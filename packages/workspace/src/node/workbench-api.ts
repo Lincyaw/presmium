@@ -56,7 +56,9 @@ export interface WorkbenchBackendOptions {
   serverHost: ServerHost
   voices: DocumentVoiceAuthoring
   diagnostics?: DiagnosticStore
+  /** The origin browsers reach the service at; `basePath` is the site's path on it (default `/`). */
   url(): string
+  basePath?: string
   preview?: { origins: string[] }
   log: Logger
   /** Starts the web dev server of a document ahead of its first request. */
@@ -137,7 +139,7 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
           if (!prefetch) throw error
           return undefined
         })
-        const web = page ? `${base}${page}` : `${base}/${document ? `${urlPath(document)}/` : ''}`
+        const web = page ? `${base}${page}` : `${base}${options.basePath ?? '/'}${document ? `${urlPath(document)}/` : ''}`
         log.info(`${label} phase=viewer source=${page ? 'app' : 'site'} elapsedMs=${Date.now() - started}`)
         phase = 'compilation'
         if (prefetch && !page) void options.warmSite?.(document).catch(() => undefined)

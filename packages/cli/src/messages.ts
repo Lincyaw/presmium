@@ -84,8 +84,8 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
           --preview-origin <来源>  （可重复）嵌入预览的 Presmium Studio 页面的来源，
                           例如 http://127.0.0.1:4320；设置 PRESMIUM_SERVICE_TOKEN 时，
                           工作区的路由要求它（Authorization: Bearer）
-          --public-url <来源>  反向代理在前面时浏览器使用的来源：信任它的主机，
-                          预览与产物的地址用它给出
+          --public-url <网址>  反向代理在前面时浏览器使用的地址：信任它的主机，预览与产物
+                          的地址用它给出；带路径时代理原样转发该路径，服务的全部内容都在它下面
   studio  启动 Presmium Studio（实验性）：浏览器中的编辑应用与这个目录（工作区的
           根目录或一份文稿）的工作区服务，只打印一个要打开的网址。需要另外安装
           @lincyaw/studio（约 865 MB）
@@ -107,7 +107,7 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
     emptyTo: '--to 至少需要一个形态，例如 --to web。',
     badAllow: (kinds, value) => `--allow 不接受“${value}”。可用的种类：${kinds.join('、')}。`,
     badPreviewOrigin: value => `“${value}”不是来源。请给出协议、主机与端口，例如 http://127.0.0.1:4320。`,
-    badPublicUrl: value => `“${value}”不是来源。请给出浏览器访问的协议与主机，例如 https://preview.example.com。`,
+    badPublicUrl: value => `“${value}”不是可用的网址。请给出浏览器访问的地址，例如 https://preview.example.com 或 https://example.com/user/a/preview/。`,
     badPort: (option, value) => `${option} 需要 0 到 65535 之间的端口号，而不是“${value}”。`,
     unmountFailed: error => `presmium: 无法关闭上一次加载的服务端扩展：${error}`,
     compiled: (sections, summary) => `已更新 ${sections} 个页面；${summary}`,
@@ -172,8 +172,9 @@ Commands:
           --preview-origin <origin>  (repeatable) the origin of a Presmium Studio whose pages embed
                           the previews, e.g. http://127.0.0.1:4320; with PRESMIUM_SERVICE_TOKEN set,
                           the workspace’s routes ask for it (Authorization: Bearer)
-          --public-url <origin>  the origin browsers use when a reverse proxy fronts the service:
-                          its host is trusted, and previews and outputs are linked under it
+          --public-url <url>  the address browsers use when a reverse proxy fronts the service: its
+                          host is trusted, and previews and outputs are linked under it; with a path, the
+                          proxy forwards that path unchanged and everything the service serves is below it
   studio  Presmium Studio (experimental): the editing app in the browser and the workspace service
           of the directory (the workspace root, or a deck); prints the one address to open. It is
           the package @lincyaw/studio (about 865 MB), installed beside this one
@@ -195,7 +196,7 @@ Exit Codes: 0 no errors, 1 error findings, 2 usage or internal error.`,
     emptyTo: '--to needs at least one renderer, such as --to web.',
     badAllow: (kinds, value) => `--allow does not take “${value}”. The kinds are ${kinds.join(', ')}.`,
     badPreviewOrigin: value => `“${value}” is not an origin. Give a scheme, host, and port, such as http://127.0.0.1:4320.`,
-    badPublicUrl: value => `“${value}” is not an origin. Give the scheme and host browsers use, such as https://preview.example.com.`,
+    badPublicUrl: value => `“${value}” is not a usable address. Give the address browsers use, such as https://preview.example.com or https://example.com/user/a/preview/.`,
     badPort: (option, value) => `${option} takes a port number from 0 to 65535, not “${value}”.`,
     unmountFailed: error => `presmium: couldn’t close the previous server contributions: ${error}`,
     compiled: (sections, summary) => `compiled ${sections} sections; ${summary}`,

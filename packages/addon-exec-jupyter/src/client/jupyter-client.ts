@@ -1,6 +1,6 @@
 import { environmentExecutor, isRecord } from '@lincyaw/kernel'
 import type { EnvironmentSpec, Executor, RunResult } from '@lincyaw/kernel'
-import { currentLocale, serverClient } from '@lincyaw/host'
+import { currentLocale, pluginRoutePath, serverClient } from '@lincyaw/host'
 import type { ServerConnection } from '@jupyterlab/services'
 import { authOf, baseUrl, cleanupPath, EXEC_JUPYTER_ID, jupyterKernelName, languagesOf, originOf, proxyPath } from '../domain/index.ts'
 import type { JupyterTerminals, TerminalSession } from '../domain/index.ts'
@@ -83,7 +83,7 @@ export function createJupyterClient(environments: Record<string, EnvironmentSpec
     if (authOf(spec) === 'proxy') {
       const document = await servedDocument()
       proxyDocuments.set(name, document)
-      const base = `${location.origin}/__presmium/${EXEC_JUPYTER_ID}/${proxyPath(name)}/`
+      const base = `${location.origin}${pluginRoutePath(serverClient(), EXEC_JUPYTER_ID)}${proxyPath(name)}/`
       class DocumentSocket extends WebSocket {
         constructor(url: string | URL, protocols?: string | string[]) {
           const target = new URL(url)
@@ -152,7 +152,7 @@ export function createJupyterClient(environments: Record<string, EnvironmentSpec
       settings: () => settingsFor(name),
       ...(authOf(spec) === 'proxy' ? {
         shutdown: (kernel: string, directory: string) => {
-          const request = fetch(`/__presmium/${EXEC_JUPYTER_ID}/${cleanupPath(name)}`, {
+          const request = fetch(`${pluginRoutePath(serverClient(), EXEC_JUPYTER_ID)}${cleanupPath(name)}`, {
             method: 'POST',
             keepalive: true,
             headers: { 'Content-Type': 'application/json', 'Presmium-Document': encodeURIComponent(proxyDocuments.get(name) ?? '') },

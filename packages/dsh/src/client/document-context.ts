@@ -8,7 +8,8 @@ export function mainViewAgentSession<T extends { retainedBy: { mainView?: number
 
 /** Tells the bundle which document the agent session works on (`null`: none, the workspace root). */
 export function postDocumentContext(agentSessionId: string, document: string | null, signal?: AbortSignal): Promise<Response> {
-  return fetch('/api/presmium/context', {
+  // Relative to the page: Studio may be served below a path (`--public-url`).
+  return fetch('api/presmium/context', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ session: agentSessionId, document }), ...signal ? { signal } : {},
   })

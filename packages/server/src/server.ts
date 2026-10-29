@@ -36,7 +36,11 @@ export interface ServerOptions {
   /** The origin to forward a path of the site to (in `serve`): the dev server that serves it. */
   forward?(path: string): string | undefined | Promise<string | undefined>
   operatorDir?: string
-  /** The address browsers use when a reverse proxy fronts the server: its host is trusted as this machine's, and pages are advertised under it. */
+  /**
+   * The address browsers use when a reverse proxy fronts the server: its host is trusted as this machine's, and pages
+   * are advertised under it. A path (`https://host/user/a/preview/`) is the base below which the proxy forwards the
+   * unchanged path; the server's own routes are found below it, and still at the root for calls on its own address.
+   */
   publicUrl?: string
   stateFile?: string
   mcp?(request: Request, access: McpCaller): Promise<Response>
@@ -117,6 +121,8 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   const listenAddress = options.listenAddress ?? '127.0.0.1'
   const refused = remoteListenRefusal(options.mode, listenAddress, options.port)
   if (refused) throw new Error(refused)
+  const basePath = options.publicUrl ? `${new URL(options.publicUrl).pathname.replace(/\/+$/, '')}/` : '/'
+  const inner = (path: string) => basePath !== '/' && path.startsWith(basePath) ? path.slice(basePath.length - 1) : path
   const machine = machineHosts(listenAddress)
   const publicHost = options.publicUrl ? normalizeHostName(new URL(options.publicUrl).host) : undefined
   const local: MachineHosts = publicHost ? host => host === publicHost || machine(host) : machine
@@ -158,7 +164,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
 
   const decide = async (req: IncomingMessage): Promise<Decision> => {
     const url = new URL(req.url ?? '/', 'http://presmium')
-    const path = url.pathname
+    const path = inner(url.pathname)
     const member = memberOf(req)
     if ('status' in member) return refuse(member)
     const target = parsePluginPath(path)
@@ -170,7 +176,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
       const proxy = await proxyOf(target, requestedDocument(req.headers, url), member, url.search)
       return proxy ?? { kind: 'fetch' }
     }
-    const forward = options.mode === 'serve' ? await options.forward?.(path) : undefined
+    const forward = options.mode === 'serve' ? await options.forward?.(url.pathname) : undefined
     if (!forward) return { kind: 'answer', response: problemResponse(404, 'not found') }
     const site = new URL(forward)
     const lan = !isLoopback(header(req.headers, 'host'))
@@ -229,7 +235,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
 
   const handle = async (request: Request, req: IncomingMessage): Promise<Response> => {
     const url = new URL(request.url)
-    const path = url.pathname
+    const path = inner(url.pathname)
     const member = memberOf(req)
     if ('status' in member) return problemResponse(member.status, member.message)
     const document = requestedDocument(req.headers, url)

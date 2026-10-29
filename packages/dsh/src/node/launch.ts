@@ -141,9 +141,9 @@ export interface LaunchedWorkspaceServer {
   ready: Promise<{ url: string, root: string }>
 }
 
-/** Starts `presmium serve <dir> --port 0 [args]` with `launchNode`, in `workspaceServerEnv`. */
-export function launchWorkspaceServer(options: { presmium: string, dir: string, serviceToken: string, args?: string[], env?: NodeJS.ProcessEnv, onOutput?(text: string): void }): LaunchedWorkspaceServer {
-  const server = launchNode('presmium serve', [options.presmium, 'serve', options.dir, '--port', '0', ...options.args ?? []], {
+/** Starts `presmium serve <dir> --port <port, default 0: a free one> [args]` with `launchNode`, in `workspaceServerEnv`. */
+export function launchWorkspaceServer(options: { presmium: string, dir: string, serviceToken: string, port?: number, args?: string[], env?: NodeJS.ProcessEnv, onOutput?(text: string): void }): LaunchedWorkspaceServer {
+  const server = launchNode('presmium serve', [options.presmium, 'serve', options.dir, '--port', String(options.port ?? 0), ...options.args ?? []], {
     cwd: options.dir,
     env: workspaceServerEnv(options.env ?? process.env, options.serviceToken),
     ...options.onOutput ? { onOutput: options.onOutput } : {},

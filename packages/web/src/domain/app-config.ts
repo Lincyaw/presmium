@@ -59,6 +59,8 @@ export interface AppConfig {
   ir?: string
   /** The IR's changes as the dev server compiles them (server-sent events). */
   events?: string
+  /** The Presmium server's routes (`<path>__presmium/<plugin>/…`), ending with `/`; `/` when omitted. */
+  server?: string
   /** The document's own code (`document-bundle.ts`), when it has any. */
   bundle?: string
   /** The search index of the page's language (MiniSearch's JSON). */

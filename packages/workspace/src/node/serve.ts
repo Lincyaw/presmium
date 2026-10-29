@@ -96,6 +96,11 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   const check = options.check ?? (compilation => compilation.check())
   const launcherToken = env.PRESMIUM_SERVICE_TOKEN || undefined
   const preview = { origins: options.previewOrigins ?? [] }
+  // Behind a proxy that forwards a path (`--public-url https://host/user/a/preview/`), the site, the jobs' files and the
+  // previews' links are all below that path; the server finds its own routes below it too.
+  const basePath = options.publicUrl ? `${new URL(options.publicUrl).pathname.replace(/\/+$/, '')}/` : '/'
+  const outputsPath = `${basePath}${OUTPUTS_PATH.slice(1)}`
+  const publicOrigin = () => options.publicUrl ? new URL(options.publicUrl).origin : server?.url ?? ''
 
   let serverServices: [ServiceToken<unknown>, unknown][] = []
   let workspaceServices: [ServiceToken<unknown>, unknown][] = []
@@ -117,7 +122,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   // The builds and exports, as jobs the workbench and the AI start and follow.
   const jobs = createJobs({
     stateDir,
-    url: () => server?.publicUrl ?? '',
+    url: publicOrigin,
+    outputsPath,
     compilation: (dir, fresh) => fresh ? compileSessionOf(dir).recompile() : compileSessionOf(dir).ready(),
     revision: compilation => irRevision(compilation.doc),
     origins: preview.origins,
@@ -337,7 +343,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     stateFile,
     forward: async (path) => {
       lookAtDisk()
-      if (path.startsWith(OUTPUTS_PATH)) return await jobs.origin()
+      if (path.startsWith(outputsPath)) return await jobs.origin()
       if (!site) return undefined
       // Straight to the dev server of the path's document, not through the site's router: one hop less per module.
       try {
@@ -367,7 +373,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   const running = server
   serverServices = running.services
   voiceAuthoring = createDocumentVoiceAuthoring({ editor, services: authoringServices, revision: document => { const latest = compileSessions.get(document)?.latest; return latest ? irRevision(latest.doc) : undefined } })
-  workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, voices: voiceAuthoring.service, diagnostics: running.diagnostics, url: () => running.publicUrl, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
+  workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, voices: voiceAuthoring.service, diagnostics: running.diagnostics, url: () => options.publicUrl ? new URL(options.publicUrl).origin : running.url, basePath, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
   history = openHistory()
   documentEditor = createDocumentEditor({ productionPlan: async (document, source) => { const audio = (await authoringServices(document, source)).audio; if (!audio) throw new RequestError(503, 'caption-production-unavailable'); return audio.readPlan({ source }) }, editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   projectAuthoring = createProjectAuthoring({ config, documentEditor, operations: history?.operations, revisions: history?.revisions, git: history?.git })
@@ -421,7 +427,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     return workbench!.stampPreviewRevision(compilation, siteDocumentIR(compilation))
   }
   try {
-    site = await startWorkspaceSite({ root, spec, bundled: options.bundled, stateDir, compile: compileForSite, stampPreviewRevision: (compilation, doc) => workbench!.stampPreviewRevision(compilation, doc), diagnostics: running.diagnostics, preview, log })
+    site = await startWorkspaceSite({ root, spec, basePath, bundled: options.bundled, stateDir, compile: compileForSite, stampPreviewRevision: (compilation, doc) => workbench!.stampPreviewRevision(compilation, doc), diagnostics: running.diagnostics, preview, log })
   } catch (error) {
     await closeAuthoring()
     await workbench.close()
@@ -449,6 +455,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
 
 interface WorkspaceSiteOptions {
   root: string
+  basePath: string
   spec: SiteSpec
   bundled?: string
   stateDir: string
@@ -467,7 +474,7 @@ async function startWorkspaceSite(options: WorkspaceSiteOptions) {
   const renderer = await webRenderer(root, options.bundled)
   const findings: Finding[] = []
   const work = join(options.stateDir, 'site', 'full')
-  const ctx = siteContext({ root, outDir: work, workDir: work, findings })
+  const ctx = siteContext({ root, outDir: work, workDir: work, base: options.basePath, findings })
   ctx.preview = options.preview
   const dev = await renderer.devSite!(spec, ctx, options.compile)
   const origin = new URL(dev.url).origin

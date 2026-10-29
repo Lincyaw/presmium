@@ -36,7 +36,9 @@ presmium-studio-<散列>.log（每个安装一个）保存在 $XDG_STATE_HOME/pr
                  任何能访问这个端口的人都以你的身份操作
   --public-url <网址>   有反向代理在前面时浏览器打开的根地址（例如 Presmium 云端）；
                  它的主机受信任，打印的网址用它。代理需保留 Host 并转发 WebSocket
-  --preview-url <来源>  同样情况下预览所在的来源，由代理转发到工作区服务
+  --preview-url <网址>  同样情况下预览所在的地址，由代理转发到工作区服务；可以带路径，
+                 此时它必须与 Studio 不同源，否则预览中文稿的代码能读到 Studio 的会话
+  --preview-port <端口>  工作区服务的端口（默认为空闲端口），供需要事先知道端口的代理使用
   -h, --help     显示本说明`,
     badPort: value => `--port 需要 0 到 65535 之间的端口号，而不是“${value}”。`,
     badUrl: (option, value) => `${option} 需要一个完整的网址，例如 https://studio.example.com/，而不是“${value}”。`,
@@ -70,7 +72,10 @@ Options:
   --public-url <url>    the root browsers open when a reverse proxy fronts Studio (as in Presmium
                  Cloud): its host is trusted, and the printed address uses it. The proxy keeps Host and
                  forwards WebSockets
-  --preview-url <origin>  in that case, the origin of the previews, forwarded to the workspace service
+  --preview-url <url>  in that case, the address of the previews, forwarded to the workspace service; it
+                 may have a path, and should be another origin than Studio’s, or the documents’ code in
+                 previews can read Studio’s session
+  --preview-port <n>  the workspace service’s port (default: a free one), for a proxy that needs it in advance
   -h, --help     show this help`,
     badPort: value => `--port takes a port number from 0 to 65535, not “${value}”.`,
     badUrl: (option, value) => `${option} takes a full address, such as https://studio.example.com/, not “${value}”.`,
