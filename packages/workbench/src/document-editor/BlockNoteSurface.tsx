@@ -1,7 +1,6 @@
 import { forwardRef, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react'
 import { filterSuggestionItems } from '@blocknote/core'
-import { en, zh } from '@blocknote/core/locales'
 import { BlockNoteView, components } from '@blocknote/mantine'
 import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ComponentsContext, CreateLinkButton, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, LinkToolbarController, NestBlockButton, RenderInPortalElement, SideMenuController, SuggestionMenuController, TableCellMergeButton, TableHandlesController, TextAlignButton, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
 import type { ComponentProps, FormattingToolbarProps } from '@blocknote/react'
@@ -12,7 +11,8 @@ import { DOCUMENT_NODE_VIEWS, documentEditorSchema } from './schema.tsx'
 import type { DocumentEditorBlock, DocumentEditorInput, DocumentNodeViews, NativeDocumentEditor } from './schema.tsx'
 import { documentSelection } from './selection.ts'
 import type { NativeDocumentSelection } from './selection.ts'
-import { DOCUMENT_EDITOR_MESSAGES, IMAGE_IMPORT_MESSAGES } from './messages.ts'
+import { DOCUMENT_EDITOR_MESSAGES, IMAGE_IMPORT_MESSAGES, slashAliases } from './messages.ts'
+import { blockNoteDictionary } from './blocknote-messages.ts'
 import { imageFileInput } from './file-input.ts'
 import type { ImageImportFailure } from './file-input.ts'
 import { nativeTextClipboard } from './clipboard.ts'
@@ -123,7 +123,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
   const uploads = useMemo(() => ({ controllers: new Set<AbortController>(), pending: Promise.resolve() }), [props.identity, props.reset ?? 0])
   const [fileErrors, setFileErrors] = useState<{ identity: string, failures: ImageImportFailure[] }>()
   current.current = props
-  const dictionary = props.locale === 'zh-CN' ? zh : en
+  const dictionary = blockNoteDictionary(props.locale)
   const t = DOCUMENT_EDITOR_MESSAGES[props.locale]
   const linkToolbarOptions = useMemo(linkToolbarFloating, [])
   const links = useMemo<DocumentLinks>(() => ({ openSection: sectionId => current.current.onSectionLink?.(sectionId) ?? false }), [])
@@ -195,7 +195,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         <SideMenuController sideMenu={DocumentSideMenu} />
         <TableHandlesController tableHandle={DocumentTableHandle} tableCellHandle={DocumentTableCellButton} />
         <SuggestionMenuController triggerCharacter="/" getItems={async query => editor.getTextCursorPosition().block.type === 'presmiumPage' ? [] : filterSuggestionItems([...withFormulas(getDefaultReactSlashMenuItems(editor), formulaSlashItems(editor, props.locale, dictionary.slash_menu.table.group)), {
-          title: t.page, aliases: ['page', 'section', '页面', '章节'], group: t.document,
+          title: t.page, aliases: slashAliases('pageAliases'), group: t.document,
           onItemClick: () => { const current = editor.getTextCursorPosition().block; editor.insertBlocks([{ type: 'presmiumPage', props: { sectionId: crypto.randomUUID() }, content: t.untitledPage }], current, 'after') },
         }], query)} />
         {props.children}

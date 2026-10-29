@@ -31,10 +31,9 @@ if (typeof document !== 'undefined' && !document.querySelector(`style[data-plugi
 
 export const inject = ['slots', 'theme', 'locale', 'shortcuts']
 
+// The studio's one language source: the language chosen in Settings, else the browser's.
 function workbenchLocale(active: string | undefined): Locale {
-  const tag = active?.toLowerCase() ?? ''
-  if (tag.startsWith('zh') || tag.startsWith('en')) return localeOf(tag)
-  return localeOf(navigator.language)
+  return localeOf(active) ?? localeOf(navigator.language) ?? 'en'
 }
 
 export function apply(ctx: DshClientContext): void {

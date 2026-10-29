@@ -11,7 +11,7 @@ import type { Locale } from '../messages.ts'
 
 export const NARRATION_MESSAGES = {
   'zh-CN': { field: '讲稿', captions: '字幕', pronunciation: '发音', display: '显示文字', spoken: '实际读音', done: '确定', cancel: '取消', cue: '提示', empty: '输入本步讲稿…', emptyCaptions: '输入字幕…' },
-  en: { field: 'Narration', captions: 'Captions', pronunciation: 'Pronunciation', display: 'Written text', spoken: 'Spoken text', done: 'Apply', cancel: 'Cancel', cue: 'Cue', empty: 'Write this step’s narration…', emptyCaptions: 'Write captions…' },
+  en: { field: 'Script', captions: 'Captions', pronunciation: 'Pronunciation', display: 'Written text', spoken: 'Spoken text', done: 'Apply', cancel: 'Cancel', cue: 'Cue', empty: 'Write this step’s script…', emptyCaptions: 'Write captions…' },
 }
 export const NARRATION_CONTEXT = createContext<{ locale: Locale, readOnly?: boolean, advanced?: boolean }>({ locale: 'zh-CN' })
 
