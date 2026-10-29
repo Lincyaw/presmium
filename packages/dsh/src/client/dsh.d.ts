@@ -82,7 +82,11 @@ interface DshLocale {
   setLocale(id: string): unknown
 }
 
+interface DshShortcutBinding { code: string, modifiers: string[] }
+
 interface DshShortcuts {
+  /** A read-only row of the shortcut reference; its keys are handled by their owner and kept from editable commands. */
+  registerFixed(command: { id: string, label: () => string, keys: readonly string[], bindings: readonly [DshShortcutBinding, ...DshShortcutBinding[]], group: 'application' | 'input' | 'menus' | 'approval' }): () => void
   register(command: {
     id: string
     label: () => string
