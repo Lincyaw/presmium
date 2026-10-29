@@ -13,8 +13,8 @@ const cam = (x: number, y: number, s: number) => {
 
 // Capture coordinates (CSS pixels of 1600 × 900): the two lines of the picked paragraph, the comment button of the
 // selection toolbar, the comment box and its save button, the AI Assistant's composer and send button.
-const LINES = [[558.5, 356.8, 709.8, 24], [558.5, 380.8, 454.1, 24]] as const
-const COMMENT_FRAMES = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 33]
+const LINES = [[558.5, 260.8, 723.6, 24], [558.5, 284.8, 688.7, 24], [558.5, 308.8, 329.8, 24]] as const
+const COMMENT_FRAMES = [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 50]
 const clipOf = ([x, y, w, h]: readonly number[], i: number) =>
   `<div class="a-sel a-sel${i + 1}" style="${at(x!, y!, w!, h!)}"><img src="${asset('studio-selected')}" alt="" style="left:${-x! / w! * 100}%;top:${-y! / h! * 100}%;width:${1600 / w! * 100}%;height:${900 / h! * 100}%"></div>`
 
@@ -23,50 +23,52 @@ export const ask: Shot = {
   css: `
     .a-sel { position: absolute; overflow: hidden; }
     .a-sel img { position: absolute; max-width: none; }
-    .pf .a-frame { position: absolute; left: ${609.5 / 16}%; top: ${413 / 9}%; width: ${352 / 16}%; height: auto; }
+    .pf .a-frame { position: absolute; left: ${547.5 / 16}%; top: ${341 / 9}%; width: ${352 / 16}%; height: auto; }
   `,
   stage: `${nightRoom()}<div class="pf-mug"></div>${laptop(`
     ${image('studio-before')}${LINES.map(clipOf).join('')}${image('studio-selected', 'pf-fill a-selected')}
     ${image('studio-comment', 'pf-fill a-comment')}${COMMENT_FRAMES.map(i => image(`comment-${String(i).padStart(2, '0')}`, `a-frame a-f${i}`)).join('')}
     ${image('studio-commented', 'pf-fill a-commented')}`)}`,
-  over: `${line('这次换个讲法。', 'pf-line--night a-line1')}${line('想改哪儿，圈出来说一句。', 'a-line2')}`,
+  over: `${line('This time, show it.', 'pf-line--night a-line1')}${line('Mark the spot. Say what you want.', 'a-line2')}`,
   play(k, gsap, tl) {
     k.camSet({ x: 0.5, y: 0.5, s: 1 })
     k.say('.a-line1', 0.25, 2.5)
-    k.cam(0.7, cam(913, 381, 2.3), 0.9)
+    k.cam(0.7, cam(913, 290, 2.3), 0.9)
     // Drag across both lines; the real selection is uncovered under the pointer, then the toolbar appears.
-    const [l1, l2] = LINES
-    k.pointerAt(1.25, onScreen(S, 820, 520))
-    k.point(1.3, onScreen(S, l1[0] + 2, l1[1] + 12), 0.35)
-    k.wipe('.a-sel1', 1.7, 0.35)
-    k.point(1.7, onScreen(S, l1[0] + l1[2], l1[1] + 12), 0.35, 'none')
-    k.wipe('.a-sel2', 2.05, 0.25)
-    k.point(2.05, onScreen(S, l2[0] + l2[2], l2[1] + 12), 0.25, 'none')
+    const [l1, l2, l3] = LINES
+    k.pointerAt(1.2, onScreen(S, 820, 440))
+    k.point(1.25, onScreen(S, l1[0] + 2, l1[1] + 12), 0.35)
+    k.wipe('.a-sel1', 1.62, 0.26)
+    k.point(1.62, onScreen(S, l1[0] + l1[2], l1[1] + 12), 0.26, 'none')
+    k.wipe('.a-sel2', 1.88, 0.24)
+    k.point(1.88, onScreen(S, l2[0] + l2[2], l2[1] + 12), 0.24, 'none')
+    k.wipe('.a-sel3', 2.12, 0.16)
+    k.point(2.12, onScreen(S, l3[0] + l3[2], l3[1] + 12), 0.16, 'none')
     k.show('.a-selected', 2.35)
-    k.point(2.45, onScreen(S, 1091, 331), 0.4)
+    k.point(2.45, onScreen(S, 1127, 235), 0.4)
     k.click(2.9)
     // The comment box, typed into: each frame is the real box after two more characters.
     k.show('.a-comment', 2.95)
-    k.cam(2.95, cam(850, 445, 2.4), 0.7)
-    k.point(3.05, onScreen(S, 1010, 640), 0.5)
+    k.cam(2.95, cam(850, 360, 2.4), 0.7)
+    k.point(3.05, onScreen(S, 1010, 560), 0.5)
     COMMENT_FRAMES.forEach((i, j) => {
       const el = `.a-f${i}`
       k.show(el, j ? 3.15 + j * 0.125 : 2.95)
       if (j < COMMENT_FRAMES.length - 1) k.hide(el, 3.15 + (j + 1) * 0.125 + 0.01)
     })
-    k.point(5.45, onScreen(S, 921.5, 518), 0.4)
+    k.point(5.45, onScreen(S, 858, 446), 0.4)
     k.click(5.9)
     // Saved: the paragraph is marked and the comment sits beside it, waiting.
     k.show('.a-commented', 6.0)
-    k.hide(`.a-f33`, 6.0)
-    k.cam(6.0, cam(985, 345, 1.95), 0.8)
+    k.hide(`.a-f50`, 6.0)
+    k.cam(6.0, cam(985, 290, 1.95), 0.8)
     k.pointerOff(6.05)
     k.say('.a-line2', 6.1)
   },
 }
 
-// The preview's own step buttons under the animation: button n is at x = 424 + 34(n − 1), y = 714.
-const stepButton = (n: number) => onScreen(S, 424 + 34 * (n - 1), 714)
+// The preview's own step buttons under the animation: button n is at x = 424 + 34(n − 1), y = 738.
+const stepButton = (n: number) => onScreen(S, 424 + 34 * (n - 1), 738)
 
 /** 19–26 s. The teacher asks the AI Assistant to work through the comment; the page comes back with the animation. */
 export const done: Shot = {
@@ -77,22 +79,22 @@ export const done: Shot = {
   `,
   stage: `${nightRoom()}<div class="pf-mug"></div>${laptop(`
     ${image('studio-ai')}
-    <div class="d-typed" style="${at(1216, 480, 357, 52)}"><img src="${asset('studio-ai-typed')}" alt="" style="left:${-1216 / 357 * 100}%;top:${-480 / 52 * 100}%;width:${1600 / 357 * 100}%;height:${900 / 52 * 100}%"></div>
+    <div class="d-typed" style="${at(1216, 494, 357, 52)}"><img src="${asset('studio-ai-typed')}" alt="" style="left:${-1216 / 357 * 100}%;top:${-494 / 52 * 100}%;width:${1600 / 357 * 100}%;height:${900 / 52 * 100}%"></div>
     ${image('studio-ai-typed', 'pf-fill d-ready')}${image('studio-ai-working', 'pf-fill d-working')}
     ${image('studio-after', 'pf-fill d-after')}${[2, 3, 4].map(n => image(`studio-after-${n}`, `pf-fill d-after${n}`)).join('')}
     <div class="d-sweep"></div>`)}`,
-  over: line('剩下的，交给 AI。'),
+  over: line('The AI does the rest.'),
   play(k, gsap, tl) {
-    k.camSet(cam(1390, 470, 2.4))
-    k.pointerAt(0.15, onScreen(S, 1330, 640))
-    k.point(0.2, onScreen(S, 1300, 506), 0.35)
+    k.camSet(cam(1390, 480, 2.4))
+    k.pointerAt(0.15, onScreen(S, 1330, 650))
+    k.point(0.2, onScreen(S, 1300, 520), 0.35)
     k.click(0.6)
     k.wipe('.d-typed', 0.7, 0.55)
     k.show('.d-ready', 1.3)
-    k.point(1.3, onScreen(S, 1552, 561.5), 0.3)
+    k.point(1.3, onScreen(S, 1552, 575), 0.3)
     k.click(1.65)
     k.show('.d-working', 1.75)
-    k.cam(1.75, cam(1400, 330, 1.9), 0.7)
+    k.cam(1.75, cam(1400, 300, 1.9), 0.7)
     k.pointerOff(1.8)
     k.say('.pf-line', 1.9, 4.3)
     // The AI's revision arrives: a light passes down the page and the animation is there, recorded in the history.
@@ -102,24 +104,24 @@ export const done: Shot = {
     tl.to('.d-sweep', { autoAlpha: 0, duration: 0.15 }, 3.15)
     k.show('.d-after', 2.85, 0.25)
     k.cam(3.4, cam(1450, 190, 2.6), 0.7)
-    k.cam(4.4, cam(760, 500, 1.9), 0.8)
+    k.cam(4.4, cam(760, 520, 1.9), 0.8)
     // Pressing the preview's steps plays the comparison, a step at a time.
-    k.pointerAt(4.75, onScreen(S, 640, 790))
+    k.pointerAt(4.75, onScreen(S, 640, 810))
     ;[2, 3, 4].forEach((n, i) => {
       const t = 4.8 + i * 0.55
       k.point(t, stepButton(n), i ? 0.25 : 0.3)
       k.click(t + 0.3)
       k.show(`.d-after${n}`, t + 0.38)
     })
-    k.point(6.35, onScreen(S, 700, 790), 0.4)
+    k.point(6.35, onScreen(S, 700, 810), 0.4)
   },
 }
 
 const icon = (name: 'slides' | 'website' | 'video') => `<span class="f-icon">${iconMarkup(name, '100%', 1.8)}</span>`
 const FORMS = [
-  ['slides', '上课放映', image('slide-8', 'f-thumb')],
-  ['website', '做成网站', image('web-page', 'f-thumb f-top')],
-  ['video', '导出视频', `${image('lesson-04', 'f-thumb')}<span class="f-play"></span>`],
+  ['slides', 'Present in class', image('slide-8', 'f-thumb')],
+  ['website', 'Publish a website', image('web-page', 'f-thumb f-top')],
+  ['video', 'Export a video', `${image('lesson-04', 'f-thumb')}<span class="f-play"></span>`],
 ] as const
 
 /** 26–29 s. The one lesson becomes three things to use. */
@@ -142,7 +144,7 @@ export const forms: Shot = {
     .f-icon svg { display: block; width: 100%; height: 100%; }
   `,
   stage: `<div class="pf-fill pf-day"></div>
-    <div class="f-doc"><h3>学习率，怎样改变一条预测线？</h3>${image('slide-8', 'f-doc-img')}<i></i><i style="width:70%"></i></div>
+    <div class="f-doc"><h3>How does the learning rate move a prediction line?</h3>${image('slide-8', 'f-doc-img')}<i></i><i style="width:70%"></i></div>
     ${FORMS.map(([name, label, media], i) => `<div class="f-card f-card${i}" style="left:${7 + i * 30}cqw"><div class="f-media">${media}</div><div class="f-label">${icon(name)}${label}</div></div>`).join('')}`,
   pointer: 'none',
   play(k, gsap, tl) {
@@ -185,9 +187,9 @@ export const lesson: Shot = {
     <div class="c-screen">${Array.from({ length: 9 }, (_, i) => image(`slide-${i}`, `pf-fill c-slide c-s${i}`)).join('')}</div>
     <div class="c-row c-back">${Array.from({ length: 6 }, (_, i) => `<div class="c-kid c-b${i}"><b></b><i></i></div>`).join('')}</div>
     <div class="c-row c-front">${Array.from({ length: 5 }, (_, i) => `<div class="c-kid c-k${i}"><b></b><i></i></div>`).join('')}</div>
-    <div class="c-oh">哦——</div>
+    <div class="c-oh">Oh, I see!</div>
     <div class="c-hand"><div class="c-sleeve"></div><div class="c-clicker"><div class="c-btn"></div><div class="c-ring"></div></div><div class="c-fist"></div></div>`,
-  over: line('上课，按一下走一步。'),
+  over: line('In class: one click, one step.'),
   pointer: 'none',
   play(k, gsap, tl) {
     k.camSet({ x: 0.5, y: 0.5, s: 1 })
@@ -226,15 +228,15 @@ export const website: Shot = {
   `,
   stage: `<div class="pf-fill pf-day"></div><div class="pf-browser w-win"><div class="pf-browser-bar"><i></i><i></i><i></i><span>/course/learn/</span></div>
     <div class="w-view">${image('web-page', 'w-page')}</div></div>`,
-  over: line('课后打开网站，随时翻看。'),
+  over: line('After class, it\'s all online.'),
   pointer: 'none',
   play(k, gsap, tl) {
     k.camSet({ x: 0.5, y: 0.5, s: 1 })
     k.cam(0.4, { x: 0.5, y: 0.5, s: 1.08 }, 5, 'sine.inOut')
     k.enter('.w-win', 0, { yPercent: 6 }, 0.5)
     k.say('.pf-line', 0.6)
-    // The page is 2245 CSS pixels tall; scroll until the comparison's heading is near the top.
-    tl.to('.w-page', { yPercent: -530 / 2245 * 100, duration: 1.4, ease: 'power2.inOut' }, 0.9)
+    // The page is 2385 CSS pixels tall; scroll until the comparison's heading is near the top.
+    tl.to('.w-page', { yPercent: -560 / 2385 * 100, duration: 1.4, ease: 'power2.inOut' }, 0.9)
   },
 }
 
@@ -245,11 +247,11 @@ export const brand: Shot = {
     .br-mark { width: 6.4cqw; height: 6.4cqw; }
     .br-mark svg { display: block; width: 100%; height: 100%; }
     .br-word { font-size: 5.6cqw; font-weight: 700; letter-spacing: -0.01em; }
-    .br-promise { position: absolute; left: 0; right: 0; top: 52cqh; text-align: center; font-size: 3.4cqw; font-weight: 600; letter-spacing: 0.06em; }
-    .br-note { position: absolute; left: 0; right: 0; top: 66cqh; text-align: center; font-size: 1.6cqw; color: color-mix(in srgb, var(--pm-color-film-ink) 55%, transparent); letter-spacing: 0.08em; }
+    .br-promise { position: absolute; left: 0; right: 0; top: 52cqh; text-align: center; font-size: 3.6cqw; font-weight: 600; letter-spacing: -0.005em; }
+    .br-note { position: absolute; left: 0; right: 0; top: 66cqh; text-align: center; font-size: 1.6cqw; color: color-mix(in srgb, var(--pm-color-film-ink) 55%, transparent); letter-spacing: 0.02em; }
   `,
   stage: `<div class="pf-fill pf-day"></div><div class="br-name"><span class="br-mark">${brandMarkup()}</span><span class="br-word">Presmium</span></div>
-    <div class="br-promise">难讲的课，也能讲明白。</div><div class="br-note">开源 · 免费使用</div>`,
+    <div class="br-promise">Make complex things clear.</div><div class="br-note">Open source · Free to use</div>`,
   pointer: 'none',
   play(k) {
     k.camSet({ x: 0.5, y: 0.5, s: 1 })

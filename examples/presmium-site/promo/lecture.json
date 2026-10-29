@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "id": "presmium-product-promo-60s",
   "metadata": {
-    "title": "难讲的课，也能讲明白",
-    "lang": "zh-CN",
-    "description": "一个学生深夜提问，老师在 Presmium 里圈出一段讲义、让 AI 加上动画；第二天上课一步一步讲，课后做成网站、导出视频，学生回复“懂了”。",
+    "title": "Make complex things clear",
+    "lang": "en",
+    "description": "A student asks a question late at night. The teacher marks a paragraph in Presmium and has the AI add an animation, teaches it step by step the next day, then shares the lesson as a website and a video, and the student replies \"Got it\".",
     "plugins": [
       "@lincyaw/addon-motion",
       "@lincyaw/addon-lecture"
@@ -30,7 +30,7 @@
   "sections": {
     "film-question": {
       "id": "film-question",
-      "title": "难讲的课，也能讲明白",
+      "title": "Make complex things clear",
       "level": 1,
       "children": [
         "question-scene"
@@ -49,7 +49,7 @@
     },
     "film-board": {
       "id": "film-board",
-      "title": "黑板上画了三遍",
+      "title": "Three times on the board",
       "level": 2,
       "children": [
         "board-scene"
@@ -68,7 +68,7 @@
     },
     "film-ask": {
       "id": "film-ask",
-      "title": "圈出来，说一句",
+      "title": "Mark it, say it",
       "level": 2,
       "children": [
         "ask-scene"
@@ -87,7 +87,7 @@
     },
     "film-done": {
       "id": "film-done",
-      "title": "剩下的交给 AI",
+      "title": "The AI does the rest",
       "level": 2,
       "children": [
         "done-scene"
@@ -106,7 +106,7 @@
     },
     "film-forms": {
       "id": "film-forms",
-      "title": "上课、网站、视频",
+      "title": "Class, website, video",
       "level": 2,
       "children": [
         "forms-scene"
@@ -125,7 +125,7 @@
     },
     "film-lesson": {
       "id": "film-lesson",
-      "title": "上课，按一下走一步",
+      "title": "One click, one step",
       "level": 2,
       "children": [
         "lesson-scene"
@@ -144,7 +144,7 @@
     },
     "film-website": {
       "id": "film-website",
-      "title": "课后打开网站",
+      "title": "After class, online",
       "level": 2,
       "children": [
         "website-scene"
@@ -163,7 +163,7 @@
     },
     "film-video": {
       "id": "film-video",
-      "title": "导出视频，发到群里",
+      "title": "Send the video",
       "level": 2,
       "children": [
         "video-scene"
@@ -182,7 +182,7 @@
     },
     "film-reply": {
       "id": "film-reply",
-      "title": "懂了",
+      "title": "Got it",
       "level": 2,
       "children": [
         "reply-scene"
@@ -429,7 +429,7 @@
       "id": "film-score",
       "kind": "audio",
       "location": "audio/score.ogg",
-      "title": "难讲的课，也能讲明白 · 原创配乐",
+      "title": "Make complex things clear · original score",
       "fingerprint": "sha256:aacc7e31ca06e7eea3e6708c78817da4bda27c378d5b0073dd3b91e181e7aa30",
       "mediaType": "audio/ogg"
     }
@@ -487,7 +487,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "深夜，老师的手机亮了。课程群里，林同学问：“老师，学习率调大了，怎么反而越训越差？”"
+                  "value": "Late at night, the teacher's phone lights up. In the class chat, Sam asks: \"Why does a bigger learning rate make training worse, not better?\""
                 }
               ]
             }
@@ -547,7 +547,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "上节课的黑板：同一条损失曲线，大步长的折线画了三遍、擦了两遍。黑板上画了三遍，还是没讲明白。"
+                  "value": "Last class's blackboard: the same overshoot drawn three times and erased twice. Drew it three times. Still didn't click."
                 }
               ]
             }
@@ -607,7 +607,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "老师在 Presmium 里选中“更新规则”这一段，新建批注：“这里做成动画：同一个起点，学习率 2.2 和 0.35 各走几步。”想改哪儿，圈出来说一句。"
+                  "value": "In Presmium, the teacher selects the paragraph on the update rule and leaves a comment: \"Animate this: α = 2.2 vs 0.35 from the same start.\" Mark the spot. Say what you want."
                 }
               ]
             }
@@ -667,7 +667,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "老师让 AI 助手按批注修改。页面里多了对比动画，版本历史记下一条 AI 的修改，可以撤消；按预览的步骤按钮，预测线一步一步摆开。"
+                  "value": "The teacher asks the AI Assistant to apply the comment. The page now has the comparison animation, the version history records the AI's change, and the preview steps through it."
                 }
               ]
             }
@@ -727,7 +727,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "同一份讲义，可以上课放映、做成网站，也可以导出视频。"
+                  "value": "The same document can be presented in class, published as a website, or exported as a video."
                 }
               ]
             }
@@ -787,7 +787,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "第二天上课，投影上是放映版。老师按一下翻页笔走一步：学习率 2.2 时预测线越摆越远；回到同一个起点换成 0.35，线一步步贴近数据。"
+                  "value": "Next morning in class, the slides are on the screen. Each click is one step: with 2.2 the line swings further out; back at the same start with 0.35, it settles onto the data."
                 }
               ]
             }
@@ -847,7 +847,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "课后，这堂课就是课程网站上的一页，学生可以随时翻看。"
+                  "value": "After class, the lesson is a page of the course website, ready to read again."
                 }
               ]
             }
@@ -907,7 +907,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "老师把这堂课导出成视频发到课程群。没看懂的地方，拖回去再看一遍。"
+                  "value": "The teacher exports the lesson as a video and sends it to the class chat. Missed a step? Drag it back."
                 }
               ]
             }
@@ -967,7 +967,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "林同学回复：“懂了！步子太大，一下迈过头了。”"
+                  "value": "Sam replies: \"Got it! The steps were too big, so it kept overshooting.\""
                 }
               ]
             }
@@ -1027,7 +1027,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "Presmium。难讲的课，也能讲明白。开源，免费使用。"
+                  "value": "Presmium. Make complex things clear. Open source, free to use."
                 }
               ]
             }

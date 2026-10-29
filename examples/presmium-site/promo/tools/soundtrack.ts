@@ -1,5 +1,5 @@
 /**
- * Original score for “难讲的课，也能讲明白”. Every sound is synthesized here; no samples or speech.
+ * Original score for “Make complex things clear”. Every sound is synthesized here; no samples or speech.
  * Run with Node's TypeScript support: node soundtrack.ts. All randomness is seeded.
  * The cues follow the film's ten shots (`PHASES`, the sections of `lecture.json`) and the moments inside them.
  */
@@ -241,7 +241,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     for (const data of channels) for (let i = Math.round(phase.from * SAMPLE_RATE); i < Math.round(phase.to * SAMPLE_RATE); i++) { const v = data[i]!; energy += v * v; peak = Math.max(peak, Math.abs(v)) }
     return { ...phase, rms: Math.sqrt(energy / ((phase.to - phase.from) * SAMPLE_RATE * 2)), peak }
   })
-  const manifest = { title: '难讲的课，也能讲明白 · 原创配乐', originalComposition: true, speech: false, sampledRecordings: false, sampleRate: SAMPLE_RATE, channels: 2, bitDepth: 16, durationSeconds: DURATION_SECONDS, bpm: BPM, phases: windows, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') }
+  const manifest = { title: 'Make complex things clear · original score', originalComposition: true, speech: false, sampledRecordings: false, sampleRate: SAMPLE_RATE, channels: 2, bitDepth: 16, durationSeconds: DURATION_SECONDS, bpm: BPM, phases: windows, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') }
   writeFileSync(output.replace(/\.wav$/, '.json'), JSON.stringify(manifest, null, 2) + '\n')
   console.log(JSON.stringify({ output, ...manifest }))
 }
