@@ -116,7 +116,14 @@ the slides are both pages of Presmium's own prebuilt viewer (`docs/architecture.
 
 - **Two languages.** Every package keeps its own zh-CN and en text; browser code uses `useMessages` and
   `useLocale` from `@lincyaw/host`, compiled output follows the document's `lang` (`docs/architecture.md`
-  5.7). The workbench needs both sets complete.
+  5.7). The workbench needs both sets complete. Names, commands, status words, words not to use and the style
+  rules of each language are in `docs/glossary.md`, the single source of interface terms (English commands and
+  pane titles in Title Case, messages in sentence case); add a new term there before using it. Run
+  `node scripts/check-i18n.mjs` after changing interface text: it reports key sets that differ, untranslated
+  text, glossary and style breaks, hard-coded UI text, CLI and error literals and places that choose the
+  locale themselves (`--package <name>` for one package, `--json` for the list). It is report-only for now;
+  `--strict` fails on catalog findings and joins `pnpm test` once the catalogs are clean
+  (`docs/benchmarks/i18n-audit-2026-10-29.md`).
 - **Tokens only.** Styles reference `packages/design/src/tokens.css`: no raw colors, no px (except in
   `@media` breakpoints), no ms/s; add a missing token there first (dark mode overrides only colors and
   shadows); icon sizes come from size tokens in CSS, not numbers in components. Color token names are also in
@@ -136,7 +143,7 @@ the slides are both pages of Presmium's own prebuilt viewer (`docs/architecture.
   paragraphs pretty; rules in `packages/design/src/typography.css`), complete states (hover, pressed with
   `--pm-color-pressed`, focus-visible, disabled; `PmSkeleton` for loading of a known shape, `PmEmpty` with a
   guiding line for empty panels, inline errors, never `window.alert`/`confirm`), message style (specific
-  success and error text with a next step, no exclamation marks, English sentence case, zh-CN and en together)
+  success and error text with a next step, no exclamation marks, English messages in sentence case, zh-CN and en together)
   and motion (transform and opacity only, durations from tokens, loops off under reduced motion).
   `scripts/check-tokens.mjs` reports raw values and transitions or `@keyframes` of layout properties in its
   scope; the other rules are checked by looking.
