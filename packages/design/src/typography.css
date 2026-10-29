@@ -1,0 +1,24 @@
+/* Line wrapping, for every surface that loads the design system: the workbench, the document's site and its slides.
+   A heading's lines are balanced; a paragraph's last lines are evened out so that it does not end on a lone
+   character or word, which Chinese lecture text does often. Code, numbers in tables and form fields keep the
+   browser's plain wrapping. Zero specificity, so that a component's own rule still wins. */
+:where(h1, h2, h3, h4, h5, h6, .pm-ui-heading, .pm-ui-card__title, .pm-ui-dialog__title, .pm-ui-drawer__title, .pm-ui-empty__title, .pm-layout__title) {
+  text-wrap: balance;
+}
+
+:where(p, li, dd, blockquote, figcaption, caption, .pm-ui-empty, .pm-ui-notice, .pm-ui-tooltip, .pm-ui-caption__line, .pm-ui-menu__description) {
+  text-wrap: pretty;
+}
+
+:where(pre, code, kbd, samp, td, th, input, textarea, select, button) {
+  text-wrap: wrap;
+}
+
+/* The editor's document body: BlockNote draws its paragraphs and headings as blocks, not as p and h elements. */
+:where(.pm-ui-block-editor) :where(.bn-block-content[data-content-type='heading'] .bn-inline-content) {
+  text-wrap: balance;
+}
+
+:where(.pm-ui-block-editor) :where(.bn-block-content:is([data-content-type='paragraph'], [data-content-type='quote'], [data-content-type='bulletListItem'], [data-content-type='numberedListItem'], [data-content-type='checkListItem']) .bn-inline-content) {
+  text-wrap: pretty;
+}

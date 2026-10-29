@@ -7,6 +7,7 @@ export const COLORS = [
   'chrome',
   'canvas',
   'hover',
+  'pressed',
   'primary-hover',
   'primary-pressed',
   'accent-hover',

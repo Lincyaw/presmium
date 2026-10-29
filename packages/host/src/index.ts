@@ -14,6 +14,7 @@ export {
   PmDialog,
   PmDrawer,
   PmEmpty,
+  PmSkeleton,
   PmField,
   PmIcon,
   PmIconButton,

@@ -5,7 +5,7 @@ import { components } from '@blocknote/mantine'
 import { FloatingThreadController, getReferenceText, Thread, useBlockNoteEditor, useCreateBlockNote, useEditorState, useExtension, useExtensionState, useThreads } from '@blocknote/react'
 import type { ComponentProps, ThreadProps } from '@blocknote/react'
 import type { Locale } from '../messages.ts'
-import { PmButton, PmNotice, PmSelect } from '../components.tsx'
+import { PmButton, PmEmpty, PmNotice, PmSelect } from '../components.tsx'
 import type { DocumentCommentEditorHandle, DocumentThreadStore } from './comments.ts'
 import type { CommentDrafts, CommentDraftCandidate, CommentDraftRecord, CommentDraftReference, CommentDraftOperation } from './comment-drafts.ts'
 import { isNewCommentDraft, sameCommentDraftTarget } from './comment-drafts.ts'
@@ -84,7 +84,8 @@ export function DocumentThreadsSidebar({ children }: { children?: ReactNode }) {
     const parent = next.closest('.bn-thread')
     if (!parent || !(event.target instanceof Node) || !parent.contains(event.target)) comments.selectThread(undefined)
   }
-  return <div className="bn-threads-sidebar">{children}<CommentDraftRetrieval />{ordered.map(thread => <DocumentCommentThread key={thread.id} thread={thread}
+  const context = useContext(COMMENT_EDITOR_CONTEXT), t = DOCUMENT_EDITOR_MESSAGES[context?.locale ?? 'en']
+  return <div className="bn-threads-sidebar">{children}<CommentDraftRetrieval />{!ordered.length && <PmEmpty icon="comment">{t.commentsEmpty}</PmEmpty>}{ordered.map(thread => <DocumentCommentThread key={thread.id} thread={thread}
     selected={selectedThreadId === thread.id} orphaned={!threadPositions.has(thread.id)} referenceText={getReferenceText(editor, threadPositions.get(thread.id))}
     onFocus={event => focus(thread.id, event)} onBlur={blur} tabIndex={0} />)}</div>
 }
