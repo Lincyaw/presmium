@@ -3,7 +3,7 @@ import { createStore } from '@lincyaw/host'
 import type { Viewer } from './viewer-state.ts'
 export interface ViewDefinition { id: string, label: string, kind: 'page' | 'overlay', component: ComponentType<any>, hidden?: boolean }
 export type NodeRenderer = ComponentType<any>
-export interface ViewerAction { id: string, keys: readonly string[], run(viewer: Viewer): boolean | void, views?: readonly string[] }
+export interface ViewerAction { id: string, keys: readonly string[], run(viewer: Viewer, event?: KeyboardEvent): boolean | void, views?: readonly string[] }
 export interface ViewerLayer { id: string, component: ComponentType<any>, views?: readonly string[], scope?: 'view' | 'viewport' | 'slide' | 'bar' }
 const views = new Map<string, ViewDefinition>(), nodeRenderers = new Map<string, NodeRenderer>(), components = new Map<string, ComponentType<any>>(), actions = new Map<string, ViewerAction>(), layerMap = new Map<string, ViewerLayer>()
 export const registryRevision = createStore(0)

@@ -992,21 +992,23 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   }
   window.addEventListener('keydown', shortcut)
   // Saving belongs to the workbench everywhere, fields included, so the browser never offers to save the page itself.
-  window.addEventListener('keydown', event => {
+  const saveShortcut = (event: KeyboardEvent) => {
     if (!isLive(state) || event.isComposing || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || event.key.toLowerCase() !== 's') return
     event.preventDefault()
     if (!event.repeat) post({ type: 'shortcut', command: 'save' })
-  }, true)
+  }
+  window.addEventListener('keydown', saveShortcut, true)
   // A workbench that plays this page also owns its playback keys. Listening on the document lets the page's own controls
   // keep their keys first, and stops the press before the viewer's window listener turns Space into the next step.
+  const playbackShortcut = (event: KeyboardEvent) => {
+    const command = event.key === ' ' ? 'play-pause' : event.key === 'ArrowLeft' ? 'previous' : event.key === 'ArrowRight' ? 'next' : undefined
+    if (!command || !isLive(state) || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || keyBelongsToTarget(event)) return
+    event.preventDefault(); event.stopPropagation()
+    if (!(event.repeat && command === 'play-pause')) post({ type: 'shortcut', command })
+  }
   if (new URL(window.location.href).searchParams.get(PREVIEW_KEYS_PARAM) === 'playback') {
     watchFocusSource(document)
-    document.addEventListener('keydown', event => {
-      const command = event.key === ' ' ? 'play-pause' : event.key === 'ArrowLeft' ? 'previous' : event.key === 'ArrowRight' ? 'next' : undefined
-      if (!command || !isLive(state) || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || keyBelongsToTarget(event)) return
-      event.preventDefault(); event.stopPropagation()
-      if (!(event.repeat && command === 'play-pause')) post({ type: 'shortcut', command })
-    })
+    document.addEventListener('keydown', playbackShortcut)
   }
 
   const locate = createLocator(page)
@@ -1183,6 +1185,8 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
       page.activityChanged?.(false)
       window.removeEventListener('message', receive)
       window.removeEventListener('keydown', shortcut)
+      window.removeEventListener('keydown', saveShortcut, true)
+      document.removeEventListener('keydown', playbackShortcut)
       selection.stop()
       rects.stop()
       observer.disconnect()

@@ -23,9 +23,10 @@ const plugin: ViewerPlugin = (ctx) => {
   })
   ctx.registerLayer({ id: 'presmium.lecture.player', component: PlayerPanel, views: ['present'], scope: exporting ? 'view' : 'bar' })
   // Space plays and pauses the lecture; without a player it is left to the next step.
-  ctx.registerAction({ id: 'presmium.lecture.play', keys: [' '], views: ['present'], run: () => {
+  ctx.registerAction({ id: 'presmium.lecture.play', keys: [' '], views: ['present'], run: (_viewer, event) => {
     const player = keyboardPlayer.getSnapshot()
     if (!player) return false
+    if (event?.repeat) return true
     if (player.playing) player.pause()
     else void player.play()
   } })
