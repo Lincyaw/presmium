@@ -35,6 +35,8 @@ export default d3Scene(({ root, d3, at, color, parameters }) => {
   const ticks = svg.selectAll<SVGGElement, unknown>('.tick')
   const xTitle = svg.append('text').attr('x', W - M.r).attr('y', H - 40).attr('text-anchor', 'end').attr('font-size', 24).attr('fill', muted).text('训练算力（FLOPs）')
   const yTitle = svg.append('text').attr('x', M.l - 20).attr('y', M.t - 28).attr('font-size', 24).attr('fill', muted).text('BLEU')
+  // The source stays on screen from the first frame: a still of this chart on a slide or a poster carries it.
+  svg.append('text').attr('x', M.l - 20).attr('y', H - 40).attr('font-size', 19).attr('fill', muted).text((parameters.source as string | undefined) ?? '数据：Vaswani et al. 2017，表 2（英德翻译）')
   const best = svg.append('line').attr('x1', M.l).attr('x2', W - M.r).attr('y1', y(BEST)).attr('y2', y(BEST))
     .attr('stroke', line).attr('stroke-width', 2.5).attr('stroke-dasharray', '10 8')
   const bestClip = svg.append('clipPath').attr('id', 'ds-best').append('rect').attr('x', M.l).attr('y', 0).attr('height', H)

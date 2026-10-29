@@ -150,6 +150,7 @@ Pieces with a fixed length (1, 5, 10, 30 or 60 s), exported as video. What each 
 | Problem → solution without words | 10 s | lengths `10s/problem-solution` |
 | A method in one figure | 10 s | lengths `10s/method` |
 | One chart insight | 10 s | lengths `10s/data-story` |
+| Any outline drawn by circles (Fourier series, epicycles), the error falling as circles are added, ending in a vector path | 10 s | lengths `10s/fourier` |
 | Product spot, paper teaser | 30 s | films sections `s30-product`, `s30-paper` (their shot lists: the same sections of lengths) |
 | Product explainer, paper video | 60 s | films sections `s60-product`, `s60-paper` |
 

@@ -112,6 +112,7 @@ These five are the vocabulary, and their GSAP functions in `kit/atoms.ts` build 
 | Problem → solution | `10s/problem-solution` (GSAP atoms) | product | scattered files land; one is edited and the others get warnings one by one; they fly into one document; lines draw to the four forms; hold |
 | Method in one figure | `10s/method` (Anime.js) | paper | inputs; blocks drawn in data order; a pulse fills each block as it passes, and only the key block gets an extra move; the repeated part stacks ("×6"); outputs |
 | Data story | `10s/data-story` (D3) | paper, data | axes and their names; the baselines from cheapest to dearest; a line at the previous best; the new results drop in above it; one arrow and one sentence |
+| Fourier fit | `10s/fourier` (D3) | science explainer, paper | the outline with its measuring points, and an empty log–log chart of error against circles; one large circle turns once, and a whisker from each point to the pen, drawn as the pen passes, is the error the readout reports; each round doubles the circles (2 … 128): the new, smaller ones pop out at the tip, the last trace dims to a ghost, the whiskers shrink as the pen passes and the chart's point falls with the readout, each round shorter than the last; the chain fades and the fit becomes a filled vector path whose anchors and handles pop in along it, with its path data typed below. Any outline: pass `svg` (or `path`, `viewBox`, `fill`); the series, the error and the Bézier fit are in `kit/fourier.ts` |
 
 ### 30 seconds: a short film
 

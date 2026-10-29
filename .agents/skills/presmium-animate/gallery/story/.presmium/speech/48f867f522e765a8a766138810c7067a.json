@@ -1,0 +1,203 @@
+{
+  "key": "48f867f522e765a8a766138810c7067a",
+  "audio": "48f867f522e765a8a766138810c7067a.ogg",
+  "mime": "audio/ogg",
+  "duration": 12.5,
+  "words": [
+    {
+      "text": "训练",
+      "start": 0.1,
+      "end": 0.5375
+    },
+    {
+      "text": "三万",
+      "start": 0.5625,
+      "end": 0.875
+    },
+    {
+      "text": "轮",
+      "start": 0.875,
+      "end": 1.0375
+    },
+    {
+      "text": "之后",
+      "start": 1.05,
+      "end": 1.525
+    },
+    {
+      "text": "撒",
+      "start": 1.825,
+      "end": 2.025
+    },
+    {
+      "text": "下",
+      "start": 2.025,
+      "end": 2.2
+    },
+    {
+      "text": "两千",
+      "start": 2.225,
+      "end": 2.65
+    },
+    {
+      "text": "个",
+      "start": 2.65,
+      "end": 2.725
+    },
+    {
+      "text": "噪声",
+      "start": 2.75,
+      "end": 3.1
+    },
+    {
+      "text": "粒子",
+      "start": 3.1125,
+      "end": 3.5875
+    },
+    {
+      "text": "沿着",
+      "start": 3.8625,
+      "end": 4.1375
+    },
+    {
+      "text": "学到",
+      "start": 4.1625,
+      "end": 4.5
+    },
+    {
+      "text": "的",
+      "start": 4.5,
+      "end": 4.5875
+    },
+    {
+      "text": "速度",
+      "start": 4.6,
+      "end": 4.925
+    },
+    {
+      "text": "走",
+      "start": 4.925,
+      "end": 5.2125
+    },
+    {
+      "text": "就",
+      "start": 5.4125,
+      "end": 5.55
+    },
+    {
+      "text": "填满",
+      "start": 5.5625,
+      "end": 5.9625
+    },
+    {
+      "text": "了",
+      "start": 5.9625,
+      "end": 6.075
+    },
+    {
+      "text": "整个",
+      "start": 6.1,
+      "end": 6.45
+    },
+    {
+      "text": "标志",
+      "start": 6.4625,
+      "end": 6.975
+    },
+    {
+      "text": "给",
+      "start": 7.55,
+      "end": 7.725
+    },
+    {
+      "text": "噪声",
+      "start": 7.7375,
+      "end": 8.1875
+    },
+    {
+      "text": "按",
+      "start": 8.2125,
+      "end": 8.375
+    },
+    {
+      "text": "位置",
+      "start": 8.3875,
+      "end": 8.7
+    },
+    {
+      "text": "染色",
+      "start": 8.7125,
+      "end": 9.25
+    },
+    {
+      "text": "颜色",
+      "start": 9.5375,
+      "end": 9.9125
+    },
+    {
+      "text": "到",
+      "start": 9.925,
+      "end": 10.075
+    },
+    {
+      "text": "了",
+      "start": 10.075,
+      "end": 10.15
+    },
+    {
+      "text": "标志",
+      "start": 10.1625,
+      "end": 10.5875
+    },
+    {
+      "text": "里",
+      "start": 10.5875,
+      "end": 10.85
+    },
+    {
+      "text": "还",
+      "start": 10.95,
+      "end": 11.1125
+    },
+    {
+      "text": "连",
+      "start": 11.1125,
+      "end": 11.3
+    },
+    {
+      "text": "成",
+      "start": 11.3,
+      "end": 11.4625
+    },
+    {
+      "text": "一片",
+      "start": 11.475,
+      "end": 11.9625
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "训练三万轮之后，撒下两千个噪声粒子，沿着学到的速度走，就填满了整个标志。给噪声按位置染色，颜色到了标志里还连成一片。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "48f867f522e765a8a766138810c7067a",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "d50e0014c8432dec9386d93b53f669afe2f2f5d1f28082f41752e5e746f92f44",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "a2aaabb1a422fb0035e53de077161674",
+  "request": {
+    "spoken": "训练三万轮之后，撒下两千个噪声粒子，沿着学到的速度走，就填满了整个标志。给噪声按位置染色，颜色到了标志里还连成一片。",
+    "rate": 1,
+    "style": ""
+  }
+}
