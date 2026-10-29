@@ -13,6 +13,7 @@ import { createRichProjection, nativeRichTextToProduct, productRichTextToNative 
 import type { DocumentEditorBlock, NativeDocumentEditor } from './schema.tsx'
 import { PmNotice } from '../components.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
+import { commentFloating } from './popover.tsx'
 
 type CommentEditor = BlockNoteEditor<any, any, any>
 interface ComposerBinding {
@@ -79,7 +80,8 @@ export function NewCommentDraftProvider({ children }: { children?: ReactNode }) 
 /** Closing hides the native form; permanent discard is an exact backup action. */
 export function DocumentNewCommentController() {
   const owner = useContext(NEW_DRAFT_OWNER), context = useContext(COMMENT_EDITOR_CONTEXT), comments = useExtension(CommentsExtension)
-  return <FloatingComposerController floatingComposer={DocumentNewCommentComposer} floatingUIOptions={{ useFloatingOptions: { onOpenChange(open) {
+  const floating = useMemo(() => commentFloating(), [])
+  return <FloatingComposerController floatingComposer={DocumentNewCommentComposer} floatingUIOptions={{ useFloatingOptions: { ...floating, onOpenChange(open) {
     if (open || !owner || owner.latest.current?.composing || owner.latest.current?.editor.prosemirrorView.composing) return
     try { context?.store.beforeAction?.() } catch { return }
     comments.stopPendingComment()

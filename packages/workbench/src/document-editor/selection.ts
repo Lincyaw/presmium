@@ -33,13 +33,58 @@ export function nativeEditingCursor(editor: NativeDocumentEditor): NativeEditing
   return { nativeBlockId: getNodeId(info.block.node, state.doc), position, objectSelected }
 }
 
+// Product text counts a character per text character and one per other inline node (a break, a formula, a
+// component), as in the kernel's comment anchors. A native inline formula holds its source as content, so native
+// positions after it are further along than product offsets.
+function inlineLength(content: ProseMirrorNode): number {
+  let length = 0
+  content.forEach(child => { length += child.isText ? child.nodeSize : 1 })
+  return length
+}
+
+function inlineOffset(content: ProseMirrorNode, position: number): number {
+  let offset = 0, start = 0
+  for (let index = 0; index < content.childCount; index++) {
+    const child = content.child(index)
+    if (child.isText && position <= start + child.nodeSize) return offset + Math.max(0, position - start)
+    // Inside an inline node is its start.
+    if (!child.isText && position < start + child.nodeSize) return offset
+    offset += child.isText ? child.nodeSize : 1
+    start += child.nodeSize
+  }
+  return offset
+}
+
+function inlinePosition(content: ProseMirrorNode, offset: number): number {
+  let remaining = Math.max(0, offset), start = 0
+  for (let index = 0; index < content.childCount; index++) {
+    const child = content.child(index), length = child.isText ? child.nodeSize : 1
+    if (remaining === 0 || child.isText && remaining <= length) return start + remaining
+    remaining -= length
+    start += child.nodeSize
+  }
+  return start
+}
+
+/** A native range as product text: breaks as line breaks, other inline nodes as one object character. */
+export function nativeProductText(document: ProseMirrorNode, from: number, to: number): string {
+  let text = '', started = false
+  document.nodesBetween(from, to, (node, position) => {
+    if (node.isTextblock) { if (started) text += '\n'; started = true; return true }
+    if (node.isText) { text += node.text!.slice(Math.max(from, position) - position, to - position); return false }
+    if (node.isInline) { if (position >= from) text += node.type.name === 'hardBreak' ? '\n' : '\uFFFC'; return false }
+    return true
+  })
+  return text
+}
+
 // Native cells contain paragraphs; the product flattens their boundaries to one break.
 function cellTextOffset(cell: ProseMirrorNode, position: number): number {
   let offset = 0, before = 0
   for (let index = 0; index < cell.childCount; index++) {
     const paragraph = cell.child(index), start = before + 1
-    if (position <= start + paragraph.content.size) return offset + Math.max(0, position - start)
-    offset += paragraph.content.size + 1
+    if (position <= start + paragraph.content.size) return offset + inlineOffset(paragraph, Math.max(0, position - start))
+    offset += inlineLength(paragraph) + 1
     before += paragraph.nodeSize
   }
   return Math.max(0, offset - 1)
@@ -48,10 +93,10 @@ function cellTextOffset(cell: ProseMirrorNode, position: number): number {
 function cellTextPosition(cell: ProseMirrorNode, offset: number): number {
   let remaining = Math.max(0, offset), before = 0, end = 1
   for (let index = 0; index < cell.childCount; index++) {
-    const paragraph = cell.child(index), start = before + 1
+    const paragraph = cell.child(index), start = before + 1, length = inlineLength(paragraph)
     end = start + paragraph.content.size
-    if (remaining <= paragraph.content.size) return start + remaining
-    remaining -= paragraph.content.size + 1
+    if (remaining <= length) return start + inlinePosition(paragraph, remaining)
+    remaining -= length + 1
     before += paragraph.nodeSize
   }
   return end
@@ -67,7 +112,8 @@ export function nativeTextPoint(editor: NativeDocumentEditor, position: number):
   }
   const info = getBlockInfoNearPos(state, position)
   if (!info.hasContent || info.contentKind === 'none') return undefined
-  return { blockId: getNodeId(info.block.node, state.doc), offset: Math.max(0, Math.min(position - info.contentStart, info.contentEnd - info.contentStart)), contentKind: info.contentKind }
+  const relative = Math.max(0, Math.min(position - info.contentStart, info.contentEnd - info.contentStart))
+  return { blockId: getNodeId(info.block.node, state.doc), offset: info.contentKind === 'inline' ? inlineOffset(info.content.node, relative) : relative, contentKind: info.contentKind }
 }
 
 export function nativeTextPosition(editor: NativeDocumentEditor, point: { blockId: string, offset: number }): number | undefined {
@@ -84,7 +130,7 @@ export function nativeTextPositionInDocument(document: ProseMirrorNode, point: {
     }
     if (node.attrs.id !== point.blockId) return
     const info = getBlockInfoFromNode(node, beforePos)
-    if (info.hasContent) position = info.contentStart + Math.max(0, Math.min(point.offset, info.contentEnd - info.contentStart))
+    if (info.hasContent) position = info.contentStart + (info.contentKind === 'inline' ? inlinePosition(info.content.node, point.offset) : Math.max(0, Math.min(point.offset, info.contentEnd - info.contentStart)))
     return false
   })
   return position
