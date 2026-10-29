@@ -1,10 +1,10 @@
-import { OPERATIONS, pluginsOf, presmiumService, registerPresmiumPlugin, startHost, createStore, observe, runtimeRevision } from '@lincyaw/host'
+import { currentLocale, OPERATIONS, pluginsOf, presmiumService, registerPresmiumPlugin, startHost, createStore, observe, runtimeRevision } from '@lincyaw/host'
 import { previewAppearance } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import { findView, syncViewerWithOperations } from '@lincyaw/viewer'
 import type { LiveUpdate } from '@lincyaw/viewer/domain'
 import { packages } from 'virtual:presmium-app/registry'
-import { APP_CONFIG_ELEMENT, parsePositionQuery, parsePrintQuery, UPDATE_EVENT, withPositionQuery } from '../domain/index.ts'
+import { APP_CONFIG_ELEMENT, parsePositionQuery, parsePrintQuery, UPDATE_EVENT, WEB_MESSAGES, withPositionQuery } from '../domain/index.ts'
 import type { AppConfig, DevUpdateEvent } from '../domain/index.ts'
 import { webPreview } from '../client/preview-frame.ts'
 import { createRuntimeLifecycle } from '../client/runtime.ts'
@@ -194,5 +194,5 @@ async function bootDocument(): Promise<void> {
 
 void (config.kind === 'document' ? bootDocument() : bootPage()).catch((error: unknown) => {
   console.error('[presmium] the viewer did not start', error)
-  document.getElementById('app')!.textContent = String(error)
+  document.getElementById('app')!.textContent = WEB_MESSAGES[currentLocale()].startFailed
 })

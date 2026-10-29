@@ -7,17 +7,17 @@ const messages: Record<string, { 'zh-CN': string, en: string }> = {
   'production.asset-missing': { 'zh-CN': '找不到此音频资产声明。', en: 'This audio asset is not declared in the document.' },
   'production.asset-kind': { 'zh-CN': '当前只支持本地音频；视频尚未支持。', en: 'Only local audio is supported; video is unavailable.' },
   'production.asset-path': { 'zh-CN': '音频须为同文稿的非隐藏本地文件；远程或跨文稿素材尚未支持。', en: 'Audio must be a non-hidden local file in this document; remote and shared assets are unsupported.' },
-  'production.asset-file': { 'zh-CN': '音频文件不存在、不可读取或不是本地常规文件。', en: 'The audio is missing, unreadable or not a local regular file.' },
+  'production.asset-file': { 'zh-CN': '音频文件不存在、不可读取或不是本地常规文件。', en: 'The audio is missing, unreadable, or not a local regular file.' },
   'production.asset-size': { 'zh-CN': '音频文件须非空且不超过 16 MiB。', en: 'The audio file must be nonempty and at most 16 MiB.' },
   'production.asset-count': { 'zh-CN': '本次制作最多引用 32 份音频资产。', en: 'A production can reference at most 32 audio assets.' },
   'production.asset-decoded-size': { 'zh-CN': '引用音频的解码总量超过 256 MiB，请减少或拆分素材。', en: 'The referenced audio exceeds the 256 MiB decoded-data limit; reduce or split the assets.' },
   'production.asset-format': { 'zh-CN': '此文件不是受支持的单音轨音频，或媒体数据已损坏。', en: 'The file is not supported single-track audio, or its media data is damaged.' },
   'production.asset-duration': { 'zh-CN': '无法确认音频时长，或时长超过 10 分钟。', en: 'The audio duration is unconfirmed or exceeds ten minutes.' },
   'production.asset-fingerprint': { 'zh-CN': '音频字节与声明的 SHA-256 不符，请检查或重新采用素材。', en: 'The audio bytes do not match the declared SHA-256; review or adopt the asset again.' },
-  'production.asset-changed': { 'zh-CN': '音频文件已变化，请重新准备当前制作计划。', en: 'The audio file changed; prepare the current production plan again.' },
+  'production.asset-changed': { 'zh-CN': '音频文件已变化，请重新准备当前编排。', en: 'The audio file changed; prepare the current sequence again.' },
   'production.media-range': { 'zh-CN': '裁切出点须晚于入点且不超过实际音频时长。', en: 'The out point must follow the in point and stay within the actual audio duration.' },
   'production.media-step-unknown': { 'zh-CN': '音频只能附着到时段已确认的步骤，请先修正配音或时序。', en: 'Audio requires a confirmed step range; resolve voiceover or timing first.' },
-  'production.media-step-range': { 'zh-CN': '音频片段超出本步时段；请调整裁切、偏移或本步停留，不会自动跨步。', en: 'The audio exceeds this step; adjust its range, offset or step hold. It will not cross steps automatically.' },
+  'production.media-step-range': { 'zh-CN': '音频片段超出本步时段；请调整裁切、偏移或本步停留，不会自动跨步。', en: 'The audio exceeds this step; adjust its range, offset, or step hold. It will not cross steps automatically.' },
 }
 export function productionAudioMessage(doc: IRDocument, code: string): string { return (messages[code] ?? messages['production.asset-format']!)[deckLocale(doc.meta.lang)] }
 

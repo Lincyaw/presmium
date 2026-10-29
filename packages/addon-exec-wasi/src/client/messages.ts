@@ -12,10 +12,10 @@ const zhCN = {
 export type WasiMessages = typeof zhCN
 
 const en: WasiMessages = {
-  cancelled: 'Cancelled',
+  cancelled: 'Canceled',
   runTimeout: ms => `Stopped after ${ms} ms`,
   loadTimeout: ms => `The WebAssembly runtime did not load within ${ms} ms; stopped`,
-  loadFailed: error => `The WebAssembly runtime could not load: ${error}`,
+  loadFailed: error => `Couldn’t load the WebAssembly runtime: ${error}`,
   crashed: error => `The WebAssembly runtime failed: ${error}`,
 }
 

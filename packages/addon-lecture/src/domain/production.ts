@@ -10,25 +10,27 @@ import type { LectureTrack } from './track.ts'
 const messages = {
   'zh-CN': {
     animation: '动画未声明有效时长，不能用于按时播放或导出。',
-    recording: '录音内的提示位置或讲稿起点尚无确认时码；请采用无跨步、无内部暂停且起点一致的讲稿。',
-    recordingCaptions: '旁白已裁切；字幕仍为本步完整讲稿，未按原音对齐，请核对。',
+    recording: '录音中的提示位置或讲稿起点尚无确认的时间；请使用不跨步、无内部停顿且起点一致的讲稿。',
+    recordingCaptions: '配音已裁切；字幕仍为本步完整讲稿，未按原音对齐，请核对。',
     fingerprint: '采用此原音前须确认实际 SHA-256。',
     media: '当前只支持同文稿本地音频；视频尚未支持。',
-    cue: '无配音讲稿中的文字位置提示没有确认时码；请移到步骤起点或提供音频。',
+    cue: '无配音讲稿中的文字位置提示没有确认的时间；请移到步骤起点或提供音频。',
     next: '含跨步提示的同一段配音尚不能插入步骤结束停顿；请先拆为步骤绑定的讲稿。',
-    cache: '当前讲稿与音色缺少精确配音缓存；显示的时长为估算，不能用于确认播放或导出。',
+    cache: '当前讲稿与音色缺少已生成的配音；显示的时长为估算，不能用于确认播放或导出。',
     unset: '此讲稿尚未选择音频来源；请选择无配音或实际音色。',
+    step: (step: number) => `第 ${step} 步`,
   },
   en: {
     animation: 'The animation has no valid declared duration; timed playback and export are unavailable.',
-    recording: 'Recording cues or narration starts have no confirmed timing; use step-bound narration without internal pauses and with one common start.',
-    recordingCaptions: 'Narration is trimmed. Captions still display the complete step script without audio alignment; review them.',
+    recording: 'Recording cues or script starts have no confirmed timing; use step-bound scripts without internal pauses and with one common start.',
+    recordingCaptions: 'The voiceover is trimmed. Captions still display the complete step script without audio alignment; review them.',
     fingerprint: 'Confirm the actual SHA-256 before adopting this recording.',
     media: 'Only local audio from this document is supported; video is unavailable.',
     cue: 'Text-anchored cues without audio have no confirmed timing; move them to the step start or provide audio.',
-    next: 'A narration clip with a next-step cue cannot yet insert trailing step pauses; split it into step-bound narrations.',
-    cache: 'Exact voiceover cache is missing for the current script and voice; displayed duration is estimated and cannot confirm playback or export.',
-    unset: 'This narration has no audio source; choose silence or an actual voice.',
+    next: 'A voiceover clip with a next-step cue can’t insert trailing step pauses yet; split it into step-bound scripts first.',
+    cache: 'No generated voiceover matches the current script and voice; the displayed duration is estimated and can’t confirm playback or export.',
+    unset: 'This script has no audio source; choose silence or an actual voice.',
+    step: (step: number) => `Step ${step}`,
   },
 }
 export function productionMessages(doc: IRDocument) { return messages[deckLocale(doc.meta.lang)] }
@@ -92,7 +94,7 @@ export function projectProductionPlan(doc: IRDocument, plan: LecturePlan, track:
   })
   const captionSources = captionTimingSources(doc, track, pages)
   for (const page of pages) for (const step of page.steps) step.captionTiming = captionSources.get(step.stepId)
-  const visual: ProductionSegment[] = pages.flatMap(page => page.steps.map(step => ({ id: `visual:${step.stepId}`, sectionId: page.sectionId, stepId: step.stepId, label: deckLocale(doc.meta.lang) === 'en' ? `Step ${step.index + 1}` : `第 ${step.index + 1} 步`, startMs: step.startMs, endMs: step.endMs, timing: step.timing })))
+  const visual: ProductionSegment[] = pages.flatMap(page => page.steps.map(step => ({ id: `visual:${step.stepId}`, sectionId: page.sectionId, stepId: step.stepId, label: messages.step(step.index + 1), startMs: step.startMs, endMs: step.endMs, timing: step.timing })))
   const voice: ProductionSegment[] = [], caption: ProductionSegment[] = []
   for (const utterance of track.utterances) {
     const section = doc.sections.find(section => section.id === utterance.section), stepId = section?.stepIds?.[utterance.step ?? 0]

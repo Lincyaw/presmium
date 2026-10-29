@@ -7,6 +7,7 @@ import * as Tabs from '@radix-ui/react-tabs'
 import * as Tooltip from '@radix-ui/react-tooltip'
 import * as RadioGroup from '@radix-ui/react-radio-group'
 import { useLocale } from '../locale.ts'
+import { HOST_MESSAGES } from '../messages.ts'
 import { ICONS } from '@lincyaw/design'
 import type { IconName } from '@lincyaw/design'
 import type { ToolbarPlacement } from '../contracts.ts'
@@ -94,7 +95,7 @@ function DialogSurface({ open, label, closeLabel, name, children, actions, trigg
         },
       }, h('div', { className: `${kind}__header` },
         h(Dialog.Title, { className: `${kind}__title` }, label), actions,
-        h(Dialog.Close, { asChild: true }, h(PmIconButton, { icon: 'close', label: closeLabel ?? (locale === 'zh-CN' ? '关闭' : 'Close'), small: true, disabled: busy }))),
+        h(Dialog.Close, { asChild: true }, h(PmIconButton, { icon: 'close', label: closeLabel ?? HOST_MESSAGES[locale].close, small: true, disabled: busy }))),
       description ? h(Dialog.Description, { className: 'pm-ui-dialog__description' }, description) : null,
       h('div', { className: `${kind}__body` }, children),
       footer ? h('div', { className: 'pm-ui-dialog__footer' }, footer) : null)))
