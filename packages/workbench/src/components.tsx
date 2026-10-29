@@ -261,8 +261,25 @@ export function PmEmpty({ title, icon, action, children }: { title?: string, ico
     <div className="pm-ui-empty">
       {icon && <PmIcon name={icon} size={28} />}
       {title && <p className="pm-ui-empty__title">{title}</p>}
-      {children && <p style={{ margin: 0 }}>{children}</p>}
+      {children && <p className="pm-ui-empty__body">{children}</p>}
       {action}
+    </div>
+  )
+}
+
+/** Loading in the shape of the content: `document` is a page of headings and paragraphs, `list` a column of rows and
+ * `preview` a slide-shaped area. The label is the status read to assistive technology. */
+export function PmSkeleton({ label, shape = 'document' }: { label: string, shape?: 'document' | 'list' | 'preview' }) {
+  const bar = (kind?: 'heading' | 'row' | 'media', key?: number) => <span key={key} className="pm-ui-skeleton__bar" data-kind={kind} />
+  const paragraph = (lines: number, key: number) => <span key={key} className="pm-ui-skeleton__group">{Array.from({ length: lines }, (_, index) => bar(undefined, index))}</span>
+  return (
+    <div className="pm-ui-skeleton" data-shape={shape} role="status" aria-busy="true">
+      <span className="pm-ui-sr-only">{label}</span>
+      <span className="pm-ui-skeleton" aria-hidden="true">
+        {shape === 'list' ? Array.from({ length: 5 }, (_, index) => bar('row', index))
+          : shape === 'preview' ? <>{bar('media')}{paragraph(2, 0)}</>
+            : <>{bar('heading')}{paragraph(4, 0)}{paragraph(3, 1)}{bar('heading')}{paragraph(4, 2)}</>}
+      </span>
     </div>
   )
 }

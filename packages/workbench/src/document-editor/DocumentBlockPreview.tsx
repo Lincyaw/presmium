@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import type { BlockPreviewCommand } from '@lincyaw/kernel'
 import { toBlockPreviewPlaybackCancelled, toBlockPreviewPlaybackRequest, toBlockPreviewPosition } from '@lincyaw/kernel'
-import { PmIconButton, PmIcon } from '../components.tsx'
+import { PmIconButton, PmIcon, PmSkeleton } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { prepareDocumentPreview } from '../document-preview.ts'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
@@ -207,7 +207,7 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
       style={height === undefined ? undefined : { '--pm-block-content-height': `${height}px` } as CSSProperties}
       onKeyDownCapture={event => { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) event.stopPropagation() }}>
       {enabled && src ? <iframe key={src} ref={mountFrame} className="pm-ui-block-preview__frame" src={src} title={t.previewTitle} sandbox="allow-scripts allow-same-origin" onFocus={() => { editingStep.current = undefined }} /> : fallback}
-      {enabled && !src && (state.status === 'loading' || state.status === 'preparing') && <p className="pm-ui-block-preview__pending" role="status">{state.status === 'preparing' ? p.preparingDetail : t.previewLoading}</p>}
+      {enabled && !src && (state.status === 'loading' || state.status === 'preparing') && <div className="pm-ui-block-preview__pending"><PmSkeleton shape="preview" label={state.status === 'preparing' ? p.preparingDetail : t.previewLoading} /></div>}
       {state.status === 'failed' && <p className="pm-ui-block-preview__pending">{state.failure === 'build' ? p.buildFailure : p.displayFailure}</p>}
     </div>
     {sectionId && stepId && <DocumentStepNarration blockId={blockId} sectionId={sectionId} stepId={stepId} expanded={narrationOpen} panelId={narrationPanel} onPause={pause} />}

@@ -36,4 +36,6 @@ A component's state is a pure function of the resolved step and time. Arbitrary 
 
 Use public `Pm*` controls, semantic icons and design tokens through `@lincyaw/host`. Keep all zh-CN and en text together; compiled strings follow the document's language. Business CSS owns layout and cannot override a public control. Check real light/dark and desktop/narrow layouts.
 
+The design rules a component follows (balanced headings and pretty paragraphs, nested radius, complete control states with skeleton loading and guiding empty panels, specific messages without exclamation marks, motion only through transform and opacity that stops under reduced motion) are listed under *Design system* in [the plugin contract](references/plugin.md).
+
 Changes to the Node entry require restarting the development service. Saving document JSON triggers snapshot compilation independently of authoring save; never write back generated snapshot fields or claim an older snapshot is current. Keep provider credentials and operator execution settings outside document metadata.
