@@ -4389,5 +4389,46 @@
     "defaults": {},
     "stepOverrides": {},
     "mediaClips": []
+  },
+  "comments": {
+    "868afd88-4961-479f-a6e0-ce649f4c5e1c": {
+      "id": "868afd88-4961-479f-a6e0-ce649f4c5e1c",
+      "type": "thread",
+      "createdAt": "2026-10-29T02:24:30.139Z",
+      "updatedAt": "2026-10-29T02:24:30.139Z",
+      "resolved": false,
+      "anchor": {
+        "from": {
+          "blockId": "draw-curve--paragraph-3--text-0",
+          "offset": 14
+        },
+        "to": {
+          "blockId": "draw-curve--paragraph-3--text-0",
+          "offset": 23
+        }
+      },
+      "comments": [
+        {
+          "id": "bf2fe4dd-f9f8-4345-8725-2418b6d839e9",
+          "type": "comment",
+          "userId": "local",
+          "createdAt": "2026-10-29T02:24:30.139Z",
+          "updatedAt": "2026-10-29T02:24:30.139Z",
+          "content": [
+            {
+              "id": "9b7d0141-42f0-4c9b-8158-83f402d31356",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "测试评论"
+                }
+              ]
+            }
+          ],
+          "reactions": []
+        }
+      ]
+    }
   }
 }
