@@ -38,7 +38,7 @@ export function useActions(viewer: Viewer, view: string, extra: readonly ViewerA
     for (const action of [...extra, ...actions.filter(action => !builtin.has(action.id)), ...actions.filter(action => builtin.has(action.id))]) {
       if (!action.keys.includes(event.key)) continue
       if (!presentationConfirmed(viewer) && action.id !== 'exit') return
-      if (action.run(viewer) === false) continue
+      if (action.run(viewer, event) === false) continue
       event.preventDefault()
       return
     }
