@@ -130,6 +130,13 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
   }, [document, view, workspace, active])
   useEffect(() => {
     if (!active) return
+    // Saving now works everywhere, typing included, so the browser never offers to save the page itself. It listens in the
+    // capture phase: the narration fields keep their key presses inside themselves.
+    const save = (event: KeyboardEvent) => {
+      if (event.isComposing || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || event.key.toLowerCase() !== 's') return
+      event.preventDefault()
+      if (!event.repeat) void workbench.flushPendingEdits().catch(() => {})
+    }
     const keys = (event: KeyboardEvent) => {
       if (event.defaultPrevented || isTyping(event.target) || !(event.ctrlKey || event.metaKey) || event.altKey) return
       const key = event.key.toLowerCase()
@@ -141,8 +148,9 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
         void workbench.redo()
       }
     }
+    window.addEventListener('keydown', save, true)
     window.addEventListener('keydown', keys)
-    return () => window.removeEventListener('keydown', keys)
+    return () => { window.removeEventListener('keydown', save, true); window.removeEventListener('keydown', keys) }
   }, [active, workbench])
   useEffect(() => {
     if (!active || !presenting) return
@@ -166,7 +174,7 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
       <DocumentNotices />
       <div className="pmw-document__body" role="region" aria-label={producing ? PRODUCTION_MESSAGES[workbench.getState().locale].title : presenting ? t.presentationPreview : t.documentEditor}>
         {!presenting && !producing && navigation && <NavigationPane onClose={() => setNavigation(false)} onSelect={() => { if (matchMedia('(max-width: 1279px)').matches) setNavigation(false) }} />}
-        <div className="pmw-document__main"><div className="pmw-document__source" hidden={presenting || producing}><SourceDocumentPanel commentsPortal={commentsPortal} onCommentDraftRestore={() => setAside(current => current === 'comments' ? null : current)} /></div>{producing && <ProductionPanel closing={changingView} onClose={() => void exitPresent()} />}{presenting && <PreviewPanel presentation active={active} onPresentationAction={action => { if (action === 'refresh') void compilePresentation(); else void exitPresent() }} />}</div>
+        <div className="pmw-document__main"><div className="pmw-document__source" hidden={presenting || producing}><SourceDocumentPanel commentsPortal={commentsPortal} onCommentDraftRestore={() => setAside(current => current === 'comments' ? null : current)} /></div>{producing && <ProductionPanel active={active} closing={changingView} onClose={() => void exitPresent()} />}{presenting && <PreviewPanel presentation active={active} onPresentationAction={action => { if (action === 'refresh') void compilePresentation(); else void exitPresent() }} />}</div>
         {!presenting && !producing && aside && (
           <aside className="pmw-document__aside pm-ui-block-editor" aria-label={{ narration: t.documentNarration, comments: t.comments, export: t.exportPane, history: t.versionHistory }[aside]}>
             {aside === 'comments' ? <section className="pmw-pane"><header className="pmw-pane__header"><h2 className="pmw-pane__title">{t.comments}</h2><PmIconButton small icon="close" label={t.close} onClick={() => setAside(null)} /></header><div ref={setCommentsPortal} /></section> : aside === 'narration' ? <DocumentNarrationPanel onClose={() => setAside(null)} /> : aside === 'export' ? <ExportPanel documentOnly onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} />}

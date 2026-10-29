@@ -50,7 +50,7 @@ interface Entry {
  * Keeps the iframes of the last previews (at most two) in `container`, shows the selected one and pauses the others
  * (or removes those that cannot pause). `switchDocument` opens another document when a preview navigates to it.
  */
-export function createPreviewPool(container: HTMLElement, workbench: Workbench, onStatus: (status: PreviewFrameStatus) => void, switchDocument: (document: string) => void, presentationAction?: (action: PresentationAction) => void, options: { presentation?: boolean } = {}) {
+export function createPreviewPool(container: HTMLElement, workbench: Workbench, onStatus: (status: PreviewFrameStatus) => void, switchDocument: (document: string) => void, presentationAction?: (action: PresentationAction) => void, options: { presentation?: boolean, playbackKeys?: boolean } = {}) {
   const entries = new Map<string, Entry>()
   let confirmedRevision: string | undefined
   const confirm = (entry: Entry) => {
@@ -241,7 +241,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
         if (selected(entry)) onStatus({ ready: false, mismatch: true })
         destroy(entry)
       },
-    }, { dark: workbench.state.isDark, presentation: options.presentation, subscribeEvents: workbench.client.subscribePreviewEvents })
+    }, { dark: workbench.state.isDark, presentation: options.presentation, playbackKeys: options.playbackKeys, subscribeEvents: workbench.client.subscribePreviewEvents })
     const entry: Entry = { key, target, frame, connection, ready: false, active: true, generation: 0, used: ++uses, problems: new Map() }
     entries.set(key, entry)
     hide(entry)

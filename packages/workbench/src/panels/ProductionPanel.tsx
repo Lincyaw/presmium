@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { PRODUCTION_PLAYBACK_RATES, sameProductionBinding } from '@lincyaw/kernel'
+import { keyBelongsToTarget, PRODUCTION_PLAYBACK_RATES, sameProductionBinding, watchFocusSource } from '@lincyaw/kernel'
 import type { ProductionPlaybackCommand } from '@lincyaw/kernel'
-import { PmBadge, PmButton, PmCard, PmEmpty, PmField, PmIconButton, PmNotice, PmSelect, PmSegmented, PmToolbar, PmToolbarButton } from '../components.tsx'
+import { PmBadge, PmButton, PmCard, PmEmpty, PmField, PmIconButton, PmNotice, PmSelect, PmSegmented, PmToolbar, PmToolbarButton, PmTooltip } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { DocumentStepNarration } from '../document-editor/DocumentStepNarration.tsx'
 import { PRODUCTION_MESSAGES, productionFailure } from '../production-messages.ts'
+import { SHORTCUTS } from '../shortcuts.ts'
 import { isAgentChanging } from '../workbench.ts'
+import type { PlaybackKey } from '../workbench.ts'
 import { DocumentVoiceField } from './DocumentVoiceField.tsx'
 import { ExportPanel } from './ExportPanel.tsx'
 import { PreviewPanel } from './PreviewPanel.tsx'
@@ -22,8 +24,14 @@ const clockTime = (value?: number) => {
   return `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${(ms % 60000 / 1000).toFixed(3).padStart(6, '0')}`
 }
 
-/** An explicit production workspace edits the same source; its preview has an independent compilation boundary. */
-export function ProductionPanel({ onClose, closing }: { onClose(): void, closing: boolean }) {
+const PLAYBACK_KEYS: Record<string, PlaybackKey> = { ' ': 'play-pause', ArrowLeft: 'previous', ArrowRight: 'next' }
+
+/**
+ * An explicit production workspace edits the same source; its preview has an independent compilation boundary.
+ * While it is `active`, Space plays or pauses and the left and right arrows select the previous or next step, from the
+ * workbench and from its preview alike; text entry, menus, dialogs and controls the keyboard moved to keep their keys.
+ */
+export function ProductionPanel({ onClose, closing, active = true }: { onClose(): void, closing: boolean, active?: boolean }) {
   const workbench = useWorkbench(), t = useMessages(), locale = useWorkbenchState(state => state.locale), p = PRODUCTION_MESSAGES[locale]
   const source = useWorkbenchState(state => state.authoring), position = useWorkbenchState(state => state.position)
   const stamp = useWorkbenchState(state => state.presentationSnapshot), view = useWorkbenchState(state => state.webView)
@@ -115,6 +123,32 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
   }, [mediaRefresh, preparing, blocked, closing, source?.identity, source?.version, source?.fingerprint, source?.loading, source?.dirty, source?.saving, source?.composing, source?.restored, source?.error, sourceCurrent, frameCurrent])
   useEffect(() => { if (!initial.current) { initial.current = true; void compile(false) } }, [])
   const select = (page: string, step: string) => { workbench.stopAuditions(); workbench.selectDocumentStep(page, step) }
+  const playbackKey = useRef<(key: PlaybackKey) => void>(() => {})
+  playbackKey.current = key => {
+    if (blocked || closing || !document || !sectionId || !stepId) return
+    if (key === 'play-pause') {
+      if (plan && canPlay && !playerBusy && !planBusy && !preparing && !seeking) void control({ binding: plan.binding, action: live?.position?.playing ? 'pause' : 'play' })
+      return
+    }
+    // Steps run on across pages and stop at the first and the last.
+    const steps = document.sectionOrder.flatMap(page => document.sections[page]?.stepOrder.map(step => ({ page, step })) ?? [])
+    const at = steps.findIndex(item => item.page === sectionId && item.step === stepId), next = at < 0 ? undefined : steps[at + (key === 'next' ? 1 : -1)]
+    if (next) select(next.page, next.step)
+  }
+  useEffect(() => {
+    if (!active) return
+    watchFocusSource()
+    const press = (event: KeyboardEvent) => {
+      const key = PLAYBACK_KEYS[event.key]
+      if (!key || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || keyBelongsToTarget(event)) return
+      // Taken before the focused control sees it: Space would press the button clicked last, the arrows move in its toolbar.
+      event.preventDefault(); event.stopPropagation()
+      if (!(event.repeat && key === 'play-pause')) playbackKey.current(key)
+    }
+    window.addEventListener('keydown', press, true)
+    const stop = workbench.observePlaybackKeys(key => playbackKey.current(key))
+    return () => { window.removeEventListener('keydown', press, true); stop() }
+  }, [workbench, active])
   const enable = async () => {
     if (blocked || closing || enabling) return
     setFailure(undefined); setEnabling(true)
@@ -142,7 +176,7 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
       <PmField label={p.step} group><PmToolbar className="pmw-step-timeline__steps" label={p.step}>{section.stepOrder.map((id, index) => <PmToolbarButton asChild key={id}><PmButton small aria-pressed={stepId === id} disabled={blocked || closing} onClick={() => select(sectionId, id)}>{index + 1}</PmButton></PmToolbarButton>)}</PmToolbar></PmField>
     </div>
     <PmToolbar label={p.timeline} className="pmw-production__transport">
-      <PmToolbarButton asChild><PmButton small icon={live?.position?.playing ? 'pause' : 'play'} loading={playerBusy} disabled={!canPlay || planBusy || preparing || blocked || closing || seeking} onClick={() => { if (plan) void control({ binding: plan.binding, action: live?.position?.playing ? 'pause' : 'play' }) }}>{live?.position?.playing ? p.pause : p.play}</PmButton></PmToolbarButton>
+      <PmTooltip label={live?.position?.playing ? p.pause : p.play} shortcut={SHORTCUTS.playPause}><PmToolbarButton asChild><PmButton small icon={live?.position?.playing ? 'pause' : 'play'} aria-keyshortcuts="Space" loading={playerBusy} disabled={!canPlay || planBusy || preparing || blocked || closing || seeking} onClick={() => { if (plan) void control({ binding: plan.binding, action: live?.position?.playing ? 'pause' : 'play' }) }}>{live?.position?.playing ? p.pause : p.play}</PmButton></PmToolbarButton></PmTooltip>
       <output aria-label={p.timelineLabels.position}>{clockTime(live?.position?.timeMs)} / {clockTime(planCurrent ? plan?.durationMs : undefined)}</output>
       <PmSelect label={p.rate} value={live?.position?.rate === undefined ? '' : String(live.position.rate)} disabled={!canPlay || playerBusy || planBusy || preparing || blocked || closing || seeking} onChange={event => { if (plan) void control({ binding: plan.binding, action: 'rate', rate: Number(event.target.value) }) }}>
         {live?.position?.rate === undefined && <option value="">{p.timelineLabels.unknown}</option>}{PRODUCTION_PLAYBACK_RATES.map(value => <option key={value} value={value}>{value}×</option>)}
@@ -160,7 +194,7 @@ export function ProductionPanel({ onClose, closing }: { onClose(): void, closing
     <div className="pmw-production__body" data-wide={wide || undefined} data-background={backgroundBody || undefined} aria-hidden={backgroundBody || undefined} {...backgroundBody ? { inert: '' } : {}}>
       {/* Hidden tabs retain a laid-out frame so its native animation clock can acknowledge preparation. */}
       <div className="pmw-production__visuals" data-background={backgroundVisuals || undefined} aria-hidden={backgroundVisuals || undefined} {...backgroundVisuals ? { inert: '' } : {}}>
-        <div className="pmw-production__frame" hidden={!previewVisible}><PreviewPanel active={previewVisible} onPresentationAction={action => { if (action === 'refresh') void compile(); else onClose() }} /></div>
+        <div className="pmw-production__frame" hidden={!previewVisible}><PreviewPanel active={previewVisible} playbackKeys onPresentationAction={action => { if (action === 'refresh') void compile(); else onClose() }} /></div>
         {!previewVisible && <PmEmpty icon="slides" title={p.unavailable} action={<PmButton small loading={preparing} disabled={blocked || closing} onClick={() => void compile()}>{p.prepare}</PmButton>}>{p.previewHint}</PmEmpty>}
       </div>
       <div className="pmw-production__properties pm-ui-block-editor" hidden={!wide && tab !== 'script' || tab === 'outputs'}>

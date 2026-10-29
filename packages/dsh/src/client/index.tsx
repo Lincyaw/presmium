@@ -16,6 +16,7 @@ import { registerAssistantSetup } from './assistant-setup.tsx'
 import { rootLayoutFor } from './RootLayout.tsx'
 import { beginRootReload, restoreRootReturnPoint, saveRootReturnPoint } from './root-reload.ts'
 import { registerSourceLinks } from './source-links.tsx'
+import { registerWorkbenchKeys } from './workbench-keys.ts'
 import { runtimeDiagnostics } from './runtime-diagnostics.tsx'
 import { DSH_THEME_TOKENS, syncDarkClass, ThemePresenter } from './theme.ts'
 
@@ -58,6 +59,7 @@ export function apply(ctx: DshClientContext): void {
     if (!nativeLayout) saveRootReturnPoint(workbench)
   }, 'presmium: workbench')
   syncDocumentContext(ctx, workbench)
+  registerWorkbenchKeys(ctx, workbench)
   registerAgentRequests(ctx, workbench, registerAssistantSetup(ctx, workbench))
   ctx.effect(() => ctx.locale.subscribe(() => workbench.setLocale(workbenchLocale(ctx.locale.getLocale().active))), 'presmium: language')
   ctx.effect(() => ctx.theme.overrideTokens(CLIENT_ID, DSH_THEME_TOKENS), 'presmium: 书卷 tokens')

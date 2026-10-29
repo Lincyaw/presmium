@@ -1,5 +1,6 @@
 import type { PreviewEvents } from './preview-events.ts'
-import { AUTHOR_MARKS_CLASS, PREVIEW_APPEARANCE_PARAM, PREVIEW_NAME, PREVIEW_PARAM, previewEnvelope, toPreviewCommand } from './contracts/preview.ts'
+import { AUTHOR_MARKS_CLASS, PREVIEW_APPEARANCE_PARAM, PREVIEW_KEYS_PARAM, PREVIEW_NAME, PREVIEW_PARAM, previewEnvelope, toPreviewCommand } from './contracts/preview.ts'
+import { keyBelongsToTarget, watchFocusSource } from './keyboard.ts'
 import type { PreviewAnchor, PreviewCommand, PreviewCommandType, PreviewPin, PreviewPoint, PreviewPosition, PreviewRect, PreviewReport } from './contracts/preview.ts'
 import { errorMessage } from './errors.ts'
 import { sameProductionBinding } from './contracts/production.ts'
@@ -990,6 +991,23 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     post({ type: 'shortcut', command: key === 'y' || event.shiftKey ? 'redo' : 'undo' })
   }
   window.addEventListener('keydown', shortcut)
+  // Saving belongs to the workbench everywhere, fields included, so the browser never offers to save the page itself.
+  window.addEventListener('keydown', event => {
+    if (!isLive(state) || event.isComposing || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || event.key.toLowerCase() !== 's') return
+    event.preventDefault()
+    if (!event.repeat) post({ type: 'shortcut', command: 'save' })
+  }, true)
+  // A workbench that plays this page also owns its playback keys. Listening on the document lets the page's own controls
+  // keep their keys first, and stops the press before the viewer's window listener turns Space into the next step.
+  if (new URL(window.location.href).searchParams.get(PREVIEW_KEYS_PARAM) === 'playback') {
+    watchFocusSource(document)
+    document.addEventListener('keydown', event => {
+      const command = event.key === ' ' ? 'play-pause' : event.key === 'ArrowLeft' ? 'previous' : event.key === 'ArrowRight' ? 'next' : undefined
+      if (!command || !isLive(state) || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || keyBelongsToTarget(event)) return
+      event.preventDefault(); event.stopPropagation()
+      if (!(event.repeat && command === 'play-pause')) post({ type: 'shortcut', command })
+    })
+  }
 
   const locate = createLocator(page)
   const highlight = createHighlight(page, state, locate)

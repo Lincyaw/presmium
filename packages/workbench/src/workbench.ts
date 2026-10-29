@@ -69,6 +69,9 @@ export type WorkbenchMode = 'editing' | 'viewing'
  */
 export type WebView = 'document' | 'present'
 
+/** A playback key pressed in a preview that the workbench plays: Space, and the left and right arrows. */
+export type PlaybackKey = 'play-pause' | 'previous' | 'next'
+
 /** What the author points at in the document: a block (or a section), or a passage selected in it. */
 export interface Pointer {
   target: PreviewAnchor
@@ -298,6 +301,7 @@ export class Workbench {
   readonly #voiceover: VoiceoverJobs
   readonly #askers = new Set<(request: AgentRequest) => Promise<AgentAnswer | void>>()
   readonly #previewSinks = new Set<PreviewSink>()
+  readonly #playbackKeys = new Set<(command: PlaybackKey) => void>()
   #unsubscribeIr?: () => void
   #runtimeDocument?: string
   #jobsDocument?: string
@@ -934,6 +938,12 @@ export class Workbench {
     this.#syncRuntimeStreams()
     if (this.#state.document !== undefined) void this.#readIr(this.#state.document)
     return () => { if (this.#jobObservers.delete(token)) this.#syncRuntimeStreams() }
+  }
+
+  /** Space and the left and right arrows pressed in a preview that the workbench plays (Video Production's). */
+  observePlaybackKeys(listener: (command: PlaybackKey) => void): () => void {
+    this.#playbackKeys.add(listener)
+    return () => { this.#playbackKeys.delete(listener) }
   }
 
   /** Video and its dialogs borrow one owner; its idle reads never prepare a snapshot or stop media. */
@@ -2208,7 +2218,9 @@ export class Workbench {
         if (report.command === 'dismiss') {
           if (this.#state.pointer) this.point(undefined)
         } else if (report.command === 'undo') void this.undo()
-        else void this.redo()
+        else if (report.command === 'redo') void this.redo()
+        else if (report.command === 'save') void this.flushPendingEdits().catch(() => {})
+        else for (const listener of this.#playbackKeys) listener(report.command)
         break
       default:
         break

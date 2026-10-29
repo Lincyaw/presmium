@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { createStore } from '@lincyaw/host'
+import { keyBelongsToTarget, watchFocusSource } from '@lincyaw/kernel'
 import { listActions } from '../registry.ts'
 import type { ViewerAction } from '../registry.ts'
 import type { Viewer } from '../viewer-state.ts'
@@ -23,16 +24,18 @@ export const BUILTIN_ACTIONS: readonly ViewerAction[] = [
   { id: 'overview', keys: ['o'], views: ['present'], run: () => { overviewOpen.set(!overviewOpen.getSnapshot()) } },
 ]
 
-function typing(target: EventTarget | null): boolean {
-  return Boolean((target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable], [role="dialog"], [role="menu"], [role="tablist"], [role="slider"]'))
-}
+const builtin = new Set(BUILTIN_ACTIONS.map(action => action.id))
 
-/** Runs the registered actions of a view on their keys while the view is mounted. */
+/**
+ * Runs the registered actions of a view on their keys while the view is mounted. A plugin's action comes before the
+ * built-in one on the same key and hands the key on by returning false: the lecture player takes Space to play or
+ * pause, and without a player Space moves to the next step.
+ */
 export function useActions(viewer: Viewer, view: string, extra: readonly ViewerAction[] = []): void {
   const onKey = (event: KeyboardEvent) => {
-    if (event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || typing(event.target)) return
-    if (event.key === ' ' && (event.target as Element | null)?.closest?.('button, a[href]')) return
-    for (const action of [...extra, ...listActions(view)]) {
+    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || keyBelongsToTarget(event)) return
+    const actions = listActions(view)
+    for (const action of [...extra, ...actions.filter(action => !builtin.has(action.id)), ...actions.filter(action => builtin.has(action.id))]) {
       if (!action.keys.includes(event.key)) continue
       if (!presentationConfirmed(viewer) && action.id !== 'exit') return
       if (action.run(viewer) === false) continue
@@ -41,6 +44,7 @@ export function useActions(viewer: Viewer, view: string, extra: readonly ViewerA
     }
   }
   useEffect(() => {
+    watchFocusSource(document)
     window.addEventListener('keydown', onKey)
     document.documentElement.classList.add('pm-presenting')
     return () => { window.removeEventListener('keydown', onKey); document.documentElement.classList.remove('pm-presenting') }
