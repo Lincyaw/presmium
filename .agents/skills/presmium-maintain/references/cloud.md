@@ -1,33 +1,30 @@
 # Cloud hosting
 
-The optional private `packages/cloud` app runs one complete Presmium Studio container per user. Read
+The optional private `packages/cloud` app gives each user one complete Presmium Studio on JupyterHub. Read
 `docs/rfc-cloud.md`, `docs/cloud-deployment.md` and `packages/cloud/project-index.yaml` before changing it.
 
-Never reimplement Studio, the workbench or the workspace service in the cloud. Every feature an author uses
-comes from the Studio image (`deploy/cloud/studio/`), which runs `presmium studio` with `--public-url` and
-`--preview-url`. A missing feature in the cloud is a bug in the image, the gateway or those flags, not a reason
-for a second implementation. Documents live only in each Studio's volume (a git workspace); PostgreSQL holds
-accounts, Studio state, gate tickets and sessions, access tokens and shares.
+Never reimplement Studio, the workbench, the workspace service, or JupyterHub's jobs (sign-in to Studio, spawning,
+routing, idle culling). Every author feature comes from the Studio image (`deploy/cloud/studio/`), a JupyterHub
+single-user server whose extension `presmium_hub.py` runs `presmium studio` with `--public-url`, `--preview-url`
+and `--preview-port`, and jupyter-server-proxy serves `studio/` (prefix stripped), `preview/` (path kept) and
+`cloud/` (the control service) below `/user/<name>/`. A missing feature in the cloud is a bug in the image, the Hub
+configuration (`deploy/cloud/hub/`) or those flags, not a reason for a second implementation.
 
-Keep the trust split: the console (`serve`) has no Docker; the runner has Docker but never reads or writes
-authors' files; file work (documents, snapshots, copies) happens in the Studio container's control service as
-the author's unprivileged user. `PRESMIUM_CLOUD_*` variables stay in the container entry and never reach Studio.
+The console (`presmium-cloud serve`) is a JupyterHub service: its token creates users, starts and stops servers,
+and reaches `/user/<name>/cloud/` for documents, share snapshots, copies and the MCP relay. Hub user names are the
+OIDC `sub`, so the console and the Hub name the same user. Documents live only in each user's volume (a git
+workspace); PostgreSQL holds accounts, access tokens and shares. File work happens in the control service as the
+author's unprivileged user.
 
-The gateway checks a host-only gate cookie on each Studio host (`s-<slug>`, `p-<slug>`), bound to the owner,
-the console session and the Studio generation, and forwards with `Host` kept and the gate cookie removed.
-DeepSeek Harness's session cookie is SameSite=Strict, so its `/?token=` exchange must start from a page on the
-Studio host, not from the console's redirect chain.
-
-Keycloak/OIDC owns registration and passwords; preserve code/PKCE, state, nonce, issuer/audience and revocable
-sessions. Shares are snapshots (`git archive` of HEAD plus a web build) in object storage; copies are committed
-into the reader's own workspace with links and special files removed.
+DeepSeek Harness's session cookie is SameSite=Strict, so `/user/<name>/presmium` answers with a page that starts the
+`studio/?token=` navigation itself. The Hub keeps running Studios on restart (`cleanup_servers = False`) and does not
+demand a fresh login before the console spawns a user (`refresh_pre_spawn = False`).
 
 Deploy only the authorized Compose project; preserve unrelated containers and volumes. Do not print `.env`,
-tokens or API keys. Real deployments need the XFS quota pool; `CLOUD_STORAGE_UNENFORCED=true` is for loopback
-trials only.
+tokens or API keys.
 
-Verify with a real loopback deployment and Chromium: register, open Studio, open a document (previews load),
-the AI assistant's model settings, share, a second account's copy, MCP through `/mcp` with an access token,
-stop and restart (files kept), light/dark and wide/narrow console views. Use lightweight structure checks, not
-new tests or full suites unless explicitly requested. Record results and remaining limitations in a benchmark
-note and the requirements index.
+Verify with a real loopback deployment and Chromium: register, open Studio through the Hub, open a document
+(previews load below `/user/<name>/preview/`), share, a second account's copy, MCP through `/mcp` with an access
+token, stop and reopen (files kept), another user's 403 on every `/user/<name>/` path, and the console in
+light/dark and wide/narrow views. Use lightweight structure checks, not new tests or full suites unless
+explicitly requested. Record results and remaining limitations in a benchmark note and the requirements index.

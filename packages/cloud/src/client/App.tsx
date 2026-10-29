@@ -17,16 +17,12 @@ function initialLocale(): Locale {
   if (saved === 'zh-CN' || saved === 'en') return saved
   return (navigator.language || '').startsWith('en') ? 'en' : 'zh-CN'
 }
-type Route = { page: 'home' } | { page: 'studio', document?: string, id?: string } | { page: 'shared', slug: string }
+type Route = { page: 'home' } | { page: 'shared', slug: string }
 function routeOf(): Route {
-  const parts = window.location.pathname.split('/').filter(Boolean), query = new URLSearchParams(window.location.search)
+  const parts = window.location.pathname.split('/').filter(Boolean)
   if (parts[0] === 's' && parts[1]) return { page: 'shared', slug: parts[1] }
-  if (parts[0] === 'studio') return { page: 'studio', document: query.get('document') ?? undefined, id: query.get('id') ?? undefined }
   return { page: 'home' }
 }
-/** The console's page that starts Studio and enters it; documents and copies open through it too. */
-const studioPath = (document?: WorkspaceDocument | { document: string, id: string }) => document ? `/studio?${new URLSearchParams({ document: document.document, id: document.id })}` : '/studio'
-
 export default function App() {
   const [locale, setLocale] = useState<Locale>(initialLocale)
   const [dark, setDark] = useState(() => readPreference('theme') === 'dark' || (readPreference('theme') === null && window.matchMedia('(prefers-color-scheme: dark)').matches))
@@ -58,42 +54,9 @@ export default function App() {
       {session.loading && !session.data && <PmSkeleton label={t.loading} />}
       {session.data && route.page === 'shared' && <SharedPage slug={route.slug} t={t} signedIn={Boolean(user)} loginUrl={authenticationUrl('login')} />}
       {session.data && route.page !== 'shared' && !user && <div className="pmc-welcome"><PmCard><h1 className="pm-ui-card__title">{t.welcomeTitle}</h1><p>{t.welcomeHint}</p><div className="pmc-actions"><PmButton variant="primary" onClick={() => window.location.assign(authenticationUrl('login'))}>{t.login}</PmButton><PmButton onClick={() => window.location.assign(authenticationUrl('register'))}>{t.register}</PmButton></div></PmCard></div>}
-      {user && route.page === 'studio' && <StudioLauncher t={t} target={route.document !== undefined && route.id ? { document: route.document, id: route.id } : undefined} />}
       {user && route.page === 'home' && <Home t={t} locale={locale} mcpUrl={session.data?.mcpUrl ?? ''} />}
     </main>
   </div>
-}
-
-/** Starts Studio when needed, waits for it, then enters it through the console's sign-in to its hosts. */
-function StudioLauncher({ t, target }: { t: Messages, target?: { document: string, id: string } }) {
-  const [studio, setStudio] = useState<Studio>()
-  const [error, setError] = useState<unknown>()
-  const [attempt, setAttempt] = useState(0)
-  useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      try {
-        let current = (await request<{ studio: Studio }>('/api/studio')).studio
-        if (current.state === 'stopped' || current.state === 'failed') current = (await request<{ studio: Studio }>('/api/studio/start', { method: 'POST' })).studio
-        while (!cancelled && current.state !== 'running') {
-          setStudio(current)
-          if (current.state === 'failed' || current.state === 'stopped') return
-          await new Promise(done => setTimeout(done, 1500))
-          current = (await request<{ studio: Studio }>('/api/studio')).studio
-        }
-        if (!cancelled) window.location.replace(`/api/studio/open${target ? `?${new URLSearchParams(target)}` : ''}`)
-      } catch (failure) { if (!cancelled) setError(failure) }
-    })()
-    return () => { cancelled = true }
-  }, [attempt, target?.document, target?.id])
-  const failed = studio?.state === 'failed' || studio?.state === 'stopped'
-  return <div className="pmc-welcome"><PmCard>
-    <SectionHeading title={t.studioTitle}>{studio && <Status status={studio.state} t={t} />}</SectionHeading>
-    <ErrorNotice error={error} t={t} />
-    {failed && <PmNotice tone="danger">{t.failedHint}</PmNotice>}
-    {!failed && error === undefined && <><PmSkeleton label={t.startingHint} shape="preview" /><p>{t.startingHint}</p></>}
-    {(failed || error !== undefined) && <div className="pmc-actions"><PmButton variant="primary" onClick={() => { setError(undefined); setStudio(undefined); setAttempt(value => value + 1) }}>{t.retry}</PmButton></div>}
-  </PmCard></div>
 }
 
 function Home({ t, locale, mcpUrl }: { t: Messages, locale: Locale, mcpUrl: string }) {
@@ -108,7 +71,7 @@ function Home({ t, locale, mcpUrl }: { t: Messages, locale: Locale, mcpUrl: stri
       <SectionHeading title={t.studioTitle} description={t.studioHint}>{state && <Status status={state} t={t} />}</SectionHeading>
       <ResourceState resource={studio} t={t}>
         <div className="pmc-actions">
-          <a className="pm-ui-button pm-ui-button--primary" href={studioPath()} target="_blank" rel="noopener"><PmIcon name="external" /><span>{t.openStudio}</span></a>
+          {studio.data && <a className="pm-ui-button pm-ui-button--primary" href={studio.data.studio.url} target="_blank" rel="noopener"><PmIcon name="external" /><span>{t.openStudio}</span></a>}
           {(state === 'running' || state === 'starting') && <PmButton icon="stop" loading={mutation.pending} onClick={() => void mutation.run(async () => { await request('/api/studio/stop', { method: 'POST' }); studio.refresh() })}>{t.stopStudio}</PmButton>}
         </div>
         <p className="pm-ui-section-card__description">{t.studioIdleHint}</p>
@@ -121,7 +84,7 @@ function Home({ t, locale, mcpUrl }: { t: Messages, locale: Locale, mcpUrl: stri
       {state !== 'running' ? <PmEmpty icon="document">{t.documentsStopped}</PmEmpty> : <ResourceState resource={documents} t={t}>
         {documents.data?.documents?.length === 0 ? <PmEmpty icon="document">{t.noDocuments}</PmEmpty> : <ul className="pm-ui-document-list">{(documents.data?.documents ?? []).map(document => <li className="pm-ui-document-list__row" key={document.document}>
           <span className="pm-ui-document-list__icon"><PmIcon name="document" /></span>
-          <a className="pm-ui-document-list__body" href={studioPath(document)} target="_blank" rel="noopener"><span className="pm-ui-document-list__title">{document.title}</span><span className="pm-ui-document-list__meta">{document.document}</span></a>
+          <a className="pm-ui-document-list__body" href={document.url} target="_blank" rel="noopener"><span className="pm-ui-document-list__title">{document.title}</span><span className="pm-ui-document-list__meta">{document.document}</span></a>
           <PmButton small icon="share" onClick={() => setSharing(document)}>{t.share}</PmButton>
         </li>)}</ul>}
       </ResourceState>}
@@ -199,7 +162,7 @@ function SharedPage({ slug, t, signedIn, loginUrl }: { slug: string, t: Messages
       <PmCard>
         <SectionHeading title={share.title} description={format(t.sharedBy, { name: share.owner })}>
           {share.state === 'ready' && (signedIn
-            ? <PmButton variant="primary" icon="copy" loading={mutation.pending} onClick={() => void mutation.run(async () => { const copy = await request<{ document: string, id: string }>(`/api/shared/${encodeURIComponent(slug)}/fork`, { method: 'POST' }); window.location.assign(studioPath(copy)) })}>{mutation.pending ? t.copying : t.makeCopy}</PmButton>
+            ? <PmButton variant="primary" icon="copy" loading={mutation.pending} onClick={() => void mutation.run(async () => { const copy = await request<{ open: string }>(`/api/shared/${encodeURIComponent(slug)}/fork`, { method: 'POST' }); window.location.assign(copy.open) })}>{mutation.pending ? t.copying : t.makeCopy}</PmButton>
             : <PmButton variant="primary" onClick={() => window.location.assign(loginUrl)}>{t.loginToCopy}</PmButton>)}
         </SectionHeading>
         <p className="pm-ui-section-card__description">{t.makeCopyHint}</p>

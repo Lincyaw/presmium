@@ -2,7 +2,7 @@
   "name": "@lincyaw/cloud",
   "version": "0.1.0",
   "private": true,
-  "description": "Presmium Cloud: accounts, a complete Presmium Studio per user, sharing, and MCP access",
+  "description": "Presmium Cloud console: accounts, sharing and MCP access around one complete Presmium Studio per user on JupyterHub",
   "license": "Apache-2.0",
   "type": "module",
   "engines": {
@@ -21,7 +21,6 @@
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/workbench": "workspace:*",
     "hono": "4.13.13",
-    "http-proxy-3": "2.0.1",
     "jiti": "2.7.0",
     "jose": "6.2.12",
     "mime-types": "3.0.2",

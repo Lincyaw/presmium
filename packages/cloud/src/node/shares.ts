@@ -9,7 +9,7 @@ import { CloudError, requireId, requireText } from '../domain/errors.ts'
 import type { CloudUser } from './auth.ts'
 import type { Database } from './database.ts'
 import type { ObjectStorage } from './storage.ts'
-import type { Studios } from './studios.ts'
+import type { Hub } from './hub.ts'
 
 /**
  * A share is a snapshot of one document: its committed source (what a fork copies) and its web form built for the
@@ -19,7 +19,7 @@ const SITE_FILE_LIMIT = 64 << 20
 const SITE_TOTAL_LIMIT = 512 << 20
 const SOURCE_LIMIT = 256 << 20
 
-interface ShareRow { id: string, slug: string, space_id: string, user_id: string, document: string, title: string, state: 'pending' | 'ready' | 'failed', error_code: string | null, created_at: Date, owner_name?: string }
+interface ShareRow { id: string, slug: string, user_id: string, document: string, title: string, state: 'pending' | 'ready' | 'failed', error_code: string | null, created_at: Date, owner_name?: string }
 const view = (row: ShareRow, contentUrl: string) => ({ id: row.id, slug: row.slug, document: row.document, title: row.title, state: row.state, errorCode: row.error_code, createdAt: row.created_at.toISOString(), siteUrl: new URL(`/p/${row.slug}/`, contentUrl).href })
 const slugOf = () => randomBytes(16).toString('base64url')
 const validSlug = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z0-9_-]{22}$/.test(value)
@@ -63,21 +63,22 @@ async function files(response: Response): Promise<Map<string, Buffer>> {
 export class Shares {
   readonly db: Database
   readonly storage: ObjectStorage
-  readonly studios: Studios
+  readonly hub: Hub
   readonly contentUrl: string
-  constructor(db: Database, storage: ObjectStorage, studios: Studios, contentUrl: string) { this.db = db; this.storage = storage; this.studios = studios; this.contentUrl = contentUrl }
+  constructor(db: Database, storage: ObjectStorage, hub: Hub, contentUrl: string) { this.db = db; this.storage = storage; this.hub = hub; this.contentUrl = contentUrl }
 
-  async list(spaceId: string) {
-    return (await this.db.query<ShareRow>('SELECT * FROM shares WHERE space_id = $1 AND revoked_at IS NULL ORDER BY created_at DESC', [spaceId])).rows.map(row => view(row, this.contentUrl))
+  async list(user: CloudUser) {
+    return (await this.db.query<ShareRow>('SELECT * FROM shares WHERE user_id = $1 AND revoked_at IS NULL ORDER BY created_at DESC', [user.id])).rows.map(row => view(row, this.contentUrl))
   }
 
   /** Records the share at once; the snapshot is made in the owner's Studio in the background. */
-  async create(spaceId: string, user: CloudUser, document: unknown, title: unknown) {
+  async create(user: CloudUser, document: unknown, title: unknown) {
     const dir = requireText(document, 'document-invalid', 200)
     if (/[/\\\0]/.test(dir) || dir.startsWith('.')) throw new CloudError(400, 'document-invalid')
-    const row = (await this.db.query<ShareRow>(`INSERT INTO shares (id, slug, space_id, user_id, document, title, state) VALUES ($1, $2, $3, $4, $5, $6, 'pending') RETURNING *`,
-      [randomUUID(), slugOf(), spaceId, user.id, dir, requireText(title ?? dir, 'document-invalid', 200)])).rows[0]!
-    void this.#snapshot(row).catch(async error => {
+    const name = this.hub.name(user)
+    const row = (await this.db.query<ShareRow>(`INSERT INTO shares (id, slug, user_id, document, title, state) VALUES ($1, $2, $3, $4, $5, 'pending') RETURNING *`,
+      [randomUUID(), slugOf(), user.id, dir, requireText(title ?? dir, 'document-invalid', 200)])).rows[0]!
+    void this.#snapshot(row, name).catch(async error => {
       const code = error instanceof CloudError ? error.code : 'share-failed'
       process.stderr.write(`share ${row.id}: ${error instanceof Error ? error.message : String(error)}\n`)
       await this.db.query(`UPDATE shares SET state = 'failed', error_code = $2, updated_at = now() WHERE id = $1`, [row.id, code]).catch(() => {})
@@ -85,14 +86,14 @@ export class Shares {
     return view(row, this.contentUrl)
   }
 
-  async #snapshot(row: ShareRow): Promise<void> {
-    const connection = await this.studios.running(row.space_id)
-    const made = await (await this.studios.control(connection, `/snapshots?${new URLSearchParams({ document: row.document, base: `/p/${row.slug}/` })}`, { method: 'POST', timeoutMs: 20 * 60_000 })).json() as { id: string }
+  async #snapshot(row: ShareRow, name: string): Promise<void> {
+    await this.hub.running(name)
+    const made = await (await this.hub.control(name, `/snapshots?${new URLSearchParams({ document: row.document, base: `/p/${row.slug}/` })}`, { method: 'POST', timeoutMs: 20 * 60_000 })).json() as { id: string }
     if (!/^[a-f0-9]{32}$/.test(made.id)) throw new CloudError(502, 'studio-control-failed')
     const prefix = `shares/${row.id}/`
-    const source = await body(await this.studios.control(connection, `/snapshots/${made.id}/source`, { timeoutMs: 5 * 60_000 }), SOURCE_LIMIT)
+    const source = await body(await this.hub.control(name, `/snapshots/${made.id}/source`, { timeoutMs: 5 * 60_000 }), SOURCE_LIMIT)
     await this.storage.put(`${prefix}source.tar.gz`, source, 'application/gzip')
-    const site = await files(await this.studios.control(connection, `/snapshots/${made.id}/site`, { timeoutMs: 5 * 60_000 }))
+    const site = await files(await this.hub.control(name, `/snapshots/${made.id}/site`, { timeoutMs: 5 * 60_000 }))
     if (!site.has('index.html')) throw new CloudError(502, 'share-site-missing')
     const entries = [...site]
     for (let at = 0; at < entries.length; at += 8) {
@@ -101,8 +102,8 @@ export class Shares {
     await this.db.query(`UPDATE shares SET state = 'ready', error_code = NULL, updated_at = now() WHERE id = $1`, [row.id])
   }
 
-  async revoke(spaceId: string, id: string): Promise<void> {
-    const row = (await this.db.query<ShareRow>('UPDATE shares SET revoked_at = now() WHERE id = $1 AND space_id = $2 AND revoked_at IS NULL RETURNING *', [requireId(id), spaceId])).rows[0]
+  async revoke(user: CloudUser, id: string): Promise<void> {
+    const row = (await this.db.query<ShareRow>('UPDATE shares SET revoked_at = now() WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL RETURNING *', [requireId(id), user.id])).rows[0]
     if (row) await this.storage.removePrefix(`shares/${row.id}/`).catch(error => process.stderr.write(`share ${row.id} cleanup: ${error instanceof Error ? error.message : String(error)}\n`))
   }
 
@@ -120,13 +121,14 @@ export class Shares {
   }
 
   /** Copies the shared source into the signed-in user's own Studio as a new document, committed there. */
-  async fork(slug: string, spaceId: string): Promise<{ document: string, id: string }> {
+  async fork(slug: string, user: CloudUser): Promise<{ document: string, id: string }> {
     const row = await this.#shared(slug)
     if (row.state !== 'ready') throw new CloudError(409, 'share-not-ready')
     const source = await this.storage.get(`shares/${row.id}/source.tar.gz`)
     if (!source) throw new CloudError(404, 'share-not-found')
-    const connection = await this.studios.running(spaceId)
-    const answer = await (await this.studios.control(connection, `/imports?${new URLSearchParams({ title: row.title })}`, { method: 'POST', body: source.body as unknown as BodyInit, headers: { 'content-type': 'application/gzip' }, timeoutMs: 5 * 60_000 })).json() as { document: string, id: string }
+    const name = this.hub.name(user)
+    await this.hub.running(name)
+    const answer = await (await this.hub.control(name, `/imports?${new URLSearchParams({ title: row.title })}`, { method: 'POST', body: source.body as unknown as BodyInit, headers: { 'content-type': 'application/gzip' }, timeoutMs: 5 * 60_000 })).json() as { document: string, id: string }
     if (typeof answer.document !== 'string' || typeof answer.id !== 'string') throw new CloudError(502, 'studio-control-failed')
     return answer
   }

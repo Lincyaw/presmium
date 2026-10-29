@@ -84,7 +84,7 @@
 
 浏览器与这些服务之间没有替浏览器持有 cookie 的代理：注入 cookie 并改写 `Origin` 的代理会拆掉 dsh 的栅栏，让外来源的页面读出会话记录。
 
-**反向代理之后。** `presmium studio --public-url <网址> --preview-url <网址>` 让 Studio 在保留 `Host`、转发 WebSocket 的反向代理后工作：前者交给 dsh 的 `--public-url` 与 `--trusted-host`（带路径时代理去掉该前缀再转发，与 dsh 的约定相同），后者交给工作区服务的 `--public-url`，它信任该主机并用它给出预览与产物的地址。预览地址可以带路径（`https://host/user/a/preview/`）：代理原样转发该路径，工作区网站、导出产物与 `__presmium/` 路由都在它下面，页面经 `AppConfig.server` 得到这个前缀，插件用 `@lincyaw/host` 的 `pluginRoutePath` 拼出自己的路由；工作区服务对自身地址上不带前缀的调用（dsh 的 bundle、MCP）照常应答。`--preview-port` 固定工作区服务的端口，供事先要知道端口的代理使用；启动后 Studio 把带启动令牌的地址写进 `<home>/<profile>.json`（0600，关闭时删除），供替用户打开 Studio 的宿主读取。预览应与 Studio 不同源：同源时预览中文稿的代码能以作者身份调用 dsh 的接口。代理可以在转发前做自己的认证，但不得替浏览器注入 cookie 或改写 `Origin`。Presmium 云端按这种方式为每个用户运行一个 Studio（[云端 RFC](rfc-cloud.md) 第 4 节）。
+**反向代理之后。** `presmium studio --public-url <网址> --preview-url <网址>` 让 Studio 在保留 `Host`、转发 WebSocket 的反向代理后工作：前者交给 dsh 的 `--public-url` 与 `--trusted-host`（带路径时代理去掉该前缀再转发，与 dsh 的约定相同），后者交给工作区服务的 `--public-url`，它信任该主机并用它给出预览与产物的地址。预览地址可以带路径（`https://host/user/a/preview/`）：代理原样转发该路径，工作区网站、导出产物与 `__presmium/` 路由都在它下面，页面经 `AppConfig.server` 得到这个前缀，插件用 `@lincyaw/host` 的 `pluginRoutePath` 拼出自己的路由；工作区服务对自身地址上不带前缀的调用（dsh 的 bundle、MCP）照常应答。`--preview-port` 固定工作区服务的端口，供事先要知道端口的代理使用；启动后 Studio 把带启动令牌的地址写进 `<home>/<profile>.json`（0600，关闭时删除），供替用户打开 Studio 的宿主读取。预览应与 Studio 不同源：同源时预览中文稿的代码能以作者身份调用 dsh 的接口。代理可以在转发前做自己的认证，但不得替浏览器注入 cookie 或改写 `Origin`。Presmium 云端在 JupyterHub 中按这种方式为每个用户运行一个 Studio（[云端 RFC](rfc-cloud.md) 第 3 节）。
 
 正常 Studio 的 Web 补丁固定 `client-hmr.disabled: true`，官方启动器在 profile 层之后应用该补丁。静态启动图保留，文稿及运行数据仍实时更新；客户端代码重建不会替换正在编辑的根客户端，作者在确认保存或取回未持久草稿后再重新加载页面。该设置也避免 `/plugins/events` 占用每页一条 HTTP/1.1 连接，六标签页结果见[传输记录](benchmarks/studio-multitab-transport-2026-10-27.md)。
 

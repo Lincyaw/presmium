@@ -1,8 +1,8 @@
 # Debian trixie: the workspace service's history needs git 2.43 or later (cat-file -Z).
 FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f
 
-# One user's complete Presmium Studio: the workbench, the AI assistant (DeepSeek Harness), the workspace service,
-# builds and exports. The toolchain is fixed at image build; the user's files live on the volume mounted at /work.
+# One user's complete Presmium Studio (the workbench, the AI assistant, the workspace service, builds and exports)
+# as a JupyterHub single-user server. The toolchain is fixed at image build; the user's files live on /work.
 ENV DEBIAN_FRONTEND=noninteractive PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git python3 python3-venv ca-certificates tar \
@@ -19,8 +19,14 @@ RUN pnpm install --frozen-lockfile \
  && pnpm --filter @lincyaw/render-slides exec playwright install --with-deps chromium \
  && node packages/dsh/build/client.mjs \
  && pnpm --filter @lincyaw/skills run skills
-COPY deploy/cloud/studio/entry.mjs deploy/cloud/studio/share-build.mjs ./deploy/cloud/studio/
+# JupyterHub's single-user server around Studio (deploy/cloud/hub): Hub authenticates every request.
+RUN python3 -m venv /opt/hub \
+ && /opt/hub/bin/pip install --no-cache-dir jupyterhub==5.5.4 jupyter-server-proxy==4.6.0 \
+ && mkdir -p /work && chown 1000:1000 /work
+COPY deploy/cloud/studio/jupyter_server_config.py /etc/jupyter/jupyter_server_config.py
+COPY deploy/cloud/studio/presmium_hub.py deploy/cloud/studio/control.mjs deploy/cloud/studio/share-build.mjs ./deploy/cloud/studio/
+ENV PATH=/opt/hub/bin:$PATH PYTHONPATH=/opt/presmium/deploy/cloud/studio HOME=/work/home XDG_STATE_HOME=/work/state XDG_CACHE_HOME=/work/cache XDG_CONFIG_HOME=/work/config
 USER 1000:1000
 WORKDIR /work
-EXPOSE 3080 3090
-CMD ["node", "/opt/presmium/deploy/cloud/studio/entry.mjs"]
+EXPOSE 8888
+CMD ["jupyterhub-singleuser"]

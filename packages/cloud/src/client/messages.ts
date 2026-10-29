@@ -33,9 +33,6 @@ const zh = {
   running: '运行中',
   stopping: '正在停止…',
   failed: '启动失败',
-  startingHint: '正在启动 Studio，首次启动需要一两分钟。启动后会自动打开。',
-  failedHint: '无法启动 Studio。文稿仍然保留，请重试。',
-  popupBlocked: 'Studio 已启动。请点击“打开 Studio”。',
 
   documents: '文稿',
   documentsHint: '工作区中的文稿。共享后，任何拿到链接的人都能阅读它，并创建副本到自己的空间。',
@@ -132,9 +129,6 @@ const en: Messages = {
   running: 'Running',
   stopping: 'Stopping…',
   failed: 'Startup failed',
-  startingHint: 'Studio is starting. The first start takes a minute or two, and Studio then opens here.',
-  failedHint: 'Couldn’t start Studio. Your documents are kept. Please try again.',
-  popupBlocked: 'Studio is running. Choose Open Studio.',
 
   documents: 'Documents',
   documentsHint: 'The documents of your workspace. Anyone with a shared document’s link can read it and make a copy in their own space.',

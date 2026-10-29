@@ -4,6 +4,7 @@ services:
     environment:
       KC_HOSTNAME: http://auth.localhost:${CLOUD_LOOPBACK_PORT:-18787}
       CLOUD_PUBLIC_URL: http://app.localhost:${CLOUD_LOOPBACK_PORT:-18787}
+      CLOUD_HUB_URL: http://hub.localhost:${CLOUD_LOOPBACK_PORT:-18787}
       CLOUD_KEYCLOAK_VERIFY_EMAIL: "false"
       CLOUD_KEYCLOAK_SSL_REQUIRED: none
       CLOUD_SMTP_FROM: no-reply@example.invalid
@@ -37,23 +38,20 @@ services:
     environment: &loopback
       CLOUD_PUBLIC_URL: http://app.localhost:${CLOUD_LOOPBACK_PORT:-18787}
       CLOUD_CONTENT_URL: http://content.localhost:${CLOUD_LOOPBACK_PORT:-18787}
-      CLOUD_STUDIO_URL: http://studio.localhost:${CLOUD_LOOPBACK_PORT:-18787}
+      CLOUD_HUB_URL: http://hub.localhost:${CLOUD_LOOPBACK_PORT:-18787}
       CLOUD_OIDC_ISSUER: http://auth.localhost:${CLOUD_LOOPBACK_PORT:-18787}/realms/presmium
       CLOUD_ALLOW_INSECURE_LOOPBACK: "true"
-      CLOUD_STORAGE_UNENFORCED: ${CLOUD_STORAGE_UNENFORCED:-false}
   api:
     environment: *loopback
-  runner:
-    environment: *loopback
+  hub:
+    environment:
+      CLOUD_HUB_URL: http://hub.localhost:${CLOUD_LOOPBACK_PORT:-18787}
+      CLOUD_OIDC_ISSUER: http://auth.localhost:${CLOUD_LOOPBACK_PORT:-18787}/realms/presmium
   entrance:
     environment:
       CLOUD_APP_HOST: http://app.localhost
       CLOUD_AUTH_HOST: http://auth.localhost
       CLOUD_CONTENT_HOST: http://content.localhost
-      CLOUD_STUDIO_HOST: studio.localhost
-    volumes: !override
-      - ./Caddyfile.loopback:/etc/caddy/Caddyfile:ro
-      - entrance-data:/data
-      - entrance-config:/config
+      CLOUD_HUB_HOST: http://hub.localhost
     ports: !override
       - "127.0.0.1:${CLOUD_LOOPBACK_PORT:-18787}:80"

@@ -851,9 +851,6 @@ importers:
       hono:
         specifier: 4.13.13
         version: 4.13.13
-      http-proxy-3:
-        specifier: 2.0.1
-        version: 2.0.1(supports-color@9.4.0)
       jiti:
         specifier: 2.7.0
         version: 2.7.0

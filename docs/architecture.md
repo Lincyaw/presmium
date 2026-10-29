@@ -2,7 +2,7 @@
 
 本文档定义工程结构、分层规则、跨上下文契约、插件约定与测试策略。领域概念见 `domain-model.md`，可编辑文稿与运行快照见 `ir.md`，公开接口与版本规则见 `api.md`，工作台的设计见 `design-dsh.md`。
 
-**定位**：Presmium 核心是组件库与工具链。作者在自己的机器（或自己的容器）中编写、预览、讲授与发布文稿，读者阅读构建出的静态站点。独立的私有应用 `@lincyaw/cloud`（实验性）为每个注册用户运行一个完整的 Presmium Studio 容器，另有共享与创建副本、MCP 接入；其架构、需求与 Linux 部署见 [云端 RFC](rfc-cloud.md)、`packages/cloud/project-index.yaml` 和 [部署说明](cloud-deployment.md)。
+**定位**：Presmium 核心是组件库与工具链。作者在自己的机器（或自己的容器）中编写、预览、讲授与发布文稿，读者阅读构建出的静态站点。独立的私有应用 `@lincyaw/cloud`（实验性）借助 JupyterHub 为每个注册用户运行一个完整的 Presmium Studio 容器，另有共享与创建副本、MCP 接入；其架构、需求与 Linux 部署见 [云端 RFC](rfc-cloud.md)、`packages/cloud/project-index.yaml` 和 [部署说明](cloud-deployment.md)。
 
 - 核心（编译器、IR、渲染端、IR 运行时、CLI、静态产物）与产物离开模型也能工作，不引用 DeepSeek Harness。不改动源码的功能（放映、演讲者视图、课堂、运行代码、读者用自己的模型问答、放映中的讲授录制）属于产物；改动源码的功能属于工作台。
 - 工作台是作者在浏览器中编写文稿的界面，实验性，不在语义化版本的承诺之内：工作台的包（`@lincyaw/workbench`、`@lincyaw/dsh`、`@lincyaw/studio`）为 0.x，DeepSeek Harness 发布正式版、并且升级闸门（13.5 节）在连续两个版本上通过之后才纳入 1.x 的承诺（`api.md`）。
