@@ -5,13 +5,14 @@ import { argsPrelude } from '../domain/args.ts'
 import { DEFAULT_TIMEOUT_MS } from '../domain/config.ts'
 import { OutputCollector } from '../domain/outputs.ts'
 import { executeCode, writeRunFiles } from './execute.ts'
-import { createJupyterKernelLifecycle } from './kernel-lifecycle.ts'
-import type { JupyterKernelHandle, ShutdownJupyterKernel } from './kernel-lifecycle.ts'
+import { createJupyterKernelLifecycle, failureCode } from './kernel-lifecycle.ts'
+import type { JupyterFailure, JupyterKernelHandle, ShutdownJupyterKernel } from './kernel-lifecycle.ts'
 import { loadJupyterServices } from './load-services.ts'
 import { isRefused } from './refusal.ts'
 
 export interface JupyterKernelsText {
-  unreachable(error: string): string
+  /** `error` is the failure's own words, for logs; `code` is set when the failure is one the reader's text names. */
+  unreachable(error: string, code?: JupyterFailure): string
   refused: string
   noKernel(kernel: string, known: string[]): string
   wrongLanguage(kernel: string, language: string, lang: string): string
@@ -65,7 +66,7 @@ export function createJupyterKernels(options: JupyterKernelsOptions): JupyterKer
       options.refused?.()
       return failedWith(options.text.refused, started)
     }
-    return failedWith(options.text.unreachable(errorMessage(error)), started)
+    return failedWith(options.text.unreachable(errorMessage(error), failureCode(error)), started)
   }
 
   /** The connection's settings, or the failed run when there are none (no address, refused credentials). */
@@ -221,7 +222,7 @@ export function createJupyterKernels(options: JupyterKernelsOptions): JupyterKer
         return names.includes(options.kernelName) ? undefined : options.text.noKernel(options.kernelName, names)
       } catch (error) {
         specs = undefined
-        return isRefused(error) ? options.text.refused : options.text.unreachable(errorMessage(error))
+        return isRefused(error) ? options.text.refused : options.text.unreachable(errorMessage(error), failureCode(error))
       }
     },
     dispose() {

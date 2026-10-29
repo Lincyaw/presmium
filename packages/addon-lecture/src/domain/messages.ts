@@ -9,6 +9,17 @@ export interface LectureMessages {
     incompleteCache: string
     noVoice: string
     noPreparedLecture: string
+    /** Why a sentence has no voiceover, by the code a speech service or the plan gives; others read as `reasonGeneric`. */
+    reasons: Record<string, string>
+    reasonGeneric: string
+  }
+  /** The problems of a {cue} mark, written into the document's diagnostics. */
+  cue: {
+    problem(command: string, reason: string): string
+    unknown(name: string, commands: readonly string[]): string
+    pauseDuration(arg: string): string
+    clickAction: string
+    markName: string
   }
   recorder: {
     region: string
@@ -87,16 +98,50 @@ export interface LectureMessages {
   }
 }
 
+/** What the lecture's tools say to the AI and the author for the codes they fail with (the AI may pass it on). */
+export const LECTURE_TOOL_ERRORS: Record<Locale, Record<string, string>> = {
+  'zh-CN': {
+    'lecture-plugin-missing': '这份文稿没有启用讲授插件。',
+    'document-not-ready': '文稿还没有准备好，请稍后重试。',
+    'speech-unavailable': '未连接语音服务。请在文稿中启用语音服务插件 addon-speech。',
+    'track-required': '需要给出讲授的名称（track）。',
+    'lang-required': '需要给出要译成的语言（lang）。',
+  },
+  en: {
+    'lecture-plugin-missing': 'This document doesn’t use the lecture plugin.',
+    'document-not-ready': 'The document isn’t ready yet. Try again shortly.',
+    'speech-unavailable': 'No voice service is connected. Enable the voice service plugin addon-speech in the document.',
+    'track-required': 'Give the name of the lecture (track).',
+    'lang-required': 'Give the language to translate into (lang).',
+  },
+}
+
 export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
   'zh-CN': {
     view: '讲授',
     production: {
       missingSpeech: '读取已生成的配音需要语音服务。请在文稿的 metadata.plugins 中启用语音服务插件 addon-speech。',
-      cacheMissing: (text, section, reason) => `页面 ${section} 的讲稿“${text}”没有与当前文字和音色一致的配音：${reason}`,
+      cacheMissing: (text, section, reason) => `页面 ${section} 的讲稿“${text}”没有与当前文字和音色一致的配音。${reason}`,
       generateHint: '请先为当前讲稿和音色生成配音，再重新导出。检查和导出不会自动生成缺失的配音。',
       incompleteCache: '当前讲稿与音色的配音不完整。请先生成配音，再导出。',
       noVoice: '视频制作设置未指定音色，文稿没有生成的配音。',
       noPreparedLecture: '文稿还没有可用的配音。请提供录音，或选择音色并生成配音。',
+      reasons: {
+        'voiceover-not-generated': '还没有为当前讲稿和音色生成配音。',
+        'voiceover-cache-missing': '语音服务没有给出已生成配音的文件。',
+        'speech-unavailable': '未连接语音服务。',
+        'voice-unset': '没有选择音色。',
+        'voice-step-binding-unavailable': '这句讲稿所在的步骤已经变化，请重新选择音色。',
+        'production-media-changed': '配音文件在读取时发生了变化，请重试。',
+      },
+      reasonGeneric: '无法读取这句讲稿的配音。',
+    },
+    cue: {
+      problem: (command, reason) => `提示“${command}”：${reason}`,
+      unknown: (name, commands) => `没有“${name}”这种提示。可用的提示：${commands.join('、')}。`,
+      pauseDuration: arg => `停顿需要时长，例如“pause 800ms”，而不是“${arg}”。`,
+      clickAction: '点击需要组件的操作名，例如“click reset”。',
+      markName: '标记需要名称，例如“mark merge”。',
     },
     recorder: {
       region: '讲授录制',
@@ -178,11 +223,27 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
     view: 'Lecture',
     production: {
       missingSpeech: 'Reading the generated voiceover needs the voice service. Enable the voice service plugin addon-speech in the document’s metadata.plugins.',
-      cacheMissing: (text, section, reason) => `The script “${text}” on page ${section} has no voiceover that matches its current text and voice: ${reason}`,
+      cacheMissing: (text, section, reason) => `The script “${text}” on page ${section} has no voiceover that matches its current text and voice. ${reason}`,
       generateHint: 'Generate the voiceover for the current script and voice first, then export again. Checking and exporting never generate missing voiceover.',
       incompleteCache: 'The voiceover for the current script and voice is incomplete. Generate the voiceover before exporting.',
       noVoice: 'The video production settings name no voice, so the document has no generated voiceover.',
       noPreparedLecture: 'The document has no voiceover yet. Provide a recording, or choose a voice and generate the voiceover first.',
+      reasons: {
+        'voiceover-not-generated': 'No voiceover is generated for the current script and voice yet.',
+        'voiceover-cache-missing': 'The voice service gave no file for the generated voiceover.',
+        'speech-unavailable': 'No voice service is connected.',
+        'voice-unset': 'No voice is chosen.',
+        'voice-step-binding-unavailable': 'The step of this sentence changed. Choose its voice again.',
+        'production-media-changed': 'The voiceover file changed while it was read. Try again.',
+      },
+      reasonGeneric: 'Couldn’t read the voiceover of this sentence.',
+    },
+    cue: {
+      problem: (command, reason) => `Cue “${command}”: ${reason}`,
+      unknown: (name, commands) => `There is no cue “${name}”. The cues are ${commands.join(', ')}.`,
+      pauseDuration: arg => `A pause needs a duration, such as “pause 800ms”, not “${arg}”.`,
+      clickAction: 'A click needs the action of the component, such as “click reset”.',
+      markName: 'A mark needs a name, such as “mark merge”.',
     },
     recorder: {
       region: 'Lecture Recording',

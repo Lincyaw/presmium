@@ -87,7 +87,7 @@ export class Kernel {
       reports.set(id, await this.#setup(plugin, missing))
     }
 
-    this.#report = { order, plugins: this.#plugins.map(p => reports.get(p.manifest.id)!), cycles: plan.cycles }
+    this.#report = { order, plugins: this.#plugins.map(p => ({ ...reports.get(p.manifest.id)!, ...p.manifest.name ? { name: p.manifest.name } : {} })), cycles: plan.cycles }
     this.#state = 'started'
     return this.#report
   }

@@ -45,8 +45,8 @@ export function WorkbenchApprovals({ density = 'compact' }: { density?: 'compact
         {pending.map(({ id, request }) => (
           <li key={id} className="pmw-approvals__item" data-approval={id}>
             <p className="pmw-approvals__title">{request.title}</p>
-            <p className="pmw-muted">{t.approvalFrom(t.approvalOrigin[request.from] ?? request.from)}</p>
-            {request.detail && <pre className="pm-ui-code pmw-approvals__detail">{request.detail}</pre>}
+            <p className="pmw-muted">{t.approvalFrom(t.approvalOrigin[request.from] ?? t.approvalOtherOrigin)}</p>
+            {request.detail && <p className="pmw-approvals__detail">{request.detail}</p>}
             <div className="pmw-approvals__actions">
               <PmButton density={density} disabled={answering === id} onClick={() => answer(id, false)}>{t.approvalDeny}</PmButton>
               <PmButton variant="primary" density={density} loading={answering === id ? true : undefined} disabled={answering === id} onClick={() => answer(id, true)}>{t.approvalAllow}</PmButton>

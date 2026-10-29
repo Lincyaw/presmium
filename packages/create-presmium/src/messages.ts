@@ -1,3 +1,4 @@
+export { systemLocale } from '@lincyaw/kernel/node'
 import type { ProjectKind } from './create.ts'
 
 export type Locale = 'zh-CN' | 'en'
@@ -181,7 +182,3 @@ After a change, run \`${kind === 'lecture' ? 'presmium check' : 'presmium check 
   },
 }
 
-export function systemLocale(env: NodeJS.ProcessEnv = process.env): Locale {
-  const tag = env.LC_ALL || env.LC_MESSAGES || env.LANG || Intl.DateTimeFormat().resolvedOptions().locale
-  return /^zh/i.test(tag) ? 'zh-CN' : 'en'
-}

@@ -1,5 +1,5 @@
 import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
-import { DocumentView, HomePanel, PmDialog, PmIcon, PmMenu, useWorkbenchState, WorkbenchApprovals, WorkbenchProvider } from '@lincyaw/workbench'
+import { DocumentView, HomePanel, PmDialog, PmIcon, PmMenu, SHORTCUTS, useWorkbenchState, WorkbenchApprovals, WorkbenchProvider } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode, RefObject } from 'react'
@@ -243,7 +243,7 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
       <div className="pmw-frame__overlay" data-pmw-slot="shell.overlay">{overlays}</div>
 
       <PmDialog open={helpOpen} label={t.help} closeLabel={t.close} onClose={() => setHelpOpen(false)}>
-        <ul className="pmw-help">{t.helpItems.map(item => <li key={item}>{item}</li>)}</ul>
+        <ul className="pmw-help">{t.helpItems.map(item => <li key={item}>{item.replace('{undo}', SHORTCUTS.undo).replace('{redo}', SHORTCUTS.redo)}</li>)}</ul>
       </PmDialog>
     </div>
   )

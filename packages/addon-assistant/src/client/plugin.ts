@@ -13,6 +13,7 @@ let cleanup: Unsubscribe[] = []
 export const assistantPlugin: PluginDefinition = {
   manifest: {
     id: ASSISTANT_ID,
+    name: { 'zh-CN': '读者问答', en: 'Reader Q&A' },
     version,
     kernel: '^1.0.0',
     provides: [ASK],

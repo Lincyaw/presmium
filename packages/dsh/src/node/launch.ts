@@ -5,7 +5,7 @@ import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { machineState, NODE_RESOURCE_ARGS, nodeResourceArgs, resourceEnvironment } from '@lincyaw/kernel/node'
-export { bracketIPv6 } from '@lincyaw/kernel/node'
+export { bracketIPv6, systemLocale } from '@lincyaw/kernel/node'
 
 export type Carrier = 'web' | 'headless' | 'acp'
 

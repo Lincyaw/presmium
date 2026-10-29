@@ -9,6 +9,7 @@ let unregister: Unsubscribe[] = []
 export const execLocalPlugin: PluginDefinition = {
   manifest: {
     id: EXEC_LOCAL_ID,
+    name: { 'zh-CN': '本机容器运行', en: 'Local Container Runner' },
     version,
     kernel: '^1.0.0',
     provides: [LOCAL_ENV],

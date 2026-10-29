@@ -11,6 +11,7 @@ const plugin: PluginDefinition = {
   restartable: true,
   manifest: {
     id: GUIDE_ID,
+    name: { 'zh-CN': '导览提示', en: 'Guidance Cues' },
     version,
     kernel: '^1.0.0',
     requires: [{ token: OPERATIONS, optional: true }, { token: NAVIGATION, optional: true }],

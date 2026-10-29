@@ -12,7 +12,7 @@ const kinds = <T extends string>(image: T, video: T, audio: T, file: T) => ({ im
 // 插入 / Insert, commands in Title Case, one “…”). Every other entry stays BlockNote's.
 export const BLOCKNOTE_MESSAGES: Record<Locale, Overrides<Dictionary>> = {
   'zh-CN': {
-    slash_menu: { ...basicGroups('zh-CN'), image: { title: '图片' }, divider: { subtext: '分隔内容块', group: basic['zh-CN'] } },
+    slash_menu: { ...basicGroups('zh-CN'), image: { title: '图片', subtext: '可调整大小、带题注的图片' }, divider: { subtext: '分隔内容块', group: basic['zh-CN'] } },
     placeholders: { default: '输入文字，或输入“/”使用命令', toggleListItem: '折叠项', new_comment: '输入批注…', edit_comment: '编辑批注…', comment_reply: '回复…' },
     file_blocks: { add_button_text: kinds('插入图片', '插入视频', '插入音频', '插入文件') },
     toggle_blocks: { add_block_button: '空的折叠项。单击以插入内容块。', toggle_button: '显示或隐藏' },
@@ -47,7 +47,7 @@ export const BLOCKNOTE_MESSAGES: Record<Locale, Overrides<Dictionary>> = {
     generic: { loading: '正在加载…', load_more: '加载更多' },
   },
   en: {
-    slash_menu: { ...basicGroups('en'), image: { title: 'Picture' }, divider: { subtext: 'Visually divide blocks', group: basic.en } },
+    slash_menu: { ...basicGroups('en'), image: { title: 'Picture', subtext: 'Resizable picture with caption' }, divider: { subtext: 'Visually divide blocks', group: basic.en } },
     placeholders: { default: 'Enter text, or type “/” for commands', toggleListItem: 'Toggle', new_comment: 'Write a comment…', edit_comment: 'Write a comment…', comment_reply: 'Reply…' },
     file_blocks: { add_button_text: kinds('Insert Picture', 'Insert Video', 'Insert Audio', 'Insert File') },
     toggle_blocks: { add_block_button: 'Empty toggle. Click to insert a block.', toggle_button: 'Show or Hide' },

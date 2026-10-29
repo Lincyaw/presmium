@@ -1,3 +1,4 @@
+export { systemLocale } from '@lincyaw/dsh/launch'
 // Only the `studio  <url>` line on standard output is read by programs; it is the same in both languages.
 export type Locale = 'zh-CN' | 'en'
 
@@ -78,8 +79,3 @@ Options:
   },
 }
 
-/** The language of command-line output: the system's (`LC_ALL`, `LC_MESSAGES`, `LANG`), as `create-presmium` chooses it. */
-export function systemLocale(env: NodeJS.ProcessEnv = process.env): Locale {
-  const tag = env.LC_ALL || env.LC_MESSAGES || env.LANG || Intl.DateTimeFormat().resolvedOptions().locale
-  return /^zh/i.test(tag) ? 'zh-CN' : 'en'
-}

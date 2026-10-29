@@ -49,8 +49,8 @@ export async function synthesizeClip(speech: SpeechService, said: { text: string
     ...options.lexicon ? { lexicon: options.lexicon } : {},
   }
   const synthesis = options.cacheOnly ? await speech.lookup?.(request, signal) : await speech.synthesize(request, signal)
-  if (!synthesis) throw new Error('voiceover is not generated for the current script and voice; generate it explicitly')
-  if (typeof synthesis.audio !== 'string') throw new Error('the Node speech service gave no file of its cache')
+  if (!synthesis) throw new Error('voiceover-not-generated')
+  if (typeof synthesis.audio !== 'string') throw new Error('voiceover-cache-missing')
   const engineWords = synthesis.words?.length
     ? synthesis.words
     : await speech.alignWords?.(synthesis.key, { lang: options.lang, transcribe: !options.cacheOnly && options.alignByTranscription !== false }, signal)

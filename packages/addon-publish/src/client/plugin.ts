@@ -13,7 +13,7 @@ const ToolbarToggle = () => createElement(PmContrastToggle, { compact: true })
 let unregister: Unsubscribe[] = []
 
 export const publishPlugin: PluginDefinition = {
-  manifest: { id: PUBLISH_ID, version, kernel: '^1.0.0', requires: [{ token: TOOLBAR, optional: true }] },
+  manifest: { id: PUBLISH_ID, name: { 'zh-CN': '发布', en: 'Publishing' }, version, kernel: '^1.0.0', requires: [{ token: TOOLBAR, optional: true }] },
   setup(ctx) {
     initHighContrast()
     const toolbar = ctx.tryGet(TOOLBAR)

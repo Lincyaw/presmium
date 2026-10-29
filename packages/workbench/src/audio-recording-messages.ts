@@ -24,7 +24,7 @@ type Messages = typeof zh
 const en: Messages = {
   trim: 'Recording range', captionReview: 'Captions are not aligned to the trimmed recording. Review them.',
   title: 'Original audio', source: 'Original audio for this step', choose: 'Choose Saved Audio', removedAudio: 'Original audio was removed', adopt: 'Use as Step Voiceover', adopted: 'Applied', retryAdoption: 'Retry', cancelAdoption: 'Cancel', adoptionSourceChanged: 'The document changed. Retry.', adoptionFailed: 'Couldn’t use this audio. Try again.', start: 'Start Recording', stop: 'Stop Recording', cancel: 'Cancel', cancelTake: 'Discard This Recording', rerecord: 'Record Again',
-  audition: 'Listen', stopAudition: 'Stop Listening', save: 'Save as Audio Asset', saving: 'Saving original audio…', retry: 'Retry', discard: 'Discard Candidate',
+  audition: 'Play Sample', stopAudition: 'Stop Sample', save: 'Save as Audio Asset', saving: 'Saving original audio…', retry: 'Retry', discard: 'Discard Candidate',
   ready: 'Original audio candidate · Not saved', imported: 'Saved as an audio asset', requesting: 'Waiting for microphone permission', recording: 'Recording', stopping: 'Finishing recording…',
   cancelSave: 'Cancel', currentSource: 'Finish and save the current document input first.', saveFailed: 'Couldn’t save the original audio. The recording is kept; try again.',
   discardTitle: 'Discard this original audio?', discardHint: 'The recording that is not saved will be deleted. Saved audio assets are kept.', keep: 'Keep Original Audio',
