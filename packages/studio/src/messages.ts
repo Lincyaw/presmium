@@ -5,6 +5,7 @@ export type Locale = 'zh-CN' | 'en'
 export interface StudioMessages {
   usage: string
   badPort(value: string): string
+  badUrl(option: string, value: string): string
   unexpectedArgument(argument: string): string
   notDirectory(dir: string): string
   log(file: string): string
@@ -33,8 +34,12 @@ presmium-studio-<散列>.log（每个安装一个）保存在 $XDG_STATE_HOME/pr
   --port <端口>  Presmium Studio 的端口（默认为 4320，被占用时取空闲端口）
   --host <地址>  改为监听本机在局域网中的这个地址，而不是 127.0.0.1，且没有登录：
                  任何能访问这个端口的人都以你的身份操作
+  --public-url <网址>   有反向代理在前面时浏览器打开的根地址（例如 Presmium 云端）；
+                 它的主机受信任，打印的网址用它。代理需保留 Host 并转发 WebSocket
+  --preview-url <来源>  同样情况下预览所在的来源，由代理转发到工作区服务
   -h, --help     显示本说明`,
     badPort: value => `--port 需要 0 到 65535 之间的端口号，而不是“${value}”。`,
+    badUrl: (option, value) => `${option} 需要一个完整的网址，例如 https://studio.example.com/，而不是“${value}”。`,
     unexpectedArgument: argument => `多余的参数“${argument}”。只能给出一个目录。`,
     notDirectory: dir => `${dir} 不是目录。请给出工作区的根目录或一份文稿所在的目录。`,
     log: file => `presmium studio: 日志在 ${file}`,
@@ -62,8 +67,13 @@ Options:
   --port <n>     Presmium Studio’s port (default: 4320, or a free one when that is in use)
   --host <addr>  listen on this address of the machine on the local network instead of 127.0.0.1, with
                  no login: whoever reaches the port works as you
+  --public-url <url>    the root browsers open when a reverse proxy fronts Studio (as in Presmium
+                 Cloud): its host is trusted, and the printed address uses it. The proxy keeps Host and
+                 forwards WebSockets
+  --preview-url <origin>  in that case, the origin of the previews, forwarded to the workspace service
   -h, --help     show this help`,
     badPort: value => `--port takes a port number from 0 to 65535, not “${value}”.`,
+    badUrl: (option, value) => `${option} takes a full address, such as https://studio.example.com/, not “${value}”.`,
     unexpectedArgument: argument => `Unexpected argument “${argument}”. Give one directory.`,
     notDirectory: dir => `${dir} is not a directory. Give the workspace root, or the directory of a document.`,
     log: file => `presmium studio: log ${file}`,

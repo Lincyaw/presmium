@@ -1,28 +1,34 @@
+import { randomUUID } from 'node:crypto'
+import type { IncomingMessage, ServerResponse } from 'node:http'
+import type { Duplex } from 'node:stream'
+import { fileURLToPath } from 'node:url'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
+import { getRequestListener } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
-import { fileURLToPath } from 'node:url'
-import { CloudError, requireId, requireInteger, requireText } from '../domain/errors.ts'
-import { PLANS } from '../domain/plans.ts'
+import { CloudError } from '../domain/errors.ts'
 import { authRoutes, createAuthService } from './auth.ts'
-import { billingRoutes, createBillingService } from './billing.ts'
+import type { CloudUser } from './auth.ts'
+import { studioHost, studioOrigins } from './config.ts'
 import type { CloudConfig } from './config.ts'
 import { Database } from './database.ts'
-import { Documents } from './documents.ts'
-import { Spaces } from './spaces.ts'
+import { Gateway } from './gateway.ts'
+import { AccessTokens, registerMcp } from './mcp.ts'
+import { Shares } from './shares.ts'
 import { ObjectStorage } from './storage.ts'
-import { Usage } from './usage.ts'
-import { registerRuntimeRoutes } from './runtime-http.ts'
-import { registerCloudMcpRoutes } from './mcp-routes.ts'
-import { workbenchRoutes } from './workbench-routes.ts'
-import { registerRuntimeAccess } from './runtime-access.ts'
-import { registerAdmissionRoutes } from './admission.ts'
-import { registerContentRoutes } from './content.ts'
+import { Studios } from './studios.ts'
 
+/** The console (login, the Studio, sharing, MCP access), the shared sites, and the gateway to every Studio. */
 export async function createCloudApp(config: CloudConfig, database?: Database) {
   const db = database ?? new Database(config.databaseUrl)
-  const auth = await createAuthService(db, config.auth), spaces = new Spaces(db, config.publicUrl), documents = new Documents(db, spaces), usage = new Usage(db)
-  const billing = createBillingService(db, config.billing), storage = config.storage ? new ObjectStorage(db, config.storage) : undefined
+  const auth = await createAuthService(db, config.auth)
+  const studios = new Studios(db, config.runtime.credentialKey), storage = new ObjectStorage(config.storage)
+  const shares = new Shares(db, storage, studios, config.contentUrl), tokens = new AccessTokens(db)
+  const gateway = new Gateway(db, config, studios, auth)
+  const publicHost = new URL(config.publicUrl).host.toLowerCase(), contentHost = new URL(config.contentUrl).host.toLowerCase()
+  // A share whose snapshot was cut off by a restart is failed, not pending forever.
+  await db.query(`UPDATE shares SET state = 'failed', error_code = 'share-interrupted', updated_at = now() WHERE state = 'pending' AND updated_at < now() - interval '30 minutes'`)
+
   const app = new Hono()
   app.onError((error, c) => {
     if (error instanceof CloudError) return c.json({ error: error.code, ...error.details ? { details: error.details } : {} }, error.status as 400)
@@ -32,112 +38,96 @@ export async function createCloudApp(config: CloudConfig, database?: Database) {
   app.use('*', async (c, next) => {
     c.header('X-Content-Type-Options', 'nosniff')
     c.header('Referrer-Policy', 'same-origin')
-    if (c.req.path.startsWith('/api/') || c.req.path.startsWith('/mcp')) c.header('Cache-Control', 'no-store')
+    const host = c.req.header('host')?.toLowerCase()
+    // The content origin serves shared sites only; the console's routes and cookies never run there.
+    if (host === contentHost && host !== publicHost && !c.req.path.startsWith('/p/') && c.req.path !== '/health') return c.text('Not found', 404)
+    if (c.req.path.startsWith('/api/') || c.req.path === '/mcp') c.header('Cache-Control', 'no-store')
     await next()
   })
-  const jsonLimit = bodyLimit({ maxSize: 3 << 20, onError: c => c.json({ error: 'request-too-large' }, 413) })
-  app.use('/api/*', async (c, next) => /^\/api\/spaces\/[^/]+\/(?:objects|presmium\/document\/image)$/.test(c.req.path) && c.req.method === 'POST' ? next() : jsonLimit(c, next))
+  app.use('/api/*', bodyLimit({ maxSize: 1 << 20, onError: c => c.json({ error: 'request-too-large' }, 413) }))
   app.get('/health', c => c.json({ status: 'ok' }))
   app.get('/ready', async c => { await db.query('SELECT 1'); return c.json({ status: 'ready' }) })
   authRoutes(app, auth)
-  const current = async (request: Request) => { const user = await auth.requireUser(request); await spaces.ensurePersonal(user); return user }
-  const mutate = async (request: Request) => { await auth.assertCsrf(request); return current(request) }
-  const accountOwner = async (userId: string, accountId: string) => {
-    const row = (await db.query('SELECT id FROM spaces WHERE billing_account_id=$1', [requireId(accountId)])).rows[0]
-    if (!row) throw new CloudError(404, 'space-not-found')
-    await spaces.authorize(userId, row.id, 'manage')
+
+  const spaceOf = async (user: CloudUser): Promise<string> => {
+    await db.query('INSERT INTO spaces (id, owner_id) VALUES ($1, $2) ON CONFLICT (owner_id) DO NOTHING', [randomUUID(), user.id])
+    return (await db.query<{ id: string }>('SELECT id FROM spaces WHERE owner_id = $1', [user.id])).rows[0]!.id
   }
-  billingRoutes(app, { service: billing, requireUser: auth.requireUser, assertCsrf: auth.assertCsrf, authorizeAccount: accountOwner })
+  const current = async (request: Request) => { const user = await auth.requireUser(request); return { user, space: await spaceOf(user) } }
+  const mutate = async (request: Request) => { await auth.assertCsrf(request); return current(request) }
+  const studioView = async (space: string) => {
+    const studio = await studios.get(space)
+    return { ...studio, url: studioOrigins(config, studio.slug).studio }
+  }
+
   app.get('/api/me', async c => {
-    const response = await app.request(new URL('/api/auth/session', config.publicUrl).href, { headers: c.req.raw.headers })
-    const session = await response.json() as Record<string, unknown>
-    if (session.user) await spaces.ensurePersonal(session.user as Parameters<Spaces['ensurePersonal']>[0])
-    return c.json({ ...session, capabilities: { oidc: true, ai: false, billing: billing.configured, storage: Boolean(storage), runtime: Boolean(config.runner) } })
+    const user = await auth.user(c.req.raw)
+    if (!user) return c.json({ user: null })
+    const session = await (await app.request(new URL('/api/auth/session', config.publicUrl).href, { headers: c.req.raw.headers })).json() as { csrfToken: string | null }
+    return c.json({ user, csrfToken: session.csrfToken, mcpUrl: new URL('/mcp', config.publicUrl).href })
   })
-  app.get('/api/spaces', async c => c.json({ spaces: await spaces.list((await current(c.req.raw)).id) }))
-  app.post('/api/spaces', async c => { const user = await mutate(c.req.raw), body = await c.req.json(); return c.json({ space: await spaces.create(user, body.name) }, 201) })
-  app.get('/api/spaces/:sid/members', async c => c.json(await spaces.members((await current(c.req.raw)).id, c.req.param('sid'))))
-  app.post('/api/spaces/:sid/members', async c => c.json({ invitation: await spaces.invite(await mutate(c.req.raw), c.req.param('sid'), await c.req.json()) }, 201))
-  app.delete('/api/spaces/:sid/members/:uid', async c => { await spaces.removeMember((await mutate(c.req.raw)).id, c.req.param('sid'), c.req.param('uid')); return c.json({ removed: true }) })
-  app.delete('/api/spaces/:sid/invitations/:id', async c => { await spaces.revokeInvitation((await mutate(c.req.raw)).id, c.req.param('sid'), c.req.param('id')); return c.json({ revoked: true }) })
-  app.post('/api/invitations/:token/accept', async c => c.json(await spaces.accept(await mutate(c.req.raw), c.req.param('token'))))
-  app.get('/api/spaces/:sid/tokens', async c => c.json({ tokens: await spaces.listTokens((await current(c.req.raw)).id, c.req.param('sid')) }))
-  app.post('/api/spaces/:sid/tokens', async c => c.json({ token: await spaces.createToken((await mutate(c.req.raw)).id, c.req.param('sid'), await c.req.json()) }, 201))
-  app.delete('/api/spaces/:sid/tokens/:id', async c => { await spaces.revokeToken((await mutate(c.req.raw)).id, c.req.param('sid'), c.req.param('id')); return c.json({ revoked: true }) })
-  app.get('/api/spaces/:sid/documents', async c => c.json({ documents: await documents.list((await current(c.req.raw)).id, c.req.param('sid')) }))
-  app.post('/api/spaces/:sid/documents', async c => { const user = await mutate(c.req.raw), body = await c.req.json(); return c.json({ document: await documents.create(user.id, c.req.param('sid'), body.title, body.lang) }, 201) })
-  app.get('/api/spaces/:sid/documents/:id', async c => c.json(await documents.read((await current(c.req.raw)).id, c.req.param('sid'), c.req.param('id'))))
-  app.post('/api/spaces/:sid/documents/:id/plan', async c => c.json(await documents.plan((await mutate(c.req.raw)).id, c.req.param('sid'), c.req.param('id'), await c.req.json())))
-  app.post('/api/spaces/:sid/documents/:id/apply', async c => { const user = await mutate(c.req.raw), body = await c.req.json(); return c.json(await documents.apply(user.id, c.req.param('sid'), c.req.param('id'), body.planId, body.change)) })
-  app.post('/api/spaces/:sid/documents/:id/change', async c => c.json(await documents.change((await mutate(c.req.raw)).id, c.req.param('sid'), c.req.param('id'), await c.req.json())))
-  app.get('/api/spaces/:sid/documents/:id/history', async c => c.json(await documents.historyPage((await current(c.req.raw)).id, c.req.param('sid'), c.req.param('id'), { cursor: c.req.query('cursor') })))
-  app.post('/api/spaces/:sid/documents/:id/restore', async c => c.json(await documents.restore((await mutate(c.req.raw)).id, c.req.param('sid'), c.req.param('id'), await c.req.json())))
-  app.get('/api/spaces/:sid/usage', async c => {
-    const member = await spaces.authorize((await current(c.req.raw)).id, c.req.param('sid'))
-    return c.json({ usage: await usage.read(member.billingAccountId) })
-  })
-  app.put('/api/spaces/:sid/budget', async c => {
-    const member = await spaces.authorize((await mutate(c.req.raw)).id, c.req.param('sid'), 'manage'), body = await c.req.json()
-    await usage.setBudget(member.billingAccountId, requireInteger(body.monthlyLimitMinor)); return c.json({ usage: await usage.read(member.billingAccountId) })
-  })
-  app.get('/api/spaces/:sid/billing', async c => {
-    const member = await spaces.authorize((await current(c.req.raw)).id, c.req.param('sid'), 'manage')
-    return c.json({ billing: { ...await billing.subscription(member.billingAccountId), available: billing.configured, plans: Object.values(PLANS).map(plan => ({ ...plan, name: plan.id })) } })
-  })
-  for (const action of ['checkout', 'portal'] as const) app.post(`/api/spaces/:sid/billing/${action}`, async c => {
-    const member = await spaces.authorize((await mutate(c.req.raw)).id, c.req.param('sid'), 'manage'), body = action === 'checkout' ? await c.req.json() : {}
-    return c.json(action === 'checkout' ? await billing.checkout(member.billingAccountId, requireText(body.planId ?? body.plan), requireText(body.requestId)) : await billing.portal(member.billingAccountId))
-  })
-  app.get('/api/runtime/profiles', async c => { await current(c.req.raw); return c.json({ profiles: config.runtime.profiles.map(({ id, kind, cpu, memoryBytes, diskBytes, maxDurationSeconds, pricePerMinuteMinor }) => ({ id, name: id, kind, cpu, memoryBytes, diskBytes, maxDurationSeconds, pricePerMinuteMinor })) }) })
-
-  const runtime = registerRuntimeRoutes(app, { auth, spaces, config })
-  const admission = registerAdmissionRoutes(app, { db, auth, spaces, documents, usage, storage, runtime: runtime.client, config })
-  const content = registerContentRoutes(app, { db, spaces, documents, storage, config, auth, admission })
-  const runtimeAccess = runtime.client ? registerRuntimeAccess(app, { db, auth, spaces, runtime: runtime.client, publicUrl: config.publicUrl, runtimeUrl: config.runtimeUrl }) : undefined
-  const mcp = registerCloudMcpRoutes(app, { auth, spaces, documents, usage, admission, runtime: runtime.client, profiles: config.runtime.profiles, storage, publicUrl: config.publicUrl })
-  const workbench = workbenchRoutes(app, { db, spaces, documents, current, mutate, publicUrl: config.publicUrl, content, storage, admission })
-  app.get('/api/spaces/:sid/documents/:id/editor', async c => {
-    const user = await current(c.req.raw), member = await spaces.authorize(user.id, c.req.param('sid'))
-    await documents.read(user.id, c.req.param('sid'), c.req.param('id'))
-    return c.json({ available: true, readOnly: member.role === 'reader', apiBase: `/api/spaces/${c.req.param('sid')}/presmium/`, document: c.req.param('id') })
-  })
-
-  app.get('/api/spaces/:sid/objects/:sha', async c => {
-    const spaceId = c.req.param('sid'); await spaces.authorize((await current(c.req.raw)).id, spaceId)
-    if (!storage) throw new CloudError(503, 'asset-storage-unavailable')
-    if (!/^[a-f0-9]{64}$/.test(c.req.param('sha'))) throw new CloudError(400, 'invalid-object-key')
-    const object = await storage.get(spaceId, `spaces/${spaceId}/${c.req.param('sha')}`)
-    return new Response(object.body, { headers: { 'Content-Type': 'application/octet-stream', 'Content-Disposition': 'attachment', 'Content-Length': String(object.bytes), 'X-Content-Type-Options': 'nosniff' } })
-  })
-  app.post('/api/spaces/:sid/objects', async c => {
-    const spaceId = c.req.param('sid'); await spaces.authorize((await mutate(c.req.raw)).id, spaceId, 'write')
-    if (!storage) throw new CloudError(503, 'asset-storage-unavailable')
-    const limit = 100 * 1024 * 1024
-    if (Number(c.req.header('content-length')) > limit) throw new CloudError(413, 'asset-too-large')
-    const reader = c.req.raw.body?.getReader(), chunks: Uint8Array[] = []
-    let size = 0
+  app.get('/api/studio', async c => c.json({ studio: await studioView((await current(c.req.raw)).space) }))
+  app.post('/api/studio/start', async c => { const { space } = await mutate(c.req.raw); await studios.start(space); return c.json({ studio: await studioView(space) }) })
+  app.post('/api/studio/stop', async c => { const { space } = await mutate(c.req.raw); await studios.stop(space); gateway.forget(space); return c.json({ studio: await studioView(space) }) })
+  // A navigation: the console's session cookie (SameSite=Lax) opens the owner's own running Studio.
+  app.get('/api/studio/open', async c => {
+    const user = await auth.user(c.req.raw)
+    if (!user) return c.redirect('/')
+    const space = await spaceOf(user)
     try {
-      while (reader) {
-        const { done, value } = await reader.read()
-        if (done) break
-        size += value.byteLength
-        if (size > limit) { await reader.cancel(); throw new CloudError(413, 'asset-too-large') }
-        chunks.push(value)
-      }
-    } finally { reader?.releaseLock() }
-    return c.json(await storage.put(spaceId, Buffer.concat(chunks), c.req.header('content-type') ?? 'application/octet-stream'), 201)
+      return c.redirect(await gateway.open(c.req.raw, user, space, { document: c.req.query('document'), id: c.req.query('id') }), 303)
+    } catch (error) {
+      if (error instanceof CloudError && error.status === 409) return c.redirect(`/studio${new URL(c.req.url).search}`, 303)
+      throw error
+    }
   })
+  app.get('/api/documents', async c => {
+    const { space } = await current(c.req.raw)
+    const connection = await studios.connection(space).catch(() => undefined)
+    if (!connection) return c.json({ documents: null })
+    return c.json(await (await studios.control(connection, '/documents')).json())
+  })
+
+  app.get('/api/tokens', async c => c.json({ tokens: await tokens.list((await current(c.req.raw)).space) }))
+  app.post('/api/tokens', async c => { const { user, space } = await mutate(c.req.raw); return c.json({ token: await tokens.create(space, user.id, await c.req.json()) }, 201) })
+  app.delete('/api/tokens/:id', async c => { const { space } = await mutate(c.req.raw); await tokens.revoke(space, c.req.param('id')); return c.json({ revoked: true }) })
+
+  app.get('/api/shares', async c => c.json({ shares: await shares.list((await current(c.req.raw)).space) }))
+  app.post('/api/shares', async c => { const { user, space } = await mutate(c.req.raw), body = await c.req.json(); return c.json({ share: await shares.create(space, user, body.document, body.title) }, 201) })
+  app.delete('/api/shares/:id', async c => { const { space } = await mutate(c.req.raw); await shares.revoke(space, c.req.param('id')); return c.json({ revoked: true }) })
+  app.get('/api/shared/:slug', async c => c.json({ share: await shares.describe(c.req.param('slug')) }))
+  app.post('/api/shared/:slug/fork', async c => {
+    const { space } = await mutate(c.req.raw)
+    const forked = await shares.fork(c.req.param('slug'), space)
+    return c.json({ ...forked, open: `/api/studio/open?${new URLSearchParams({ document: forked.document, id: forked.id })}` }, 201)
+  })
+
+  // Caddy's on-demand TLS asks here (inside the deployment network) before issuing a Studio host's certificate.
+  app.get('/internal/tls', async c => {
+    const host = c.req.header('host')?.toLowerCase()
+    if (host === publicHost || host === contentHost) return c.text('Not found', 404)
+    const named = studioHost(config, c.req.query('domain'))
+    return named && await studios.bySlug(named.slug) ? c.text('ok') : c.text('unknown', 404)
+  })
+  shares.routes(app, contentHost)
+  registerMcp(app, { tokens, studios, gateway, publicUrl: config.publicUrl })
   app.get('/api/*', c => c.json({ error: 'route-not-found' }, 404))
   const web = fileURLToPath(new URL('../../dist/web/', import.meta.url))
   app.use('/*', serveStatic({ root: web }))
   app.get('*', serveStatic({ root: web, path: 'index.html' }))
-  let checking = false
-  const recover = async () => { if (checking) return; checking = true; try { await billing.processPendingEvents() } catch (error) { process.stderr.write(`cloud billing recovery: ${error instanceof CloudError ? error.code : 'failed'}\n`) } finally { checking = false } }
-  const interval = setInterval(() => void recover(), 5000); interval.unref()
-  void recover()
+
+  const console = getRequestListener(app.fetch)
   return {
-    app, db, auth, spaces, documents, usage, billing, storage, admission, content,
-    async upgrade(...args: Parameters<typeof runtime.upgrade>) { if (!await runtimeAccess?.upgrade(...args)) await runtime.upgrade(...args) },
-    async close() { clearInterval(interval); await runtimeAccess?.close(); await workbench.close(); await mcp.close(); await storage?.close(); if (!database) await db.close() },
+    app, db, auth, studios, storage, gateway,
+    /** The Node request listener: Studio hosts go to the gateway, everything else to the console. */
+    listener(request: IncomingMessage, response: ServerResponse) {
+      if (gateway.handles(request)) void gateway.web(request, response)
+      else void console(request, response)
+    },
+    async upgrade(request: IncomingMessage, socket: Duplex, head: Buffer) {
+      if (gateway.handles(request)) await gateway.upgrade(request, socket, head)
+      else socket.destroy()
+    },
+    async close() { gateway.close(); storage.close(); if (!database) await db.close() },
   }
 }

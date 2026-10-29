@@ -4,250 +4,78 @@ project:
   - typescript
 requirements:
 - id: REQ-001
-  title: 可独立部署的云产品边界
-  description: 云账号与执行控制面独立于本地工具链，文稿继续使用唯一 TeachingDocument 模型。
+  title: 每个用户一个完整的 Presmium Studio
+  description: 注册登录后得到与本机 presmium studio 相同的全部功能（AI 助手、编辑、预览、放映、讲授制作、配音、诊断、导出），云端不另写编辑器或文稿存储。
   priority: P0
   status: implemented
+  source: 用户决定云端采用每用户一个 Studio 容器的方案，删除原有的数据库文稿与部分功能的实现。
+  code:
+  - path: deploy/cloud/studio/Dockerfile
+  - path: deploy/cloud/studio/entry.mjs
+  - path: packages/cloud/src/node/studios.ts
+  - path: packages/studio/src/studio.ts
   docs:
   - path: docs/rfc-cloud.md
-  - path: docs/cloud-deployment.md
-  - path: docs/benchmarks/cloud-foundation-2026-10-29.md
-  source: 用户明确要求设计、实现与 Linux 部署。
-  code:
-  - path: packages/cloud/package.json
-  - path: packages/cloud/src/node/app.ts
-  notes: 已通过真实服务、浏览器或 Linux 容器验收及交叉审查；范围和证据见 docs/benchmarks/cloud-foundation-2026-10-29.md。按仓库要求未新增测试或运行测试套件。
+  - path: docs/benchmarks/cloud-studio-2026-10-29.md
+  notes: 回环部署中真实打开 Studio、文稿与预览；AI 助手入口与模型设置存在，未用真实模型密钥对话。
 - id: REQ-002
   title: 注册登录与可撤销会话
-  description: 真实 OIDC 注册登录、浏览器会话、退出与到期，身份以 issuer 和 subject 唯一标识。
+  description: OIDC 注册登录，issuer 加 subject 唯一，退出后会话与 Studio 网关会话失效。
   priority: P0
   status: implemented
-  depends_on:
-  - REQ-001
   code:
   - path: packages/cloud/src/node/auth.ts
   - path: deploy/cloud/keycloak/presmium-realm.json
-  - path: deploy/cloud/keycloak/build-theme.mjs
-  - path: deploy/cloud/keycloak/theme/presmium/login/theme.properties
   docs:
-  - path: docs/rfc-cloud.md
   - path: docs/cloud-deployment.md
-  - path: docs/benchmarks/cloud-foundation-2026-10-29.md
-  - path: docs/benchmarks/cloud-auth-style-2026-10-29.md
-  notes: 已通过真实服务、浏览器或 Linux 容器验收及交叉审查；范围和证据见 docs/benchmarks/cloud-foundation-2026-10-29.md。按仓库要求未新增测试或运行测试套件。
+  notes: 两个账号经 Keycloak 注册表单真实注册；退出后网关会话失效依赖外键级联，未单独在浏览器中复验。
 - id: REQ-003
-  title: 空间与成员权限
-  description: 创建空间，邀请和撤销成员，每个文稿、附件、事件与执行入口核对成员角色和能力。
+  title: Studio 网关与隔离
+  description: 每个 Studio 两个主机名，一次性票据换取仅主机的网关 cookie，绑定所有者、登录会话与代次；保留 Host 转发 HTTP 与 WebSocket；每个 Studio 独立网络。
   priority: P0
   status: implemented
-  depends_on:
-  - REQ-002
   code:
-  - path: packages/cloud/src/node/spaces.ts
-  - path: packages/cloud/src/domain/plans.ts
+  - path: packages/cloud/src/node/gateway.ts
+  - path: packages/cloud/src/node/docker.ts
   docs:
   - path: docs/rfc-cloud.md
-  - path: docs/cloud-deployment.md
-  - path: docs/benchmarks/cloud-foundation-2026-10-29.md
-  notes: 已通过真实服务、浏览器或 Linux 容器验收及交叉审查；范围和证据见 docs/benchmarks/cloud-foundation-2026-10-29.md。按仓库要求未新增测试或运行测试套件。
+  notes: 无 cookie、他人的网关 cookie、未知主机均为 401；证书询问只批准已有的 Studio。
 - id: REQ-004
-  title: 持久文稿事务与历史
-  description: Web 与 MCP 共用持久化 canonical 文稿事务、基础版本检查、预检回执、幂等、工程文件和历史恢复。
+  title: 启停、空闲回收与时限
+  description: 控制台写入意图，执行代理按租约对账；空闲停止、看门狗强制最长运行时间；停止保留卷。
   priority: P0
   status: implemented
-  depends_on:
-  - REQ-003
   code:
-  - path: packages/cloud/src/node/documents.ts
-  - path: packages/cloud/src/node/workbench-routes.ts
-  docs:
-  - path: docs/rfc-cloud.md
-  - path: docs/cloud-deployment.md
-  - path: docs/benchmarks/cloud-foundation-2026-10-29.md
-  notes: 已通过真实服务、浏览器或 Linux 容器验收及交叉审查；范围和证据见 docs/benchmarks/cloud-foundation-2026-10-29.md。按仓库要求未新增测试或运行测试套件。
-- id: REQ-005
-  title: 远程 MCP
-  description: 可撤销的空间授权、真实 MCP 工具、OAuth 资源元数据和按调用者范围执行。
-  priority: P0
-  status: implemented
-  depends_on:
-  - REQ-004
-  code:
-  - path: packages/cloud/src/node/mcp-routes.ts
-  - path: packages/mcp/src/remote-tools.ts
-  docs:
-  - path: docs/rfc-cloud.md
-  - path: docs/cloud-deployment.md
-  - path: docs/benchmarks/cloud-foundation-2026-10-29.md
-  notes: 已通过真实服务、浏览器或 Linux 容器验收及交叉审查；范围和证据见 docs/benchmarks/cloud-foundation-2026-10-29.md。按仓库要求未新增测试或运行测试套件。
-- id: REQ-006
-  title: AI 计费可用性边界
-  description: 基础创作免费；云端 AI 未接入时，购买入口与支付服务均明确禁用，不能仅凭支付配置销售没有对应服务的商品。
-  priority: P0
-  status: implemented
-  depends_on:
-  - REQ-003
-  code:
-  - path: packages/cloud/src/node/billing.ts
-  docs:
-  - path: docs/rfc-cloud.md
-  - path: docs/cloud-deployment.md
-  - path: docs/benchmarks/cloud-foundation-2026-10-29.md
-  notes: 当前 capabilities.ai=false。即使提供 Stripe 配置，Checkout、门户与 webhook 仍拒绝调用；真实 AI 与支付联调未提供。免费策略复验见 docs/benchmarks/cloud-quality-2026-10-29.md。
-- id: REQ-007
-  title: 非 AI 零计费与历史更正
-  description: 编译、预览、放映、导出和交互环境实际预占与结算均为零；零预算不阻断免费功能，旧计量通过独立幂等退款记录退回并保留原账本。
-  priority: P0
-  status: implemented
-  depends_on:
-  - REQ-003
-  code:
-  - path: packages/cloud/src/node/usage.ts
-  - path: packages/cloud/src/node/admission.ts
-  docs:
-  - path: docs/rfc-cloud.md
-  - path: docs/cloud-deployment.md
-  - path: docs/benchmarks/cloud-foundation-2026-10-29.md
-  notes: 已通过真实服务、浏览器或 Linux 容器验收及交叉审查；范围和证据见 docs/benchmarks/cloud-foundation-2026-10-29.md。按仓库要求未新增测试或运行测试套件。
-- id: REQ-008
-  title: 持久隔离任务
-  description: 编译导出任务按不可变版本执行，持久队列、租约、取消、限额、重启对账与隔离输入输出。
-  priority: P0
-  status: implemented
-  depends_on:
-  - REQ-004
-  - REQ-007
-  code:
-  - path: packages/cloud/src/node/runner.ts
-  - path: packages/cloud/src/node/runtime-http.ts
-  - path: deploy/cloud/runtime/run.mjs
-  docs:
-  - path: docs/rfc-cloud.md
-  - path: docs/cloud-deployment.md
-  - path: docs/benchmarks/cloud-foundation-2026-10-29.md
-  notes: 已通过真实服务、浏览器或 Linux 容器验收及交叉审查；范围和证据见 docs/benchmarks/cloud-foundation-2026-10-29.md。按仓库要求未新增测试或运行测试套件。
-- id: REQ-009
-  title: Jupyter 交互环境
-  description: Linux 上创建、启动、停止和回收隔离的持久文件环境，真实内核执行、中断、富输出和终端。
-  priority: P0
-  status: implemented
-  depends_on:
-  - REQ-003
-  - REQ-007
-  code:
-  - path: packages/cloud/src/node/environments.ts
-  - path: packages/cloud/src/node/runtime-access.ts
-  - path: packages/cloud/src/node/runtime-storage.ts
+  - path: packages/cloud/src/node/studios.ts
   - path: packages/cloud/src/node/runtime-watchdog.ts
-  - path: packages/cloud/src/node/runtime-seccomp.ts
-  docs:
-  - path: docs/rfc-cloud.md
-  - path: docs/cloud-deployment.md
-  - path: docs/benchmarks/cloud-foundation-2026-10-29.md
-  notes: 已通过真实服务、浏览器或 Linux 容器验收及交叉审查；范围和证据见 docs/benchmarks/cloud-foundation-2026-10-29.md。按仓库要求未新增测试或运行测试套件。
-- id: REQ-010
-  title: 原生编辑与预览
-  description: 直接复用 Studio 的 DocumentView、编辑、版本历史、放映与 ExportPanel，仅由云端宿主提供路由、账号权限和标准服务适配；普通预览无需报价或任务面板。
+  notes: 控制台停止后重新打开，8 秒内就绪，副本提交仍在；空闲回收与看门狗时限未在本轮等到触发。
+- id: REQ-005
+  title: 共享与创建副本
+  description: 共享生成快照（源文件归档与网站），任何拿到链接的人可阅读；登录的读者把它创建为自己空间中的副本并在 Studio 中打开。
   priority: P0
   status: implemented
-  depends_on:
-  - REQ-004
-  - REQ-008
   code:
-  - path: packages/cloud/src/client/NativeEditor.tsx
-  - path: packages/cloud/src/node/workbench-routes.ts
-  - path: packages/cloud/src/node/content.ts
+  - path: packages/cloud/src/node/shares.ts
+  - path: deploy/cloud/studio/share-build.mjs
   docs:
   - path: docs/rfc-cloud.md
-  - path: docs/cloud-deployment.md
-  - path: docs/benchmarks/cloud-foundation-2026-10-29.md
-  notes: 已通过真实服务、浏览器或 Linux 容器验收及交叉审查；范围和证据见 docs/benchmarks/cloud-foundation-2026-10-29.md。按仓库要求未新增测试或运行测试套件。
-- id: REQ-011
-  title: 操作控制台
-  description: 中英文空间、成员、服务连接、真实存储用量、免费创作与 AI 可用性、私有环境控制，亮暗与桌面窄屏均可使用。
+  notes: 未登录读者看到共享网站（动画可交互）；第二个账号创建副本，提交为“Fork: 冒泡排序”并打开；原作者的工作区不变。
+- id: REQ-006
+  title: MCP 接入
+  description: 空间的访问令牌（只存散列，可撤销、可到期）经控制台 /mcp 转发到用户 Studio 中工作区服务的 MCP，需要时启动 Studio。
   priority: P0
   status: implemented
-  depends_on:
-  - REQ-003
-  - REQ-005
-  - REQ-006
-  - REQ-009
   code:
-  - path: packages/cloud/src/client/App.tsx
-  - path: packages/cloud/src/client/messages.ts
-  - path: packages/cloud/src/client/styles.css
-  docs:
-  - path: docs/rfc-cloud.md
-  - path: docs/cloud-deployment.md
-  - path: docs/benchmarks/cloud-foundation-2026-10-29.md
-  - path: docs/benchmarks/cloud-auth-style-2026-10-29.md
-  notes: 已通过真实服务、浏览器或 Linux 容器验收及交叉审查；范围和证据见 docs/benchmarks/cloud-foundation-2026-10-29.md。按仓库要求未新增测试或运行测试套件。
-- id: REQ-012
-  title: 存储与发布
-  description: 素材和不可变产物使用对象存储，私有预览授权，用户内容独立域，可公开发布课程。
+  - path: packages/cloud/src/node/mcp.ts
+  notes: MCP 客户端经控制台列出 80 个工具并调用 list_documents；无效令牌 401。
+- id: REQ-007
+  title: 部署与存储配额
+  description: Compose 部署、XFS 项目配额磁盘池（每个 Studio 一个 slot）、回环验证、备份恢复与升级说明。
   priority: P0
-  status: implemented
-  depends_on:
-  - REQ-004
-  - REQ-008
-  code:
-  - path: packages/cloud/src/node/storage.ts
-  - path: packages/cloud/src/node/content.ts
-  docs:
-  - path: docs/rfc-cloud.md
-  - path: docs/cloud-deployment.md
-  - path: docs/benchmarks/cloud-foundation-2026-10-29.md
-  notes: 已通过真实服务、浏览器或 Linux 容器验收及交叉审查；范围和证据见 docs/benchmarks/cloud-foundation-2026-10-29.md。按仓库要求未新增测试或运行测试套件。
-- id: REQ-013
-  title: Linux 部署与运维
-  description: 提供真实镜像、Compose、迁移、健康检查、配置、备份恢复、升级和执行节点隔离说明。
-  priority: P0
-  status: implemented
-  depends_on:
-  - REQ-002
-  - REQ-006
-  - REQ-008
-  - REQ-009
-  - REQ-012
+  status: partial
   code:
   - path: deploy/cloud/compose.yaml
-  - path: deploy/cloud/storage/provision.sh
-  - path: deploy/cloud/storage/mount.sh
-  - path: packages/cloud/src/node/cli.ts
+  - path: packages/cloud/src/node/runtime-storage.ts
   docs:
-  - path: docs/rfc-cloud.md
   - path: docs/cloud-deployment.md
-  - path: docs/benchmarks/cloud-foundation-2026-10-29.md
-  - path: docs/benchmarks/cloud-recovery-proof-2026-10-29.json
-  notes: 已通过真实服务、浏览器或 Linux 容器验收及交叉审查；范围和证据见 docs/benchmarks/cloud-foundation-2026-10-29.md。按仓库要求未新增测试或运行测试套件。
-- id: REQ-014
-  title: 真实验证与独立审查
-  description: 运行真实服务、浏览器和 Linux 执行，不以模拟服务或结构检查宣称完整完成，记录验证证据与剩余范围。
-  priority: P0
-  status: implemented
-  depends_on:
-  - REQ-010
-  - REQ-011
-  - REQ-013
-  code:
-  - path: docs/benchmarks/cloud-foundation-2026-10-29.md
-  docs:
-  - path: docs/rfc-cloud.md
-  - path: docs/cloud-deployment.md
-  - path: docs/benchmarks/cloud-foundation-2026-10-29.md
-  notes: 真实 OIDC 双用户、Web/MCP 编辑与冲突、编译/PDF/学生版发布、Jupyter/升级恢复、硬配额/外部watchdog、应用和身份库及完整持久文件/S3恢复均已验收，交叉审查通过。
-
-- id: REQ-015
-  title: 免费创作复用 Studio 的完整体验
-  description: 云端不重写预览状态机；首次放映自动准备当前保存版本，导出沿用公共面板，后台并发限制不暴露为报价确认。
-  priority: P0
-  status: implemented
-  depends_on: [REQ-007, REQ-010, REQ-014]
-  code:
-  - path: packages/cloud/src/client/NativeEditor.tsx
-  - path: packages/workbench/src/panels/DocumentView.tsx
-  - path: packages/cloud/src/node/workbench-outputs.ts
-  - path: deploy/cloud/runtime/warmup.mjs
-  docs:
-  - path: docs/benchmarks/cloud-quality-2026-10-29.md
-  notes: 已通过新免费 API、零预算编译、PDF下载与实际产物、历史恢复、前台放映和亮暗桌面/手机四组合验证。新增读取令牌与新版完整公开发布UI尚未验收；云端AI/支付和生产SMTP未接入。范围及审批边界见质量记录，旧报价流程不作为本项证据。
+  notes: 回环部署（无配额的普通目录）真实运行；XFS 配额池、公网 HTTPS 与按需证书未在本轮验证。

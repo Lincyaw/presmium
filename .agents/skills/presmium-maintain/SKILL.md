@@ -39,7 +39,7 @@ what change after which action, and which real run showed it.
 | Build or change the VS Code extension | [packaging](references/packaging.md#the-vs-code-extension), `packages/vscode/README.md` | The VSIX's service starts a preview outside the repository and the package works in an ordinary VS Code window |
 | A preview is slow, stalls or shows nothing in the studio | [Debugging and performance](references/debugging.md), `docs/debugging.md` | Evidence from logs and `pnpm debug:studio` names the step that fails; the same run passes after the fix |
 | Measure or improve performance | [Debugging and performance](references/debugging.md#performance-changes), `docs/architecture.md` 1.1 | Before and after measured alternately under the same load; outputs unchanged |
-| Add or operate hosted accounts, spaces, billing or execution | `docs/rfc-cloud.md`, `docs/cloud-deployment.md`, [cloud hosting](references/cloud.md) | Real OIDC, canonical edit, isolated Linux execution and budget receipts work; provider configuration and unverified flows remain explicit |
+| Add or operate the hosted cloud (accounts, per-user Studio containers, sharing, MCP access) | `docs/rfc-cloud.md`, `docs/cloud-deployment.md`, [cloud hosting](references/cloud.md) | A real loopback deployment gives each account the complete Studio, shares and copies work, and MCP reaches the user's Studio; unverified flows remain explicit |
 | Change only skills or docs | [Hand over](#hand-over) | `node scripts/check-skills.mjs` prints `skills ok`; task paths and examples checked by hand |
 | Run existing tests (only when the owner asks) | [Testing in the repository](references/testing.md) | Only the targeted cases ran; passed, skipped and not run reported separately |
 

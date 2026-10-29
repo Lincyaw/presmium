@@ -32,12 +32,12 @@ export class RuntimeWatchdog {
         try {
           const container = await this.engine.inspect(item.Id)
           const labels = container?.Config.Labels
-          if (!container?.State.Running || labels?.[`${label}.instance`] !== this.options.instanceId || !['job', 'environment'].includes(labels[`${label}.kind`] ?? '')) return
+          if (!container?.State.Running || labels?.[`${label}.instance`] !== this.options.instanceId || labels[`${label}.kind`] !== 'studio') return
           checked++
           const value = labels[`${label}.max-duration-seconds`] ?? ''
           const seconds = /^\d{1,5}$/.test(value) ? Number(value) : 0
           const started = Date.parse(container.State.StartedAt)
-          const invalid = !Number.isSafeInteger(seconds) || seconds < 1 || seconds > 86_400 || !Number.isFinite(started) || started <= 0 || started > Date.now() + 5000
+          const invalid = !Number.isSafeInteger(seconds) || seconds < 1 || seconds > 7 * 86_400 || !Number.isFinite(started) || started <= 0 || started > Date.now() + 5000
           if (invalid || Date.now() - started >= seconds * 1000) {
             // Zero grace also kills a tenant-stopped supervisor and processes ignoring SIGTERM.
             await this.engine.stop(container.Id, 0)

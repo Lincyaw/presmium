@@ -22,6 +22,12 @@ export interface StudioOptions {
   port?: number
   /** `--host`: one address of this machine to listen on instead of 127.0.0.1. */
   listenAddress?: string
+  /**
+   * When a reverse proxy fronts Studio (Presmium Cloud): the root browsers open, and the origin of the workspace
+   * service's previews. Their hosts are trusted and advertised; the proxy keeps `Host` and forwards upgrades.
+   */
+  publicUrl?: string
+  previewUrl?: string
   env?: NodeJS.ProcessEnv
   presmium?: string
   /** Live workspace-service output; the complete host output is also kept in `Studio.log`. */
@@ -141,7 +147,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
     throw new Error(t.badHost(listenAddress))
   }
   const port = await choosePort(listenAddress ?? '127.0.0.1', options.port)
-  const origins = [`http://${bracketIPv6(listenAddress ?? '127.0.0.1')}:${port}`, ...!listenAddress || listenAddress === '127.0.0.1' ? [`http://localhost:${port}`] : []]
+  const origins = options.publicUrl ? [new URL(options.publicUrl).origin] : [`http://${bracketIPv6(listenAddress ?? '127.0.0.1')}:${port}`, ...!listenAddress || listenAddress === '127.0.0.1' ? [`http://localhost:${port}`] : []]
 
   const home = studioHome(env)
   mkdirSync(home, { recursive: true, mode: 0o700 })
@@ -164,6 +170,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
       args: [
         ...listenAddress ? ['--host', listenAddress] : [],
         ...origins.flatMap(origin => ['--preview-origin', origin]),
+        ...options.previewUrl ? ['--public-url', new URL(options.previewUrl).origin] : [],
       ],
       env,
       onOutput: text => { log.write('serve', text); options.onServiceOutput?.(text) },
@@ -174,6 +181,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
     const dsh = launchNode('DeepSeek Harness', [
       dshBin(PACKAGE_DIR), ...launchArgs(profile, 'web'), '--port', String(port), '--no-open',
       ...listenAddress ? ['--host', listenAddress, '--trusted-host', `${bracketIPv6(listenAddress)}:${port}`] : [],
+      ...options.publicUrl ? ['--public-url', options.publicUrl, '--trusted-host', new URL(options.publicUrl).host] : [],
     ], {
       cwd: root,
       env: {

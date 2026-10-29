@@ -1,6 +1,10 @@
 {
 	email {$CLOUD_ACME_EMAIL}
 	admin off
+	# Each Studio's two hosts get their certificate on first use, for Studios that exist only.
+	on_demand_tls {
+		ask http://api:8787/internal/tls
+	}
 }
 
 {$CLOUD_APP_HOST} {
@@ -19,7 +23,7 @@
 {$CLOUD_CONTENT_HOST} {
 	header X-Content-Type-Options nosniff
 	header Referrer-Policy no-referrer
-	@content path /v/* /p/*
+	@content path /p/*
 	handle @content {
 		reverse_proxy api:8787 {
 			header_up -Cookie
@@ -32,14 +36,12 @@
 	}
 }
 
-{$CLOUD_RUNTIME_HOST} {
-	header X-Content-Type-Options nosniff
-	header Referrer-Policy no-referrer
-	@runtime path /runtime/*
-	handle @runtime {
-		reverse_proxy api:8787
+# s-<id> is a user's Studio and p-<id> its previews. The console checks every request and keeps Host.
+*.{$CLOUD_STUDIO_HOST} {
+	tls {
+		on_demand
 	}
-	handle {
-		respond 404
+	reverse_proxy api:8787 {
+		flush_interval -1
 	}
 }

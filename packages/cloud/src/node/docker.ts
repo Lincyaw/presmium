@@ -140,40 +140,35 @@ export class DockerEngine {
     catch (error) { if (!(error instanceof DockerError && error.dockerStatus === 404)) throw error }
   }
 
-  async network(name: string, labels: Record<string, string>, runnerContainerId?: string): Promise<void> {
-    try { await this.#request('POST', '/networks/create', { Name: name, Driver: 'bridge', Internal: true, CheckDuplicate: true, Labels: labels }) }
+  /** A private bridge for one tenant container; `internal: false` lets it reach the Internet. Only `connect` may join it. */
+  async network(name: string, labels: Record<string, string>, options: { internal: boolean, connect: readonly string[] }): Promise<void> {
+    try { await this.#request('POST', '/networks/create', { Name: name, Driver: 'bridge', Internal: options.internal, CheckDuplicate: true, Labels: labels }) }
     catch (error) { if (!(error instanceof DockerError && error.dockerStatus === 409)) throw error }
     const network = JSON.parse((await this.#request('GET', `/networks/${encodeURIComponent(name)}`)).body.toString('utf8')) as { Internal?: boolean, Labels?: Record<string, string> }
-    if (!network.Internal || Object.entries(labels).some(([key, value]) => network.Labels?.[key] !== value)) throw new CloudError(409, 'runtime-network-ownership-mismatch')
-    if (runnerContainerId) {
-      try { await this.#request('POST', `/networks/${encodeURIComponent(name)}/connect`, { Container: runnerContainerId }) }
+    if (Boolean(network.Internal) !== options.internal || Object.entries(labels).some(([key, value]) => network.Labels?.[key] !== value)) throw new CloudError(409, 'runtime-network-ownership-mismatch')
+    for (const container of options.connect) {
+      try { await this.#request('POST', `/networks/${encodeURIComponent(name)}/connect`, { Container: container }) }
       catch (error) {
-        // A connected runner is expected after a restart; prove that connection before accepting conflict.
-        const runner = await this.inspect(runnerContainerId)
-        if (!runner?.NetworkSettings.Networks?.[name]) throw error
+        // A connected service is expected after a restart; prove that connection before accepting conflict.
+        const connected = await this.inspect(container)
+        if (!connected?.NetworkSettings.Networks?.[name]) throw error
       }
     }
   }
 
-  async removeNetwork(name: string, labels: Record<string, string>, runnerContainerId?: string): Promise<void> {
-    let network: { Internal?: boolean, Labels?: Record<string, string>, Containers?: Record<string, unknown> }
+  async removeNetwork(name: string, labels: Record<string, string>, connected: readonly string[]): Promise<void> {
+    let network: { Labels?: Record<string, string>, Containers?: Record<string, unknown> }
     try { network = JSON.parse((await this.#request('GET', `/networks/${encodeURIComponent(name)}`)).body.toString('utf8')) }
     catch (error) { if (error instanceof DockerError && error.dockerStatus === 404) return; throw error }
-    if (!network.Internal || Object.entries(labels).some(([key, value]) => network.Labels?.[key] !== value)) throw new CloudError(409, 'runtime-network-ownership-mismatch')
-    const runner = runnerContainerId ? await this.inspect(runnerContainerId) : undefined
+    if (Object.entries(labels).some(([key, value]) => network.Labels?.[key] !== value)) throw new CloudError(409, 'runtime-network-ownership-mismatch')
+    const services = (await Promise.all(connected.map(id => this.inspect(id)))).filter(value => value !== undefined)
     const members = Object.keys(network.Containers ?? {})
-    if (members.some(id => id !== runner?.Id)) throw new CloudError(409, 'runtime-network-in-use')
-    if (runner && members.includes(runner.Id)) await this.#request('POST', `/networks/${encodeURIComponent(name)}/disconnect`, { Container: runner.Id, Force: false })
+    if (members.some(id => !services.some(service => service.Id === id))) throw new CloudError(409, 'runtime-network-in-use')
+    for (const service of services) if (members.includes(service.Id)) await this.#request('POST', `/networks/${encodeURIComponent(name)}/disconnect`, { Container: service.Id, Force: false })
     try { await this.#request('DELETE', `/networks/${encodeURIComponent(name)}`) }
     catch (error) { if (!(error instanceof DockerError && error.dockerStatus === 404)) throw error }
   }
 
-  async putArchive(id: string, path: string, archive: Buffer): Promise<void> {
-    await this.#request('PUT', `/containers/${encodeURIComponent(id)}/archive?path=${encodeURIComponent(path)}`, archive)
-  }
-  async archive(id: string, path: string, limit: number): Promise<Buffer> {
-    return (await this.#request('GET', `/containers/${encodeURIComponent(id)}/archive?path=${encodeURIComponent(path)}`, undefined, limit)).body
-  }
   async logs(id: string, limit = 1 << 20): Promise<string> {
     const raw = (await this.#request('GET', `/containers/${encodeURIComponent(id)}/logs?stdout=1&stderr=1&tail=200`, undefined, limit)).body
     // Docker non-TTY streams carry an eight-byte frame header; exclude framing from diagnostics.

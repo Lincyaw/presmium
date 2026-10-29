@@ -1,17 +1,50 @@
-import { serve } from '@hono/node-server'
+import { randomUUID } from 'node:crypto'
+import { createServer } from 'node:http'
+import type { Duplex } from 'node:stream'
 import { systemLocale } from '@lincyaw/kernel/node'
 import { createCloudApp } from './app.ts'
-import { readCloudConfig } from './config.ts'
+import { readCloudConfig, studioOrigins } from './config.ts'
+import type { CloudConfig } from './config.ts'
 import { Database } from './database.ts'
 import { CloudError } from '../domain/errors.ts'
-import { createRuntimeHttp } from './runtime-http.ts'
-import type { Duplex } from 'node:stream'
 import { DockerEngine } from './docker.ts'
+import { RuntimeStorage, UnenforcedStorage } from './runtime-storage.ts'
 import { RuntimeWatchdog } from './runtime-watchdog.ts'
+import { ObjectStorage } from './storage.ts'
+import { StudioRunner, Studios } from './studios.ts'
 
 const text = {
   'zh-CN': { help: '用法：presmium-cloud [serve|migrate|storage-init|runner|watchdog]\n通过 CLOUD_* 环境变量配置云服务。', started: '云服务已启动', failed: '云服务启动失败', missing: '请设置环境变量' },
   en: { help: 'Usage: presmium-cloud [serve|migrate|storage-init|runner|watchdog]\nConfigure the service using CLOUD_* environment variables.', started: 'Cloud service started', failed: 'Cloud service failed to start', missing: 'Missing environment variable' },
+}
+
+function stopped(close: () => Promise<void>): Promise<void> {
+  return new Promise(done => {
+    const stop = () => { process.off('SIGTERM', stop); process.off('SIGINT', stop); void close().finally(done) }
+    process.once('SIGTERM', stop); process.once('SIGINT', stop)
+  })
+}
+
+/** The trusted runner: the only process with Docker; it makes each Studio's container match its desired state. */
+async function runner(config: CloudConfig, db: Database): Promise<void> {
+  const storageOptions = config.runtime.storage
+  if (!storageOptions) throw new CloudError(500, 'configuration-missing', { key: 'CLOUD_RUNTIME_STORAGE_HOST' })
+  const options = { mountRoot: storageOptions.mountRoot, hostRoot: storageOptions.hostRoot, instanceId: config.runtime.instanceId }
+  const storage = storageOptions.unenforced ? new UnenforcedStorage(options) : new RuntimeStorage(db, options)
+  if (storageOptions.unenforced) process.stderr.write('studio runner: storage without quotas (loopback trial only)\n')
+  const engine = new DockerEngine({ socketPath: config.runtime.dockerSocket })
+  await engine.ping(); await storage.ready()
+  const connect = [config.runtime.runnerContainerId, config.runtime.gatewayContainerId].filter((id): id is string => Boolean(id))
+  const studios = new Studios(db, config.runtime.credentialKey)
+  const studioRunner = new StudioRunner(studios, engine, config.runtime.profile, { instanceId: config.runtime.instanceId, publicOrigins: slug => studioOrigins(config, slug), connect, storage })
+  const controller = new AbortController(), running = studioRunner.run(`runner-${randomUUID()}`, controller.signal)
+  const health = createServer((request, response) => {
+    void (async () => {
+      try { await engine.ping(); await storage.ready(); await db.query('SELECT 1'); response.writeHead(200).end('ready') }
+      catch { response.writeHead(503).end('unavailable') }
+    })()
+  }).listen(config.runtime.port, config.host)
+  await stopped(async () => { controller.abort(); await running; health.close(); engine.close() })
 }
 
 export async function main(args: string[]): Promise<number> {
@@ -27,10 +60,8 @@ export async function main(args: string[]): Promise<number> {
       const engine = new DockerEngine({ socketPath: process.env.CLOUD_DOCKER_SOCKET ?? '/var/run/docker.sock' })
       await engine.ping()
       const watchdog = new RuntimeWatchdog(engine, { instanceId }), controller = new AbortController()
-      const stop = () => controller.abort()
-      process.once('SIGTERM', stop); process.once('SIGINT', stop)
-      try { await watchdog.run(controller.signal) }
-      finally { process.off('SIGTERM', stop); process.off('SIGINT', stop); await watchdog.close(); engine.close() }
+      const running = watchdog.run(controller.signal)
+      await stopped(async () => { controller.abort(); await running; await watchdog.close(); engine.close() })
       return 0
     }
     if (command === 'migrate') {
@@ -38,50 +69,23 @@ export async function main(args: string[]): Promise<number> {
       db = new Database(process.env.CLOUD_DATABASE_URL); await db.migrate(); await db.close(); return 0
     }
     const config = await readCloudConfig()
-    db = new Database(config.databaseUrl); await db.migrate()
-    if (command === 'runner') {
-      const runtime = await createRuntimeHttp(config, db)
-      const server = serve({ fetch: runtime.app.fetch, hostname: config.host, port: config.runtime.port })
-      const sockets = new Set<Duplex>()
-      server.on('upgrade', (request, socket, head) => { sockets.add(socket); socket.once('close', () => sockets.delete(socket)); void runtime.upgrade(request, socket, head).catch(() => socket.destroy()) })
-      let stop!: () => void
-      let closing: Promise<void> | undefined
-      await new Promise<void>(done => {
-        stop = () => {
-          if (closing) return
-          server.close(() => done())
-          closing = runtime.close()
-          for (const socket of sockets) socket.destroy()
-          void closing.catch(() => {})
-        }
-        process.once('SIGTERM', stop); process.once('SIGINT', stop)
-      })
-      await closing
-      process.off('SIGTERM', stop); process.off('SIGINT', stop)
-      await db.close(); return 0
-    }
-    const cloud = await createCloudApp(config, db)
     if (command === 'storage-init') {
-      if (!cloud.storage) throw new CloudError(503, 'asset-storage-unavailable')
-      await cloud.storage.initialize(); await cloud.close(); await db.close(); return 0
+      const storage = new ObjectStorage(config.storage)
+      await storage.initialize(); storage.close(); return 0
     }
-    const server = serve({ fetch: cloud.app.fetch, hostname: config.host, port: config.port }, () => process.stdout.write(`${t.started}: ${config.publicUrl}\n`))
+    db = new Database(config.databaseUrl); await db.migrate()
+    if (command === 'runner') { await runner(config, db); await db.close(); return 0 }
+    const cloud = await createCloudApp(config, db)
+    const server = createServer((request, response) => cloud.listener(request, response))
     const sockets = new Set<Duplex>()
     server.on('upgrade', (request, socket, head) => { sockets.add(socket); socket.once('close', () => sockets.delete(socket)); void cloud.upgrade(request, socket, head).catch(() => socket.destroy()) })
-    let finish!: () => void
-    const stopped = new Promise<void>(done => { finish = done })
-    let closing: Promise<void> | undefined
-    const stop = () => {
-      if (closing) return
-      server.close(() => finish())
-      closing = cloud.close()
-      for (const socket of sockets) socket.destroy()
-      void closing.catch(() => {})
-    }
-    process.once('SIGTERM', stop); process.once('SIGINT', stop)
-    await stopped
-    process.off('SIGTERM', stop); process.off('SIGINT', stop)
-    await closing; await db.close(); return 0
+    server.listen(config.port, config.host, () => process.stdout.write(`${t.started}: ${config.publicUrl}\n`))
+    await stopped(async () => {
+      await new Promise<void>(done => { server.close(() => done()); server.closeAllConnections(); for (const socket of sockets) socket.destroy() })
+      await cloud.close()
+    })
+    await db.close()
+    return 0
   } catch (error) {
     await db?.close().catch(() => {})
     const detail = error instanceof CloudError ? error.code === 'configuration-missing' ? `${t.missing} ${error.details?.key}` : error.code : error instanceof Error ? error.message : String(error)

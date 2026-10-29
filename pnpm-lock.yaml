@@ -249,18 +249,18 @@ importers:
       '@lincyaw/addon-motion':
         specifier: workspace:*
         version: link:../../packages/addon-motion
-      '@lincyaw/design':
-        specifier: workspace:*
-        version: link:../../packages/design
       '@lincyaw/compiler':
         specifier: workspace:*
         version: link:../../packages/compiler
-      '@lincyaw/render-slides':
+      '@lincyaw/design':
         specifier: workspace:*
-        version: link:../../packages/render-slides
+        version: link:../../packages/design
       '@lincyaw/presmium':
         specifier: workspace:*
         version: link:../../packages/presmium
+      '@lincyaw/render-slides':
+        specifier: workspace:*
+        version: link:../../packages/render-slides
       '@lincyaw/web':
         specifier: workspace:*
         version: link:../../packages/web
@@ -845,27 +845,24 @@ importers:
       '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@lincyaw/mcp':
-        specifier: workspace:*
-        version: link:../mcp
-      '@lincyaw/web':
-        specifier: workspace:*
-        version: link:../web
       '@lincyaw/workbench':
         specifier: workspace:*
         version: link:../workbench
       hono:
         specifier: 4.13.13
         version: 4.13.13
-      image-size:
-        specifier: 2.0.4
-        version: 2.0.4
+      http-proxy-3:
+        specifier: 2.0.1
+        version: 2.0.1(supports-color@9.4.0)
       jiti:
         specifier: 2.7.0
         version: 2.7.0
       jose:
         specifier: 6.2.12
         version: 6.2.12
+      mime-types:
+        specifier: 3.0.2
+        version: 3.0.2
       openid-client:
         specifier: 6.8.8
         version: 6.8.8
@@ -878,10 +875,13 @@ importers:
       react-dom:
         specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
-      stripe:
-        specifier: 23.0.1
-        version: 23.0.1(@types/node@22.20.5)
+      tar:
+        specifier: 7.5.22
+        version: 7.5.22
     devDependencies:
+      '@types/mime-types':
+        specifier: ^3.0.1
+        version: 3.0.1
       '@types/pg':
         specifier: ^8.16.0
         version: 8.23.1
@@ -9650,15 +9650,6 @@ packages:
   strip-final-newline@4.0.0:
     resolution: {integrity: sha512-aulFJcD6YK8V1G7iRB5tigAP4TsHBZZrOV8pjV++zdUwmeV8uzbY7yn6h9MswN62adStNZFuCIx4haBnRuMDaw==}
     engines: {node: '>=18'}
-
-  stripe@23.0.1:
-    resolution: {integrity: sha512-VFLs9IAzSZ8GIm6/vqhjqOL0fbYrSNYCpgZ3LS3YkSi/i5RnyMpu/Hf9YxPTOCYwc3mZKU3IJvuvKffQH2NLMg==}
-    engines: {node: '>=20'}
-    peerDependencies:
-      '@types/node': '>=20'
-    peerDependenciesMeta:
-      '@types/node':
-        optional: true
 
   structured-source@4.0.0:
     resolution: {integrity: sha512-qGzRFNJDjFieQkl/sVOI2dUjHKRyL9dAJi2gCPGJLbJHBIkyOHxjuocpIEfbLioX+qSJpvbYdT49/YCdMznKxA==}
@@ -19907,10 +19898,6 @@ snapshots:
       ansi-regex: 6.4.0
 
   strip-final-newline@4.0.0: {}
-
-  stripe@23.0.1(@types/node@22.20.5):
-    optionalDependencies:
-      '@types/node': 22.20.5
 
   structured-source@4.0.0:
     dependencies:

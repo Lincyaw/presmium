@@ -7,12 +7,13 @@ import { pluginLogger } from '@lincyaw/compiler'
 import { createPresmiumMcp } from '@lincyaw/mcp'
 import type { McpCaller } from '@lincyaw/mcp'
 import { authenticate, machineHosts } from './auth.ts'
+import type { MachineHosts } from './auth.ts'
 import type { Refusal } from './auth.ts'
 import { ControlChannel } from './control.ts'
 import type { ApprovalPolicy } from './control.ts'
 import { FocusStore } from './focus.ts'
 import { DiagnosticStore } from './diagnostics.ts'
-import { bearer, createProxy, header, isLoopback, limitBody, listen, nodeServer, urlHost } from './http.ts'
+import { bearer, createProxy, header, isLoopback, limitBody, listen, nodeServer, normalizeHostName, urlHost } from './http.ts'
 import type { Decision, ProxyTarget } from './http.ts'
 import { McpTokens } from './mcp-access.ts'
 import { serverMcpHost } from './mcp-host.ts'
@@ -35,6 +36,8 @@ export interface ServerOptions {
   /** The origin to forward a path of the site to (in `serve`): the dev server that serves it. */
   forward?(path: string): string | undefined | Promise<string | undefined>
   operatorDir?: string
+  /** The address browsers use when a reverse proxy fronts the server: its host is trusted as this machine's, and pages are advertised under it. */
+  publicUrl?: string
   stateFile?: string
   mcp?(request: Request, access: McpCaller): Promise<Response>
   env?: NodeJS.ProcessEnv
@@ -45,6 +48,8 @@ export interface ServerOptions {
 
 export interface PresmiumServer {
   url: string
+  /** The address browsers use: `publicUrl` when given, else `url`. */
+  publicUrl: string
   port: number
   mcpToken: string
   services: [ServiceToken<unknown>, unknown][]
@@ -112,7 +117,9 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   const listenAddress = options.listenAddress ?? '127.0.0.1'
   const refused = remoteListenRefusal(options.mode, listenAddress, options.port)
   if (refused) throw new Error(refused)
-  const local = machineHosts(listenAddress)
+  const machine = machineHosts(listenAddress)
+  const publicHost = options.publicUrl ? normalizeHostName(new URL(options.publicUrl).host) : undefined
+  const local: MachineHosts = publicHost ? host => host === publicHost || machine(host) : machine
 
   const control = new ControlChannel({
     policy: options.approvals ?? {},
@@ -265,6 +272,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
 
   return {
     url,
+    publicUrl: options.publicUrl?.replace(/\/+$/, '') ?? url,
     port,
     mcpToken: mcpTokens.processMcpToken,
     services,

@@ -1,0 +1,10 @@
+{
+  "image": "presmium-cloud-studio:0.1.0",
+  "cpu": 2,
+  "memoryBytes": 4294967296,
+  "diskBytes": 4294967296,
+  "tmpBytes": 1073741824,
+  "pidsLimit": 2048,
+  "idleSeconds": 1800,
+  "maxDurationSeconds": 43200
+}

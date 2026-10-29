@@ -10,9 +10,7 @@ x-cloud-environment: &cloud-environment
   CLOUD_DATABASE_URL: postgresql://presmium:${CLOUD_DATABASE_PASSWORD:?Set CLOUD_DATABASE_PASSWORD}@database:5432/presmium
   CLOUD_PUBLIC_URL: ${CLOUD_PUBLIC_URL:?Set CLOUD_PUBLIC_URL}
   CLOUD_CONTENT_URL: ${CLOUD_CONTENT_URL:?Set CLOUD_CONTENT_URL}
-  CLOUD_RUNTIME_URL: ${CLOUD_RUNTIME_URL:?Set CLOUD_RUNTIME_URL}
-  CLOUD_INTERNAL_API_URL: http://api:8787
-  CLOUD_INPUT_SIGNING_KEY: ${CLOUD_INPUT_SIGNING_KEY:?Set CLOUD_INPUT_SIGNING_KEY}
+  CLOUD_STUDIO_URL: ${CLOUD_STUDIO_URL:?Set CLOUD_STUDIO_URL}
   CLOUD_OIDC_ISSUER: ${CLOUD_OIDC_ISSUER:?Set CLOUD_OIDC_ISSUER}
   CLOUD_OIDC_ISSUER_INTERNAL_URL: ${CLOUD_OIDC_ISSUER_INTERNAL_URL-http://keycloak:8080/realms/presmium}
   CLOUD_OIDC_CLIENT_ID: ${CLOUD_OIDC_CLIENT_ID:-presmium-cloud}
@@ -24,12 +22,9 @@ x-cloud-environment: &cloud-environment
   CLOUD_S3_BUCKET: ${CLOUD_S3_BUCKET:-presmium}
   CLOUD_S3_ACCESS_KEY_ID: ${CLOUD_S3_ACCESS_KEY_ID:?Set CLOUD_S3_ACCESS_KEY_ID}
   CLOUD_S3_SECRET_ACCESS_KEY: ${CLOUD_S3_SECRET_ACCESS_KEY:?Set CLOUD_S3_SECRET_ACCESS_KEY}
-  CLOUD_RUNNER_URL: ${CLOUD_RUNNER_URL:-http://runner:8788}
-  CLOUD_RUNNER_TOKEN: ${CLOUD_RUNNER_TOKEN:?Set CLOUD_RUNNER_TOKEN}
   CLOUD_CREDENTIAL_KEY: ${CLOUD_CREDENTIAL_KEY:?Set CLOUD_CREDENTIAL_KEY}
   CLOUD_INSTANCE_ID: ${CLOUD_INSTANCE_ID:-presmium-cloud}
-  CLOUD_PROFILES: /opt/presmium/deploy/cloud/profiles.json
-  CLOUD_INPUT_ORIGINS: http://api:8787,${CLOUD_S3_ENDPOINT:-http://object-store:9000},${CLOUD_PUBLIC_URL}
+  CLOUD_STUDIO_PROFILE: /opt/presmium/deploy/cloud/studio-profile.json
 
 x-cloud-service: &cloud-service
   image: presmium-cloud:${CLOUD_IMAGE_TAG:-0.1.0}
@@ -45,7 +40,7 @@ x-cloud-service: &cloud-service
   security_opt: [no-new-privileges:true]
   logging: *logs
   volumes:
-    - ./profiles.json:/opt/presmium/deploy/cloud/profiles.json:ro
+    - ./studio-profile.json:/opt/presmium/deploy/cloud/studio-profile.json:ro
 
 services:
   database:
@@ -160,31 +155,33 @@ services:
       object-store: { condition: service_started }
     networks: [services, data]
 
+  # The only service with Docker: it starts, stops and recovers each user's Studio container.
   runner:
     <<: *cloud-service
     container_name: ${CLOUD_COMPOSE_PROJECT:-presmium-cloud}-runner
     command: [node, packages/cloud/bin/presmium-cloud.mjs, runner]
     user: "0:0"
-    cap_add: [DAC_OVERRIDE, FOWNER]
+    cap_add: [DAC_OVERRIDE, FOWNER, CHOWN]
     environment:
       <<: *cloud-environment
       CLOUD_HOST: 0.0.0.0
       CLOUD_RUNNER_PORT: "8788"
       CLOUD_DOCKER_SOCKET: /var/run/docker.sock
       CLOUD_RUNNER_CONTAINER_ID: ${CLOUD_COMPOSE_PROJECT:-presmium-cloud}-runner
+      CLOUD_GATEWAY_CONTAINER_ID: ${CLOUD_COMPOSE_PROJECT:-presmium-cloud}-api
       CLOUD_RUNTIME_STORAGE_MOUNT: /runtime-pool
       CLOUD_RUNTIME_STORAGE_HOST: ${CLOUD_RUNTIME_STORAGE_HOST:?Set CLOUD_RUNTIME_STORAGE_HOST}
     volumes:
-      - ./profiles.json:/opt/presmium/deploy/cloud/profiles.json:ro
+      - ./studio-profile.json:/opt/presmium/deploy/cloud/studio-profile.json:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - ${CLOUD_RUNTIME_STORAGE_HOST:?Set CLOUD_RUNTIME_STORAGE_HOST}:/runtime-pool
     depends_on:
       migrate: { condition: service_completed_successfully }
-      object-store: { condition: service_started }
+      api: { condition: service_started }
     networks: [services, data]
     stop_grace_period: 45s
     healthcheck:
-      test: [CMD, node, --input-type=module, -e, "try { const r = await fetch('http://127.0.0.1:8788/ready'); process.exit(r.ok ? 0 : 1) } catch { process.exit(1) }"]
+      test: [CMD, node, --input-type=module, -e, "try { const r = await fetch('http://127.0.0.1:8788/'); process.exit(r.ok ? 0 : 1) } catch { process.exit(1) }"]
       start_period: 20s
       interval: 10s
       timeout: 5s
@@ -203,17 +200,15 @@ services:
     networks: [services]
     stop_grace_period: 10s
 
+  # The console, the shared sites and the gateway to every Studio (joined to each Studio's private network).
   api:
     <<: *cloud-service
+    container_name: ${CLOUD_COMPOSE_PROJECT:-presmium-cloud}-api
     command: [node, packages/cloud/bin/presmium-cloud.mjs, serve]
     environment:
       <<: *cloud-environment
       CLOUD_HOST: 0.0.0.0
       CLOUD_PORT: "8787"
-      CLOUD_STRIPE_SECRET_KEY: ${CLOUD_STRIPE_SECRET_KEY:-}
-      CLOUD_STRIPE_WEBHOOK_SECRET: ${CLOUD_STRIPE_WEBHOOK_SECRET:-}
-      CLOUD_STRIPE_PRICE_PRO: ${CLOUD_STRIPE_PRICE_PRO:-}
-      CLOUD_STRIPE_PRICE_TEAM: ${CLOUD_STRIPE_PRICE_TEAM:-}
     depends_on:
       storage-init: { condition: service_completed_successfully }
     networks: [services, data]
@@ -232,7 +227,7 @@ services:
       CLOUD_APP_HOST: ${CLOUD_APP_HOST:?Set CLOUD_APP_HOST}
       CLOUD_AUTH_HOST: ${CLOUD_AUTH_HOST:?Set CLOUD_AUTH_HOST}
       CLOUD_CONTENT_HOST: ${CLOUD_CONTENT_HOST:?Set CLOUD_CONTENT_HOST}
-      CLOUD_RUNTIME_HOST: ${CLOUD_RUNTIME_HOST:?Set CLOUD_RUNTIME_HOST}
+      CLOUD_STUDIO_HOST: ${CLOUD_STUDIO_HOST:?Set CLOUD_STUDIO_HOST}
       CLOUD_ACME_EMAIL: ${CLOUD_ACME_EMAIL:?Set CLOUD_ACME_EMAIL}
     ports:
       - "${CLOUD_BIND_ADDRESS:-0.0.0.0}:${CLOUD_HTTP_PORT:-80}:80"
@@ -247,10 +242,11 @@ services:
     networks: [services]
     logging: *logs
 
-  runtime-image:
-    profiles: [build-runtime]
-    image: presmium-cloud-runtime:0.1.0
-    build: { context: ../.., dockerfile: deploy/cloud/runtime/Dockerfile }
+  # Built once per release; the runner starts one container of it per user (studio-profile.json).
+  studio-image:
+    profiles: [build-studio]
+    image: presmium-cloud-studio:0.1.0
+    build: { context: ../.., dockerfile: deploy/cloud/studio/Dockerfile }
     command: [node, --version]
     network_mode: none
 

@@ -37,10 +37,10 @@ services:
     environment: &loopback
       CLOUD_PUBLIC_URL: http://app.localhost:${CLOUD_LOOPBACK_PORT:-18787}
       CLOUD_CONTENT_URL: http://content.localhost:${CLOUD_LOOPBACK_PORT:-18787}
-      CLOUD_RUNTIME_URL: http://runtime.localhost:${CLOUD_LOOPBACK_PORT:-18787}
+      CLOUD_STUDIO_URL: http://studio.localhost:${CLOUD_LOOPBACK_PORT:-18787}
       CLOUD_OIDC_ISSUER: http://auth.localhost:${CLOUD_LOOPBACK_PORT:-18787}/realms/presmium
       CLOUD_ALLOW_INSECURE_LOOPBACK: "true"
-      CLOUD_INPUT_ORIGINS: http://api:8787,${CLOUD_S3_ENDPOINT:-http://object-store:9000},http://app.localhost:${CLOUD_LOOPBACK_PORT:-18787}
+      CLOUD_STORAGE_UNENFORCED: ${CLOUD_STORAGE_UNENFORCED:-false}
   api:
     environment: *loopback
   runner:
@@ -50,6 +50,10 @@ services:
       CLOUD_APP_HOST: http://app.localhost
       CLOUD_AUTH_HOST: http://auth.localhost
       CLOUD_CONTENT_HOST: http://content.localhost
-      CLOUD_RUNTIME_HOST: http://runtime.localhost
+      CLOUD_STUDIO_HOST: studio.localhost
+    volumes: !override
+      - ./Caddyfile.loopback:/etc/caddy/Caddyfile:ro
+      - entrance-data:/data
+      - entrance-config:/config
     ports: !override
       - "127.0.0.1:${CLOUD_LOOPBACK_PORT:-18787}:80"

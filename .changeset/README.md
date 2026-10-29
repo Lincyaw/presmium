@@ -8,7 +8,7 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 
 | 包 | 发布到 | 说明 |
 |---|---|---|
-| `@lincyaw/cloud` | 否 | 托管产品：账号、空间、文稿事务、计费与 Linux 隔离执行（实施中） |
+| `@lincyaw/cloud` | 否 | 托管产品：账号、每个用户一个完整的 Presmium Studio 容器、共享与创建副本、MCP 接入（实验性） |
 | `@lincyaw/kernel` | npm | 共享内核：IR 与插件契约、服务注册、锚点、检查 |
 | `@lincyaw/host` | npm | 插件组件的宿主接口与设计系统的 Vue 组件 |
 | `@lincyaw/design` | npm | 设计系统：令牌、`pm-ui-*` 的类、字体与图标，产物与工作台共用，没有框架（`docs/design-dsh.md` 3.1 节） |
