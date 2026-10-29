@@ -1,8 +1,15 @@
 {
-  "{0} is not installed. Add it to the workspace, or set presmium.server.path.": "没有安装 {0}。请把它加入工作区，或设置 presmium.server.path。",
-  "Couldn’t start Presmium: {0}": "无法启动 Presmium：{0}",
+  "Show Output": "显示输出",
+  "Open lecture.json to preview or present this document.": "请打开 lecture.json，以预览或放映此文稿。",
   "Starting the preview…": "正在启动预览…",
-  "Couldn’t open the preview: {0}": "无法打开预览：{0}",
-  "Preview {0}": "预览 {0}",
-  "Presmium Preview": "Presmium 预览"
+  "Starting the visual editor…": "正在启动可视化编辑器…",
+  "Open Visual Editor": "打开可视化编辑器",
+  "Install Project Skills": "安装工程技能",
+  "Couldn’t open the preview. Check the Presmium output and try again.": "无法打开预览。请查看 Presmium 输出后重试。",
+  "Couldn’t open the presentation. Check the Presmium output and try again.": "无法打开放映。请查看 Presmium 输出后重试。",
+  "Couldn’t open the visual editor. Check the Presmium output and try again.": "无法打开可视化编辑器。请查看 Presmium 输出后重试。",
+  "Couldn’t stop the visual editor. Check the Presmium output and try again.": "无法停止可视化编辑器。请查看 Presmium 输出后重试。",
+  "Couldn’t install the project skills. Check the Presmium output and try again.": "无法安装工程技能。请查看 Presmium 输出后重试。",
+  "Installing the project skills…": "正在安装工程技能…",
+  "Installed {0} project skills; kept {1} existing skills.": "已安装 {0} 项工程技能，保留 {1} 项已有技能。"
 }

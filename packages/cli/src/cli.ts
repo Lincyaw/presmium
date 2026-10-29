@@ -63,6 +63,7 @@ interface Command {
 export async function main(argv: string[], options: MainOptions = {}): Promise<number> {
   const bundled = options.bundled ?? BUNDLED
   if (argv[0] === 'new') return runNewCommand(argv.slice(1), bundled)
+  if (argv[0] === 'skills') return (await import('@lincyaw/skills')).main(argv.slice(1))
   if (argv[0] === 'studio') return runStudioCommand(argv.slice(1), bundled, options.bin ?? PRESMIUM_BIN)
   let command: Command | 'help'
   try {

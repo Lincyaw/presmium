@@ -33,9 +33,9 @@ export async function load(url, context, next) {
   return next(url, context)
 }`))
 
-const SCOPE = ['workbench', 'dsh', 'design', 'studio', 'host', 'viewer', 'web', 'mcp', 'cli', 'presmium', 'create-presmium', 'vscode',
+const SCOPE = ['workbench', 'dsh', 'design', 'studio', 'host', 'viewer', 'web', 'mcp', 'cli', 'skills', 'presmium', 'create-presmium', 'vscode',
   ...readdirSync(join(root, 'packages')).filter(name => name.startsWith('addon-')).sort()]
-const CLI_PACKAGES = new Set(['cli', 'studio', 'presmium', 'create-presmium'])
+const CLI_PACKAGES = new Set(['cli', 'skills', 'studio', 'presmium', 'create-presmium'])
 const CJK = /[㐀-鿿豈-﫿]/
 const CJK_ANY = /[　-〿㐀-鿿豈-﫿＀-￯]/
 // Names that are the same in both languages (brands, formats, standards).
@@ -147,6 +147,11 @@ function packageOf(file) {
 
 function sources(dir, test = name => /\.(?:tsx?|mjs|js)$/.test(name) && !name.endsWith('.d.ts')) {
   if (!existsSync(dir)) return []
+  // Pack-time resource copies (including skill scene examples) are not this package’s interface source.
+  const packageDir = join(root, 'packages', packageOf(dir))
+  const manifest = join(packageDir, 'package.json')
+  const generated = existsSync(manifest) ? JSON.parse(readFileSync(manifest, 'utf8')).presmium?.generated ?? [] : []
+  if (generated.some(path => { const inside = relative(join(packageDir, path), dir); return inside === '' || !inside.startsWith('..') && !inside.startsWith(sep) })) return []
   if (statSync(dir).isFile()) return test(dir) ? [dir] : []
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name)

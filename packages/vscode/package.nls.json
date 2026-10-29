@@ -1,9 +1,14 @@
 {
   "displayName": "Presmium",
-  "description": "Edit lecture.json with the built-in JSON editor: schema completion, teaching graph diagnostics, code anchor navigation, and a preview that follows the current page",
+  "description": "Native JSON and code editing with diagnostics, live previews and presentations; open the shared visual editor for authoring and exports.",
   "category": "Presmium",
   "command.openPreview": "Open Preview to the Side",
+  "command.openStudio": "Open Visual Editor",
+  "command.present": "Present Document",
+  "command.stopStudio": "Stop Visual Editor",
   "configuration.title": "Presmium",
-  "configuration.server.runtime": "Node.js executable that runs the language server (Node.js 22.19 or later).",
-  "configuration.server.path": "Path to presmium-language-server.mjs. By default, the one of @lincyaw/language-server installed in the workspace, or else the extension’s own."
+  "configuration.server.runtime": "Node.js executable that runs the local services (Node.js 22.19 or later).",
+  "configuration.server.path": "Path to presmium-language-server.mjs. By default, the one installed in the workspace, or else the extension’s own.",
+  "capabilities.untrustedWorkspaces": "Presmium starts local services that can edit files and run project code.",
+  "command.installSkills": "Install Project Skills"
 }

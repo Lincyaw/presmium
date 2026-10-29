@@ -7,6 +7,7 @@ import { CLIENT_ID, isBootEntryLoaded, ROOT_CHILDREN, UI_LAYOUT, UI_SIDEBAR } fr
 import { syncDocumentContext } from './document-context.ts'
 import { FALLBACK_PANEL, registerFallbackLayout } from './fallback.tsx'
 import { createLayoutStore, LayoutController } from './layout.ts'
+import { connectLaunchTarget } from './launch-target.ts'
 import { CLIENT_MESSAGES } from './messages.ts'
 import { registerNavigationShell } from './navigation-shell.tsx'
 import { createObservable } from './observable.ts'
@@ -144,7 +145,7 @@ export function apply(ctx: DshClientContext): void {
   }
   registerBrand(ctx, workbench)
   registerAuthorSettings(ctx)
-  if (!nativeLayout) {
-    ctx.effect(() => restoreRootReturnPoint(workbench, reload.point), 'presmium: restore root return point')
-  }
+  ctx.inject(['layout'], inner => inner.effect(() => connectLaunchTarget(workbench,
+    () => nativeLayout ? () => {} : restoreRootReturnPoint(workbench, reload.point),
+    () => showEditor(inner.layout)), 'presmium: launch target and root return point'))
 }

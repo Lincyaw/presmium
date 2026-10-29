@@ -1,7 +1,7 @@
 {
   "name": "presmium-vscode",
   "displayName": "%displayName%",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "publisher": "presmium",
@@ -16,7 +16,7 @@
     "Programming Languages"
   ],
   "engines": {
-    "vscode": "^1.91.0"
+    "vscode": "^1.142.0"
   },
   "main": "./dist/extension.cjs",
   "l10n": "./l10n",
@@ -39,6 +39,29 @@
         "title": "%command.openPreview%",
         "category": "%category%",
         "icon": "$(open-preview)"
+      },
+      {
+        "command": "presmium.openStudio",
+        "title": "%command.openStudio%",
+        "category": "%category%",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "presmium.present",
+        "title": "%command.present%",
+        "category": "%category%",
+        "icon": "$(play)"
+      },
+      {
+        "command": "presmium.stopStudio",
+        "title": "%command.stopStudio%",
+        "category": "%category%"
+      },
+      {
+        "command": "presmium.installSkills",
+        "title": "%command.installSkills%",
+        "category": "%category%",
+        "icon": "$(book)"
       }
     ],
     "menus": {
@@ -47,6 +70,33 @@
           "command": "presmium.openPreview",
           "when": "resourceScheme == file && resourceFilename == lecture.json && editorLangId == json",
           "group": "navigation"
+        },
+        {
+          "command": "presmium.openStudio",
+          "when": "resourceScheme == file && resourceFilename == lecture.json && editorLangId == json",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "presmium.openStudio",
+          "when": "resourceScheme == file && resourceFilename == lecture.json",
+          "group": "navigation"
+        },
+        {
+          "command": "presmium.installSkills",
+          "when": "resourceScheme == file && (explorerResourceIsFolder || resourceFilename == lecture.json)",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "presmium.openPreview",
+          "when": "resourceScheme == file && resourceFilename == lecture.json && editorLangId == json"
+        },
+        {
+          "command": "presmium.present",
+          "when": "resourceScheme == file && resourceFilename == lecture.json && editorLangId == json"
         }
       ]
     },
@@ -56,12 +106,14 @@
         "presmium.server.runtime": {
           "type": "string",
           "default": "node",
-          "description": "%configuration.server.runtime%"
+          "description": "%configuration.server.runtime%",
+          "scope": "machine"
         },
         "presmium.server.path": {
           "type": "string",
           "default": "",
-          "description": "%configuration.server.path%"
+          "description": "%configuration.server.path%",
+          "scope": "machine"
         }
       }
     }
@@ -74,7 +126,9 @@
   "dependencies": {
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/language-server": "workspace:*",
-    "vscode-languageclient": "10.1.2"
+    "vscode-languageclient": "10.1.2",
+    "@lincyaw/studio": "workspace:*",
+    "@lincyaw/skills": "workspace:*"
   },
   "devDependencies": {
     "@types/vscode": "1.91.0",
@@ -83,5 +137,20 @@
     "esbuild": "0.21.5",
     "vscode-jsonrpc": "9.0.3",
     "yauzl": "3.4.0"
+  },
+  "files": [
+    "dist/extension.cjs",
+    "dist/lecture.schema.json",
+    "l10n",
+    "package.nls*.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "%capabilities.untrustedWorkspaces%"
+    },
+    "virtualWorkspaces": false
   }
 }

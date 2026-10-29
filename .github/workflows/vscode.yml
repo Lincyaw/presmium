@@ -3,12 +3,17 @@ name: VS Code extension
 on:
   push:
     branches: [main]
-    paths: ['packages/**', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.github/workflows/vscode.yml']
+    paths: ['packages/**', '.agents/skills/**', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.github/workflows/vscode.yml']
   pull_request:
-    paths: ['packages/**', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.github/workflows/vscode.yml']
+    paths: ['packages/**', '.agents/skills/**', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.github/workflows/vscode.yml']
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing GitHub Release tag to build and attach VSIX files to (leave empty for artifacts only)
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -34,6 +39,8 @@ jobs:
           - { os: windows-11-arm, target: win32-arm64 }
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -53,7 +60,7 @@ jobs:
 
   release:
     name: Attach VSIX files to the release
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
     needs: build
     runs-on: ubuntu-24.04
     permissions:
@@ -68,5 +75,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
         run: gh release upload "$RELEASE_TAG" vsix/*.vsix --clobber

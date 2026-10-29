@@ -47,6 +47,10 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
           --title <标题>  讲义或工作区的标题
           --name <包名>   插件的包名
           --no-git        不运行 git init
+  skills  安装内置技能（与 MCP 和可视化编辑器共用）
+          install <目录> [--json]  安装缺少的 .agents/skills，保留已有技能
+          --name <技能>   只安装指定技能，可重复
+          --json          以 JSON 打印安装结果
   build   导出文稿：写出 <输出>/ir.json 与 <输出>/<形态>/；在工作区的根目录
           （有 presmium.workspace.yaml）把整个工作区导出为网站，写到 <输出>/web/
           --to <形态>     要导出的形态，以逗号分隔（默认为文稿声明的形态）
@@ -126,6 +130,10 @@ Commands:
           --title <text>  the lecture’s or the workspace’s title
           --name <name>   the plugin’s package name
           --no-git        do not run git init
+  skills  install bundled skills, shared with MCP and the visual editor
+          install <dir> [--json]  install missing .agents/skills; keep existing skills
+          --name <skill>  install only the named skill; repeat for more
+          --json          print the installation result as JSON
   build   export the deck: writes <out>/ir.json and <out>/<renderer>/; at a workspace root
           (presmium.workspace.yaml) exports the workspace as a website into <out>/web/
           --to <ids>      forms to export, comma-separated (default: the deck’s renderers)

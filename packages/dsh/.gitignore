@@ -1,4 +1,4 @@
-# The skills copied at pack time and kept (scripts/copy-skills.mjs); their source is .agents/skills.
+# Ignore resources left by older builds; current skills ship in @lincyaw/skills.
 /skills/
 # The client bundle build/client.mjs makes at pack time, or in a checkout as DeepSeek Harness starts (build/ensure.mjs).
 /build/dist/

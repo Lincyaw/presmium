@@ -59,7 +59,8 @@
 
 | 层 | 包 | 框架 | 依赖 dsh | 没有模型时 | 版本 |
 |---|---|---|---|---|---|
-| 核心 | `kernel`、`compiler`、`cli`、`server`、`mcp`、`language-server`、`workspace`（Node 部分，即工作区服务）、`classroom-server`、`create-presmium`、`presmium-vscode` | TS、Node | 否 | 全部可用 | 1.x |
+| 核心 | `kernel`、`compiler`、`cli`、`server`、`mcp`、`language-server`、`workspace`（Node 部分，即工作区服务）、`classroom-server`、`create-presmium` | TS、Node | 否 | 全部可用 | 1.x |
+| VS Code 宿主 | `presmium-vscode` | TS、Node、Integrated Browser | 可视化入口经 `studio` 启动 | 原生编辑、预览与放映可用；Web 创作复用同一 Studio | 0.x |
 | 产物 | `web`（站点外壳加 `viewer`，网页与幻灯片两种形态）、`render-slides`（幻灯片的构建与导出）、`render-notebook`、讲授插件的渲染端、各插件的组件，宿主接口 `host` | React | 否 | 全部可用；读者问答用读者自己的模型服务 | 1.x |
 | 工作台 | `design`（与产物共用）、`workbench`、`dsh`、`studio` | React 18（由 dsh 的外壳提供） | 只有 `dsh` 与 `studio` | 除对话外都可用 | 0.x，实验性（`design` 随 `host` 为 1.x） |
 
@@ -366,7 +367,7 @@ dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达�
 
 - **指南**：一段固定的说明放进 system 消息，描述系统而不规定步骤：东西在哪（工作区根目录是工作目录；文稿的入口、形态与其他文件；`dist/` 与 `.presmium/` 不是源码；工作区自己的 AGENTS.md 说明它特有的约定；上下文中的路径都相对工作区根目录，Presmium 工具中文稿的路径相对文稿目录，诊断的除外），agent 负责什么（照作者的要求做，不多做：问题就回答、不改文件，修改只改要求的地方，不清楚就先问；修改由作者审阅，自己不提交），哪个工具说明什么（保存后预览自动重新编译，上下文中的诊断是最近一次保存的结果；`get_section` 看编译后的文字；`get_diagnostics`、`get_outputs`、`get_runtime`、`run_code`、`build` 各自证明什么；沙箱只能写工作区之内）。技能何时加载也在其中。web 载体中 agent 面对的作者与说话方式由内置预设 `preset-authoring` 的 persona 说明（6.6 节）。
 - **文稿快照**：网页会话按界面选中的文稿获取上下文，会话工作目录始终是工作区根目录；未选择文稿时明确告知模型。快照包含标题、语言、入口文件、形态与插件、文稿目录中的文件、工作区的其他文稿、章节（ID 与标题）、具体诊断（5.4 节）、本轮开始时作者的位置、当前的焦点（8.6 节，源码路径换算为相对工作区根目录）与浏览器反馈；路径都相对工作区根目录。bundle 在每一步之前（`agent/pre-step`）经 MCP 更新上下文，诊断同时通过订阅失效通知刷新。dsh 在上下文有任何变化时整份重发，所以作者的位置每轮只取一次，浏览器反馈只在有插件未启动、组件错误或现场运行时列出窗口：作者在 agent 工作时滚动文稿不会让上下文重发。上下文与工具一样登记在 agent 的作用域中。
-- **技能**：在运行时登记（`ctx.skills.register`）。skill-filesystem 的 `agentsHome` 固定到 Presmium 状态目录中的空目录，用户的 `~/.agents/skills` 不进入技能目录；文稿项目自己的 `.agents/skills` 保留，它是作者自己的材料。项目中的同名技能会覆盖 bundle 的那份，这一点写进技能的说明。
+- **技能**：从共用 `@lincyaw/skills` 在运行时登记（`ctx.skills.register`）author、animate、present、develop 四项及其参考资源，与 MCP、VSIX 和 CLI 安装器共用打包文件。外部 MCP 客户端通过 `list_skills` / `read_skill` 或技能资源按需读取；是否加载由客户端决定。skill-filesystem 的 `agentsHome` 固定到 Presmium 状态目录中的空目录，用户的 `~/.agents/skills` 不进入技能目录；文稿项目自己的 `.agents/skills` 保留，它是作者自己的材料。项目中的同名技能会覆盖 bundle 的那份，这一点写进技能的说明。
 
 ### 6.5 turn、审阅与提交
 
