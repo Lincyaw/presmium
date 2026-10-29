@@ -49,7 +49,7 @@ export async function environmentExecutors(
   execute: ExecuteConfig,
   providers: Map<string, EnvironmentProvider>,
   context: EnvironmentContext,
-  made: Map<string, Executor>,
+  made: WeakMap<EnvironmentProvider, Map<string, Executor>>,
   report: (finding: Finding) => void,
   at: At,
 ): Promise<Executor[]> {
@@ -57,7 +57,9 @@ export async function environmentExecutors(
   for (const [name, provider] of providers) {
     const spec = execute.environments![name]!
     const key = JSON.stringify([name, spec])
-    let executor = made.get(key)
+    let instances = made.get(provider)
+    if (!instances) made.set(provider, instances = new Map())
+    let executor = instances.get(key)
     if (!executor) {
       try {
         executor = await provider.create(name, spec, context)
@@ -69,7 +71,7 @@ export async function environmentExecutors(
         report({ checkId: 'presmium.execute', severity: 'error', message: `environment "${name}": the ${spec.kind} provider made the executor ${executor.id}, not ${environmentExecutor(name)}`, source: at(`${name}:`) })
         continue
       }
-      made.set(key, executor)
+      instances.set(key, executor)
     }
     executors.push(executor)
   }
