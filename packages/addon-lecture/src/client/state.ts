@@ -31,6 +31,8 @@ const PARAM = 'track'
 function fromUrl(): string | undefined { return typeof location === 'undefined' ? undefined : new URLSearchParams(location.search).get(PARAM) ?? undefined }
 export const playing = createStore<string | undefined>(fromUrl())
 export const exporting = typeof location !== 'undefined' && new URLSearchParams(location.search).has('export')
+/** `&autoplay`: a page that embeds the presentation asks for the lecture to start as soon as it is ready. */
+export const autoplay = typeof location !== 'undefined' && new URLSearchParams(location.search).has('autoplay')
 export const burnedCaptions = exporting ? new URLSearchParams(location.search).get('captions') ?? undefined : undefined
 export function play(id: string | undefined): void {
   playing.set(id)

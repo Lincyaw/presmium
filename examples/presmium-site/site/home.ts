@@ -5,68 +5,68 @@ import './style.css'
 type Locale = 'zh-CN' | 'en'
 const messages = {
   'zh-CN': {
-    title: '让知识从文稿走向舞台', nav: ['特性', '60 秒了解', '下载源码'], start: '开始创作',
-    eyebrow: '为讲述知识而创作', hero: '让知识从文稿\n走向舞台。',
-    lead: '文字、代码与动画，在同一份教学文稿里。\n生成网页、放映与视频，把内容带到更多人面前。',
-    watch: '观看 60 秒宣传片', source: '探索这堂小课', sourceLabel: '一份内容，三种表达',
-    file: '看懂一次参数更新', sourceNote: '线性回归 · 公式 · 代码 · 曲线', formats: ['网页', '放映', '视频'],
-    statement: '把精力留给内容。', substatement: '从一个想法，到读者眼前。',
+    title: '难讲的课，也能讲明白', nav: ['功能', '看影片', '下载源码'], start: '开始使用',
+    eyebrow: '写给讲课的人', hero: '讲义写一遍，\n课上课后都能用。',
+    lead: '公式、代码和动画写在同一份讲义里，想改哪儿，圈出来跟 AI 说一句。\n课上一步一步放，课后做成网站，也能导出视频。',
+    watch: '看 60 秒影片', source: '看看这堂小课', sourceLabel: '一份讲义，三种用法',
+    file: '看懂一次参数更新', sourceNote: '线性回归 · 公式 · 代码 · 曲线', formats: ['网站', '放映', '视频'],
+    statement: '把时间花在讲课上。', substatement: '排版、动画和发布交给它',
     features: [
-      ['01', '把分散的解释串起来', '公式、代码、图形与讲稿放在同一份文稿里，围绕同一个例子展开，省下反复整理不同版本的时间。', 'document'],
-      ['02', '让每一步都有依据', '从公式到数值，再到画面变化，按步骤解释复杂过程。讲得太快，就回到那一步重新展开。', 'steps'],
-      ['03', '讲完，还能继续探索', '同一份内容生成阅读网页、演示幻灯片和讲解视频。课堂上讲过的过程，也能留给读者回看。', 'website'],
+      ['01', '想改哪儿，圈出来说一句', '在讲义里选中一段，写一条批注，交给 AI 去改。每次修改都记在版本历史里，不满意随时撤消。', 'comment'],
+      ['02', '一步一步讲', '把一个过程拆成几步，按一下走一步，公式、数值和图一起变。学生没跟上，就退回上一步再讲。', 'steps'],
+      ['03', '课后接着看', '同一份讲义可以做成网站、放映和视频。课上讲过的过程，学生课后能自己再走一遍。', 'website'],
     ],
-    filmTag: '由 Presmium 制作', filmTitle: '从公式，到理解。', filmLead: '以线性回归为例，把公式、代码、预测线与损失曲线串成一次讲解。看见学习率怎样改变训练过程。',
-    filmHint: '60 秒 · Presmium 制作', filmDownload: '下载影片', filmSource: '回看线性回归小课', filmScript: '影片文稿',
-    chapters: ['备课的难题', '组织讲解', '随时回看', '课堂与课后'],
-    collectionTag: '这个网站，也是一份作品', collectionTitle: '从内容，到自己的站点。',
-    collectionLead: '首页自由设计，文稿持续生长。预置课程、文档、作品展示三种主题，构建结果可部署到 GitHub Pages 等静态托管平台。',
+    filmTag: '用 Presmium 做的', filmTitle: '难讲的课，也能讲明白。', filmLead: '学生深夜发来一个问题。老师在讲义里圈出一段，让 AI 加上动画；第二天上课一步一步讲，课后把同一份讲义做成网站、导出视频。下面播放的就是这支影片的讲义本身，画面由浏览器实时画出来，没有经过视频压缩。',
+    filmHint: '60 秒 · 实时播放', filmPlay: '播放影片', filmDownload: '下载视频文件', filmSource: '看看这堂线性回归小课', filmScript: '影片的讲义',
+    chapters: ['深夜的提问', '换个讲法', '上课', '课后'],
+    collectionTag: '这个网站也是用 Presmium 做的', collectionTitle: '做一个自己的课程网站',
+    collectionLead: '首页想怎么设计都行，讲义一份一份往里加。自带课程、文档、展示三种主题，做好的网站可以直接放到 GitHub Pages 这类静态托管上。',
     cards: [
-      ['配套小课', '同一个例子，自己走一遍', '回看预测线和损失如何随参数变化，再从同一份教学内容进入放映。', '打开小课', 'document'],
-      ['独立首页', '让作品拥有自己的样子', '这个页面使用独立 HTML、CSS 与 TypeScript 制作，由 Presmium 构建。', '下载作品源码', 'website'],
-      ['静态发布', '把作品带到更多人面前', '构建整套网站与文稿，保留视频、字幕和资源，部署到自己的地址。', '开始建站', 'export'],
+      ['配套小课', '同一个例子，自己走一遍', '自己按步骤看预测线和损失怎么变，也可以直接切到放映。', '打开小课', 'document'],
+      ['独立首页', '首页想怎么做就怎么做', '这个页面是单独用 HTML、CSS 和 TypeScript 写的，和讲义一起由 Presmium 构建。', '下载这个网站的源码', 'website'],
+      ['静态发布', '放到自己的网址上', '整个网站连同讲义、视频、字幕和素材一起构建，放到自己的地址上就能打开。', '开始建站', 'export'],
     ],
     faqTitle: '开始之前，你可能想知道',
     faqs: [
-      ['首页一定是一份文稿吗？', '可以独立设计。使用站点 JSON 组合内容区块，或者使用 HTML、CSS、JavaScript 自由制作；教学内容仍由 lecture.json 保存。'],
-      ['能把整个工作区变成网站吗？', '可以。站点构建会收集工作区里的多份文稿，生成独立地址和导航，并一起打包内容需要的资源。'],
-      ['可以播放视频吗？', '可以。网站可以使用原生播放器播放视频并加载字幕。这支影片也是由 Presmium 导出，再放回到这个首页的。'],
-      ['已有内容要怎样开始？', '先创建一个站点，选择主题，再加入自己的文稿。想定制首页时，替换 site.landing 的来源即可。'],
+      ['首页一定要是一份讲义吗？', '不用。可以用站点 JSON 拼几个内容区块，也可以用 HTML、CSS、JavaScript 随意写；讲义还是写在 lecture.json 里。'],
+      ['能把整个工作区做成网站吗？', '能。构建时会把工作区里的讲义都收进来，每份一个地址，自动生成导航，用到的素材也一起打包。'],
+      ['网站能放视频吗？', '能。可以用浏览器自带的播放器放视频、加字幕；也可以像这里一样，直接嵌入讲义的放映页实时播放。这支影片本身就是一份 Presmium 讲义，下载的视频文件也是从它导出的。'],
+      ['手上已经有内容，怎么开始？', '先建一个站点、选好主题，再把讲义放进去。想自己设计首页，就把 site.landing 指向你的首页文件。'],
     ],
-    cta: '你的下一份作品，从这里开始。', ctaLead: '一份文稿，一个自己的舞台。', install: '首次使用，先安装', copy: '复制命令', copied: '已复制',
-    footer: '用 Presmium 制作 · 开源创作工具', appearance: '切换亮暗外观', language: 'English', skip: '跳到正文',
+    cta: '下一堂课，就用它来讲。', ctaLead: '开源，免费，装好就能用。', install: '第一次用，先安装', copy: '复制命令', copied: '已复制',
+    footer: '用 Presmium 制作 · 开源的讲课工具', appearance: '切换亮暗外观', language: 'English', skip: '跳到正文',
   },
   en: {
-    title: 'Bring knowledge to the stage', nav: ['Features', 'The 60-second film', 'Download source'], start: 'Start creating',
-    eyebrow: 'Made for sharing knowledge', hero: 'Bring knowledge\nto the stage.',
-    lead: 'Words, code and animation in one teaching document.\nPublish a website, present your ideas, or make a film.',
-    watch: 'Watch the 60-second film', source: 'Explore the lesson', sourceLabel: 'One source. Three ways to share.',
+    title: 'Hard lessons, made clear', nav: ['Features', 'Watch the film', 'Download source'], start: 'Get started',
+    eyebrow: 'For people who teach', hero: 'Write it once.\nTeach it anywhere.',
+    lead: 'Equations, code and animation live in one lesson. To change something, mark it and tell the AI.\nPresent it step by step in class, then share it as a website or a video.',
+    watch: 'Watch the 60-second film', source: 'Try the lesson', sourceLabel: 'One lesson, three ways to use it',
     file: 'Inside a parameter update', sourceNote: 'Linear regression · Math · Code · Plots', formats: ['Website', 'Slides', 'Video'],
-    statement: 'Keep your focus on the content.', substatement: 'From an idea to your audience.',
+    statement: 'Spend your time on teaching.', substatement: 'Layout, animation and publishing, taken care of',
     features: [
-      ['01', 'Connect the explanation', 'Keep equations, code, visuals and narration in one document, built around the same example.', 'document'],
-      ['02', 'Give every step a reason', 'Connect equations to values and visual changes. Revisit any step when the explanation needs more time.', 'steps'],
-      ['03', 'Keep exploring after class', 'Generate reading pages, slides and narrated video from the same source, so your audience can revisit the process.', 'website'],
+      ['01', 'Mark it, say what you want', 'Select a passage, leave a comment, and let the AI make the change. Every edit lands in the version history, so you can undo it.', 'comment'],
+      ['02', 'One step at a time', 'Break a process into steps. Each click moves one step, and the equation, numbers and plot change together. Lost the class? Go back a step.', 'steps'],
+      ['03', 'Keep learning after class', 'The same lesson becomes a website, slides and a video, so students can walk through it again on their own.', 'website'],
     ],
-    filmTag: 'Made with Presmium', filmTitle: 'From equations to understanding.', filmLead: 'Follow one linear regression lesson through equations, code, predictions and loss. See how a learning rate changes training.',
-    filmHint: '60 seconds · Made with Presmium', filmDownload: 'Download film', filmSource: 'Explore the regression lesson', filmScript: 'Film source',
-    chapters: ['Before class', 'Build the explanation', 'Revisit a step', 'During and after class'],
-    collectionTag: 'This website is a work, too', collectionTitle: 'From content to your own website.',
-    collectionLead: 'Design your homepage independently. Choose a course, documentation or showcase theme, and publish to GitHub Pages or another static host.',
+    filmTag: 'Made with Presmium', filmTitle: 'Hard lessons, made clear.', filmLead: 'A student asks a question late at night. The teacher marks a paragraph and asks the AI for an animation, walks the class through it step by step the next day, then shares the same lesson as a website and a video. What plays below is the film\'s own lesson, drawn live by your browser with no video compression.',
+    filmHint: '60 seconds · played live', filmPlay: 'Play the film', filmDownload: 'Download video file', filmSource: 'Try the linear regression lesson', filmScript: 'The film\'s lesson',
+    chapters: ['A question at night', 'Another way to explain', 'In class', 'After class'],
+    collectionTag: 'This website was made with Presmium too', collectionTitle: 'Build your own course website',
+    collectionLead: 'Design the homepage however you like and keep adding lessons. Choose a course, docs or showcase theme, and put the result on GitHub Pages or any static host.',
     cards: [
-      ['Companion lesson', 'Walk through the same example', 'Revisit how parameters change predictions and loss, then present the same teaching content.', 'Open lesson', 'document'],
-      ['Independent homepage', 'Make it yours', 'This page is built from standalone HTML, CSS and TypeScript, with Presmium.', 'Download source', 'website'],
-      ['Static publishing', 'Reach your audience', 'Build your workspace and its documents, keeping video, captions and assets together.', 'Create your site', 'export'],
+      ['Companion lesson', 'Walk through the same example', 'Step through how the prediction and the loss change, or switch straight to the slides.', 'Open the lesson', 'document'],
+      ['Custom homepage', 'Make the homepage your own', 'This page is plain HTML, CSS and TypeScript, built together with the lessons by Presmium.', 'Download this site\'s source', 'website'],
+      ['Static publishing', 'Put it at your own address', 'The whole site is built with its lessons, videos, captions and assets, ready to serve from your own address.', 'Create a site', 'export'],
     ],
     faqTitle: 'A few things before you begin',
     faqs: [
-      ['Does the homepage have to be a document?', 'You can design it independently. Compose sections in site JSON, or use HTML, CSS and JavaScript. Teaching content stays in lecture.json.'],
-      ['Can I publish a whole workspace?', 'Yes. A site build collects the documents in your workspace, gives each an address, and bundles their assets together.'],
-      ['Can the website play video?', 'Yes. Native video players can play your film and load captions. This film was exported by Presmium and added back to this homepage.'],
-      ['How do I start with my content?', 'Create a site, pick a theme and add your documents. Change the site.landing source when you want a custom homepage.'],
+      ['Does the homepage have to be a lesson?', 'No. Compose sections in site JSON, or write it freely in HTML, CSS and JavaScript. Lessons stay in lecture.json.'],
+      ['Can I turn a whole workspace into a website?', 'Yes. The build collects every lesson in the workspace, gives each its own address, generates the navigation and bundles the assets they use.'],
+      ['Can the website play video?', 'Yes. Play videos with captions in the browser\'s own player, or, as here, embed a lesson\'s presentation and play it live. This film is itself a Presmium lesson, and the downloadable video was exported from it.'],
+      ['I already have material. How do I start?', 'Create a site, pick a theme and add your lessons. For your own homepage, point site.landing at your homepage file.'],
     ],
-    cta: 'Your next work starts here.', ctaLead: 'One document. Your own stage.', install: 'First time? Install Presmium', copy: 'Copy command', copied: 'Copied',
-    footer: 'Made with Presmium · Open source', appearance: 'Switch appearance', language: '中文', skip: 'Skip to content',
+    cta: 'Teach your next class with it.', ctaLead: 'Open source, free, and ready once installed.', install: 'First time? Install Presmium', copy: 'Copy command', copied: 'Copied',
+    footer: 'Made with Presmium · An open-source teaching tool', appearance: 'Switch appearance', language: '中文', skip: 'Skip to content',
   },
 } as const
 
@@ -77,6 +77,22 @@ const sourceUrl = `${base}presmium-source.tar.gz`
 const docUrl = site.documents?.find(doc => doc.id === 'learn')?.href || `${base}learn/`
 const promoUrl = site.documents?.find(doc => doc.id === 'promo')?.href || `${base}promo/`
 const command = 'presmium new my-site --type site'
+// The film is played from its source: the film document's presentation with its lecture, drawn live by the browser
+// at the viewer's resolution. Each chapter starts at the first step of one of its sections.
+const CHAPTERS = [['film-question', '00:00'], ['film-ask', '00:11'], ['film-lesson', '00:29'], ['film-website', '00:39']] as const
+function playFilm(section: string) {
+  const frame = document.getElementById('film-frame')!
+  let live = frame.querySelector('iframe')
+  if (!live) {
+    live = document.createElement('iframe')
+    live.className = 'film-live'
+    live.title = messages[locale].filmTitle
+    live.allow = 'autoplay; fullscreen'
+    frame.replaceChildren(live)
+  }
+  live.src = `${promoUrl}slides/?view=present&track=script&section=${section}&step=0&autoplay`
+  live.focus()
+}
 const icon = (name: Parameters<typeof iconMarkup>[0]) => iconMarkup(name)
 const chart = () => {
   const xs = [-Math.SQRT2, -1 / Math.SQRT2, 0, 1 / Math.SQRT2, Math.SQRT2]
@@ -100,10 +116,10 @@ function render() {
     <main id="main">
       <section class="hero wrap">
         <div class="hero-copy"><p class="eyebrow">${t.eyebrow}</p><h1>${t.hero.replace('\n','<br>')}</h1><p class="lead">${t.lead.replace('\n','<br>')}</p><div class="hero-actions">${button('#film',t.watch,true)}${button(docUrl,t.source)}</div><p class="hero-note">${t.sourceLabel}</p></div>
-        <div class="hero-art" role="img" aria-label="${t.sourceLabel}"><div class="document-card"><div class="window-bar"><span>lecture.json</span>${icon('document')}</div><span class="tiny-label">PRESMIUM / 001</span><h2>${t.file}</h2><p>${t.sourceNote}</p><div class="content-lines"><i></i><i></i></div>${chart()}<div class="document-bottom"><span>${icon('check')} ${locale === 'en' ? 'Ready to share' : '准备好，去分享'}</span><span>01 / 03</span></div></div><div class="output-row">${t.formats.map((f,i)=>`<div class="output-card">${icon((['website','slides','video'] as const)[i]!)}<span>${f}</span><b>0${i+1}</b></div>`).join('')}</div><div class="art-caption"><span class="status-dot"></span>${t.sourceLabel}</div></div>
+        <div class="hero-art" role="img" aria-label="${t.sourceLabel}"><div class="document-card"><div class="window-bar"><span>lecture.json</span>${icon('document')}</div><span class="tiny-label">PRESMIUM / 001</span><h2>${t.file}</h2><p>${t.sourceNote}</p><div class="content-lines"><i></i><i></i></div>${chart()}<div class="document-bottom"><span>${icon('check')} ${locale === 'en' ? 'Ready to teach' : '可以上课了'}</span><span>01 / 03</span></div></div><div class="output-row">${t.formats.map((f,i)=>`<div class="output-card">${icon((['website','slides','video'] as const)[i]!)}<span>${f}</span><b>0${i+1}</b></div>`).join('')}</div><div class="art-caption"><span class="status-dot"></span>${t.sourceLabel}</div></div>
       </section>
       <section class="features wrap" id="features"><div class="section-heading"><p class="eyebrow">PRESMIUM / ${t.substatement}</p><h2>${t.statement}</h2></div><div class="feature-grid">${t.features.map(([n,title,body,i])=>`<article><div class="feature-top"><span>${n}</span>${icon(i as Parameters<typeof iconMarkup>[0])}</div><h3>${title}</h3><p>${body}</p></article>`).join('')}</div></section>
-      <section class="film-section wrap" id="film"><div class="section-heading film-heading"><div><p class="eyebrow">${t.filmTag}</p><h2>${t.filmTitle}</h2></div><p>${t.filmLead}</p></div><div class="player-frame"><video id="promo-video" controls playsinline preload="metadata" poster="${base}presmium-60s-poster.png"><source src="${base}presmium-60s.webm" type="video/webm"></video></div><div class="film-meta"><span>${t.filmHint}</span><div><a class="pm-ui-link" href="${base}presmium-60s.webm" download>${t.filmDownload}${icon('download')}</a><a class="pm-ui-link" href="${docUrl}">${t.filmSource}${icon('chevron-right')}</a><a class="pm-ui-link" href="${promoUrl}">${t.filmScript}${icon('chevron-right')}</a></div></div><div class="chapter-list">${t.chapters.map((c,i)=>`<button class="pm-ui-button pm-ui-button--ghost" data-seek="${[0,14,42,48][i]}"><span>${['00:00','00:14','00:42','00:48'][i]}</span>${c}</button>`).join('')}</div></section>
+      <section class="film-section wrap" id="film"><div class="section-heading film-heading"><div><p class="eyebrow">${t.filmTag}</p><h2>${t.filmTitle}</h2></div><p>${t.filmLead}</p></div><div class="player-frame" id="film-frame"><button class="film-poster" id="film-play" aria-label="${t.filmPlay}"><img src="${base}presmium-60s-poster.png" alt=""><span class="film-play">${icon('play')}</span></button></div><div class="film-meta"><span>${t.filmHint}</span><div><a class="pm-ui-link" href="${base}presmium-60s.webm" download>${t.filmDownload}${icon('download')}</a><a class="pm-ui-link" href="${docUrl}">${t.filmSource}${icon('chevron-right')}</a><a class="pm-ui-link" href="${promoUrl}">${t.filmScript}${icon('chevron-right')}</a></div></div><div class="chapter-list">${t.chapters.map((c,i)=>`<button class="pm-ui-button pm-ui-button--ghost" data-section="${CHAPTERS[i]![0]}"><span>${CHAPTERS[i]![1]}</span>${c}</button>`).join('')}</div></section>
       <section class="collection wrap" id="source"><div class="section-heading"><p class="eyebrow">${t.collectionTag}</p><h2>${t.collectionTitle}</h2><p class="section-lead">${t.collectionLead}</p></div><div class="collection-grid">${t.cards.map(([tag,title,body,label,i],index)=>`<article><div class="card-label">${icon(i as Parameters<typeof iconMarkup>[0])}<span>${tag}</span></div><h3>${title}</h3><p>${body}</p><a class="pm-ui-link" href="${[docUrl,sourceUrl,'#start'][index]}">${label}${icon('chevron-right')}</a></article>`).join('')}</div></section>
       <section class="faq wrap"><h2>${t.faqTitle}</h2><div>${t.faqs.map(([q,a],i)=>`<details${i===0?' open':''}><summary>${q}${icon('plus')}</summary><p>${a}</p></details>`).join('')}</div></section>
       <section class="start wrap" id="start"><p class="eyebrow">PRESMIUM</p><h2>${t.cta}</h2><p>${t.ctaLead}</p><div class="command"><code>${command}</code><button class="pm-ui-icon-button pm-ui-icon-button--ghost" id="copy" aria-label="${t.copy}">${icon('copy')}</button></div><span id="copy-status" role="status"></span><p class="install">${t.install} <code>pnpm add -g @lincyaw/presmium</code></p></section>
@@ -114,7 +130,8 @@ function render() {
     try { await navigator.clipboard.writeText(command); document.getElementById('copy-status')!.textContent = t.copied }
     catch { const range = document.createRange(); range.selectNodeContents(document.querySelector('.command code')!); getSelection()?.removeAllRanges(); getSelection()?.addRange(range) }
   }
-  document.querySelectorAll<HTMLButtonElement>('[data-seek]').forEach(button => button.onclick = () => { const video = document.querySelector<HTMLVideoElement>('#promo-video')!; video.currentTime = Number(button.dataset.seek); void video.play() })
+  document.getElementById('film-play')!.onclick = () => playFilm(CHAPTERS[0][0])
+  document.querySelectorAll<HTMLButtonElement>('[data-section]').forEach(button => button.onclick = () => playFilm(button.dataset.section!))
   syncMotion()
 }
 function syncMotion() {
