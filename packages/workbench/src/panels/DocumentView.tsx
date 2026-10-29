@@ -351,7 +351,11 @@ function SaveStatus() {
   const text = dirty ? backupPending ? t.documentDraftBackingUp : t.unsaved : save.kind === 'saving'
     ? t.saving
     : save.kind === 'saved' ? t.savedAt(timeAgo(save.at, locale)) : save.kind === 'idle' ? t.saved : ''
-  return <span className="pmw-toolbar__status" role="status" aria-live="polite" data-save={dirty ? 'dirty' : save.kind} data-backup={dirty && backupPending ? 'pending' : undefined}>{text}</span>
+  // A narrow toolbar keeps the short state ("Saved") whole rather than truncating the line with its time.
+  const short = !dirty && save.kind === 'saved' ? t.saved : undefined
+  return <span className="pmw-toolbar__status" role="status" aria-live="polite" title={text} data-save={dirty ? 'dirty' : save.kind} data-backup={dirty && backupPending ? 'pending' : undefined}>
+    {short ? <><span className="pmw-toolbar__status-full">{text}</span><span className="pmw-toolbar__status-short">{short}</span></> : text}
+  </span>
 }
 
 /** What needs the author's attention: the AI's change, an edit to hand over, a failed save, content that did not display. */
