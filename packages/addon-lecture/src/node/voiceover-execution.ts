@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { setImmediate } from 'node:timers/promises'
-import { errorMessage, isRecord, resolvedVoice, speechEngineId, speechVoice, voiceTarget } from '@lincyaw/kernel'
+import { deckLocale, errorMessage, isRecord, resolvedVoice, speechEngineId, speechVoice, voiceTarget } from '@lincyaw/kernel'
 import { irRevision, VoiceoverOperationError } from '@lincyaw/kernel/node'
 import type { CanonicalSource, IRDocument, NodeServiceContext, SpeechService, SpeechVoice, Synthesis, SynthesisRequest, VoiceoverExecution, VoiceoverProgress, VoiceoverRunResult, VoiceoverSnapshot, VoiceoverStatusQuery, VoicePreviewQuery, VoicePreviewQuote, VoiceScope, VoiceTarget } from '@lincyaw/kernel'
 import { plannedUtterances } from '../domain/index.ts'
@@ -10,6 +10,11 @@ import { deckPlan } from './plan.ts'
 import { claimVoiceGeneration, VoiceGenerationBusy } from './voice-generation.ts'
 import { assertVoiceSource, VoiceSourceRefusal } from './voice-source.ts'
 import { createServedDeck, RouteRefusal } from './routes/served-deck.ts'
+
+const PREVIEW_TEXT = {
+  'zh-CN': '你好，这是一段配音试听。你可以用它比较音色，再选择文稿的配音音色。',
+  'en': 'Hello. This is a short voice preview for your presentation.',
+}
 
 type Unit = ReturnType<typeof plannedUtterances>[number]
 interface Context { source: CanonicalSource, doc: IRDocument, revision: string, units: Unit[], lang: string, lexicon?: Record<string, string> }
@@ -120,7 +125,7 @@ export function voiceoverExecution(ctx: NodeServiceContext): VoiceoverExecution 
   const quote = async (query: VoicePreviewQuery, signal: AbortSignal, expected?: CanonicalSource): Promise<{ quote: VoicePreviewQuote, request: SynthesisRequest, hit?: Synthesis, context: Context }> => {
     const now = await assertRevision(query.revision, expected), voice = speechVoice(query.voice)
     if (!voice) throw new RouteRefusal(400, 'voice-preview-invalid')
-    let text = now.lang.toLowerCase().startsWith('en') ? 'Hello. This is a short voice preview for your presentation.' : '你好，这是一段配音试听。你可以用它比较音色，再选择文稿的旁白声音。'
+    let text = PREVIEW_TEXT[deckLocale(now.lang)]
     if (query.mode === 'step') {
       if (!validTarget(query.target)) throw new RouteRefusal(400, 'voice-target')
       text = scoped(now, { kind: 'step', target: query.target }).map(unit => unit.spoken).join('\n\n')

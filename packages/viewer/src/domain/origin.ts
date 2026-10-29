@@ -2,35 +2,35 @@ import type { CodeNode, ResolutionStatus } from '@lincyaw/kernel'
 import type { Locale } from '@lincyaw/kernel/contracts'
 
 const zh = {
-  workingTree: '工作区',
-  status: { moved: '已移动', fuzzy: '待确认', lost: '已失效' } as Partial<Record<ResolutionStatus, string>>,
+  workingTree: '当前代码',
+  status: { moved: '已移动', fuzzy: '待核对', lost: '已失效' } as Partial<Record<ResolutionStatus, string>>,
   statusTitle: {
-    moved: '引用的代码在文件中移动了位置，显示的是移动后的代码',
-    fuzzy: '引用的代码有改动，找到的位置有待确认；运行 presmium check 查看',
-    lost: '找不到引用的代码；运行 presmium check 查看',
+    moved: '引用的代码在文件中移动了位置，显示的是移动后的代码。',
+    fuzzy: '引用的代码有改动，找到的位置有待确认；请运行 presmium check 查看。',
+    lost: '找不到引用的代码。请运行 presmium check 查看原因。',
   } as Partial<Record<ResolutionStatus, string>>,
   drifted: '已漂移',
-  driftedTitle: '工作区中的代码已改变，运行 presmium check 查看差异',
+  driftedTitle: '当前代码已改变。请运行 presmium check 查看差异。',
   synced: '已锁定',
-  syncedTitle: '锁定的代码与工作区一致',
+  syncedTitle: '锁定的代码与当前代码一致',
   openFile: (file: string) => `在仓库中打开 ${file}`,
 }
 
 export type OriginMessages = typeof zh
 
 const en: OriginMessages = {
-  workingTree: 'working tree',
+  workingTree: 'Current code',
   status: { moved: 'Moved', fuzzy: 'Unconfirmed', lost: 'Lost' },
   statusTitle: {
-    moved: 'The referenced code moved in its file; this is the code where it is now',
-    fuzzy: 'The referenced code changed and the place found is uncertain; run presmium check to see it',
-    lost: 'The referenced code is no longer found; run presmium check to see why',
+    moved: 'The referenced code moved in its file; this is the code where it is now.',
+    fuzzy: 'The referenced code changed and the place found is uncertain; run presmium check to see it.',
+    lost: 'The referenced code is no longer found; run presmium check to see why.',
   },
   drifted: 'Drifted',
-  driftedTitle: 'The code changed in the working tree; run presmium check to see the difference',
+  driftedTitle: 'The current code changed; run presmium check to see the difference.',
   synced: 'Pinned',
-  syncedTitle: 'The pinned code matches the working tree',
-  openFile: file => `Open ${file} in the repository`,
+  syncedTitle: 'The pinned code matches the current code',
+  openFile: file => `Open ${file} in the Repository`,
 }
 
 export const ORIGIN_MESSAGES: Record<Locale, OriginMessages> = { 'zh-CN': zh, 'en': en }
