@@ -121,9 +121,12 @@ the slides are both pages of Presmium's own prebuilt viewer (`docs/architecture.
   pane titles in Title Case, messages in sentence case); add a new term there before using it. Run
   `node scripts/check-i18n.mjs` after changing interface text: it reports key sets that differ, untranslated
   text, glossary and style breaks, hard-coded UI text, CLI and error literals and places that choose the
-  locale themselves (`--package <name>` for one package, `--json` for the list). It is report-only for now;
-  `--strict` fails on catalog findings and joins `pnpm test` once the catalogs are clean
-  (`docs/benchmarks/i18n-audit-2026-10-29.md`).
+  locale themselves (`--package <name>` for one package, `--json` for the list). `pnpm test` runs it with
+  `--strict`, which fails on catalog findings (key sets, untranslated text, glossary and style breaks); a
+  finding judged not to break the glossary (a field label in sentence case, a command name in CLI help) goes in
+  `scripts/check-i18n.allow.json` with its reason. Reasons that a server or the browser gives reach authors as
+  catalog text by their code, never as raw words. CLIs choose their language with `systemLocale` from
+  `@lincyaw/kernel/node`.
 - **Tokens only.** Styles reference `packages/design/src/tokens.css`: no raw colors, no px (except in
   `@media` breakpoints), no ms/s; add a missing token there first (dark mode overrides only colors and
   shadows); icon sizes come from size tokens in CSS, not numbers in components. Color token names are also in

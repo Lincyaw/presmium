@@ -14,7 +14,7 @@
   "scripts": {
     "studio": "node scripts/studio.mjs",
     "debug:studio": "node scripts/debug-studio.mjs",
-    "test": "node scripts/check-layering.mjs && node scripts/check-skills.mjs && node scripts/check-plugins.mjs && node scripts/check-packages.mjs && node scripts/check-tokens.mjs && node scripts/check-types.mjs && vitest run --passWithNoTests",
+    "test": "node scripts/check-layering.mjs && node scripts/check-skills.mjs && node scripts/check-plugins.mjs && node scripts/check-packages.mjs && node scripts/check-tokens.mjs && node scripts/check-i18n.mjs --strict --summary && node scripts/check-types.mjs && vitest run --passWithNoTests",
     "demo:build": "pnpm --filter presmium-animations build",
     "demo:check": "pnpm --filter presmium-animations check",
     "demo:ir": "pnpm --filter presmium-animations ir",

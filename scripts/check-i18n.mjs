@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 // Interface text in zh-CN and en (docs/architecture.md 5.7, docs/glossary.md).
 //
-// Report-only by default: it prints every finding and exits 0, because the packages are being brought to the glossary
-// one slice at a time. `--strict` exits 1 when a message catalog has a finding (A–C below); turn it on, and add the
-// script to `pnpm test`, once the catalogs are clean. The source scan (D–F) stays a report: a literal it lists may be
-// a key, a CSS class or a log line, which only a reader can tell.
+// By default it prints every finding and exits 0. `--strict` (as `pnpm test` runs it) exits 1 when a message catalog
+// has a finding (A–C below) that scripts/check-i18n.allow.json does not list with a reason. The source scan (D–F)
+// stays a report: a literal it lists may be a key, a CSS class or a log line, which only a reader can tell.
 //
 //   A  a key present in one locale only
 //   B  untranslated text: CJK in en, an English sentence in zh-CN, or the same wording in both
@@ -43,7 +42,17 @@ const CJK_ANY = /[　-〿㐀-鿿豈-﫿＀-￯]/
 const SAME = /^(?:Presmium(?: Studio)?|Notebook|PowerPoint|PDF|PNG|SVG|AI|LaTeX|PlantUML|Markdown|Python|Jupyter(?:Lab)?|WebGPU|WASI|Git|GitHub|Mermaid|Markmap|JSON|HTML|URL|ID|OK|Ctrl\+[A-Z]|Esc|Tab|Enter|Shift|Alt|Ctrl\s?[A-Z]|https?:\/\/\S+|[a-z0-9]+(?:-[a-z0-9]+)+|[hms:.]+|\W*|[\d\s\W]+)$/
 
 const findings = []
-const add = (pkg, kind, where, text, note = '') => findings.push({ pkg, kind, where, text: String(text).replace(/\s+/g, ' ').slice(0, 160), note })
+const add = (pkg, kind, where, text, note = '', meta = {}) => findings.push({ pkg, kind, where, text: String(text).replace(/\s+/g, ' ').slice(0, 160), note, ...meta })
+
+// Findings judged one by one not to break the glossary: { file, key, rule?, reason }. `key` is the catalog path the
+// finding names (an entry matches that key or one ending in `.<key>`); `rule`, when given, a part of the finding's note.
+const allowFile = join(root, 'scripts/check-i18n.allow.json')
+const allowed = existsSync(allowFile) ? JSON.parse(readFileSync(allowFile, 'utf8')) : []
+for (const entry of allowed) if (!entry.file || !entry.key || !entry.reason) throw new Error(`check-i18n.allow.json: each entry needs file, key and reason: ${JSON.stringify(entry)}`)
+const isAllowed = f => f.file && allowed.some(entry => entry.file === f.file && (f.key === entry.key || f.key?.endsWith(`.${entry.key}`)) && (!entry.rule || f.note.includes(entry.rule)))
+
+// Brand names hold words the glossary does not use on their own (火山引擎 holds 引擎); docs/glossary.md section 1.
+const BRANDS = ['火山引擎', 'Volcengine']
 
 // --- the glossary's do-not-use terms ---------------------------------------------------------------------------------
 // Every table row of docs/glossary.md whose last column holds `backticked` terms: a CJK term is checked in zh-CN text,
@@ -56,9 +65,11 @@ if (existsSync(glossaryFile)) {
     const cells = line.split('|').slice(1, -1).map(cell => cell.trim())
     if (cells.length < 4) continue
     const preferred = cells[0].startsWith('（') ? 'nothing (not shown to authors)' : `${cells[0]} / ${cells[1]}`.replace(/`/g, '')
+    // The row's own preferred wording may contain a term it does not use (用 AI 改写 holds AI 改写, 访问令牌 holds 令牌).
+    const own = cells[0].startsWith('（') ? [] : `${cells[0]}/${cells[1]}`.replace(/`/g, '').replace(/（[^）]*）/g, '').split(/\s*[/、]\s*/).map(term => term.trim()).filter(term => term.length > 1)
     for (const [, term] of cells.at(-1).matchAll(/`([^`]+)`/g)) {
-      if (CJK.test(term)) { if (!banned.zh.some(known => known.term === term)) banned.zh.push({ term, preferred }) }
-      else if (!banned.en.some(known => known.term.toLowerCase() === term.toLowerCase())) banned.en.push({ term, preferred, pattern: new RegExp(`(?<![\\w-])${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w-])`, 'i') })
+      if (CJK.test(term)) { if (!banned.zh.some(known => known.term === term)) banned.zh.push({ term, preferred, own }) }
+      else if (!banned.en.some(known => known.term.toLowerCase() === term.toLowerCase())) banned.en.push({ term, preferred, own, pattern: new RegExp(`(?<![\\w-])${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w-])`, 'i') })
     }
   }
 }
@@ -114,15 +125,19 @@ function sourceLine(file, key) {
   return index < 0 ? '' : `:${index + 1}`
 }
 
-function checkText(pkg, where, text, locale) {
+const escape = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const without = (text, terms) => terms.reduce((rest, term) => rest.replace(new RegExp(escape(term), 'gi'), ' '), text)
+
+function checkText(pkg, where, text, locale, meta) {
+  const plain = without(text, BRANDS)
   if (locale === 'zh-CN') {
-    for (const [pattern, rule] of ZH_RULES) if (pattern.test(text)) add(pkg, 'C', where, text, rule)
-    for (const { term, preferred } of banned.zh) if (text.includes(term)) add(pkg, 'C', where, text, `术语：不用“${term}”，用 ${preferred}`)
-    for (const { term, preferred, pattern } of banned.en) if (pattern.test(text)) add(pkg, 'C', where, text, `术语：不用“${term}”，用 ${preferred}`)
+    for (const [pattern, rule] of ZH_RULES) if (pattern.test(text)) add(pkg, 'C', where, text, rule, meta)
+    for (const { term, preferred, own } of banned.zh) if (without(plain, own).includes(term)) add(pkg, 'C', where, text, `术语：不用“${term}”，用 ${preferred}`, meta)
+    for (const { term, preferred, own, pattern } of banned.en) if (pattern.test(without(plain, own))) add(pkg, 'C', where, text, `术语：不用“${term}”，用 ${preferred}`, meta)
   } else {
-    for (const [pattern, rule] of EN_RULES) if (pattern.test(text)) add(pkg, rule.startsWith('CJK') ? 'B' : 'C', where, text, rule)
-    if (commandInSentenceCase(text)) add(pkg, 'C', where, text, 'command not in Title Case (glossary 3)')
-    for (const { term, preferred, pattern } of banned.en) if (pattern.test(text)) add(pkg, 'C', where, text, `term: not “${term}”, use ${preferred}`)
+    for (const [pattern, rule] of EN_RULES) if (pattern.test(text)) add(pkg, rule.startsWith('CJK') ? 'B' : 'C', where, text, rule, meta)
+    if (commandInSentenceCase(text)) add(pkg, 'C', where, text, 'command not in Title Case (glossary 3)', meta)
+    for (const { term, preferred, own, pattern } of banned.en) if (pattern.test(without(plain, own))) add(pkg, 'C', where, text, `term: not “${term}”, use ${preferred}`, meta)
   }
 }
 
@@ -258,23 +273,24 @@ for (const pkg of packages) {
       seen.add(identity)
       catalogs++
       const loc = key => line ? `${where}:${line}${key ? ` ${key}` : ''}` : `${where}${sourceLine(file, key)} ${name}.${key}`
+      const meta = key => ({ file: where, key: line ? key : `${name}.${key}` })
       if (!enKey) add(pkg, 'A', loc(''), '', 'no en catalog')
-      for (const key of zh.keys()) if (enKey && !en.has(key)) add(pkg, 'A', loc(key), zh.get(key) ?? '', 'missing in en')
-      for (const key of en.keys()) if (!zh.has(key)) add(pkg, 'A', loc(key), en.get(key) ?? '', 'missing in zh-CN')
+      for (const key of zh.keys()) if (enKey && !en.has(key)) add(pkg, 'A', loc(key), zh.get(key) ?? '', 'missing in en', meta(key))
+      for (const key of en.keys()) if (!zh.has(key)) add(pkg, 'A', loc(key), en.get(key) ?? '', 'missing in zh-CN', meta(key))
       for (const [key, text] of zh) {
         if (text === undefined) continue
         const at = loc(key)
-        if (!CJK.test(text) && /[A-Za-z]{2,}[\s,][A-Za-z]{2,}/.test(text) && !SAME.test(text.trim())) add(pkg, 'B', at, text, 'English text in zh-CN')
-        else if (en.get(key) === text && /[A-Za-z㐀-鿿]/.test(text) && !SAME.test(text.trim())) add(pkg, 'B', at, text, 'same text in zh-CN and en')
-        checkText(pkg, at, text, 'zh-CN')
+        if (!CJK.test(text) && /[A-Za-z]{2,}[\s,][A-Za-z]{2,}/.test(text) && !SAME.test(text.trim())) add(pkg, 'B', at, text, 'English text in zh-CN', meta(key))
+        else if (en.get(key) === text && /[A-Za-z㐀-鿿]/.test(text) && !SAME.test(text.trim())) add(pkg, 'B', at, text, 'same text in zh-CN and en', meta(key))
+        checkText(pkg, at, text, 'zh-CN', meta(key))
       }
-      for (const [key, text] of en) if (text !== undefined) checkText(pkg, loc(key), text, 'en')
+      for (const [key, text] of en) if (text !== undefined) checkText(pkg, loc(key), text, 'en', meta(key))
     }
   }
 }
 
-// The block editor's own text (BlockNote's dictionaries) shows in the workbench beside Presmium's; the workbench passes
-// it through `dictionary`, where any term that breaks the glossary is to be overridden.
+// The block editor's own text shows in the workbench beside Presmium's: BlockNote's dictionaries with the workbench's
+// overrides merged in (blockNoteDictionary), which is what the editor receives through its `dictionary` option.
 if (!only || only === 'workbench') {
   let blocknote
   try {
@@ -283,11 +299,13 @@ if (!only || only === 'workbench') {
   if (blocknote) {
     const zh = new Map()
     const en = new Map()
-    walk('', blocknote.zh, zh, '标题')
-    walk('', blocknote.en, en, 'Title')
+    const merged = await import(pathToFileURL(join(root, 'packages/workbench/src/document-editor/blocknote-messages.ts')).href)
+    walk('', merged.blockNoteDictionary('zh-CN'), zh, '标题')
+    walk('', merged.blockNoteDictionary('en'), en, 'Title')
     catalogs++
-    for (const [key, text] of zh) if (text) checkText('workbench', `packages/workbench/src/document-editor/BlockNoteSurface.tsx:126 BlockNote zh.${key}`, text, 'zh-CN')
-    for (const [key, text] of en) if (text) checkText('workbench', `packages/workbench/src/document-editor/BlockNoteSurface.tsx:126 BlockNote en.${key}`, text, 'en')
+    const file = 'packages/workbench/src/document-editor/blocknote-messages.ts'
+    for (const [key, text] of zh) if (text) checkText('workbench', `${file} blockNoteDictionary('zh-CN').${key}`, text, 'zh-CN', { file, key: `zh.${key}` })
+    for (const [key, text] of en) if (text) checkText('workbench', `${file} blockNoteDictionary('en').${key}`, text, 'en', { file, key: `en.${key}` })
   }
 }
 
@@ -309,7 +327,7 @@ const LOCALE_CHOICE = [
   /navigator\.languages?\b/, /documentElement\.lang\b/, /\.startsWith\(\s*['"]zh/, /\/\^zh\//, /process\.env\.(?:LANG|LC_ALL|LC_MESSAGES|LANGUAGE)\b/,
   /resolvedOptions\(\)\.locale/, /attributeFilter:\s*\[\s*['"]lang['"]/, /\bfunction localeOf\b|\bconst localeOf\b/,
 ]
-const LOCALE_OWNERS = new Set(['packages/host/src/locale.ts'])
+const LOCALE_OWNERS = new Set(['packages/host/src/locale.ts', 'packages/kernel/src/node/locale.ts'])
 
 for (const pkg of packages) {
   for (const file of sources(join(root, 'packages', pkg))) {
@@ -359,30 +377,32 @@ for (const pkg of packages) {
     const zh = existsSync(zhFile) ? JSON.parse(readFileSync(zhFile, 'utf8')) : {}
     for (const key of Object.keys(base)) if (!(key in zh)) add(pkg, 'A', `${relative(root, nls)} ${key}`, base[key], 'missing in package.nls.zh-cn.json')
     for (const key of Object.keys(zh)) if (!(key in base)) add(pkg, 'A', `${relative(root, zhFile)} ${key}`, zh[key], 'missing in package.nls.json')
-    for (const [key, value] of Object.entries(base)) checkText(pkg, `${relative(root, nls)} ${key}`, value, 'en')
-    for (const [key, value] of Object.entries(zh)) checkText(pkg, `${relative(root, zhFile)} ${key}`, value, 'zh-CN')
+    for (const [key, value] of Object.entries(base)) checkText(pkg, `${relative(root, nls)} ${key}`, value, 'en', { file: relative(root, nls), key })
+    for (const [key, value] of Object.entries(zh)) checkText(pkg, `${relative(root, zhFile)} ${key}`, value, 'zh-CN', { file: relative(root, zhFile), key })
   }
 }
 
 // --- report ----------------------------------------------------------------------------------------------------------
 const KINDS = { A: 'keys', B: 'untranslated', C: 'style/terms', D: 'hard-coded UI text', E: 'CLI output / errors', F: 'locale choice' }
+for (const f of findings) f.allowed = 'ABC'.includes(f.kind) && isAllowed(f)
+const accepted = findings.filter(f => f.allowed).length
 if (asJson) console.log(JSON.stringify(findings, null, 2))
 else {
-  if (!summaryOnly) for (const f of findings) console.log(`${f.kind} ${f.where}: ${f.note}${f.text ? ` — ${f.text}` : ''}`)
+  if (!summaryOnly) for (const f of findings) if (!f.allowed) console.log(`${f.kind} ${f.where}: ${f.note}${f.text ? ` — ${f.text}` : ''}`)
   const table = new Map()
-  for (const f of findings) {
+  for (const f of findings.filter(f => !f.allowed)) {
     const row = table.get(f.pkg) ?? Object.fromEntries(Object.keys(KINDS).map(k => [k, 0]))
     row[f.kind]++
     table.set(f.pkg, row)
   }
-  console.log(`\ni18n: ${catalogs} catalogs; ${banned.zh.length + banned.en.length} glossary terms not to use`)
+  console.log(`\ni18n: ${catalogs} catalogs; ${banned.zh.length + banned.en.length} glossary terms not to use; ${accepted} findings accepted by scripts/check-i18n.allow.json`)
   console.log(['package'.padEnd(20), ...Object.entries(KINDS).map(([k, v]) => `${k} ${v}`)].join(' | '))
   for (const pkg of packages) {
     const row = table.get(pkg)
     if (row) console.log([pkg.padEnd(20), ...Object.keys(KINDS).map((k, i) => String(row[k]).padStart(Object.values(KINDS)[i].length + 2))].join(' | '))
   }
 }
-const blocking = findings.filter(f => 'ABC'.includes(f.kind))
+const blocking = findings.filter(f => 'ABC'.includes(f.kind) && !f.allowed)
 if (strict && blocking.length) {
   console.error(`i18n: ${blocking.length} catalog findings`)
   process.exit(1)
