@@ -4,7 +4,7 @@ import type { AuthoringDiagnostics } from '@lincyaw/kernel'
 import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobSource, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, SourceTransactionAnswer, SourceTransactionChange, StartJobRequest, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
 import type { ApprovalRequest } from '@lincyaw/kernel'
 import type { OperationBatch } from './telemetry.ts'
-import type { VoiceCatalogAnswer, VoiceoverCancellation, VoiceoverJob, VoiceoverJobsAnswer, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest } from '@lincyaw/kernel'
+import type { VoiceCatalogAnswer, VoiceCloneStatus, VoiceoverCancellation, VoiceoverJob, VoiceoverJobsAnswer, VoiceoverRequest, VoiceoverSnapshot, VoicePreviewAnswer, VoicePreviewQuery, VoicePreviewQuote, VoicePreviewRequest } from '@lincyaw/kernel'
 import type { PageDeleteAnswer, PageDeletePlan, PageDeleteRequest } from '@lincyaw/kernel'
 import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, DocumentEvent } from '@lincyaw/kernel'
 import type { AppliedDocumentAuthoringAction, AuthoringCapabilities, DocumentAuthoringActionInspection, DocumentAuthoringActionPlan, DocumentAuthoringActionRead, DocumentAuthoringActionReference, DocumentAuthoringActionRequest } from '@lincyaw/kernel'
@@ -27,6 +27,9 @@ const isRetryLater = (response: Response) => response.status === 503 && response
 export const isObservedWorkspaceFailure = (error: unknown): boolean => typeof error === 'object' && error !== null && observedFailures.has(error)
 
 /** A route of the workspace server answered with an error. */
+/** A cloned voice to train: the sample and the consent statement are WAV recordings of the same speaker. */
+export interface VoiceCloneForm { engine?: string, voice: string, lang?: string, speaker: string, scope: string, sample: Blob, statement: Blob }
+
 export class WorkspaceServerError extends Error {
   readonly status: number
   readonly answer: ErrorAnswer
@@ -88,6 +91,9 @@ export interface WorkspaceClient {
   readPageDeletion(document: string, section: string): Promise<PageDeletePlan>
   deletePage(document: string, request: PageDeleteRequest): Promise<PageDeleteAnswer>
   readVoiceCatalog(document: string, engine?: string, lang?: string, signal?: AbortSignal): Promise<VoiceCatalogAnswer>
+  /** Registers the speaker's consent and starts training a cloned voice: the owner's, and paid for at the provider. */
+  cloneVoice(document: string, request: VoiceCloneForm, signal?: AbortSignal): Promise<VoiceCloneStatus>
+  readCloneStatus(document: string, voice: string, engine?: string, signal?: AbortSignal): Promise<VoiceCloneStatus>
   readVoiceover(document: string, signal?: AbortSignal): Promise<VoiceoverSnapshot>
   readVoiceoverJobs(document: string, signal?: AbortSignal): Promise<VoiceoverJobsAnswer>
   readProductionPlan(document: string, query: ProductionPlanQuery, signal?: AbortSignal): Promise<ProductionPlan>
@@ -363,6 +369,15 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     readPageDeletion: (document, section) => call(url('pages/delete', document, { section })),
     deletePage: (document, request) => post(url('pages/delete', document), request),
     readVoiceCatalog: (document, engine, lang, signal) => call(url('voice-catalog', document, { ...engine ? { engine } : {}, ...lang ? { lang } : {} }), { signal }),
+    cloneVoice: (document, request, signal) => {
+      const body = new FormData()
+      for (const [name, value] of [['engine', request.engine], ['voice', request.voice], ['lang', request.lang], ['speaker', request.speaker], ['scope', request.scope]] as const) if (value) body.set(name, value)
+      body.set('confirmed', '1')
+      body.set('sample', request.sample, 'sample.wav')
+      body.set('statement', request.statement, 'statement.wav')
+      return call(url('voice-clone', document), { method: 'POST', body, signal })
+    },
+    readCloneStatus: (document, voice, engine, signal) => call(url('voice-clone/status', document, { voice, ...engine ? { engine } : {} }), { signal }),
     readVoiceover: (document, signal) => call(url('voiceover', document), { signal }),
     readVoiceoverJobs: (document, signal) => call(url('voiceover/jobs', document), { signal }),
     readProductionPlan: (document, query, signal) => call(url('production-plan', document, { source: JSON.stringify(query.source), irRevision: query.irRevision }), { signal }),

@@ -942,6 +942,8 @@ export interface SpeechEngineInfo {
   wordTimes: boolean
   /** 不把数据发给第三方 */
   local: boolean
+  /** 引擎能用样本训练克隆音色（`SpeechService.cloneVoice`）；没有表示不能 */
+  clone?: boolean
 }
 
 export interface VoiceInfo {
@@ -1006,7 +1008,29 @@ export interface SpeechService {
   /** `speech.lock.json` 只留下给出的键，返回去掉了几个；不删除缓存中的文件。Node 端的服务有它（讲授的构建在发布之后清理） */
   pruneLock?(keep: ReadonlySet<string>): Promise<number>
   transcribe(request: TranscriptionRequest, signal?: AbortSignal): Promise<Transcript>
+  /**
+   * 训练一个克隆音色：先在运营者目录登记同意记录（与同意声明的录音放在一起），再把样本发给引擎；
+   * 克隆音色没有开启、引擎不能克隆时拒绝。训练要付费，浏览器由语音插件的所有者路由 POST clone 接入，要求 confirmed=1
+   */
+  cloneVoice?(request: VoiceCloneRequest, signal?: AbortSignal): Promise<VoiceCloneStatus>
+  /** 训练的进度；要有同意记录。就绪之后音色出现在目录中（GET clone/status） */
+  cloneStatus?(engine: string | undefined, voice: string, signal?: AbortSignal): Promise<VoiceCloneStatus>
 }
+
+export interface VoiceCloneRequest {
+  engine?: string
+  /** 要训练的音色：提供方的音色槽位（火山引擎的 S_…）或按引擎规则起的新名字 */
+  voice: string
+  /** 24 kHz 单声道 WAV 等引擎接受的样本，10 MB 以内 */
+  sample: Blob
+  lang?: string
+  /** 样本说的话，已知时给出：比对文字的提供方会拒绝不一致的样本 */
+  text?: string
+  consent: { speaker: string, scope: string, statement: Blob }
+}
+
+export type VoiceCloneState = 'training' | 'ready' | 'failed' | 'unknown'
+export interface VoiceCloneStatus { engine: string, voice: string, state: VoiceCloneState, trainingsLeft?: number, message?: string }
 
 export const SPEECH = defineService<SpeechService>('presmium.speech')
 
@@ -1665,7 +1689,8 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 | `presmium-language-server` | `@lincyaw/language-server` | `--stdio`、`--node-ipc`、`--socket=<port>` | 语言服务，VS Code 扩展启动它 |
 | `presmium-mcp [deck]` | `@lincyaw/mcp` | `--allow operate`（不加时不提供操作类工具） | 以 stdio 提供与 `/mcp` 相同的读取类工具，供编辑器中的 agent（Claude Code、Codex、VS Code）使用；没有放映位置与课堂 |
 | `presmium-lecture export [deck]` | `@lincyaw/addon-lecture` | `--track <id>`（默认合成的讲授 `script`，否则唯一的录制讲授）、`--out <file>`（只能是 `.webm`，默认 `<deck>/dist/<id>.webm`；不导出 MP4）、`--size <宽x高>`（默认 1280x720）、`--fps <n>`（默认 30）、`--burn <语言>`（把这种语言的字幕画进画面） | 构建网页与讲授（工作目录 `.presmium/lecture-export`，结束后删除），用 Playwright 的 Chromium 逐帧播放讲授并截图：每一帧先把讲授推进到这一帧的时刻，等组件准备好画面（`STEP_CLOCK.settled()`）再截图，动画按讲授的时刻画出（4.4 节“步内时间”）；某一帧画不出来（组件登记的准备失败，例如场景载入出错）时导出失败，指出这一帧的时刻；在另一个页面中用 Mediabunny 的 WebCodecs 路径把画面与音频（合成的片段或录音，各在其时刻）合成为 WebM（VP9 或 VP8、Opus），讲授轨的每种字幕成为一条 WebVTT 字幕轨（语言码取 ISO 639-2，不知道的语言给出警告），视频写完后也写在视频旁边（`<文件>.<语言>.vtt`）；`--burn` 画的字幕与字幕轨同样取文字，没有译文的句子不画；合成的声音在文件的标签中带 `AIGC` 标识。退出码 0 完成，2 用法错误或失败 |
-| `presmium-speech fake` | `@lincyaw/addon-speech` | `--port <n>`（默认取空闲端口）、`--host <地址>`（默认 `127.0.0.1`） | 确定性的假引擎，打印 `fake  <地址>`（`http://…/v1`，作为 `PRESMIUM_SPEECH_FAKE_URL`）。OpenAI 音频接口的形态加 Presmium 的扩展：`audio/voices`（音色 `alpha`、`beta` 与克隆音色 `cloned-lin`）、`audio/speech`、`audio/speech/timestamps`、`audio/transcriptions`；合成的 WAV（8 kHz，每词一个音调）在 `pmfk` 块中嵌入文字、音色与逐字时间，转写读回它们；`GET /requests` 列出收到的请求（方法、路径、`Authorization`），供用例计数 |
+| `presmium-speech fake` | `@lincyaw/addon-speech` | `--port <n>`（默认取空闲端口）、`--host <地址>`（默认 `127.0.0.1`） | 确定性的假引擎，打印 `fake  <地址>`（`http://…/v1`，作为 `PRESMIUM_SPEECH_FAKE_URL`）。OpenAI 音频接口的形态加 Presmium 的扩展：`audio/voices`（音色 `alpha`、`beta` 与克隆音色 `cloned-lin`）、`audio/voices/clone`（POST 训练，GET `?voice=` 查进度：第一次为训练中，之后就绪，训练过的音色进入音色列表）、`audio/speech`、`audio/speech/timestamps`、`audio/transcriptions`；合成的 WAV（8 kHz，每词一个音调）在 `pmfk` 块中嵌入文字、音色与逐字时间，转写读回它们；`GET /requests` 列出收到的请求（方法、路径、`Authorization`），供用例计数 |
+| `presmium-speech clone` | `@lincyaw/addon-speech` | `<引擎> <音色> <样本>`、`--speaker <说话人>`、`--scope <范围>`、`--statement <同意声明录音>`，可选 `--lang`、`--text`、`--operator-dir <目录>`；`--status` 只查进度 | 运营者训练克隆音色：与工作台的“克隆音色”对话框相同，先登记同意记录（声明录音存为同目录的 `<音色>.statement.<扩展名>`，记录中是它的 sha256），再把样本发给引擎，每 3 秒查一次进度直到就绪或失败。要求 `settings.presmium.speech.cloned: true`；训练按提供方的价格计费 |
 | `presmium-speech consent` | `@lincyaw/addon-speech` | `<引擎> <音色> <记录文件>`、`--operator-dir <目录>`（默认为当前工作区的运营者目录或 `PRESMIUM_OPERATOR_DIR`，10.5 节；同样不能在工作区之中） | 运营者登记克隆音色的同意记录：记录是 JSON `{ speaker, scope, date, statementSha256 }`，校验后写入运营者目录中的 `<consentDir>/<引擎>/<音色>.json`（`consentDir` 取当前工作区配置的 `settings.presmium.speech.consentDir`，权限 0600）。与所有者经语音插件路由的登记效果相同（第 11 节） |
 
 ## 8. 用例的分布
@@ -1852,7 +1877,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 | 文稿中的 Node 插件在服务端运行 | 文稿列出的插件与文稿目录中的包在 `presmium` 进程中运行，等于运行文稿的代码：`presmium serve` 与 `presmium dev` 相同；只打开信任的文稿与工作区（9.4 节） |
 | 编辑者或 agent 写的代码在服务端运行 | 代码只得到清理过的环境变量（`RunContext.env`，4.6 节），`presmium serve` 中只有允许列表；全部执行，运营者插件登记了进程沙箱时经它运行（10.6 节）；agent 的 shell 按 dsh 的权限模式 |
 | 同一 uid 的代码读其他进程的环境与内存 | 不声称挡住（9.4 节），只有进程沙箱在可用时隐藏其他进程 |
-| 文稿把服务端的凭据引向别的地址 | 文稿只写环境与引擎的名字，不能决定哪个凭据发往哪个地址：凭据与它的地址由运营者在持有凭据的 `presmium` 进程的环境变量中成对给出。远端环境：`PRESMIUM_ENV_<名>_TOKEN` 只发往 `PRESMIUM_ENV_<名>_URL`，文稿中的 `url` 与它不同源时不连接并给出错误诊断，不回退到通用的变量（如 `JUPYTER_TOKEN`）；没有给出地址时不发送令牌。语音：引擎 `<ID>` 的地址与凭据是 `PRESMIUM_SPEECH_<ID>_URL` 与 `PRESMIUM_SPEECH_<ID>_KEY`（火山引擎的地址固定在适配器中），文稿只用 `engine`、`voice` 选择引擎与音色；文稿中出现 `url`、`keyEnv` 这类字段时是错误，不被使用。模型：`DEEPSEEK_API_KEY` 只发往 DeepSeek 的官方地址，`PRESMIUM_MODEL_KEY` 只发往 `PRESMIUM_MODEL_URL` |
+| 文稿把服务端的凭据引向别的地址 | 文稿只写环境与引擎的名字，不能决定哪个凭据发往哪个地址：凭据与它的地址由运营者在持有凭据的 `presmium` 进程的环境变量中成对给出。远端环境：`PRESMIUM_ENV_<名>_TOKEN` 只发往 `PRESMIUM_ENV_<名>_URL`，文稿中的 `url` 与它不同源时不连接并给出错误诊断，不回退到通用的变量（如 `JUPYTER_TOKEN`）；没有给出地址时不发送令牌。语音：引擎 `<ID>` 的地址与凭据是 `PRESMIUM_SPEECH_<ID>_URL` 与 `PRESMIUM_SPEECH_<ID>_KEY`（火山引擎的地址固定在适配器中；它的控制台访问密钥 `PRESMIUM_SPEECH_VOLCENGINE_ACCESS_KEY_ID`、`_SECRET_ACCESS_KEY` 只经官方 SDK 发往 `open.volcengineapi.com`，显式传给客户端，SDK 的默认凭据链不被使用），文稿只用 `engine`、`voice` 选择引擎与音色；文稿中出现 `url`、`keyEnv` 这类字段时是错误，不被使用。模型：`DEEPSEEK_API_KEY` 只发往 DeepSeek 的官方地址，`PRESMIUM_MODEL_KEY` 只发往 `PRESMIUM_MODEL_URL` |
 | 提示注入（学习者的问题、远端输出、网页内容） | 学习者的问题不到达任何 agent 与服务端：页面把问题与页面中的文字发给读者自己填写的模型服务，回答只是显示的文字与跳转的链接（`presmium://sections/<章节>`），不调用任何工具；回答在课堂中公开前由主讲确认（“发给课堂”）。作者的 agent 读到的文稿与远端输出照旧可能含有注入的指令，它的写入经审阅、shell 与网络经确认（上一行） |
 | 凭据泄露 | 凭据不写入文稿、IR 与产物；代理代加凭据；`presmium check` 对文稿 metadata中像凭据的字段告警（字段名含 `token`、`secret`、`password`、`key` 且值不是环境变量名，或值形如常见的密钥前缀）；编译时执行的代码只得到清理过的环境（见上）；启动 agent 子进程时去掉全部 `PRESMIUM_` 开头的变量。凭据在 `presmium` 进程与 agent 的环境中（同一 uid 拿得到，9.4 节） |
 | 数据外发 | DeepSeek Harness 的会话日志上传与遥测由配置模板关闭，并以 `DSH_TELEMETRY_MODE=DISABLED` 启动；语音与模型的服务提供方在界面上标明（读者的提问面板写明读者自己填写的服务与模型；转写与合成的入口写明 `SpeechEngineInfo.provider`），运营者的服务提供方的名字来自运营者的配置（`PRESMIUM_SPEECH_<ID>_PROVIDER`），在任何请求之前就已知，没有定义的引擎不发出请求；录音只在显式“转写”时发出；读者的问题只发往读者自己填写的服务，不带站点的 Cookie 与来源 |
@@ -1861,7 +1886,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 | 仓库中的脚本被 git 执行 | 工作区的 git 命令关闭钩子与 fsmonitor（`-c core.hooksPath=/dev/null -c core.fsmonitor=false`）；审阅的 git 命令在审阅自己的 git 目录中运行，只用仓库的对象库与工作树，不读仓库 git 目录中的配置与钩子（工作树的 `.gitattributes` 照常读，但它点名的过滤驱动没有定义，不会运行，10.7 节），并在运行 git 之前恢复 agent 写进仓库 git 目录的钩子与配置，留给作者与工作区之后的 git 命令（4.8 节）。任务进行中工作区自己的 git 命令（状态栏的 `git status`）仍读仓库的配置：单份文稿的仓库中，agent 在任务进行中写进 `.git/config` 的过滤驱动可能被它执行，直到看守在下一步恢复它；这与 agent 本来就能以作者的身份运行命令（经确认的 shell）属于同一个信任边界 |
 | 文档目录中的符号链接让服务端写到别处或读到别处 | 服务端写文档目录都经 `DOCUMENT_FILES`（审阅的回退与恢复、文档操作改写的链接、撤销，讲授与语音插件的写入）：途中的符号链接被替换而不被跟随（4.8 节）；插件写入中的例外是课堂服务的归档，直接写 `.presmium/classroom/`（10.2 节），与舞台插件的圈画路由，直接写 `.presmium/drawings/`（5.12 节），编译器的执行录制 `.presmium/freeze/` 也直接写；讲授插件的路由读文件时不跟随链接、不等待 FIFO（`addon-lecture/test/files.test.ts`） |
 | GPU 被学习者代码拖垮 | 限制派发规模与重复次数；超时就销毁设备并结束 Worker；监听设备丢失，避免浏览器把站点列入 GPU 黑名单；可以只给录制输出 |
-| 音色滥用 | 克隆音色默认关闭：只在运营者设置 `settings.presmium.speech.cloned: true` 时可用，且每个克隆音色要有本人的同意记录 `<consentDir>/<引擎>/<音色>.json`（说话人、范围、日期、同意声明录音的 sha256），语音服务在合成前检查，缺一即拒绝；合成缓存命中时同样检查，同意撤回之后服务端的讲授路由也不再给出已合成的讲授与它的片段。同意记录是运营者的数据，在运营者目录中，不在文稿里：只有所有者经语音插件的路由（`role: owner`）登记，或运营者用 `presmium-speech consent` 登记；文稿目录中的同意记录被忽略，文档的提交不包含它们。运营者目录在工作区之外的用户状态目录中（10.5 节），agent 对它的权限请求一律拒绝，同一 uid 的代码绕过工具写它是残余风险（9.4 节）。合成的音频在播放界面与元数据中标明由 AI 生成（GB 45438-2025、《人工智能生成合成内容标识办法》）：元数据由语音服务在写入缓存时加入，不依赖引擎 |
+| 音色滥用 | 克隆音色默认关闭：只在运营者设置 `settings.presmium.speech.cloned: true` 时可用，且每个克隆音色要有本人的同意记录 `<consentDir>/<引擎>/<音色>.json`（说话人、范围、日期、同意声明录音的 sha256），语音服务在合成前检查，缺一即拒绝；合成缓存命中时同样检查，同意撤回之后服务端的讲授路由也不再给出已合成的讲授与它的片段。同意记录是运营者的数据，在运营者目录中，不在文稿里：只有所有者经语音插件的路由（`role: owner`：`consent`，以及训练克隆音色的 `clone`，它先登记、后发送样本，同意声明的录音存在记录旁边）登记，或运营者用 `presmium-speech consent`、`presmium-speech clone` 登记；文稿目录中的同意记录被忽略，文档的提交不包含它们。运营者目录在工作区之外的用户状态目录中（10.5 节），agent 对它的权限请求一律拒绝，同一 uid 的代码绕过工具写它是残余风险（9.4 节）。合成的音频在播放界面与元数据中标明由 AI 生成（GB 45438-2025、《人工智能生成合成内容标识办法》）：元数据由语音服务在写入缓存时加入，不依赖引擎 |
 | 只给教师的内容到达学习者 | 学习者只得到学生版的构建（`presmium build --audience student`），它的产物扫描泄漏；读者问答的上下文取自页面中的 IR，学生版站点的 IR 本来就没有教师内容。教师专用指令中的脚注留在指令之中，受众标记范围内的块随之去掉；任何构建都不发布文档的源码（指向另一份文档 `lecture.json` 的链接在工作区站点中改写为它的页面，`ir.md`）。学生版的构建只发布录制的讲授中摘要与录制时相同的章节的话语与音视频 |
 | 请求体耗尽服务端的内存 | 插件路由的请求体默认至多 1 MiB（`Route.maxBody` 可放大，讲授录制的分块为 `MAX_CHUNK`）：`Content-Length` 超过时在处理函数运行之前回答 413，分块传输读到上限即截断 |
 | 提问耗尽资源与模型预算 | 读者的问题不占用服务端与运营者的模型：每位读者用自己的服务与密钥，费用由读者自己承担；主讲在课堂中生成“AI 回答”用的是主讲自己填写的服务。运营者的模型只用于作者自己在工作台中的会话 |
@@ -1921,7 +1946,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 
 本仓库根 `pnpm-workspace.yaml` 将 ProseMirror View 约束为 1.42.6，并让 BlockNote 与 Tiptap 共用同一份实例。在浏览器版本对照中，1.42.7／1.42.8 使 BlockNote 收缩的中文预编辑分成两段；版本分界与真实系统输入、正文及字幕保存验证见[输入法回归记录](benchmarks/document-ime-regression-2026-10-27.md)。没有修改依赖源码或替换原生输入机制。这是仓库根安装与构建的约束，发布包不会自动把根 overrides 传给外部消费者；独立安装的依赖约束与输入行为仍需单独验证。
 
-语音服务没有采用 SDK：火山引擎没有 npm SDK，OpenAI 音频接口形态的服务用 `fetch` 即可；语音插件的适配器直接调用 HTTP 与 WebSocket 接口。
+火山引擎的控制台接口（OpenAPI，`speech_saas_prod`）用官方 SDK `@volcengine/speechsaasprod`（ListSpeakers，模型的音色列表）与 `@volcengine/speechsaasprod20250521`（BatchListMegaTTSTrainStatus，账号的克隆音色），Apache-2.0，凭据显式传入。合成、转写与训练克隆音色的数据面接口（`/api/v3/tts/unidirectional`、`/api/v3/tts/voice_clone`、`/api/v3/tts/get_voice` 等）没有 npm SDK，适配器直接调用 HTTP；OpenAI 音频接口形态的服务用 `fetch` 即可。没有控制台凭据时，火山引擎的音色来自随包的目录 `volcengine-voices.ts`（语音合成 2.0 的全部音色，由 `packages/addon-speech/scripts/volcengine-voices.mjs` 从官方的音色列表文档生成）。
 
 不采用：ffmpeg.wasm（核心为 GPL）、Motion Canvas（2024 年底起停止维护）、TensorFlow.js 的 WebGPU 后端与 webgpu-torch（停更）、Jupyter Kernel Gateway（停更，浏览器跨域有缺陷）、Daytona 等 AGPL 许可的沙箱平台、edge-tts（非官方接口）、在进程内 mock 语音或模型的测试库。
 

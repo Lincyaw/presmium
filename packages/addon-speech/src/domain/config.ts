@@ -7,6 +7,9 @@ export const PROTOCOL_PATH = 'v1'
 
 export const CONSENT_PATH = 'consent'
 
+/** Training a cloned voice (`clone`) and its status (`clone/status`); for the owner only. */
+export const CLONE_PATH = 'clone'
+
 export const DEFAULT_CONSENT_DIR = 'consent'
 
 export interface DeckSpeechConfig {
