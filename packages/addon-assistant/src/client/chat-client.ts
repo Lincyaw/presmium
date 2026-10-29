@@ -1,4 +1,5 @@
 import { EventSourceParserStream } from 'eventsource-parser/stream'
+import { currentLocale } from '@lincyaw/host'
 import type { Navigation } from '@lincyaw/host'
 import type { AgentContext, AskClient } from '@lincyaw/kernel'
 import { askMessages, askProvider, completionsUrl, completionText, sectionText, serviceError, streamDelta } from '../domain/index.ts'
@@ -25,7 +26,7 @@ function placeOf(context: AgentContext, webViewer: WebViewerAccess | undefined, 
   const id = position?.section ?? context.section
   const title = page?.querySelector('h1, h2, h3')?.textContent?.trim() || document.title
   return {
-    lang: document.documentElement.lang || undefined,
+    lang: currentLocale(),
     sections: id ? [{ id, title }] : [],
     ...id && text ? { section: { id, title, text } } : {},
     ...selection,
@@ -71,7 +72,7 @@ export function createAskClient(options: ChatClientOptions): AskClient {
       if (!response.ok) throw new Error(serviceError(response.status, await response.text().catch(() => '')))
       if (!response.headers.get('content-type')?.includes('text/event-stream') || !response.body) {
         const text = completionText(await response.json().catch(() => undefined))
-        if (text === undefined) throw new Error(serviceError(response.status, 'no answer'))
+        if (text === undefined) throw new Error(serviceError(response.status, ''))
         yield text
         return
       }

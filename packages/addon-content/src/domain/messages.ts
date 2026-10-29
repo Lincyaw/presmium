@@ -7,6 +7,6 @@ export interface ContentMessages {
 }
 
 export const MESSAGES: Record<Locale, ContentMessages> = {
-  'zh-CN': { plantUml: 'PlantUML 图', mediaPlaybackFailed: '媒体未能播放，请检查文件或播放权限后重试。', toggle: node => `折叠或展开：${node}` },
-  'en': { plantUml: 'PlantUML diagram', mediaPlaybackFailed: 'Media could not play. Check the file or playback permission, then retry.', toggle: node => `Fold or unfold: ${node}` },
+  'zh-CN': { plantUml: 'PlantUML 图', mediaPlaybackFailed: '无法播放媒体。请检查文件或播放权限，然后重试。', toggle: node => `折叠或展开：${node}` },
+  'en': { plantUml: 'PlantUML diagram', mediaPlaybackFailed: 'Couldn’t play the media. Check the file or playback permission, then try again.', toggle: node => `Fold or unfold: ${node}` },
 }
