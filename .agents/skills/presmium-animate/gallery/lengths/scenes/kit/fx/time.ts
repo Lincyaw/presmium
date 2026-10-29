@@ -45,3 +45,34 @@ export function shake(t: number, a: number, duration: number, seed = 1): [number
   const s = (k: number, f: number) => Math.sin(2 * Math.PI * f * t + seed * (k + 1) * 1.7)
   return [a * fade * (0.6 * s(0, 23) + 0.4 * s(1, 37)), a * fade * (0.6 * s(2, 29) + 0.4 * s(3, 41))]
 }
+
+export const mix = (a: number, b: number, p: number) => a + (b - a) * p
+
+/**
+ * Eases as plain functions of p in [0, 1], named by their exponent: `out3` is GSAP's `power2.out` (GSAP's powerN is a
+ * power of N + 1). A scene that draws every frame from the time (`defineScene`) needs no library for them.
+ */
+export const ease = {
+  linear: (p: number) => p,
+  in2: (p: number) => p * p,
+  out2: (p: number) => 1 - (1 - p) ** 2,
+  out3: (p: number) => 1 - (1 - p) ** 3,
+  out4: (p: number) => 1 - (1 - p) ** 4,
+  inOut2: (p: number) => (p < 0.5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2),
+  inOut3: (p: number) => (p < 0.5 ? 4 * p ** 3 : 1 - (-2 * p + 2) ** 3 / 2),
+  outExpo: (p: number) => (p >= 1 ? 1 : 1 - 2 ** (-10 * p)),
+  /** back.out(s): passes 1 and comes back; s = 1.7 overshoots by about 10%. */
+  backOut: (s = 1.7) => (p: number) => 1 + (s + 1) * (p - 1) ** 3 + s * (p - 1) ** 2,
+}
+
+/** A cubic-bezier(x1, y1, x2, y2) ease, solved for x by bisection, as CSS writes them. */
+export function bezier(x1: number, y1: number, x2: number, y2: number): (p: number) => number {
+  const at = (a: number, b: number, s: number) => 3 * a * s * (1 - s) ** 2 + 3 * b * s * s * (1 - s) + s ** 3
+  return p => {
+    if (p <= 0) return 0
+    if (p >= 1) return 1
+    let lo = 0, hi = 1
+    for (let i = 0; i < 30; i++) { const mid = (lo + hi) / 2; if (at(x1, x2, mid) < p) lo = mid; else hi = mid }
+    return at(y1, y2, (lo + hi) / 2)
+  }
+}

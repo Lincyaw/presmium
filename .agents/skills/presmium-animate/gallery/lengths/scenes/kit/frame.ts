@@ -5,9 +5,9 @@
 /** Type sizes in cqw: a caption is readable in a video, a title fills about a third of the width. */
 export const TYPE = { caption: 1.9, body: 2.6, label: 2.2, lead: 3.6, title: 6.2, hero: 9 }
 
+const ROOT = `.lf { position: absolute; inset: 0; container-type: size; overflow: hidden; font-family: var(--pm-font-sans); color: var(--pm-color-ink); line-height: 1.25; }`
 const BASE = `
-  .lf { position: absolute; inset: 0; container-type: size; overflow: hidden; font-family: var(--pm-font-sans); color: var(--pm-color-ink); line-height: 1.25; }
-  .lf * { box-sizing: border-box; }
+  * { box-sizing: border-box; }
   .lf-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2cqh; text-align: center; }
   .lf-title { font: 600 ${TYPE.title}cqw/1.1 var(--pm-font-serif); letter-spacing: -0.01em; white-space: nowrap; }
   .lf-lead { font-size: ${TYPE.lead}cqw; font-weight: 600; white-space: nowrap; }
@@ -19,9 +19,12 @@ const BASE = `
   .lf-mono { font-family: var(--pm-font-mono); }
 `
 
-/** Fills `root` with the frame, the piece's own CSS and its markup; returns the frame element. */
+/**
+ * Fills `root` with the frame, the piece's own CSS and its markup; returns the frame element. A `<style>` is page-wide,
+ * so the CSS sits in `@scope`: two scenes on one page can both style `.card` without restyling each other's.
+ */
 export function frame(root: HTMLElement, css: string, html: string): HTMLElement {
-  root.innerHTML = `<div class="lf"><style>${BASE}${css}</style>${html}</div>`
+  root.innerHTML = `<div class="lf"><style>${ROOT}@scope {${BASE}${css}}</style>${html}</div>`
   return root.firstElementChild as HTMLElement
 }
 

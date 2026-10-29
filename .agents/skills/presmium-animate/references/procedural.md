@@ -72,13 +72,16 @@ Each is a plan, with its thesis and states; build it by `story.md`.
 
 The Fourier fit, the de Casteljau scene and the universal-approximation storyboard (`storyboards.md`) share one picture, "add parts, watch the error fall"; give them the same vector-editor look so they read as a series.
 
-## Assets and licences
+## Assets and sources
 
 - **Animation runtimes**: Rive's web runtime is MIT, and a linear animation's time is settable (a state machine can only advance, so it would be replayed from 0); Lottie (lottie-web, MIT) seeks with `goToAndStop`; LottieFiles' free animations use the Lottie Simple License; DragonBonesJS is MIT; Spine's runtimes need an editor licence. None of them is a Presmium scene library today; adding one is a dependency decision.
-- **Code to learn from**: argonaut's procedural animals (MIT, <https://github.com/argonautcode/animal-proc-anim>), flubber (MIT), simplex-noise (MIT), Red Blob Games (MIT or Apache), Nicky Case (CC0), Manim (MIT). Read but don't copy: Shadertoy shaders default to CC BY-NC-SA 3.0, OpenProcessing sketches carry their author's licence, p5.js is LGPL-2.1, and Inigo Quilez's articles state no licence (re-derive from the maths). Non-commercial terms conflict with scenes shipped in other people's documents.
+- **Code to learn from**: argonaut's procedural animals (MIT, <https://github.com/argonautcode/animal-proc-anim>), flubber (MIT), simplex-noise (MIT), Red Blob Games (MIT or Apache), Nicky Case (CC0), Manim (MIT). Shadertoy shaders, OpenProcessing sketches, p5.js examples and Inigo Quilez's articles (re-derive their maths into the scene's own time function).
 - **Icons** (stroke icons draw on with `pathLength`, recoloured by tokens): Lucide (ISC), Tabler (MIT), Phosphor (MIT; a weight change is a cut, not a tween), Simple Icons (CC0 data; the trademarks remain their owners').
-- **Characters and illustrations**: Open Peeps (CC0; separate parts that can ride a bone chain), Humaaans (CC0), Kenney (CC0), OpenMoji (CC BY-SA 4.0). unDraw forbids bundling and AI training: avoid it here.
+- **Characters and illustrations**: Open Peeps (CC0; separate parts that can ride a bone chain), Humaaans (CC0), Kenney (CC0), OpenMoji (CC BY-SA 4.0). unDraw.
 - **Strokes and writing**: Make Me a Hanzi (9,000+ characters with stroke outlines and medians for stroke-order animation; Arphic Public License graphics, LGPL data; <https://github.com/skishore/makemeahanzi>), KanjiVG (CC BY-SA 3.0), Quick, Draw! (CC BY 4.0; strokes keep their timing, so a drawing replays at its author's speed), Hershey single-stroke fonts.
+- **Logos**: theSVG first, then the organisation's GitHub avatar, then the site's favicon; never redraw a logo. Use a brand's mark only for that exact brand.
+- **Sound and music**: see `lengths.md`, "Sound and music".
+- **Where each asset came from** goes in the reading view's notes: the source and what was changed, so the next author can replace it.
 - **Motion data**: the CMU Graphics Lab motion capture database ("free for all uses", not for resale), for a stick figure or to check an IK gait.
 - **Already in the kit**: seeded `mulberry32` and `hash`, `noise1`/`noise2`, `spring01`, `wobble`, `shake`, `smoothPath`, `samplePath`, `trail`, and the Fourier series with `bezierPath`.
 

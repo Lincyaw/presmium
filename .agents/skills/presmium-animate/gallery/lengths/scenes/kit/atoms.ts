@@ -97,7 +97,7 @@ export function atoms(gsap: typeof Gsap, tl: Timeline) {
 export const POINTER = `<div class="lf-pointer"><div class="lf-pointer__ring"></div><svg class="lf-pointer__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2 L20 12 L12 13.6 L8.2 21 Z" fill="var(--pm-color-pointer-fill)" stroke="var(--pm-color-pointer-stroke)" stroke-width="1.6" stroke-linejoin="round" /></svg></div>`
 
 export const POINTER_CSS = `
-  .lf-pointer-layer { position: absolute; inset: 0; pointer-events: none; }
+  .lf-pointer-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
   .lf-pointer { position: absolute; left: 0; top: 0; width: 2.6cqw; height: 2.6cqw; transform-origin: 0 0; }
   .lf-pointer__arrow { position: absolute; left: -0.3cqw; top: -0.2cqw; width: 100%; height: 100%; overflow: visible; }
   .lf-pointer__ring { position: absolute; left: -2.6cqw; top: -2.6cqw; width: 5.2cqw; height: 5.2cqw; border-radius: 50%; border: 0.3cqw solid var(--pm-color-accent); }

@@ -227,6 +227,9 @@ export default function SceneView(props: SceneProps) {
       const box = { width: root.clientWidth, height: root.clientHeight }
       dimensions = { width: box.width, height: box.height }
       let swatch: CanvasRenderingContext2D | null | undefined
+      // A build that draws text on a canvas measures and paints it with the page's fonts, so they load first.
+      await document.fonts.ready
+      if (!current()) { layer.remove(); return }
       const made = await definition.create({
         root: layer,
         parameters: sceneParameters,
@@ -261,6 +264,8 @@ export default function SceneView(props: SceneProps) {
         }
         throw error
       })
+      // The first frame shows the scene's pictures: the video export captures a step as soon as it is ready.
+      await Promise.all([...layer.querySelectorAll('img')].map((img) => img.decode().catch(() => undefined)))
       if (!current()) {
         try { made.dispose?.() }
         finally { layer.remove() }

@@ -193,9 +193,9 @@ export type ThreeAddons = Awaited<ReturnType<typeof threeAddons>>
 
 /**
  * A Three.js scene: the adapter keeps logical dimensions for the scene and a drawing buffer matched
- * to `root`'s displayed pixels, including presentation scaling; `build` returns how to draw it at a time.
+ * to `root`'s displayed pixels, including presentation scaling; `build` returns (or resolves to) how to draw it at a time.
  */
-export function threeScene(build: (ctx: SceneContext & { THREE: typeof ThreeModule, renderer: ThreeModule.WebGLRenderer, addons: ThreeAddons }) => ThreeView | ThreeView['render']): SceneDefinition {
+export function threeScene(build: (ctx: SceneContext & { THREE: typeof ThreeModule, renderer: ThreeModule.WebGLRenderer, addons: ThreeAddons }) => ThreeView | ThreeView['render'] | Promise<ThreeView | ThreeView['render']>): SceneDefinition {
   return {
     engine: 'three',
     async create(ctx) {
@@ -223,7 +223,8 @@ export function threeScene(build: (ctx: SceneContext & { THREE: typeof ThreeModu
         return true
       }
       syncBuffer()
-      const made = build({ ...ctx, THREE, renderer, addons })
+      // An async build can load its textures (`new THREE.TextureLoader().loadAsync(url)`) before the first frame.
+      const made = await build({ ...ctx, THREE, renderer, addons })
       const view: ThreeView = typeof made === 'function' ? { render: made } : made
       return {
         seek(ms) {

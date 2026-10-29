@@ -30,6 +30,9 @@ Each library counts time in its own unit: GSAP and Motion in seconds (`at(k) / 1
 - **Speed effects from speed.** Trails, smears and blur are earlier poses of the same function of time or a function of the velocity of its ease, so they are exact at any seek and vanish at rest.
 - **A state owns its end.** A step rests at the end of its state (`ms = at(k + 1)`), so that frame must show this state's result. Clamped interval progress (`at(k)` to `at(k + 1)`) gets this for free; a scene that picks a discrete state or round from the time counts the boundary in the earlier one (`ms > at(k + 1)`), or every step rests on the first frame of the next.
 - **Rest frames stay still.** Springs keep creeping after they look settled and re-rasterize text; snap to the exact end within 0.001. Keep an identity 3D transform at rest instead of removing it, and give `preserve-3d` elements `will-change: transform`: Chromium rasterizes a layer that once had a 3D transform differently, so a frame would depend on how it was reached.
+- **Pictures** are `<img>` elements (a file in the document's `public/` or a URL): the viewer waits for every `<img>` in the scene and for the fonts before the first frame, so an export opens on the picture. A CSS background image or a picture drawn on a canvas is not waited for; a Three.js scene loads its textures in an async build.
+- **Styles:** `frame()` (`gallery/lengths/scenes/kit/frame.ts`) puts the scene's CSS in `@scope`, so two scenes on a page can both style `.card`; a `<style>` written by hand is page-wide. Inside `@scope` a selector matches only below the frame's root. `cqw`/`cqh` inside an element that is itself a size container are that element's units, not the frame's.
+- **A list that makes steps** (clicks, messages, screens) needs as many declared states as items; nothing checks the two agree.
 - **Seeking a one-state scene:** its reading view shows no step buttons (they appear only with more than one state); check seeking with the scrubber (`.pm-scene__scrub`).
 
 ## Pick by the picture
@@ -48,14 +51,17 @@ One scene uses one library. A section that needs a diagram and a 3D view gets tw
 
 ## Find an effect
 
-Each entry ``<library> `<name>` `` is the file `gallery/<library>/scenes/<name>.ts` in this skill's folder; its section in `gallery/<library>/lecture.json` (search its definition parameters for the scene name) shows its declared durations and narration. The D3 scenes import helpers from `gallery/d3/scenes/kit/`: copy that folder along with them.
+Each entry ``<library> `<name>` `` is the file `gallery/<library>/scenes/<name>.ts` in this skill's folder, and ``catalog/<deck> `<name>` `` is `gallery/catalog/<deck>/scenes/<name>.ts` (pieces adapted from the HyperFrames catalog, with an author's parameters for text, images and data); the scene's section in that deck's `lecture.json` (search its definition parameters for the scene name) shows its declared durations and parameters. Scenes import helpers from their deck's `scenes/lib/` or `scenes/kit/` and from `gallery/lengths/scenes/kit/`: copy those along with them.
 
 | Effect | Where |
 |---|---|
 | Grid or list appearing in a wave (from the centre, by row, by distance) | gsap `stagger-grid`, anime `grid-ripple`, motion `ripple` |
-| Text rising per character, word or line | gsap `split-text`, anime `token-split` |
-| Typing code or a sentence | gsap `text-plugin`, remotion `typewriter` |
-| Word-by-word highlight, kinetic typography, captions | remotion `word-highlight`, `kinetic-type`, `lower-third` |
+| Text rising per character, word or line | gsap `split-text`, anime `token-split`, catalog/text-captions `text-reveal` |
+| Typing code or a sentence | gsap `text-plugin`, remotion `typewriter`, catalog/data-code `code-typing`, `terminal-run` |
+| Word-by-word highlight, kinetic typography, captions | remotion `word-highlight`, `kinetic-type`, `lower-third`, catalog/text-captions `captions`, `lower-third`, `camera-caption`, catalog/motion-showcase `focus-words` |
+| Title cards and type that hits: a word slams in, letters swap like a slot, a weight wave, a scramble that resolves | catalog/text-captions `title-card`, `glyph-slam`, `slot-swap`, `weight-wave`, `scramble-reveal` |
+| Correcting a claim: striking a word and writing the right one, two options side by side | catalog/text-captions `strike-replace`, `versus-cards` |
+| A code change: diff, one version morphing into the next, focusing lines | catalog/data-code `code-diff`, `code-morph`, `code-focus` |
 | Drawing a line, curve or graph edges | gsap `draw-svg`, anime `draw-curve`, `draw-fill`, motion `draw`, remotion `path-draw`, three `lorenz` |
 | Highlighting a path in a graph (BFS) | gsap `draw-svg`, anime `graph-bfs` |
 | Moving along a path, packets on a link | gsap `motion-path`, anime `packet-path`, motion `flow`, `packet`, three `route` |
@@ -72,7 +78,18 @@ Each entry ``<library> `<name>` `` is the file `gallery/<library>/scenes/<name>.
 | Heatmaps and color scales | anime `attention-heat`, motion `heatmap`, d3 `heatmap-scales` |
 | Emphasis: pulse, shake, bounce, blur focus | gsap `emphasis`, motion `emphasis`, `blur`, `pulse` |
 | Card flips and layers in depth | gsap `flip-3d`, anime `flip-cards`, motion `flip` |
-| Panels replacing each other: wipe, slide, fade | remotion `series-transition`, `wipe`, motion `wipe` |
+| Panels replacing each other: wipe, slide, fade | remotion `series-transition`, `wipe`, motion `wipe`, catalog/transitions-camera `slide-wipe`, `fade-through`, `grid-wipe`, `iris`, `flip` |
+| Cuts with a cause: a whip pan, a cut on speed, a match cut on a shape or a word | catalog/transitions-camera `whip-pan`, `velocity-cut`, `match-cut`, catalog/text-captions `text-match-cut` |
+| Camera moves: push in, pull back to reveal, dolly zoom, rack focus, zoom through, pan across stations, split screen | catalog/transitions-camera `push-in`, `pull-back`, `dolly-zoom`, `rack-focus`, `zoom-through`, `pan-stations`, `split-compare` |
+| Marking up content: a pen underlines and circles, keywords marked, callouts, a spotlight, a speech bubble, a hand-drawn checklist or flow | catalog/annotate-cursor `pen-annotate`, `keyword-marks`, `callout`, `spotlight`, `speech-bubble`, `sketch-checklist`, `sketch-flow`, catalog/motion-showcase `outline-callout`, `whiteboard-sketch` |
+| A pointer using a product: clicks, selecting text, an agent operating a screen, a toggle, a form, a context menu, drag and drop, zooming in on each click | catalog/annotate-cursor `click-trail`, `text-select`, `agent-cursor`, catalog/product-ui `cursor-zoom`, `settings-toggle`, `signup-form`, `context-menu`, `drag-drop` |
+| A product's screenshots: in a browser, phone or tablet frame, several devices, a flow of screens, before and after | catalog/product-ui `device-frame`, `device-splay`, `screen-flow`, `before-after`, catalog/shader-3d-bg `before-after` |
+| App moments: notifications stacking, a chat, an assistant's answer streaming in, an onboarding stepper, a card opening into its detail, a quote | catalog/product-ui `notification-stack`, `chat-thread`, `ai-answer`, `onboarding-stepper`, `modal-morph`, `testimonial` |
+| One idea and its parts: a hub with spokes, items surrounding a centre, cards in a grid, a carousel, a checklist | catalog/motion-showcase `hub-spokes`, `surround`, `card-grid`, `carousel`, `checklist` |
+| A number on a gauge, a decision tree, a map of tiles, a signal on an oscilloscope, a chart that tells its point | catalog/motion-showcase `stat-gauge`, catalog/data-code `decision-tree`, `tile-map`, `oscilloscope`, `chart-story` |
+| Physical motion: a pendulum settling, an exit with weight, confetti, stop-motion | catalog/motion-showcase `pendulum-settle`, `physical-exit`, `confetti`, `stop-motion` |
+| Figures or samples in 3D: a ring of chart cards, a sphere of samples | catalog/shader-3d-bg `figure-ring`, `sample-sphere` |
+| Shaders that explain: noise becoming marble, waves interfering, a paper-grain layer | catalog/shader-3d-bg `noise-to-marble`, `wave-interference`, `paper-grain` |
 | Canvas drawn from tweened values (optimisation paths) | anime `descent-canvas`, motion `canvas` |
 | Random-looking but reproducible (k-means, Monte Carlo, scatter) | gsap `seeded`, anime `kmeans-seeded`, remotion `monte-carlo` |
 | Comparing easings or springs | anime `easing-lanes`, motion `easings`, `spring-compare`, remotion `easing` |
@@ -109,6 +126,8 @@ export default gsapScene(({ root, gsap, plugins, at, color }) => {
 Presmium sets `force3D: false` (so a frame looks the same however it was reached) and registers the plugins. `plugins` holds `SplitText`, `TextPlugin`, `DrawSVGPlugin`, `MorphSVGPlugin`, `MotionPathPlugin`, `CustomEase`, `CustomBounce`, `CustomWiggle`, `Physics2DPlugin`, `PhysicsPropsPlugin` and `Flip`, all registered: tweens can use `drawSVG`, `morphSVG`, `motionPath`, `text`, `physics2D`, and the scene calls `plugins.SplitText.create(...)`, `plugins.CustomWiggle.create(...)`.
 
 - **Later steps:** `from()` and `fromTo()` apply their start values when the timeline is built. For something that appears in step k > 0, set its hidden state with `gsap.set` (e.g. `drawSVG: 0`, `opacity: 0`, `motionPath: { …, end: 0 }`) and tween it with `to()` or `fromTo(…, { immediateRender: false })` at `s(k)`. Without the `set`, a path drawn in step 2 shows fully drawn during steps 0 and 1.
+- **A look computed from the time alone** (every element placed by a function of `t`) is `defineScene`, with eases from `gallery/lengths/scenes/kit/fx/time.ts`; a GSAP tween that only drives a clock adds nothing.
+- **GSAP can't tween `var()` or `color-mix()`:** tween to `color('accent')`; GSAP 3 has no `className` tween. SVG shapes scaled or rotated about their centre need `transform-box: fill-box; transform-origin: center`.
 - **Callbacks never fire** (`onUpdate`, `onComplete`, `tl.call`). Numbers: `textContent` with `snap: { textContent: 1 }` or `modifiers: { textContent: v => (+v).toFixed(2) }`. Text swaps: `tl.set(el, { textContent: 'lo' }, time)`, which seeking back undoes.
 - **Stagger with `repeat` or `yoyo`:** put them inside `stagger: { …, yoyo: true, repeat: 1 }`; on the tween they repeat the whole wave and run into the next step.
 - **TextPlugin:** `preserveSpaces: true` keeps indentation in code.
@@ -220,6 +239,8 @@ D3 does not animate here: `transition()` and `d3.timer` run on their own clock a
 
 ## Three.js
 
+Light a product or object with a warm key and a cool rim; keep metal roughness at 0.45 or more, or it renders as noise. One NaN pixel turns the whole frame black through bloom: clamp what a shader divides by.
+
 ```ts
 import { threeScene } from '@lincyaw/addon-motion/scene'
 
@@ -237,6 +258,8 @@ export default threeScene(({ THREE, renderer, addons, at, width, height, color, 
 
 `addons` holds `CSS2DRenderer`, `CSS2DObject`, `Line2`, `LineGeometry`, `LineMaterial`, `ParametricGeometry`, `RoundedBoxGeometry` and `ConvexGeometry`.
 
+- **Textures:** make the build `async` and `await new THREE.TextureLoader().loadAsync(url)` (or decode an `Image`) before returning the view; a texture that arrives later is blank in the first frames of an export.
+- **Noise clamped to 0–1 makes flat plateaus;** remap it with `smoothstep` instead.
 - **Compute, don't accumulate:** every `render(ms)` assigns positions with `lerp` from eased phases; no `+=` between frames. Random scatter comes from a seeded generator at build.
 - **Labels:** a `CSS2DRenderer` on top of the canvas: append `labels.domElement` to `root` with `position: absolute; inset: 0; pointer-events: none`, call `labels.setSize` in `resize` and `labels.render(scene, camera)` after `renderer.render`. Label CSS can use `var(--pm-color-…)`.
 - **Lines wider than 1 px:** `Line2` + `LineGeometry` + `LineMaterial` (set `resolution` in `resize`); draw progressively with `geometry.instanceCount`. Plain `Line` draws progressively with `geometry.setDrawRange`.
