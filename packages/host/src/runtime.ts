@@ -20,8 +20,9 @@ export const runtimeRevision = createStore(0)
 const registered: PluginDefinition[] = []
 const running = createStore<Kernel | undefined>(undefined)
 let starting: Promise<StartReport> | undefined
-let disconnect: (() => void) | undefined
-let stopClock: (() => void) | undefined
+interface RuntimeOwner { kernel: Kernel, releases: (() => void)[], started?: Promise<StartReport> }
+let runtime: RuntimeOwner | undefined
+let lifecycle: Promise<unknown> = Promise.resolve()
 const failures = createStore<PluginReport[]>([])
 let resumeHost: (() => Promise<StartReport>) | undefined
 let hostActive = true
@@ -48,36 +49,55 @@ export function pluginsOf(module: unknown): PluginDefinition[] {
 interface StartOptions {
   mode: PresentationMode
   config?: Record<string, unknown>
-  beforeStart?(kernel: Kernel): void
+  beforeStart?(kernel: Kernel, release: (stop: () => void) => void): void
   log?: Logger
   environments?: Record<string, EnvironmentSpec>
 }
 
+function transition<T>(change: () => Promise<T>): Promise<T> {
+  const next = lifecycle.then(change)
+  lifecycle = next.catch(() => undefined)
+  return next
+}
+
 function startKernel(options: StartOptions): Promise<StartReport> {
-  starting ??= (async () => {
-    const kernel = new Kernel({ mode: options.mode, config: options.config, log: options.log, environments: options.environments })
-    options.beforeStart?.(kernel)
-    for (const plugin of registered) kernel.register(plugin)
-    const report = await kernel.start()
-    running.set(kernel); runtimeRevision.set(n => n + 1)
-    return report
-  })()
+  starting = transition(async () => {
+    if (runtime) return runtime.started!
+    const owner: RuntimeOwner = { kernel: new Kernel({ mode: options.mode, config: options.config, log: options.log, environments: options.environments }), releases: [] }
+    runtime = owner
+    owner.started = (async () => {
+      options.beforeStart?.(owner.kernel, stop => owner.releases.push(stop))
+      for (const plugin of registered) owner.kernel.register(plugin)
+      const report = await owner.kernel.start()
+      running.set(owner.kernel); runtimeRevision.set(n => n + 1)
+      return report
+    })()
+    return owner.started
+  })
   return starting
 }
 
 /** Stops the kernel and disposes the plugins; `startHost` or `setHostActive(true)` starts it again. */
-export async function stopHost(): Promise<void> {
-  const current = starting
-  if (!current) return
-  starting = undefined
-  disconnect?.()
-  disconnect = undefined
-  stopClock?.()
-  stopClock = undefined
-  await current.catch(() => undefined)
-  const kernel = running.getSnapshot()
-  running.set(undefined); runtimeRevision.set(n => n + 1)
-  await kernel?.dispose()
+export function stopHost(): Promise<void> {
+  const requested = starting
+  return transition(async () => {
+    const owner = runtime
+    try {
+      if (!owner) return
+      if (running.getSnapshot() === owner.kernel) {
+        running.set(undefined); runtimeRevision.set(n => n + 1)
+      }
+      const results = await Promise.allSettled([
+        ...owner.releases.splice(0).reverse().map(async release => release()),
+        owner.kernel.dispose(),
+      ])
+      const failed = results.find(result => result.status === 'rejected')
+      if (failed?.status === 'rejected') throw failed.reason
+    } finally {
+      if (runtime === owner) runtime = undefined
+      if (starting === requested) starting = undefined
+    }
+  })
 }
 
 function stopOnPageHide(start: () => void): void {
@@ -124,7 +144,7 @@ export function startHost(options: HostStart): Promise<StartReport> {
     mode: options.mode,
     config: options.config,
     environments: options.environments,
-    beforeStart(kernel) {
+    beforeStart(kernel, release) {
       const toolbar = createToolbar()
       const status = createStatusRegistry()
       kernel.provide(PRESENTER_PANELS, createPresenterPanels())
@@ -136,9 +156,8 @@ export function startHost(options: HostStart): Promise<StartReport> {
       kernel.provide(OPERATIONS, operations)
       kernel.provide(PLAYBACK_CONTROL, createPlaybackControl())
       kernel.provide(TIMED_CAPTIONS, createTimedCaptions())
-      stopClock?.()
       const stepClock = createStepClock(options.navigation)
-      stopClock = stepClock.stop
+      release(stepClock.stop)
       kernel.provide(STEP_CLOCK, stepClock.clock)
       kernel.provide(STATUS, status)
       status.register({
@@ -148,8 +167,6 @@ export function startHost(options: HostStart): Promise<StartReport> {
           errors: componentErrors().slice(-20).map(error => ({ component: error.component, message: error.message.slice(0, 2000) })),
         }),
       })
-      disconnect?.()
-      disconnect = undefined
       const { server } = options
       if (!server?.available) return
       toolbar.register({
@@ -160,7 +177,7 @@ export function startHost(options: HostStart): Promise<StartReport> {
         component: PmApprovals,
         order: 1000,
       })
-      disconnect = connectControl(server, { navigation: options.navigation, status, service: token => kernel.getService(token) })
+      release(connectControl(server, { navigation: options.navigation, status, service: token => kernel.getService(token) }))
     },
   })
   resumeHost = start
