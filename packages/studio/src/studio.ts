@@ -8,6 +8,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { bracketIPv6, dshBin, inheritedEnv, isLauncherVariable, launchArgs, launchEnv, launchNode, launchWorkspaceServer, WEB_READY, writeProfile } from '@lincyaw/dsh/launch'
 import type { LaunchedProcess } from '@lincyaw/dsh/launch'
+import { STUDIO_MESSAGES, systemLocale } from './messages.ts'
 import { modelEnv } from './model-env.ts'
 
 const PROFILE = 'presmium-studio'
@@ -90,11 +91,11 @@ function freePort(listenAddress: string, port: number): Promise<number | undefin
 
 async function choosePort(listenAddress: string, port: number | undefined): Promise<number> {
   if (port) {
-    if (await freePort(listenAddress, port) === undefined) throw new Error(`port ${port} of ${listenAddress} is in use: give another with --port`)
+    if (await freePort(listenAddress, port) === undefined) throw new Error(STUDIO_MESSAGES[systemLocale()].portInUse(port, listenAddress))
     return port
   }
   const chosen = (port === undefined ? await freePort(listenAddress, DEFAULT_PORT) : undefined) ?? await freePort(listenAddress, 0)
-  if (chosen === undefined) throw new Error(`no free port on ${listenAddress}`)
+  if (chosen === undefined) throw new Error(STUDIO_MESSAGES[systemLocale()].noFreePort(listenAddress))
   return chosen
 }
 
@@ -134,9 +135,10 @@ class Log {
 
 export async function startStudio(options: StudioOptions): Promise<Studio> {
   const env = options.env ?? process.env
+  const t = STUDIO_MESSAGES[systemLocale(env)]
   const { listenAddress } = options
   if (listenAddress !== undefined && (isIP(listenAddress) === 0 || WILDCARD.test(listenAddress))) {
-    throw new Error(`--host takes one address of this machine, such as 192.168.0.21, not "${listenAddress}" (DeepSeek Harness listens on one concrete address, never on all of them)`)
+    throw new Error(t.badHost(listenAddress))
   }
   const port = await choosePort(listenAddress ?? '127.0.0.1', options.port)
   const origins = [`http://${bracketIPv6(listenAddress ?? '127.0.0.1')}:${port}`, ...!listenAddress || listenAddress === '127.0.0.1' ? [`http://localhost:${port}`] : []]
@@ -190,8 +192,8 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
 
     let closing: Promise<void> | undefined
     const ended = Promise.race([
-      server.process.exited.then(() => 'the workspace service (presmium serve) ended'),
-      dsh.exited.then(() => 'DeepSeek Harness ended'),
+      server.process.exited.then(() => t.serviceEnded),
+      dsh.exited.then(() => t.appEnded),
     ]).then(how => (closing ? new Promise<string>(() => {}) : how))
     return {
       url: address,
@@ -209,6 +211,6 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
     await stopAll()
     log.close()
     const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`${message.endsWith('\n') ? message : `${message}; `}the whole log is ${log.file}`)
+    throw new Error(t.wholeLog(message, log.file))
   }
 }

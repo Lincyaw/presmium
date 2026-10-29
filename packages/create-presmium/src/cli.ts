@@ -17,7 +17,7 @@ export async function main(argv: string[]): Promise<number> {
   const t = MESSAGES[systemLocale()]
   let args: ReturnType<typeof parse>
   try {
-    args = parse(argv)
+    args = parse(argv, t)
   } catch (error) {
     process.stderr.write(`create-presmium: ${(error as Error).message}\n\n${t.usage}\n`)
     return 2
@@ -52,7 +52,7 @@ export async function main(argv: string[]): Promise<number> {
   }
 }
 
-function parse(argv: string[]) {
+function parse(argv: string[], t: Messages) {
   const parsed = parseArgs({
     args: argv,
     allowPositionals: true,
@@ -65,7 +65,7 @@ function parse(argv: string[]) {
       help: { type: 'boolean', short: 'h', default: false },
     },
   })
-  if (parsed.positionals.length > 1) throw new Error(`one directory, not ${parsed.positionals.length}`)
+  if (parsed.positionals.length > 1) throw new Error(t.tooManyDirectories(parsed.positionals.length))
   return parsed
 }
 

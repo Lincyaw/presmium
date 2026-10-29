@@ -258,10 +258,11 @@ const TOOLS: ToolSpec[] = [
       const section = findSection(doc, str(call.args.section) ?? '')
       const step = Math.min(int(call.args.step) ?? 0, section.steps)
       const own = call.host.positions?.(document, call.caller.member).filter(p => p.member === call.caller.member.id) ?? []
-      if (own.length === 0) throw new Error('none of your windows shows the deck: open it first')
+      const text = MCP_MESSAGES[deckLocale(doc.meta.lang)]
+      if (own.length === 0) throw new Error(text.noWindow)
       await call.approve('operate', m => m.navigate(section.title, step))
       const windows = call.host.navigate!(document, { slide: section.index, step, section: section.id, trail: stepTrail(stepKeys(section), step) }, call.caller.member)
-      if (windows === 0) throw new Error('none of your windows shows the deck')
+      if (windows === 0) throw new Error(text.windowClosed)
       return { section: section.id, step, windows }
     },
   },
@@ -315,10 +316,10 @@ const TOOLS: ToolSpec[] = [
           call.signal.throwIfAborted()
         }
         const lang = (await call.host.documents()).find(info => info.dir === document)?.lang ?? ''
-        await call.approve('operate', m => m.build(targets.join(', ') || m.allRenderers), { lang })
+        await call.approve('operate', m => m.build(m.renderers(targets)), { lang })
         return finish(await Promise.all(targets.map(target => jobs.start(document, target, expected))))
       }
-      await call.approve('operate', m => m.build(to?.join(', ') || m.allRenderers))
+      await call.approve('operate', m => m.build(m.renderers(to ?? [])))
       const { doc } = await call.compiled()
       const report = await call.host.build(document, { to })
       return {
@@ -366,7 +367,7 @@ const TOOLS: ToolSpec[] = [
       if (!before) throw Object.assign(new Error('job-not-found'), { status: 404 })
       if (before.state !== 'queued' && before.state !== 'running') return { cancellation: 'already-finished', job: jobSummary(before, LOG_TAIL) }
       const lang = (await call.host.documents()).find(info => info.dir === document)?.lang ?? ''
-      await call.approve('operate', m => m.cancelBuild(before.target), { lang })
+      await call.approve('operate', m => m.cancelBuild(m.renderers([before.target])), { lang })
       const current = own()
       if (!current) throw Object.assign(new Error('job-not-found'), { status: 404 })
       const active = current.state === 'queued' || current.state === 'running'
@@ -394,7 +395,7 @@ const TOOLS: ToolSpec[] = [
 async function classroom(call: Call, action: 'start' | 'end') {
   const document = await call.document()
   const presenting = call.host.positions?.(document, call.caller.member).filter(p => p.member === call.caller.member.id && isPresentingRole(p.role)) ?? []
-  if (presenting.length === 0) throw new Error('none of your windows presents the deck: open its present or presenter view first')
+  if (presenting.length === 0) throw new Error(MCP_MESSAGES[deckLocale((await call.host.documents()).find(info => info.dir === document)?.lang)].noPresentingWindow)
   const name = str(call.args.name) ?? ''
   await call.approve('operate', m => (action === 'start' ? m.classroomStart(name) : m.classroomEnd))
   return { classroom: action, windows: call.host.setClassroom!(document, action, name || undefined, call.caller.member) }

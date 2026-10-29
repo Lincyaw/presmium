@@ -51,8 +51,12 @@ it('writes the poll\'s question into the notebook', async () => {
 })
 ```
 
-- `presmium check` prints `no problems` when clean; `--json` prints `{ entry, counts, findings, lock }`, for
-  asserting a finding's `checkId`, `severity`, `message` and `source.line`.
+- The commands' own text (help, progress, summaries, argument errors) follows the system language (`LC_ALL`,
+  `LC_MESSAGES`, `LANG`): Chinese for `zh*`, English otherwise. Run them with `LANG=en_US.UTF-8` when asserting
+  that text; then `presmium check` prints `no problems` when clean. `--json` prints
+  `{ entry, counts, findings, lock }` in every language, for asserting a finding's `checkId`, `severity`,
+  `message` and `source.line`; the `key  value` lines (`serve  <url>`, `workspace  <dir>`, `mcp  <url>`) keep
+  their keys in both languages.
 - `<out>/ir.json` is the derived runtime snapshot: find the stable authored section `id` and inspect
   `blocks[].node`. Numeric runtime step positions are not authoring data.
 - A case that needs another document (an error case, other options) writes a small normalized `lecture.json` into a

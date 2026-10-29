@@ -147,7 +147,7 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
       const capability = own.capabilities(document, call.caller.member)
       if (!capability.actions.apply) throw Object.assign(new Error(capability.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: capability.applyUnavailableReason ? 409 : 403 })
       const current = await own.read(document, call.caller.member)
-      await call.approve('operate', messages => messages.tool('apply_document_change'), { lang: current.content.metadata.lang ?? '', detail: JSON.stringify({ document, planId: call.args.planId, change: call.args.change }), check: () => own.checkApply(document, { change: call.args.change as DocumentChange, planId: String(call.args.planId) }, call.caller.member) })
+      await call.approve('operate', messages => messages.applyDocumentChange, { lang: current.content.metadata.lang ?? '', detail: JSON.stringify({ document, planId: call.args.planId, change: call.args.change }), check: () => own.checkApply(document, { change: call.args.change as DocumentChange, planId: String(call.args.planId) }, call.caller.member) })
       call.signal.throwIfAborted()
       return own.apply(document, { change: call.args.change as DocumentChange, planId: String(call.args.planId) }, call.caller.member)
     },
