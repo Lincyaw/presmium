@@ -419,7 +419,9 @@ export default plugin
   token in `src/domain/` with `defineService<T>('presmium-poll.store')`, and list it in `manifest.provides`
   (or `requires`) so the viewer starts plugins in dependency order.
 - `dispose` releases Workers, timers, queued work, streams, media tracks and listeners: the host stops the
-  plugins on `pagehide` and restarts them when the page returns from the back/forward cache.
+  plugins on `pagehide` and restarts them when the page returns from the back/forward cache. It also runs
+  after `setup` fails, so it must tolerate partial initialization. Stopping waits for in-flight setup
+  and releases dependent plugins before their providers.
 - Toolbar items: `slot` is `tools` (default), `settings` or `status`; a component learns where it is drawn
   with `useToolbarPlacement()` (`bar` or `status`); an entry that opens a panel uses `PmToolbarEntry`
   (`name`, `label`, `closeLabel`, `icon`, `open`, `onOpenChange`).
