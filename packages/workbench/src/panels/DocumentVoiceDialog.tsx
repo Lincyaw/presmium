@@ -7,10 +7,12 @@ import type { DocumentVoiceImpact } from '../document-voices.ts'
 import { clearVoiceDraft, keepVoiceDraft, readVoiceDraft, voiceDraftStorageStatus } from '../voice-drafts.ts'
 import type { VoiceDraft } from '../voice-drafts.ts'
 import { PRODUCTION_MESSAGES } from '../production-messages.ts'
+import { VOICE_CLONE_MESSAGES } from '../voice-clone-messages.ts'
 import { VOICE_MESSAGES, voiceFailure } from '../voice-messages.ts'
 import { prepareVoiceSnapshot, voiceSnapshotCurrent } from '../voice-snapshot.ts'
 import type { VoiceSnapshot } from '../voice-snapshot.ts'
 import { isAgentChanging } from '../workbench.ts'
+import { VoiceCloneDialog } from './VoiceCloneDialog.tsx'
 import { VoicePreviewDialog } from './VoicePreviewDialog.tsx'
 import { VoiceScopeField } from './VoiceScopeField.tsx'
 
@@ -21,7 +23,7 @@ const supportsLanguage = (languages: string[], lang: string) => !languages.lengt
 export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClose(): void }) {
   const workbench = useWorkbench(), actor = useWorkbenchState(state => state.authoring), locale = useWorkbenchState(state => state.locale)
   const blocked = useWorkbenchState(state => Boolean(state.authoring?.loading || state.authoring?.composing) || isAgentChanging(state))
-  const t = VOICE_MESSAGES[locale], p = PRODUCTION_MESSAGES[locale]
+  const t = VOICE_MESSAGES[locale], p = PRODUCTION_MESSAGES[locale], c = VOICE_CLONE_MESSAGES[locale]
   const identity = useRef(actor!.identity!).current, directory = useRef(actor!.directory).current
   const [restored] = useState(() => readVoiceDraft(workbench.client, identity, stepId))
   const [draft, setDraft] = useState<VoiceDraft>(() => restored ?? { version: actor!.version!, scope: { kind: 'step', stepId }, source: resolveDocumentStepVoice(actor!.content!, stepId).value ?? null, replaceOverrides: false })
@@ -30,7 +32,7 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
   const [language, setLanguage] = useState(''), [query, setQuery] = useState(''), [catalog, setCatalog] = useState<VoiceCatalogAnswer>()
   const [catalogBusy, setCatalogBusy] = useState(true), [catalogFailure, setCatalogFailure] = useState<string>(), [reload, setReload] = useState(0)
   const [busy, setBusy] = useState(false), [failure, setFailure] = useState<string>(), [review, setReview] = useState<Review>()
-  const [preview, setPreview] = useState<{ quote: VoicePreviewQuote, snapshot: VoiceSnapshot }>()
+  const [preview, setPreview] = useState<{ quote: VoicePreviewQuote, snapshot: VoiceSnapshot }>(), [cloning, setCloning] = useState(false)
   const owner = useRef({ active: true, generation: 0 }), request = useRef<AbortController>()
   useEffect(() => () => { owner.current.active = false; owner.current.generation++; request.current?.abort() }, [])
   useEffect(() => {
@@ -131,8 +133,9 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
           {voices.length > 0 && <PmSelect label={t.language} value={language} disabled={busy || blocked} onChange={event => setLanguage(event.target.value)}><option value="">{t.allLanguages}</option>{languages.map(lang => <option key={lang} value={lang}>{lang}</option>)}</PmSelect>}
           {(catalogBusy || catalogFailure || catalog?.catalog.status === 'available') && <PmSearchList label={t.available} searchLabel={t.search} searchPlaceholder={t.searchPlaceholder} emptyLabel={t.empty} loadingLabel={t.loadingVoices} loading={catalogBusy} error={catalogFailure} disabled={busy || blocked || catalog?.catalog.status !== 'available'} query={query} onQueryChange={setQuery}
             value={draft.source.voice.engine === engineId || !draft.source.voice.engine ? draft.source.voice.voice : undefined}
-            items={voices.filter(voice => !language || voice.lang.includes(language)).map(voice => ({ value: voice.id, label: voice.label, description: `${voice.lang.join(', ')}${supportsLanguage(voice.lang, lang) ? '' : ` · ${t.languageMismatch}`}`, keywords: [voice.id, ...voice.lang, engineId ?? ''], disabled: !supportsLanguage(voice.lang, lang) }))}
+            items={voices.filter(voice => !language || voice.lang.includes(language)).map(voice => ({ value: voice.id, label: voice.label, description: [voice.lang.join(', '), voice.cloned ? c.cloned : '', supportsLanguage(voice.lang, lang) ? '' : t.languageMismatch].filter(Boolean).join(' · '), keywords: [voice.id, ...voice.lang, engineId ?? ''], disabled: !supportsLanguage(voice.lang, lang) }))}
             resultsLabel={t.results} onValueChange={voice => edit({ ...draft, source: { type: 'tts', voice: { ...engineId ? { engine: engineId } : {}, voice } }, rateInput: undefined })} />}
+          {engine?.clone && <div className="pmw-voice__actions"><PmButton small disabled={busy || blocked} onClick={() => setCloning(true)}>{c.open}</PmButton></div>}
           <PmField label={p.selectedVoice}><span>{draft.source.voice.voice || t.unset}</span></PmField>
           {rateRange && <PmInput label={t.rate} width="number" inputMode="decimal" maxLength={32} value={draft.rateInput ?? (draft.source.voice.rate === undefined ? '' : String(draft.source.voice.rate))} error={rateInvalid ? t.rateInvalid(rateRange.min, rateRange.max) : undefined} disabled={busy || blocked} onChange={event => {
             if (draft.source?.type !== 'tts') return
@@ -166,6 +169,10 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
         <PmField label={t.scope}><span>{review.scopeLabel}</span></PmField><details><summary>{t.selected(review.targets.length)}</summary><ul>{review.targets.map(target => <li key={target}>{target}</li>)}</ul></details><p>{p.counts(review.impact.updated, review.impact.preserved, review.impact.unchanged)}</p><p>{p.overridden(review.impact.overrides.none, review.impact.overrides.recording)}</p>{review.draft.replaceOverrides && <PmNotice tone="warn">{t.replaceAll} {p.keepAssets}</PmNotice>}{!reviewCurrent && <PmNotice tone="warn">{p.draftChanged}</PmNotice>}
       </div>}
     </PmDialog>
+    {cloning && engine && <VoiceCloneDialog directory={directory} engine={engine} lang={lang} onClose={() => setCloning(false)} onUse={(voice) => {
+      setCloning(false); setReload(value => value + 1)
+      edit({ ...draft, source: { type: 'tts', voice: { engine: engine.id, voice } }, rateInput: undefined })
+    }} />}
     {preview && <VoicePreviewDialog quote={preview.quote} snapshot={preview.snapshot} onClose={() => setPreview(undefined)} onRecheck={() => { const mode = preview.quote.mode; setPreview(undefined); void audition(mode) }} />}
   </>
 }

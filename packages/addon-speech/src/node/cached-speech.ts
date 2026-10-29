@@ -2,10 +2,11 @@ import { DOCUMENT_FILES, speechEngineId } from '@lincyaw/kernel'
 import type { NodeServiceContext, SpeechWord, SynthesisRequest, TranscriptionRequest, VoiceCatalog } from '@lincyaw/kernel'
 import type { DeckSpeechConfig } from '../domain/index.ts'
 import { applyLexicon, deckSpeechConfig } from '../domain/index.ts'
-import type { SpeechBackend, SynthesisResult } from './backend.ts'
+import type { CloneInput, SpeechBackend, SynthesisResult } from './backend.ts'
 import { cacheKey, profileCacheKey, SynthesisCache } from './cache.ts'
 import type { SpeechCore } from './core.ts'
 import { speechCore } from './core.ts'
+import { SpeechError } from './errors.ts'
 
 export class CachedSpeech implements SpeechBackend {
   readonly #inner: SpeechBackend
@@ -128,6 +129,16 @@ export class CachedSpeech implements SpeechBackend {
 
   consent(engine: string, voice: string, recorded: boolean, signal?: AbortSignal): Promise<void> {
     return this.#inner.consent(engine, voice, recorded, signal)
+  }
+
+  async cloneVoice(input: CloneInput, signal?: AbortSignal) {
+    if (!this.#inner.cloneVoice) throw new SpeechError(400, 'this speech service cannot clone voices')
+    return this.#inner.cloneVoice({ ...input, engine: input.engine ?? this.#defaults.engine }, signal)
+  }
+
+  async cloneStatus(engine: string | undefined, voice: string, signal?: AbortSignal) {
+    if (!this.#inner.cloneStatus) throw new SpeechError(400, 'this speech service cannot clone voices')
+    return this.#inner.cloneStatus(engine ?? this.#defaults.engine, voice, signal)
   }
 
   async transcribe(request: TranscriptionRequest, signal?: AbortSignal) {

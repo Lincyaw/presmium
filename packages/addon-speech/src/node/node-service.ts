@@ -46,5 +46,18 @@ export function nodeSpeech(ctx: NodeServiceContext): SpeechService {
     alignWords: (key, options, signal) => speech.alignWords(key, options, signal),
     pruneLock: keep => speech.cache.pruneLock(keep),
     transcribe: (request, signal) => speech.transcribe(request, signal),
+    async cloneVoice(request, signal) {
+      const bytes = async (blob: Blob) => new Uint8Array(await blob.arrayBuffer())
+      return speech.cloneVoice({
+        ...request.engine ? { engine: request.engine } : {},
+        voice: request.voice,
+        sample: await bytes(request.sample),
+        sampleMime: request.sample.type,
+        ...request.lang ? { lang: request.lang } : {},
+        ...request.text ? { text: request.text } : {},
+        consent: { speaker: request.consent.speaker, scope: request.consent.scope, statement: await bytes(request.consent.statement), statementMime: request.consent.statement.type },
+      }, signal)
+    },
+    cloneStatus: (engine, voice, signal) => speech.cloneStatus(engine, voice, signal),
   }
 }

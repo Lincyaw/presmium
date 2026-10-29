@@ -1,6 +1,7 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { jsonResponse, problemResponse } from '@lincyaw/kernel'
+import type { VoiceInfo } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
 import { consentPath, consentProblem, DEFAULT_CONSENT_DIR, safeName } from '../domain/index.ts'
 import { SpeechError } from './errors.ts'
@@ -42,17 +43,48 @@ export function checkConsent(operatorDir: string | undefined, settings: Record<s
   if (problem) throw new SpeechError(403, `${what} whose consent record ${file} is not valid: ${problem}`)
 }
 
-export function writeConsent(operatorDir: string | undefined, settings: Record<string, unknown>, engine: string, voice: string, record: unknown): string {
+function writeAtomic(file: string, data: string | Uint8Array): void {
+  const temporary = `${file}.${process.pid}.tmp`
+  writeFileSync(temporary, data, { mode: 0o600 })
+  renameSync(temporary, file)
+}
+
+/**
+ * Writes a consent record; with `statement`, also the speaker's recording of the consent statement beside it
+ * (`<voice>.statement.<ext>`), whose sha256 the record holds, so the record can be checked against it later.
+ */
+export function writeConsent(operatorDir: string | undefined, settings: Record<string, unknown>, engine: string, voice: string, record: unknown, statement?: { bytes: Uint8Array, ext: string }): string {
   if (!operatorDir) throw new SpeechError(409, 'this process has no operator directory to hold consent records')
   assertSafeNames(engine, voice)
   const problem = consentProblem(record)
   if (problem) throw new SpeechError(400, problem)
   const file = join(consentDir(operatorDir, settings), consentPath(engine, voice))
   mkdirSync(dirname(file), { recursive: true, mode: 0o700 })
-  const temporary = `${file}.${process.pid}.tmp`
-  writeFileSync(temporary, `${JSON.stringify(record, null, 2)}\n`, { mode: 0o600 })
-  renameSync(temporary, file)
+  if (statement) writeAtomic(file.replace(/\.json$/, `.statement.${statement.ext}`), statement.bytes)
+  writeAtomic(file, `${JSON.stringify(record, null, 2)}\n`)
   return file
+}
+
+/** The voices of an engine that have a valid consent record, named by their speaker: cloned voices the operator can use. */
+export function consentedVoices(operatorDir: string | undefined, settings: Record<string, unknown>, engine: string): VoiceInfo[] {
+  if (!operatorDir || settings.cloned !== true || !safeName(engine)) return []
+  let names: string[]
+  try {
+    names = readdirSync(join(consentDir(operatorDir, settings), engine))
+  } catch {
+    return []
+  }
+  return names.flatMap((name) => {
+    const voice = name.endsWith('.json') && !name.includes('.statement.') ? name.slice(0, -'.json'.length) : ''
+    if (!voice || !safeName(voice)) return []
+    try {
+      const record: unknown = JSON.parse(readFileSync(join(consentDir(operatorDir, settings), engine, name), 'utf8'))
+      if (consentProblem(record)) return []
+      return [{ id: voice, label: (record as { speaker: string }).speaker, lang: [], cloned: true }]
+    } catch {
+      return []
+    }
+  })
 }
 
 export async function consentRoute(request: Request, rest: string, register: (engine: string, voice: string, record: unknown) => string): Promise<Response> {

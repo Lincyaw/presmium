@@ -41,6 +41,8 @@ export interface SpeechEngineInfo {
   tts: boolean
   wordTimes: boolean
   local: boolean
+  /** The engine can train a cloned voice from a sample (`SpeechService.cloneVoice`); absent means it cannot. */
+  clone?: boolean
   /** Absent means the provider has not declared a supported authoring range. */
   parameters?: { rate?: { min: number, max: number, step?: number }, styles?: string[] }
 }
@@ -74,6 +76,33 @@ export interface SynthesisRequest {
   lexicon?: Record<string, string>
 }
 
+/**
+ * Training a cloned voice. The speaker's consent comes with the request and is registered before anything is sent:
+ * `statement` is their recording of the consent statement, kept by the operator, whose sha256 the record holds.
+ */
+export interface VoiceCloneRequest {
+  engine?: string
+  /** The voice to train: a slot the operator owns at the provider (Volcengine's S_…) or a new name, per the engine. */
+  voice: string
+  /** One speaker, mono, about 10–30 s. */
+  sample: Blob
+  lang?: string
+  /** What the sample says, when known: providers that compare it reject a mismatch. */
+  text?: string
+  consent: { speaker: string, scope: string, statement: Blob }
+}
+
+export type VoiceCloneState = 'training' | 'ready' | 'failed' | 'unknown'
+
+export interface VoiceCloneStatus {
+  engine: string
+  voice: string
+  state: VoiceCloneState
+  /** How many more trainings the provider allows for this voice. */
+  trainingsLeft?: number
+  message?: string
+}
+
 export interface TranscriptionRequest {
   engine?: string
   audio: Blob
@@ -96,6 +125,9 @@ export interface SpeechService {
   alignWords?(key: string, options: { lang: string, transcribe?: boolean }, signal?: AbortSignal): Promise<SpeechWord[] | undefined>
   pruneLock?(keep: ReadonlySet<string>): Promise<number>
   transcribe(request: TranscriptionRequest, signal?: AbortSignal): Promise<Transcript>
+  /** Registers the consent, then starts training; only for the document's owner. Absent: the service cannot clone. */
+  cloneVoice?(request: VoiceCloneRequest, signal?: AbortSignal): Promise<VoiceCloneStatus>
+  cloneStatus?(engine: string, voice: string, signal?: AbortSignal): Promise<VoiceCloneStatus>
 }
 
 export const SPEECH = defineService<SpeechService>('presmium.speech')
