@@ -8,6 +8,8 @@ Use the document toolbar's presentation preview action after the authoring save 
 
 The presentation identifies its confirmed source version. When the source or an observed project dependency changes, use the refresh icon's explicit recompile action to adopt the new result. Unconfirmed runtime revisions are hidden. This version check does not freeze historical project assets or external dependencies.
 
+Keys while presenting: left/right arrows move a step, Space plays or pauses the lecture (with nothing to play it moves to the next step), O opens the overview, Shift+F goes full screen, Escape ends the show. In Video production, Space plays or pauses and left/right arrows select the previous or next step across pages, also while the preview has the focus. Ctrl+S (⌘S) saves at once anywhere in the studio. Text fields, editors, open menus and dialogs keep their keys; a control reached with Tab keeps Space; after a click on a control, Space and the arrows do the shortcut instead of pressing that control again. Settings → Keyboard Shortcuts lists these keys.
+
 ## Edit scripts and voices in video production
 
 Use the document toolbar's **Video production** action for the independent production workspace. Its page and step controls select stable authoring steps; the script and timing fields write to the same canonical source. The visual preview compiles a confirmed saved version separately. Returning to the document retains the original body editor.

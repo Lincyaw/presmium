@@ -1450,7 +1450,7 @@ export interface Renderer {
 | `registerView({ id, label, kind, component, hidden? })` | 注册运行时视图（`ir.md`）。`kind: 'page'` 的视图在页面正文中渲染本页的章节，组件得到属性 `sections`；`'overlay'` 的视图覆盖全屏、贯穿全文；`hidden` 的视图不出现在视图菜单中。同一 ID 后注册的替换先注册的 |
 | `registerNodeRenderer(key, component)` | 为一类块注册渲染器。`key` 为节点类型（`markdown`、`code`、`component`）、`code:<语言>` 或组件名；渲染器得到属性 `block`、`section`、`step` |
 | `registerComponent(name, component)` | 注册渲染 `component` 节点的 React 组件，用于 `components/` 约定之外的组件 |
-| `registerAction({ id, keys, run, views? })` | 注册按键动作：`keys` 为 `KeyboardEvent.key` 的值（不含 Ctrl、Alt、Meta），`run(viewer)` 返回 `false` 时按键交给其他处理；`views` 默认是放映视图与演讲者窗口。例如舞台插件的 `b`、`f`、`d` |
+| `registerAction({ id, keys, run, views? })` | 注册按键动作：`keys` 为 `KeyboardEvent.key` 的值（不含 Ctrl、Alt、Meta），`run(viewer)` 返回 `false` 时按键交给其他处理；插件的动作先于同一按键的内置动作，例如讲授插件在有播放器时用空格播放／暂停，否则交还给内置的下一步；输入框、编辑器、打开的菜单与对话框，以及用键盘移到的控件自己用的键，不交给动作（`@lincyaw/kernel` 的 `keyBelongsToTarget`）；`views` 默认是放映视图与演讲者窗口。例如舞台插件的 `b`、`f`、`d` |
 | `registerLayer({ id, component, views?, scope? })` | 注册覆盖视图的图层，组件得到属性 `view`；`views` 默认同上。`scope: 'viewport'`（默认）与视图根并列，供播放器、课堂状态与黑屏使用，可与全局聚光、弹层按同一层级排序；`'view'` 放在视图根内，供冻结画面、讲台徽标与录制面板按视图定位；`'slide'` 在每张幻灯片上（`.pm-slide__layers`，画布的坐标），组件另得到这张幻灯片的 `section` 与 `step`，例如舞台插件的圈画（`views` 可以含打印页 `print`）；`'bar'` 是视图控制条中的控件，例如舞台插件的画笔。这些图层都在视图的模态焦点范围内；全屏覆盖整个文档，保留插件与库经公开接口创建的浮层 |
 | `useViewer()` | 在组件的 `setup` 中取得运行时状态：文档、当前视图与位置 |
 | `SectionView`、`BlockView` | 组成视图的构件：一个章节（含版式），一个块在某一步的状态 |

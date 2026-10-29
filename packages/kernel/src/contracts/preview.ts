@@ -118,6 +118,8 @@ export interface PreviewSource {
 
 /** Fixed live-viewer channels; no arbitrary upstream URL crosses the preview boundary. */
 export const PREVIEW_PRESENTATION_PARAM = 'presmium-presentation'
+/** `playback`: the workbench plays this page, so Space and the left and right arrows pressed in it go to the workbench. */
+export const PREVIEW_KEYS_PARAM = 'presmium-keys'
 export const PREVIEW_EVENTS_PARAM = 'presmium-events'
 export type PreviewEventTarget =
   | { topic: 'viewer-site', document: string, app: string, lang: string, form: 'web' | 'slides' }
@@ -167,7 +169,8 @@ export type PreviewCommand =
 export type PreviewCommandType = PreviewCommand['type']
 
 /** A workbench command the page's keyboard asks for while it has the focus. */
-export type PreviewShortcut = 'undo' | 'redo' | 'dismiss'
+export type PreviewShortcut = 'undo' | 'redo' | 'dismiss' | 'save' | 'play-pause' | 'previous' | 'next'
+const PREVIEW_SHORTCUTS: readonly string[] = ['undo', 'redo', 'dismiss', 'save', 'play-pause', 'previous', 'next'] satisfies readonly PreviewShortcut[]
 
 export type PreviewReport =
   | { type: 'events-subscribe', connection: string, id: string, target: PreviewEventTarget }
@@ -374,7 +377,7 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
       ? { type: 'activity', active: m.active, request: m.request, ...m.revision === undefined ? {} : { revision: m.revision as string }, ...m.error === undefined ? {} : { error: m.error as string } }
       : undefined
     case 'report': return (m.level === 'error' || m.level === 'warning') && text(m.message) && optional(m.plugin, text) && (m.resolved === undefined || typeof m.resolved === 'boolean') ? { type: 'report', level: m.level, message: m.message, ...m.plugin ? { plugin: m.plugin as string } : {}, ...m.resolved === undefined ? {} : { resolved: m.resolved as boolean } } : undefined
-    case 'shortcut': return m.command === 'undo' || m.command === 'redo' || m.command === 'dismiss' ? { type: 'shortcut', command: m.command } : undefined
+    case 'shortcut': return typeof m.command === 'string' && PREVIEW_SHORTCUTS.includes(m.command) ? { type: 'shortcut', command: m.command as PreviewShortcut } : undefined
     default: return undefined
   }
 }
