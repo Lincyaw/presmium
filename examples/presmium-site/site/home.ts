@@ -5,7 +5,8 @@ import './style.css'
 type Locale = 'zh-CN' | 'en'
 const messages = {
   'zh-CN': {
-    title: '再复杂的东西，也能讲明白', nav: ['功能', '看影片', '下载源码'], start: '开始使用',
+    title: '再复杂的东西，也能讲明白', description: '写一份文稿，现场讲、做成网站、导出视频都能用。Presmium 是开源的演示工具。',
+    nav: ['功能', '看影片', '下载源码'], mainNav: '主导航', ready: '可以开讲了', start: '开始使用',
     eyebrow: '给每个需要把事情讲清楚的人', hero: '写一份文稿，\n讲台、网页、视频都能用。',
     lead: '课程、论文报告、技术分享、产品发布……公式、代码、数据和动画写在同一份文稿里，想改哪儿，圈出来跟 AI 说一句。\n现场一步一步讲，会后做成网站，也能导出视频。',
     watch: '看 60 秒影片', source: '打开示例文稿', sourceLabel: '一份文稿，三种用法',
@@ -37,7 +38,8 @@ const messages = {
     footer: '用 Presmium 制作 · 开源的演示工具', appearance: '切换亮暗外观', language: 'English', skip: '跳到正文',
   },
   en: {
-    title: 'Make complex things clear', nav: ['Features', 'Watch the film', 'Download source'], start: 'Get started',
+    title: 'Make complex things clear', description: 'Write one document and present it live, publish it as a website, or export it as a video. Presmium is an open-source presentation tool.',
+    nav: ['Features', 'Watch the film', 'Download source'], mainNav: 'Main navigation', ready: 'Ready to present', start: 'Get started',
     eyebrow: 'For anyone with something to explain', hero: 'Write it once.\nPresent it anywhere.',
     lead: 'Lectures, paper talks, tech talks, product launches. Equations, code, data and animation live in one document; to change something, mark it and tell the AI.\nPresent it step by step, then share it as a website or a video.',
     watch: 'Watch the 60-second film', source: 'Open the example', sourceLabel: 'One document, three ways to use it',
@@ -72,7 +74,13 @@ const messages = {
 
 const site = JSON.parse(document.getElementById('presmium-site-data')?.textContent || '{}') as { base?: string, documents?: { id: string, href: string }[] }
 const base = site.base || new URL('./',document.baseURI).pathname
-let locale: Locale = new URL(location.href).searchParams.get('lang') === 'en' ? 'en' : 'zh-CN'
+// The page speaks the visitor's language: `?lang=` first, then the choice made on this page before, then the browser's.
+const LOCALE_KEY = 'presmium-site-locale'
+const asLocale = (value: string | null | undefined): Locale | undefined => !value ? undefined : value.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en'
+function remembered(): Locale | undefined {
+  try { return asLocale(localStorage.getItem(LOCALE_KEY)) } catch { return undefined }
+}
+let locale: Locale = asLocale(new URL(location.href).searchParams.get('lang')) ?? remembered() ?? asLocale(navigator.languages?.[0] ?? navigator.language) ?? 'en'
 const sourceUrl = `${base}presmium-source.tar.gz`
 const docUrl = site.documents?.find(doc => doc.id === 'learn')?.href || `${base}learn/`
 const promoUrl = site.documents?.find(doc => doc.id === 'promo')?.href || `${base}promo/`
@@ -106,17 +114,18 @@ function render() {
   const t = messages[locale]
   document.documentElement.lang = locale
   document.title = `Presmium · ${t.title}`
+  document.querySelector('meta[name="description"]')?.setAttribute('content', t.description)
   document.getElementById('app')!.innerHTML = `
     <a class="skip pm-ui-link" href="#main">${t.skip}</a>
     <div class="ambient" aria-hidden="true"><img class="ambient-blue" src="${new URL('./assets/ambient-blue.svg', import.meta.url)}" alt=""><img class="ambient-teal" src="${new URL('./assets/ambient-teal.svg', import.meta.url)}" alt=""><img class="ambient-violet" src="${new URL('./assets/ambient-violet.svg', import.meta.url)}" alt=""></div>
     <header class="topbar"><a class="wordmark" href="${base}">${icon('slides')}<span>Presmium</span></a>
-      <nav aria-label="${locale === 'en' ? 'Main navigation' : '主导航'}"><a href="#features">${t.nav[0]}</a><a href="#film">${t.nav[1]}</a><a href="${sourceUrl}">${t.nav[2]}</a></nav>
+      <nav aria-label="${t.mainNav}"><a href="#features">${t.nav[0]}</a><a href="#film">${t.nav[1]}</a><a href="${sourceUrl}">${t.nav[2]}</a></nav>
       <div class="nav-actions"><button class="pm-ui-icon-button pm-ui-icon-button--ghost" id="appearance" aria-label="${t.appearance}">${icon('contrast')}</button><button class="pm-ui-button pm-ui-button--ghost" id="language">${t.language}</button>${button('#start',t.start,true)}</div>
     </header>
     <main id="main">
       <section class="hero wrap">
         <div class="hero-copy"><p class="eyebrow">${t.eyebrow}</p><h1>${t.hero.replace('\n','<br>')}</h1><p class="lead">${t.lead.replace('\n','<br>')}</p><div class="hero-actions">${button('#film',t.watch,true)}${button(docUrl,t.source)}</div><p class="hero-note">${t.sourceLabel}</p></div>
-        <div class="hero-art" role="img" aria-label="${t.sourceLabel}"><div class="document-card"><div class="window-bar"><span>lecture.json</span>${icon('document')}</div><span class="tiny-label">PRESMIUM / 001</span><h2>${t.file}</h2><p>${t.sourceNote}</p><div class="content-lines"><i></i><i></i></div>${chart()}<div class="document-bottom"><span>${icon('check')} ${locale === 'en' ? 'Ready to present' : '可以开讲了'}</span><span>01 / 03</span></div></div><div class="output-row">${t.formats.map((f,i)=>`<div class="output-card">${icon((['website','slides','video'] as const)[i]!)}<span>${f}</span><b>0${i+1}</b></div>`).join('')}</div><div class="art-caption"><span class="status-dot"></span>${t.sourceLabel}</div></div>
+        <div class="hero-art" role="img" aria-label="${t.sourceLabel}"><div class="document-card"><div class="window-bar"><span>lecture.json</span>${icon('document')}</div><span class="tiny-label">PRESMIUM / 001</span><h2>${t.file}</h2><p>${t.sourceNote}</p><div class="content-lines"><i></i><i></i></div>${chart()}<div class="document-bottom"><span>${icon('check')} ${t.ready}</span><span>01 / 03</span></div></div><div class="output-row">${t.formats.map((f,i)=>`<div class="output-card">${icon((['website','slides','video'] as const)[i]!)}<span>${f}</span><b>0${i+1}</b></div>`).join('')}</div><div class="art-caption"><span class="status-dot"></span>${t.sourceLabel}</div></div>
       </section>
       <section class="features wrap" id="features"><div class="section-heading"><p class="eyebrow">PRESMIUM / ${t.substatement}</p><h2>${t.statement}</h2></div><div class="feature-grid">${t.features.map(([n,title,body,i])=>`<article><div class="feature-top"><span>${n}</span>${icon(i as Parameters<typeof iconMarkup>[0])}</div><h3>${title}</h3><p>${body}</p></article>`).join('')}</div></section>
       <section class="film-section wrap" id="film"><div class="section-heading film-heading"><div><p class="eyebrow">${t.filmTag}</p><h2>${t.filmTitle}</h2></div><p>${t.filmLead}</p></div><div class="player-frame" id="film-frame"><button class="film-poster" id="film-play" aria-label="${t.filmPlay}"><img src="${base}presmium-60s-poster.png" alt=""><span class="film-play">${icon('play')}</span></button></div><div class="film-meta"><span>${t.filmHint}</span><div><a class="pm-ui-link" href="${base}presmium-60s.webm" download>${t.filmDownload}${icon('download')}</a><a class="pm-ui-link" href="${docUrl}">${t.filmSource}${icon('chevron-right')}</a><a class="pm-ui-link" href="${promoUrl}">${t.filmScript}${icon('chevron-right')}</a></div></div><div class="chapter-list">${t.chapters.map((c,i)=>`<button class="pm-ui-button pm-ui-button--ghost" data-section="${CHAPTERS[i]![0]}"><span>${CHAPTERS[i]![1]}</span>${c}</button>`).join('')}</div></section>
@@ -125,7 +134,12 @@ function render() {
       <section class="start wrap" id="start"><p class="eyebrow">PRESMIUM</p><h2>${t.cta}</h2><p>${t.ctaLead}</p><div class="command"><code>${command}</code><button class="pm-ui-icon-button pm-ui-icon-button--ghost" id="copy" aria-label="${t.copy}">${icon('copy')}</button></div><span id="copy-status" role="status"></span><p class="install">${t.install} <code>pnpm add -g @lincyaw/presmium</code></p></section>
     </main><footer class="wrap"><a class="wordmark" href="${base}">${icon('slides')}<span>Presmium</span></a><p>${t.footer}</p><a class="pm-ui-link" href="https://github.com/Lincyaw/presmium">GitHub ${icon('external')}</a></footer>`
   document.getElementById('appearance')!.onclick = () => document.documentElement.classList.toggle('dark')
-  document.getElementById('language')!.onclick = () => { locale = locale === 'zh-CN' ? 'en' : 'zh-CN'; const url = new URL(location.href); url.searchParams.set('lang',locale); history.replaceState(null,'',url); render(); document.getElementById('language')!.focus() }
+  document.getElementById('language')!.onclick = () => {
+    locale = locale === 'zh-CN' ? 'en' : 'zh-CN'
+    try { localStorage.setItem(LOCALE_KEY, locale) } catch { /* the choice still holds on this visit */ }
+    const url = new URL(location.href); url.searchParams.set('lang',locale); history.replaceState(null,'',url)
+    render(); document.getElementById('language')!.focus()
+  }
   document.getElementById('copy')!.onclick = async () => {
     try { await navigator.clipboard.writeText(command); document.getElementById('copy-status')!.textContent = t.copied }
     catch { const range = document.createRange(); range.selectNodeContents(document.querySelector('.command code')!); getSelection()?.removeAllRanges(); getSelection()?.addRange(range) }
