@@ -9,7 +9,7 @@ import { TextSelection } from '@tiptap/pm/state'
 import { DOCUMENT_COLOR_NAMES, documentColorToken, documentColorValue } from '@lincyaw/kernel'
 import type { DocumentColorKind } from '@lincyaw/kernel'
 import { PmIcon } from '../components.tsx'
-import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
+import { DOCUMENT_EDITOR_MESSAGES, slashAliases } from './messages.ts'
 import { DOCUMENT_EDITOR_LOCALE } from './math.tsx'
 import type { NativeDocumentEditor } from './schema.tsx'
 
@@ -203,10 +203,10 @@ export function insertInlineFormula(editor: NativeDocumentEditor, source = ''): 
 export function formulaSlashItems(editor: NativeDocumentEditor, locale: keyof typeof DOCUMENT_EDITOR_MESSAGES, group: string): DefaultReactSuggestionItem[] {
   const t = DOCUMENT_EDITOR_MESSAGES[locale]
   return [{
-    title: t.formulaBlock, subtext: t.formulaBlockHint, group, icon: <PmIcon name="formula" />, aliases: ['formula', 'math', 'equation', 'latex', 'tex', '公式', '数学'],
+    title: t.formulaBlock, subtext: t.formulaBlockHint, group, icon: <PmIcon name="formula" />, aliases: slashAliases('formulaBlockAliases'),
     onItemClick: () => openBlockFormula(editor, insertOrUpdateBlockForSlashMenu(editor, { type: 'presmiumMath', content: '' }).id),
   }, {
-    title: t.formulaInline, subtext: t.formulaInlineHint, group, icon: <PmIcon name="formula" />, aliases: ['inline formula', 'inline math', 'latex', 'tex', '行内公式', '公式'],
+    title: t.formulaInline, subtext: t.formulaInlineHint, group, icon: <PmIcon name="formula" />, aliases: slashAliases('formulaInlineAliases'),
     onItemClick: () => insertInlineFormula(editor),
   }]
 }

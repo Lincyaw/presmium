@@ -167,7 +167,7 @@ export function DocumentView({ active = true, framed = false }: { active?: boole
         {!presenting && !producing && navigation && <NavigationPane onClose={() => setNavigation(false)} onSelect={() => { if (matchMedia('(max-width: 1279px)').matches) setNavigation(false) }} />}
         <div className="pmw-document__main"><div className="pmw-document__source" hidden={presenting || producing}><SourceDocumentPanel commentsPortal={commentsPortal} onCommentDraftRestore={() => setAside(current => current === 'comments' ? null : current)} /></div>{producing && <ProductionPanel closing={changingView} onClose={() => void exitPresent()} />}{presenting && <PreviewPanel presentation active={active} onPresentationAction={action => { if (action === 'refresh') void compilePresentation(); else void exitPresent() }} />}</div>
         {!presenting && !producing && aside && (
-          <aside className="pmw-document__aside pm-ui-block-editor" aria-label={aside === 'narration' ? t.documentNarration : aside}>
+          <aside className="pmw-document__aside pm-ui-block-editor" aria-label={{ narration: t.documentNarration, comments: t.comments, export: t.exportPane, history: t.versionHistory }[aside]}>
             {aside === 'comments' ? <section className="pmw-pane"><header className="pmw-pane__header"><h2 className="pmw-pane__title">{t.comments}</h2><PmIconButton small icon="close" label={t.close} onClick={() => setAside(null)} /></header><div ref={setCommentsPortal} /></section> : aside === 'narration' ? <DocumentNarrationPanel onClose={() => setAside(null)} /> : aside === 'export' ? <ExportPanel documentOnly onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} />}
           </aside>
         )}
@@ -316,7 +316,7 @@ function DocumentToolbar({ presentButton, framed, aside, navigation, changingVie
       <PmToolbarButton asChild><PmIconButton small icon="comment" label={openComments ? `${t.comments} (${openComments})` : t.comments} aria-pressed={aside === 'comments'} onClick={() => onAside('comments')} /></PmToolbarButton>
       {!narrow && <PmToolbarButton asChild><PmIconButton small icon="versions" label={t.versionHistory} aria-pressed={aside === 'history'} onClick={() => onAside('history')} /></PmToolbarButton>}
       <span className="pmw-toolbar__divider" aria-hidden="true" />
-      <PmToolbarButton asChild><PmIconButton ref={presentButton} small icon="slides" label={t.presentationPreview} hint={preparing ? t.presentationPreparing : timingDrafts ? t.timingDraftPending : blocked ? t.presentationPending : t.presentHint} loading={preparing} disabled={blocked} onClick={onPresent} /></PmToolbarButton>
+      <PmToolbarButton asChild><PmIconButton ref={presentButton} small icon="slides" label={t.present} hint={preparing ? t.presentationPreparing : timingDrafts ? t.timingDraftPending : blocked ? t.presentationPending : t.presentHint} loading={preparing} disabled={blocked} onClick={onPresent} /></PmToolbarButton>
       <PmToolbarButton asChild><PmIconButton small icon="export" label={t.exportPane} aria-pressed={aside === 'export'} onClick={() => onAside('export')} /></PmToolbarButton>
       {narrow && <PmMenu toolbarItem label={t.moreCommands} items={[
         { id: 'production', label: p.title, icon: 'arrange', disabled: busy || !hasStep || changingView },
