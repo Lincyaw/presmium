@@ -209,6 +209,8 @@
   background: var(--pm-color-line);
 }
 
+.pmw-toolbar__status-short { display: none; }
+
 .pmw-toolbar__status {
   margin: 0 var(--pm-space-2) 0 var(--pm-space-1);
   color: var(--pm-color-muted);
@@ -950,7 +952,9 @@
 .pmw-toolbar--present { justify-content: flex-end; }
 @media (max-width: 767px) {
   .pmw-source-document { padding: var(--pm-space-2); }
-  .pmw-toolbar__status { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .pmw-toolbar__status { flex: none; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .pmw-toolbar__status-full:has(+ .pmw-toolbar__status-short) { display: none; }
+  .pmw-toolbar__status-short { display: inline; }
   .pmw-document__aside { width: 100%; }
   .pmw-step-timeline { padding: var(--pm-space-2); }
 }
