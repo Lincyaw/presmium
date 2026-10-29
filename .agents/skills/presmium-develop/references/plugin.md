@@ -332,13 +332,13 @@ never raw colors:
 
 | Group | Tokens |
 |---|---|
-| Color | `--pm-color-` `bg`, `surface`, `sunk`, `canvas`, `hover`, `code`, `ink`, `muted`, `muted-soft`, `line`, `line-strong`, `accent`, `accent-soft`, `accent-line`, `on-accent`, `selected`, `ok`, `ok-soft`, `warn`, `warn-soft`, `danger`, `danger-soft`, `add`, `del` |
+| Color | `--pm-color-` `bg`, `surface`, `sunk`, `canvas`, `hover`, `pressed`, `code`, `ink`, `muted`, `muted-soft`, `line`, `line-strong`, `accent`, `accent-soft`, `accent-line`, `on-accent`, `selected`, `ok`, `ok-soft`, `warn`, `warn-soft`, `danger`, `danger-soft`, `add`, `del` |
 | Font | `--pm-font-sans`, `--pm-font-serif`, `--pm-font-mono` |
 | Size, leading | `--pm-text-xs`, `sm`, `md`, `lg`, `reading`, `title`, `display`; `--pm-leading-tight`, `ui`, `reading` |
 | Space | `--pm-space-px`, `--pm-space-1` ... `--pm-space-12` (4 px grid) |
-| Radius | `--pm-radius-control`, `small`, `card`, `panel`, `chip`, `pill` |
+| Radius | `--pm-radius-control`, `small`, `card`, `panel`, `chip`, `pill`; nested: `control-inset`, `menu-item` |
 | Size | `--pm-size-hairline` (1 px line), `stroke`, `dot`, `icon-sm`, `icon`, `badge`, `touch`, `row` |
-| Shadow, motion | `--pm-shadow`, `--pm-shadow-float`; `--pm-duration-fast`, `--pm-duration`, `--pm-ease` (0 under reduced motion) |
+| Shadow, motion | `--pm-shadow`, `--pm-shadow-float`; `--pm-duration-fast`, `--pm-duration`, `--pm-duration-slow`, `--pm-ease` (0 under reduced motion); `--pm-duration-spin`, `--pm-duration-pulse` for loops |
 
 Dark mode is the class `dark` on `<html>`; the color tokens switch with it, as they do in the high-contrast
 mode of the publishing plugin (`data-pm-contrast="high"` on `<html>`). Components: `PmButton`
@@ -346,13 +346,36 @@ mode of the publishing plugin (`data-pm-contrast="high"` on `<html>`). Component
 `PmIconButton` (`icon`, `label`), `PmField` (`label`, `inline`; inputs use `pm-ui-input`, `pm-ui-select`,
 `pm-ui-textarea`), `PmBadge` (`tone`, `pill`), `PmCard` (`variant` `interactive | dashed`), `PmSegmented` and
 `PmTabs` (`value`, `onValueChange`, `choices`/`tabs` of `{ value, label }`, `label`), `PmPopover`, `PmDrawer`, `PmDialog`
-(`open`, `onOpenChange`, `label`, `closeLabel`; popovers also take `trigger`), `PmMenu` (`items`, `onSelect`), `PmEmpty`, `PmNotice` (`tone`),
+(`open`, `onOpenChange`, `label`, `closeLabel`; popovers also take `trigger`), `PmMenu` (`items`, `onSelect`), `PmEmpty`, `PmSkeleton` (`label`, `shape` `document | list | preview`), `PmNotice` (`tone`),
 `PmIcon` (`name` from `ICONS`, semantic names such as `play`, `pause`, `check`, `close`, `plus`, `edit`,
 `trash`, `copy`, `download`, `info`, `warning`, `error`, `chevron-left`, `chevron-right`, `more`; `iconMarkup(name)`
 where only HTML text fits). Text reaches WCAG AA on its
 background; borders that identify inputs and selected states use `line-strong` (3:1). A component inside the
 document sets `--pm-text-sm` and `--pm-text-md` in `em` on its root so its controls scale with the slide;
 toolbar popovers and panels keep the host's size.
+
+The rules the shared controls follow, which a plugin's own CSS follows too:
+
+- **Line wrapping.** Headings wrap balanced (`text-wrap: balance`) and paragraphs pretty (`text-wrap: pretty`), so a
+  line of Chinese text does not end on one or two characters. The host applies this to `h1`–`h6`, `p`, `li`,
+  captions and the `pm-ui-*` titles; a component that draws headings or paragraphs with other elements sets the same
+  property on them. Code, numbers in table cells and form fields keep normal wrapping.
+- **Nested radius.** A shape inside another, less than 2rem from its edge, takes the outer radius minus the gap
+  (`calc(var(--pm-radius-control) - var(--pm-space-1))` for an item 4 px inside a control-radius panel); when that
+  leaves 2 px or less it keeps its own radius. `--pm-radius-control-inset` and `--pm-radius-menu-item` name the
+  pairs the host uses.
+- **Complete states.** Every control has hover, pressed (`:active`, `--pm-color-pressed`), `:focus-visible` and
+  disabled. `Pm*` controls already have them; reuse them instead of drawing your own. While content of a known
+  shape loads, show `PmSkeleton` rather than a spinner; an empty panel shows `PmEmpty` with a short line that says
+  how to get the first item; an error shows inline with `PmNotice` or the field's error, never `window.alert`,
+  `confirm` or `prompt`.
+- **Messages.** A success says what happened ("Poll saved to this slide"), an error says what failed and what to do
+  next ("The vote was not sent. Check the connection and try again"). No exclamation marks or cute interjections;
+  English in sentence case. Keep the zh-CN and en texts saying the same thing.
+- **Motion.** Animate `transform` and `opacity` only, never `top`, `left`, `width`, `height`, margins or padding.
+  Take every transition's time from a duration token so that reduced motion stills it, and switch looping
+  animations off under `@media (prefers-reduced-motion: reduce)`. A component's step animation shows its final
+  state when `usePrefersReducedMotion()` is true.
 
 ### The browser plugin: `src/client/plugin.ts`
 

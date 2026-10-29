@@ -511,7 +511,7 @@ Presmium 自己占用的槽位：品牌槽位 `sidebar.brand.mark`、`sidebar.br
 图标优先、语义映射与视觉规则见 [UI/UX RFC 第 3.2、9 节](rfc-workbench-uiux.md#32-图标优先)。本节说明实现依赖和 dsh 的主题适配。
 
 - **共用的一层**：`@lincyaw/design`，产物与工作台的 React 组件用同一层令牌与 `pm-ui-*` 的类。
-- **React 版的通用组件**在 `@lincyaw/workbench`，只有工作台用到的几个：`PmButton`、`PmIconButton`、`PmIcon`、`PmField`、`PmBadge`、`PmCard`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmNotice`。工作台自己的类以 `pmw-` 开头，只供工作台的样式与用例使用，作者与插件用 `pm-ui-*`。有交互的组件封装 Radix Primitives，焦点、键盘导航、浮层定位与模态遮罩由依赖提供；Presmium 只维护样式与业务回调。分栏用 react-resizable-panels。首次使用的提示直接使用 Harness 的 `Modal`。对比度与键盘行为由浏览器用例检查。
+- **React 版的通用组件**在 `@lincyaw/workbench`，只有工作台用到的几个：`PmButton`、`PmIconButton`、`PmIcon`、`PmField`、`PmBadge`、`PmCard`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmSkeleton`、`PmNotice`。工作台自己的类以 `pmw-` 开头，只供工作台的样式与用例使用，作者与插件用 `pm-ui-*`。有交互的组件封装 Radix Primitives，焦点、键盘导航、浮层定位与模态遮罩由依赖提供；Presmium 只维护样式与业务回调。分栏用 react-resizable-panels。首次使用的提示直接使用 Harness 的 `Modal`。对比度与键盘行为由浏览器用例检查。
 - **dsh 的令牌**：`ctx.theme.overrideTokens` 把 dsh 用到的 76 个 `--dsw-*` 别名令牌（dsh 共用到 125 个变量）映射到书卷的取值，明暗两套。字体经 `--dsh-font-family-*` 设为 IBM Plex Sans 与 IBM Plex Mono，用户自己选的字体优先。dsh 写死的颜色、圆角、字号与 CSS module 的类不去覆盖：检查以 WCAG AA 与截图为准，不要求和书卷一致。
 - **暗色**：工作台在 `<html>` 上设 `dark` 类，`--pm-*` 与 `--dsw-*` 一起切换，再经预览协议的 `appearance` 让产物跟随。
 - **品牌**：品牌槽位、标题与图标（`tapIndex`）、首次使用提示换成 Presmium 的。对话首页的标语用公开的语言包接口替换（`ctx.locale.addLanguage` 加 `register`）：`zh-CN`、`en-US` 两个语言包出现在 dsh 设置的语言列表中，标为“简体中文（Presmium）”“English (Presmium)”，只换 `conversation` 的 `hero.headline`、`hero.preview` 与输入框的提示（`placeholder.hero`、`placeholder.default`、`placeholder.workspace`，改成对教师说的话），其余回退到 dsh 的中文与英文。换不干净的：其他语言标签（如 zh-TW）仍显示 dsh 的文案；插件管理器的备用源默认是 npmmirror；用户能在插件管理中关掉 `@lincyaw/dsh`（7.2 节）。默认的模型路由是 DeepSeek 的官方服务，它是正当的服务提供方，不算品牌问题。

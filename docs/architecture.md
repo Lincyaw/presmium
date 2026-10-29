@@ -1500,16 +1500,16 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 
 | 组 | 令牌 | 说明 |
 |---|---|---|
-| 颜色 | `--pm-color-bg`、`surface`、`sunk`、`chrome`、`canvas`、`hover`、`primary-hover`、`primary-pressed`、`accent-hover`、`accent-pressed`、`backdrop`、`code`、`ink`、`muted`、`muted-soft`、`line`、`line-strong`、`accent`、`accent-soft`、`accent-line`、`on-accent`、`selected`、`ok`、`ok-soft`、`warn`、`warn-soft`、`danger`、`danger-soft`、`add`、`del`、`gutter`、`syntax-key`、`syntax-string`、`syntax-keyword`、`qr-paper`、`qr-ink`、`sheen`、`shadow` | 二维码的 paper/ink 在暗色中保留固定对比；动画的高光 `sheen` 与投影 `shadow` 在两种外观下都保持浅与深。其余取值见 `packages/design/src/tokens.css`。`ok` 在 `ok-soft` 上达到 AA；`muted-soft`、`accent-soft`、`ok-soft`、`warn-soft`、`danger-soft` 也是文稿文字的背景色，暗色下与纸面的亮度比约 1.5–1.7，墨色在其上高于 7:1，各语义色在自己的 soft 底上高于 4.5:1；`line-strong` 在 `bg`、`surface`、`sunk` 上达到 3:1（WCAG 1.4.11）。源码编辑器的行号用 `muted`（5.11 节）；`danger` 与 `del` 同色。`chrome` 是编辑台围在文稿四周的界面（各种栏与窗格），`canvas` 是纸张或幻灯片下面的画布；`hover` 是鼠标下的扁平控件，`accent-line` 是按下的控件的边，`backdrop` 是模态遮罩 |
+| 颜色 | `--pm-color-bg`、`surface`、`sunk`、`chrome`、`canvas`、`hover`、`pressed`、`primary-hover`、`primary-pressed`、`accent-hover`、`accent-pressed`、`backdrop`、`code`、`ink`、`muted`、`muted-soft`、`line`、`line-strong`、`accent`、`accent-soft`、`accent-line`、`on-accent`、`selected`、`ok`、`ok-soft`、`warn`、`warn-soft`、`danger`、`danger-soft`、`add`、`del`、`gutter`、`syntax-key`、`syntax-string`、`syntax-keyword`、`qr-paper`、`qr-ink`、`sheen`、`shadow` | 二维码的 paper/ink 在暗色中保留固定对比；动画的高光 `sheen` 与投影 `shadow` 在两种外观下都保持浅与深。其余取值见 `packages/design/src/tokens.css`。`ok` 在 `ok-soft` 上达到 AA；`muted-soft`、`accent-soft`、`ok-soft`、`warn-soft`、`danger-soft` 也是文稿文字的背景色，暗色下与纸面的亮度比约 1.5–1.7，墨色在其上高于 7:1，各语义色在自己的 soft 底上高于 4.5:1；`line-strong` 在 `bg`、`surface`、`sunk` 上达到 3:1（WCAG 1.4.11）。源码编辑器的行号用 `muted`（5.11 节）；`danger` 与 `del` 同色。`chrome` 是编辑台围在文稿四周的界面（各种栏与窗格），`canvas` 是纸张或幻灯片下面的画布；`hover` 是鼠标下的扁平控件，`accent-line` 是按下的控件的边，`backdrop` 是模态遮罩 |
 | 字体 | `--pm-font-sans`、`--pm-font-serif`、`--pm-font-mono` | IBM Plex Sans、Source Serif 4、IBM Plex Mono，后接中文的系统字体 |
 | 字号 | `--pm-text-xs`、`sm`、`md`、`lg`、`reading`、`title`、`display` | 12、13、14（界面）、16、17（阅读）、20、32 px，以 rem 表示，跟随读者的字号 |
 | 行高 | `--pm-leading-tight`、`ui`、`reading` | 1.25、1.6、1.85 |
 | 间距 | `--pm-space-px`、`--pm-space-1` 至 `--pm-space-12` | 4 px 网格，`px` 是 2 px 的微调 |
-| 圆角 | `--pm-radius-control`、`small`、`card`、`panel`、`chip`、`pill`、`tool`、`sheet` | 8、6、12、14、4、999、4、2 px；`tool` 是编辑台的命令与导航项，`sheet` 是画布上的纸张 |
+| 圆角 | `--pm-radius-control`、`small`、`card`、`panel`、`chip`、`pill`、`tool`、`sheet`；嵌套的 `control-inset`、`menu-item` | 8、6、12、14、4、999、4、2 px；`tool` 是编辑台的命令与导航项，`sheet` 是画布上的纸张；嵌套的两个是外层圆角减去间隙（6、4 px），规则见 `docs/design-system.md` 第 5.4 节 |
 | 尺寸 | `--pm-size-hairline`、`stroke`、`rule`、`dot`、`icon-sm`、`icon`、`icon-lg`、`logo`、`badge`、`avatar`、`divider`、`tool`、`touch`、`row`；`--pm-control-height`、`--pm-control-hit-area` | 细线、描边、图标、标志和行高；新增正式控件高度与有效热区令牌，旧控件使用情况与待迁移项见视觉规范 |
 | 编辑台 | `--pm-appbar-height`、`--pm-appbar-height-touch`、`--pm-toolbar-height`、`--pm-statusbar-height`、`--pm-pane-header-height`、`--pm-navigation-width`、`--pm-aside-width`、`--pm-sheet-width` | 应用栏、命令栏、状态栏与窗格标题的高度，导航窗格与批注、版本历史窗格的宽度，画布上纸张的宽度 |
 | 阴影 | `--pm-shadow`、`--pm-shadow-float`、`--pm-shadow-page` | 前两个只用于分段控件的选中项与浮层；`page` 是画布上的纸张与幻灯片；不用渐变 |
-| 动效 | `--pm-duration-fast`、`--pm-duration`、`--pm-duration-spin`、`--pm-duration-pulse`、`--pm-ease` | 系统要求减少动态效果时前两个为 0；`spin` 是忙碌的转圈，`pulse` 是活动的圆点 |
+| 动效 | `--pm-duration-fast`、`--pm-duration`、`--pm-duration-slow`、`--pm-duration-spin`、`--pm-duration-pulse`、`--pm-ease` | 系统要求减少动态效果时前三个为 0；`slow` 是页面与幻灯片上步骤的显现，`spin` 是忙碌的转圈，`pulse` 是活动的圆点与加载占位；只动画 `transform` 与 `opacity` |
 | 外壳 | `--pm-activity-width`、`--pm-sidebar-width`、`--pm-statusbar-height`、`--pm-z-popover`、`--pm-z-dialog` | 工作台的列宽、状态栏高与浮层的层级 |
 
 **字体**：三种西文字体的拉丁子集随 `@lincyaw/design` 发布（`fonts.css`；`@lincyaw/host` 也列出这三个包，站点的字体许可证由它们写出，Fontsource 的 `@fontsource/ibm-plex-sans`、`@fontsource/source-serif-4`、`@fontsource/ibm-plex-mono`，SIL OFL 1.1），打包进产物，不从网络加载。中文先用系统字体：黑体为 PingFang SC、Microsoft YaHei、Noto Sans CJK SC，宋体为 Songti SC、Noto Serif CJK SC、Source Han Serif SC。
@@ -1533,7 +1533,8 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 | `PmDrawer` | 活动栏旁、与窗口等高的面板 |
 | `PmDialog` | Radix 模态对话框：标题、说明、忙碌、操作区与焦点归还，外部按下不关闭 |
 | `PmMenu` | 菜单：打开时焦点在第一项，方向键移动，到头时回到另一端；选中一项或按 Escape 后焦点回到按钮；同样留在窗口内 |
-| `PmEmpty` | 空状态 |
+| `PmEmpty` | 空状态：简短的引导文字，不留空白 |
+| `PmSkeleton` | 加载占位：按 `shape`（`document`、`list`、`preview`）画出将要出现的内容 |
 | `PmNotice` | 提示，`status`，失败时为 `alert` |
 | `PmToolbarEntry` | 打开面板的工具栏项：在活动栏中是图标按钮与抽屉，在其他位置是带文字的按钮与弹层（状态栏中向上弹出） |
 
