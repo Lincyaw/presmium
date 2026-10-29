@@ -1,4 +1,4 @@
-export { CONSENT_PATH, DEFAULT_CONSENT_DIR, deckSpeechConfig, PROTOCOL_PATH, SPEECH_ID } from './config.ts'
+export { CLONE_PATH, CONSENT_PATH, DEFAULT_CONSENT_DIR, deckSpeechConfig, PROTOCOL_PATH, SPEECH_ID } from './config.ts'
 export type { ConfigProblem, DeckSpeechConfig } from './config.ts'
 export { consentPath, consentProblem, safeName } from './consent.ts'
 export type { ConsentRecord } from './consent.ts'

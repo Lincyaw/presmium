@@ -3,7 +3,7 @@ import { isRecord } from '@lincyaw/kernel'
 import type { EngineDefinition } from '../../domain/index.ts'
 import { oneSegment, wordsIntoSegments } from '../../domain/index.ts'
 import { SpeechError, upstreamError } from '../errors.ts'
-import type { EngineAdapter, EngineSynthesisRequest, EngineSynthesisResult, EngineTranscriptionRequest } from './types.ts'
+import type { EngineAdapter, EngineCloneStatus, EngineSynthesisRequest, EngineSynthesisResult, EngineTranscriptionRequest } from './types.ts'
 import { speaks } from './types.ts'
 
 export function blobOf(bytes: Uint8Array, type: string): Blob {
@@ -17,6 +17,12 @@ function timedWords(value: unknown): SpeechWord[] {
     const text = typeof word.text === 'string' ? word.text : typeof word.word === 'string' ? word.word : ''
     return text.trim() ? [{ text: text.trim(), start: word.start, end: word.end }] : []
   })
+}
+
+function cloneStatusOf(value: unknown): EngineCloneStatus {
+  if (!isRecord(value)) return { state: 'unknown' }
+  const state = value.state === 'training' || value.state === 'ready' || value.state === 'failed' ? value.state : 'unknown'
+  return { state, ...typeof value.trainingsLeft === 'number' ? { trainingsLeft: value.trainingsLeft } : {} }
 }
 
 function voiceOf(value: unknown): VoiceInfo | undefined {
@@ -48,9 +54,30 @@ export function openaiEngine(engine: EngineDefinition): EngineAdapter {
     return { status: 'available', source: 'provider', voices: list.flatMap(item => voiceOf(item) ?? []).filter(voice => speaks(voice, lang)) }
   }
 
+  // OpenAI's audio API has no cloning; Presmium's fake engine extends it with audio/voices/clone so the whole
+  // clone flow can be tried without a provider account.
+  const cloning: Pick<EngineAdapter, 'clone' | 'cloneStatus'> = engine.kind !== 'fake' ? {} : {
+    async clone(request, signal) {
+      const form = new FormData()
+      form.set('file', blobOf(request.audio, request.mime), 'sample')
+      form.set('voice', request.voice)
+      if (request.lang) form.set('language', request.lang)
+      if (request.text) form.set('text', request.text)
+      const response = await call('audio/voices/clone', { method: 'POST', body: form }, signal)
+      if (!response.ok) throw await upstreamError(response, what)
+      return cloneStatusOf(await response.json())
+    },
+    async cloneStatus(voice, signal) {
+      const response = await call(`audio/voices/clone?voice=${encodeURIComponent(voice)}`, { method: 'GET' }, signal)
+      if (!response.ok) throw await upstreamError(response, what)
+      return cloneStatusOf(await response.json())
+    },
+  }
+
   return {
     voiceCatalog,
     async voices(lang, signal) { return (await voiceCatalog(lang, signal)).voices },
+    ...cloning,
 
     async synthesize(request: EngineSynthesisRequest, signal): Promise<EngineSynthesisResult> {
       const body = JSON.stringify({

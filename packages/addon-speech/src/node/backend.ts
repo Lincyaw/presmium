@@ -1,4 +1,4 @@
-import type { AigcLabel, SpeechWord, SynthesisRequest, Transcript, TranscriptionRequest, VoiceCatalog, VoiceInfo } from '@lincyaw/kernel'
+import type { AigcLabel, SpeechWord, SynthesisRequest, Transcript, TranscriptionRequest, VoiceCatalog, VoiceCloneStatus, VoiceInfo } from '@lincyaw/kernel'
 import type { EnginesResponseBody } from '../domain/index.ts'
 
 export interface SynthesisResult {
@@ -18,6 +18,17 @@ export interface SynthesisResult {
   AIGC: AigcLabel
 }
 
+/** Training a cloned voice: the sample, and the speaker's consent with their recorded statement. */
+export interface CloneInput {
+  engine?: string
+  voice: string
+  sample: Uint8Array
+  sampleMime: string
+  lang?: string
+  text?: string
+  consent: { speaker: string, scope: string, statement: Uint8Array, statementMime: string }
+}
+
 export type CacheProfile = { status: 'configured', profile: string, model: string, provider: string } | { status: 'absent' | 'unavailable' }
 
 export interface SpeechBackend {
@@ -30,4 +41,7 @@ export interface SpeechBackend {
   synthesize(request: SynthesisRequest, signal?: AbortSignal): Promise<SynthesisResult>
   transcribe(request: TranscriptionRequest, signal?: AbortSignal): Promise<Transcript>
   consent(engine: string, voice: string, recorded: boolean, signal?: AbortSignal): Promise<void>
+  /** Registers the consent, then starts training; absent when cloning is not wired. */
+  cloneVoice?(input: CloneInput, signal?: AbortSignal): Promise<VoiceCloneStatus>
+  cloneStatus?(engine: string | undefined, voice: string, signal?: AbortSignal): Promise<VoiceCloneStatus>
 }

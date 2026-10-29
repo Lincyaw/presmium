@@ -19,6 +19,11 @@ export interface EngineDefinition {
   synthesizes: boolean
   /** False when the operator says the engine does not transcribe (`PRESMIUM_SPEECH_<ID>_TRANSCRIBE_MODEL=none`). */
   transcribes: boolean
+  /**
+   * Volcengine's console (OpenAPI) credentials, an IAM access key pair separate from the speech API key: with them
+   * the voice list and the account's cloned voices come from the account; without, from the bundled catalogue.
+   */
+  console?: { accessKeyId: string, secretAccessKey: string, project: string }
 }
 
 /** The model an operator writes for a use an engine does not have, e.g. an engine that only says text. */
@@ -42,7 +47,7 @@ export interface UnavailableEngine {
 
 export const VOLCENGINE_URL = 'https://openspeech.bytedance.com'
 
-const SUFFIXES = ['URL', 'PROVIDER', 'KEY', 'APPID', 'MODEL', 'TRANSCRIBE_MODEL'] as const
+const SUFFIXES = ['URL', 'PROVIDER', 'KEY', 'APPID', 'MODEL', 'TRANSCRIBE_MODEL', 'ACCESS_KEY_ID', 'SECRET_ACCESS_KEY', 'PROJECT'] as const
 type Suffix = typeof SUFFIXES[number]
 const VARIABLE = new RegExp(`^PRESMIUM_SPEECH_([A-Z0-9_]+?)_(${SUFFIXES.join('|')})$`)
 
@@ -71,15 +76,24 @@ function isLoopback(url: string): boolean {
   }
 }
 
-export function operatorEngines(names: Iterable<string>, secret: (name: string) => string | undefined): { engines: EngineDefinition[], unavailable: UnavailableEngine[] } {
+/** The engines the operator defined; `warnings` are settings that were ignored, for the operator's log. */
+export function operatorEngines(names: Iterable<string>, secret: (name: string) => string | undefined): { engines: EngineDefinition[], unavailable: UnavailableEngine[], warnings: string[] } {
   const engines: EngineDefinition[] = []
   const unavailable: UnavailableEngine[] = []
+  const warnings: string[] = []
   for (const id of engineIds(names)) {
     const value = (suffix: Suffix) => secret(engineVariable(id, suffix))?.trim() || undefined
     if (id === VOLCENGINE) {
       const key = value('KEY')
+      const accessKeyId = value('ACCESS_KEY_ID'), secretAccessKey = value('SECRET_ACCESS_KEY')
       if (!key) unavailable.push({ id, reason: `${engineVariable(id, 'KEY')} is not set` })
-      else engines.push({ id, kind: 'volcengine', url: VOLCENGINE_URL, provider: '火山引擎', key, appid: value('APPID'), model: 'seed-tts-2.0', transcribeModel: 'volc.bigasr.auc_turbo', synthesizes: true, transcribes: true })
+      else {
+        if (Boolean(accessKeyId) !== Boolean(secretAccessKey)) warnings.push(`speech engine ${id}: ${engineVariable(id, 'ACCESS_KEY_ID')} and ${engineVariable(id, 'SECRET_ACCESS_KEY')} come as a pair, and only one is set, so the voice list is the bundled one`)
+        engines.push({
+          id, kind: 'volcengine', url: VOLCENGINE_URL, provider: '火山引擎', key, appid: value('APPID'), model: 'seed-tts-2.0', transcribeModel: 'volc.bigasr.auc_turbo', synthesizes: true, transcribes: true,
+          ...accessKeyId && secretAccessKey ? { console: { accessKeyId, secretAccessKey, project: value('PROJECT') ?? 'default' } } : {},
+        })
+      }
       continue
     }
     const missing = (['URL', 'PROVIDER'] as const).filter(suffix => !value(suffix)).map(suffix => engineVariable(id, suffix))
@@ -111,7 +125,7 @@ export function operatorEngines(names: Iterable<string>, secret: (name: string) 
     })
   }
   engines.sort((a, b) => Number(b.id === VOLCENGINE) - Number(a.id === VOLCENGINE) || a.id.localeCompare(b.id))
-  return { engines, unavailable }
+  return { engines, unavailable, warnings }
 }
 
 function isChinese(lang: string | undefined): boolean {
@@ -131,5 +145,6 @@ export function engineInfo(engine: EngineDefinition, lang?: string): SpeechEngin
     tts: engine.synthesizes,
     wordTimes: engine.kind !== 'openai',
     local: engine.kind === 'fake' || (engine.kind === 'openai' && isLoopback(engine.url)),
+    clone: engine.kind !== 'openai' && engine.synthesizes,
   }
 }

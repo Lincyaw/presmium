@@ -1,4 +1,4 @@
-import type { SpeechWord, Transcript, VoiceCatalog, VoiceInfo } from '@lincyaw/kernel'
+import type { SpeechWord, Transcript, VoiceCatalog, VoiceCloneState, VoiceInfo } from '@lincyaw/kernel'
 
 export interface EngineSynthesisRequest {
   voice: string
@@ -22,12 +22,29 @@ export interface EngineTranscriptionRequest {
   hints?: string[]
 }
 
+export interface EngineCloneRequest {
+  voice: string
+  audio: Uint8Array
+  mime: string
+  lang?: string
+  text?: string
+}
+
+export interface EngineCloneStatus {
+  state: VoiceCloneState
+  trainingsLeft?: number
+  message?: string
+}
+
 export interface EngineAdapter {
   voices(lang?: string, signal?: AbortSignal): Promise<VoiceInfo[]>
   voiceCatalog(lang?: string, signal?: AbortSignal): Promise<VoiceCatalog>
   cloned?(voice: string): boolean
   synthesize(request: EngineSynthesisRequest, signal?: AbortSignal): Promise<EngineSynthesisResult>
   transcribe(input: EngineTranscriptionRequest, signal?: AbortSignal): Promise<Transcript>
+  /** Trains `voice` from a sample; absent when the engine cannot clone. */
+  clone?(request: EngineCloneRequest, signal?: AbortSignal): Promise<EngineCloneStatus>
+  cloneStatus?(voice: string, signal?: AbortSignal): Promise<EngineCloneStatus>
 }
 
 export function speaks(voice: VoiceInfo, lang: string | undefined): boolean {

@@ -16,6 +16,9 @@ export const ROUTES: Record<string, string> = Object.fromEntries([
   ['diagnostics/events', `${SERVER_ROUTES}diagnostics/events`],
   ['diagnostics/authoring', `${SERVER_ROUTES}diagnostics/authoring`],
   ...['voiceover', 'voiceover/jobs', 'voiceover/job', 'voiceover/cancel', 'voice-preview', 'voice-preview/media', 'production-plan', 'production-media', 'production-asset'].map(path => [path, `/__presmium/presmium.lecture/${path}`]),
+  // Training a cloned voice and its status: the speech plugin's owner routes.
+  ['voice-clone', '/__presmium/presmium.speech/clone'],
+  ['voice-clone/status', '/__presmium/presmium.speech/clone/status'],
 ])
 
 const PASSED = ['accept', 'content-type', 'presmium-document', 'last-event-id', 'if-none-match']
