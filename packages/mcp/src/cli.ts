@@ -2,23 +2,18 @@ import { stat } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
-import { APPROVAL_KINDS, DOCUMENT_ENTRY, errorMessage, LOCAL_AUTHOR } from '@lincyaw/kernel'
+import { APPROVAL_KINDS, errorMessage, LOCAL_AUTHOR } from '@lincyaw/kernel'
 import type { ApprovalKind } from '@lincyaw/kernel'
 import { buildSummary, buildToDist, Compiler, findPackageDir, resolveEntry, runBlock } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import type { McpHost } from './host.ts'
 import { serveMcpStdio } from './mcp.ts'
+import { MCP_CLI_MESSAGES, systemLocale } from './messages.ts'
 
 const OWN_DIR = fileURLToPath(new URL('..', import.meta.url))
 const CLI_PACKAGE = '@lincyaw/cli'
 
-const USAGE = `Usage: presmium-mcp [deck] [--allow <kinds>]
-
-Serves the document (a directory holding ${DOCUMENT_ENTRY}, or that JSON entry; default: .)
-as MCP tools and resources on stdio, for the agent of an editor.
-
-  --allow <kinds>  offer and allow these operations: operate (run_code, build), spend
-  -h, --help       show this help`
+const t = MCP_CLI_MESSAGES[systemLocale()]
 
 async function stamps(files: string[]): Promise<string> {
   const times = await Promise.all(files.map(file => stat(file).then(s => s.mtimeMs, () => -1)))
@@ -78,19 +73,19 @@ export async function main(argv: string[]): Promise<number | undefined> {
   try {
     const { values, positionals } = parseArgs({ args: argv, allowPositionals: true, options: { allow: { type: 'string' }, help: { type: 'boolean', short: 'h' } } })
     if (values.help) {
-      process.stdout.write(`${USAGE}\n`)
+      process.stdout.write(`${t.usage}\n`)
       return 0
     }
-    if (positionals.length > 1) throw new Error(`unexpected argument "${positionals[1]}"`)
+    if (positionals.length > 1) throw new Error(t.unexpectedArgument(positionals[1]!))
     deck = resolveEntry(positionals[0] ?? '.')
     allow = (values.allow?.split(',').map(kind => kind.trim()).filter(Boolean) ?? []) as ApprovalKind[]
     const unknown = allow.find(kind => !APPROVAL_KINDS.includes(kind))
-    if (unknown) throw new Error(`--allow takes ${APPROVAL_KINDS.join(', ')}, not "${unknown}"`)
+    if (unknown) throw new Error(t.badAllow(APPROVAL_KINDS, unknown))
     await stat(deck).catch(() => {
-      throw new Error(`${deck} not found`)
+      throw new Error(t.notFound(deck))
     })
   } catch (error) {
-    process.stderr.write(`presmium-mcp: ${errorMessage(error)}\n\n${USAGE}\n`)
+    process.stderr.write(`presmium-mcp: ${errorMessage(error)}\n\n${t.usage}\n`)
     return 2
   }
   serveMcpStdio(compilerMcpHost(deck, allow), { member: LOCAL_AUTHOR, mode: 'author', document: '' })

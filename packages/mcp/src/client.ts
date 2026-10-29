@@ -182,7 +182,13 @@ export function describeOperation(tool: string, args: Record<string, unknown>, l
   switch (tool) {
     case 'navigate': return m.navigate(text(args.section), typeof args.step === 'number' ? args.step : 0)
     case 'run_code': return m.run(text(args.section), text(args.block))
-    case 'build': return m.build(Array.isArray(args.to) && args.to.length ? args.to.join(', ') : m.allRenderers)
+    case 'build': return m.build(m.renderers(Array.isArray(args.to) ? args.to.map(text) : []))
+    case 'apply_document_change': return m.applyDocumentChange
+    case 'apply_page_duplication': return m.duplicatePage
+    case 'apply_page_change': return m.applyPagePlan
+    case 'start_transcription': return m.startTranscription
+    case 'cancel_transcription': return m.cancelTranscription
+    case 'apply_transcription_adoption': return m.adoptTranscription
     case 'classroom_start': return m.classroomStart(text(args.name))
     case 'classroom_end': return m.classroomEnd
     default: return m.tool(tool)

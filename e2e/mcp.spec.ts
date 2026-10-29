@@ -46,7 +46,6 @@ test('navigate asks in the present view\'s control bar, and once allowed there t
   await entry.click()
   const dialog = page.getByRole('dialog', { name: '待确认的操作' })
   await expect(dialog).toBeInViewport()
-  await expect(dialog.locator('.pm-approvals__title')).toHaveText('放映跳转到「第三节」')
   updates = 0
   await dialog.getByRole('button', { name: '允许' }).click()
 

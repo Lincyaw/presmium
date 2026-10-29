@@ -19,6 +19,7 @@
     "vscode": "^1.91.0"
   },
   "main": "./dist/extension.cjs",
+  "l10n": "./l10n",
   "extensionKind": [
     "workspace"
   ],

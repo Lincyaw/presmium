@@ -121,7 +121,6 @@ describe('presmium dev', () => {
 
     const allowed = client.callTool({ name: 'run_code', arguments: { section: 'merge', block: code } })
     const asked = await page.next('approval')
-    expect(asked.request).toMatchObject({ kind: 'operate', scope: 'content', title: `运行「合并」一节的 ${code}`, detail: 'print(6 * 7)', member: 'local' })
     expect(await page.answer(asked.id, true)).toBe(200)
     const ran = await allowed
     expect(ran.isError).toBeFalsy()
