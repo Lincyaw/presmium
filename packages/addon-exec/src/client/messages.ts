@@ -68,7 +68,7 @@ const en: ExecMessages = {
   },
   output: 'Output',
   outputTook: seconds => `Output · ${seconds} s`,
-  droppedImage: 'The image output does not hold base64 data and is not shown',
+  droppedImage: 'The picture output does not hold base64 data and is not shown',
   gpuUnavailable: detail => (/no gpu adapter/i.test(detail) ? 'No GPU adapter is available' : /no webgpu/i.test(detail) ? 'This browser has no WebGPU' : `The GPU is unavailable: ${detail}`),
   recorded: 'recorded',
   succeeded: 'ok',

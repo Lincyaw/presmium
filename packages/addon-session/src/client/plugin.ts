@@ -35,6 +35,7 @@ async function fetchLocalServer(): Promise<{ server: string, params: Record<stri
 export const sessionPlugin: PluginDefinition = {
   manifest: {
     id: SESSION_ID,
+    name: { 'zh-CN': '课堂同步', en: 'Classroom Sync' },
     version,
     kernel: '^1.0.0',
     provides: [SESSION, CLASSROOM_STORE],

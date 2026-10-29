@@ -1,5 +1,6 @@
+export { systemLocale } from '@lincyaw/kernel/node'
 import { DOCUMENT_ENTRY } from '@lincyaw/kernel'
-import type { Locale } from '@lincyaw/kernel'
+import type { DocumentChange, Locale, TeachingDocument } from '@lincyaw/kernel'
 
 export interface McpMessages {
   navigate(section: string, step: number): string
@@ -27,6 +28,15 @@ export interface McpMessages {
   classroomStart(name: string): string
   classroomEnd: string
   tool(name: string): string
+  change: {
+    at(page: number, title: string, what: string): string
+    what: Record<'text' | 'image' | 'code' | 'component' | 'container' | 'insert' | 'move' | 'delete' | 'update' | 'section' | 'step' | 'script' | 'timing' | 'asset', string>
+    document: string
+    files(count: number): string
+    more(count: number): string
+    join: string
+    none: string
+  }
   detail(member: string): string
   noWindow: string
   windowClosed: string
@@ -47,7 +57,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     generateVoiceover: scope => `生成配音（${scope}）`,
     cancelVoiceover: () => '取消生成配音',
     previewVoice: voice => `试听音色“${voice}”`,
-    changeMediaClip: action => action === 'add' ? '添加音频片段' : action === 'update' ? '调整音频片段' : '移除音频片段',
+    changeMediaClip: action => action === 'add' ? '添加音频片段' : action === 'update' ? '调整音频片段' : '删除音频片段',
     historyChange: which => which === 'undo' ? '撤消上一次修改' : which === 'redo' ? '恢复上一次撤消的修改' : '撤消版本历史中的一项修改',
     authoringClientAction: () => '在编辑器中执行操作',
     projectChange: '更改工作区',
@@ -62,6 +72,15 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     classroomStart: name => `开始课堂${name ? `“${name}”` : ''}`,
     classroomEnd: '结束课堂',
     tool: name => `使用工具“${name}”`,
+    change: {
+      at: (page, title, what) => `第 ${page} 页${title ? `“${title}”` : ''}：${what}`,
+      what: { text: '插入文字', image: '插入图片', code: '插入代码', component: '插入组件', container: '插入分栏或标签页', insert: '插入内容块', move: '移动内容块', delete: '删除内容块', update: '修改文字', section: '修改页面标题或版式', step: '修改步骤的显示', script: '修改讲稿', timing: '修改时间', asset: '替换素材' },
+      document: '整份文稿将被替换',
+      files: count => `修改 ${count} 个代码或素材文件`,
+      more: count => `另有 ${count} 项修改`,
+      join: '；',
+      none: '没有修改',
+    },
     detail: member => `由 AI 代 ${member} 请求`,
     noWindow: '无法跳转：你没有打开这份文稿的窗口。请先打开文稿。',
     windowClosed: '无法跳转：显示这份文稿的窗口已关闭。请重新打开文稿后重试。',
@@ -78,7 +97,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     generateVoiceover: scope => `Generate Voiceover (${scope})`,
     cancelVoiceover: () => 'Cancel Voiceover',
     previewVoice: voice => `Preview Voice “${voice}”`,
-    changeMediaClip: action => action === 'add' ? 'Add Audio Clip' : action === 'update' ? 'Adjust Audio Clip' : 'Remove Audio Clip',
+    changeMediaClip: action => action === 'add' ? 'Add Audio Clip' : action === 'update' ? 'Adjust Audio Clip' : 'Delete Audio Clip',
     historyChange: which => which === 'undo' ? 'Undo Last Change' : which === 'redo' ? 'Redo Last Change' : 'Undo a Change from Version History',
     authoringClientAction: () => 'Perform Editor Action',
     projectChange: 'Change Workspace',
@@ -93,6 +112,15 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     classroomStart: name => `Start Classroom${name ? ` “${name}”` : ''}`,
     classroomEnd: 'End Classroom',
     tool: name => `Use Tool “${name}”`,
+    change: {
+      at: (page, title, what) => `Page ${page}${title ? ` “${title}”` : ''}: ${what}`,
+      what: { text: 'insert text', image: 'insert a picture', code: 'insert code', component: 'insert a component', container: 'insert columns or tabs', insert: 'insert a block', move: 'move a block', delete: 'delete a block', update: 'change text', section: 'change the page title or layout', step: 'change what a step shows', script: 'change the script', timing: 'change the timing', asset: 'replace an asset' },
+      document: 'The whole document is replaced',
+      files: count => `Change ${count} ${count === 1 ? 'code or asset file' : 'code or asset files'}`,
+      more: count => `and ${count} more ${count === 1 ? 'change' : 'changes'}`,
+      join: '; ',
+      none: 'No changes',
+    },
     detail: member => `Requested by the AI for ${member}`,
     noWindow: 'Couldn’t move the presentation: none of your windows shows this document. Open it first.',
     windowClosed: 'Couldn’t move the presentation: the windows showing this document closed. Open it again and retry.',
@@ -134,11 +162,6 @@ as tools and resources on stdio, for the AI of an editor.
   },
 }
 
-/** The language of command-line output: the system's (`LC_ALL`, `LC_MESSAGES`, `LANG`), as `create-presmium` chooses it. */
-export function systemLocale(env: NodeJS.ProcessEnv = process.env): Locale {
-  const tag = env.LC_ALL || env.LC_MESSAGES || env.LANG || Intl.DateTimeFormat().resolvedOptions().locale
-  return /^zh/i.test(tag) ? 'zh-CN' : 'en'
-}
 
 type Detail = Record<string, unknown>
 const path = (detail: Detail) => typeof detail.path === 'string' ? detail.path : ''
@@ -197,4 +220,45 @@ export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => s
     'authoring-review-required': () => 'Couldn’t apply this change yet: accept or reject the AI’s earlier changes first.',
     'authoring-permission-denied': () => 'Couldn’t apply this change: you don’t have permission to edit this document.',
   },
+}
+
+/** A short, readable account of a document change for its approval: by page, what it does; no ids and no source. */
+export function documentChangeSummary(t: McpMessages, change: DocumentChange, content: TeachingDocument): string {
+  const pageOf = new Map<string, string>()
+  const walk = (section: string, blocks: readonly string[]) => {
+    for (const id of blocks) {
+      pageOf.set(id, section)
+      const block = content.blocks[id]
+      if (block && 'children' in block && Array.isArray(block.children)) walk(section, block.children)
+    }
+  }
+  for (const id of content.sectionOrder) walk(id, content.sections[id]?.children ?? [])
+  const stepPage = (step: string | undefined) => step ? content.steps[step]?.sectionId : undefined
+  const parts: string[] = []
+  if (change.replacement) parts.push(t.change.document)
+  const byPage = new Map<string | undefined, string[]>()
+  for (const op of change.operations ?? []) {
+    const [section, what] = op.type === 'insertBlock' ? [op.sectionId, t.change.what[op.block.type in t.change.what ? op.block.type as 'text' : 'insert']]
+      : op.type === 'moveBlock' ? [op.sectionId, t.change.what.move]
+        : op.type === 'deleteBlock' ? [pageOf.get(op.blockId), t.change.what.delete]
+          : op.type === 'updateText' ? [pageOf.get(op.blockId), t.change.what.update]
+            : op.type === 'updateSection' ? [op.sectionId, t.change.what.section]
+              : op.type === 'setStepState' ? [stepPage(op.stepId), t.change.what.step]
+                : op.type === 'setNarration' ? [stepPage(op.stepId), t.change.what.script]
+                  : op.type === 'setTiming' ? [op.sectionId ?? stepPage(op.stepId), t.change.what.timing]
+                    : [undefined, t.change.what.asset]
+    const list = byPage.get(section) ?? []
+    if (!list.includes(what)) list.push(what)
+    byPage.set(section, list)
+  }
+  for (const [section, whats] of byPage) {
+    const page = section ? content.sectionOrder.indexOf(section) + 1 : 0
+    const what = whats.join(t.change.join)
+    parts.push(page > 0 ? t.change.at(page, content.sections[section!]?.title ?? '', what) : what.charAt(0).toUpperCase() + what.slice(1))
+  }
+  if (change.fileChanges?.length) parts.push(t.change.files(change.fileChanges.length))
+  if (parts.length === 0) return t.change.none
+  const shown = parts.slice(0, 4)
+  if (parts.length > shown.length) shown.push(t.change.more(parts.length - shown.length))
+  return shown.join('\n')
 }

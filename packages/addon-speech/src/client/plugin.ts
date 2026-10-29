@@ -9,6 +9,7 @@ const plugin: PluginDefinition = {
   restartable: true,
   manifest: {
     id: SPEECH_ID,
+    name: { 'zh-CN': '语音服务', en: 'Voice Service' },
     version,
     kernel: '^1.0.0',
     provides: [SPEECH],

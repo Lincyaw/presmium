@@ -78,7 +78,7 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
       findings.push({
         checkId: LECTURE_ID,
         severity: 'error',
-        message: t.cacheMissing(text, u.section, errorMessage(error)),
+        message: t.cacheMissing(text, u.section, t.reasons[errorMessage(error)] ?? t.reasonGeneric),
         source: u.source ? { file: u.source.file, line: u.source.line } : source,
         hint: t.generateHint,
       })

@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
-import { docBlocks, errorMessage, isRenderable } from '@lincyaw/kernel'
+import { deckLocale, docBlocks, errorMessage, isRenderable } from '@lincyaw/kernel'
 import type { AnchorString, CodeNode, CodeVariant, IRDocument, IRPass, PassContext, Resolution, ResolutionStatus, ResolvedLocation, Severity } from '@lincyaw/kernel'
-import { driftDiff, highlightSteps, originUnits, permalink, repoWebUrl, splitTarget, toCodeConfig, toSnippet } from '../domain/index.ts'
+import { CODE_MESSAGES, CodeRefError, driftDiff, highlightSteps, originUnits, permalink, repoWebUrl, splitTarget, toCodeConfig, toSnippet } from '../domain/index.ts'
 import type { CodeRefSpec } from '../domain/index.ts'
 import { codeRefs } from './directive.ts'
 import { openGitTree } from './git-tree.ts'
@@ -152,7 +152,8 @@ async function writeCode(node: CodeNode, spec: CodeRefSpec, snapshots: CodeSnaps
       node.highlight = highlightSteps(spec.steps, snippet.regions)
     }
     catch (error) {
-      report('presmium.code.anchors', 'error', errorMessage(error), 'add nested #region markers for each step')
+      const t = CODE_MESSAGES[deckLocale(ctx.lang)]
+      report('presmium.code.anchors', 'error', error instanceof CodeRefError ? t.problem(error.problem) : errorMessage(error), t.stepHint)
     }
   }
   if (shown.commit) {

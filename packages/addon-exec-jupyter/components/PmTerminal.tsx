@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom'
 import { useMessages, useService } from '@lincyaw/host'
 import { errorMessage } from '@lincyaw/kernel'
 import '@xterm/xterm/css/xterm.css'
-import { MESSAGES } from '../src/client/messages.ts'
+import { failureText, MESSAGES } from '../src/client/messages.ts'
 import {
   DEFAULT_TERMINAL_ROWS,
   JUPYTER_TERMINALS,
@@ -128,7 +128,7 @@ export default function PmTerminal({
         <p className="pm-terminal__note">{unavailable}</p>
       ) : failure ? (
         <p className="pm-terminal__note" role="alert">
-          {t.terminalFailed(failure)}
+          {t.terminalFailed(failureText(failure))}
         </p>
       ) : null}
       <div

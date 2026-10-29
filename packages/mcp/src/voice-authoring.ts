@@ -54,7 +54,7 @@ export const VOICE_AUTHORING_TOOLS: ToolSpec[] = [
     run: async call => {
       const selected = await call.document(), request = call.args.request as VoiceoverStart
       const scope = request.scope.kind === 'page' ? request.scope.section : request.scope.kind === 'step' ? request.scope.target.section : request.scope.kind
-      await call.approve('spend', messages => messages.generateVoiceover(scope), { lang: await language(call, selected), detail: `${selected}\n${request.intent}`, check: () => service(call).checkStart(selected, request, call.caller.member, call.signal) })
+      await call.approve('spend', messages => messages.generateVoiceover(scope), { lang: await language(call, selected), detail: selected, check: () => service(call).checkStart(selected, request, call.caller.member, call.signal) })
       call.signal.throwIfAborted()
       return service(call).start(selected, request, call.caller.member, call.signal)
     },

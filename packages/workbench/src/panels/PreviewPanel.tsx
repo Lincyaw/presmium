@@ -5,6 +5,7 @@ import type { PresentationAction, PreviewFrameStatus } from '../preview-pool.ts'
 import { PmButton, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { slideAspect } from '../workbench.ts'
+import { failureReason } from '../messages.ts'
 
 /** The open document as its readers see it (the web form or the slides), with the tools for what the author points at. */
 export function PreviewPanel({ active = true, onPresentationAction, presentation = false }: { active?: boolean, presentation?: boolean, onPresentationAction?(action: PresentationAction): void }) {
@@ -60,7 +61,7 @@ export function PreviewPanel({ active = true, onPresentationAction, presentation
       {mismatch && <PmNotice tone="warn">{t.versionMismatch}</PmNotice>}
       {identityFailure && <PmNotice tone="danger"><span>{t.previewIdentityMismatch}</span><PmButton small onClick={() => workbench.reloadPreview()}>{t.reloadPreview}</PmButton></PmNotice>}
       {handshakeFailure && <PmNotice tone="danger"><span>{t.previewStalled}</span><PmButton small onClick={() => workbench.reloadPreview()}>{t.reloadPreview}</PmButton></PmNotice>}
-      {failure && <PmNotice tone="danger"><span>{t.previewFailed(failure)}</span><PmButton small onClick={() => workbench.retryPreview()}>{t.retry}</PmButton></PmNotice>}
+      {failure && <PmNotice tone="danger"><span>{t.previewFailed(failureReason(t, failure))}</span><PmButton small onClick={() => workbench.retryPreview()}>{t.retry}</PmButton></PmNotice>}
       {(!ready || !snapshotMatches) && !failure && !handshakeFailure && !(renderer === 'slides' && preview && !preview.slides) && <p className="pmw-muted pmw-preview__loading">{presentation && ready && !snapshotMatches && !preparing ? t.presentationOutdated : address ? t.previewLoading : t.previewPreparing}</p>}
       {renderer === 'slides' && preview && !preview.slides && <p className="pmw-muted pmw-preview__loading">{t.noSlides}</p>}
       <div className="pmw-preview__stage">

@@ -778,7 +778,7 @@ export class Workbench {
       const preview = await readPreviewWhenReady(this.client, dir, renderer, { waiting: current })
       if (current()) this.#set({ preview, previewFailure: undefined })
     } catch (error) {
-      if (current()) this.#set({ previewFailure: error instanceof Error && error.name === 'TimeoutError' ? this.#messages.previewPrepareTimeout : errorMessage(error) })
+      if (current()) this.#set({ previewFailure: error instanceof Error && error.name === 'TimeoutError' ? 'preview-timeout' : errorMessage(error) })
     }
   }
 
@@ -1879,13 +1879,12 @@ export class Workbench {
   async #ask(kind: 'request' | 'comments', focus: FocusReport[], compose: (places: Map<string, AgentPlace>) => string): Promise<boolean> {
     const document = this.#state.document
     const asker = [...this.#askers][0]
-    const t = this.#messages
     if (document === undefined) return false
     // The request's id joins the operation to the conversation: the session's user message carries it, and its turn follows.
     const asked = (attributes: Record<string, OperationValue>) => this.#record('agent.ask', { 'presmium.ask.kind': kind, 'presmium.focus': focus.map(item => [item.id, item.section, item.block].filter(Boolean).join(':')).join('\n'), ...attributes })
     if (!asker) {
       asked({ 'presmium.outcome': 'no-conversation' })
-      this.#set({ askFailure: t.noConversation })
+      this.#set({ askFailure: 'no-conversation' })
       return false
     }
     this.#set({ isAsking: true, askFailure: undefined })

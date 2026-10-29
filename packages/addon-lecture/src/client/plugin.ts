@@ -11,7 +11,7 @@ let unregister: Unsubscribe[] = []
 const plugin: PluginDefinition = {
   // dispose releases everything setup made; a paused preview starts the same definition again.
   restartable: true,
-  manifest: { id: LECTURE_ID, version, kernel: '^1.0.0', provides: [PRODUCTION_PLAYBACK], requires: [{ token: OPERATIONS, optional: true }] },
+  manifest: { id: LECTURE_ID, name: { 'zh-CN': '讲授', en: 'Lecture' }, version, kernel: '^1.0.0', provides: [PRODUCTION_PLAYBACK], requires: [{ token: OPERATIONS, optional: true }] },
   setup(ctx) {
     readLecturesFlag(ctx.config)
     const operations = ctx.tryGet(OPERATIONS)

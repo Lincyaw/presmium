@@ -9,7 +9,7 @@ import type { JupyterKernels } from '../shared/kernels.ts'
 import { loadJupyterServices } from '../shared/load-services.ts'
 import { isRefused } from '../shared/refusal.ts'
 import { openTerminal } from '../shared/terminals.ts'
-import { messages } from './messages.ts'
+import { failureText, messages } from './messages.ts'
 import { forgetJupyterToken, jupyterTokenFor } from './jupyter-token.ts'
 
 /** The browser's side of the deck's Jupyter environments: an executor for each, and their terminals. */
@@ -165,7 +165,7 @@ export function createJupyterClient(environments: Record<string, EnvironmentSpec
       } : {}),
       refused: () => forget(name),
       text: {
-        unreachable: error => messages().unreachable(name, error),
+        unreachable: (error, code) => messages().unreachable(name, failureText(error, code)),
         get refused() {
           return messages().refused(name)
         },

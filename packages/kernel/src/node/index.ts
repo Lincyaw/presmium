@@ -22,3 +22,4 @@ export { validateDocumentHistoryQuery, validateDocumentHistoryRead, validateDocu
 export { validateAuthoringClientRequest, validateAuthoringClientQuery, validateAuthoringClientRequestQuery, validateAuthoringClientOpen, validateAuthoringClientReport, validateAuthoringClientAcknowledgement, validateAuthoringClientLease } from './authoring-clients.ts'
 export { validateProjectPlan, validateProjectApply } from './projects.ts'
 export { validateDocumentWorkspaceImageInspect, validateDocumentWorkspaceImageImport } from './document-image.ts'
+export { systemLocale } from './locale.ts'

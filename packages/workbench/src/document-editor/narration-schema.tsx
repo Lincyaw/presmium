@@ -10,8 +10,12 @@ import { PmButton, PmDialog, PmInput } from '../components.tsx'
 import type { Locale } from '../messages.ts'
 
 export const NARRATION_MESSAGES = {
-  'zh-CN': { field: '讲稿', captions: '字幕', pronunciation: '发音', display: '显示文字', spoken: '实际读音', done: '确定', cancel: '取消', cue: '提示', empty: '输入本步讲稿…', emptyCaptions: '输入字幕…' },
-  en: { field: 'Script', captions: 'Captions', pronunciation: 'Pronunciation', display: 'Written text', spoken: 'Spoken text', done: 'Apply', cancel: 'Cancel', cue: 'Cue', empty: 'Write this step’s script…', emptyCaptions: 'Write captions…' },
+  'zh-CN': { field: '讲稿', captions: '字幕', pronunciation: '发音', display: '显示文字', spoken: '实际读音', done: '确定', cancel: '取消', cue: '提示', empty: '输入本步讲稿…', emptyCaptions: '输入字幕…',
+    cueTitle: (action: string) => `提示：${action}`,
+    actions: { next: '下一步', spot: '聚光', hint: '高亮', point: '指示', click: '点击', run: '运行', ink: '标注', pause: '停顿', mark: '标记', call: '调用', hover: '悬停', move: '移动' } as Record<string, string> },
+  en: { field: 'Script', captions: 'Captions', pronunciation: 'Pronunciation', display: 'Written text', spoken: 'Spoken text', done: 'Apply', cancel: 'Cancel', cue: 'Cue', empty: 'Write this step’s script…', emptyCaptions: 'Write captions…',
+    cueTitle: (action: string) => `Cue: ${action}`,
+    actions: { next: 'Next Step', spot: 'Spotlight', hint: 'Highlight', point: 'Pointer', click: 'Click', run: 'Run', ink: 'Ink', pause: 'Pause', mark: 'Mark', call: 'Call', hover: 'Hover', move: 'Move' } as Record<string, string> },
 }
 export const NARRATION_CONTEXT = createContext<{ locale: Locale, readOnly?: boolean, advanced?: boolean }>({ locale: 'zh-CN' })
 
@@ -28,7 +32,8 @@ const atom = createReactInlineContentSpec({
       if (advanced === false) return <span contentEditable={false} className="pm-ui-narration-editor__cue">{t.cue}</span>
       let action = ''
       try { action = String(JSON.parse(props.payload).action ?? '') } catch { /* The adapter reports malformed content. */ }
-      return <span contentEditable={false} className="pm-ui-narration-editor__cue" title={props.cueId}>{t.cue}{action ? ` · ${action}` : ''}</span>
+      const name = t.actions[action]
+      return <span contentEditable={false} className="pm-ui-narration-editor__cue" title={name ? t.cueTitle(name) : t.cue}>{t.cue}{name ? ` · ${name}` : ''}</span>
     }
     if (advanced === false) return <span contentEditable={false}>{props.display}</span>
     return <span contentEditable={false}>

@@ -19,6 +19,7 @@ function records<T>(store: ClassroomStore | undefined, name: string, parse: (val
 export const classroomPlugin: PluginDefinition = {
   manifest: {
     id: CLASSROOM_ID,
+    name: { 'zh-CN': '课堂', en: 'Classroom' },
     version,
     kernel: '^1.0.0',
     requires: [SESSION, CLASSROOM_STORE, EXECUTOR, TOOLBAR, PRESENTER_PANELS, STATUS].map(token => ({ token, optional: true })),

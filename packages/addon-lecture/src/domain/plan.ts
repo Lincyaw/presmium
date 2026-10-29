@@ -3,7 +3,7 @@ import type { CodeNode, IRBlock, IRDocument, IRSection, RecordedRun, SourcePos, 
 import { narrationVoice } from './config.ts'
 import { blockKey, codeLineCount, lastNamedLine } from './drift.ts'
 import type { CueCommand, CueMark, SpokenText } from './narration.ts'
-import { parseCue, spokenText, TARGETED } from './narration.ts'
+import { cueProblem, parseCue, spokenText, TARGETED } from './narration.ts'
 import { LECTURE_RENDERER, PLAYER_RENDERER } from './track.ts'
 
 export interface PlannedCue {
@@ -139,7 +139,7 @@ function planCues(spoken: SpokenText, at: Reader): PlannedCue[] {
   for (const mark of spoken.cues) {
     const parsed = parseCue(mark.command)
     if ('problem' in parsed) {
-      problem(`{cue}\`${mark.command}\`: ${parsed.problem}`, true)
+      problem(cueProblem(mark.command, parsed.problem, at.doc.meta.lang), true)
       continue
     }
     const { name, arg } = parsed
