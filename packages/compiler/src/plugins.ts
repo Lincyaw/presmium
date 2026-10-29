@@ -1,11 +1,12 @@
 import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { errorMessage, isRecord, kernelIncompatibility } from '@lincyaw/kernel'
 import type { PresmiumNodePlugin, Severity } from '@lincyaw/kernel'
 import { createJiti } from 'jiti'
 import { satisfies, validRange } from 'semver'
+import { exports as resolveExports } from 'resolve.exports'
 
 export const NODE_PLUGIN_EXPORT = './presmium'
 
@@ -113,9 +114,9 @@ async function loadFrom(name: string, dir: string, problem: (severity: Severity,
       const label = typeof pkg.name === 'string' ? ` (${pkg.name}${typeof pkg.version === 'string' ? ` ${pkg.version}` : ''})` : ''
       return { problem: problem('error', `plugin "${name}"${label} is not loaded: ${peers}`) }
     }
-    const target = exportTarget(pkg.exports?.[NODE_PLUGIN_EXPORT])
+    const target = exportTarget(pkg, dir)
     if (!target) return { loaded: { name, dir } }
-    const file = join(dir, target)
+    const file = fileURLToPath(new URL(target, pathToFileURL(`${dir}/`)))
     if (!existsSync(file)) {
       return { loaded: { name, dir }, problem: problem('warning', `plugin "${name}": ${NODE_PLUGIN_EXPORT} points to missing file ${target}; only its components are used`) }
     }
@@ -184,10 +185,30 @@ export function findPackageDir(name: string, from: string, up = true): string | 
   }
 }
 
-function exportTarget(value: unknown): string | undefined {
-  if (typeof value === 'string') return value
-  if (!isRecord(value)) return undefined
-  return exportTarget(value.import) ?? exportTarget(value.node) ?? exportTarget(value.default)
+function exportTarget(pkg: PluginPackage, dir: string): string | undefined {
+  let targets: string[] | void
+  try {
+    targets = resolveExports(pkg, NODE_PLUGIN_EXPORT)
+  } catch {
+    // A package with no matching Node export still contributes its components.
+    return undefined
+  }
+  if (!targets?.length) return undefined
+  const base = pathToFileURL(`${dir}/`)
+  for (const target of targets) {
+    const path = target.split(/[?#]/, 1)[0]!
+    if (!path.startsWith('./') || /%2f|%5c/i.test(path)) continue
+    try {
+      const segments = path.slice(2).split(/[\\/]/).map(decodeURIComponent)
+      if (segments.some(segment => /^(?:\.{1,2}|node_modules)$/i.test(segment))) continue
+      const normalized = new URL(target, base)
+      if (!normalized.href.startsWith(base.href)) continue
+      return target
+    } catch {
+      // Invalid URL encoding cannot name a package file; arrays may provide another target.
+    }
+  }
+  throw new Error(`${NODE_PLUGIN_EXPORT} has no valid package-relative Node target`)
 }
 
 function isNodePlugin(value: unknown): value is PresmiumNodePlugin {

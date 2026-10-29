@@ -182,7 +182,7 @@ export class Compiler {
   #workspace?: Workspace
   readonly #committed: CommittedFiles = new Map()
   #plugins?: Plugins
-  readonly #environments = new Map<string, Executor>()
+  readonly #environments = new WeakMap<EnvironmentProvider, Map<string, Executor>>()
 
   constructor(deck: string, options: CompilerOptions = {}) {
     this.entry = resolveEntry(deck)
