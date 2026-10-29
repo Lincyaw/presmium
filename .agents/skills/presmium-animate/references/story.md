@@ -158,7 +158,7 @@ A cold viewer saying "clear" is not a pass: Muller's clear video raised confiden
 `gallery/story/lecture.json` is a 115-second narrated explainer built by this process, after a 小红书 video that explains flow matching unusually well ("flow matching：将生图路径，拉直！"). What that video does, and the example copies:
 
 1. **The title is the thesis**: straighten the path from noise to image, so few steps suffice.
-2. **One picture all the way through**: two planes in space-time (noise at t = 0, the target at t = 1) with each sample's path between them. Every new idea is a change of that picture: curved paths → straight training lines → the lines cross → the paths bend again → Reflow straightens them.
+2. **One picture all the way through**: space-time in three dimensions, time as the third axis, the noise plane (t = 0) and the target plane (t = 1) facing each other along it, each sample's path a curve between them. Flattened to 2D the paths lose what they are, curves through time. Every new idea is a change of that picture: curved paths → straight training lines → the lines cross → the paths bend again → Reflow straightens them.
 3. **One, then many**: one path → its tangent at one point ("this is the velocity") → arrows everywhere (the field) → only then dx/dt = v(x, t), as a label.
 4. **One iteration in detail, then the loop**: a time ruler with its step size stays on screen; one particle, the network's arrow, one step, the marker moves on.
 5. **Convergence by overlay**: Euler with 4, 8, 16 and 32 steps on the same curve, the end error read off each.
@@ -167,7 +167,7 @@ A cold viewer saying "clear" is not a pass: Muller's clear video raised confiden
 8. **The flaw at one point**: zoom on one crossing; the network's arrow is the average of the lines through it.
 9. **The fix as numbered steps on the same planes**, and the result as a side-by-side.
 
-The example's worksheet is in its reading view. Its data come from `gallery/story/scenes/data/flow-matching.py` (a 200,000-parameter MLP trained for 30,000 rounds, then Reflow), and the scene `scenes/flow-matching.ts` reads every readout from that file. Its narration is synthesized with the Edge voice and committed as the document's speech cache.
+The example's worksheet is in its reading view. Its data come from `gallery/story/scenes/data/flow-matching.py` (a 200,000-parameter MLP trained for 30,000 rounds, then Reflow), and the scene `scenes/flow-matching.ts` (Three.js) reads every readout from that file. The camera moves between the states: round the planes in the intro, above the one path for Euler, through the noise plane to face the logo for the result. Where the subject is too small for the picture (the path bends 0.25 across a time axis 3.4 long), space is magnified about it for those states rather than cut to a flat view. Its narration is synthesized with the Edge voice and committed as the document's speech cache.
 
 ## Anti-patterns
 
