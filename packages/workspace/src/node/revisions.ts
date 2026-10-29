@@ -203,7 +203,7 @@ export class Revisions implements RevisionService {
 
   commit(change: { files: string[], message: string, origin: CommitOrigin, trailers?: [string, string][] }): Promise<Revision | undefined> {
     const [summary = '', ...body] = change.message.trim().split('\n')
-    return this.#git.exclusive(() => this.commitWhileLocked({ paths: change.files, summary, body: body.join('\n'), origin: change.origin, ...change.trailers ? { trailers: change.trailers } : {} }))
+    return this.transaction(() => this.commitWhileLocked({ paths: change.files, summary, body: body.join('\n'), origin: change.origin, ...change.trailers ? { trailers: change.trailers } : {} }))
   }
 
   /** Commits the paths; the caller holds the git lock (`Git.exclusive`). */
