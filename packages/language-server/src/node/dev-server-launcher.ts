@@ -49,7 +49,8 @@ export class DevServerLauncher {
   #start(entry: string, forget: () => void): Promise<string> {
     const deckDir = dirname(entry)
     const args = [presmiumBin(deckDir), 'dev', entry, '--to', 'web', '--out', join(deckDir, PREVIEW_DIR)]
-    const child = spawn(process.execPath, args, { cwd: deckDir, stdio: ['ignore', 'pipe', 'pipe'] })
+    // The lines read below are the English ones: `presmium dev` prints in the system's language.
+    const child = spawn(process.execPath, args, { cwd: deckDir, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, LC_ALL: 'en_US.UTF-8' } })
     this.#children.add(child)
     return new Promise((resolve, reject) => {
       let started = false
