@@ -37,8 +37,17 @@ for (const dir of readdirSync(join(root, 'packages')).sort()) {
   if (plugin?.version !== pkg.version) problems.push(`${where}: version is ${JSON.stringify(plugin?.version)}, the package's is "${pkg.version}"`)
 }
 
+// A browser plugin's manifest names it in both interface languages: the startup report shows the name, never the id.
+let named = 0
+for (const dir of readdirSync(join(root, 'packages')).sort()) {
+  const file = join(root, 'packages', dir, 'src/client/plugin.ts')
+  if (!existsSync(file)) continue
+  named++
+  if (!/manifest:\s*\{[^]*?\bname:\s*\{\s*'zh-CN':\s*'[^']+',\s*en:\s*'[^']+'\s*\}/.test(readFileSync(file, 'utf8'))) problems.push(`packages/${dir}/src/client/plugin.ts: the manifest has no name: { 'zh-CN': '…', en: '…' } for the startup report`)
+}
+
 if (problems.length) {
   console.error(`plugin declaration problems:\n${problems.join('\n')}`)
   process.exit(1)
 }
-console.log(`plugins ok: ${checked} Node plugins declare their version and a kernel range ${KERNEL_VERSION} satisfies`)
+console.log(`plugins ok: ${checked} Node plugins declare their version and a kernel range ${KERNEL_VERSION} satisfies; ${named} browser plugins name themselves in zh-CN and en`)
