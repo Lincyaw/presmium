@@ -2,10 +2,12 @@
   "name": "@lincyaw/cloud",
   "version": "0.1.0",
   "private": true,
-  "description": "Presmium cloud spaces, accounts, billing and isolated execution",
+  "description": "Presmium Cloud: accounts, a complete Presmium Studio per user, sharing, and MCP access",
   "license": "Apache-2.0",
   "type": "module",
-  "engines": { "node": ">=22.19" },
+  "engines": {
+    "node": ">=22.19"
+  },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
@@ -17,23 +19,23 @@
     "@hono/node-server": "2.1.3",
     "@lincyaw/design": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
-    "@lincyaw/mcp": "workspace:*",
-    "@lincyaw/web": "workspace:*",
     "@lincyaw/workbench": "workspace:*",
     "hono": "4.13.13",
-    "image-size": "2.0.4",
+    "http-proxy-3": "2.0.1",
     "jiti": "2.7.0",
     "jose": "6.2.12",
+    "mime-types": "3.0.2",
     "openid-client": "6.8.8",
     "pg": "8.23.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "stripe": "23.0.1"
+    "tar": "7.5.22"
   },
   "devDependencies": {
     "@types/pg": "^8.16.0",
     "@types/react": "18.3.28",
     "@types/react-dom": "^18.3.7",
-    "vite": "8.3.4"
+    "vite": "8.3.4",
+    "@types/mime-types": "^3.0.1"
   }
 }

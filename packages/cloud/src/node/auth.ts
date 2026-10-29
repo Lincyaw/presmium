@@ -78,9 +78,7 @@ function endpoint(value: string, allowLoopback: boolean): URL {
 /** Login may return only to a concrete application route, never an arbitrary URL. */
 export function authenticationReturnPath(value: unknown): string {
   if (typeof value !== 'string' || value.length > 512) return '/'
-  if (value === '/' || /^\/invite\/[A-Za-z0-9_-]{43}$/.test(value)) return value
-  const id = '[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}'
-  return new RegExp(`^/spaces/${id}/(?:documents(?:/${id})?|members|access|usage|execution|billing)$`).test(value) ? value : '/'
+  return value === '/' || /^\/s\/[A-Za-z0-9_-]{22}$/.test(value) ? value : '/'
 }
 
 /** OIDC owns credentials; this service owns only opaque, revocable application sessions. */

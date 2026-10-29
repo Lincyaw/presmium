@@ -1,13 +1,20 @@
 import { createHash } from 'node:crypto'
 import { constants } from 'node:fs'
-import { chmod, lstat, open, readFile, readdir, realpath, rm, statfs } from 'node:fs/promises'
+import { chmod, chown, lstat, mkdir, open, readFile, readdir, realpath, rm, statfs } from 'node:fs/promises'
 import { isAbsolute, join, resolve } from 'node:path'
 import { CloudError, requireId, requireInteger } from '../domain/errors.ts'
 import type { Database } from './database.ts'
 import { runtimeSeccompDigest } from './runtime-seccomp.ts'
 
 export interface RuntimeStorageOptions { mountRoot: string, hostRoot: string, instanceId: string }
-export interface RuntimeStorageReference { kind: 'job' | 'environment', id: string }
+export interface RuntimeStorageReference { kind: 'studio', id: string }
+
+/** Trusted host storage: a directory per Studio volume, allocated by the operator's pool. */
+export interface StudioStorage {
+  ready(): Promise<void>
+  acquire(request: RuntimeStorageReference & { bytes: number }): Promise<{ hostPath: string }>
+  release(reference: RuntimeStorageReference): Promise<void>
+}
 interface Slot {
   id: string
   path: string
@@ -34,7 +41,7 @@ const validErrno = (value: unknown) => value === 'EDQUOT' || value === 'ENOSPC'
 const location = (value: string) => isAbsolute(value) && value !== '/' && resolve(value) === value && /^\/[A-Za-z0-9_./-]+$/.test(value)
 
 /** Allocates only provisioned, kernel-enforced project-quota directories. */
-export class RuntimeStorage {
+export class RuntimeStorage implements StudioStorage {
   readonly db: Database
   readonly options: RuntimeStorageOptions
   #registeredDigest: string | undefined
@@ -115,7 +122,7 @@ export class RuntimeStorage {
   }
 
   #reference(reference: RuntimeStorageReference) {
-    if (reference.kind !== 'job' && reference.kind !== 'environment') throw new CloudError(400, 'runtime-storage-reference-invalid')
+    if (reference.kind !== 'studio') throw new CloudError(400, 'runtime-storage-reference-invalid')
     return [this.options.instanceId, reference.kind, requireId(reference.id)]
   }
 
@@ -159,5 +166,37 @@ export class RuntimeStorage {
       await this.#checkSlot(slot)
       await sql.query('UPDATE cloud_runtime_storage_slots SET resource_kind = NULL, resource_id = NULL, requested_bytes = NULL, allocated_at = NULL WHERE instance_id = $1 AND slot_id = $2', [this.options.instanceId, slot.id])
     })
+  }
+}
+
+/**
+ * Plain directories without a quota, for a loopback trial only (`CLOUD_STORAGE_UNENFORCED=true` requires
+ * `CLOUD_ALLOW_INSECURE_LOOPBACK=true`): a Studio can fill the host's disk.
+ */
+export class UnenforcedStorage implements StudioStorage {
+  readonly options: RuntimeStorageOptions
+  constructor(options: RuntimeStorageOptions) {
+    if (!location(options.mountRoot) || !location(options.hostRoot)) throw new CloudError(500, 'runtime-storage-configuration-invalid')
+    this.options = { ...options }
+  }
+  async ready(): Promise<void> {
+    const root = await lstat(this.options.mountRoot)
+    if (!root.isDirectory() || root.isSymbolicLink()) throw new CloudError(503, 'runtime-storage-pool-invalid')
+  }
+  #path(reference: RuntimeStorageReference) {
+    if (reference.kind !== 'studio') throw new CloudError(400, 'runtime-storage-reference-invalid')
+    return join('unenforced', requireId(reference.id))
+  }
+  async acquire(request: RuntimeStorageReference & { bytes: number }): Promise<{ hostPath: string }> {
+    const path = this.#path(request), mounted = join(this.options.mountRoot, path)
+    await mkdir(join(this.options.mountRoot, 'unenforced'), { recursive: true, mode: 0o755 })
+    await mkdir(mounted, { mode: 0o700 }).catch((error: NodeJS.ErrnoException) => { if (error.code !== 'EEXIST') throw error })
+    const metadata = await lstat(mounted)
+    if (!metadata.isDirectory() || metadata.isSymbolicLink()) throw new CloudError(503, 'runtime-storage-pool-invalid')
+    if (metadata.uid !== 1000) await chown(mounted, 1000, 1000)
+    return { hostPath: join(this.options.hostRoot, path) }
+  }
+  async release(reference: RuntimeStorageReference): Promise<void> {
+    await rm(join(this.options.mountRoot, this.#path(reference)), { recursive: true, force: true, maxRetries: 2 })
   }
 }

@@ -17,12 +17,14 @@ export interface CliMessages {
   emptyTo: string
   badAllow(kinds: readonly string[], value: string): string
   badPreviewOrigin(value: string): string
+  badPublicUrl(value: string): string
   badPort(option: string, value: string): string
   unmountFailed(error: string): string
   compiled(sections: number, summary: string): string
   token(file: string): string
   watching(ir: string): string
   serveOpen(address: string, port: string): string
+  noFfmpeg(command: string): string
   newMissing: string
   studioMissing: string
   noProblems: string
@@ -82,6 +84,8 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
           --preview-origin <来源>  （可重复）嵌入预览的 Presmium Studio 页面的来源，
                           例如 http://127.0.0.1:4320；设置 PRESMIUM_SERVICE_TOKEN 时，
                           工作区的路由要求它（Authorization: Bearer）
+          --public-url <来源>  反向代理在前面时浏览器使用的来源：信任它的主机，
+                          预览与产物的地址用它给出
   studio  启动 Presmium Studio（实验性）：浏览器中的编辑应用与这个目录（工作区的
           根目录或一份文稿）的工作区服务，只打印一个要打开的网址。需要另外安装
           @lincyaw/studio（约 865 MB）
@@ -103,11 +107,13 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
     emptyTo: '--to 至少需要一个形态，例如 --to web。',
     badAllow: (kinds, value) => `--allow 不接受“${value}”。可用的种类：${kinds.join('、')}。`,
     badPreviewOrigin: value => `“${value}”不是来源。请给出协议、主机与端口，例如 http://127.0.0.1:4320。`,
+    badPublicUrl: value => `“${value}”不是来源。请给出浏览器访问的协议与主机，例如 https://preview.example.com。`,
     badPort: (option, value) => `${option} 需要 0 到 65535 之间的端口号，而不是“${value}”。`,
     unmountFailed: error => `presmium: 无法关闭上一次加载的服务端扩展：${error}`,
     compiled: (sections, summary) => `已更新 ${sections} 个页面；${summary}`,
     token: file => ` （访问令牌在 ${file} 中）`,
     watching: ir => `正在监视修改；运行快照在 ${ir}`,
+    noFfmpeg: command => `presmium serve: 没有找到 FFmpeg，讲授视频只能由浏览器导出为 WebM，画质较低。安装后可导出清晰的 MP4：${command}`,
     serveOpen: (address, port) => `presmium serve: 正在 ${address} 上监听，局域网中的设备可以访问，且没有登录：任何能访问端口 ${port} 的人都以你的身份使用这个工作区（编辑、运行代码、允许操作）。请只在可信的网络中使用；不加 --host 时只在本机监听。`,
     newMissing: 'presmium new: 没有安装 create-presmium。它随 presmium 一起安装，请运行 pnpm add -g @lincyaw/presmium。',
     studioMissing: 'presmium studio: 这里没有安装 Presmium Studio（实验性，约 865 MB）。请运行 pnpm add -g @lincyaw/studio 后使用 presmium-studio，或在本项目中运行 pnpm add -D @lincyaw/studio。',
@@ -166,6 +172,8 @@ Commands:
           --preview-origin <origin>  (repeatable) the origin of a Presmium Studio whose pages embed
                           the previews, e.g. http://127.0.0.1:4320; with PRESMIUM_SERVICE_TOKEN set,
                           the workspace’s routes ask for it (Authorization: Bearer)
+          --public-url <origin>  the origin browsers use when a reverse proxy fronts the service:
+                          its host is trusted, and previews and outputs are linked under it
   studio  Presmium Studio (experimental): the editing app in the browser and the workspace service
           of the directory (the workspace root, or a deck); prints the one address to open. It is
           the package @lincyaw/studio (about 865 MB), installed beside this one
@@ -187,11 +195,13 @@ Exit Codes: 0 no errors, 1 error findings, 2 usage or internal error.`,
     emptyTo: '--to needs at least one renderer, such as --to web.',
     badAllow: (kinds, value) => `--allow does not take “${value}”. The kinds are ${kinds.join(', ')}.`,
     badPreviewOrigin: value => `“${value}” is not an origin. Give a scheme, host, and port, such as http://127.0.0.1:4320.`,
+    badPublicUrl: value => `“${value}” is not an origin. Give the scheme and host browsers use, such as https://preview.example.com.`,
     badPort: (option, value) => `${option} takes a port number from 0 to 65535, not “${value}”.`,
     unmountFailed: error => `presmium: couldn’t close the previous server contributions: ${error}`,
     compiled: (sections, summary) => `compiled ${sections} sections; ${summary}`,
     token: file => ` (its token is in ${file})`,
     watching: ir => `watching; runtime snapshot in ${ir}`,
+    noFfmpeg: command => `presmium serve: FFmpeg was not found, so lecture videos export from the browser as WebM, at a lower quality. Install it for sharp MP4 videos: ${command}`,
     serveOpen: (address, port) => `presmium serve: listening on ${address}, on the local network, with no login: anyone who reaches port ${port} uses this workspace as you (edits, runs code, approves). Use it on a network you trust; without --host it listens on this machine only.`,
     newMissing: 'presmium new: create-presmium is not installed. It comes with the presmium package: run pnpm add -g @lincyaw/presmium.',
     studioMissing: 'presmium studio: Presmium Studio is not installed here (experimental, about 865 MB). Run pnpm add -g @lincyaw/studio, then presmium-studio; or run pnpm add -D @lincyaw/studio in this project.',

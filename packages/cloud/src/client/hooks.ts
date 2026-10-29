@@ -3,23 +3,16 @@ import { ApiError, request } from './api.ts'
 import type { Messages } from './messages.ts'
 
 export function failureMessage(error: unknown, t: Messages): string {
-  if (!(error instanceof ApiError)) {
-    if (error instanceof Error && /^(document-|save-locked|revision-conflict|page-context-changed)/.test(error.message)) return t.errorPendingEdits
-    return error instanceof TypeError ? t.errorNetwork : t.errorGeneric
-  }
-  if (error.code === 'history-plan-required') return t.errorHistoryPlan
-  if (error.code === 'cloud-preview-required') return t.previewRequired
-  if (error.code === 'publication-student-build-required') return t.publicationRequired
-  if (error.code === 'collaborator-limit') return t.errorCollaborators
-  if (['storage-limit', 'runtime-job-limit', 'runtime-concurrency-limit'].includes(error.code)) return t.errorQuota
-  if (error.code === 'runtime-storage-pool-exhausted') return t.errorExecutionCapacity
-  if (error.code === 'verified-email-required') return t.errorVerifiedEmail
+  if (!(error instanceof ApiError)) return error instanceof TypeError ? t.errorNetwork : t.errorGeneric
+  if (['runtime-storage-pool-exhausted', 'runtime-storage-size-unavailable'].includes(error.code)) return t.errorCapacity
+  if (error.code === 'share-too-large') return t.errorTooLarge
+  if (error.code === 'share-not-ready') return t.errorShareNotReady
   if (error.status === 401) return t.errorUnauthorized
   if (error.status === 403) return t.errorForbidden
   if (error.status === 404) return t.errorNotFound
   if (error.status === 409) return t.errorConflict
-  if ([402, 429].includes(error.status)) return t.errorQuota
-  if ([400, 413, 422].includes(error.status)) return t.errorInvalid
+  if (error.status === 413) return t.errorTooLarge
+  if ([400, 422].includes(error.status)) return t.errorInvalid
   if (error.status >= 500) return t.errorUnavailable
   return t.errorGeneric
 }

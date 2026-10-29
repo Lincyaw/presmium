@@ -11,6 +11,15 @@ export interface MainOptions {
   presmium?: string
 }
 
+function urlOf(option: string, value: string | undefined): string | undefined {
+  if (value === undefined) return undefined
+  try {
+    const url = new URL(value)
+    if (/^https?:$/.test(url.protocol) && !url.username && !url.password && !url.search && !url.hash) return url.href
+  } catch {}
+  throw new Error(t.badUrl(option, value))
+}
+
 function portOf(value: string | undefined): number | undefined {
   if (value === undefined) return undefined
   const n = Number(value)
@@ -19,16 +28,18 @@ function portOf(value: string | undefined): number | undefined {
 }
 
 export async function main(argv: string[], options: MainOptions = {}): Promise<number> {
-  let values: { port?: string, host?: string, help?: boolean }
+  let values: { port?: string, host?: string, 'public-url'?: string, 'preview-url'?: string, help?: boolean }
   let dir: string
   try {
-    const parsed = parseArgs({ args: argv, allowPositionals: true, options: { port: { type: 'string' }, host: { type: 'string' }, help: { type: 'boolean', short: 'h' } } })
+    const parsed = parseArgs({ args: argv, allowPositionals: true, options: { port: { type: 'string' }, host: { type: 'string' }, 'public-url': { type: 'string' }, 'preview-url': { type: 'string' }, help: { type: 'boolean', short: 'h' } } })
     values = parsed.values
     const [given = '.', ...extra] = parsed.positionals
     if (extra.length > 0) throw new Error(t.unexpectedArgument(extra[0]!))
     dir = resolve(given)
     if (!values.help && (!existsSync(dir) || !statSync(dir).isDirectory())) throw new Error(t.notDirectory(dir))
     portOf(values.port)
+    urlOf('--public-url', values['public-url'])
+    urlOf('--preview-url', values['preview-url'])
   } catch (error) {
     process.stderr.write(`presmium studio: ${error instanceof Error ? error.message : String(error)}\n\n${t.usage}\n`)
     return 2
@@ -43,14 +54,14 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
 
   let studio
   try {
-    studio = await startStudio({ dir, port: portOf(values.port), onServiceOutput: text => process.stderr.write(text), ...values.host ? { listenAddress: values.host } : {}, ...options.presmium ? { presmium: options.presmium } : {} })
+    studio = await startStudio({ dir, port: portOf(values.port), onServiceOutput: text => process.stderr.write(text), ...values.host ? { listenAddress: values.host } : {}, ...values['public-url'] ? { publicUrl: urlOf('--public-url', values['public-url']) } : {}, ...values['preview-url'] ? { previewUrl: urlOf('--preview-url', values['preview-url']) } : {}, ...options.presmium ? { presmium: options.presmium } : {} })
   } catch (error) {
     process.stderr.write(`presmium studio: ${error instanceof Error ? error.message : String(error)}\n`)
     return 2
   }
   process.stdout.write(`studio  ${studio.url}\n`)
   process.stderr.write(`${t.log(studio.log)}\n`)
-  if (values.host && values.host !== '127.0.0.1' && values.host !== '::1') {
+  if (values.host && values.host !== '127.0.0.1' && values.host !== '::1' && !values['public-url']) {
     process.stderr.write(`${t.openOnNetwork(values.host, new URL(studio.url).port, new URL(studio.workspaceServerUrl).port)}\n`)
   }
 

@@ -1,59 +1,51 @@
-import { createHash } from 'node:crypto'
-import { CreateBucketCommand, GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { CreateBucketCommand, DeleteObjectsCommand, GetObjectCommand, HeadBucketCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { CloudError } from '../domain/errors.ts'
 import type { CloudConfig } from './config.ts'
-import type { Database } from './database.ts'
-import { assertStorageCapacity, lockStorageAccount } from './runtime-storage-budget.ts'
 
+/** S3-compatible storage of shared documents: each share's source archive and built site, under `shares/<id>/`. */
 export class ObjectStorage {
   readonly client: S3Client
-  readonly db: Database
-  readonly config: NonNullable<CloudConfig['storage']>
-  constructor(db: Database, config: NonNullable<CloudConfig['storage']>) {
-    this.db = db; this.config = config
+  readonly bucket: string
+  readonly config: CloudConfig['storage']
+  constructor(config: CloudConfig['storage']) {
+    this.config = config
+    this.bucket = config.bucket
     this.client = new S3Client({ endpoint: config.endpoint, region: config.region, forcePathStyle: Boolean(config.endpoint), credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey }, maxAttempts: 2 })
   }
 
   async initialize(): Promise<void> {
-    try { await this.client.send(new HeadBucketCommand({ Bucket: this.config.bucket })) }
+    try { await this.client.send(new HeadBucketCommand({ Bucket: this.bucket })) }
     catch (error) {
       if ((error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode !== 404) throw error
-      await this.client.send(new CreateBucketCommand({ Bucket: this.config.bucket, ...this.config.region !== 'us-east-1' ? { CreateBucketConfiguration: { LocationConstraint: this.config.region as 'eu-west-1' } } : {} }))
+      await this.client.send(new CreateBucketCommand({ Bucket: this.bucket, ...this.config.region !== 'us-east-1' ? { CreateBucketConfiguration: { LocationConstraint: this.config.region as 'eu-west-1' } } : {} }))
     }
   }
 
-  async put(spaceId: string, bytes: Uint8Array, mediaType: string) {
-    if (bytes.byteLength > 100 * 1024 * 1024) throw new CloudError(413, 'asset-too-large')
-    const sha256 = createHash('sha256').update(bytes).digest('hex'), key = `spaces/${spaceId}/${sha256}`
-    await this.db.transaction(async sql => {
-      const found = (await sql.query<{ billing_account_id: string }>('SELECT billing_account_id FROM spaces WHERE id=$1', [spaceId])).rows[0]
-      if (!found) throw new CloudError(404, 'space-not-found')
-      const account = await lockStorageAccount(sql, found.billing_account_id)
-      const space = (await sql.query('SELECT id,billing_account_id FROM spaces WHERE id=$1 FOR UPDATE', [spaceId])).rows[0]
-      if (!space) throw new CloudError(404, 'space-not-found')
-      if (space.billing_account_id !== found.billing_account_id) throw new CloudError(409, 'billing-account-changed')
-      if ((await sql.query('SELECT key FROM objects WHERE key=$1', [key])).rowCount) return
-      await assertStorageCapacity(sql, found.billing_account_id, account.plan, bytes.byteLength)
-      // An unreferenced object on a failed DB commit is safe for later collection;
-      // publishing metadata before the bytes would expose a missing canonical object.
-      await this.client.send(new PutObjectCommand({ Bucket: this.config.bucket, Key: key, Body: bytes, ContentType: mediaType, Metadata: { sha256 } }))
-      await sql.query('INSERT INTO objects(key,space_id,bytes,sha256,media_type) VALUES($1,$2,$3,$4,$5)', [key, spaceId, bytes.byteLength, sha256, mediaType])
-    })
-    return { key, sha256, bytes: bytes.byteLength }
+  async put(key: string, body: Uint8Array, contentType: string): Promise<void> {
+    await this.client.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: body, ContentType: contentType }))
   }
 
-  async stat(spaceId: string, key: string): Promise<{ key: string, bytes: number, sha256: string, mediaType: string }> {
-    const row = (await this.db.query('SELECT * FROM objects WHERE key=$1 AND space_id=$2', [key, spaceId])).rows[0]
-    if (!row) throw new CloudError(404, 'asset-not-found')
-    return { key: row.key, bytes: Number(row.bytes), sha256: row.sha256, mediaType: row.media_type }
+  async get(key: string): Promise<{ body: ReadableStream, contentType: string, bytes: number } | undefined> {
+    try {
+      const result = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }))
+      if (!result.Body) throw new CloudError(503, 'storage-unavailable')
+      return { body: result.Body.transformToWebStream(), contentType: result.ContentType ?? 'application/octet-stream', bytes: result.ContentLength ?? 0 }
+    } catch (error) {
+      if ((error as { name?: string }).name === 'NoSuchKey' || (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404) return undefined
+      throw error
+    }
   }
 
-  async get(spaceId: string, key: string) {
-    const row = await this.stat(spaceId, key)
-    const result = await this.client.send(new GetObjectCommand({ Bucket: this.config.bucket, Key: key }))
-    if (!result.Body) throw new CloudError(503, 'asset-storage-unavailable')
-    return { body: result.Body.transformToWebStream(), mediaType: row.mediaType, bytes: row.bytes, sha256: row.sha256 }
+  async removePrefix(prefix: string): Promise<void> {
+    if (!/^shares\/[a-f0-9-]{36}\/$/.test(prefix)) throw new CloudError(500, 'storage-prefix-invalid')
+    let token: string | undefined
+    do {
+      const page = await this.client.send(new ListObjectsV2Command({ Bucket: this.bucket, Prefix: prefix, ContinuationToken: token }))
+      const keys = (page.Contents ?? []).flatMap(object => object.Key ? [{ Key: object.Key }] : [])
+      if (keys.length) await this.client.send(new DeleteObjectsCommand({ Bucket: this.bucket, Delete: { Objects: keys, Quiet: true } }))
+      token = page.IsTruncated ? page.NextContinuationToken : undefined
+    } while (token)
   }
 
-  async close() { this.client.destroy() }
+  close(): void { this.client.destroy() }
 }

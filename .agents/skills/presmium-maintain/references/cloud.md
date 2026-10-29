@@ -1,47 +1,33 @@
 # Cloud hosting
 
-The optional private `packages/cloud` app is a separate multi-user product. Read
-`docs/rfc-cloud.md`, `docs/cloud-deployment.md`, `packages/cloud/project-index.yaml`
-and the current real-run record before changing it. Local workspace services remain
-single-user tools.
+The optional private `packages/cloud` app runs one complete Presmium Studio container per user. Read
+`docs/rfc-cloud.md`, `docs/cloud-deployment.md` and `packages/cloud/project-index.yaml` before changing it.
 
-PostgreSQL owns canonical TeachingDocument revisions and project text files. Web and
-MCP use `Documents` for version checks, plans, persistent receipts and history. Never
-create an independent writable source tree as another authority. Permissions are checked at each read, write and execution boundary. All existing non-AI
-services are free; legacy spend scope is not required for them.
+Never reimplement Studio, the workbench or the workspace service in the cloud. Every feature an author uses
+comes from the Studio image (`deploy/cloud/studio/`), which runs `presmium studio` with `--public-url` and
+`--preview-url`. A missing feature in the cloud is a bug in the image, the gateway or those flags, not a reason
+for a second implementation. Documents live only in each Studio's volume (a git workspace); PostgreSQL holds
+accounts, Studio state, gate tickets and sessions, access tokens and shares.
 
-Keycloak/OIDC owns registration and passwords. Preserve code/PKCE, state, nonce,
-issuer/audience and persistent revocable sessions. Keep author, identity, user-content
-and Jupyter origins distinct. Private content capabilities expire and recheck membership;
-published content rechecks revocation. Runtime browser grants are environment- and
-generation-bound, and author logout revokes that browser grant.
+Keep the trust split: the console (`serve`) has no Docker; the runner has Docker but never reads or writes
+authors' files; file work (documents, snapshots, copies) happens in the Studio container's control service as
+the author's unprivileged user. `PRESMIUM_CLOUD_*` variables stay in the container entry and never reach Studio.
 
-Identity pages inherit the official Keycloak base templates and reuse the public design
-entry, brand and controls. Build the theme with deploy/cloud/keycloak/build-theme.mjs;
-fingerprint generated CSS/JS so ordinary refreshes see updates. Existing realms need
-a loginTheme update, not reimport. Verify locale/appearance handoff, native form errors,
-password reveal and menu keyboard behavior in light/dark and wide/narrow views.
+The gateway checks a host-only gate cookie on each Studio host (`s-<slug>`, `p-<slug>`), bound to the owner,
+the console session and the Studio generation, and forwards with `Host` kept and the gate cookie removed.
+DeepSeek Harness's session cookie is SameSite=Strict, so its `/?token=` exchange must start from a page on the
+Studio host, not from the console's redirect chain.
 
-Cloud editing reuses Studio document views and the standard workspace host protocol.
-Ordinary compile, preview, presenting, export and code environments are free. Use
-Admission.prepareJob with the exact source and target; matching retries share preparation.
-Environment starts use a stable requestId and a finite free lease, without a quote UI.
-Reuse Admission, Usage and RuntimeClient for persistent intent, actual zero-price
-reserve/settle and resource quotas. Zero budget must not reject free operations.
-Hosted AI is unavailable; Stripe keys alone must never enable purchases of missing AI
-services. Keep the capability and checkout route disabled until a real product exists. A task never receives database, OIDC, object-store or payment credentials.
-Only trusted runner/watchdog processes receive Docker control privileges; tenant
-containers have bounded resources, a read-only root, hard storage limits and finite
-lifetimes. Do not replace real quotas with a delayed directory-size check.
+Keycloak/OIDC owns registration and passwords; preserve code/PKCE, state, nonce, issuer/audience and revocable
+sessions. Shares are snapshots (`git archive` of HEAD plus a web build) in object storage; copies are committed
+into the reader's own workspace with links and special files removed.
 
-Deploy only the authorized Compose project. Preserve unrelated containers and volumes.
-Do not print `.env`, bearer tokens, runtime tickets or provider secrets. Keep existing
-credential keys stable across updates. Use the storage ownership marker and verified
-mount before runner admission; missing enforcement must reject execution.
+Deploy only the authorized Compose project; preserve unrelated containers and volumes. Do not print `.env`,
+tokens or API keys. Real deployments need the XFS quota pool; `CLOUD_STORAGE_UNENFORCED=true` is for loopback
+trials only.
 
-Verify actual registration, browser editing and restore, MCP scope/revocation, a real
-Linux compile/export and Jupyter execution, stop/restart and zero-charge accounting. Observe
-light/dark and wide/narrow UI. Use lightweight structure checks, not new tests or full
-suites unless explicitly requested. Future AI/provider sandbox configuration is a separate real verification step; unavailable
-AI and payment must stay visibly unavailable. Record measured
-results and remaining limitations in the benchmark document and requirements index.
+Verify with a real loopback deployment and Chromium: register, open Studio, open a document (previews load),
+the AI assistant's model settings, share, a second account's copy, MCP through `/mcp` with an access token,
+stop and restart (files kept), light/dark and wide/narrow console views. Use lightweight structure checks, not
+new tests or full suites unless explicitly requested. Record results and remaining limitations in a benchmark
+note and the requirements index.
