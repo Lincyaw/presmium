@@ -139,10 +139,12 @@ export function nodeServer(options: {
   decideUpgrade(req: IncomingMessage): Promise<{ to?: ProxyTarget, status?: number }>
   fetch(request: Request, req: IncomingMessage): Promise<Response>
   proxy: Proxy
-}): Server {
+}): { server: Server, close(): Promise<void> } {
   const listener = getRequestListener((request, env) => options.fetch(request, (env as { incoming: IncomingMessage }).incoming))
+  const upgrades = new Set<Duplex>()
   const server = createServer((req, res) => {
     void options.decide(req).then((decision) => {
+      if (res.destroyed) return
       if (decision.kind === 'fetch') return listener(req, res)
       if (decision.kind === 'proxy') return options.proxy.web(req, res, decision.to)
       return send(res, decision.response)
@@ -152,12 +154,22 @@ export function nodeServer(options: {
     })
   })
   server.on('upgrade', (req: IncomingMessage, socket: Duplex, head: Buffer) => {
+    upgrades.add(socket)
+    socket.once('close', () => upgrades.delete(socket))
     void options.decideUpgrade(req).then(({ to, status }) => {
+      if (socket.destroyed) return
       if (to) options.proxy.ws(req, socket, head, to)
       else refuseUpgrade(socket, status ?? 404)
     }, () => refuseUpgrade(socket, 500))
   })
-  return server
+  return {
+    server,
+    close: () => new Promise((resolve) => {
+      server.close(() => resolve())
+      server.closeAllConnections()
+      for (const socket of upgrades) socket.destroy()
+    }),
+  }
 }
 
 export function listen(server: Server, port: number, host: string): Promise<number> {
@@ -167,13 +179,6 @@ export function listen(server: Server, port: number, host: string): Promise<numb
       server.off('error', reject)
       resolve((server.address() as AddressInfo).port)
     })
-  })
-}
-
-export function closeServer(server: Server): Promise<void> {
-  return new Promise((resolve) => {
-    server.close(() => resolve())
-    server.closeAllConnections()
   })
 }
 
