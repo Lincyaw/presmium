@@ -1,0 +1,53 @@
+{
+  "at": "2026-10-29T09:01:11Z",
+  "scope": "Live READ ONLY PostgreSQL snapshot of validation project. All runtime reservations since actual 048 migration application; no document content read.",
+  "freePolicyAppliedAt": "2026-10-29T08:26:42.510Z",
+  "newReservations": [
+    {
+      "state": "released",
+      "count": 1,
+      "reservedMinor": 0,
+      "actualMinor": 0,
+      "maximumReservedMinor": 0,
+      "nonzeroCount": 0
+    },
+    {
+      "state": "settled",
+      "count": 10,
+      "reservedMinor": 0,
+      "actualMinor": 0,
+      "maximumReservedMinor": 0,
+      "nonzeroCount": 0
+    }
+  ],
+  "newRuntimeLedger": {
+    "positiveEntries": 0,
+    "netReserveSettleReleaseMinor": 0
+  },
+  "allUsagePeriods": {
+    "consumedMinor": 0,
+    "reservedMinor": 0
+  },
+  "historicalRuntimeRefunds": {
+    "originalPositiveSettlements": 23,
+    "originalMinor": 38,
+    "refundEntries": 23,
+    "refundMinor": -38,
+    "missingRefunds": 0,
+    "mismatchedRefunds": 0,
+    "duplicateRefunds": 0
+  },
+  "specifiedPdfJob": {
+    "jobId": "f69631f6-ed7c-4cb2-adbe-694e29a93f70",
+    "path": "slides.pdf",
+    "bytes": 68606,
+    "sha256": "7791b509b2a3311f07df6a1ae742bb84361864017ba66327226190aa3eb93308",
+    "jobState": "succeeded",
+    "reservationState": "settled",
+    "reservedMinor": 0,
+    "actualMinor": 0
+  },
+  "limitations": [
+    "Point-in-time database read; no migration replay or provider payment performed."
+  ]
+}

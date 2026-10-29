@@ -1,0 +1,59 @@
+/* Only the authentication shell and layout. Controls and states come from @lincyaw/design. */
+.pm-auth { min-height: 100%; background: var(--pm-color-bg); }
+.pm-auth__body { min-height: 100dvh; margin: 0; }
+.pm-auth__shell {
+  box-sizing: border-box;
+  display: grid;
+  gap: var(--pm-space-6);
+  width: min(100%, var(--pm-dialog-width));
+  margin-inline: auto;
+  padding: var(--pm-space-12) var(--pm-space-6);
+  overflow-wrap: anywhere;
+}
+.pm-auth__brand { text-align: center; }
+.pm-auth__brand-content { display: flex; align-items: center; justify-content: center; gap: var(--pm-space-3); }
+.pm-auth__header,
+.pm-auth__heading,
+.pm-auth__form,
+.pm-auth__input-wrapper,
+#kc-form-login,
+#kc-content-wrapper,
+#kc-error-message {
+  display: grid;
+  gap: var(--pm-space-4);
+  min-width: 0;
+}
+.pm-auth__header { gap: var(--pm-space-3); }
+.pm-auth__heading > .subtitle { order: 1; }
+.pm-auth__locale { display: flex; justify-content: flex-end; }
+.pm-auth__locale-dropdown { position: relative; }
+.pm-auth__locale-menu { inset-inline-end: 0; top: 100%; }
+.pm-auth__locale-menu { display: none; }
+.pm-auth__input-wrapper { gap: var(--pm-space-1); }
+.pm-auth__input-wrapper > :is(input, select),
+#kc-form-login > .pm-ui-field > input,
+.pm-auth__submit { width: 100%; }
+.pm-auth__options,
+.pm-auth__settings,
+.pm-auth__actions,
+.pm-auth__choice,
+.pm-auth__options .checkbox > label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pm-space-2);
+}
+.pm-auth__options { justify-content: space-between; }
+.pm-auth__actions { min-width: 0; }
+.pm-auth__settings { align-items: start; }
+.pm-auth__settings > * { flex: 1; min-width: 0; }
+.pm-auth__info { margin-block-start: var(--pm-space-2); }
+.pm-auth__providers { display: grid; gap: var(--pm-space-2); padding: 0; list-style: none; }
+.pm-auth__social { display: grid; gap: var(--pm-space-3); }
+.pm-auth__social > h2,
+#kc-error-message > p { margin: 0; }
+
+@media (max-width: 768px) {
+  .pm-auth__shell { padding: var(--pm-space-6) var(--pm-space-4); gap: var(--pm-space-4); }
+  .pm-auth__settings { flex-direction: column; align-items: stretch; }
+}

@@ -1,0 +1,20 @@
+{
+  "fixtureSpace": "31d0126a-f96c-442b-bc6d-d7d1e794bd0f",
+  "finalExistingMember": {
+    "role": "reader",
+    "canExecute": false,
+    "canSpend": false
+  },
+  "budgetRestored": 100,
+  "spentMinor": 0,
+  "reservedMinor": 0,
+  "retainedEnvironment": {
+    "id": "e705ecea-0897-4ad2-af89-87d8f6f4cae8",
+    "status": "stopped"
+  },
+  "canCancel": {
+    "readerForOtherJob": false,
+    "spaceOwner": true
+  },
+  "scope": "Actual postflight HTTP, existing fixture only. No new tokens, invitations, public grants, or permission increases."
+}

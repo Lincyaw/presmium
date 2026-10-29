@@ -24,6 +24,12 @@ export class DocumentDiagnostics {
   }
 
   subscribe(dir: string): void {
+    if (this.#client.capabilities?.diagnostics === 'none') {
+      this.#unsubscribe?.(); this.#unsubscribe = undefined
+      // An unsupported producer is absent; it has not reported a successful check.
+      this.#store.set({ diagnostics: undefined, isDiagnosticsUnavailable: false })
+      return
+    }
     const scope = this.#scope
     let streamFailed = false
     let liveReceived = false
@@ -56,6 +62,7 @@ export class DocumentDiagnostics {
 
   /** Tells the workspace server a preview's runtime findings, one report at a time. */
   reportPreview(report: PreviewDiagnostics): Promise<void> {
+    if (this.#client.capabilities?.diagnostics === 'none') return Promise.resolve()
     const scope = this.#scope
     this.#reporting = this.#reporting.then(async () => {
       try {

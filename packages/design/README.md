@@ -20,6 +20,9 @@ button.innerHTML = `${iconMarkup('play')} Run`
 | `@lincyaw/design/design.css` | the fonts, the tokens and the components' classes |
 | `@lincyaw/design/tokens.css`, `components.css`, `fonts.css` | each part alone |
 | `ICONS`, `iconMarkup(name, size?)` | the line icons, as shapes or as SVG markup |
+| `brandMarkup()` | the existing Presmium P as decorative SVG; load `design.css` for its token colors and size |
 | `COLORS`, `color(name)`, `colorToken(name)` | the names of the colour tokens, as `var(--pm-color-<name>)` or the property |
+
+`pm-ui-appbar` supplies the shared application chrome, `pm-ui-appbar__context` its muted context label, and `pm-ui-toolbar` the typography and minimum height of a tool group. `pm-ui-toolbar__group` and `pm-ui-toolbar__separator` group and separate public controls. Their host arranges the bars and supplies outer spacing; these classes do not replace toolbar keyboard behavior.
 
 The tokens and the components are described in `docs/architecture.md` (section 5.10) of the repository.

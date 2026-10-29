@@ -8,6 +8,8 @@ import { join, relative } from 'node:path'
 // that lays the box out (its size, position, margins, padding, borders, type size) or of `all` is reported.
 const SCOPE = ['examples/animations/libraries/components', 'examples/animations/bubble-sort/components', 'examples/animations/guide-steps/components', 'examples/animations/guide-production/components', 'templates/plugin/components', 'packages/addon-session/src/client', 'packages/addon-classroom/components', 'packages/addon-classroom/src/client', 'packages/addon-assistant/src/client', 'packages/addon-content/src/client/MarkmapView.css', 'packages/workbench/src', 'packages/dsh/src/client', 'packages/web/src/app', 'packages/design/src', 'packages/addon-motion/src/client', 'packages/viewer/src/client/views', 'packages/viewer/src/client/style.css', 'packages/addon-guide/components', 'packages/addon-lecture/src/client/PlayerPanel.css']
 
+SCOPE.push('packages/cloud/src/client')
+SCOPE.push('deploy/cloud/keycloak/theme/presmium/login/resources/css/layout.css')
 const root = new URL('..', import.meta.url).pathname
 const RAW = [
   { pattern: /#[0-9a-f]{3,8}\b/gi, what: 'a colour' },

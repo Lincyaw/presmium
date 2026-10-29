@@ -1,0 +1,10 @@
+{
+  "upstream": "https://github.com/moby/profiles/blob/4b8214fc4971e06172938a1f1554ccff6647ee80/seccomp/default.json",
+  "revision": "4b8214fc4971e06172938a1f1554ccff6647ee80",
+  "upstreamSha256": "6416b47770785a41ac59073cdc77d9fe98517df2799dc83ef207e622de3053f6",
+  "runtimeSha256": "1056b00d0e3a74caec22ecbd3e14ec1e7bc005e7fcb1bc27140e88c47fae1d69",
+  "blockedIoctlTypeNr": [
+    22560,
+    26114
+  ]
+}

@@ -194,12 +194,12 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
     <header className="pm-ui-block-preview__header"><span className="pm-ui-block-preview__label" role={state.status === 'failed' ? 'status' : undefined}><PmIcon name="slides" />{state.status === 'failed' ? t.previewFailure : old && state.snapshot ? t.previewPrevious : state.status === 'preparing' ? p.preparing : state.status === 'loading' ? t.previewLoading : t.previewSnapshot}</span>
       <span className="pm-ui-block-preview__actions">
         {source?.content?.blocks[blockId]?.type === 'component' && <PmIconButton small icon="sliders" label={COMPONENT_PROPERTY_MESSAGES[locale].properties}
-          data-component-properties={blockId} disabled={!source.identity} onClick={() => { if (source.identity) setProperties({ identity: source.identity, stepId }) }} />}
-        <PmIconButton small icon="captions" label={t.stepCaptions} aria-expanded={narrationOpen} aria-controls={narrationOpen ? narrationPanel : undefined} aria-pressed={narrationOpen} disabled={!stepId} onClick={() => {
+          data-component-properties={blockId} disabled={!source.identity || workbench.client.capabilities?.readOnly} onClick={() => { if (source.identity && !workbench.client.capabilities?.readOnly) setProperties({ identity: source.identity, stepId }) }} />}
+        {workbench.client.capabilities?.narration !== false && <PmIconButton small icon="captions" label={t.stepCaptions} aria-expanded={narrationOpen} aria-controls={narrationOpen ? narrationPanel : undefined} aria-pressed={narrationOpen} disabled={!stepId} onClick={() => {
           pause()
           if (sectionId && stepId) workbench.observeDocumentStep(sectionId, stepId)
           setNarrationOpen(value => !value)
-        }} />
+        }} />}
         <PmIconButton small icon="refresh" label={state.status === 'failed' ? t.previewRetry : t.previewRefresh} hint={state.status === 'loading' ? t.previewLoading : state.status === 'preparing' ? p.preparing : state.status === 'failed' ? t.previewRetry : t.previewRefresh}
           loading={state.status === 'loading' || state.status === 'preparing'} onClick={() => { pause(); if (!source?.fingerprint) void workbench.retryDocument(); setAttempt(value => value + 1) }} disabled={!enabled && state.status !== 'failed'} />
       </span></header>

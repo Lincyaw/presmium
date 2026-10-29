@@ -1,0 +1,45 @@
+[
+  {
+    "id": "compile",
+    "kind": "job",
+    "image": "presmium-cloud-runtime:0.1.0",
+    "cpu": 1,
+    "memoryBytes": 2147483648,
+    "pidsLimit": 128,
+    "maxDurationSeconds": 300,
+    "pricePerMinuteMinor": 0,
+    "maxInputBytes": 67108864,
+    "maxOutputBytes": 134217728,
+    "user": "1000:1000",
+    "network": "none",
+    "diskBytes": 1073741824
+  },
+  {
+    "id": "export",
+    "kind": "job",
+    "image": "presmium-cloud-runtime:0.1.0",
+    "cpu": 2,
+    "memoryBytes": 4294967296,
+    "pidsLimit": 256,
+    "maxDurationSeconds": 900,
+    "pricePerMinuteMinor": 0,
+    "maxInputBytes": 67108864,
+    "maxOutputBytes": 268435456,
+    "user": "1000:1000",
+    "network": "none",
+    "diskBytes": 1073741824
+  },
+  {
+    "id": "jupyter-python",
+    "kind": "jupyter",
+    "image": "quay.io/jupyter/base-notebook:2026-10-12@sha256:3fc2b8023bb7e3f11a09bd77aa07575c1ece16a0b9b64556757e34c52f667a1a",
+    "cpu": 1,
+    "memoryBytes": 1073741824,
+    "pidsLimit": 128,
+    "maxDurationSeconds": 3600,
+    "idleSeconds": 900,
+    "pricePerMinuteMinor": 0,
+    "user": "1000:100",
+    "diskBytes": 1073741824
+  }
+]

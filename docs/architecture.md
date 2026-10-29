@@ -2,13 +2,13 @@
 
 本文档定义工程结构、分层规则、跨上下文契约、插件约定与测试策略。领域概念见 `domain-model.md`，可编辑文稿与运行快照见 `ir.md`，公开接口与版本规则见 `api.md`，工作台的设计见 `design-dsh.md`。
 
-**定位**：Presmium 是组件库与工具链，不是托管产品。它像一个增强的 JupyterLab：作者在自己的机器（或自己的容器）中编写、预览、讲授与发布文稿，读者阅读构建出的静态站点；分享就是分享文件（源码仓库或构建产物），协作通过 git。
+**定位**：Presmium 核心是组件库与工具链。作者在自己的机器（或自己的容器）中编写、预览、讲授与发布文稿，读者阅读构建出的静态站点。独立的私有应用 `@lincyaw/cloud` 在工具链之上提供托管空间、账号、成员、计费及隔离执行，目前实施中；其架构、需求与 Linux 部署见 [云端 RFC](rfc-cloud.md)、`packages/cloud/project-index.yaml` 和 [部署说明](cloud-deployment.md)。
 
 - 核心（编译器、IR、渲染端、IR 运行时、CLI、静态产物）与产物离开模型也能工作，不引用 DeepSeek Harness。不改动源码的功能（放映、演讲者视图、课堂、运行代码、读者用自己的模型问答、放映中的讲授录制）属于产物；改动源码的功能属于工作台。
 - 工作台是作者在浏览器中编写文稿的界面，实验性，不在语义化版本的承诺之内：工作台的包（`@lincyaw/workbench`、`@lincyaw/dsh`、`@lincyaw/studio`）为 0.x，DeepSeek Harness 发布正式版、并且升级闸门（13.5 节）在连续两个版本上通过之后才纳入 1.x 的承诺（`api.md`）。
-- 工作区服务与工作台只供一个用户在自己的机器上使用，这个用户就是运营者，被执行的代码与 agent 以他的身份运行；安全措施只做纵深防御，不承担多个用户之间的隔离（10.1 节、第 11 节）。多人使用时每人一个容器，由 hub（例如 JupyterHub）为每个用户启动他自己的工作台，资源限额、空闲回收与模型用量由 hub 与模型网关管理；Presmium 自己不做多用户部署。
+- 本地工作区服务与 studio 默认只供一个用户使用，这个用户就是运营者，被执行的代码与 agent 以他的身份运行；安全措施不承担租户隔离（10.1 节、第 11 节）。云应用使用自己的真实身份、共享 canonical 文稿事务和执行代理，不能把 `LOCAL_AUTHOR` 或本地进程令牌当作云授权。用户代码、Jupyter 与导出在有资源限额和租约的独立环境中运行。
 - 读者得到静态站点（可以是只给学生的版本）；读者向 AI 提问用他自己填写的模型服务，在他的浏览器中完成，站点不需要服务端（4.8 节）。
-- 不在范围：账号与登录、成员与角色、按文档分享与授权、计费与用量结算、多租户托管、内容目录与审核、LMS 对接。这些由在 Presmium 之上构建的产品负责。
+- 核心不承担账号与结算；这些属于云应用上下文。内容目录与审核、LMS 对接仍由产品集成层负责。
 
 **设计原则**：
 
@@ -175,7 +175,7 @@ packages/addon-<ctx>/
 - **产物不认识工作台**：产物的包（`web`、`viewer`、`render-*` 与各插件包）不引用 `@lincyaw/workbench`。
 - **dsh 只在一处**：`@deepseek-ai/*` 只出现在 `packages/dsh` 与 `packages/studio` 中。
 - **面板不认识宿主**：`@lincyaw/workbench` 不引用 UI 框架、`@lincyaw/host` 与 `@deepseek-ai/*`；`@lincyaw/design` 只允许引用无框架的 Lucide 图标节点，不引用 UI 框架或业务包。
-- **mcp 的使用者**：“只有 server 使用 mcp”放宽为“server 与 dsh 使用 mcp”；`@modelcontextprotocol/*` 仍只在 `mcp` 中，bundle 经 `@lincyaw/mcp` 导出的客户端一侧使用 MCP。
+- **mcp 的使用者**：`server`、`dsh` 与独立的 `cloud` 宿主使用 `mcp`；`@modelcontextprotocol/*` 仍只在 `mcp` 中。云宿主通过公开的工具适配入口复用协议层，不把 Postgres、订阅或租户逻辑放进 MCP 包。
 
 `check-layering.mjs` 的规则 `only the server and the dsh bundle use mcp`、`DeepSeek Harness only in dsh and studio`、`the workbench's panels know no host`、`the design system only uses framework-free icons`、`outputs do not use the workbench` 检查模块引用；另一项检查不看引用：各包 `package.json` 的依赖（含开发与对等依赖）中 `@deepseek-ai/*` 只出现在 `dsh` 与 `studio` 中。`check-packages.mjs` 让 `@lincyaw/workbench`、`@lincyaw/dsh`、`@lincyaw/studio` 有自己的 0.x 版本（不计入统一版本），`package.json` 的 `presmium.generated` 列出打包时才生成、不入库却在 `files` 中的路径（`@lincyaw/skills` 的技能资源与 `@lincyaw/dsh` 的预编译客户端）。
 

@@ -1806,5 +1806,37 @@
         "VECTOR": 193
       }
     }
+  },
+  "cloudControls": {
+    "pageId": "299:2",
+    "overview": {
+      "nodeId": "303:419",
+      "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=303-419"
+    },
+    "components": {
+      "ChoiceSelect": {
+        "nodeId": "300:179",
+        "variants": 24
+      },
+      "WorkspaceSwitcher": {
+        "nodeId": "301:387",
+        "variants": 14
+      },
+      "SidebarItem": {
+        "nodeId": "302:349",
+        "variants": 10
+      },
+      "CloudSidebar": {
+        "nodeId": "302:556",
+        "variants": 2
+      }
+    },
+    "matrix": [
+      "light compact",
+      "dark compact",
+      "light touch",
+      "dark touch"
+    ],
+    "status": "implemented; runtime verification recorded separately"
   }
 }

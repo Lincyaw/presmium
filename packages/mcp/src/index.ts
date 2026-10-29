@@ -2,3 +2,5 @@ export type { McpCaller, McpFocus, McpHost, McpPluginTools, McpPosition, McpProc
 export { resolveFocus, toFocusReport } from './focus.ts'
 export { createPresmiumMcp, DIAGNOSTICS_URI, serveMcpStdio } from './mcp.ts'
 export type { PresmiumMcp } from './mcp.ts'
+export { createMcpToolHandler } from './remote-tools.ts'
+export type { RemoteMcpTool, RemoteMcpToolOptions, RemoteMcpToolHandler } from './remote-tools.ts'

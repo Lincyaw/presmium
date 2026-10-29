@@ -56,6 +56,8 @@ export interface SearchListProps {
   items: readonly SearchListItem[]
   value?: string
   onValueChange(value: string): void
+  /** Explicit activation is separate from moving a candidate with arrow keys. */
+  onActivate?(value: string): void
   query?: string
   onQueryChange?(query: string): void
   resultsLabel(count: number): string
@@ -70,10 +72,15 @@ export interface SearchListProps {
 }
 
 /** Search and a single choice compose with Dialog; Radix owns radio navigation and selection. */
-export function PmSearchList({ label, searchLabel, searchPlaceholder, items, value, onValueChange, query, onQueryChange, resultsLabel, emptyLabel, loadingLabel, loading, error, disabled, density = 'compact', autoFocus, 'aria-describedby': describedBy }: SearchListProps) {
+export function PmSearchList({ label, searchLabel, searchPlaceholder, items, value, onValueChange, onActivate, query, onQueryChange, resultsLabel, emptyLabel, loadingLabel, loading, error, disabled, density = 'compact', autoFocus, 'aria-describedby': describedBy }: SearchListProps) {
   const id = useId()
   const [localQuery, setLocalQuery] = useState('')
   const list = useRef<HTMLDivElement>(null)
+  const navigating = useRef(false)
+  const navigationRelease = useRef<ReturnType<typeof setTimeout>>()
+  const navigationKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End']
+  const clearNavigation = () => { if (navigationRelease.current) clearTimeout(navigationRelease.current); navigationRelease.current = undefined; navigating.current = false }
+  useEffect(() => () => { if (navigationRelease.current) clearTimeout(navigationRelease.current) }, [])
   const search = query ?? localQuery
   const matches = useMemo(() => {
     const terms = search.normalize('NFKC').toLowerCase().trim().split(/\s+/).filter(Boolean)
@@ -84,7 +91,16 @@ export function PmSearchList({ label, searchLabel, searchPlaceholder, items, val
   }, [items, search])
   const blocked = Boolean(disabled || loading || error)
   const errorId = error ? `${id}-error` : undefined
-  return <div className="pm-ui-search-list" data-density={density}>
+  return <div className="pm-ui-search-list" data-density={density} onKeyDownCapture={event => {
+    if (navigationKeys.includes(event.key)) { clearNavigation(); navigating.current = true }
+    else if (event.key === 'Enter' || event.key === ' ') clearNavigation()
+  }} onKeyUpCapture={event => {
+    // Radix can defer arrow-key focus and its corresponding synthetic click until the next task.
+    if (navigationKeys.includes(event.key)) {
+      if (navigationRelease.current) clearTimeout(navigationRelease.current)
+      navigationRelease.current = setTimeout(() => { navigating.current = false; navigationRelease.current = undefined }, 0)
+    }
+  }} onPointerDownCapture={clearNavigation} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) clearNavigation() }}>
     <PmInput label={searchLabel} value={search} placeholder={searchPlaceholder} prefixIcon="search" density={density} disabled={disabled} autoFocus={autoFocus} aria-controls={`${id}-results`} onChange={event => {
       if (query === undefined) setLocalQuery(event.target.value)
       onQueryChange?.(event.target.value)
@@ -97,7 +113,7 @@ export function PmSearchList({ label, searchLabel, searchPlaceholder, items, val
     <div className="pm-ui-search-list__heading"><span id={`${id}-label`}>{label}</span><span className="pm-ui-search-list__count" role="status" aria-live="polite" aria-atomic="true">{loading && <span className="pm-ui-loading" aria-hidden="true"><PmIcon name="loading" /></span>}{loading ? loadingLabel : resultsLabel(matches.length)}</span></div>
     {error && <p id={errorId} className="pm-ui-field__error" role="alert">{error}</p>}
     <RadioGroup.Root ref={list} id={`${id}-results`} className="pm-ui-search-list__results" aria-labelledby={`${id}-label`} aria-describedby={[describedBy, errorId].filter(Boolean).join(' ') || undefined} aria-invalid={error ? true : undefined} aria-busy={loading || undefined} value={value ?? ''} disabled={blocked} orientation="vertical" loop onValueChange={next => { if (!blocked) onValueChange(next) }}>
-      {matches.map((item, index) => <RadioGroup.Item key={item.value} value={item.value} disabled={item.disabled} className="pm-ui-search-list__option" aria-labelledby={`${id}-option-${index}`} aria-describedby={item.description ? `${id}-description-${index}` : undefined}>
+      {matches.map((item, index) => <RadioGroup.Item key={item.value} value={item.value} disabled={item.disabled} className="pm-ui-search-list__option" aria-labelledby={`${id}-option-${index}`} aria-describedby={item.description ? `${id}-description-${index}` : undefined} onClick={() => { if (!blocked && !item.disabled && !navigating.current) onActivate?.(item.value) }} onKeyDown={event => { if (event.key === 'Enter' && onActivate && !blocked && !item.disabled) { event.preventDefault(); onActivate(item.value) } }}>
         {item.icon && <PmIcon name={item.icon} />}
         <span className="pm-ui-search-list__text"><span id={`${id}-option-${index}`}>{item.label}</span>{item.description && <span id={`${id}-description-${index}`} className="pm-ui-search-list__description">{item.description}</span>}</span>
         <span className="pm-ui-search-list__check" aria-hidden="true">{item.value === value && <PmIcon name="check" />}</span>
@@ -160,6 +176,88 @@ export const PmSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
     <select {...rest} ref={ref} id={field.id} data-density={density} aria-labelledby={rest['aria-labelledby'] ?? (rest['aria-label'] ? undefined : `${field.id}-label`)} aria-invalid={error ? true : rest['aria-invalid']} aria-describedby={field.describedBy} className={cls('pm-ui-select', className)}>{children}</select>
   </PmField>
 })
+
+export interface ChoiceSelectItem extends Choice { description?: ReactNode }
+export interface ChoiceSelectProps {
+  label: string
+  value: string
+  choices: readonly ChoiceSelectItem[]
+  onValueChange(value: string): void
+  placeholder?: string
+  hint?: ReactNode
+  error?: ReactNode
+  disabled?: boolean
+  required?: boolean
+  requiredMessage?: string
+  name?: string
+  id?: string
+  density?: ControlDensity
+  'aria-describedby'?: string
+}
+
+/** A consistent choice menu; Radix owns typeahead, navigation, dismissal and focus return. */
+export function PmChoiceSelect({ label, value, choices, onValueChange, placeholder, hint, error, disabled, required, requiredMessage, name, id, density = 'regular', 'aria-describedby': describedBy }: ChoiceSelectProps) {
+  const [invalid, setInvalid] = useState(false)
+  const trigger = useRef<HTMLButtonElement>(null)
+  const feedback = error ?? (invalid ? requiredMessage : undefined)
+  const field = useField({ id, hint, error: feedback, 'aria-describedby': describedBy })
+  const selected = choices.find(choice => choice.value === value)
+  useEffect(() => { setInvalid(false) }, [value])
+  const change = (next: string) => { setInvalid(false); onValueChange(next) }
+  return <PmField label={required ? `${label} *` : label} htmlFor={field.id} hint={hint} error={feedback} hintId={field.hintId} errorId={field.errorId} density={density}>
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild><button ref={trigger} id={field.id} type="button" className="pm-ui-choice-select__trigger" data-density={density} data-placeholder={!selected || undefined} disabled={disabled} aria-labelledby={`${field.id}-label ${field.id}-value`} aria-describedby={field.describedBy} aria-invalid={Boolean(error || invalid) || undefined}>
+        {selected?.icon && <PmIcon name={selected.icon} />}<span id={`${field.id}-value`} className="pm-ui-choice-select__value">{selected?.label ?? placeholder ?? label}</span><PmIcon name="chevron-down" />
+      </button></DropdownMenu.Trigger>
+      <DropdownMenu.Portal><DropdownMenu.Content className="pm-ui-menu pm-ui-floating pm-ui pm-ui-choice-select__menu" data-density={density} aria-label={label} side="bottom" align="start" sideOffset={6} collisionPadding={16} onEscapeKeyDown={event => event.stopPropagation()}>
+        <DropdownMenu.RadioGroup value={value} onValueChange={change}>
+          {choices.filter(choice => choice.value !== '').map(choice => <DropdownMenu.RadioItem key={choice.value} value={choice.value} textValue={choice.label} disabled={choice.disabled} className="pm-ui-menu__item pm-ui-choice-select__option">
+            {choice.icon && <PmIcon name={choice.icon} />}<span className="pm-ui-choice-select__text"><span>{choice.label}</span>{choice.description && <span className="pm-ui-choice-select__description">{choice.description}</span>}</span><span className="pm-ui-choice-select__check"><DropdownMenu.ItemIndicator><PmIcon name="check" /></DropdownMenu.ItemIndicator></span>
+          </DropdownMenu.RadioItem>)}
+        </DropdownMenu.RadioGroup>
+      </DropdownMenu.Content></DropdownMenu.Portal>
+    </DropdownMenu.Root>
+    {/* The hidden native proxy participates only in HTML form submission and required validation. */}
+    {(name || required) && <select className="pm-ui-choice-select__native" aria-hidden="true" tabIndex={-1} name={name} value={selected?.value ?? ''} required={required} disabled={disabled} onChange={event => change(event.target.value)} onInvalid={event => { event.preventDefault(); setInvalid(true); trigger.current?.focus() }}><option value="" />{choices.filter(choice => choice.value !== '').map(choice => <option key={choice.value} value={choice.value} disabled={choice.disabled}>{choice.label}</option>)}</select>}
+  </PmField>
+}
+
+export interface WorkspaceSwitcherProps {
+  label: string
+  value?: string
+  items: readonly SearchListItem[]
+  onValueChange(value: string): void
+  placeholder: string
+  searchLabel: string
+  searchPlaceholder?: string
+  emptyLabel: string
+  resultsLabel(count: number): string
+  loadingLabel: string
+  loading?: boolean
+  disabled?: boolean
+  createLabel: string
+  onCreate(): void
+}
+
+/** Search candidate choices without navigating; activate by click, Space or Enter to switch. */
+export function PmWorkspaceSwitcher({ label, value, items, onValueChange, placeholder, searchLabel, searchPlaceholder, emptyLabel, resultsLabel, loadingLabel, loading, disabled, createLabel, onCreate }: WorkspaceSwitcherProps) {
+  const [open, setOpen] = useState(false)
+  const [candidate, setCandidate] = useState(value)
+  const panel = useRef<HTMLDivElement>(null)
+  const trigger = useRef<HTMLButtonElement>(null)
+  const creating = useRef(false)
+  const selected = items.find(item => item.value === value)
+  return <Popover.Root open={open} onOpenChange={next => { setOpen(next); if (next) { setCandidate(value); creating.current = false } }}>
+    <Popover.Trigger asChild><button ref={trigger} type="button" className="pm-ui-workspace-switcher" disabled={disabled || loading} aria-label={`${label}: ${selected?.label ?? placeholder}`} aria-busy={loading || undefined}>
+      <span className="pm-ui-workspace-switcher__mark" aria-hidden="true">{loading ? <span className="pm-ui-loading"><PmIcon name="loading" /></span> : selected ? Array.from(selected.label)[0] : <PmIcon name="folder" />}</span>
+      <span className="pm-ui-workspace-switcher__text"><span className="pm-ui-workspace-switcher__name">{selected?.label ?? placeholder}</span>{selected?.description && <span className="pm-ui-workspace-switcher__description">{selected.description}</span>}</span><PmIcon name="chevron-down" />
+    </button></Popover.Trigger>
+    <Popover.Portal><Popover.Content ref={panel} className="pm-ui-popover pm-ui-floating pm-ui pm-ui-workspace-switcher__panel" side="bottom" align="start" sideOffset={6} collisionPadding={16} aria-label={label} onOpenAutoFocus={event => { event.preventDefault(); panel.current?.querySelector('input')?.focus() }} onCloseAutoFocus={event => { if (creating.current) event.preventDefault() }} onEscapeKeyDown={event => event.stopPropagation()}>
+      <PmSearchList label={label} searchLabel={searchLabel} searchPlaceholder={searchPlaceholder} items={items} value={candidate} onValueChange={setCandidate} onActivate={next => { setOpen(false); onValueChange(next) }} resultsLabel={resultsLabel} emptyLabel={emptyLabel} loadingLabel={loadingLabel} loading={loading} autoFocus />
+      <div className="pm-ui-workspace-switcher__footer"><PmButton variant="ghost" icon="plus" onClick={() => { creating.current = true; setOpen(false); trigger.current?.focus(); onCreate() }}>{createLabel}</PmButton></div>
+    </Popover.Content></Popover.Portal>
+  </Popover.Root>
+}
 
 export type PopoverPlacement = 'below-end' | 'below-start' | 'above-end' | 'above-start'
 const placementOf = (placement: PopoverPlacement) => ({ side: placement.startsWith('above') ? 'top' as const : 'bottom' as const, align: placement.endsWith('start') ? 'start' as const : 'end' as const })

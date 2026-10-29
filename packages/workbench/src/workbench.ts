@@ -326,9 +326,11 @@ export class Workbench {
   /** The forms asked for ahead of the author (`web:<dir>`, `slides:<dir>`), and the wait before asking for the slides. */
   /** What the author does, for the operator's collector when the host has one. */
   readonly telemetry: OperationLog
+  readonly #preparationTimeoutMs: number
 
-  constructor(options: { client?: WorkspaceClient, locale?: Locale, isDark?: boolean } = {}) {
+  constructor(options: { client?: WorkspaceClient, locale?: Locale, isDark?: boolean, preparationTimeoutMs?: number } = {}) {
     this.client = options.client ?? workspaceClient()
+    this.#preparationTimeoutMs = Number.isFinite(options.preparationTimeoutMs) ? Math.max(1000, Math.min(300_000, options.preparationTimeoutMs!)) : 45_000
     this.#state = {
       locale: options.locale ?? localeOf(globalThis.navigator?.language) ?? 'en',
       isDark: options.isDark ?? false,
@@ -364,6 +366,11 @@ export class Workbench {
       const cueTimingScope = JSON.stringify([authoring.identity, authoring.reset])
       if (this.#cueTimingScope !== cueTimingScope) { this.#removedCueTimings.clear(); this.#cueTimingScope = cueTimingScope }
       const previous = this.#state.authoring
+      // A saved timestamp belongs to this client's acknowledged source version.
+      // Remote adoption has no server modification time to display in its place.
+      const adoptedCleanVersion = Boolean(previous?.identity && previous.identity === authoring.identity
+        && previous.version && authoring.version && previous.version !== authoring.version
+        && !previous.loading && !authoring.loading && !previous.dirty && !authoring.dirty && !previous.saving && !authoring.saving)
       const position = this.#state.position
       const selected = position && previous && previous.identity === authoring.identity ? previous.content?.sections[position.section]?.stepOrder[position.step] : undefined
       const selectedStep = selected ? authoring.content?.steps[selected] : undefined, selectedPage = selectedStep ? authoring.content?.sections[selectedStep.sectionId] : undefined
@@ -382,7 +389,7 @@ export class Workbench {
         documentTimingDraftStorageFailure: this.#documentTimingDrafts.failed,
         captionTimingDraftSteps: authoring.identity && authoring.member?.id && authoring.content ? this.#captionTimingDrafts.steps({ identity: authoring.identity, memberId: authoring.member.id }, authoring.content) : [],
         captionTimingDraftStorageFailure: Boolean(authoring.identity && authoring.member?.id && this.#captionTimingDrafts.failed({ identity: authoring.identity, memberId: authoring.member.id })),
-        save: authoring.error ? { kind: 'failed', message: authoring.error } : authoring.saving ? { kind: 'saving' } : !authoring.dirty && (previous?.dirty || previous?.saving) ? { kind: 'saved', at: new Date().toISOString() } : this.#state.save.kind === 'failed' ? { kind: 'idle' } : this.#state.save })
+        save: authoring.error ? { kind: 'failed', message: authoring.error } : authoring.saving ? { kind: 'saving' } : !authoring.dirty && (previous?.dirty || previous?.saving) ? { kind: 'saved', at: new Date().toISOString() } : adoptedCleanVersion || this.#state.save.kind === 'failed' ? { kind: 'idle' } : this.#state.save })
       // The deletion owns the token produced above; source restoration only retires its notice.
       if (removed && previous?.identity && previous.content && previous.version && previous.fingerprint
         && !previous.loading && !previous.dirty && !previous.saving && !previous.restored && !previous.composing && !previous.recovering && !previous.error
@@ -855,7 +862,7 @@ export class Workbench {
         && latest?.version === version && latest.fingerprint === fingerprint && (latest.projectRevision ?? 0) === project
     }
     this.#set({ isPreparingPresentation: true, presentationFailure: undefined })
-    const timeout = setTimeout(() => controller.abort(deadline === undefined ? new DOMException('Presentation preparation timed out', 'TimeoutError') : new Error('client-request-expired')), Math.max(0, Math.min(45_000, deadline === undefined ? 45_000 : deadline - Date.now())))
+    const timeout = setTimeout(() => controller.abort(deadline === undefined ? new DOMException('Presentation preparation timed out', 'TimeoutError') : new Error('client-request-expired')), Math.max(0, Math.min(this.#preparationTimeoutMs, deadline === undefined ? this.#preparationTimeoutMs : deadline - Date.now())))
     const stop = this.subscribe(() => { if (!unchanged()) controller.abort(new Error('presentation-source-changed')) })
     const input = () => controller.abort(new Error('client-preview-input'))
     const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') controller.abort(new Error('client-preview-cancelled')) }

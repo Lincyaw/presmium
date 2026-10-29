@@ -1,0 +1,161 @@
+{
+  "checks": [
+    {
+      "check": "existing-real-OIDC-sessions-authenticated",
+      "at": "2026-10-29T08:33:47Z",
+      "billingAvailable": false
+    },
+    {
+      "check": "anonymous-access-rejected",
+      "at": "2026-10-29T08:33:47Z"
+    },
+    {
+      "check": "existing-editor-execute-without-spend",
+      "at": "2026-10-29T08:33:47Z",
+      "role": "editor",
+      "execute": true,
+      "spend": false
+    },
+    {
+      "check": "prior-runtime-charges-refunded-and-original-records-retained",
+      "at": "2026-10-29T08:33:47Z",
+      "refunds": 7,
+      "netSpentMinor": 0
+    },
+    {
+      "check": "zero-budget-editor-no-spend-standard-web-dedup-and-real-IR-revision",
+      "at": "2026-10-29T08:33:47Z",
+      "job": {
+        "id": "b06e7abb-bc45-44f4-908d-a69ba9af5586",
+        "target": "web",
+        "state": "done",
+        "revision": "dfc7bced9904f621",
+        "source": {
+          "version": "2cbd3538-f5d0-4055-a866-5388930a64de",
+          "fingerprint": "bf43b2a63c3105db"
+        },
+        "error": null
+      },
+      "fileCount": 266
+    },
+    {
+      "check": "zero-budget-standard-PDF-real-revision-and-download",
+      "at": "2026-10-29T08:33:56Z",
+      "job": {
+        "id": "04694b97-7313-4000-822d-c44d454ecf0c",
+        "target": "pdf",
+        "state": "done",
+        "revision": "250eadc0318695d0",
+        "source": {
+          "version": "2cbd3538-f5d0-4055-a866-5388930a64de",
+          "fingerprint": "bf43b2a63c3105db"
+        },
+        "error": null
+      },
+      "bytes": 14555,
+      "sha256": "a1c85912d659b82e2b86746d27ea67a16bb87ab9d8a508cbf9e9059cdd784bc4"
+    },
+    {
+      "check": "legacy-quote-zero-and-no-spend-idempotent-start",
+      "at": "2026-10-29T08:34:04Z",
+      "jobId": "3f6dad6c-04ef-4df0-ab22-8825d97ac4ed"
+    },
+    {
+      "check": "cancel-and-explicit-retry-standard-workspace",
+      "at": "2026-10-29T08:34:31Z",
+      "cancelled": {
+        "id": "77b3449e-5130-42b7-a175-f26c62d87b83",
+        "target": "notebook",
+        "state": "cancelled",
+        "revision": "",
+        "source": {
+          "version": "2cbd3538-f5d0-4055-a866-5388930a64de",
+          "fingerprint": "bf43b2a63c3105db"
+        },
+        "error": null
+      },
+      "retry": {
+        "id": "914efa3b-ba0b-4e93-aa02-1fa3e0ed6212",
+        "target": "notebook",
+        "state": "done",
+        "revision": "250eadc0318695d0",
+        "source": {
+          "version": "2cbd3538-f5d0-4055-a866-5388930a64de",
+          "fingerprint": "bf43b2a63c3105db"
+        },
+        "error": null
+      }
+    },
+    {
+      "check": "zero-budget-free-finite-environment-start-and-replay",
+      "at": "2026-10-29T08:34:40Z",
+      "environmentId": "e705ecea-0897-4ad2-af89-87d8f6f4cae8",
+      "generation": 5,
+      "ownerSession": true,
+      "quoteAmountMinor": 0,
+      "quoteRequired": false
+    },
+    {
+      "check": "reader-no-execute-no-spend-starts-new-free-compile-and-export",
+      "at": "2026-10-29T08:35:04Z",
+      "slides": {
+        "id": "64d21d58-6e18-4dea-a553-05cb815d9794",
+        "target": "slides",
+        "state": "done",
+        "revision": "d115777fce870ea6",
+        "source": {
+          "version": "41afc831-9bcc-43c9-abc2-f59cf9e39353",
+          "fingerprint": "e09fb15759900bc8"
+        },
+        "error": null
+      },
+      "pdf": {
+        "id": "69c70d82-92f6-499b-bd7a-6497631197bc",
+        "target": "pdf",
+        "state": "done",
+        "revision": "22e935aca2a26b85",
+        "source": {
+          "version": "41afc831-9bcc-43c9-abc2-f59cf9e39353",
+          "fingerprint": "e09fb15759900bc8"
+        },
+        "error": null
+      },
+      "finalFixtureMembership": {
+        "role": "reader",
+        "canExecute": false,
+        "canSpend": false
+      }
+    },
+    {
+      "check": "reader-write-student-output-environment-and-cancel-others-denied",
+      "at": "2026-10-29T08:35:04Z"
+    },
+    {
+      "check": "ordinary-operations-zero-real-reservation-settlement-and-no-billing",
+      "at": "2026-10-29T08:35:04Z",
+      "spentMinor": 0,
+      "reservedMinor": 0
+    }
+  ],
+  "spaceId": "31d0126a-f96c-442b-bc6d-d7d1e794bd0f",
+  "scope": "Actual newly deployed standard HTTP workspace interface, existing fixture identities and sessions. No PAT, invitations, public grants, or permission increases. Old charged scripts were not rerun.",
+  "usageBefore": {
+    "spentMinor": 0,
+    "reservedMinor": 0,
+    "storageBytes": 1088600864,
+    "monthlyLimitMinor": 100
+  },
+  "documentId": "1074a182-efc7-4244-848c-82de1a229e41",
+  "finalFixtureMembership": {
+    "role": "reader",
+    "canExecute": false,
+    "canSpend": false
+  },
+  "usageAfter": {
+    "spentMinor": 0,
+    "reservedMinor": 0,
+    "storageBytes": 1088639542,
+    "monthlyLimitMinor": 0
+  },
+  "restoredEffectiveBudgetMinor": 100
+}

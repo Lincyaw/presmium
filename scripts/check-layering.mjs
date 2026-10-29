@@ -53,7 +53,7 @@ const rules = [
   { name: 'relative imports stay in their package', dirs: ['.'], forbid: (spec, file, pkgDir) => target(spec, file, pkgDir) !== undefined && outside(target(spec, file, pkgDir), '.') },
   { name: 'node packages are framework-free', pkgs: ['server', 'mcp'], dirs: ['src'], forbid: spec => framework(spec) || /^@lincyaw\/(viewer|web|host)(\/|$)/.test(spec) },
   { name: 'only cli and workspace use the server', pkgs: pkg => !['cli', 'workspace', 'server'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/server(\/|$)/.test(spec) },
-  { name: 'only the server and the dsh bundle use mcp', pkgs: pkg => !['server', 'mcp', 'dsh'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/mcp(\/|$)/.test(spec) },
+  { name: 'only server, dsh and cloud hosts use mcp', pkgs: pkg => !['server', 'mcp', 'dsh', 'cloud'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/mcp(\/|$)/.test(spec) },
   { name: 'plugins use contracts, not the hosts', pkgs: pkg => pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/(server|mcp|workspace|web)(\/|$)/.test(spec) },
   {
     name: 'protocol clients stay in their adapter',

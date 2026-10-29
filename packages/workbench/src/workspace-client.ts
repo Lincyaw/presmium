@@ -53,7 +53,17 @@ export interface WorkspaceRequestEvent {
 }
 
 /** The workbench's client of the workspace server's routes; each `subscribe*` returns its unsubscribe. */
+export interface WorkspaceCapabilities {
+  /** Omitted capabilities retain the local workspace's complete behavior. */
+  diagnostics?: 'none' | 'full'
+  production?: boolean
+  narration?: boolean
+  export?: boolean
+  readOnly?: boolean
+}
+
 export interface WorkspaceClient {
+  capabilities?: Readonly<WorkspaceCapabilities>
   subscribePreviewEvents?: PreviewEventSubscription
   openAuthoringClient?: AuthoringClientSubscription
   subscribeRequests?(listener: (event: WorkspaceRequestEvent) => void): () => void
@@ -160,7 +170,12 @@ export interface WorkspaceSubscription {
   openAuthoringClient?: AuthoringClientSubscription
 }
 
-export function workspaceClient(base = 'api/presmium/', subscription?: WorkspaceSubscription): WorkspaceClient {
+/** A remote host may add its CSRF header without replacing the page's global fetch. */
+export interface WorkspaceTransport { fetch?: typeof globalThis.fetch }
+
+export function workspaceClient(base = 'api/presmium/', subscription?: WorkspaceSubscription, transport: WorkspaceTransport = {}): WorkspaceClient {
+  let client: WorkspaceClient
+  const fetch = transport.fetch ?? globalThis.fetch.bind(globalThis)
   const requestListeners = new Set<(event: WorkspaceRequestEvent) => void>()
   let requestSequence = 0
   const observedFetch = async (address: string, init?: RequestInit, feedbackOwner?: WorkspaceRequestEvent['feedbackOwner']): Promise<Response> => {
@@ -168,6 +183,8 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     const prefix = new URL(base, globalThis.document.baseURI).pathname
     const path = target.pathname.slice(prefix.length)
     const method = (init?.method ?? 'GET').toUpperCase()
+    if (client.capabilities?.readOnly && !['GET', 'HEAD', 'OPTIONS'].includes(method)
+      && /^(?:document(?:\/|$)|source(?:\/|$)|project\/|pages\/|history\/|revisions\/|review(?:\/|$))/.test(path)) throw new WorkspaceServerError(403, { error: 'permission-denied' })
     if (path === 'telemetry' || (path === 'diagnostics' || path === 'diagnostics/authoring') && method === 'POST') return fetch(address, { credentials: 'same-origin', ...init })
     const document = target.searchParams.get('document') ?? undefined
     const requestId = ++requestSequence
@@ -306,7 +323,7 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     return () => source.close()
   }
   const projectIntents = new Map<string, { id: string, plan?: ProjectPlan }>()
-  return {
+  return client = {
     ...subscription?.openAuthoringClient ? { openAuthoringClient: subscription.openAuthoringClient } : {},
     ...subscription ? { subscribePreviewEvents: ((target, received) => {
       const address = new URL(base, globalThis.document.baseURI)

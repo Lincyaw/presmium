@@ -1,0 +1,98 @@
+{
+  "backupDirectory": "/data/projects/ops/workspace/presmium/.presmium/cloud-verification/recovery-e080539a1fce4d09bf7dc99445cce56b",
+  "restoredDatabase": "presmium_pool_restore_e080539a1fce4d09bf7dc99445cce56b",
+  "sourceDatabaseSha256": "085948ed9f52b31b1ca78ea1785a768389fe7defe80e940de7778c98b3208099",
+  "restoredDatabaseSha256": "085948ed9f52b31b1ca78ea1785a768389fe7defe80e940de7778c98b3208099",
+  "slotAllocationsMatch": true,
+  "poolManifestSha256": "d5d2dcc905b4e8ba36b22e396697ba304c527bf5797f9dbecafc6c352b625bc1",
+  "sourceTree": {
+    "sha256": "b0f1d3f592eeab322adc0769845e65467e5effb0f1c0ff7ae256e57093a8ef9d",
+    "regularFiles": 3
+  },
+  "restoredTree": {
+    "sha256": "b0f1d3f592eeab322adc0769845e65467e5effb0f1c0ff7ae256e57093a8ef9d",
+    "regularFiles": 3
+  },
+  "quotaSlots": 32,
+  "logicalImageBytes": 38654705664,
+  "allocatedImageBytes": 1093246976,
+  "objectArchiveSha256": "9c78f8a181a147f93962aebb37bdb08bab95e1db23907747a00b8146d45186ef",
+  "restoredObjects": {
+    "objects": 543,
+    "bytes": 21376295,
+    "manifestSha256": "838705d04f50208827cea807f519f5021e38d97ec2bce133172deb1653686f95"
+  },
+  "restoreObjectPrefix": "restore-verification/e080539a1fce4d09bf7dc99445cce56b/",
+  "maintenanceSeconds": 26.05,
+  "sourcePoolRemounted": true,
+  "sourceServicesRestarted": true,
+  "finalServices": {
+    "api": {
+      "image": "sha256:9b57c88881f2b516f99a009ed805d4f26d8acf76f706ac6d33e417f787b682d0",
+      "status": "healthy",
+      "ready": 200
+    },
+    "runner": {
+      "image": "sha256:9b57c88881f2b516f99a009ed805d4f26d8acf76f706ac6d33e417f787b682d0",
+      "status": "healthy",
+      "ready": 200
+    },
+    "watchdog": {
+      "image": "sha256:9b57c88881f2b516f99a009ed805d4f26d8acf76f706ac6d33e417f787b682d0",
+      "status": "running",
+      "enginePing": true,
+      "tick": {
+        "checked": 0,
+        "stopped": 0
+      }
+    }
+  },
+  "runtimeCounts": {
+    "unsettledJobs": 0,
+    "activeJobs": 0,
+    "reservedEnvironments": 0,
+    "activeEnvironments": 0,
+    "allocatedSlots": 0
+  },
+  "unrelatedCgfsUnchanged": true,
+  "persistentFixture": {
+    "environmentId": "17d3deef-7edb-4503-8d29-80794cce5e12",
+    "environmentName": "[ops recovery] durable-fixture-13c3a184e560",
+    "state": "stopped",
+    "context": {
+      "workspaceId": "684e2701-3512-47d3-a613-24faf49dc54a",
+      "userId": "d19f330a-53ba-4c38-99e9-14029ffe4d94",
+      "billingAccountId": "d3ebdb7e-d44a-40d2-9c9f-804e01e95e21"
+    },
+    "slotId": "slot-0001",
+    "source": "trusted operator fixture writer; real file bytes; no simulated kernel output",
+    "files": [
+      {
+        "path": "slots/slot-0001/operator-fixture.ipynb",
+        "bytes": 1037,
+        "sha256": "8768966d58d7d1f2379572894bf5ab47bb7cddce55edad2a7abf1c9ee4a37d3a"
+      },
+      {
+        "path": "slots/slot-0001/operator-fixture.bin",
+        "bytes": 16400,
+        "sha256": "1b3d608cbf210266205f729bca24b6131723e521c88f6ab62d09e9c1df1cbf00"
+      }
+    ],
+    "destroyed": true
+  },
+  "restoredFixtureEnvironment": {
+    "id": "17d3deef-7edb-4503-8d29-80794cce5e12",
+    "workspace_id": "684e2701-3512-47d3-a613-24faf49dc54a",
+    "user_id": "d19f330a-53ba-4c38-99e9-14029ffe4d94",
+    "billing_account_id": "d3ebdb7e-d44a-40d2-9c9f-804e01e95e21",
+    "state": "stopped",
+    "desired_state": "stopped",
+    "container_id": null,
+    "reservation_id": null,
+    "destroyed_at": null
+  },
+  "realDestroyResult": {
+    "id": "17d3deef-7edb-4503-8d29-80794cce5e12",
+    "destroyed": true
+  }
+}

@@ -194,6 +194,8 @@
   white-space: nowrap;
 }
 
+.pmw-toolbar__document { display: contents; }
+
 .pmw-toolbar__group {
   display: inline-flex;
   flex: none;
@@ -952,6 +954,11 @@
 .pmw-toolbar--present { justify-content: flex-end; }
 @media (max-width: 767px) {
   .pmw-source-document { padding: var(--pm-space-2); }
+  .pmw-toolbar--document { flex-wrap: wrap; }
+  .pmw-toolbar--document .pmw-toolbar__document { display: flex; flex: 1 0 100%; align-items: center; gap: var(--pm-space-px); min-width: 0; }
+  .pmw-toolbar--document .pmw-toolbar__title { flex: 1; max-width: none; }
+  .pmw-toolbar--document .pmw-toolbar__status { flex: 1 1 0; }
+  .pmw-toolbar--document > .pmw-spacer { display: none; }
   .pmw-toolbar__status { flex: none; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .pmw-toolbar__status-full:has(+ .pmw-toolbar__status-short) { display: none; }
   .pmw-toolbar__status-short { display: inline; }

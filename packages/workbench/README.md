@@ -28,9 +28,19 @@ export function Centre({ open }: { open: boolean }) {
 
 The page reaches the workspace service's routes under its own `api/presmium/` path; the host passes them on to the service. React 18 is a peer dependency. Dialogs and menus wrap Radix Primitives. Presmium maintains the visual tokens, the editing, the versions and the preview.
 
+A host exposing a subset of the workspace service can set `client.capabilities` before constructing `Workbench`: `{ diagnostics: 'none', production: false, narration: false, export: false, readOnly: true }`. This disables diagnostic subscriptions and reports, hides the corresponding document controls, and makes the source session and canonical write requests read-only. Omitted fields preserve the local workspace's complete behavior. Hosts explain unavailable services in their own interface and enforce authorization on every server request. The optional third `workspaceClient` argument, `{ fetch }`, provides an instance-specific transport for authentication headers.
+
+`client.capabilities.readOnly: true` also disables canonical document writes, including source transactions, asset imports, comments, page operations and history changes. The source actor and editor controls share this restriction; the service still checks the authenticated member on every request.
+
+`DocumentView` keeps the document title, toolbar, editor and preview in one shared view. Its optional `onBack()` callback replaces the default return to the workspace's document list. `actions` places host controls, such as sharing, beside the document's own commands; hosts provide localized accessible names and use the public workbench controls.
+
+`historyRevisionAction` adds an explicit host operation to the existing Version History rows. It uses the exported `HistoryRevisionAction` configuration: `label`, optional `icon`, `onSelect(revision)`, optional `disabled` (a boolean or a predicate of the revision), and optional `pendingRevision` (the opaque revision ID being processed). The standalone `HistoryPanel` accepts the same configuration as `revisionAction`. The host owns confirmation, source flushing, authorization, conflict checks and request recovery; it controls pending state while the shared panel disables its other history operations and pagination. Read-only clients cannot activate the action.
+
+An absolute snapshot restore is separate from selective undo. A host that stores full snapshots can return `revertible: false` in its history rows and supply a clearly named restore action. Treat revision IDs as opaque references and resolve them on the server; do not reinterpret them in the browser or fetch another history list. Reuse the ordinary compilation and presentation flow, which checks the exact saved source, fingerprint and revision before showing a presentation.
+
 ## On the page
 
-The document toolbar holds the navigation pane, Undo and Redo, whether the document is saved, Video production, Captions, Comments, Version History, Presentation preview and Export. Below 768 px, Video production, Captions and Version History move into a More menu so the toolbar stays on one row.
+The document toolbar holds the navigation pane, Undo and Redo, whether the document is saved, Video production, Captions, Comments, Version History, Presentation preview and Export. Below 768 px, Video production, Captions and Version History move into a More menu. When the view owns its title (`framed` is false), Back and the title use their own row; Undo, Redo and Comments join the same More menu so the main commands fit within the available width. A framed view retains its existing single command row.
 
 The names follow Microsoft Word's, in Chinese and English.
 

@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-29T08:28:26Z",
+  "originalSettlements": 23,
+  "originalMinor": 38,
+  "refundEntries": 23,
+  "refundMinor": -38,
+  "missingRefunds": 0,
+  "mismatchedRefunds": 0,
+  "duplicateRefunds": 0,
+  "consumedMinor": 0,
+  "reservedMinor": 0,
+  "minimumConsumedMinor": 0,
+  "auditRefundEvents": 23,
+  "migrations": {
+    "046-oidc-account-action.sql": "02dbdbf77d6a0016416195651cb50639879cb220a055be284aa8febc8e7537ef",
+    "047-standard-outputs.sql": "f17482291c66034b3ce45148b0241fd822ea28715b9d6827defdd252a7f9d857",
+    "048-nonai-runtime-refund.sql": "b45e72b6d069e012faa32664a646abcc9e0567c826e539d392e085380643041d"
+  },
+  "migrationDigestsMatchSource": true,
+  "scope": "Actual live PostgreSQL READ ONLY transaction; original non-AI settlements preserved. Unique refund key and zero missing candidates establish idempotent state; migration was not replayed."
+}
