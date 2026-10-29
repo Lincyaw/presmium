@@ -3,7 +3,7 @@ import type { CompileJob, OutputTarget } from '@lincyaw/kernel'
 import type { IconName } from '@lincyaw/design'
 import { PmBadge, PmButton, PmDialog, PmEmpty, PmIcon, PmIconButton, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
-import { timeAgo } from '../messages.ts'
+import { failureReason, timeAgo } from '../messages.ts'
 
 // The media types a browser shows by itself; a file of another type is downloaded.
 const SHOWN = new Set(['text/html', 'application/pdf'])
@@ -46,7 +46,7 @@ export function ExportPanel({ documentOnly = false, onClose }: { documentOnly?: 
         <h2 id="pmw-export-title" className="pmw-pane__title">{documentOnly ? t.documentExport : t.exportPane}</h2>
         <PmIconButton small icon="close" label={t.close} onClick={onClose} />
       </header>
-      {failure && <PmNotice tone="danger">{t.outputFailed(t.jobFailureReasons[failure] ?? failure)}</PmNotice>}
+      {failure && <PmNotice tone="danger">{t.outputFailed(t.jobFailureReasons[failure] ?? failureReason(t, failure))}</PmNotice>}
       {preparing && <PmNotice>{preparing.canCancel ? t.outputConfirmingSave : t.outputStarting} {preparing.canCancel && <PmButton small onClick={() => workbench.cancelJobPreparation()}>{t.cancelOutput}</PmButton>}</PmNotice>}
       <h3 id="pmw-export-make" className="pmw-export__subtitle">{t.makeLabel}</h3>
       <ul className="pmw-export__targets" aria-labelledby="pmw-export-make">
@@ -108,7 +108,7 @@ function JobItem({ job, label, current, onPlay }: { job: CompileJob, label: stri
             <span>{t.jobProgress(t.jobPhases[progress.phase] ?? t.outputLabels[progress.phase] ?? progress.phase, progress.done, progress.total)}</span>
           </div>
         )}
-        {job.error && <p className="pmw-job__error">{t.jobFailureReasons[job.error] ?? job.error.split('\n')[0]}</p>}
+        {job.error && <p className="pmw-job__error">{t.jobFailureReasons[job.error] ?? failureReason(t, job.error)}</p>}
         {job.log.length > 0 && (
           <details className="pmw-job__log">
             <summary>{t.outputLog}</summary>
@@ -120,7 +120,7 @@ function JobItem({ job, label, current, onPlay }: { job: CompileJob, label: stri
           {job.state === 'done' && main && isVideo(type) && <PmButton small icon="play" onClick={onPlay}>{t.playOutput}</PmButton>}
           {job.state === 'done' && main && type && SHOWN.has(type) && <a className="pm-ui-button pm-ui-button--small" href={main} target="_blank" rel="noopener"><PmIcon name="external" size={14} />{t.openOutput}</a>}
           {job.state === 'done' && main && type !== 'text/html' && <a className="pm-ui-button pm-ui-button--small" href={`${main}?download`}><PmIcon name="download" size={14} />{t.downloadOutput}</a>}
-          {(job.state === 'queued' || job.state === 'running') && <PmButton small onClick={() => void workbench.cancelJob(job.id)}>{t.cancelOutput}</PmButton>}
+          {job.canCancel !== false && (job.state === 'queued' || job.state === 'running') && <PmButton small onClick={() => void workbench.cancelJob(job.id)}>{t.cancelOutput}</PmButton>}
         </div>
       </div>
     </li>

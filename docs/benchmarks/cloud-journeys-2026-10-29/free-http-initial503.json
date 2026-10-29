@@ -1,0 +1,48 @@
+{
+  "checks": [
+    {
+      "check": "existing-real-OIDC-sessions-authenticated",
+      "at": "2026-10-29T08:29:37Z",
+      "billingAvailable": false
+    },
+    {
+      "check": "anonymous-access-rejected",
+      "at": "2026-10-29T08:29:37Z"
+    },
+    {
+      "check": "existing-editor-execute-without-spend",
+      "at": "2026-10-29T08:29:37Z",
+      "role": "editor",
+      "execute": true,
+      "spend": false
+    },
+    {
+      "check": "prior-runtime-charges-refunded-and-original-records-retained",
+      "at": "2026-10-29T08:29:37Z",
+      "refunds": 7,
+      "netSpentMinor": 0
+    }
+  ],
+  "spaceId": "31d0126a-f96c-442b-bc6d-d7d1e794bd0f",
+  "scope": "Actual newly deployed standard HTTP workspace interface, existing fixture identities and sessions. No PAT, invitations, public grants, or permission increases. Old charged scripts were not rerun.",
+  "usageBefore": {
+    "spentMinor": 0,
+    "reservedMinor": 0,
+    "storageBytes": 1084412607,
+    "monthlyLimitMinor": 100
+  },
+  "documentId": "1074a182-efc7-4244-848c-82de1a229e41",
+  "restoredEffectiveBudgetMinor": 100,
+  "failure": {
+    "operation": "POST standard workspace /jobs",
+    "status": 503,
+    "code": "service-unavailable",
+    "cause": "PostgreSQL inferred UUID parameter also compared to JSON text",
+    "fix": "Explicit $2::text comparison; live corrected SQL returns same previously admitted job",
+    "existingJobId": "b06e7abb-bc45-44f4-908d-a69ba9af5586",
+    "existingJobState": "succeeded",
+    "budgetRestored": true,
+    "memberPermissionsUnchanged": true,
+    "environmentUnchanged": true
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "image": "sha256:d84e0e9dd67d2f80ec213a9a209db9cc567948c5482e3ed0c561fa1b1421a890",
+  "source": {
+    "run": "3c13a41fe5de15ed0e8dd411108e5ee640504c4db3c17877287d8ab1219e0229",
+    "warmup": "e8745c4f786088c650b163ea568bc084db9200616970ae3f4c1475adcca33f41",
+    "Dockerfile": "f9a739ed5dba035392979b96b335a73ed8ae005f1311107c98432de2768ce510"
+  },
+  "scope": "One cold/warm/miss isolated minimal web compile round on Linux, not end-to-end browser latency",
+  "result": {
+    "seed": {
+      "schema": 1,
+      "bytes": 16725448,
+      "files": 465,
+      "jiti": {
+        "bytes": 1351078,
+        "files": 193
+      },
+      "viewer": {
+        "bytes": 15374370,
+        "files": 272
+      }
+    },
+    "results": [
+      {
+        "mode": "cold",
+        "seconds": 40.428,
+        "exit": 0,
+        "irSha256": "de7c8ab73e7b046d75bdcf81d6b48496e0337fdac8f7aac102af6c65a8f6f44b",
+        "html": true,
+        "metadata": {
+          "revision": "8ba0f14cbc27290f",
+          "source": {
+            "documentId": "benchmark-document",
+            "version": "1d6e347fa1adc4f2f5fa",
+            "fingerprint": "7f09f63d31e0ee8c"
+          }
+        },
+        "log": "/tmp/presmium-runtime-cache-benchmark-6bjbclnf/0-cold.log"
+      },
+      {
+        "mode": "warm",
+        "seconds": 2.039,
+        "exit": 0,
+        "irSha256": "de7c8ab73e7b046d75bdcf81d6b48496e0337fdac8f7aac102af6c65a8f6f44b",
+        "html": true,
+        "metadata": {
+          "revision": "8ba0f14cbc27290f",
+          "source": {
+            "documentId": "benchmark-document",
+            "version": "1d6e347fa1adc4f2f5fa",
+            "fingerprint": "7f09f63d31e0ee8c"
+          }
+        },
+        "log": "/tmp/presmium-runtime-cache-benchmark-6bjbclnf/1-warm.log"
+      },
+      {
+        "mode": "miss",
+        "seconds": 21.336,
+        "exit": 0,
+        "irSha256": "78d0a877aa5b8dd2120f3402d3dd1b9e5f4abd49b4be2d91c45452d792fdcff1",
+        "html": true,
+        "metadata": {
+          "revision": "b5b6bec75a81f7a8",
+          "source": {
+            "documentId": "benchmark-document",
+            "version": "bcb9055ee81e2305a986",
+            "fingerprint": "d9852095613d824c"
+          }
+        },
+        "log": "/tmp/presmium-runtime-cache-benchmark-6bjbclnf/2-miss.log"
+      }
+    ],
+    "isolated": {
+      "cpu": 1,
+      "memoryBytes": 2147483648,
+      "tmpBytes": 134217728,
+      "network": "none",
+      "readOnlyRoot": true,
+      "seccomp": "/tmp/presmium-runtime-cache-policy.0xFNav/packages/cloud/seccomp/runtime.json"
+    },
+    "irMatches": true
+  },
+  "phasesMs": {
+    "cold": {
+      "import": 5327,
+      "compile": 69,
+      "build": 34492
+    },
+    "warm": {
+      "copy": 181,
+      "import": 775,
+      "compile": 27,
+      "build": 613
+    },
+    "miss": {
+      "copy": 158,
+      "import": 825,
+      "compile": 232,
+      "build": 19647
+    }
+  },
+  "tmpFreeAfterCopyBytes": 116334592,
+  "remoteResult": "/tmp/presmium-runtime-cache-benchmark-6bjbclnf/result.json"
+}

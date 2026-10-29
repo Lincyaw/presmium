@@ -25,6 +25,8 @@
 
 `@lincyaw/design` 维持框架无关。React 封装留在 workbench 与 host，不为复用控件而让 workbench 引用 host，也不让插件引用 workbench。跨边界共用的是令牌、语义图标、`pm-ui-*` 及一致的交互规范。
 
+云端外壳与身份页共用公开的 `brandMarkup()`，沿用原工作台 P 标志；尺寸由 `pm-ui-brand-mark` 与 `--pm-size-logo` 决定。`pm-ui-appbar`、`pm-ui-appbar__context`、`pm-ui-toolbar` 及其组和分隔样式抽取已有外壳令牌，业务层只排列区域。语言与账号使用公共图标菜单，明暗使用公共图标按钮；键盘、焦点、提示与勾选态沿用现有控件。身份页继承 Keycloak 官方模板，使用相同字体、令牌与控件类；只为官方没有 class 插槽的节点补类和静态标志，不另写认证表单。
+
 BlockNote 的公共适配类为 `pm-ui-block-editor`，由工作台的全篇 `BlockNoteSurface` 挂载，选中态样式集中在 `packages/design/src/components.css`。文稿与富文本结构由 `@lincyaw/kernel` 定义，编辑器只通过公开接口投影与回写 `lecture.json`，不持久化另一份编辑器工程。
 适配使用 BlockNote 的公开 `.ProseMirror-selectednode`、`.bn-block-content` 选择器，仅在编辑器内有焦点时以 `accent-soft` 表面与 `accent` 描边表示当前块；伪元素保持透明，不遮住正文或动画。
 斜杠菜单使用公开 `.bn-suggestion-menu` 选择器隔离阅读正文的段落留白与行高，菜单文字恢复公共 `leading-ui`，避免正文排版把每条插入项撑高；菜单的布局、滚动与键盘行为仍由 BlockNote 提供。
@@ -285,6 +287,8 @@ zh-CN 与 en 两份文本同时修改，含义一致；名称、命令与状态�
 本轮 regular 基础包含 4 组共 87 个变体：Button 30、IconButton 12、FieldControl 27、Choice 18，包含错误＋焦点、只读＋焦点和选中＋焦点。compact 单独建立 Button 30、IconButton 12、FieldControl 27；触屏输入另建 27 个状态。Timing 两种横排选项与 StatusChip 三种状态为领域组合服务，另有 Menu、Tabs、Tooltip、Range、Dialog 示例。已查看桌面与触屏的浅色、深色四种组合。Figma 中文使用 Noto Sans SC 表达代码中系统中文字体回退，拉丁字体采用 IBM Plex Sans；不要求 Web 额外下载中文字体。这些示例确定视觉方向，不表示公共层缺口或真实交互已经实现。完整节点映射与数量登记在 [figma-nodes.json](prototypes/workbench/figma-nodes.json) 的 `designSystem` 中。
 
 桌面工作台使用独立的 `Compact` 组件集，复用同一套颜色、边框、图标和状态语义；regular 保留用于普通对话框。主题通过变量模式处理，不再展开变体；密度独立分集，每集不超过 30 个变体。Figma 的 compact 与触屏实例已经建立，运行中的公共组件仍需按缺口表迁移。
+
+[第 04 页云端公共控件矩阵](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=303-419)补齐 `PmChoiceSelect`（3 种密度、24 个状态变体）、`PmWorkspaceSwitcher`（紧凑／触屏、14 个变体）、SidebarItem（10 个变体）与 CloudSidebar（2 种密度组合）。实例复用既有 Product 亮暗变量、SearchList 和 Button，四列覆盖亮／暗与桌面／触屏；页面与原发布画板独立。代码中的空间搜索、选择和导航使用这些公共控件，文稿内部直接复用 Studio 的 `DocumentView`，不另建一套预览、历史和导出面板。
 
 [第 03 页交互状态](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=40-4645)将 12 组已确定规则落实为 30 个 UI 状态，分别展示保存、版本与冲突、页面及引用、步骤与时序、配音、字幕、agent 审阅、媒体、放映、导出、焦点和响应式。规则使用 I01–I12 稳定编号，与 [interactions.json](prototypes/workbench/interactions.json) 和 RFC 对齐；技术能力的实现门槛放在画板注释中，不伪装成已可用按钮。
 

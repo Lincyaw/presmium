@@ -1,0 +1,267 @@
+name: ${CLOUD_COMPOSE_PROJECT:-presmium-cloud}
+
+x-logs: &logs
+  driver: local
+  options: { max-size: "10m", max-file: "3" }
+
+x-cloud-environment: &cloud-environment
+  NODE_ENV: production
+  JITI_FS_CACHE: "false"
+  CLOUD_DATABASE_URL: postgresql://presmium:${CLOUD_DATABASE_PASSWORD:?Set CLOUD_DATABASE_PASSWORD}@database:5432/presmium
+  CLOUD_PUBLIC_URL: ${CLOUD_PUBLIC_URL:?Set CLOUD_PUBLIC_URL}
+  CLOUD_CONTENT_URL: ${CLOUD_CONTENT_URL:?Set CLOUD_CONTENT_URL}
+  CLOUD_RUNTIME_URL: ${CLOUD_RUNTIME_URL:?Set CLOUD_RUNTIME_URL}
+  CLOUD_INTERNAL_API_URL: http://api:8787
+  CLOUD_INPUT_SIGNING_KEY: ${CLOUD_INPUT_SIGNING_KEY:?Set CLOUD_INPUT_SIGNING_KEY}
+  CLOUD_OIDC_ISSUER: ${CLOUD_OIDC_ISSUER:?Set CLOUD_OIDC_ISSUER}
+  CLOUD_OIDC_ISSUER_INTERNAL_URL: ${CLOUD_OIDC_ISSUER_INTERNAL_URL-http://keycloak:8080/realms/presmium}
+  CLOUD_OIDC_CLIENT_ID: ${CLOUD_OIDC_CLIENT_ID:-presmium-cloud}
+  CLOUD_OIDC_CLIENT_SECRET: ${CLOUD_OIDC_CLIENT_SECRET:?Set CLOUD_OIDC_CLIENT_SECRET}
+  CLOUD_OIDC_AUDIENCE: ${CLOUD_OIDC_AUDIENCE:-presmium-api}
+  CLOUD_ALLOW_INSECURE_LOOPBACK: "false"
+  CLOUD_S3_ENDPOINT: ${CLOUD_S3_ENDPOINT:-http://object-store:9000}
+  CLOUD_S3_REGION: ${CLOUD_S3_REGION:-us-east-1}
+  CLOUD_S3_BUCKET: ${CLOUD_S3_BUCKET:-presmium}
+  CLOUD_S3_ACCESS_KEY_ID: ${CLOUD_S3_ACCESS_KEY_ID:?Set CLOUD_S3_ACCESS_KEY_ID}
+  CLOUD_S3_SECRET_ACCESS_KEY: ${CLOUD_S3_SECRET_ACCESS_KEY:?Set CLOUD_S3_SECRET_ACCESS_KEY}
+  CLOUD_RUNNER_URL: ${CLOUD_RUNNER_URL:-http://runner:8788}
+  CLOUD_RUNNER_TOKEN: ${CLOUD_RUNNER_TOKEN:?Set CLOUD_RUNNER_TOKEN}
+  CLOUD_CREDENTIAL_KEY: ${CLOUD_CREDENTIAL_KEY:?Set CLOUD_CREDENTIAL_KEY}
+  CLOUD_INSTANCE_ID: ${CLOUD_INSTANCE_ID:-presmium-cloud}
+  CLOUD_PROFILES: /opt/presmium/deploy/cloud/profiles.json
+  CLOUD_INPUT_ORIGINS: http://api:8787,${CLOUD_S3_ENDPOINT:-http://object-store:9000},${CLOUD_PUBLIC_URL}
+
+x-cloud-service: &cloud-service
+  image: presmium-cloud:${CLOUD_IMAGE_TAG:-0.1.0}
+  build:
+    context: ../..
+    dockerfile: deploy/cloud/Dockerfile
+  init: true
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp:rw,nosuid,nodev,size=268435456,uid=1000,gid=1000,mode=1777
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  logging: *logs
+  volumes:
+    - ./profiles.json:/opt/presmium/deploy/cloud/profiles.json:ro
+
+services:
+  database:
+    image: postgres:17-alpine@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: presmium
+      POSTGRES_DB: presmium
+      POSTGRES_PASSWORD: ${CLOUD_DATABASE_PASSWORD:?Set CLOUD_DATABASE_PASSWORD}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    volumes: [database:/var/lib/postgresql/data]
+    networks: [data]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U presmium -d presmium"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    logging: *logs
+
+  identity-database:
+    image: postgres:17-alpine@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_DB: keycloak
+      POSTGRES_PASSWORD: ${CLOUD_KEYCLOAK_DATABASE_PASSWORD:?Set CLOUD_KEYCLOAK_DATABASE_PASSWORD}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    volumes: [identity-database:/var/lib/postgresql/data]
+    networks: [identity]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    logging: *logs
+
+  keycloak:
+    image: presmium-cloud-keycloak:26.8.1
+    build: { context: ../.., dockerfile: deploy/cloud/keycloak/Dockerfile }
+    command: [start, --optimized, --import-realm]
+    restart: unless-stopped
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://identity-database:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${CLOUD_KEYCLOAK_DATABASE_PASSWORD:?Set CLOUD_KEYCLOAK_DATABASE_PASSWORD}
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HOSTNAME: ${CLOUD_AUTH_URL:?Set CLOUD_AUTH_URL}
+      KC_HOSTNAME_STRICT: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${CLOUD_KEYCLOAK_ADMIN:-operator}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${CLOUD_KEYCLOAK_ADMIN_PASSWORD:?Set CLOUD_KEYCLOAK_ADMIN_PASSWORD}
+      CLOUD_PUBLIC_URL: ${CLOUD_PUBLIC_URL}
+      CLOUD_OIDC_CLIENT_ID: ${CLOUD_OIDC_CLIENT_ID:-presmium-cloud}
+      CLOUD_OIDC_CLIENT_SECRET: ${CLOUD_OIDC_CLIENT_SECRET}
+      CLOUD_OIDC_AUDIENCE: ${CLOUD_OIDC_AUDIENCE:-presmium-api}
+      CLOUD_KEYCLOAK_VERIFY_EMAIL: ${CLOUD_KEYCLOAK_VERIFY_EMAIL:-true}
+      CLOUD_KEYCLOAK_SSL_REQUIRED: external
+      CLOUD_SMTP_HOST: ${CLOUD_SMTP_HOST:-}
+      CLOUD_SMTP_PORT: ${CLOUD_SMTP_PORT:-587}
+      CLOUD_SMTP_FROM: ${CLOUD_SMTP_FROM:-}
+      CLOUD_SMTP_AUTH: ${CLOUD_SMTP_AUTH:-true}
+      CLOUD_SMTP_USER: ${CLOUD_SMTP_USER:-}
+      CLOUD_SMTP_PASSWORD: ${CLOUD_SMTP_PASSWORD:-}
+      CLOUD_SMTP_STARTTLS: ${CLOUD_SMTP_STARTTLS:-true}
+      CLOUD_SMTP_SSL: ${CLOUD_SMTP_SSL:-false}
+    mem_limit: 2g
+    depends_on:
+      identity-database: { condition: service_healthy }
+    volumes: [./keycloak/presmium-realm.json:/opt/keycloak/data/import/presmium-realm.json:ro]
+    networks: [services, identity]
+    healthcheck:
+      test: [CMD, bash, /opt/keycloak/bin/presmium-health.sh]
+      start_period: 60s
+      interval: 5s
+      timeout: 3s
+      retries: 60
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    logging: *logs
+
+  object-store:
+    image: minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    command: [server, /data, --console-address, ":9001"]
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${CLOUD_S3_ACCESS_KEY_ID:?Set CLOUD_S3_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${CLOUD_S3_SECRET_ACCESS_KEY:?Set CLOUD_S3_SECRET_ACCESS_KEY}
+    volumes: [objects:/data]
+    networks: [data]
+    logging: *logs
+
+  migrate:
+    <<: *cloud-service
+    command: [node, packages/cloud/bin/presmium-cloud.mjs, migrate]
+    restart: "no"
+    environment:
+      CLOUD_DATABASE_URL: postgresql://presmium:${CLOUD_DATABASE_PASSWORD}@database:5432/presmium
+      JITI_FS_CACHE: "false"
+    depends_on:
+      database: { condition: service_healthy }
+    networks: [data]
+
+  storage-init:
+    <<: *cloud-service
+    command: [node, packages/cloud/bin/presmium-cloud.mjs, storage-init]
+    restart: "on-failure:10"
+    environment: *cloud-environment
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      keycloak: { condition: service_healthy }
+      object-store: { condition: service_started }
+    networks: [services, data]
+
+  runner:
+    <<: *cloud-service
+    container_name: ${CLOUD_COMPOSE_PROJECT:-presmium-cloud}-runner
+    command: [node, packages/cloud/bin/presmium-cloud.mjs, runner]
+    user: "0:0"
+    cap_add: [DAC_OVERRIDE, FOWNER]
+    environment:
+      <<: *cloud-environment
+      CLOUD_HOST: 0.0.0.0
+      CLOUD_RUNNER_PORT: "8788"
+      CLOUD_DOCKER_SOCKET: /var/run/docker.sock
+      CLOUD_RUNNER_CONTAINER_ID: ${CLOUD_COMPOSE_PROJECT:-presmium-cloud}-runner
+      CLOUD_RUNTIME_STORAGE_MOUNT: /runtime-pool
+      CLOUD_RUNTIME_STORAGE_HOST: ${CLOUD_RUNTIME_STORAGE_HOST:?Set CLOUD_RUNTIME_STORAGE_HOST}
+    volumes:
+      - ./profiles.json:/opt/presmium/deploy/cloud/profiles.json:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${CLOUD_RUNTIME_STORAGE_HOST:?Set CLOUD_RUNTIME_STORAGE_HOST}:/runtime-pool
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      object-store: { condition: service_started }
+    networks: [services, data]
+    stop_grace_period: 45s
+    healthcheck:
+      test: [CMD, node, --input-type=module, -e, "try { const r = await fetch('http://127.0.0.1:8788/ready'); process.exit(r.ok ? 0 : 1) } catch { process.exit(1) }"]
+      start_period: 20s
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  watchdog:
+    <<: *cloud-service
+    command: [node, packages/cloud/bin/presmium-cloud.mjs, watchdog]
+    user: "0:0"
+    environment:
+      JITI_FS_CACHE: "false"
+      CLOUD_INSTANCE_ID: ${CLOUD_INSTANCE_ID:-presmium-cloud}
+      CLOUD_DOCKER_SOCKET: /var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks: [services]
+    stop_grace_period: 10s
+
+  api:
+    <<: *cloud-service
+    command: [node, packages/cloud/bin/presmium-cloud.mjs, serve]
+    environment:
+      <<: *cloud-environment
+      CLOUD_HOST: 0.0.0.0
+      CLOUD_PORT: "8787"
+      CLOUD_STRIPE_SECRET_KEY: ${CLOUD_STRIPE_SECRET_KEY:-}
+      CLOUD_STRIPE_WEBHOOK_SECRET: ${CLOUD_STRIPE_WEBHOOK_SECRET:-}
+      CLOUD_STRIPE_PRICE_PRO: ${CLOUD_STRIPE_PRICE_PRO:-}
+      CLOUD_STRIPE_PRICE_TEAM: ${CLOUD_STRIPE_PRICE_TEAM:-}
+    depends_on:
+      storage-init: { condition: service_completed_successfully }
+    networks: [services, data]
+    stop_grace_period: 45s
+    healthcheck:
+      test: [CMD, node, --input-type=module, -e, "try { const r = await fetch('http://127.0.0.1:8787/ready'); process.exit(r.ok ? 0 : 1) } catch { process.exit(1) }"]
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  entrance:
+    image: caddy:2.10-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    restart: unless-stopped
+    environment:
+      CLOUD_APP_HOST: ${CLOUD_APP_HOST:?Set CLOUD_APP_HOST}
+      CLOUD_AUTH_HOST: ${CLOUD_AUTH_HOST:?Set CLOUD_AUTH_HOST}
+      CLOUD_CONTENT_HOST: ${CLOUD_CONTENT_HOST:?Set CLOUD_CONTENT_HOST}
+      CLOUD_RUNTIME_HOST: ${CLOUD_RUNTIME_HOST:?Set CLOUD_RUNTIME_HOST}
+      CLOUD_ACME_EMAIL: ${CLOUD_ACME_EMAIL:?Set CLOUD_ACME_EMAIL}
+    ports:
+      - "${CLOUD_BIND_ADDRESS:-0.0.0.0}:${CLOUD_HTTP_PORT:-80}:80"
+      - "${CLOUD_BIND_ADDRESS:-0.0.0.0}:${CLOUD_HTTPS_PORT:-443}:443"
+      - "${CLOUD_BIND_ADDRESS:-0.0.0.0}:${CLOUD_HTTPS_PORT:-443}:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - entrance-data:/data
+      - entrance-config:/config
+    depends_on:
+      keycloak: { condition: service_healthy }
+    networks: [services]
+    logging: *logs
+
+  runtime-image:
+    profiles: [build-runtime]
+    image: presmium-cloud-runtime:0.1.0
+    build: { context: ../.., dockerfile: deploy/cloud/runtime/Dockerfile }
+    command: [node, --version]
+    network_mode: none
+
+networks:
+  services: {}
+  data: { internal: true }
+  identity: { internal: true }
+
+volumes:
+  database: {}
+  identity-database: {}
+  objects: {}
+  entrance-data: {}
+  entrance-config: {}

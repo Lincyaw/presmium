@@ -1,0 +1,39 @@
+{
+  "name": "@lincyaw/cloud",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Presmium cloud spaces, accounts, billing and isolated execution",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": { "node": ">=22.19" },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "start": "node bin/presmium-cloud.mjs",
+    "migrate": "node bin/presmium-cloud.mjs migrate"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1155.0",
+    "@hono/node-server": "2.1.3",
+    "@lincyaw/design": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
+    "@lincyaw/mcp": "workspace:*",
+    "@lincyaw/web": "workspace:*",
+    "@lincyaw/workbench": "workspace:*",
+    "hono": "4.13.13",
+    "image-size": "2.0.4",
+    "jiti": "2.7.0",
+    "jose": "6.2.12",
+    "openid-client": "6.8.8",
+    "pg": "8.23.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "stripe": "23.0.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.16.0",
+    "@types/react": "18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "vite": "8.3.4"
+  }
+}

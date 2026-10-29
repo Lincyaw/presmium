@@ -19,3 +19,7 @@ dist-web/
 !**/.presmium/speech/
 !**/.presmium/speech.lock.json
 .playwright-mcp/
+deploy/cloud/.env
+deploy/cloud/.env.new.*
+deploy/cloud/backups/
+deploy/cloud/keycloak/theme-output/

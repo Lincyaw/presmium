@@ -1,0 +1,98 @@
+{
+  "scope": "Real deployed runner/operator Jupyter protocol consumer, not a browser UI test.",
+  "records": [
+    {
+      "stage": "environment",
+      "at": "2026-10-29T06:56:50.080Z",
+      "status": "starting",
+      "errorCode": null
+    },
+    {
+      "stage": "environment",
+      "at": "2026-10-29T06:56:58.102Z",
+      "status": "running",
+      "errorCode": null
+    },
+    {
+      "stage": "jupyter-protocol",
+      "at": "2026-10-29T06:56:58.737Z",
+      "kernelId": "630f7888-e8ae-4ab1-9c10-2a144b28d1fe",
+      "richOutput": true,
+      "interrupted": true,
+      "isolation": {
+        "uid": 1000,
+        "dockerSocket": false,
+        "platformSecrets": [],
+        "memory.max": "1073741824",
+        "cpu.max": "100000 100000",
+        "pids.max": "128",
+        "readonlyRoot": true,
+        "egressBlocked": true
+      }
+    },
+    {
+      "stage": "environment-stop",
+      "at": "2026-10-29T06:57:00.123Z",
+      "status": "stopping",
+      "errorCode": null
+    },
+    {
+      "stage": "environment-stop",
+      "at": "2026-10-29T06:57:04.132Z",
+      "status": "stopped",
+      "errorCode": null
+    },
+    {
+      "stage": "environment-bill",
+      "at": "2026-10-29T06:57:04.132Z",
+      "generation": 1,
+      "state": "settled",
+      "actual_minor": "1"
+    },
+    {
+      "stage": "environment",
+      "at": "2026-10-29T06:57:04.168Z",
+      "status": "starting",
+      "errorCode": null
+    },
+    {
+      "stage": "environment",
+      "at": "2026-10-29T06:57:16.203Z",
+      "status": "running",
+      "errorCode": null
+    },
+    {
+      "stage": "jupyter-restart",
+      "at": "2026-10-29T06:57:16.239Z",
+      "environmentId": "e705ecea-0897-4ad2-af89-87d8f6f4cae8",
+      "generation": 2,
+      "terminal": true,
+      "persistentFile": true
+    },
+    {
+      "stage": "environment-stop",
+      "at": "2026-10-29T06:57:16.248Z",
+      "status": "stopping",
+      "errorCode": null
+    },
+    {
+      "stage": "environment-stop",
+      "at": "2026-10-29T06:57:22.263Z",
+      "status": "stopped",
+      "errorCode": null
+    },
+    {
+      "stage": "environment-bill",
+      "at": "2026-10-29T06:57:22.264Z",
+      "generation": 2,
+      "state": "settled",
+      "actual_minor": "1"
+    },
+    {
+      "stage": "complete",
+      "at": "2026-10-29T06:57:22.264Z",
+      "mode": "jupyter",
+      "statePath": "/tmp/presmium-cloud-journey-operator/state.json"
+    }
+  ]
+}

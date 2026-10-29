@@ -33,9 +33,9 @@ export async function load(url, context, next) {
   return next(url, context)
 }`))
 
-const SCOPE = ['workbench', 'dsh', 'design', 'studio', 'host', 'viewer', 'web', 'mcp', 'cli', 'skills', 'presmium', 'create-presmium', 'vscode',
+const SCOPE = ['workbench', 'cloud', 'dsh', 'design', 'studio', 'host', 'viewer', 'web', 'mcp', 'cli', 'skills', 'presmium', 'create-presmium', 'vscode',
   ...readdirSync(join(root, 'packages')).filter(name => name.startsWith('addon-')).sort()]
-const CLI_PACKAGES = new Set(['cli', 'skills', 'studio', 'presmium', 'create-presmium'])
+const CLI_PACKAGES = new Set(['cli', 'cloud', 'skills', 'studio', 'presmium', 'create-presmium'])
 const CJK = /[㐀-鿿豈-﫿]/
 const CJK_ANY = /[　-〿㐀-鿿豈-﫿＀-￯]/
 // Names that are the same in both languages (brands, formats, standards).

@@ -1,0 +1,55 @@
+# Explicit local validation only. Compose 2.24.4+ supports !override on ports.
+services:
+  keycloak:
+    environment:
+      KC_HOSTNAME: http://auth.localhost:${CLOUD_LOOPBACK_PORT:-18787}
+      CLOUD_PUBLIC_URL: http://app.localhost:${CLOUD_LOOPBACK_PORT:-18787}
+      CLOUD_KEYCLOAK_VERIFY_EMAIL: "false"
+      CLOUD_KEYCLOAK_SSL_REQUIRED: none
+      CLOUD_SMTP_FROM: no-reply@example.invalid
+      CLOUD_SMTP_HOST: mailpit
+      CLOUD_SMTP_PORT: "1025"
+      CLOUD_SMTP_AUTH: "false"
+      CLOUD_SMTP_STARTTLS: "false"
+      CLOUD_SMTP_SSL: "false"
+  # Captures verification mail only within this validation project's identity network.
+  # Neither the mailbox API nor SMTP is published on the host.
+  mailpit:
+    image: axllent/mailpit:v1.31.5@sha256:94f6b70c1436defae6799d9ac7ff0eeff9540465b842026d5cdb018f1c0234ea
+    restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    environment:
+      MP_DATABASE: /tmp/mailpit.db
+      MP_MAX_MESSAGES: "100"
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=67108864,uid=1000,gid=1000,mode=1777
+    mem_limit: 128m
+    cpus: 0.25
+    pids_limit: 64
+    networks: [identity]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: local
+      options: { max-size: "10m", max-file: "3" }
+  storage-init:
+    environment: &loopback
+      CLOUD_PUBLIC_URL: http://app.localhost:${CLOUD_LOOPBACK_PORT:-18787}
+      CLOUD_CONTENT_URL: http://content.localhost:${CLOUD_LOOPBACK_PORT:-18787}
+      CLOUD_RUNTIME_URL: http://runtime.localhost:${CLOUD_LOOPBACK_PORT:-18787}
+      CLOUD_OIDC_ISSUER: http://auth.localhost:${CLOUD_LOOPBACK_PORT:-18787}/realms/presmium
+      CLOUD_ALLOW_INSECURE_LOOPBACK: "true"
+      CLOUD_INPUT_ORIGINS: http://api:8787,${CLOUD_S3_ENDPOINT:-http://object-store:9000},http://app.localhost:${CLOUD_LOOPBACK_PORT:-18787}
+  api:
+    environment: *loopback
+  runner:
+    environment: *loopback
+  entrance:
+    environment:
+      CLOUD_APP_HOST: http://app.localhost
+      CLOUD_AUTH_HOST: http://auth.localhost
+      CLOUD_CONTENT_HOST: http://content.localhost
+      CLOUD_RUNTIME_HOST: http://runtime.localhost
+    ports: !override
+      - "127.0.0.1:${CLOUD_LOOPBACK_PORT:-18787}:80"

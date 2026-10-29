@@ -5,6 +5,17 @@
   "scope": "Application UI assets only; project materials and generated content are excluded.",
   "assets": [
     {
+      "id": "presmium-brand-mark",
+      "kind": "brand-mark",
+      "owner": "Presmium repository contributors",
+      "license": "Apache-2.0",
+      "licenseEvidence": "../../LICENSE",
+      "source": "https://github.com/Lincyaw/presmium/blob/main/packages/dsh/src/client/brand.tsx",
+      "entry": "./brand.ts",
+      "usage": "Existing Presmium P geometry shared by product and authentication surfaces through brandMarkup(); dimensions and appearance follow public design tokens.",
+      "variants": "One inline SVG for light and dark; accent fill and background-colored P follow the host tokens."
+    },
+    {
       "id": "semantic-icons",
       "kind": "icon-library",
       "sourcePackage": "lucide",

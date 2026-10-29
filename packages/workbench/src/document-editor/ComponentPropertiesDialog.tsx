@@ -77,7 +77,7 @@ export function ComponentPropertiesDialog({ identity, blockId, stepId, onClose }
   }, [ready, bank, key, revision, source?.version, source?.fingerprint, busy, initial])
   const draft = bank?.get(target) ?? (initial?.key === key ? initial.draft : undefined)
   const stored = bank?.get(target)
-  const editable = Boolean(source?.member?.roles.some(role => role === 'editor' || role === 'owner'))
+  const editable = workbench.client.capabilities?.readOnly !== true && Boolean(source?.member?.roles.some(role => role === 'editor' || role === 'owner'))
   const clean = Boolean(source?.version && source.fingerprint && !source.loading && !source.dirty && !source.saving && !source.composing && !source.restored && !source.recovering && !source.error
     && editable && !state.isHistoryBusy && !state.isHistoryPreparing && !isAgentChanging(state))
   const canonical = document && source?.version && source.fingerprint ? componentSource({ content: document, version: source.version, fingerprint: source.fingerprint }) : undefined

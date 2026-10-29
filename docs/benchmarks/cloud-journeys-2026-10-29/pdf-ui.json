@@ -1,0 +1,12 @@
+{
+  "artifact": "UI downloaded slides.pdf",
+  "pages": 1,
+  "bytes": 68606,
+  "sha256": "a311018d140a78ece2a5372276c80eb8ae9024d7648b4012b7485af1d3b5ece1",
+  "encrypted": false,
+  "title": "第一讲 · 从编辑到放映",
+  "text": "第一讲  · 从编辑到放映\n本讲从一个简单问题开始，验证正文保存、预览生成和课堂放映。\n第一讲  · 从编辑到放映 1 / 1",
+  "expectedTitlePresent": true,
+  "expectedBodyPresent": true,
+  "scope": "Actual UI export layout validation; exported before free policy change, not free accounting evidence."
+}

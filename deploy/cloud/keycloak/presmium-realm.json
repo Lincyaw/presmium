@@ -1,0 +1,71 @@
+{
+  "realm": "presmium",
+  "enabled": true,
+  "displayName": "Presmium",
+  "loginTheme": "presmium",
+  "sslRequired": "${CLOUD_KEYCLOAK_SSL_REQUIRED:external}",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "rememberMe": true,
+  "editUsernameAllowed": false,
+  "verifyEmail": "${CLOUD_KEYCLOAK_VERIFY_EMAIL:true}",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["zh-CN", "en"],
+  "defaultLocale": "zh-CN",
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 10,
+  "passwordPolicy": "length(12) and notUsername(undefined) and notEmail(undefined)",
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "smtpServer": {
+    "host": "${CLOUD_SMTP_HOST:}",
+    "port": "${CLOUD_SMTP_PORT:587}",
+    "from": "${CLOUD_SMTP_FROM:}",
+    "fromDisplayName": "Presmium",
+    "auth": "${CLOUD_SMTP_AUTH:true}",
+    "user": "${CLOUD_SMTP_USER:}",
+    "password": "${CLOUD_SMTP_PASSWORD:}",
+    "starttls": "${CLOUD_SMTP_STARTTLS:true}",
+    "ssl": "${CLOUD_SMTP_SSL:false}"
+  },
+  "clients": [
+    {
+      "clientId": "${CLOUD_OIDC_CLIENT_ID:presmium-cloud}",
+      "name": "Presmium Cloud",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${CLOUD_OIDC_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["${CLOUD_PUBLIC_URL}/api/auth/callback"],
+      "webOrigins": ["${CLOUD_PUBLIC_URL}"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "${CLOUD_PUBLIC_URL}"
+      },
+      "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "email"],
+      "protocolMappers": [
+        {
+          "name": "Presmium API audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "${CLOUD_OIDC_AUDIENCE:presmium-api}",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ]
+}

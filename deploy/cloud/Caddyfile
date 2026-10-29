@@ -1,0 +1,45 @@
+{
+	email {$CLOUD_ACME_EMAIL}
+	admin off
+}
+
+{$CLOUD_APP_HOST} {
+	encode zstd gzip
+	header X-Content-Type-Options nosniff
+	header Referrer-Policy same-origin
+	reverse_proxy api:8787
+}
+
+{$CLOUD_AUTH_HOST} {
+	encode zstd gzip
+	header Referrer-Policy no-referrer
+	reverse_proxy keycloak:8080
+}
+
+{$CLOUD_CONTENT_HOST} {
+	header X-Content-Type-Options nosniff
+	header Referrer-Policy no-referrer
+	@content path /v/* /p/*
+	handle @content {
+		reverse_proxy api:8787 {
+			header_up -Cookie
+			header_up -Authorization
+			header_down -Set-Cookie
+		}
+	}
+	handle {
+		respond 404
+	}
+}
+
+{$CLOUD_RUNTIME_HOST} {
+	header X-Content-Type-Options nosniff
+	header Referrer-Policy no-referrer
+	@runtime path /runtime/*
+	handle @runtime {
+		reverse_proxy api:8787
+	}
+	handle {
+		respond 404
+	}
+}

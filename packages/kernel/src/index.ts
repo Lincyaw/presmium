@@ -1,5 +1,6 @@
 export * from './contracts.ts'
 export { applyDocumentOperations } from './document-operations.ts'
+export { validateDocumentChange, DOCUMENT_CHANGE_JSON_SCHEMA } from './authoring.ts'
 export { allocateDocumentPage, createDocumentPage, documentPageDefaults, DOCUMENT_PAGE_DEFAULT_TIMING, duplicateDocumentPage, moveDocumentPage, pageContents, pageDeletion, pageDeletionImpact, removeDocumentPage, renameDocumentPage } from './document-pages.ts'
 export { documentOutline, documentPart, DocumentReadError } from './document-reads.ts'
 export { changeDocumentVoice, documentVoiceStepIds, previewDocumentVoiceChange, resolveDocumentStepVoice } from './document-voices.ts'

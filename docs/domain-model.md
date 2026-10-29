@@ -24,6 +24,7 @@
 | 编辑 Editing | `@lincyaw/language-server`、`presmium-vscode` | 编辑器中的诊断、跳转、悬停、补全，编辑器与预览同步 |
 | 智能体 Agent | `@lincyaw/mcp`、`@lincyaw/dsh`、`@lincyaw/addon-assistant` | agent 环境（MCP 与 dsh 的工具）、焦点、学习者问答 |
 | 工作区 Workspace | `@lincyaw/workspace` | 工作区服务、文档管理、修改历史与撤销（重做）、修改审阅、工作区站点 |
+| 云空间 Cloud | `@lincyaw/cloud`（私有应用，实施中） | OIDC 账号、空间成员、持久 canonical 文稿事务、订阅、预算账本、远程 MCP、任务与个人执行环境；边界见 [云端 RFC](rfc-cloud.md) |
 | 工作台 Workbench | `@lincyaw/workbench`、`@lincyaw/dsh`、`@lincyaw/studio`；`@lincyaw/design` 与产物共用 | 作者编写文稿的界面：文稿列表、文稿视图（就地编辑、批注、AI 改写）、版本历史、对话与焦点；DeepSeek Harness 的防腐层（bundle）；`presmium studio` |
 | 讲授 Lecture（含语音 Speech） | `@lincyaw/addon-lecture`、`@lincyaw/addon-speech` | 讲授轨、录制、回放、脚本化讲授、导出视频、转写回写；语音服务（语音协议 `v1/*`）、引擎、合成缓存、字幕译文 |
 

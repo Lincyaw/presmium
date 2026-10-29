@@ -1,4 +1,4 @@
-import { validateDocument } from '@lincyaw/kernel'
+import { hasRole, validateDocument } from '@lincyaw/kernel'
 import type { DocumentAnswer, DocumentChangeAnswer, DocumentImageImportAnswer, DocumentIssue, Member, TeachingDocument } from '@lincyaw/kernel'
 import { WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
@@ -194,6 +194,7 @@ export class DocumentSession {
     if (this.#active === slot.state.directory && this.#slots.get(slot.state.directory) === slot) this.#changed({ ...slot.state })
   }
   #error(error: unknown): string { return error instanceof WorkspaceServerError ? error.answer.error ?? 'document-request-failed' : 'document-disconnected' }
+  #readOnly(slot: Slot): boolean { return this.#client.capabilities?.readOnly === true || Boolean(slot.state.member && !hasRole(slot.state.member, 'editor')) }
   #issues(error: unknown): DocumentIssue[] { const value = error instanceof WorkspaceServerError ? (error.answer as { issues?: DocumentIssue[] }).issues : undefined; return Array.isArray(value) ? value : [] }
 
   async refresh(directory = this.#active): Promise<void> {
@@ -244,7 +245,7 @@ export class DocumentSession {
 
   record(content: TeachingDocument): void {
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
-    if (!slot || content.id !== slot.state.content?.id) return
+    if (!slot || this.#readOnly(slot) || content.id !== slot.state.content?.id) return
     slot.input++
     slot.state = { ...slot.state, content: structuredClone(content), dirty: true }
     this.#persist(slot); this.#emit(slot)
@@ -258,6 +259,8 @@ export class DocumentSession {
   }
 
   replace(content: TeachingDocument): void {
+    const current = this.#active === undefined ? undefined : this.#slots.get(this.#active)
+    if (current && this.#readOnly(current)) return
     this.record(content)
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
     if (slot) { slot.state.reset++; this.#emit(slot) }
@@ -265,7 +268,7 @@ export class DocumentSession {
 
   composition(composing: boolean, owner = 'body', identity?: string): void {
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
-    if (!slot || identity !== undefined && identity !== slot.state.identity || slot.compositions.has(owner) === composing) return
+    if (!slot || this.#readOnly(slot) || identity !== undefined && identity !== slot.state.identity || slot.compositions.has(owner) === composing) return
     if (composing) slot.compositions.add(owner)
     else slot.compositions.delete(owner)
     slot.state = { ...slot.state, composing: slot.compositions.size > 0 }
@@ -283,7 +286,7 @@ export class DocumentSession {
   async #save(slot: Slot, immediate = false): Promise<void> {
     if (immediate) { clearTimeout(slot.timer); slot.timer = undefined }
     else if (slot.timer !== undefined) return
-    if (slot.flight || slot.assetFlight || !slot.state.dirty || slot.state.composing || slot.state.restored || slot.state.error || !slot.state.content || !slot.state.version) return
+    if (this.#readOnly(slot) || slot.flight || slot.assetFlight || !slot.state.dirty || slot.state.composing || slot.state.restored || slot.state.error || !slot.state.content || !slot.state.version) return
     slot.read++
     const flight = { id: crypto.randomUUID(), input: slot.input, content: structuredClone(slot.state.content), baseVersion: slot.state.version, hash: undefined as string | undefined }
     slot.flight = flight
@@ -349,6 +352,7 @@ export class DocumentSession {
   async commitExternal<T extends DocumentChangeAnswer>(expected: { identity: string, version: string }, submit: (before: TeachingDocument, signal?: AbortSignal) => Promise<T>, reconcile: (before: TeachingDocument, answer: DocumentAnswer, current: TeachingDocument) => TeachingDocument | undefined, signal?: AbortSignal): Promise<T> {
     signal?.throwIfAborted()
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
+    if (slot && this.#readOnly(slot)) throw new WorkspaceServerError(403, { error: 'permission-denied' })
     if (!slot?.state.content || this.#disposed || slot.state.identity !== expected.identity || slot.state.version !== expected.version
       || slot.state.loading || slot.state.dirty || slot.state.saving || slot.state.composing || slot.state.restored || slot.state.recovering || slot.state.error || slot.flight || slot.assetFlight) throw new Error('document-identity-changed')
     const before = structuredClone(slot.state.content), input = slot.input, read = ++slot.read, directory = slot.state.directory, baseHash = slot.baseHash, fingerprint = slot.state.fingerprint, { identity, version } = expected
@@ -397,6 +401,7 @@ export class DocumentSession {
   async importImage(file: File, identity: string, signal?: AbortSignal): Promise<DocumentImageImportAnswer> {
     await this.flush(signal)
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
+    if (slot && this.#readOnly(slot)) throw new WorkspaceServerError(403, { error: 'permission-denied' })
     if (!slot?.state.content || !slot.state.version || slot.state.identity !== identity || slot.state.dirty || slot.state.saving || slot.state.composing || slot.state.error) throw new Error('document-identity-changed')
     const before = structuredClone(slot.state.content), input = slot.input, version = slot.state.version
     let request = this.#imageImports.get(file)
@@ -581,6 +586,7 @@ export class DocumentSession {
   /** Selecting a candidate never writes the source or replaces this tab's only snapshot. */
   async recoverDraft(value: DocumentDraftReference): Promise<void> {
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
+    if (slot && this.#readOnly(slot)) return
     if (!slot?.state.identity || !slot.state.content || slot.state.loading || slot.flight || slot.assetFlight || slot.state.composing || this.#disposed) return
     const identity = slot.state.identity, documentId = slot.state.content.id, input = slot.input, read = ++slot.read
     const operation = slot.recoveryOperation = (slot.recoveryOperation ?? 0) + 1

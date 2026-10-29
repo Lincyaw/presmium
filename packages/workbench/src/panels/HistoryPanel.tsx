@@ -5,18 +5,36 @@ import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
 import { isAgentChanging } from '../workbench.ts'
 
-/** The document's versions, newest first: who changed what and when; each change can be undone or redone on its own. */
-export function HistoryPanel({ onClose }: { onClose(): void }) {
+/** A host-owned operation on a version, such as restoring an entire saved snapshot. This never replaces selective undo. */
+export interface HistoryRevisionAction {
+  label: string
+  icon?: IconName
+  onSelect(revision: HistoryRevision): void
+  disabled?: boolean | ((revision: HistoryRevision) => boolean)
+  /** The revision whose operation the host is performing. Other history actions wait for it. */
+  pendingRevision?: string
+}
+
+export interface HistoryPanelProps {
+  onClose(): void
+  revisionAction?: HistoryRevisionAction
+}
+
+/** The document's versions, newest first: who changed what and when, with selective undo and optional host operations. */
+export function HistoryPanel({ onClose, revisionAction }: HistoryPanelProps) {
   const t = useMessages()
   const workbench = useWorkbench()
   const history = useWorkbenchState(state => state.history)
   const outside = useWorkbenchState(state => state.outside)
-  const busy = useWorkbenchState(state => state.isHistoryBusy || state.isHistoryPreparing || isAgentChanging(state))
+  const changing = useWorkbenchState(state => state.isHistoryBusy || state.isHistoryPreparing || isAgentChanging(state))
+  const busy = changing || revisionAction?.pendingRevision !== undefined
+  const readOnly = workbench.client.capabilities?.readOnly === true
   const locale = useWorkbenchState(state => state.locale)
+  const memberId = useWorkbenchState(state => state.authoring?.member?.id)
   const revisions = history?.revisions ?? []
   // Undoing and redoing are not versions of their own: they mark the change they act on.
   const changes = revisions.filter(revision => !revision.reverts)
-  const who = (revision: HistoryRevision) => (revision.origin.kind === 'agent' ? t.byAi : revision.origin.kind === 'document' ? t.byDocument : t.byYou)
+  const who = (revision: HistoryRevision) => (revision.origin.kind === 'agent' ? t.byAi : revision.origin.kind === 'document' ? t.byDocument : revision.origin.member?.id && revision.origin.member.id !== memberId ? revision.author : t.byYou)
   const icon = (revision: HistoryRevision): IconName => (revision.origin.kind === 'agent' ? 'sparkle' : revision.origin.kind === 'document' ? 'document' : 'edit')
   return (
     <section className="pmw-pane" aria-labelledby="pmw-history-title">
@@ -37,6 +55,7 @@ export function HistoryPanel({ onClose }: { onClose(): void }) {
               {changes.map((revision) => {
                 const undone = revision.undone === true
                 const [summary = ''] = revision.message.split('\n')
+                const hostDisabled = typeof revisionAction?.disabled === 'function' ? revisionAction.disabled(revision) : revisionAction?.disabled
                 return (
                   <li key={revision.id} className="pmw-version" data-origin={revision.origin.kind} data-undone={undone || undefined}>
                     <span className="pmw-version__icon" aria-hidden="true"><PmIcon name={icon(revision)} /></span>
@@ -50,10 +69,11 @@ export function HistoryPanel({ onClose }: { onClose(): void }) {
                       </p>
                     </div>
                     {!revision.operation && revision.revertible !== false && (
-                      <PmButton small className="pmw-version__action" disabled={busy || history?.loading} onClick={() => void workbench.revertRevision(revision.revertTarget ?? revision.id)}>
+                      <PmButton small className="pmw-version__action" disabled={readOnly || busy || history?.loading} onClick={() => void workbench.revertRevision(revision.revertTarget ?? revision.id)}>
                         {undone ? t.redoChange : t.undoChange}
                       </PmButton>
                     )}
+                    {revisionAction && <PmButton small className="pmw-version__action" icon={revisionAction.icon} disabled={readOnly || busy || history?.loading || hostDisabled} loading={revisionAction.pendingRevision === revision.id} onClick={() => revisionAction.onSelect(revision)}>{revisionAction.label}</PmButton>}
                   </li>
                 )
               })}

@@ -364,6 +364,8 @@ export interface CompileJob {
   target: string
   kind: OutputTarget['kind']
   state: JobState
+  /** Host UI hint only; the server still authorizes every cancellation. Omission preserves the local host's behavior. */
+  canCancel?: boolean
   /** The derived IR revision captured for this output; not the authoring document's save version. */
   revision: string
   /** Absent only in historical jobs created before source confirmation was recorded. */
