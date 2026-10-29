@@ -64,6 +64,7 @@ export interface PluginDefinition {
   /** Opt in only when dispose stops every resource and this definition can run setup again. */
   restartable?: boolean
   setup(ctx: PluginContext): void | Promise<void>
+  /** Also called after setup fails; releases resources acquired during partial initialization. */
   dispose?(): void | Promise<void>
 }
 

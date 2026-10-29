@@ -34,6 +34,8 @@ export class Kernel {
   #environments?: Readonly<Record<string, EnvironmentSpec>>
   #plugins: PluginDefinition[] = []
   #state: 'idle' | 'starting' | 'started' | 'disposed' = 'idle'
+  #starting?: Promise<StartReport>
+  #disposing?: Promise<void>
   #report?: StartReport
 
   constructor(options: KernelOptions) {
@@ -66,9 +68,13 @@ export class Kernel {
     return this.#report
   }
 
-  async start(): Promise<StartReport> {
-    if (this.#state !== 'idle') throw new Error('kernel already started')
+  start(): Promise<StartReport> {
+    if (this.#state !== 'idle') return Promise.reject(new Error('kernel already started'))
     this.#state = 'starting'
+    return this.#starting = Promise.resolve().then(() => this.#start())
+  }
+
+  async #start(): Promise<StartReport> {
     const plan = this.services.plan(this.#plugins.map(p => p.manifest), this.version)
     const reports = new Map<string, PluginReport>()
     for (const [id, reason] of plan.excluded) reports.set(id, this.#disable(id, reason))
@@ -88,25 +94,25 @@ export class Kernel {
     }
 
     this.#report = { order, plugins: this.#plugins.map(p => ({ ...reports.get(p.manifest.id)!, ...p.manifest.name ? { name: p.manifest.name } : {} })), cycles: plan.cycles }
-    this.#state = 'started'
+    if (this.#state !== 'disposed') this.#state = 'started'
     return this.#report
   }
 
-  async dispose(): Promise<void> {
-    if (this.#state === 'disposed') return
+  dispose(): Promise<void> {
+    if (this.#disposing) return this.#disposing
     this.#state = 'disposed'
+    return this.#disposing = this.#dispose()
+  }
+
+  async #dispose(): Promise<void> {
+    await this.#starting?.catch(() => undefined)
     const running = new Set(
       this.#report?.plugins.filter(r => r.status === 'started' || r.status === 'degraded').map(r => r.id),
     )
     for (const id of [...(this.#report?.order ?? [])].reverse()) {
       if (!running.has(id)) continue
       const plugin = this.#plugins.find(p => p.manifest.id === id)!
-      try {
-        await plugin.dispose?.()
-      } catch (error) {
-        this.#log.error(`[presmium] ${id} dispose failed`, error)
-      }
-      this.services.revoke(id)
+      await this.#disposePlugin(plugin)
     }
   }
 
@@ -117,7 +123,7 @@ export class Kernel {
       const unprovided = provides.filter(t => this.services.owner(t) !== id).map(t => t.id)
       if (unprovided.length > 0) throw new Error(`declared but did not provide: ${unprovided.join(', ')}`)
     } catch (error) {
-      this.services.revoke(id)
+      await this.#disposePlugin(plugin)
       const reason = errorMessage(error)
       this.#log.error(`[presmium] ${id} failed to start`, error)
       this.#emit({ type: 'kernel.plugin.failed', payload: { id, error: reason } })
@@ -130,6 +136,16 @@ export class Kernel {
     }
     this.#emit({ type: 'kernel.plugin.started', payload: { id } })
     return { id, status: 'started' }
+  }
+
+  async #disposePlugin(plugin: PluginDefinition): Promise<void> {
+    try {
+      await plugin.dispose?.()
+    } catch (error) {
+      this.#log.error(`[presmium] ${plugin.manifest.id} dispose failed`, error)
+    } finally {
+      this.services.revoke(plugin.manifest.id)
+    }
   }
 
   #disable(id: string, reason: string, missing?: string[]): PluginReport {
