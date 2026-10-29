@@ -1,0 +1,1108 @@
+{
+  "schemaVersion": 1,
+  "id": "document-story-gallery",
+  "metadata": {
+    "title": "从主旨到分镜：一个示范",
+    "lang": "zh-CN",
+    "description": "一段带讲解的 flow matching 动画：主旨、中心画面、叙事形状和分镜表先写好，动画按分镜表做，每个数字来自真实的训练。",
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-speech"
+    ],
+    "renderers": {
+      "web": {},
+      "lecture": {}
+    }
+  },
+  "sectionOrder": [
+    "intro",
+    "flow-matching"
+  ],
+  "sections": {
+    "intro": {
+      "id": "intro",
+      "title": "从主旨到分镜：一个示范",
+      "level": 1,
+      "children": [
+        "intro--card",
+        "intro--notes"
+      ],
+      "stepOrder": [
+        "intro--step-0"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "cover"
+          }
+        }
+      }
+    },
+    "flow-matching": {
+      "id": "flow-matching",
+      "title": "Flow matching：把生成的路径拉直",
+      "level": 2,
+      "children": [
+        "flow-matching--notes",
+        "flow-matching--scene"
+      ],
+      "stepOrder": [
+        "flow-matching--step-0",
+        "flow-matching--step-1",
+        "flow-matching--step-2",
+        "flow-matching--step-3",
+        "flow-matching--step-4",
+        "flow-matching--step-5",
+        "flow-matching--step-6",
+        "flow-matching--step-7",
+        "flow-matching--step-8"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "intro--card": {
+      "id": "intro--card",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--card--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "主旨 · 中心画面 · 分镜表 · 讲解"
+            }
+          ]
+        }
+      ]
+    },
+    "intro--notes": {
+      "id": "intro--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这份文稿是 "
+            },
+            {
+              "type": "text",
+              "text": "references/story.md",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 的示范：一段带讲解的 flow matching 动画。动手写代码之前，先写下面的工作单：主旨、中心画面、叙事形状和分镜表；动画的每个状态就是分镜表的一行，每个状态停住的那一帧单独看也能读懂。"
+            }
+          ]
+        },
+        {
+          "id": "intro--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "叙事参考了小红书上的讲解视频《flow matching：将生图路径，拉直！》：同一个画面（噪声到图的路径）贯穿始终，每个新想法都是这个画面的一次变化。"
+            }
+          ]
+        }
+      ]
+    },
+    "flow-matching--notes": {
+      "id": "flow-matching--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "flow-matching--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "主旨",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：看完后，观众明白 flow matching 把生成的路径拉直，所以一两步就能生成，因为他们看到同一批粒子沿着弯路要走几十步，拉直之后一步就落进标志。"
+            }
+          ]
+        },
+        {
+          "id": "flow-matching--notes--n1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "ABT",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：生成就是让噪声沿着路径走到图，而且网络只需要学每一处的速度；但是路是弯的，步数少就走不准；所以用直线训练，再用 Reflow 把路拉直。"
+            }
+          ]
+        },
+        {
+          "id": "flow-matching--notes--n2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "中心画面",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：两张时空平面（左边噪声 t = 0，右边目标 t = 1）之间每个粒子的路径，下面一条时间尺。"
+            },
+            {
+              "type": "text",
+              "text": "最有说服力的一帧",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：最后两块面板，同样走 1 步，一团和一个标志。"
+            }
+          ]
+        },
+        {
+          "id": "flow-matching--notes--n3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "叙事形状",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：两幕。问题（弯路要很多步）→ 机制（学速度、按步积分）→ 答案（直线训练）→ 遗留问题（直线交叉，平均方向让路又弯）→ 第二个答案（Reflow）。"
+            }
+          ]
+        },
+        {
+          "id": "flow-matching--notes--n4",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "颜色只有一种含义",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "：红色是真实（精确路径、训练目标），强调色是网络的箭头，黄色是采样器实际走的，绿色是拉直后的模型。"
+            }
+          ]
+        },
+        {
+          "id": "flow-matching--notes--n5",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "数字的来源",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "："
+            },
+            {
+              "type": "text",
+              "text": "scenes/data/flow-matching.py",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 的一次训练：四层、每层 256 个神经元的 MLP（约 20 万参数），随机配对训练 30000 轮，再用它自己生成的配对做 Reflow 训练 4000 轮；轨迹用 RK4 积分 96 步。画面里的偏差、比值和损失都从这份数据读出。"
+            }
+          ]
+        },
+        {
+          "id": "flow-matching--notes--n6",
+          "type": "table",
+          "headerRows": 1,
+          "children": [
+            {
+              "id": "flow-matching--notes--n6--r0",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "flow-matching--notes--n6--r0c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "时间"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r0c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "停留画面与动作"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r0c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "讲解"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r0c3",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "为什么"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "flow-matching--notes--n6--r1",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "flow-matching--notes--n6--r1c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "0–11 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r1c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "两张时空平面，左边噪声 t = 0，右边目标 t = 1；2000 个粒子从噪声流进标志"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r1c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "生成一张图，就是把一团随机噪声推成一张图：每个噪声点沿着一条路，走到图里属于它的位置。"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r1c3",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "先交代对象和怎么读图：点是样本，线是路径"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "flow-matching--notes--n6--r2",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "flow-matching--notes--n6--r2c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "11–22 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r2c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "只留一条路径；切线沿路径滑动；t = 0.5 的切片上画出整片箭头"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r2c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "网络并不直接学整条路，而是学每个位置、每个时刻该往哪走，也就是速度：路径的切线。"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r2c3",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "先讲一个，再讲全部：切线就是速度，所有点的速度就是向量场"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "flow-matching--notes--n6--r3",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "flow-matching--notes--n6--r3c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "22–36 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r3c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "切到这条路径的俯视（只看空间，时间会把弯拉平）；欧拉法 4、8、16、32 步依次叠上，读数是各自的终点偏差"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r3c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "生成的时候，把时间切成几段，每段沿着速度走一步。可路是弯的，每一步都会偏出去一点：四步偏得明显，三十二步才贴住。"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r3c3",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "同一画面上的逐步逼近：路弯，步数少就在拐弯处冲过头"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "flow-matching--notes--n6--r4",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "flow-matching--notes--n6--r4c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "36–43 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r4c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "同一俯视里，起点到终点的虚线，一步走到"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r4c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "如果路是直的，一步就能走到。那能不能把路拉直？"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r4c3",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "问题本身画成一个画面"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "flow-matching--notes--n6--r5",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "flow-matching--notes--n6--r5c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "43–60 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r5c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "随机配对的直线；选一条、取 t = 0.6、标出线上的点；红箭头是目标，强调色箭头是网络在 1 到 30000 轮的预测，旁边是损失曲线"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r5c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "Flow matching 的训练很简单：随便配一个噪声点和一个图上的点，连一条直线，在线上随便取一个时刻，让网络在这里预测的速度，去逼近这条直线的方向。"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r5c3",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "训练讲成“在时空里取一个点”；公式的每一项和箭头同色"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "flow-matching--notes--n6--r6",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "flow-matching--notes--n6--r6c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "60–75 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r6c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "噪声按位置染色后流进标志，颜色仍连成片"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r6c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "训练三万轮之后，撒下两千个噪声粒子，沿着学到的速度走，就填满了整个标志。给噪声按位置染色，颜色到了标志里还连成一片。"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r6c3",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "用操纵输入展示映射是连续的"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "flow-matching--notes--n6--r7",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "flow-matching--notes--n6--r7c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "75–90 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r7c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "穿过 t = 0.5 同一点的直线和它们的方向；网络的箭头是它们的平均；随后画出模型真正走的弯路，读数“路程 ÷ 直线距离”"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r7c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "可网络的箭头始终没对齐那条线。随机配对的直线会交叉，在交叉的地方，网络只能学到所有方向的平均，于是真正走出来的路又弯了。"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r7c3",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "遗留问题聚焦到一个点；为第二幕埋伏笔（训练时箭头就对不齐）"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "flow-matching--notes--n6--r8",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "flow-matching--notes--n6--r8c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "90–104 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r8c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "弯路收直成各自起点到终点的直线；再训练的模型的路径落在直线上；读数 3.4 → 1.00"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r8c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "Reflow 的办法是：先用这个模型把每个噪声点送到终点，按这样的配对重新连直线，再训练一遍。这一次，路几乎是直的。"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r8c3",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "第二篇论文的解法，按步骤在同一画面上做"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "flow-matching--notes--n6--r9",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "flow-matching--notes--n6--r9c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "104–115 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r9c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "切到两块正面的面板，各走 1 步：第一个模型挤成一团，Reflow 之后画出标志；读数是终点偏差"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r9c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "同样只走一步：第一个模型的粒子全挤在中间，拉直之后，一步就画出了标志。"
+                    }
+                  ]
+                },
+                {
+                  "id": "flow-matching--notes--n6--r9c3",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "结论停在可对比的一帧上"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "flow-matching--scene": {
+      "id": "flow-matching--scene",
+      "type": "component",
+      "definitionId": "flow-matching--scene--definition",
+      "parameters": {
+        "scene": "flow-matching",
+        "alt": "flow matching 的时空路径动画"
+      }
+    }
+  },
+  "steps": {
+    "intro--step-0": {
+      "id": "intro--step-0",
+      "sectionId": "intro",
+      "visuals": [
+        {
+          "blockId": "intro--card",
+          "visible": true
+        },
+        {
+          "blockId": "intro--notes",
+          "visible": false
+        }
+      ],
+      "narrationIds": []
+    },
+    "flow-matching--step-0": {
+      "id": "flow-matching--step-0",
+      "sectionId": "flow-matching",
+      "visuals": [
+        {
+          "blockId": "flow-matching--notes",
+          "visible": false
+        },
+        {
+          "blockId": "flow-matching--scene",
+          "visible": true,
+          "state": "intro"
+        }
+      ],
+      "narrationIds": [
+        "flow-matching--narration-0"
+      ]
+    },
+    "flow-matching--step-1": {
+      "id": "flow-matching--step-1",
+      "sectionId": "flow-matching",
+      "visuals": [
+        {
+          "blockId": "flow-matching--notes",
+          "visible": false
+        },
+        {
+          "blockId": "flow-matching--scene",
+          "visible": true,
+          "state": "velocity"
+        }
+      ],
+      "narrationIds": [
+        "flow-matching--narration-1"
+      ]
+    },
+    "flow-matching--step-2": {
+      "id": "flow-matching--step-2",
+      "sectionId": "flow-matching",
+      "visuals": [
+        {
+          "blockId": "flow-matching--notes",
+          "visible": false
+        },
+        {
+          "blockId": "flow-matching--scene",
+          "visible": true,
+          "state": "euler"
+        }
+      ],
+      "narrationIds": [
+        "flow-matching--narration-2"
+      ]
+    },
+    "flow-matching--step-3": {
+      "id": "flow-matching--step-3",
+      "sectionId": "flow-matching",
+      "visuals": [
+        {
+          "blockId": "flow-matching--notes",
+          "visible": false
+        },
+        {
+          "blockId": "flow-matching--scene",
+          "visible": true,
+          "state": "straight"
+        }
+      ],
+      "narrationIds": [
+        "flow-matching--narration-3"
+      ]
+    },
+    "flow-matching--step-4": {
+      "id": "flow-matching--step-4",
+      "sectionId": "flow-matching",
+      "visuals": [
+        {
+          "blockId": "flow-matching--notes",
+          "visible": false
+        },
+        {
+          "blockId": "flow-matching--scene",
+          "visible": true,
+          "state": "train"
+        }
+      ],
+      "narrationIds": [
+        "flow-matching--narration-4"
+      ]
+    },
+    "flow-matching--step-5": {
+      "id": "flow-matching--step-5",
+      "sectionId": "flow-matching",
+      "visuals": [
+        {
+          "blockId": "flow-matching--notes",
+          "visible": false
+        },
+        {
+          "blockId": "flow-matching--scene",
+          "visible": true,
+          "state": "result"
+        }
+      ],
+      "narrationIds": [
+        "flow-matching--narration-5"
+      ]
+    },
+    "flow-matching--step-6": {
+      "id": "flow-matching--step-6",
+      "sectionId": "flow-matching",
+      "visuals": [
+        {
+          "blockId": "flow-matching--notes",
+          "visible": false
+        },
+        {
+          "blockId": "flow-matching--scene",
+          "visible": true,
+          "state": "cross"
+        }
+      ],
+      "narrationIds": [
+        "flow-matching--narration-6"
+      ]
+    },
+    "flow-matching--step-7": {
+      "id": "flow-matching--step-7",
+      "sectionId": "flow-matching",
+      "visuals": [
+        {
+          "blockId": "flow-matching--notes",
+          "visible": false
+        },
+        {
+          "blockId": "flow-matching--scene",
+          "visible": true,
+          "state": "reflow"
+        }
+      ],
+      "narrationIds": [
+        "flow-matching--narration-7"
+      ]
+    },
+    "flow-matching--step-8": {
+      "id": "flow-matching--step-8",
+      "sectionId": "flow-matching",
+      "visuals": [
+        {
+          "blockId": "flow-matching--notes",
+          "visible": false
+        },
+        {
+          "blockId": "flow-matching--scene",
+          "visible": true,
+          "state": "onestep"
+        }
+      ],
+      "narrationIds": [
+        "flow-matching--narration-8"
+      ]
+    }
+  },
+  "narrations": {
+    "flow-matching--narration-0": {
+      "id": "flow-matching--narration-0",
+      "content": [
+        {
+          "type": "text",
+          "text": "生成一张图，就是把一团随机噪声推成一张图：每个噪声点沿着一条路，走到图里属于它的位置。"
+        }
+      ]
+    },
+    "flow-matching--narration-1": {
+      "id": "flow-matching--narration-1",
+      "content": [
+        {
+          "type": "text",
+          "text": "网络并不直接学整条路，而是学每个位置、每个时刻该往哪走，也就是速度：路径的切线。"
+        }
+      ]
+    },
+    "flow-matching--narration-2": {
+      "id": "flow-matching--narration-2",
+      "content": [
+        {
+          "type": "text",
+          "text": "生成的时候，把时间切成几段，每段沿着速度走一步。可路是弯的，每一步都会偏出去一点：四步偏得明显，三十二步才贴住。"
+        }
+      ]
+    },
+    "flow-matching--narration-3": {
+      "id": "flow-matching--narration-3",
+      "content": [
+        {
+          "type": "text",
+          "text": "如果路是直的，一步就能走到。那能不能把路拉直？"
+        }
+      ]
+    },
+    "flow-matching--narration-4": {
+      "id": "flow-matching--narration-4",
+      "content": [
+        {
+          "type": "text",
+          "text": "Flow matching 的训练很简单：随便配一个噪声点和一个图上的点，连一条直线，在线上随便取一个时刻，让网络在这里预测的速度，去逼近这条直线的方向。"
+        }
+      ]
+    },
+    "flow-matching--narration-5": {
+      "id": "flow-matching--narration-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "训练三万轮之后，撒下两千个噪声粒子，沿着学到的速度走，就填满了整个标志。给噪声按位置染色，颜色到了标志里还连成一片。"
+        }
+      ]
+    },
+    "flow-matching--narration-6": {
+      "id": "flow-matching--narration-6",
+      "content": [
+        {
+          "type": "text",
+          "text": "可网络的箭头始终没对齐那条线。随机配对的直线会交叉，在交叉的地方，网络只能学到所有方向的平均，于是真正走出来的路又弯了。"
+        }
+      ]
+    },
+    "flow-matching--narration-7": {
+      "id": "flow-matching--narration-7",
+      "content": [
+        {
+          "type": "text",
+          "text": "Reflow 的办法是：先用这个模型把每个噪声点送到终点，按这样的配对重新连直线，再训练一遍。这一次，路几乎是直的。"
+        }
+      ]
+    },
+    "flow-matching--narration-8": {
+      "id": "flow-matching--narration-8",
+      "content": [
+        {
+          "type": "text",
+          "text": "同样只走一步：第一个模型的粒子全挤在中间，拉直之后，一步就画出了标志。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "flow-matching--scene--definition": {
+      "id": "flow-matching--scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/flow-matching.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "intro"
+        },
+        {
+          "id": "velocity"
+        },
+        {
+          "id": "euler"
+        },
+        {
+          "id": "straight"
+        },
+        {
+          "id": "train"
+        },
+        {
+          "id": "result"
+        },
+        {
+          "id": "cross"
+        },
+        {
+          "id": "reflow"
+        },
+        {
+          "id": "onestep"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          11000,
+          11000,
+          14000,
+          7000,
+          17000,
+          15000,
+          15000,
+          14000,
+          11000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "两张时空平面之间，噪声粒子沿路径流进 Claude 标志；路径弯时欧拉法步数少就偏，Reflow 把路拉直后一步就能画出标志。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "tts",
+        "voice": {
+          "engine": "edge",
+          "voice": "zh-CN-XiaoxiaoNeural"
+        }
+      },
+      "trailingPauseMs": 400
+    },
+    "stepOverrides": {
+      "intro--step-0": {
+        "voiceSource": {
+          "type": "none"
+        },
+        "minimumHoldMs": 2500
+      }
+    },
+    "mediaClips": []
+  }
+}

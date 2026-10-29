@@ -6,6 +6,7 @@
   "dependencies": {
     "@lincyaw/addon-lecture": "workspace:*",
     "@lincyaw/addon-motion": "workspace:*",
+    "@lincyaw/addon-speech": "workspace:*",
     "@lincyaw/cli": "workspace:*",
     "@lincyaw/compiler": "workspace:*",
     "@lincyaw/host": "workspace:*",
