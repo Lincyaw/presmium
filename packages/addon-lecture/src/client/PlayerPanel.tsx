@@ -22,6 +22,7 @@ import { useLecturePlayback } from './playback.ts'
 import { lectureSource } from './source.ts'
 import { PLAYBACK_RATES, ProductionPlaybackController } from './production-playback.ts'
 import {
+  autoplay,
   burnedCaptions,
   exporting,
   keyboardPlayer,
@@ -32,6 +33,8 @@ import {
 } from './state.ts'
 import TranscriptList from './TranscriptList.tsx'
 import './PlayerPanel.css'
+/** `&autoplay` starts the first lecture that becomes ready on this page, once. */
+let autoplayPending = autoplay
 export default function PlayerPanel(_props: { view?: string }) {
   const t = useMessages(LECTURE_MESSAGES),
     viewer = useViewer(),
@@ -48,6 +51,10 @@ export default function PlayerPanel(_props: { view?: string }) {
   useEffect(() => {
     if (!player || status !== 'ready' || failure || controlled || exporting) return
     keyboardPlayer.set(player)
+    if (autoplayPending) {
+      autoplayPending = false
+      void player.play()
+    }
     return () => { if (keyboardPlayer.getSnapshot() === player) keyboardPlayer.set(undefined) }
   }, [player, status, failure, controlled])
   const time = useStore(player?.time, 0),

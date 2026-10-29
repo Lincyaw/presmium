@@ -1,4 +1,4 @@
-title: Presmium · 让想法，被看见
+title: Presmium · 难讲的课，也能讲明白
 documents: ['*/lecture.json']
 site:
   base: /repo/
@@ -13,7 +13,7 @@ site:
   nav:
     - text: 线性回归小课
       link: /learn/
-    - text: 影片项目
+    - text: 影片的讲义
       link: /promo/
   head:
-    description: 把知识，变成值得分享的作品。阅读、演示与分享，从 Presmium 开始。
+    description: 讲义写一遍，上课放映、做成网站、导出视频都能用。Presmium 是开源的讲课工具。

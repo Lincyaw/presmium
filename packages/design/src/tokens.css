@@ -189,6 +189,13 @@
   --pm-color-film-violet: #7044d8;
   --pm-color-film-lilac: #b99af0;
   --pm-color-film-silver: #dfe2e8;
+  /* Its illustration inks: a night room, the desk lamp, a blackboard and its chalk, a wooden desk. */
+  --pm-color-film-night: #171b36;
+  --pm-color-film-dusk: #2b3160;
+  --pm-color-film-lamp: #ffd37f;
+  --pm-color-film-board: #2d4a41;
+  --pm-color-film-chalk: #eef3ea;
+  --pm-color-film-wood: #a8794f;
   --pm-product-width: 72rem;
   --pm-product-title: clamp(2.25rem, 4.4vw, 4rem);
   --pm-product-section-title: clamp(1.75rem, 3vw, 2.5rem);
@@ -196,6 +203,7 @@
   --pm-product-hero-height: 34rem;
   --pm-product-ambient-height: 60rem;
   --pm-product-radius: 1.5rem;
+  --pm-product-play-size: 4.5rem;
   --pm-product-glass-blur: 1.5rem;
   --pm-product-card-shadow: 0 1px 2px rgb(31 35 40 / 4%), 0 6px 20px -6px rgb(31 35 40 / 8%);
   --pm-product-art-height: 23rem;
