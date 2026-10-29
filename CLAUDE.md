@@ -10,6 +10,7 @@
 - 工作台（基于 DeepSeek Harness）的设计：`docs/design-dsh.md`
 - 工作台 UI/UX 决策与验收：`docs/rfc-workbench-uiux.md`（覆盖旧界面方案，区分目标与已实现行为）
 - 正式控件、样式与素材实施规范：`docs/design-system.md`（线框不作为视觉验收；明确公共组件与待迁移项）
+- 界面术语与文案（zh-CN 与 en 的名称、命令、状态词、不用的词与写法）：`docs/glossary.md`
 - 契约源码：`packages/kernel/src/contracts/` 与汇总导出它们的 `packages/kernel/src/contracts.ts`、`packages/kernel/src/ir.ts`、`packages/host/src/contracts.ts`
 
 ## 约定
@@ -17,7 +18,7 @@
 - 依赖优先：能用现成组件就用，通过公开接口定制；不 fork、不打补丁、不引用依赖的内部路径。
 - 查框架接口先读本地文档 `vendor/docs/`（DeepSeek Harness 与 MCP TypeScript SDK 的文档，缺失时运行 `pnpm docs:fetch`），不读框架的编译产物。
 - 分层（`docs/architecture.md` 第 3 节，`scripts/check-layering.mjs` 检查）：`src/domain` 为纯 TS；组件与 `src/client` 只通过 `@lincyaw/host` 获取步骤状态与服务；任何包都不用 `vitepress` 与 `@slidev/*`（网页与幻灯片两种形态都是查看器）；插件包之间不互相引用。
-- 界面文本有中文与英文（`docs/architecture.md` 5.7 节）：每个包维护自己的 zh-CN 与 en 文本，按 `<html lang>`（由文稿头部的 `lang` 决定，默认 `zh-CN`）选择，没有对应文本时看 `navigator.language`；组件可以用 `@lincyaw/host` 的 `useLocale`、`useMessages(catalog)`。编译时写入产物的文本按文稿的 `lang`。
+- 界面文本有中文与英文（`docs/architecture.md` 5.7 节）：每个包维护自己的 zh-CN 与 en 文本，按 `<html lang>`（由文稿头部的 `lang` 决定，默认 `zh-CN`）选择，没有对应文本时看 `navigator.language`；组件可以用 `@lincyaw/host` 的 `useLocale`、`useMessages(catalog)`。编译时写入产物的文本按文稿的 `lang`。用词与写法按 `docs/glossary.md`，`node scripts/check-i18n.mjs` 报告不一致之处（目前只报告）。
 - 前端样式（与 aegis-ui 相同的纪律）：设计令牌是视觉的唯一来源，在 `packages/design/src/tokens.css`（颜色令牌的名字另在 `tokens.ts` 的 `COLORS`，表在 `docs/architecture.md` 的设计系统一节）。组件与界面的 CSS 不写原始颜色（十六进制、`rgb()` 等）、px 与 ms/s，px 只出现在 `@media` 断点中；颜色混合、控件与图标尺寸、栏高与窗格宽、圆角、阴影、时长都引用令牌，没有合适的先在 `tokens.css` 加一个，暗色只覆盖颜色与阴影。React 组件中图标与标志的大小由 CSS 的尺寸令牌决定，不在组件里写数字。`scripts/check-tokens.mjs` 检查工作台与 studio 外框的样式，其他包的旧样式改动时迁入它的范围。
 - 先修组件再修页面：先读 `docs/design-system.md`，检查 `@lincyaw/design` 的 `pm-ui-*`、工作台通用组件（`packages/workbench/src/components.tsx`）是否缺能力；缺项先在公共层与 Figma 组件变体中补齐，再组合页面。业务 CSS 只负责布局，不通过后代选择器、业务类或内联样式临时改写公共按钮、输入框等控件的外观和状态；触及遗留样式时按本次范围迁入公共层。界面改动在亮色与暗色、桌面与 768 px 以下的四种组合中看过才算完成。
 - 步骤可逆：组件的视觉状态是步骤的纯函数。
