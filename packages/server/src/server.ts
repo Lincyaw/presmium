@@ -12,7 +12,7 @@ import { ControlChannel } from './control.ts'
 import type { ApprovalPolicy } from './control.ts'
 import { FocusStore } from './focus.ts'
 import { DiagnosticStore } from './diagnostics.ts'
-import { bearer, closeServer, createProxy, header, isLoopback, limitBody, listen, nodeServer, urlHost } from './http.ts'
+import { bearer, createProxy, header, isLoopback, limitBody, listen, nodeServer, urlHost } from './http.ts'
 import type { Decision, ProxyTarget } from './http.ts'
 import { McpTokens } from './mcp-access.ts'
 import { serverMcpHost } from './mcp-host.ts'
@@ -234,14 +234,33 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   }
 
   const proxy = createProxy()
-  const server = nodeServer({ decide, decideUpgrade, fetch: handle, proxy })
-  const port = await listen(server, options.port ?? (options.mode === 'dev' ? 0 : 4310), listenAddress)
-  url = `http://${urlHost(listenAddress)}:${port}`
-  log.debug(`listening at ${url}`)
-  if (options.stateFile) {
-    mkdirSync(dirname(options.stateFile), { recursive: true })
-    writeFileSync(options.stateFile, `${JSON.stringify({ url, mcp: `${url}/mcp`, token: mcpTokens.processMcpToken, pid: process.pid }, null, 2)}\n`, { mode: 0o600 })
-    chmodSync(options.stateFile, 0o600)
+  const http = nodeServer({ decide, decideUpgrade, fetch: handle, proxy })
+  let closing: Promise<void> | undefined
+  const close = (): Promise<void> => closing ??= Promise.resolve().then(async () => {
+    mounts.stop()
+    mcpTokens.revokeAgentSessions()
+    control.close()
+    await mcp?.close().catch((error: unknown) => log.error(`MCP failed to close: ${errorMessage(error)}`))
+    try {
+      await mounts.close()
+    } finally {
+      try { proxy.close() }
+      finally { await http.close() }
+    }
+  })
+  let port: number
+  try {
+    port = await listen(http.server, options.port ?? (options.mode === 'dev' ? 0 : 4310), listenAddress)
+    url = `http://${urlHost(listenAddress)}:${port}`
+    log.debug(`listening at ${url}`)
+    if (options.stateFile) {
+      mkdirSync(dirname(options.stateFile), { recursive: true })
+      writeFileSync(options.stateFile, `${JSON.stringify({ url, mcp: `${url}/mcp`, token: mcpTokens.processMcpToken, pid: process.pid }, null, 2)}\n`, { mode: 0o600 })
+      chmodSync(options.stateFile, 0o600)
+    }
+  } catch (error) {
+    await close().catch((cleanup: unknown) => log.error(`the server failed to close after startup failed: ${errorMessage(cleanup)}`))
+    throw error
   }
 
   return {
@@ -256,15 +275,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
       if (!unmountOptions.preserveFocus) focus.forget(dir)
       await mounts.unmount(dir)
     },
-    async close() {
-      mounts.stop()
-      mcpTokens.revokeAgentSessions()
-      control.close()
-      await mcp?.close().catch((error: unknown) => log.error(`MCP failed to close: ${errorMessage(error)}`))
-      await mounts.close()
-      proxy.close()
-      await closeServer(server)
-    },
+    close,
   }
 }
 
