@@ -44,13 +44,37 @@ export function linkToolbarFloating(): FloatingUIOptions {
 // BlockNote's own gap between commented text and its floating card or new-comment form.
 const COMMENT_GAP = 10
 
+type FloatingMiddleware = NonNullable<NonNullable<FloatingUIOptions['useFloatingOptions']>['middleware']>[number]
+
+/**
+ * Positions against one line box of the commented text instead of the box around the whole range, so a card for a
+ * long or wrapped comment opens at the line that was clicked. `line` gives that line in viewport coordinates.
+ */
+function commentLine(line: () => DOMRect | undefined): FloatingMiddleware {
+  return {
+    name: 'commentLine',
+    async fn({ rects, elements, middlewareData }) {
+      const target = middlewareData.commentLine?.applied ? undefined : line()
+      if (!target) return { data: { applied: true } }
+      // The reference rect is relative to the card's offset parent; move it by the line's offset from the whole range.
+      const whole = elements.reference.getBoundingClientRect()
+      const reference = { x: rects.reference.x + target.left - whole.left, y: rects.reference.y + target.top - whole.top, width: target.width, height: target.height }
+      return { data: { applied: true }, reset: { rects: { reference, floating: rects.floating } } }
+    },
+  }
+}
+
 /**
  * Comment cards and the new-comment form keep BlockNote's place under the text (above when there is no room below)
- * and slide back inside the screen with the same margin as the other popovers, instead of touching its edge.
+ * and slide back inside the screen with the same margin as the other popovers, instead of touching its edge. With
+ * `line`, the card follows that line of the text and starts where it starts.
  */
-export function commentFloatingMiddleware(): NonNullable<NonNullable<FloatingUIOptions['useFloatingOptions']>['middleware']> {
+export function commentFloating(line?: () => DOMRect | undefined): NonNullable<FloatingUIOptions['useFloatingOptions']> {
   const padding = edge()
-  return [offset(COMMENT_GAP), flip({ padding }), shift({ padding })]
+  return {
+    ...line ? { placement: 'bottom-start' as const } : {},
+    middleware: [...line ? [commentLine(line)] : [], offset(COMMENT_GAP), flip({ padding, flipAlignment: false }), shift({ padding })],
+  }
 }
 
 /**

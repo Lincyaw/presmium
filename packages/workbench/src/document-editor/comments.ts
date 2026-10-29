@@ -4,7 +4,7 @@ import type { BlockNoteEditor } from '@blocknote/core'
 import type { CommentData, ThreadData } from '@blocknote/core/comments'
 import { AddMarkStep, RemoveMarkStep } from '@tiptap/pm/transform'
 import { Plugin } from '@tiptap/pm/state'
-import { applyDocumentCommentAction, hasRole, validateDocumentCommentAnchor } from '@lincyaw/kernel'
+import { applyDocumentCommentAction, hasRole, LOCAL_AUTHOR, validateDocumentCommentAnchor } from '@lincyaw/kernel'
 import type { DocumentComment, DocumentCommentAction, DocumentThread, Member, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
 import { createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
 import type { RichProjection } from './rich-text.ts'
@@ -13,7 +13,7 @@ import type { DocumentEditorBlock, NativeDocumentEditor } from './schema.tsx'
 import { commentEditorSchema } from './schema.tsx'
 import { CommentDrafts, commentDraftBaseline, isNewCommentDraft, newCommentDraftSignature } from './comment-drafts.ts'
 import type { CommentComposerTarget, CommentDraftTarget, NewCommentDraftTarget } from './comment-drafts.ts'
-import { nativeTextPoint, nativeTextPosition, nativeTextPositionInDocument } from './selection.ts'
+import { nativeProductText, nativeTextPoint, nativeTextPosition, nativeTextPositionInDocument } from './selection.ts'
 
 type NewComment = { body: unknown, metadata?: unknown }
 type Threads = NonNullable<TeachingDocument['comments']>
@@ -121,7 +121,7 @@ export class DocumentThreadStore extends ThreadStore {
     const entities: { id: string, text: string }[] = JSON.parse(target.signature)
     for (const entity of entities) {
       const start = positions({ blockId: entity.id, offset: 0 }), end = positions({ blockId: entity.id, offset: entity.text.length })
-      if (start === undefined || end === undefined || editor.prosemirrorState.doc.textBetween(start, end, '\n', '\uFFFC') !== entity.text) return
+      if (start === undefined || end === undefined || nativeProductText(editor.prosemirrorState.doc, start, end) !== entity.text) return
     }
     return { from, to }
   }
@@ -324,8 +324,15 @@ export class DocumentThreadStore extends ThreadStore {
   }
 }
 
+/** A member's own display name; the local author's built-in name is a placeholder, not one the author chose. */
+function displayName(member: Member | undefined): string | undefined {
+  const name = member?.name.trim()
+  return name && !(member!.id === LOCAL_AUTHOR.id && member!.name === LOCAL_AUTHOR.name) ? name : undefined
+}
+
 export function nativeComments(store: DocumentThreadStore, username: string) {
-  const resolve = (ids: string[]) => ids.map(id => ({ id, username: id === 'local-author' ? username : id === store.member?.id ? store.member.name ?? username : id, avatarUrl: '' }))
+  const resolve = (ids: string[]) => ids.map(id => ({ id, avatarUrl: '',
+    username: id === store.member?.id ? displayName(store.member) ?? username : id === 'local-author' || id === LOCAL_AUTHOR.id ? username : id }))
   const users = createUserStore(async ids => resolve(ids)), identities = new Set<string>(store.member ? [store.member.id] : [])
   for (const thread of store.getThreads().values()) {
     if (thread.resolvedBy) identities.add(thread.resolvedBy)
