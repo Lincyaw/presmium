@@ -69,14 +69,32 @@ interface Logged {
 
 export async function startFakeEngine(options: { port?: number, listenAddress?: string } = {}): Promise<FakeEngine> {
   const requests: Logged[] = []
+  // Voices trained through audio/voices/clone: training on the first status check, ready on the next.
+  const trained = new Map<string, { label: string, checks: number }>()
+  const voices = () => [...FAKE_VOICES, ...[...trained].filter(([, voice]) => voice.checks > 1).map(([id, voice]): VoiceInfo => ({ id, label: voice.label, lang: ['zh-CN'], cloned: true }))]
   const answer = (status: number, body: unknown, type = 'application/json; charset=utf-8') => new Response(body instanceof Uint8Array ? new Blob([new Uint8Array(body)]) : JSON.stringify(body), { status, headers: { 'Content-Type': type } })
 
   const route = async (request: Request, path: string): Promise<Response> => {
-    if (path === '/v1/audio/voices' && request.method === 'GET') return answer(200, { voices: FAKE_VOICES })
+    if (path === '/v1/audio/voices' && request.method === 'GET') return answer(200, { voices: voices() })
+    if (path === '/v1/audio/voices/clone' && request.method === 'POST') {
+      const form = await request.formData().catch(() => undefined)
+      const file = form?.get('file'), voice = form?.get('voice')
+      if (!(file instanceof Blob) || typeof voice !== 'string' || !voice) return answer(400, { error: { message: 'multipart form data with `file` and `voice` expected' } })
+      if (file.size < 1000) return answer(400, { error: { message: 'the sample is too short to train from' } })
+      trained.set(voice, { label: `${voice}（克隆音色）`, checks: 0 })
+      return answer(200, { voice, state: 'training', trainingsLeft: 9 })
+    }
+    if (path === '/v1/audio/voices/clone' && request.method === 'GET') {
+      const voice = new URL(request.url).searchParams.get('voice') ?? ''
+      const found = trained.get(voice)
+      if (!found) return answer(200, { voice, state: 'unknown' })
+      found.checks++
+      return answer(200, { voice, state: found.checks > 1 ? 'ready' : 'training', trainingsLeft: 9 })
+    }
     if ((path === '/v1/audio/speech' || path === '/v1/audio/speech/timestamps') && request.method === 'POST') {
       const body: unknown = await request.json().catch(() => undefined)
       if (!isRecord(body) || typeof body.input !== 'string' || typeof body.voice !== 'string') return answer(400, { error: { message: '{ model, voice, input } expected' } })
-      if (!FAKE_VOICES.some(voice => voice.id === body.voice)) return answer(400, { error: { message: `no voice "${body.voice}"; the fake engine has ${FAKE_VOICES.map(v => v.id).join(', ')}` } })
+      if (!voices().some(voice => voice.id === body.voice)) return answer(400, { error: { message: `no voice "${body.voice}"; the fake engine has ${voices().map(v => v.id).join(', ')}` } })
       const { audio, words, duration } = fakeAudio(body.input, body.voice, typeof body.language === 'string' ? body.language : 'zh-CN')
       if (path === '/v1/audio/speech') return answer(200, audio, 'audio/wav')
       return answer(200, { audio: Buffer.from(audio).toString('base64'), format: 'wav', duration, words })
