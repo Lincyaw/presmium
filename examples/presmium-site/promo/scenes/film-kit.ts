@@ -29,7 +29,7 @@ const BASE = `
   .pf .pf-fill { position: absolute; inset: 0; width: 100%; height: 100%; }
   .pf-abs { position: absolute; }
   .pf-line { position: absolute; left: 0; right: 0; bottom: 6cqh; display: flex; justify-content: center; pointer-events: none; }
-  .pf-line span { font-size: 2.7cqw; font-weight: 600; letter-spacing: 0.04em; padding: 0.75cqw 2.3cqw; border-radius: 99cqw; white-space: nowrap;
+  .pf-line span { font-size: 2.6cqw; font-weight: 600; letter-spacing: 0.005em; padding: 0.75cqw 2.3cqw; border-radius: 99cqw; white-space: nowrap;
     background: color-mix(in srgb, var(--pm-color-film-paper) 94%, transparent); box-shadow: 0 0.4cqw 2.4cqw color-mix(in srgb, var(--pm-color-film-ink) 16%, transparent); }
   .pf-line--night span { background: color-mix(in srgb, var(--pm-color-film-night) 78%, transparent); color: var(--pm-color-film-chalk); box-shadow: none; }
 
@@ -88,7 +88,7 @@ const BASE = `
   .pf-avatar--me { background: var(--pm-color-film-board); }
   .pf-who { font-size: 0.85cqw; color: color-mix(in srgb, var(--pm-color-film-ink) 50%, transparent); margin-bottom: 0.25cqw; }
   .pf-msg--me .pf-who { display: none; }
-  .pf-bubble { max-width: 14.6cqw; padding: 0.7cqw 1cqw; border-radius: 0.3cqw 1.1cqw 1.1cqw 1.1cqw; background: var(--pm-color-sheen); line-height: 1.45;
+  .pf-bubble { max-width: 15cqw; padding: 0.7cqw 1cqw; border-radius: 0.3cqw 1.1cqw 1.1cqw 1.1cqw; background: var(--pm-color-sheen); line-height: 1.45;
     box-shadow: 0 0.1cqw 0.3cqw color-mix(in srgb, var(--pm-color-film-ink) 8%, transparent); }
   .pf-msg--me .pf-bubble { border-radius: 1.1cqw 0.3cqw 1.1cqw 1.1cqw; background: color-mix(in srgb, var(--pm-color-film-lilac) 42%, var(--pm-color-sheen)); }
   .pf-typing { display: flex; gap: 0.35cqw; padding: 1cqw 1.1cqw; }
@@ -125,13 +125,13 @@ export const laptop = (screen: string) => `<div class="pf-laptop"></div><div cla
 export const phone = (screen: string) => `<div class="pf-phone"><div class="pf-phone-screen">${screen}</div></div>`
 
 export interface Message { who: 'lin' | 'wang' | 'me', text: string, className?: string }
-const NAMES = { lin: ['林', '林同学'], wang: ['王', '王同学'], me: ['周', '周老师'] } as const
+const NAMES = { lin: ['S', 'Sam'], wang: ['J', 'Jordan'], me: ['L', 'Dr. Lee'] } as const
 export const message = ({ who, text, className = '' }: Message) =>
   `<div class="pf-msg ${who === 'me' ? 'pf-msg--me' : ''} ${className}"><div class="pf-avatar pf-avatar--${who}">${NAMES[who][0]}</div><div><div class="pf-who">${NAMES[who][1]}</div><div class="pf-bubble">${text}</div></div></div>`
 /** The course group chat on the teacher's phone. */
 export const chat = (clock: string, items: string) => `<div class="pf-chat">
   <div class="pf-status"><span>${clock}</span><span></span></div>
-  <div class="pf-head"><b>‹</b>机器学习导论 课程群<small>(46)</small></div>
+  <div class="pf-head"><b>‹</b>Intro to ML · class chat<small>(46)</small></div>
   <div class="pf-thread"><div class="pf-list">${items}</div></div>
   <div class="pf-input"><span></span><b></b></div>
 </div>`

@@ -24,17 +24,17 @@ presmium new my-site --type site
 
 `presmium.workspace.yaml` 的 `site.landing.template` 指向 `site/home.html`。HTML、CSS、TypeScript 由 Vite 构建，媒体位于 `public/`。页面读取注入的 `presmium-site-data`，让资源与文稿入口随部署前缀变化。中文／英文与亮／暗外观由首页维护；控件与视觉令牌来自 `@lincyaw/design`。
 
-首页延续用户参考的 CGFS Figma 方向：轻玻璃导航、环境光背景、编号能力卡、常见问题和独立影片区域。它可独立设计，不要求采用讲义布局。
+首页延续用户参考的 CGFS Figma 方向：轻玻璃导航、环境光背景、编号能力卡、常见问题和独立影片区域。它可独立设计，不要求采用文稿布局。
 
 影片区播放的是影片的源文稿，不是压缩后的视频：点封面后嵌入 `promo/slides/?view=present&track=script&autoplay`，由浏览器按观众的分辨率实时绘制，讲授播放器自带控制条。章节按钮用 `section=<页面>&step=0` 从某个镜头开始。导出的 `presmium-60s.webm` 作为下载文件。配乐按镜头分段，静态托管需要支持按字节范围请求（GitHub Pages 支持），否则音频无法跳到片段的起点。
 
 ## 宣传片
 
-先读 `promo/storyboard.md`。影片讲一个闭环的故事：学生深夜在课程群里问“学习率调大了，怎么反而越训越差？”；老师在 Presmium 里圈出讲义的一段、写一条批注，让 AI 加上对比动画；第二天上课按一下走一步，课后同一份讲义做成网站、导出视频发到群里；学生回复“懂了”。十个镜头分别为 6／5／8／7／3／10／5.5／6／3.5／6 秒，共 60 秒，每个镜头是一张 full 页面、一个场景与一个步骤。
+先读 `promo/storyboard.md`。影片是英文的，讲一个首尾呼应的故事：学生深夜在课程群里问 “Why does a bigger learning rate make training worse, not better?”；老师在 Presmium 里圈出文稿的一段、写一条批注，让 AI 加上对比动画；第二天上课按一下走一步，课后同一份文稿做成网站、导出视频发到群里；学生回复 “Got it!”。片尾是 “Make complex things clear.”。十个镜头分别为 6／5／8／7／3／10／5.5／6／3.5／6 秒，共 60 秒，每个镜头是一张 full 页面、一个场景与一个步骤。
 
 `promo/scenes/film.ts` 按 `shot` 参数选镜头，镜头在 `film-story.ts`（提问、黑板、发视频、回复）与 `film-product.ts`（工作台、三种用法、课堂、网站、片尾），共用的画面框架、镜头、指针、字幕和插画在 `film-kit.ts`。时间线用 GSAP，可以任意定位。故事场景是统一风格的扁平插画，颜色取自设计令牌的 `film-*`。
 
-`promo/assets/` 中的界面都是真实采集（2 倍分辨率）：本地 Presmium 工作台里拖选段落、批注框逐字输入、AI 助手、版本历史与预览步骤；本例构建出的放映版九个步骤；同一讲义在课程主题下的网站；导出的教学视频逐步帧。AI 的修改是重放：采集时让 AI 助手连接一个不回答的模型端点，截下“已发送”的真实界面；再把加好动画的讲义按 AI 修改的格式（`Presmium-Origin: agent`）写入版本历史，截下工作台显示的结果。采集用的是一份名为“机器学习导论”的独立工作区，内容与 `learn/lecture.json` 相同，只去掉了指向宣传片的制作说明。
+`promo/assets/` 中的界面都是英文界面的真实采集（2 倍分辨率）：本地 Presmium 工作台里拖选段落、批注框逐字输入、AI 助手、版本历史与预览步骤；放映版的九个步骤；课程主题的网站；导出的教学视频逐步帧。被编辑的课是 `learn/lecture.json` 的英文译文，放在名为 “Intro to Machine Learning” 的独立工作区里；`learn/scenes/regression.ts` 按页面语言显示中文或英文标签，两种语言共用同一个场景。AI 的修改是重放：采集时让 AI 助手连接一个不回答的模型端点，截下“已发送”的真实界面；再把加好动画的文稿按 AI 修改的格式（`Presmium-Origin: agent`）写入版本历史，截下工作台显示的结果。
 
 音乐由 `promo/tools/soundtrack.ts` 合成（没有采样与人声），`pnpm score` 生成 `promo/audio/score.wav` 与清单 `score.json`，再用 FFmpeg 编码为文稿引用的 `score.ogg`（Opus 160 kbit/s）。WAV 不入库。
 

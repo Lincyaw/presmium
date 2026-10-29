@@ -2,10 +2,10 @@
 // video the teacher sends after class, and the reply. One chat thread carries the question to its answer.
 import { chat, image, line, message, nightRoom, phone, type Shot } from './film-kit.ts'
 
-const QUESTION = '老师，学习率调大了，怎么反而越训越差？'
+const QUESTION = 'Why does a bigger learning rate make training worse, not better?'
 const OLD = [
-  message({ who: 'wang', text: '作业 2 是周五交吗？' }),
-  message({ who: 'me', text: '对，周五晚上之前。' }),
+  message({ who: 'wang', text: 'Is assignment 2 due Friday?' }),
+  message({ who: 'me', text: 'Yes, by Friday night.' }),
 ].join('')
 
 /** 0–6 s. A phone lights up on a dark desk; a student's question arrives in the course group. */
@@ -14,8 +14,8 @@ export const question: Shot = {
     .q-dark { position: absolute; inset: 0; z-index: 2; background: var(--pm-color-film-night); }
     .q-new .pf-bubble { font-weight: 600; }
   `,
-  stage: `${nightRoom()}${phone(`${chat('23:40', `<div class="pf-time">晚上 11:40</div>${OLD}
-    <div class="pf-msg q-typing"><div class="pf-avatar pf-avatar--lin">林</div><div><div class="pf-who">林同学</div><div class="pf-bubble pf-typing"><i></i><i></i><i></i></div></div></div>
+  stage: `${nightRoom()}${phone(`${chat('11:40', `<div class="pf-time">11:40 PM</div>${OLD}
+    <div class="pf-msg q-typing"><div class="pf-avatar pf-avatar--lin">S</div><div><div class="pf-who">Sam</div><div class="pf-bubble pf-typing"><i></i><i></i><i></i></div></div></div>
     ${message({ who: 'lin', text: QUESTION, className: 'q-new' })}`)}<div class="q-dark"></div>`)}`,
   pointer: 'none',
   play(k, gsap, tl) {
@@ -77,7 +77,7 @@ export const board: Shot = {
       <path class="b-chalk b-yellow b-mark" d="M1370 250 q40 -60 85 -10 q30 45 -40 80 v40 M1415 420 v4"/>
     </svg>
     <div class="b-eraser"><b></b><i></i></div>`,
-  over: line('黑板上画了三遍，还是没讲明白。'),
+  over: line('Drew it three times. Still didn\'t click.'),
   pointer: 'none',
   play(k, gsap, tl) {
     k.camSet({ x: 0.5, y: 0.5, s: 1.02 })
@@ -112,10 +112,10 @@ export const board: Shot = {
 }
 
 /** The thread on the next day: the question at the top, then whatever the shot adds. */
-const nextDay = (rest: string) => chat('11:20', `<div class="pf-time">昨天 晚上 11:40</div>${message({ who: 'lin', text: QUESTION })}<div class="pf-time">今天 上午 11:20</div>${rest}`)
-const VIDEO_CARD = `<div class="pf-msg pf-msg--me v-sent"><div class="pf-avatar pf-avatar--me">周</div><div><div class="v-card">
+const nextDay = (rest: string) => chat('11:20', `<div class="pf-time">Yesterday 11:40 PM</div>${message({ who: 'lin', text: QUESTION })}<div class="pf-time">Today 11:20 AM</div>${rest}`)
+const VIDEO_CARD = `<div class="pf-msg pf-msg--me v-sent"><div class="pf-avatar pf-avatar--me">L</div><div><div class="v-card">
   ${image('lesson-01', 'v-thumb')}<span class="v-play"></span><span class="v-len">0:22</span>
-  <div class="v-name">学习率，怎样改变一条预测线？</div></div></div></div>`
+  <div class="v-name">How does the learning rate move a prediction line?</div></div></div></div>`
 const VIDEO_CSS = `
   .v-card { position: relative; width: 14.6cqw; border-radius: 1cqw; overflow: hidden; background: var(--pm-color-sheen); box-shadow: 0 0.1cqw 0.3cqw color-mix(in srgb, var(--pm-color-film-ink) 10%, transparent); }
   .v-thumb { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
@@ -143,10 +143,10 @@ export const video: Shot = {
     .v-clock { position: absolute; left: 1.6cqw; bottom: 6.4cqw; font-size: 0.95cqw; color: color-mix(in srgb, var(--pm-color-sheen) 75%, transparent); }
   `,
   stage: `<div class="pf-fill pf-day"></div>${phone(`${nextDay(VIDEO_CARD)}
-    <div class="v-player"><div class="v-title">学习率，怎样改变一条预测线？</div>
+    <div class="v-player"><div class="v-title">How does the learning rate move a prediction line?</div>
       <div class="v-screen">${FRAMES.map(n => image(`lesson-${String(n).padStart(2, '0')}`, `v-frame v-f${n}`)).join('')}</div>
       <div class="v-bar"><div class="v-done"></div><div class="v-knob"></div></div><div class="v-clock">0:03 / 0:22</div></div>`)}`,
-  over: `${line('导出视频，发到课程群。', 'v-line1')}${line('没看懂，就拖回去再看。', 'v-line2')}`,
+  over: `${line('Export a video. Send it to the class.', 'v-line1')}${line('Missed a step? Drag it back.', 'v-line2')}`,
   pointer: 'finger',
   play(k, gsap, tl, root) {
     const thumb = k.measure('.v-sent .v-thumb'), bar = k.measure('.v-bar')
@@ -197,8 +197,8 @@ export const video: Shot = {
 export const reply: Shot = {
   css: `${VIDEO_CSS} .r-new .pf-bubble { font-weight: 600; }`,
   stage: `<div class="pf-fill pf-day"></div>${phone(nextDay(`${VIDEO_CARD}
-    <div class="pf-msg r-typing"><div class="pf-avatar pf-avatar--lin">林</div><div><div class="pf-who">林同学</div><div class="pf-bubble pf-typing"><i></i><i></i><i></i></div></div></div>
-    ${message({ who: 'lin', text: '懂了！步子太大，一下迈过头了。', className: 'r-new' })}`))}`,
+    <div class="pf-msg r-typing"><div class="pf-avatar pf-avatar--lin">S</div><div><div class="pf-who">Sam</div><div class="pf-bubble pf-typing"><i></i><i></i><i></i></div></div></div>
+    ${message({ who: 'lin', text: 'Got it! The steps were too big, so it kept overshooting.', className: 'r-new' })}`))}`,
   pointer: 'none',
   play(k, gsap, tl) {
     k.camSet({ x: 0.5, y: 0.5, s: 1.06 })
