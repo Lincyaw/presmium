@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { NarrationNode } from '@lincyaw/kernel'
-import { en, zh } from '@blocknote/core/locales'
+import { blockNoteDictionary } from './blocknote-messages.ts'
 import { BlockNoteView } from '@blocknote/mantine'
 import { useCreateBlockNote } from '@blocknote/react'
 import { PmButton, PmDialog, PmInput } from '../components.tsx'
@@ -72,7 +72,7 @@ function NarrationSurface(props: NarrationEditorProps) {
   const t = NARRATION_MESSAGES[props.locale]
   const editor = useCreateBlockNote({ schema: narrationSchema, initialContent: narrationToNative(props.narrationId, instance.content),
     trailingBlock: false,
-    dictionary: { ...(props.locale === 'zh-CN' ? zh : en), placeholders: { ...(props.locale === 'zh-CN' ? zh : en).placeholders, default: props.advanced === false ? t.emptyCaptions : t.empty } },
+    dictionary: { ...blockNoteDictionary(props.locale), placeholders: { ...blockNoteDictionary(props.locale).placeholders, default: props.advanced === false ? t.emptyCaptions : t.empty } },
     extensions: narrationExtensions, domAttributes: { editor: { 'aria-label': props.advanced === false ? t.captions : t.field } },
   }, [instance, props.advanced])
   const baseline = useMemo(() => JSON.stringify(editor.document), [editor])

@@ -326,7 +326,7 @@ export class Workbench {
   constructor(options: { client?: WorkspaceClient, locale?: Locale, isDark?: boolean } = {}) {
     this.client = options.client ?? workspaceClient()
     this.#state = {
-      locale: options.locale ?? localeOf(globalThis.navigator?.language),
+      locale: options.locale ?? localeOf(globalThis.navigator?.language) ?? 'en',
       isDark: options.isDark ?? false,
       mode: 'editing',
       previewRenderer: 'web',
