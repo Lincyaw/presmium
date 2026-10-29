@@ -1,6 +1,8 @@
 import type { CrossFormLinks, NavItem, SiteShell } from './config.ts'
 import type { Neighbour, WebPage } from './pages.ts'
 import type { HomeDocument } from './workspace-home.ts'
+import type { SitePageLayout } from './themes.ts'
+import type { SiteLandingPage } from './landing.ts'
 
 /** The element of a page whose JSON tells the viewer app what the page is (`AppConfig`). */
 export const APP_CONFIG_ELEMENT = 'presmium-app'
@@ -11,12 +13,19 @@ export interface SiteLocale {
   label: string
   /** The site path of the document in this language, ending with `/`. */
   base: string
+  /** A translated document can choose a different page layout. */
+  layout?: SitePageLayout
 }
 
 /** What a page of the web form has around the document: the site's shell. */
 export interface SiteConfig {
   /** The site's title: the document's, or the workspace's on its home page. */
   title: string
+  /** The workspace brand and its root, shared by every document's shell. */
+  brandTitle?: string
+  root?: string
+  /** A page's presentation within the selected site theme. */
+  layout?: SitePageLayout
   shell: SiteShell
   /** The navigation in this page's language (a translation's own, when the workspace gives one). */
   nav?: NavItem[]
@@ -56,11 +65,15 @@ export interface AppConfig {
   search?: string
   /** The page shown: `index` or a chapter's path (`webPages`). */
   page?: string
+  /** The site's root shows every section of its canonical landing document on one page. */
+  landing?: boolean
   /** A translation's pages, at the paths of the original's (`translationPages`); a document's own are its `webPages`. */
   pages?: WebPage[]
   site: SiteConfig
   /** The workspace's documents, on its home page. */
   documents?: HomeDocument[]
+  /** An independent website page; it does not use the teaching-document runtime. */
+  landingPage?: SiteLandingPage
   /** The plugin packages whose browser parts the page runs: the document's (and the operator's, on a site); the home page's are the operator's. */
   plugins?: string[]
   /** Who may embed the page: the workbench's origins. */

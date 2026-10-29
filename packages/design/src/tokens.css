@@ -171,6 +171,48 @@
   --pm-site-outline-width: 14rem;
   --pm-site-reading-width: 48rem;
   --pm-site-wide-width: 72rem;
+  --pm-site-reading-font: var(--pm-font-serif);
+  --pm-site-hero-width: 54rem;
+  --pm-site-hero-title: clamp(2rem, 5vw, 4rem);
+  --pm-site-hero-surface: color-mix(in srgb, var(--pm-color-accent-soft) 42%, var(--pm-color-bg));
+  --pm-site-landing-image-max: 24rem;
+  --pm-site-landing-image-mobile-max: 13rem;
+  --pm-site-card-min-width: 18rem;
+  --pm-site-showcase-card-height: 14rem;
+  /* Product websites: editorial hero and ambient motion from the reference landing. */
+  --pm-color-product-bg: #f7f8fa;
+  --pm-color-product-accent: #6543a2;
+  --pm-color-product-soft: #eee9f7;
+  /* A fixed photographic palette for authored product films, like colours in a photograph. */
+  --pm-color-film-paper: #f5f5f7;
+  --pm-color-film-ink: #111113;
+  --pm-color-film-violet: #7044d8;
+  --pm-color-film-lilac: #b99af0;
+  --pm-color-film-silver: #dfe2e8;
+  --pm-product-width: 72rem;
+  --pm-product-title: clamp(2.25rem, 4.4vw, 4rem);
+  --pm-product-section-title: clamp(1.75rem, 3vw, 2.5rem);
+  --pm-product-section-space: 5rem;
+  --pm-product-hero-height: 34rem;
+  --pm-product-ambient-height: 60rem;
+  --pm-product-radius: 1.5rem;
+  --pm-product-glass-blur: 1.5rem;
+  --pm-product-card-shadow: 0 1px 2px rgb(31 35 40 / 4%), 0 6px 20px -6px rgb(31 35 40 / 8%);
+  --pm-product-art-height: 23rem;
+  --pm-product-art-height-mobile: 20rem;
+  --pm-product-duration-ambient: 20000ms;
+  --pm-product-campaign-title: clamp(2.75rem, 6.5vw, 6rem);
+  --pm-product-campaign-heading: clamp(2rem, 4vw, 3.5rem);
+  --pm-product-campaign-width: 80rem;
+  --pm-product-campaign-gutter: clamp(1.25rem, 5vw, 6rem);
+  --pm-product-campaign-space: clamp(3.5rem, 8vw, 7rem);
+  --pm-product-campaign-leading: 1.08;
+  --pm-product-ambient-blue-x: 10.452px;
+  --pm-product-ambient-blue-y: 4.704px;
+  --pm-product-ambient-teal-x: -11.359px;
+  --pm-product-ambient-teal-y: 7.789px;
+  --pm-product-ambient-violet-x: 5.389px;
+  --pm-product-ambient-violet-y: -2.694px;
 
   /* A slide's text on its canvas (980 wide, scaled as a whole to the screen); its other sizes are relative to it. */
   --pm-slide-text: 18px;
@@ -187,6 +229,10 @@
 
 :root.dark {
   color-scheme: dark;
+  --pm-color-product-bg: #14151c;
+  --pm-color-product-accent: #c0a8f2;
+  --pm-color-product-soft: #2d263e;
+  --pm-product-card-shadow: 0 1px 2px rgb(0 0 0 / 20%), 0 6px 20px -6px rgb(0 0 0 / 32%);
 
   --pm-color-bg: #161614;
   --pm-color-surface: #1f1e1b;
@@ -256,4 +302,76 @@
   --pm-contrast-fg: #ffffff;
   --pm-contrast-link: #ffe14d;
   --pm-contrast-border: #ffffff;
+}
+
+/* Site presets select semantic token values; the same values reach portal controls through the root.
+   A workbench's embedded document has no site attributes and keeps its own design system. */
+:root:has([data-pm-site-typography='sans']),
+[data-pm-site-typography='sans'] {
+  --pm-site-reading-font: var(--pm-font-sans);
+}
+
+:root:has([data-pm-site-width='wide']),
+[data-pm-site-width='wide'] {
+  --pm-site-reading-width: var(--pm-site-wide-width);
+}
+
+:root:has([data-pm-site-accent='blue']),
+[data-pm-site-accent='blue'] {
+  --pm-color-accent: #224fa3;
+  --pm-color-accent-soft: #e8eefb;
+  --pm-color-on-accent: #ffffff;
+  --pm-color-selected: var(--pm-color-accent-soft);
+}
+
+:root:has([data-pm-site-accent='teal']),
+[data-pm-site-accent='teal'] {
+  --pm-color-accent: #0f5f5c;
+  --pm-color-accent-soft: #e2eeec;
+  --pm-color-on-accent: #ffffff;
+  --pm-color-selected: var(--pm-color-accent-soft);
+}
+
+:root:has([data-pm-site-accent='violet']),
+[data-pm-site-accent='violet'] {
+  --pm-color-accent: #6940a5;
+  --pm-color-accent-soft: #f0eafa;
+  --pm-color-on-accent: #ffffff;
+  --pm-color-selected: var(--pm-color-accent-soft);
+}
+
+:root:has([data-pm-site-accent='amber']),
+[data-pm-site-accent='amber'] {
+  --pm-color-accent: #8b5412;
+  --pm-color-accent-soft: #f9eddc;
+  --pm-color-on-accent: #ffffff;
+  --pm-color-selected: var(--pm-color-accent-soft);
+}
+
+:root.dark:has([data-pm-site-accent='blue']),
+:root.dark [data-pm-site-accent='blue'] {
+  --pm-color-accent: #9dbdf7;
+  --pm-color-accent-soft: #243b61;
+  --pm-color-on-accent: #111e35;
+}
+
+:root.dark:has([data-pm-site-accent='teal']),
+:root.dark [data-pm-site-accent='teal'] {
+  --pm-color-accent: #6fc1b9;
+  --pm-color-accent-soft: #1f4a45;
+  --pm-color-on-accent: #0e1f1d;
+}
+
+:root.dark:has([data-pm-site-accent='violet']),
+:root.dark [data-pm-site-accent='violet'] {
+  --pm-color-accent: #c8a7f3;
+  --pm-color-accent-soft: #42285e;
+  --pm-color-on-accent: #281537;
+}
+
+:root.dark:has([data-pm-site-accent='amber']),
+:root.dark [data-pm-site-accent='amber'] {
+  --pm-color-accent: #e5b465;
+  --pm-color-accent-soft: #4f3c1b;
+  --pm-color-on-accent: #2d210e;
 }

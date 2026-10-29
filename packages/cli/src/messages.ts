@@ -43,8 +43,9 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
 
 命令：
   new     在目录中新建项目（没有给出时逐项询问），由 create-presmium 完成
-          --type <种类>   lecture、workspace 或 plugin（默认询问）
-          --title <标题>  讲义或工作区的标题
+          --type <种类>   lecture、workspace、site 或 plugin（默认询问）
+          --theme <主题>  site 的主题：course、docs 或 showcase（默认 course）
+          --title <标题>  讲义、工作区或网站的标题
           --name <包名>   插件的包名
           --no-git        不运行 git init
   skills  安装内置技能（与 MCP 和可视化编辑器共用）
@@ -126,8 +127,9 @@ The deck is a directory holding ${DOCUMENT_ENTRY}, or that entry file (default: 
 
 Commands:
   new     a new project in the directory (default: asks), from create-presmium
-          --type <kind>   lecture, workspace, or plugin (default: asks)
-          --title <text>  the lecture’s or the workspace’s title
+          --type <kind>   lecture, workspace, site, or plugin (default: asks)
+          --theme <name>  site theme: course, docs, or showcase (default: course)
+          --title <text>  the lecture, workspace, or site title
           --name <name>   the plugin’s package name
           --no-git        do not run git init
   skills  install bundled skills, shared with MCP and the visual editor

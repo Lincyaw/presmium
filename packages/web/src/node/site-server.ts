@@ -1,4 +1,4 @@
-import { createReadStream, existsSync, mkdirSync, statSync, watch } from 'node:fs'
+import { createReadStream, existsSync, mkdirSync, realpathSync, statSync, watch } from 'node:fs'
 import type { ChildProcess } from 'node:child_process'
 import type { FSWatcher } from 'node:fs'
 import { Agent, createServer } from 'node:http'
@@ -8,19 +8,22 @@ import type { Duplex } from 'node:stream'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { stripVTControlCharacters } from 'node:util'
-import { errorMessage, irBlocks, localRequestRefusal, previewFrameAncestors, PreviewPreparing, safeDecodeURIComponent, viewFor } from '@lincyaw/kernel'
+import { errorMessage, irBlocks, isRecord, localRequestRefusal, previewFrameAncestors, PreviewPreparing, safeDecodeURIComponent, viewFor } from '@lincyaw/kernel'
 import type { IRDocument, NodeVitePlugin, RenderContext, RuntimeAssets, SiteSpec } from '@lincyaw/kernel'
-import { spawnInteractiveNode } from '@lincyaw/kernel/node'
+import { isInside, spawnInteractiveNode } from '@lincyaw/kernel/node'
 import { diffDocuments } from '@lincyaw/viewer/domain'
 import { createProxyServer } from 'http-proxy-3'
 import send from 'send'
-import { searchDocuments, translationPages, UPDATE_EVENT, webPages } from '../domain/index.ts'
+import { searchDocuments, sitePageLayout, translationPages, UPDATE_EVENT, webPages } from '../domain/index.ts'
 import type { AppConfig, DevUpdateEvent, WebPage } from '../domain/index.ts'
 import { BUNDLE_ENTRY, documentComponents, findDocumentBundle } from './document-bundle.ts'
 import type { DocumentBundle, DocumentBundleInput } from './document-bundle.ts'
 import { irRevisionOfJson, PublicationCache, publishedDocument } from './publish.ts'
 import { findRuntimeAsset, REVISION_HEADER, runtimeAssets, searchIndex } from './site-files.ts'
-import { documentBase, documentPage, documentSiteConfig, homeDocument, homeDocuments, isSingle, languageLabel, LIST_PAGE, siteLanguage, siteLanguages, siteNeighbours, siteShellBelow } from './site-model.ts'
+import { documentBase, documentPage, documentSiteConfig, homeDocument, homeDocuments, isSingle, landingConfig, landingDocument, languageLabel, LIST_PAGE, siteLanguage, siteLanguages, siteNeighbours, siteShellBelow } from './site-model.ts'
+import { publishedSite } from './site-assets.ts'
+import { loadLanding, publishLanding, siteContent } from './landing.ts'
+import { buildLandingTemplate, writeLandingTemplate } from './landing-template.ts'
 import { pageHtml } from './site-page.ts'
 import { appEntry, appPlugin, coreFingerprint, findViewerApp, sharedSpecifiers } from './viewer-app.ts'
 import type { AppPlugin, ViewerApp } from './viewer-app.ts'
@@ -187,6 +190,11 @@ function pageAt(pages: readonly WebPage[], rest: string): WebPage | undefined {
 export async function startSiteServer(options: SiteServerOptions): Promise<SiteServer> {
   const { ctx } = options
   const base = ctx.base
+  siteShellBelow(options.site(), base)
+  landingDocument(options.site())
+  loadLanding(options.site(), ctx)
+  const templateOutputs = new Set<string>()
+  const templateBuilds = new Map<string, Promise<string>>()
   const states = new Map<string, DocumentState>()
   const plugins = new Map<string, { plugin: Promise<AppPlugin>, at: number }>()
   const worker = createBuildWorker()
@@ -205,6 +213,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   const latest = new Map<string, IRDocument>()
 
   const documents = () => options.site().documents.map(entry => entry.dir)
+  const shellSite = () => publishedSite(options.site(), ctx, join(options.workDir, 'site-assets'), `${base}${PREFIX}site-assets/`)
   const stateOf = (dir: string): DocumentState => {
     let state = states.get(dir)
     if (!state) states.set(dir, state = { caches: new Map(), listeners: new Set(), published: new Map() })
@@ -429,12 +438,14 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
 
   /** What a document's page in `lang` (`''` its own) tells the app. */
   const documentConfig = (dir: string, doc: IRDocument, lang: string, page: WebPage | undefined, bundle: DocumentBundle | null | undefined, workbench: boolean, form: Form): AppConfig => {
-    const site = options.site()
+    const site = shellSite()
     const docBase = documentBase(base, dir)
     const query = `document=${encodeURIComponent(dir)}${lang ? `&lang=${encodeURIComponent(lang)}` : ''}${form === 'slides' ? '&form=slides' : ''}`
     const shown = lang ? translationOf(dir, lang)?.doc ?? doc : doc
     const own = doc.meta.lang ?? ctx.lang ?? 'zh-CN'
     const pages = lang ? translationPages(published(dir, shown, lang).doc, webPages(published(dir, doc).doc)) : undefined
+    const shownSite = documentSiteConfig({ site, base, dir, doc, lang: lang || own, docs: docs(), workspace: !isSingle(site) })
+    if (!workbench && form === 'slides' && options.form !== 'slides') shownSite.links = { ...shownSite.links, webUrl: `${docBase}${lang ? `${lang}/` : ''}` }
     return {
       kind: 'document',
       document: dir,
@@ -447,7 +458,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
       ...form === 'web' ? { search: `${base}${PREFIX}search?${query}` } : {},
       ...page ? { page: page.path } : {},
       ...pages ? { pages } : {},
-      site: { ...documentSiteConfig({ site, base, dir, doc, lang: own, docs: docs(), workspace: !isSingle(site) }) },
+      site: { ...shownSite, ...isSingle(site) ? { brandTitle: shown.meta.title } : {}, layout: sitePageLayout(isRecord(shown.config.renderers.web) ? shown.config.renderers.web : {}, lang || own) },
       plugins: workbench ? options.context(dir, doc).plugins : [...new Set([...options.context(dir, doc).plugins, ...ctx.plugins])],
       origins: ctx.preview?.origins ?? [],
       ...options.openSource && !workbench ? { source: `${base}${PREFIX}source` } : {},
@@ -460,11 +471,30 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   }
 
   /** A page that shows no document: the home page or a missing page, with the operator's plugins. */
-  const plainPage = async (res: ServerResponse, kind: 'home' | 'missing', lang?: string) => {
-    const site = options.site()
+  const plainPage = async (res: ServerResponse, kind: 'home' | 'missing', lang?: string, independent = false) => {
+    const site = shellSite()
     const own = siteLanguage(site, ctx.lang)
     const others = siteLanguages(site, own)
     const locales = [{ lang: own, label: languageLabel(own), base }, ...others.map(other => ({ lang: other.lang, label: languageLabel(other.lang), base: `${base}${other.lang}/` }))]
+    const landing = independent ? loadLanding(site, ctx) : undefined
+    if (landing?.kind === 'template') {
+      const key = `${lang ?? own}:${landing.file}`
+      let pending = templateBuilds.get(key)
+      if (!pending) {
+        pending = (async () => {
+          const output = await buildLandingTemplate(landing.file, join(options.workDir, 'landing', lang ?? own), base, siteContent(site, base, lang ?? own, homeDocuments(site, base, docs(), lang)), ctx.workspaceRoot)
+          const published = join(options.workDir, 'landing', 'published')
+          writeLandingTemplate(output, published)
+          templateOutputs.add(published)
+          return output.html
+        })()
+        templateBuilds.set(key, pending)
+      }
+      let body: string
+      try { body = await pending } finally { if (templateBuilds.get(key) === pending) templateBuilds.delete(key) }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', ...framed ? { 'Content-Security-Policy': framed } : {} })
+      return void res.end(body)
+    }
     const { built } = await appWith(await operatorPlugins())
     await built
     if (!current) return void res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end('the viewer app could not be built')
@@ -474,12 +504,13 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
       document: '',
       base,
       lang: lang ?? own,
-      site: { title, shell: siteShellBelow(site, base), locales, links: {} },
+      site: { title, brandTitle: title, root: `${base}${lang ? `${lang}/` : ''}`, shell: siteShellBelow(site, base), locales, links: {} },
       ...kind === 'home' ? { documents: homeDocuments(site, base, docs(), lang) } : {},
+      ...landing?.kind === 'page' ? { landingPage: publishLanding(landing, site, ctx, join(options.workDir, 'site-assets'), `${base}${PREFIX}site-assets/`, docs()) } : {},
       plugins: ctx.plugins,
       origins: ctx.preview?.origins ?? [],
     }
-    html(res, kind === 'missing' ? 404 : 200, config, title)
+    html(res, kind === 'missing' ? 404 : 200, config, config.landingPage?.title ?? title)
   }
 
   /** A new preview must confirm current project files, even before the debounced watcher rebuilds. */
@@ -497,7 +528,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   }
 
   /** A document's page (or its workbench page), once the app and the document's bundle are there. */
-  const documentPageResponse = async (res: ServerResponse, dir: string, lang: string, rest: string | undefined, form: Form = 'web', block?: string) => {
+  const documentPageResponse = async (res: ServerResponse, dir: string, lang: string, rest: string | undefined, form: Form = 'web', block?: string, landing = false) => {
     const { ready, done } = await prepare(dir)
     if (!ready()) await done
     if (!ready() || !current) return void res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' }).end('the viewer app or the document\'s code could not be built; the server\'s log says why')
@@ -510,7 +541,8 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     const page = rest === undefined ? undefined : pageAt(pages, rest)
     if (rest !== undefined && !page) return plainPage(res, 'missing')
     const state = stateOf(dir)
-    const config = documentConfig(dir, doc, lang, form === 'slides' ? undefined : page, state.bundle, rest === undefined, block === undefined ? form : 'web')
+    let config = documentConfig(dir, doc, lang, form === 'slides' ? undefined : page, state.bundle, rest === undefined, block === undefined ? form : 'web')
+    if (landing) config = landingConfig(config, shown, options.site(), base, lang)
     if (block !== undefined) {
       config.block = block
       config.ir += `&presmium-block=${encodeURIComponent(block)}`
@@ -589,6 +621,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     if (rest === 'search') return searchRoute(res, url)
     if (rest === 'events') return eventsRoute(req, res, url)
     if (rest === 'source') return sourceRoute(req, res, url)
+    if (rest.startsWith('site-assets/')) return serveFile(req, res, join(options.workDir, 'site-assets'), `/${rest.slice('site-assets/'.length)}`, false)
     const [kind, ...parts] = rest.split('/')
     const below = (n: number) => `/${parts.slice(n).join('/')}`
     if (kind === 'v' && parts.length >= 2) return serveFile(req, res, join(options.cacheDir, parts[0]!), below(1), true)
@@ -601,6 +634,11 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     const doc = await documentOf(dir)
     const own = options.context(dir, doc)
     const [first, ...others] = rest.split('/')
+    if (doc.config.renderers.slides !== undefined) {
+      const lang = first && others.length > 0 && translationOf(dir, first) ? first : ''
+      const path = lang ? others.join('/') : rest
+      if (path === 'slides' || path === 'slides/' || path === 'slides/index.html') return documentPageResponse(res, dir, lang, '', 'slides', url.searchParams.get('presmium-block') ?? undefined)
+    }
     if (formOf(url) === 'slides' && (rest === '' || rest === 'index.html')) return documentPageResponse(res, dir, '', undefined, 'slides', url.searchParams.get('presmium-block') ?? undefined)
     if (first && others.length > 0 && translationOf(dir, first)) return documentPageResponse(res, dir, first, others.join('/'), formOf(url), url.searchParams.get('presmium-block') ?? undefined)
     if (rest === '' || rest.endsWith('.html')) {
@@ -624,17 +662,25 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   const siteRoute = async (res: ServerResponse, rest: string) => {
     const site = options.site()
     const target = homeDocument(site)
+    const landing = landingDocument(site)
     const [first, ...others] = rest.split('/')
     const lang = first && others.length <= 1 && siteLanguages(site, siteLanguage(site, ctx.lang)).some(other => other.lang === first) ? first : undefined
     const own = lang ? others.join('/') : rest
     if (own === '' || own === 'index.html') {
+      if (landing) {
+        if (lang && !translationOf(landing.dir, lang)) {
+          res.writeHead(302, { Location: base, 'Cache-Control': 'no-store' })
+          return void res.end()
+        }
+        return documentPageResponse(res, landing.dir, lang ?? '', '', 'web', undefined, true)
+      }
       if (target) {
         res.writeHead(302, { 'Location': `${documentBase(base, target.dir)}${lang ? `${lang}/` : ''}`, 'Cache-Control': 'no-store' })
         return void res.end()
       }
-      return plainPage(res, 'home', lang)
+      return plainPage(res, 'home', lang, site.config.landing !== undefined)
     }
-    if (target && own === `${LIST_PAGE}.html`) return plainPage(res, 'home', lang)
+    if ((target || site.config.landing !== undefined) && own === `${LIST_PAGE}.html`) return plainPage(res, 'home', lang)
     return plainPage(res, 'missing')
   }
 
@@ -645,6 +691,10 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     // The app's routes by the address as it is (their segments name directories as encoded); the documents' by their names.
     const raw = path.slice(base.length)
     if (raw.startsWith(PREFIX)) return appRoute(req, res, url, raw.slice(PREFIX.length))
+    if (raw.startsWith('_landing/')) {
+      const output = [...templateOutputs].find(dir => existsSync(join(dir, safeDecodeURIComponent(raw))))
+      if (output) return serveFile(req, res, output, `/${raw}`, false)
+    }
     const rest = safeDecodeURIComponent(raw)
     const listed = documents()
     const dir = listed.filter(d => d === '' || rest === d || rest.startsWith(`${d}/`)).sort((a, b) => b.length - a.length)[0]
@@ -653,7 +703,11 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
       res.writeHead(301, { Location: `${path}/` })
       return void res.end()
     }
-    if (dir === undefined) return siteRoute(res, rest)
+    if (dir === undefined) {
+      const publicRoot = join(ctx.workspaceRoot, 'public'), file = join(publicRoot, rest)
+      if (rest && existsSync(file) && statSync(file).isFile() && isInside(realpathSync(file), realpathSync(publicRoot))) return serveFile(req, res, publicRoot, `/${raw}`, false)
+      return siteRoute(res, rest)
+    }
     return documentRoute(req, res, url, dir, dir ? rest.slice(dir.length + 1) : rest)
   }
 
@@ -695,19 +749,24 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
       latest.set(dir, doc)
       const state = states.get(dir)
       if (!state) return
+      const previous = new Map(state.published)
       // The plugins' run-time files follow their configuration of the document.
       state.assets = undefined
       for (const key of [...state.published.keys()].filter(key => !key.endsWith(':'))) state.published.delete(key)
-      // Each form's pages get the sections of their form that changed; a translation's read their IR again.
-      for (const form of new Set([...state.listeners].map(listener => listener.form))) {
-        const before = state.published.get(`${form}:`)
-        const after = published(dir, doc, '', form)
-        const update = before && diffDocuments(before.doc, after.doc)
-        if (before && !update) continue
-        const change = (lang: string): DevUpdateEvent => ({ revision: after.revision, ...!lang && before && update ? { base: before.revision, update } : {} })
-        for (const listener of state.listeners) {
-          if (listener.form === form) listener.res.write(`event: ${UPDATE_EVENT}\ndata: ${JSON.stringify(change(listener.lang))}\n\n`)
+      // Compare each language's own snapshot: a translation may change while the original stays identical.
+      const changes = new Map<string, DevUpdateEvent | undefined>()
+      for (const listener of state.listeners) {
+        const { form, lang } = listener
+        const key = `${form}:${lang}`
+        if (!changes.has(key)) {
+          const shown = lang ? translationOf(dir, lang)?.doc : doc
+          const before = previous.get(key)
+          const after = shown && published(dir, shown, lang, form)
+          const update = !lang && before && after ? diffDocuments(before.doc, after.doc) : undefined
+          changes.set(key, after && after.revision !== before?.revision ? { revision: after.revision, ...update && before ? { base: before.revision, update } : {} } : undefined)
         }
+        const change = changes.get(key)
+        if (change) listener.res.write(`event: ${UPDATE_EVENT}\ndata: ${JSON.stringify(change)}\n\n`)
       }
     },
     async app(dir, wait = false) {

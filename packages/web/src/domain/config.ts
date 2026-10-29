@@ -1,5 +1,7 @@
 import { isRecord } from '@lincyaw/kernel'
 import { DEFAULT_LANG } from '@lincyaw/kernel/contracts'
+import { siteTheme } from './themes.ts'
+import type { SiteTheme } from './themes.ts'
 
 export const WEB_ID = 'presmium.web'
 
@@ -20,6 +22,7 @@ export interface NavItem {
 }
 
 export interface SiteShell {
+  theme?: SiteTheme
   nav?: NavItem[]
   footer?: { message?: string, copyright?: string }
   head?: { description?: string, image?: string }
@@ -40,8 +43,8 @@ function navItems(value: unknown): NavItem[] {
   })
 }
 
-export function siteShell(config: Record<string, unknown>): SiteShell {
-  const shell: SiteShell = {}
+export function siteShell(config: Record<string, unknown>, lang?: string): SiteShell {
+  const shell: SiteShell = { theme: siteTheme(config, lang) }
   const nav = navItems(config.nav)
   if (nav.length > 0) shell.nav = nav
   if (isRecord(config.footer)) {
@@ -99,6 +102,6 @@ export function rendererConfig(ctx: { config: Record<string, unknown>, base: str
     port: Number.isInteger(port) && port > 0 ? port : undefined,
     lang: ctx.lang || DEFAULT_LANG,
     ...ctx.server ? { server: ctx.server.url } : {},
-    shell: siteShell(ctx.config),
+    shell: siteShell(ctx.config, ctx.lang),
   }
 }

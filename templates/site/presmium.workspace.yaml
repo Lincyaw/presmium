@@ -1,0 +1,17 @@
+title: {{title}}
+documents: ['*/lecture.json']
+site:
+  base: /
+  lang: {{lang}}
+  theme: {{theme}}
+  params:
+    accent: {{accent}}
+    typography: {{typography}}
+    contentWidth: {{contentWidth}}
+  landing:
+    source: ./site/home.json
+  nav:
+    - text: {{start}}
+      link: /intro/
+  head:
+    description: {{description}}

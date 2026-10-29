@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "id": "site-intro",
+  "metadata": {
+    "title": "{{guideTitle}}",
+    "lang": "{{lang}}",
+    "description": "{{guideIntro}}",
+    "plugins": [],
+    "renderers": {
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "introduction",
+    "style",
+    "publish"
+  ],
+  "sections": {
+    "introduction": {
+      "id": "introduction",
+      "title": "{{guideTitle}}",
+      "level": 1,
+      "children": [
+        "guide-intro",
+        "guide-start"
+      ],
+      "stepOrder": [
+        "introduction-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "style": {
+      "id": "style",
+      "title": "{{guideStyleTitle}}",
+      "level": 2,
+      "children": [
+        "guide-style"
+      ],
+      "stepOrder": [
+        "style-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "publish": {
+      "id": "publish",
+      "title": "{{guidePublishTitle}}",
+      "level": 2,
+      "children": [
+        "guide-publish"
+      ],
+      "stepOrder": [
+        "publish-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "guide-intro": {
+      "id": "guide-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide-intro-text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "{{guideIntro}}"
+            }
+          ]
+        }
+      ]
+    },
+    "guide-start": {
+      "id": "guide-start",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide-start-title",
+          "type": "heading",
+          "level": 2,
+          "children": [
+            {
+              "type": "text",
+              "text": "{{guideStartTitle}}"
+            }
+          ]
+        },
+        {
+          "id": "guide-start-text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "{{guideStartBody}}"
+            }
+          ]
+        }
+      ]
+    },
+    "guide-style": {
+      "id": "guide-style",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide-style-text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "{{guideStyleBody}}"
+            }
+          ]
+        }
+      ]
+    },
+    "guide-publish": {
+      "id": "guide-publish",
+      "type": "text",
+      "content": [
+        {
+          "id": "guide-publish-text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "{{guidePublishBody}}"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "introduction-step": {
+      "id": "introduction-step",
+      "sectionId": "introduction",
+      "visuals": [
+        {
+          "blockId": "guide-intro",
+          "visible": true
+        },
+        {
+          "blockId": "guide-start",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "style-step": {
+      "id": "style-step",
+      "sectionId": "style",
+      "visuals": [
+        {
+          "blockId": "guide-style",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "publish-step": {
+      "id": "publish-step",
+      "sectionId": "publish",
+      "visuals": [
+        {
+          "blockId": "guide-publish",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

@@ -10,6 +10,8 @@ const SCOPE = ['examples/animations/libraries/components', 'examples/animations/
 
 SCOPE.push('packages/cloud/src/client')
 SCOPE.push('deploy/cloud/keycloak/theme/presmium/login/resources/css/layout.css')
+SCOPE.push('examples/presmium-site/site')
+
 const root = new URL('..', import.meta.url).pathname
 const RAW = [
   { pattern: /#[0-9a-f]{3,8}\b/gi, what: 'a colour' },

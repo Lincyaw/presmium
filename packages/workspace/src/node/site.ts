@@ -35,7 +35,7 @@ export async function siteTranslations(compilation: Compilation): Promise<{ tran
 }
 
 export function siteDocument(document: DocumentSummary, doc?: IRDocument, translations?: SiteDocument['translations'], compilation?: Compilation): SiteDocument {
-  return { dir: document.dir, title: document.title, ...document.lang ? { lang: document.lang } : {}, ...document.tags ? { tags: document.tags } : {}, ...doc ? { doc } : {}, ...translations?.length ? { translations } : {}, ...compilation ? { nodeVitePlugins: nodeVitePlugins(compilation) } : {} }
+  return { dir: document.dir, title: document.title, description: document.description, ...document.lang ? { lang: document.lang } : {}, ...document.tags ? { tags: document.tags } : {}, ...doc ? { doc } : {}, ...translations?.length ? { translations } : {}, ...compilation ? { nodeVitePlugins: nodeVitePlugins(compilation) } : {} }
 }
 
 export function refreshDocumentVitePlugins(site: SiteSpec, dir: string, compilation: Compilation): void {

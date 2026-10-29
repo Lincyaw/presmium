@@ -323,6 +323,7 @@ export interface Renderer {
 export interface SiteDocument {
   dir: string
   title: string
+  description?: string
   lang?: string
   tags?: string[]
   doc?: IRDocument

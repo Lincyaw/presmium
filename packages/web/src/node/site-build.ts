@@ -2,18 +2,21 @@ import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { Readable } from 'node:stream'
 import { pathToFileURL } from 'node:url'
-import { ABSOLUTE_URL, errorMessage } from '@lincyaw/kernel'
+import { ABSOLUTE_URL, errorMessage, isRecord } from '@lincyaw/kernel'
 import type { IRDocument, NodeVitePlugin, RenderContext, SiteSpec } from '@lincyaw/kernel'
 import { FONT_LICENSE, fontLicense } from '@lincyaw/kernel/node'
 import { SitemapStream, streamToPromise } from 'sitemap'
-import { offlineEnabled, pageLink, SERVICE_WORKER, searchDocuments, translationPages, webPages } from '../domain/index.ts'
+import { offlineEnabled, pageLink, SERVICE_WORKER, searchDocuments, sitePageLayout, translationPages, webPages } from '../domain/index.ts'
 import type { AppConfig, SiteConfig, SiteShell, WebPage } from '../domain/index.ts'
 import { BUNDLE_ENTRY, buildDocumentBundle, documentComponents } from './document-bundle.ts'
 import type { DocumentBundle } from './document-bundle.ts'
 import { writeServiceWorker } from './offline.ts'
 import { publishedDocument, publishedFile } from './publish.ts'
 import { APP_DIR, CODE_DIR, contentKey, copyApp, copyPublic, copyRuntimeAssets, runtimeAssets, searchIndex } from './site-files.ts'
-import { documentBase, documentPage, documentSiteConfig, homeDocument, homeDocuments, isSingle, languageLabel, LIST_PAGE, siteLanguage, siteLanguages, siteNeighbours, siteShellBelow, sitemapPages, translationOf } from './site-model.ts'
+import { documentBase, documentPage, documentSiteConfig, homeDocument, homeDocuments, isSingle, landingConfig, landingDocument, languageLabel, LIST_PAGE, siteLanguage, siteLanguages, siteNeighbours, siteShellBelow, siteTitle, sitemapPages, translationOf } from './site-model.ts'
+import { publishedSite } from './site-assets.ts'
+import { loadLanding, publishLanding, siteContent } from './landing.ts'
+import { buildLandingTemplate, writeLandingTemplate } from './landing-template.ts'
 import { pageHtml, redirectHtml } from './site-page.ts'
 import type { MetaTag } from './site-page.ts'
 import { appEntry, appPlugin, buildViewerApp, buildViewerServer, viewerAppCache } from './viewer-app.ts'
@@ -146,7 +149,6 @@ async function buildDocumentPages(site: SiteSpec, ctx: RenderContext, built: Bui
   const others = workspace ? siteNeighbours(site, ctx.base, dir, docs).search : []
   const shell = siteShellBelow(site, ctx.base)
   const image = headImage(shell, url => publishedFile(own, out, base, { file: resolve(own.deckDir, doc.meta.entry), line: 1 }, url))
-  const siteConfig: SiteConfig = documentSiteConfig({ site, base: ctx.base, dir, doc, lang, docs, workspace })
   const offline = offlineEnabled(doc.config.presmium)
   const locales = [{ prefix: '', lang, doc: published, pages, translated: false }, ...translations.map(t => ({ prefix: `${t.lang}/`, lang: t.lang, doc: t.doc, pages: t.pages, translated: true }))]
   for (const locale of locales) {
@@ -165,7 +167,7 @@ async function buildDocumentPages(site: SiteSpec, ctx: RenderContext, built: Bui
         search: `${root}search.json`,
         page: page.path,
         ...locale.translated ? { pages: locale.pages } : {},
-        site: siteConfig,
+        site: { ...documentSiteConfig({ site, base: ctx.base, dir, doc, lang: locale.lang, docs, workspace }), brandTitle: workspace ? siteTitle(site, locale.lang) : locale.doc.meta.title, layout: sitePageLayout(isRecord(locale.doc.config.renderers.web) ? locale.doc.config.renderers.web : {}, locale.lang) },
         plugins: [...new Set([...own.plugins, ...ctx.plugins])],
         origins: [],
         ...offline ? { serviceWorker: `${base}${SERVICE_WORKER}` } : {},
@@ -173,6 +175,11 @@ async function buildDocumentPages(site: SiteSpec, ctx: RenderContext, built: Bui
       }
       const title = pageTitle(page, locale.doc)
       await renderPage(built, join(out, locale.prefix, pageFile(page)), config, title, metaTags(shell, image, title), locale.doc, components)
+      if (page.path === 'index' && landingDocument(site)?.dir === dir) {
+        const landing = landingConfig(config, locale.doc, site, ctx.base, locale.translated ? locale.lang : '')
+        const title = siteTitle(site, locale.lang)
+        await renderPage(built, join(ctx.outDir, locale.prefix, 'index.html'), landing, title, metaTags(shell, image, title), locale.doc, components)
+      }
     }
   }
   if (offline) writeServiceWorker(out, base, { dir: built.appDir, url: built.appUrl })
@@ -189,33 +196,56 @@ async function buildHome(site: SiteSpec, ctx: RenderContext, built: Built, docs:
   const others = siteLanguages(site, lang)
   const locales = [{ lang, label: languageLabel(lang), base: ctx.base }, ...others.map(other => ({ lang: other.lang, label: languageLabel(other.lang), base: `${ctx.base}${other.lang}/` }))]
   const target = homeDocument(site)
+  const landing = landingDocument(site)
+  const independent = loadLanding(site, ctx)
+  const page = independent?.kind === 'page' ? publishLanding(independent, site, ctx) : undefined
   const image = headImage(shell, url => publishedFile(ctx, ctx.outDir, ctx.base, { file: join(ctx.workspaceRoot, 'presmium.workspace.yaml'), line: 1 }, url))
   for (const locale of [{ lang, title: site.title, prefix: '' }, ...others.map(other => ({ ...other, prefix: `${other.lang}/` }))]) {
-    const config = pageConfig('home', ctx.base, locale.lang, { title: locale.title, shell, locales, links: {} }, {
+    const config = pageConfig('home', ctx.base, locale.lang, { title: locale.title, brandTitle: locale.title, root: `${ctx.base}${locale.prefix}`, shell, locales, links: {} }, {
       documents: homeDocuments(site, ctx.base, docs, locale.prefix ? locale.lang : undefined),
       plugins: ctx.plugins,
     })
-    const list = join(ctx.outDir, locale.prefix, target ? `${LIST_PAGE}.html` : 'index.html')
+    const list = join(ctx.outDir, locale.prefix, target || site.config.landing !== undefined ? `${LIST_PAGE}.html` : 'index.html')
     await renderPage(built, list, config, locale.title, metaTags(shell, image, locale.title), undefined, [])
+    if (page) {
+      const metadata = { ...shell, head: { ...shell.head, description: page.description ?? shell.head?.description } }
+      await renderPage(built, join(ctx.outDir, locale.prefix, 'index.html'), { ...config, landingPage: page }, page.title, metaTags(metadata, image, page.title), undefined, [])
+    }
+    if (independent?.kind === 'template') {
+      const output = await buildLandingTemplate(independent.file, join(ctx.workDir, 'landing', locale.lang), ctx.base, siteContent(site, ctx.base, locale.lang, config.documents ?? []), ctx.workspaceRoot)
+      writeLandingTemplate(output, ctx.outDir, locale.prefix)
+    }
     if (target) {
       const translated = locale.prefix && translationOf(target, locale.lang) ? `${documentBase(ctx.base, target.dir)}${locale.lang}/` : documentBase(ctx.base, target.dir)
       writeFileSync(join(ctx.outDir, locale.prefix, 'index.html'), redirectHtml(translated, target.title, locale.lang))
+    }
+    if (landing && locale.prefix && !translationOf(landing, locale.lang)) {
+      writeFileSync(join(ctx.outDir, locale.prefix, 'index.html'), redirectHtml(ctx.base, site.title, locale.lang))
     }
   }
 }
 
 async function buildMissing(site: SiteSpec, ctx: RenderContext, built: Built, title: string, lang: string): Promise<void> {
   const shell = siteShellBelow(site, ctx.base)
-  const config = pageConfig('missing', ctx.base, lang, { title, shell, locales: [{ lang, label: languageLabel(lang), base: ctx.base }], links: {} }, { plugins: ctx.plugins })
+  const config = pageConfig('missing', ctx.base, lang, { title, brandTitle: site.title, root: ctx.base, shell, locales: [{ lang, label: languageLabel(lang), base: ctx.base }], links: {} }, { plugins: ctx.plugins })
   await renderPage(built, join(ctx.outDir, '404.html'), config, title, [], undefined, [])
 }
 
 /** Builds the site of `documents` into `ctx.outDir`: a workspace's (with its home page), or one document's at the root. */
 export async function buildSite(site: SiteSpec, ctx: RenderContext, documents: readonly BuiltDocument[]): Promise<void> {
   const workspace = !isSingle(site)
+  // Invalid presentation settings fail before replacing an existing build.
+  siteShellBelow(site, ctx.base)
+  landingDocument(site)
+  loadLanding(site, ctx)
+  for (const entry of documents) for (const doc of [entry.doc, ...entry.translations.map(locale => locale.doc)]) sitePageLayout(isRecord(doc.config.renderers.web) ? doc.config.renderers.web : {}, doc.meta.lang)
   // A build starts empty, as the pages and files of an earlier one may be gone from the document.
   rmSync(ctx.outDir, { recursive: true, force: true })
+  if (workspace) copyPublic(ctx.workspaceRoot, ctx.outDir)
+  site = publishedSite(site, ctx)
   const built = await prepareApp(ctx, documents)
+  // Also allow publishing from a branch without Jekyll filtering the viewer's _app and _code directories.
+  writeFileSync(join(ctx.outDir, '.nojekyll'), '')
   const docs = new Map(documents.map(entry => [entry.dir, entry.doc] as const))
   if (workspace && ctx.config.home !== false) await buildHome(site, ctx, built, docs)
   for (const entry of documents) {

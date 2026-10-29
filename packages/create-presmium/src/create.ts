@@ -7,15 +7,18 @@ import { basename, dirname, join } from 'node:path'
 import type { Messages } from './messages.ts'
 import { projectPath, templateDir, templateFiles } from './templates.ts'
 
-export type ProjectKind = 'lecture' | 'workspace' | 'plugin'
+export type ProjectKind = 'lecture' | 'workspace' | 'plugin' | 'site'
+export type SiteTheme = 'course' | 'docs' | 'showcase'
 
-export const KINDS: readonly ProjectKind[] = ['lecture', 'workspace', 'plugin']
+export const KINDS: readonly ProjectKind[] = ['lecture', 'workspace', 'plugin', 'site']
+export const SITE_THEMES: readonly SiteTheme[] = ['course', 'docs', 'showcase']
 
 export const VERSION = (JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }).version
 
 const SKILLS: Record<ProjectKind, string[]> = {
   lecture: ['presmium-author', 'presmium-animate', 'presmium-present'],
   workspace: ['presmium-author', 'presmium-animate', 'presmium-present'],
+  site: ['presmium-author', 'presmium-animate', 'presmium-present'],
   plugin: ['presmium-develop', 'presmium-author'],
 }
 
@@ -29,6 +32,7 @@ export interface ProjectOptions {
   title: string
   name: string
   git: boolean
+  theme?: SiteTheme
   t: Messages
 }
 
@@ -81,6 +85,23 @@ export function createProject(options: ProjectOptions): void {
     copyTemplate('workspace', dir, (path, text) => path === 'presmium.workspace.yaml' ? text.replace(/^title: .*$/m, () => `title: ${JSON.stringify(title)}`) : text)
     document(join(dir, FIRST_DOCUMENT), t.firstDocument)
     writePackage(dir, { name, private: true, type: 'module', scripts: { serve: 'presmium serve', check: `presmium check ${FIRST_DOCUMENT}`, build: 'presmium build' }, devDependencies: { '@lincyaw/presmium': `^${VERSION}` } })
+  } else if (kind === 'site') {
+    copyTemplate('workspace', dir, unchanged, path => path === '.gitignore' || path === 'pnpm-workspace.yaml')
+    const theme = options.theme ?? 'course'
+    const params = theme === 'showcase'
+      ? { accent: 'violet', typography: 'sans', contentWidth: 'wide' }
+      : { accent: 'teal', typography: 'reading', contentWidth: 'comfortable' }
+    const strings: Record<string, string> = { ...t.site, title, theme, ...params }
+    copyTemplate('site', dir, (path, text) => {
+      if (path.endsWith('.json')) {
+        const value = JSON.parse(text, (_key, value: unknown) => typeof value === 'string' ? value.replace(/\{\{(\w+)\}\}/g, (token, key: string) => strings[key] ?? token) : value) as Record<string, unknown>
+        if (path.endsWith(DOCUMENT_ENTRY)) value.id = randomUUID()
+        return `${JSON.stringify(value, null, 2)}\n`
+      }
+      if (path === 'presmium.workspace.yaml') return text.replace(/\{\{(\w+)\}\}/g, (token, key: string) => key in strings ? JSON.stringify(strings[key]) : token)
+      return text
+    })
+    writePackage(dir, { name, private: true, type: 'module', scripts: { serve: 'presmium serve', check: 'presmium check intro', build: 'presmium build' }, devDependencies: { '@lincyaw/presmium': `^${VERSION}` } })
   } else {
     copyTemplate('plugin', dir, (path, text) => text.replaceAll('{{name}}', () => name).replaceAll('{{id}}', () => pluginIdFor(name)).replaceAll('{{version}}', () => VERSION))
   }

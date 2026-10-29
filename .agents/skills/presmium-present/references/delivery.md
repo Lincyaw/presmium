@@ -19,7 +19,7 @@ pnpm add -D sirv-cli
 pnpm exec sirv dist/web --port 8080
 ```
 
-Open the address the terminal prints; the document's first page appears. Each section has its own HTML file, so a host needs no single-page-app fallback rule. Restart sirv after every rebuild: the file names change and a running sirv does not see the new ones.
+Open the address the terminal prints; the document's first page appears. Chapter pages have their own HTML files; a document with `metadata.renderers.web.layout: landing` combines all sections into one HTML page. A host needs no single-page-app fallback rule. Restart sirv after every rebuild: the file names change and a running sirv does not see the new ones.
 
 **Student version.** Build it into its own folder so nothing from a full build is mixed in, and serve `dist-student/web` instead:
 
@@ -28,6 +28,22 @@ presmium build --to web --audience student --out dist-student
 ```
 
 `--audience student` leaves out content marked for teachers only (markers such as `:audience: teacher` are explained in `presmium-author/references/publishing.md`, "Content for students"). Every file written is then scanned for sentences of the left-out content; a hit is reported as `presmium.audience` and means teacher content leaked into the student version through some output; trace and fix it in the source. Then open the student site and look for teacher narration, answers and media.
+
+## Publish a themed workspace
+
+A website created with `presmium new my-site --type site --theme course` has an independent homepage (`site/home.json`), a teaching document (`intro/lecture.json`), workspace configuration and `.github/workflows/pages.yml`. In that project, use `pnpm install`, `pnpm serve` for local preview, and `pnpm build` to write `dist/web/`.
+
+Read the workspace's `site` before changing appearance or hosting. `site.theme` selects `course`, `docs` or `showcase`; `site.params` selects `accent` (`blue`, `teal`, `violet`, `amber`), `typography` (`reading`, `sans`), `contentWidth` (`comfortable`, `wide`), and optional `logo`/`logoAlt`. Preserve a configured `base`. A workspace applies one theme and brand across documents; a document can set `metadata.renderers.web.layout` to `article`, `landing` or `wide`. When building a document by itself, its `metadata.renderers.web` can also select `theme` and `params`.
+
+`site.landing: { source: './site/home.json' }` selects an independent homepage; the same site page object may be written inline. Its own title, hero and sections introduce the site without using a teaching-document model. Homepage files are outside `documents`; teaching content still has `lecture.json` as its only editable source.
+
+`site.landing: { template: './site/home.html' }` selects a free HTML/CSS/JavaScript homepage instead. Its local assets are built with Vite and its injected `script#presmium-site-data` holds only the public site title, base, language and document collection. Read the JSON and use the published document links. Refresh the page to rebuild a served template; there is no template hot update channel. Build again before deployment.
+
+Existing string configuration `site.landing: welcome` intentionally uses all sections of `welcome/lecture.json` at the website root and keeps its document URL and normal chapter pagination. A document's own `metadata.renderers.web.layout: landing` combines its sections into one webpage at that document's address. `site.home` retains redirect behavior and cannot be set together with any form of `landing`.
+
+Each translation chooses its own document layout; an omitted layout means `article`, while the workspace's theme stays shared. Restart `pnpm serve` after editing website settings in `presmium.workspace.yaml`, or run `pnpm build` again to export them.
+
+For GitHub Pages, the generated workflow reads the deployment base path and publishes `dist/web/`. The repository's Pages source must be GitHub Actions. After deploying, open the real root address and an inner-page direct link, use search, and play the media. Ordinary file links can publish PowerPoint or Word downloads; choosing a theme does not add Office import or an Office previewer.
 
 ## Hand out the web page and the slides together
 
