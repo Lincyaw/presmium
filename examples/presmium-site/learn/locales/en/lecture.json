@@ -1,0 +1,997 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-fourier-lesson",
+  "metadata": {
+    "title": "How can turning circles draw a musical note?",
+    "lang": "en",
+    "description": "Break an outline into a chain of turning circles: the more circles, the closer the curve gets to the shape. Every step is computed from real Fourier coefficients, so you can step through it again on your own.",
+    "tags": [
+      "Fourier series",
+      "Complex numbers",
+      "Discrete Fourier transform"
+    ],
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-code",
+      "@lincyaw/addon-lecture"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "lecture": {}
+    },
+    "presmium": {
+      "presmium.web": {
+        "slidesUrl": "./slides/"
+      }
+    },
+    "translationOf": {
+      "entry": "../../lecture.json",
+      "digest": "13cf81028a5f820215bcb1f45583664ba231b99b9cf7f5f93ff0810deec747eb"
+    }
+  },
+  "sectionOrder": [
+    "question",
+    "circles",
+    "fit",
+    "try"
+  ],
+  "sections": {
+    "question": {
+      "id": "question",
+      "title": "How can turning circles draw a musical note?",
+      "level": 1,
+      "children": [
+        "question-body"
+      ],
+      "stepOrder": [
+        "question-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "circles": {
+      "id": "circles",
+      "title": "One circle, then another",
+      "level": 2,
+      "children": [
+        "circles-body",
+        "circles-scene"
+      ],
+      "stepOrder": [
+        "one-circle-step",
+        "two-circles-step"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "fit": {
+      "id": "fit",
+      "title": "More circles, a closer curve",
+      "level": 2,
+      "children": [
+        "fit-body",
+        "fit-scene"
+      ],
+      "stepOrder": [
+        "fit-1-step",
+        "fit-2-step",
+        "fit-4-step",
+        "fit-8-step",
+        "fit-16-step",
+        "fit-32-step",
+        "fit-64-step"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "try": {
+      "id": "try",
+      "title": "Another shape: a star",
+      "level": 2,
+      "children": [
+        "try-body",
+        "try-scene",
+        "code-body",
+        "series-code",
+        "next-body"
+      ],
+      "stepOrder": [
+        "star-2-step",
+        "star-4-step",
+        "star-16-step",
+        "star-64-step"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "question-body": {
+      "id": "question-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "question-ask",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A circle is the smoothest shape there is, without a single corner. Yet chain a few turning circles end to end, and a pen on the last one can draw a musical note with sharp corners. This lesson answers: how many circles, how large, and how fast?"
+            }
+          ]
+        },
+        {
+          "id": "series-equation",
+          "type": "math",
+          "value": "z(t)=c_0+\\sum_{n\\ne 0} c_n e^{\\,int},\\qquad 0\\le t<2\\pi"
+        },
+        {
+          "id": "question-reading",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Read each point of the plane as a complex number z = x + iy. Each term cₙeⁱⁿᵗ is a circle: its radius is |cₙ|, it turns n times while the pen goes round once, and the sign of n sets the direction."
+            }
+          ]
+        }
+      ]
+    },
+    "circles-body": {
+      "id": "circles-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "circles-explain",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "One circle can only draw a circle. Put a smaller circle on its rim, turning twice the other way, and the pen's curve is bent into three corners."
+            }
+          ]
+        },
+        {
+          "id": "two-circles-equation",
+          "type": "math",
+          "value": "z(t)=e^{\\,it}+0.36\\,e^{-2it}"
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "circles-scene": {
+      "id": "circles-scene",
+      "type": "component",
+      "definitionId": "circle-chain",
+      "parameters": {}
+    },
+    "fit-body": {
+      "id": "fit-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "fit-explain",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "First take 1024 evenly spaced points along the outline of the note, then compute each circle's radius and starting angle with the discrete Fourier transform. The figure keeps only the N largest circles, chained by size. The dashed line is the target outline; on the right is the error: the root mean square distance between each point and the pen, relative to the size of the outline."
+            }
+          ]
+        },
+        {
+          "id": "dft-equation",
+          "type": "math",
+          "value": "c_n=\\frac1M\\sum_{k=0}^{M-1} z_k\\,e^{-2\\pi i nk/M},\\qquad M=1024"
+        },
+        {
+          "id": "fit-corners",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Watch the corners: with few circles the curve overshoots each corner and swings back, leaving small ripples. With more circles the ripples hug the corner more closely, but they never vanish completely."
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "fit-scene": {
+      "id": "fit-scene",
+      "type": "component",
+      "definitionId": "fourier-fit",
+      "parameters": {
+        "shape": "note",
+        "terms": [
+          1,
+          2,
+          4,
+          8,
+          16,
+          32,
+          64
+        ]
+      }
+    },
+    "try-body": {
+      "id": "try-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "try-predict",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Predict first: a star has ten sharp corners and ten straight edges. How many circles does it take to draw one?"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "try-scene": {
+      "id": "try-scene",
+      "type": "component",
+      "definitionId": "fourier-star",
+      "parameters": {
+        "shape": "star",
+        "terms": [
+          2,
+          4,
+          16,
+          64
+        ]
+      }
+    },
+    "code-body": {
+      "id": "code-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-explain",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This is the function the lesson uses to compute the coefficients. Give it other points and it draws another outline."
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "series-code": {
+      "id": "series-code",
+      "type": "code",
+      "language": "typescript",
+      "title": "Computing the Fourier coefficients",
+      "origin": {
+        "anchor": "symbol:learn/scenes/epicycles.ts#series"
+      },
+      "only": [
+        "web"
+      ]
+    },
+    "next-body": {
+      "id": "next-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "next-try",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "A star looks the same after a fifth of a turn, so only circles whose n leaves a remainder of 1 when divided by 5 are non-zero, and two circles already give five corners. Change the shape in epicycles.ts, predict how many circles it needs, then check."
+            }
+          ]
+        },
+        {
+          "id": "back-to-site",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "href": "../../../promo/lecture.json",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Watch the 60-second film made with Presmium."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    }
+  },
+  "steps": {
+    "question-step": {
+      "id": "question-step",
+      "sectionId": "question",
+      "title": "The question",
+      "visuals": [
+        {
+          "blockId": "question-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "question-step-narration"
+      ]
+    },
+    "one-circle-step": {
+      "id": "one-circle-step",
+      "sectionId": "circles",
+      "title": "One circle",
+      "visuals": [
+        {
+          "blockId": "circles-body",
+          "visible": true
+        },
+        {
+          "blockId": "circles-scene",
+          "visible": true,
+          "state": "one"
+        }
+      ],
+      "narrationIds": [
+        "one-circle-step-narration"
+      ]
+    },
+    "two-circles-step": {
+      "id": "two-circles-step",
+      "sectionId": "circles",
+      "title": "Add a second circle",
+      "visuals": [
+        {
+          "blockId": "circles-body",
+          "visible": true
+        },
+        {
+          "blockId": "circles-scene",
+          "visible": true,
+          "state": "two"
+        }
+      ],
+      "narrationIds": [
+        "two-circles-step-narration"
+      ]
+    },
+    "fit-1-step": {
+      "id": "fit-1-step",
+      "sectionId": "fit",
+      "title": "1 circle",
+      "visuals": [
+        {
+          "blockId": "fit-body",
+          "visible": true
+        },
+        {
+          "blockId": "fit-scene",
+          "visible": true,
+          "state": "n1"
+        }
+      ],
+      "narrationIds": [
+        "fit-1-step-narration"
+      ]
+    },
+    "fit-2-step": {
+      "id": "fit-2-step",
+      "sectionId": "fit",
+      "title": "2 circles",
+      "visuals": [
+        {
+          "blockId": "fit-body",
+          "visible": true
+        },
+        {
+          "blockId": "fit-scene",
+          "visible": true,
+          "state": "n2"
+        }
+      ],
+      "narrationIds": [
+        "fit-2-step-narration"
+      ]
+    },
+    "fit-4-step": {
+      "id": "fit-4-step",
+      "sectionId": "fit",
+      "title": "4 circles",
+      "visuals": [
+        {
+          "blockId": "fit-body",
+          "visible": true
+        },
+        {
+          "blockId": "fit-scene",
+          "visible": true,
+          "state": "n4"
+        }
+      ],
+      "narrationIds": [
+        "fit-4-step-narration"
+      ]
+    },
+    "fit-8-step": {
+      "id": "fit-8-step",
+      "sectionId": "fit",
+      "title": "8 circles",
+      "visuals": [
+        {
+          "blockId": "fit-body",
+          "visible": true
+        },
+        {
+          "blockId": "fit-scene",
+          "visible": true,
+          "state": "n8"
+        }
+      ],
+      "narrationIds": [
+        "fit-8-step-narration"
+      ]
+    },
+    "fit-16-step": {
+      "id": "fit-16-step",
+      "sectionId": "fit",
+      "title": "16 circles",
+      "visuals": [
+        {
+          "blockId": "fit-body",
+          "visible": true
+        },
+        {
+          "blockId": "fit-scene",
+          "visible": true,
+          "state": "n16"
+        }
+      ],
+      "narrationIds": [
+        "fit-16-step-narration"
+      ]
+    },
+    "fit-32-step": {
+      "id": "fit-32-step",
+      "sectionId": "fit",
+      "title": "32 circles",
+      "visuals": [
+        {
+          "blockId": "fit-body",
+          "visible": true
+        },
+        {
+          "blockId": "fit-scene",
+          "visible": true,
+          "state": "n32"
+        }
+      ],
+      "narrationIds": [
+        "fit-32-step-narration"
+      ]
+    },
+    "fit-64-step": {
+      "id": "fit-64-step",
+      "sectionId": "fit",
+      "title": "64 circles",
+      "visuals": [
+        {
+          "blockId": "fit-body",
+          "visible": true
+        },
+        {
+          "blockId": "fit-scene",
+          "visible": true,
+          "state": "n64"
+        }
+      ],
+      "narrationIds": [
+        "fit-64-step-narration"
+      ]
+    },
+    "star-2-step": {
+      "id": "star-2-step",
+      "sectionId": "try",
+      "title": "Star, 2 circles",
+      "visuals": [
+        {
+          "blockId": "try-body",
+          "visible": true
+        },
+        {
+          "blockId": "try-scene",
+          "visible": true,
+          "state": "n2"
+        },
+        {
+          "blockId": "code-body",
+          "visible": true
+        },
+        {
+          "blockId": "series-code",
+          "visible": true
+        },
+        {
+          "blockId": "next-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "star-2-step-narration"
+      ]
+    },
+    "star-4-step": {
+      "id": "star-4-step",
+      "sectionId": "try",
+      "title": "Star, 4 circles",
+      "visuals": [
+        {
+          "blockId": "try-body",
+          "visible": true
+        },
+        {
+          "blockId": "try-scene",
+          "visible": true,
+          "state": "n4"
+        },
+        {
+          "blockId": "code-body",
+          "visible": true
+        },
+        {
+          "blockId": "series-code",
+          "visible": true
+        },
+        {
+          "blockId": "next-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "star-4-step-narration"
+      ]
+    },
+    "star-16-step": {
+      "id": "star-16-step",
+      "sectionId": "try",
+      "title": "Star, 16 circles",
+      "visuals": [
+        {
+          "blockId": "try-body",
+          "visible": true
+        },
+        {
+          "blockId": "try-scene",
+          "visible": true,
+          "state": "n16"
+        },
+        {
+          "blockId": "code-body",
+          "visible": true
+        },
+        {
+          "blockId": "series-code",
+          "visible": true
+        },
+        {
+          "blockId": "next-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "star-16-step-narration"
+      ]
+    },
+    "star-64-step": {
+      "id": "star-64-step",
+      "sectionId": "try",
+      "title": "Star, 64 circles",
+      "visuals": [
+        {
+          "blockId": "try-body",
+          "visible": true
+        },
+        {
+          "blockId": "try-scene",
+          "visible": true,
+          "state": "n64"
+        },
+        {
+          "blockId": "code-body",
+          "visible": true
+        },
+        {
+          "blockId": "series-code",
+          "visible": true
+        },
+        {
+          "blockId": "next-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "star-64-step-narration"
+      ]
+    }
+  },
+  "narrations": {
+    "question-step-narration": {
+      "id": "question-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "A circle has no corners. Yet chain turning circles end to end, and they draw a shape with sharp corners. Let's see how many circles it takes."
+        }
+      ]
+    },
+    "one-circle-step-narration": {
+      "id": "one-circle-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Start with one circle. It turns once, and the pen draws a circle, with no corners at all."
+        }
+      ]
+    },
+    "two-circles-step-narration": {
+      "id": "two-circles-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Put a smaller circle on its rim, turning twice the other way. The pen's path bends, and three rounded corners appear."
+        }
+      ]
+    },
+    "fit-1-step-narration": {
+      "id": "fit-1-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now take a musical note. With only the largest circle, all we get is a circle, about sixty-four percent off."
+        }
+      ]
+    },
+    "fit-2-step-narration": {
+      "id": "fit-2-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Two circles squeeze the circle into a tilted ellipse, already leaning like the note."
+        }
+      ]
+    },
+    "fit-4-step-narration": {
+      "id": "fit-4-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Four circles begin to separate the head from the flag."
+        }
+      ]
+    },
+    "fit-8-step-narration": {
+      "id": "fit-8-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Eight circles, and it is clearly a note. The error is down to about eight percent."
+        }
+      ]
+    },
+    "fit-16-step-narration": {
+      "id": "fit-16-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sixteen circles straighten the stem. Look at the corners: the curve overshoots and swings back."
+        }
+      ]
+    },
+    "fit-32-step-narration": {
+      "id": "fit-32-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Thirty-two circles, about one percent off, and the ripples at the corners get shorter."
+        }
+      ]
+    },
+    "fit-64-step-narration": {
+      "id": "fit-64-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sixty-four circles, and the curve almost lies on the outline, less than half a percent off. The more circles, the closer the shape."
+        }
+      ]
+    },
+    "star-2-step-narration": {
+      "id": "star-2-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now a star. Guess how many circles it needs. With just two, it already has five corners."
+        }
+      ]
+    },
+    "star-4-step-narration": {
+      "id": "star-4-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Four circles sharpen the five points and straighten the edges a little."
+        }
+      ]
+    },
+    "star-16-step-narration": {
+      "id": "star-16-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sixteen circles, and the edges are straight; only the corners are still a little round."
+        }
+      ]
+    },
+    "star-64-step-narration": {
+      "id": "star-64-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sixty-four circles, and you can hardly tell it from the star. Pick another shape and try it yourself."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "circle-chain": {
+      "id": "circle-chain",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/circles.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "one"
+        },
+        {
+          "id": "two"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          4000,
+          4500
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "One circle draws a circle; a smaller circle turning twice the other way adds three rounded corners."
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "fourier-fit": {
+      "id": "fourier-fit",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/fourier.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shape": {
+            "type": "string",
+            "enum": [
+              "note",
+              "star"
+            ]
+          },
+          "terms": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 511
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "n1"
+        },
+        {
+          "id": "n2"
+        },
+        {
+          "id": "n4"
+        },
+        {
+          "id": "n8"
+        },
+        {
+          "id": "n16"
+        },
+        {
+          "id": "n32"
+        },
+        {
+          "id": "n64"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          5000,
+          5000,
+          5000,
+          5000,
+          5000,
+          5000,
+          5000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "The Fourier series of a musical note: from 1 to 64 circles, the error falls from about 64% to about 0.4%, with ripples left at the corners."
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "fourier-star": {
+      "id": "fourier-star",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/fourier.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shape": {
+            "type": "string",
+            "enum": [
+              "note",
+              "star"
+            ]
+          },
+          "terms": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 511
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "n2"
+        },
+        {
+          "id": "n4"
+        },
+        {
+          "id": "n16"
+        },
+        {
+          "id": "n64"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          5000,
+          5000,
+          5000,
+          5000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "The Fourier series of a star: two circles already make five corners, and 64 circles nearly match it."
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      },
+      "minimumHoldMs": 1800,
+      "trailingPauseMs": 0
+    },
+    "sectionOverrides": {
+      "fit": {
+        "minimumHoldMs": 6500
+      },
+      "try": {
+        "minimumHoldMs": 6500
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

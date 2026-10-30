@@ -11,7 +11,7 @@ site:
   landing:
     template: ./site/home.html
   nav:
-    - text: 线性回归小课
+    - text: 傅里叶级数小课
       link: /learn/
     - text: 影片的文稿
       link: /promo/

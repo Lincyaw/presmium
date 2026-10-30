@@ -44,11 +44,10 @@ p { text-wrap: pretty; }
 .content-lines { display: grid; gap: var(--pm-space-2); margin: var(--pm-space-5) var(--pm-space-6); }
 .content-lines i { display: block; width: 88%; height: var(--pm-space-1); border-radius: var(--pm-radius-pill); background: var(--pm-color-line); }
 .content-lines i:last-child { width: 62%; }
-.learning-plot { display: block; width: calc(100% - var(--pm-space-6) * 2); margin: var(--pm-space-5) var(--pm-space-6); border-radius: var(--pm-radius-control); background: var(--pm-color-product-soft); }
-.plot-axis { stroke: var(--pm-color-line-strong); stroke-width: var(--pm-size-hairline); fill: none; opacity: .35; }
-.plot-prediction { stroke: var(--pm-color-product-accent); stroke-width: var(--pm-size-stroke); fill: none; }
-.plot-datum { fill: var(--pm-color-product-accent); stroke: var(--pm-color-surface); stroke-width: var(--pm-size-hairline); }
-.learning-plot text { fill: var(--pm-color-product-accent); font-family: var(--pm-font-mono); font-size: var(--pm-text-sm); }
+.fourier-plot { display: block; width: calc(100% - var(--pm-space-6) * 2); margin: var(--pm-space-5) var(--pm-space-6); border-radius: var(--pm-radius-control); background: var(--pm-color-product-soft); }
+.plot-target { stroke: var(--pm-color-muted); stroke-width: var(--pm-size-hairline); fill: none; }
+.plot-trace { stroke: var(--pm-color-product-accent); stroke-width: var(--pm-size-stroke); stroke-linejoin: round; fill: none; }
+.fourier-plot text { fill: var(--pm-color-product-accent); font-family: var(--pm-font-mono); font-size: var(--pm-text-sm); }
 .document-bottom { display: flex; align-items: center; justify-content: space-between; padding: var(--pm-space-3) var(--pm-space-5); border-top: var(--pm-size-hairline) solid var(--pm-color-line); font-size: var(--pm-text-xs); color: var(--pm-color-muted); }
 .document-bottom span:first-child { display: inline-flex; gap: var(--pm-space-1); align-items: center; color: var(--pm-color-ok); }
 .output-row { display: grid; grid-template-columns: repeat(3,1fr); gap: var(--pm-space-3); margin-top: var(--pm-space-5); }

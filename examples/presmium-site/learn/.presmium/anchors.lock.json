@@ -1,10 +1,10 @@
 {
   "version": 1,
   "anchors": {
-    "symbol:promo/scenes/model.ts#trajectory": {
-      "fingerprint": "2e483535afe92115",
-      "file": "promo/scenes/model.ts",
-      "startLine": 20
+    "symbol:learn/scenes/epicycles.ts#series": {
+      "fingerprint": "0857fed205846dbe",
+      "file": "learn/scenes/epicycles.ts",
+      "startLine": 104
     }
   }
 }

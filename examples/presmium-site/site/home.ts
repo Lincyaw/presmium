@@ -1,6 +1,8 @@
 import '@lincyaw/design/design.css'
 import { iconMarkup } from '@lincyaw/design'
 import './style.css'
+import { pathData, shapeSeries, trace } from '../learn/scenes/epicycles.ts'
+import type { Point } from '../learn/scenes/epicycles.ts'
 
 type Locale = 'zh-CN' | 'en'
 const messages = {
@@ -10,7 +12,7 @@ const messages = {
     eyebrow: '给每个需要把事情讲清楚的人', hero: '写一份文稿，\n讲台、网页、视频都能用。',
     lead: '课程、论文报告、技术分享、产品发布……公式、代码、数据和动画写在同一份文稿里，想改哪儿，圈出来跟 AI 说一句。\n现场一步一步讲，会后做成网站，也能导出视频。',
     watch: '看 60 秒影片', source: '打开示例文稿', sourceLabel: '一份文稿，三种用法',
-    file: '看懂一次参数更新', sourceNote: '线性回归 · 公式 · 代码 · 曲线', formats: ['网站', '放映', '视频'],
+    file: '转动的圆，画出一个音符', sourceNote: '傅里叶级数 · 公式 · 代码 · 动画', formats: ['网站', '放映', '视频'],
     statement: '把时间花在讲清楚上。', substatement: '排版、动画和发布交给它',
     features: [
       ['01', '想改哪儿，圈出来说一句', '在文稿里选中一段，写一条批注，交给 AI 去改。每次修改都记在版本历史里，不满意随时撤消。', 'comment'],
@@ -23,7 +25,7 @@ const messages = {
     collectionTag: '这个网站也是用 Presmium 做的', collectionTitle: '做一个自己的网站',
     collectionLead: '首页想怎么设计都行，文稿一份一份往里加。自带课程、文档、展示三种主题，做好的网站可以直接放到 GitHub Pages 这类静态托管上。',
     cards: [
-      ['示例文稿', '同一个例子，自己走一遍', '自己按步骤看预测线和损失怎么变，也可以直接切到放映。', '打开示例', 'document'],
+      ['示例文稿', '同一个例子，自己走一遍', '自己按步骤看圆一个个加上去，曲线怎样越来越像音符，也可以直接切到放映。', '打开示例', 'document'],
       ['独立首页', '首页想怎么做就怎么做', '这个页面是单独用 HTML、CSS 和 TypeScript 写的，和文稿一起由 Presmium 构建。', '下载这个网站的源码', 'website'],
       ['静态发布', '放到自己的网址上', '整个网站连同文稿、视频、字幕和素材一起构建，放到自己的地址上就能打开。', '开始建站', 'export'],
     ],
@@ -43,7 +45,7 @@ const messages = {
     eyebrow: 'For anyone with something to explain', hero: 'Write it once.\nPresent it anywhere.',
     lead: 'Lectures, paper talks, tech talks, product launches. Equations, code, data and animation live in one document; to change something, mark it and tell the AI.\nPresent it step by step, then share it as a website or a video.',
     watch: 'Watch the 60-second film', source: 'Open the example', sourceLabel: 'One document, three ways to use it',
-    file: 'Inside a parameter update', sourceNote: 'Linear regression · Math · Code · Plots', formats: ['Website', 'Slides', 'Video'],
+    file: 'Turning circles draw a note', sourceNote: 'Fourier series · Math · Code · Animation', formats: ['Website', 'Slides', 'Video'],
     statement: 'Spend your time on making it clear.', substatement: 'Layout, animation and publishing, taken care of',
     features: [
       ['01', 'Mark it, say what you want', 'Select a passage, leave a comment, and let the AI make the change. Every edit lands in the version history, so you can undo it.', 'comment'],
@@ -56,7 +58,7 @@ const messages = {
     collectionTag: 'This website was made with Presmium too', collectionTitle: 'Build your own website',
     collectionLead: 'Design the homepage however you like and keep adding documents. Choose a course, docs or showcase theme, and put the result on GitHub Pages or any static host.',
     cards: [
-      ['Example document', 'Walk through the same example', 'Step through how the prediction and the loss change, or switch straight to the slides.', 'Open the example', 'document'],
+      ['Example document', 'Walk through the same example', 'Step through as circles are added and the curve closes in on a musical note, or switch straight to the slides.', 'Open the example', 'document'],
       ['Custom homepage', 'Make the homepage your own', 'This page is plain HTML, CSS and TypeScript, built together with the documents by Presmium.', 'Download this site\'s source', 'website'],
       ['Static publishing', 'Put it at your own address', 'The whole site is built with its documents, videos, captions and assets, ready to serve from your own address.', 'Create a site', 'export'],
     ],
@@ -103,11 +105,15 @@ function playFilm(section: string, step = 0) {
   live.focus()
 }
 const icon = (name: Parameters<typeof iconMarkup>[0]) => iconMarkup(name)
+// The example lesson in miniature: the note's outline and the curves its 2, 8 and 64 largest circles draw, computed
+// from the lesson's own Fourier series.
 const chart = () => {
-  const xs = [-Math.SQRT2, -1 / Math.SQRT2, 0, 1 / Math.SQRT2, Math.SQRT2]
-  const x = (value: number) => 160 + value * 84
-  const y = (value: number) => 70 - value * 12
-  return `<svg class="learning-plot" viewBox="0 0 320 140" aria-hidden="true"><path class="plot-axis" d="M24 70H296M160 12V128"/><path class="plot-prediction" d="M${x(-Math.SQRT2)} ${y(-Math.SQRT2 * 2.92)}L${x(Math.SQRT2)} ${y(Math.SQRT2 * 2.92)}"/>${xs.map(value => `<circle class="plot-datum" cx="${x(value)}" cy="${y(value*3)}" r="4"/>`).join('')}<text x="232" y="120">ŷ = 2.92x</text></svg>`
+  const s = shapeSeries('note')
+  const notes = [2, 8, 64].map((N, i) => {
+    const place = ([x, y]: Point): Point => [60 + i * 100 + x * 100, 62 + y * 100]
+    return `<path class="plot-target" stroke-dasharray="3 3" d="${pathData(s.points, place, true)}"/><path class="plot-trace" d="${pathData(trace(s, N, 400), place)}"/><text x="${60 + i * 100}" y="130" text-anchor="middle">N = ${N}</text>`
+  })
+  return `<svg class="fourier-plot" viewBox="0 0 320 140" aria-hidden="true">${notes.join('')}</svg>`
 }
 const button = (href: string, label: string, primary = false) => `<a class="pm-ui-button${primary ? ' pm-ui-button--primary' : ''}" href="${href}">${label}${icon('chevron-right')}</a>`
 
@@ -129,7 +135,7 @@ function render() {
         <div class="hero-art" role="img" aria-label="${t.sourceLabel}"><div class="document-card"><div class="window-bar"><span>lecture.json</span>${icon('document')}</div><span class="tiny-label">PRESMIUM / 001</span><h2>${t.file}</h2><p>${t.sourceNote}</p><div class="content-lines"><i></i><i></i></div>${chart()}<div class="document-bottom"><span>${icon('check')} ${t.ready}</span><span>01 / 03</span></div></div><div class="output-row">${t.formats.map((f,i)=>`<div class="output-card">${icon((['website','slides','video'] as const)[i]!)}<span>${f}</span><b>0${i+1}</b></div>`).join('')}</div><div class="art-caption"><span class="status-dot"></span>${t.sourceLabel}</div></div>
       </section>
       <section class="features wrap" id="features"><div class="section-heading"><p class="eyebrow">PRESMIUM / ${t.substatement}</p><h2>${t.statement}</h2></div><div class="feature-grid">${t.features.map(([n,title,body,i])=>`<article><div class="feature-top"><span>${n}</span>${icon(i as Parameters<typeof iconMarkup>[0])}</div><h3>${title}</h3><p>${body}</p></article>`).join('')}</div></section>
-      <section class="film-section wrap" id="film"><div class="section-heading film-heading"><div><p class="eyebrow">${t.filmTag}</p><h2>${t.filmTitle}</h2></div><p>${t.filmLead}</p></div><div class="player-frame" id="film-frame"><button class="film-poster" id="film-play" aria-label="${t.filmPlay}"><img src="${base}presmium-60s-poster.png" alt=""><span class="film-play">${icon('play')}</span></button></div><div class="film-meta"><span>${t.filmHint}</span><div><a class="pm-ui-link" href="${base}presmium-60s.webm" download>${t.filmDownload}${icon('download')}</a><a class="pm-ui-link" href="${docUrl}">${t.filmSource}${icon('chevron-right')}</a><a class="pm-ui-link" href="${promoUrl}">${t.filmScript}${icon('chevron-right')}</a></div></div><div class="chapter-list">${t.chapters.map((c,i)=>`<button class="pm-ui-button pm-ui-button--ghost" data-section="${CHAPTERS[i]![0]}" data-step="${CHAPTERS[i]![1]}"><span>${CHAPTERS[i]![2]}</span>${c}</button>`).join('')}</div></section>
+      <section class="film-section wrap" id="film"><div class="section-heading film-heading"><div><p class="eyebrow">${t.filmTag}</p><h2>${t.filmTitle}</h2></div><p>${t.filmLead}</p></div><div class="player-frame" id="film-frame"><button class="film-poster" id="film-play" aria-label="${t.filmPlay}"><img src="${base}presmium-60s-poster.jpg" alt=""><span class="film-play">${icon('play')}</span></button></div><div class="film-meta"><span>${t.filmHint}</span><div><a class="pm-ui-link" href="${base}presmium-60s.webm" download>${t.filmDownload}${icon('download')}</a><a class="pm-ui-link" href="${docUrl}">${t.filmSource}${icon('chevron-right')}</a><a class="pm-ui-link" href="${promoUrl}">${t.filmScript}${icon('chevron-right')}</a></div></div><div class="chapter-list">${t.chapters.map((c,i)=>`<button class="pm-ui-button pm-ui-button--ghost" data-section="${CHAPTERS[i]![0]}" data-step="${CHAPTERS[i]![1]}"><span>${CHAPTERS[i]![2]}</span>${c}</button>`).join('')}</div></section>
       <section class="collection wrap" id="source"><div class="section-heading"><p class="eyebrow">${t.collectionTag}</p><h2>${t.collectionTitle}</h2><p class="section-lead">${t.collectionLead}</p></div><div class="collection-grid">${t.cards.map(([tag,title,body,label,i],index)=>`<article><div class="card-label">${icon(i as Parameters<typeof iconMarkup>[0])}<span>${tag}</span></div><h3>${title}</h3><p>${body}</p><a class="pm-ui-link" href="${[docUrl,sourceUrl,'#start'][index]}">${label}${icon('chevron-right')}</a></article>`).join('')}</div></section>
       <section class="faq wrap"><h2>${t.faqTitle}</h2><div>${t.faqs.map(([q,a],i)=>`<details${i===0?' open':''}><summary>${q}${icon('plus')}</summary><p>${a}</p></details>`).join('')}</div></section>
       <section class="start wrap" id="start"><p class="eyebrow">PRESMIUM</p><h2>${t.cta}</h2><p>${t.ctaLead}</p><div class="command"><code>${command}</code><button class="pm-ui-icon-button pm-ui-icon-button--ghost" id="copy" aria-label="${t.copy}">${icon('copy')}</button></div><span id="copy-status" role="status"></span><p class="install">${t.install} <code>pnpm add -g @lincyaw/presmium</code></p></section>
