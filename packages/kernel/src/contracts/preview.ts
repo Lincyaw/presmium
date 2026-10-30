@@ -201,6 +201,8 @@ export type PreviewReport =
   | { type: 'selection', selection: (PreviewAnchor & { text: string, rect?: PreviewRect, obstacles?: PreviewRect[] }) | null }
   /** Where the picked block or the selection is after the page scrolled or resized; null when it is out of sight. */
   | { type: 'rect', rect: PreviewRect | null, obstacles?: PreviewRect[] }
+  /** Where the blocks the AI changed are in the preview's viewport while they blink, and again as the page scrolls (at most 16). */
+  | { type: 'flashed', rects: PreviewRect[] }
   | { type: 'editing', target: PreviewAnchor, active: boolean }
   /** The text of a block edited in place, before and after (its `textContent`); sent only when it changed. */
   | { type: 'edited', target: PreviewAnchor, before: string, after: string, request?: number, revision?: string, binding?: string }
@@ -369,6 +371,7 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
         ? { type: 'selection', selection: { ...toAnchor(selected), text: selected.text, ...selected.rect ? { rect: toRect(selected.rect as PreviewRect) } : {}, ...selected.obstacles !== undefined ? { obstacles: (selected.obstacles as PreviewRect[]).map(toRect) } : {} } }
         : undefined
     }
+    case 'flashed': return Array.isArray(m.rects) && m.rects.length <= 16 && m.rects.every(rect) ? { type: 'flashed', rects: (m.rects as PreviewRect[]).map(toRect) } : undefined
     case 'rect': return (m.rect === null || rect(m.rect)) && optional(m.obstacles, obstacles) ? { type: 'rect', rect: m.rect === null ? null : toRect(m.rect), ...m.obstacles !== undefined ? { obstacles: (m.obstacles as PreviewRect[]).map(toRect) } : {} } : undefined
     case 'editing': return anchor(m.target) && typeof m.active === 'boolean' ? { type: 'editing', target: toAnchor(m.target), active: m.active } : undefined
     case 'edited': return anchor(m.target) && text(m.before) && text(m.after) && m.before.length <= MAX_EDITED && m.after.length <= MAX_EDITED && editedRequest(m) ? { type: 'edited', target: toAnchor(m.target), before: m.before, after: m.after, ...m.request === undefined ? {} : { request: m.request as number, revision: m.revision as string, binding: m.binding as string } } : undefined

@@ -53,6 +53,8 @@ export async function buildClient() {
     legalComments: 'none',
     metafile: true,
     external: [...SHELL_MODULES],
+    // the mascot's sprite sheets travel inside the single client file
+    loader: { '.png': 'dataurl' },
     define: { '__PRESMIUM_CSS__': JSON.stringify(css.outputFiles[0].text), 'process.env.NODE_ENV': '"production"' },
     logLevel: 'warning',
   })

@@ -23,6 +23,12 @@ export const ONBOARDING = { slot: 'settings.onboarding', steps: ['welcome-notice
  */
 export const ASSISTANT_SLOTS = ['conversation.composer', { name: 'conversation.chat.node', key: 'turn-error' }] as const
 
+/** Where the kitten sits beside the conversation: an added entry (its own id) among the session header's actions. */
+export const MASCOT_SLOT = { name: 'conversation.session.header.actions', id: 'presmium-mascot' } as const
+
+/** Where the author turns the kitten on or off: an added row (its own id) in Settings → General. */
+export const MASCOT_SETTING = { name: 'settings.general.item', id: 'presmium-mascot' } as const
+
 /**
  * Settings → Models, and when the model catalog is read again: on the Host's events that change what can be routed,
  * whenever the window regains focus, and on a slow poll while no model is usable (Settings is a modal over this page,

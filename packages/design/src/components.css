@@ -44,6 +44,21 @@
   vertical-align: middle;
 }
 
+/* The mascot: one frame of its sprite sheet, chosen by the player through --pm-mascot-x and --pm-mascot-y. */
+.pm-ui-mascot {
+  display: inline-block;
+  flex: none;
+  width: var(--pm-size-mascot);
+  aspect-ratio: 4 / 3;
+  background-image: var(--pm-mascot-sheet);
+  background-repeat: no-repeat;
+  background-size: calc(var(--pm-mascot-columns) * 100%) calc(var(--pm-mascot-rows) * 100%);
+  background-position: var(--pm-mascot-x) var(--pm-mascot-y);
+  pointer-events: none;
+}
+.pm-ui-mascot--sm { width: var(--pm-size-mascot-sm); }
+:root.dark .pm-ui-mascot { background-image: var(--pm-mascot-sheet-dark); }
+
 .pm-ui-appbar {
   box-sizing: border-box;
   min-height: var(--pm-appbar-height);

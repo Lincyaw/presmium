@@ -3,6 +3,7 @@ import type { Locale } from '@lincyaw/workbench'
 import { workspaceSubscriptions } from './workspace-events.ts'
 import { registerAuthorSettings } from './author-settings.ts'
 import { registerBrand } from './brand.tsx'
+import { registerMascot } from './mascot.tsx'
 import { CLIENT_ID, isBootEntryLoaded, ROOT_CHILDREN, UI_LAYOUT, UI_SIDEBAR } from './contract.ts'
 import { syncDocumentContext } from './document-context.ts'
 import { FALLBACK_PANEL, registerFallbackLayout } from './fallback.tsx'
@@ -144,6 +145,7 @@ export function apply(ctx: DshClientContext): void {
     }, 'presmium: the root layout and ctx.layout')
   }
   registerBrand(ctx, workbench)
+  registerMascot(ctx, workbench)
   registerAuthorSettings(ctx)
   ctx.inject(['layout'], inner => inner.effect(() => connectLaunchTarget(workbench,
     () => nativeLayout ? () => {} : restoreRootReturnPoint(workbench, reload.point),

@@ -245,24 +245,6 @@
   margin-left: auto;
 }
 
-.pmw-busy {
-  display: inline-block;
-  width: 0.75rem;
-  height: 0.75rem;
-  border: var(--pm-size-stroke) solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: pmw-spin var(--pm-duration-spin) linear infinite;
-}
-
-@keyframes pmw-spin {
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pmw-busy { animation: none; }
-}
-
 .pmw-problems {
   display: flex;
   flex: 1;
@@ -838,6 +820,17 @@
   accent-color: var(--pm-color-accent);
 }
 
+/* The kitten above the bar, as far along it as the job has come (`--pmw-job-done`, 0 to 1), never past its ends. */
+.pmw-job__runner {
+  display: block;
+  margin-left: calc((100% - var(--pm-size-mascot-sm)) * var(--pmw-job-done));
+  line-height: 0;
+}
+
+.pmw-job__runner:empty {
+  display: none;
+}
+
 .pmw-job__error {
   margin: 0;
   color: var(--pm-color-danger);
@@ -938,7 +931,7 @@
 .pmw-source-document__recovery { display: grid; gap: var(--pm-space-2); min-width: 0; }
 .pmw-source-document__recovery-actions { display: flex; flex-wrap: wrap; gap: var(--pm-space-2); }
 .pmw-source-document__diagnostics { margin-block-end: var(--pm-space-3); }
-.pmw-source-document__sheet { max-width: var(--pm-sheet-width); min-height: 100%; margin-inline: auto; padding-block: var(--pm-space-4); background: var(--pm-color-surface); box-shadow: var(--pm-shadow-page); }
+.pmw-source-document__sheet { position: relative; max-width: var(--pm-sheet-width); min-height: 100%; margin-inline: auto; padding-block: var(--pm-space-4); background: var(--pm-color-surface); box-shadow: var(--pm-shadow-page); }
 /* Opening: the page's own margins, so that the placeholder lines sit where the text will. */
 .pmw-source-document__sheet--loading { box-sizing: border-box; padding: var(--pm-space-10) var(--pm-space-12); }
 .pmw-voice__filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--pm-space-3); }
@@ -1015,3 +1008,22 @@
 .pmw-approvals .pmw-muted { margin: 0; }
 .pmw-approvals__detail { max-height: 30vh; margin: 0; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
 .pmw-approvals__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--pm-space-2); }
+
+/* The kitten walking over the preview to the blocks the AI changed: its ground line meets the block's lower left. */
+.pmw-change-trail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+  transform: translate(calc(var(--pmw-trail-x) - 45%), calc(var(--pmw-trail-y) - 89%));
+  transition: transform var(--pm-duration-walk) linear, opacity var(--pm-duration-slow);
+}
+
+.pmw-change-trail[data-phase='done'] {
+  opacity: 0.9;
+}
+
+.pmw-change-trail__facing[data-facing='left'] {
+  transform: scaleX(-1);
+}

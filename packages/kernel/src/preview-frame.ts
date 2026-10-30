@@ -85,6 +85,8 @@ const PIN_LABELS = 'data-preview-pin-labels'
 const FLASH = 'data-preview-flash'
 // Three blinks of 0.8 s, the length of the animation below.
 const FLASH_MS = 2400
+/** How long the changed blocks' boxes keep being reported after they blink. */
+const TRAIL_MS = 15000
 const PIN_CLASS = 'pm-preview-pin'
 const CONTROLS = 'a, button, input, select, textarea, label, summary, [role="dialog"], [role="menu"], [role="menuitem"], [role="listbox"], [role="option"]'
 const HEADINGS = 'h1, h2, h3, h4, h5, h6'
@@ -317,10 +319,22 @@ function createHighlight(page: PreviewPage, state: FrameState, locate: Locator) 
  * Makes the blocks the workbench names blink (a steady tint when the reader asks for less motion), after bringing the first
  * into view; retries while the page brings it there, as the highlight does.
  */
-function createFlash(page: PreviewPage, state: FrameState, locate: Locator) {
+function createFlash(page: PreviewPage, state: FrameState, locate: Locator, post: (message: PreviewReport) => void) {
   let ending: ReturnType<typeof setTimeout> | undefined
   let retrying: ReturnType<typeof setTimeout> | undefined
   let frame = 0
+  // The changed blocks' boxes go to the workbench while they blink and for a while after, as the page scrolls, so its
+  // kitten can walk to them.
+  let trail: HTMLElement[] = [], trailUntil = 0, trailFrame = 0
+  const reportTrail = () => {
+    trailFrame = 0
+    if (!isLive(state) || Date.now() > trailUntil) return
+    const rects = trail.filter(element => element.isConnected).slice(0, 16).map(element => toRect(element.getBoundingClientRect()))
+    post({ type: 'flashed', rects })
+  }
+  const trailMoved = () => { if (!trailFrame && Date.now() <= trailUntil) trailFrame = requestAnimationFrame(reportTrail) }
+  window.addEventListener('scroll', trailMoved, { capture: true, passive: true })
+  window.addEventListener('resize', trailMoved, { passive: true })
   const clear = () => {
     clearTimeout(ending)
     cancelAnimationFrame(frame)
@@ -337,6 +351,8 @@ function createFlash(page: PreviewPage, state: FrameState, locate: Locator) {
     frame = requestAnimationFrame(() => {
       for (const element of elements) element.setAttribute(FLASH, '')
       ending = setTimeout(clear, FLASH_MS)
+      trail = elements; trailUntil = Date.now() + TRAIL_MS
+      reportTrail()
     })
     return true
   }
@@ -356,6 +372,9 @@ function createFlash(page: PreviewPage, state: FrameState, locate: Locator) {
     cancel() {
       clearTimeout(retrying)
       clear()
+      trailUntil = 0
+      cancelAnimationFrame(trailFrame)
+      trailFrame = 0
     },
   }
 }
@@ -1014,7 +1033,7 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   const locate = createLocator(page)
   const highlight = createHighlight(page, state, locate)
   const pins = createPins(locate)
-  const flash = createFlash(page, state, locate)
+  const flash = createFlash(page, state, locate, post)
   const rects = createRectReport(page, state, locate, post)
   const picking = createPicking(page, state, locate, rects, post)
   const editing = createEditing(page, state, locate, picking, post)
