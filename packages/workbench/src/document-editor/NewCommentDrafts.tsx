@@ -8,6 +8,7 @@ import type { BlockNoteEditor } from '@blocknote/core'
 import { TextSelection } from '@tiptap/pm/state'
 import { COMMENT_EDITOR_CONTEXT, DraftChoices } from './DocumentComments.tsx'
 import { isNewCommentDraft, sameCommentDraftTarget } from './comment-drafts.ts'
+import { enterSubmits } from './comments.ts'
 import type { CommentDraftCandidate, CommentDraftRecord, CommentDraftReference, NewCommentDraftTarget } from './comment-drafts.ts'
 import { createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
 import type { DocumentEditorBlock, NativeDocumentEditor } from './schema.tsx'
@@ -153,7 +154,7 @@ function NewCommentEditor(props: ComponentProps['Comments']['Editor']) {
       if (binding.origin) { void drafts.discard(binding.origin); binding.origin = undefined }
     }
     const original = props.editor.getExtension(CommentEditorSubmitExtension)
-    let guarded: typeof original
+    let guarded: typeof original, stopEnter = () => {}
     if (original) {
       props.editor.replaceExtension(original, CommentEditorSubmitExtension({ onSubmit: async () => {
         if (!binding.active || binding.composing || props.editor.prosemirrorView.composing) return
@@ -172,6 +173,8 @@ function NewCommentEditor(props: ComponentProps['Comments']['Editor']) {
         } catch { setFailure(true) }
       } }))
       guarded = props.editor.getExtension(CommentEditorSubmitExtension); composer.ready()
+      const extension = guarded
+      stopEnter = enterSubmits(props.editor, () => extension?.submit())
     }
     const stop = props.editor.onChange(() => {
       if (!binding.active || suppress.current || submitting.current || !context.store.version) return
@@ -180,7 +183,7 @@ function NewCommentEditor(props: ComponentProps['Comments']['Editor']) {
       binding.record = drafts.write(binding.record?.target ?? binding.target, binding.record?.version ?? context.store.version,
         nativeRichTextToProduct(props.editor.document as DocumentEditorBlock[], rich), binding.composing, binding.record) ?? binding.record
     })
-    return () => { stop(); if (original && guarded && !props.editor.prosemirrorView.isDestroyed && props.editor.getExtension(CommentEditorSubmitExtension) === guarded) props.editor.replaceExtension(guarded, original) }
+    return () => { stop(); stopEnter(); if (original && guarded && !props.editor.prosemirrorView.isDestroyed && props.editor.getExtension(CommentEditorSubmitExtension) === guarded) props.editor.replaceExtension(guarded, original) }
   }, [binding, drafts, props.editor])
   const composerId = useRef(crypto.randomUUID())
   useLayoutEffect(() => {
