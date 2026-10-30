@@ -102,6 +102,9 @@
   --pm-size-icon: 1rem;
   --pm-size-icon-lg: 1.25rem;
   --pm-size-logo: 1.375rem;
+  /* The mascot's frame is 4:3; these are its widths: small beside a line of text, and full size. */
+  --pm-size-mascot-sm: 3.5rem;
+  --pm-size-mascot: 7rem;
   --pm-size-badge: 1.25rem;
   --pm-size-avatar: 1.75rem;
   --pm-size-divider: 1.25rem;
@@ -140,6 +143,8 @@
   --pm-duration-pulse: 1200ms;
   /* A step's reveal on a page or slide. */
   --pm-duration-slow: 300ms;
+  /* The kitten walking from one place to the next. */
+  --pm-duration-walk: 700ms;
   --pm-ease: cubic-bezier(0.2, 0, 0, 1);
   /* Motion animates transform and opacity only, never a box's size or position (top, left, width, height,
      margin, padding), and every transition takes its time from a duration above, so that the reduced-motion
@@ -283,6 +288,7 @@
     --pm-duration-fast: 0ms;
     --pm-duration: 0ms;
     --pm-duration-slow: 0ms;
+    --pm-duration-walk: 0ms;
   }
 }
 

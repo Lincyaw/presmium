@@ -1,5 +1,5 @@
 import { irBlocks } from '@lincyaw/kernel'
-import type { IRDocument, PreviewAnchor, ReviewChange, SourcePos } from '@lincyaw/kernel'
+import type { IRDocument, PreviewAnchor, ReviewChange, SourcePos, TeachingDocument } from '@lincyaw/kernel'
 
 const CHANGED_PLACES = 100
 
@@ -64,4 +64,39 @@ export function changedPlaces(doc: IRDocument, changes: readonly ReviewChange[])
     }
   }
   return [...places.values()].slice(0, CHANGED_PLACES)
+}
+
+/**
+ * The places that differ between two versions of a document: each block whose content changed or that is new (with
+ * its page), each page whose title changed or that is new, and the block of each step whose narration or settings
+ * changed, at most CHANGED_PLACES.
+ */
+export function changedBlocks(before: TeachingDocument, after: TeachingDocument): PreviewAnchor[] {
+  const places: PreviewAnchor[] = []
+  const visit = (section: string, ids: readonly string[]) => {
+    for (const id of ids) {
+      const block = after.blocks[id]
+      if (!block) continue
+      if (JSON.stringify(block) !== JSON.stringify(before.blocks[id])) places.push({ section, block: id })
+      if ('children' in block && Array.isArray(block.children)) visit(section, block.children as string[])
+    }
+  }
+  for (const id of after.sectionOrder) {
+    const section = after.sections[id]
+    if (!section) continue
+    if (before.sections[id]?.title !== section.title) places.push({ section: id })
+    visit(id, section.children)
+  }
+  // A changed step, or a changed narration of it, shows at the block the step plays (else at its page).
+  const seen = new Set(places.map(place => `${place.section}\0${place.block ?? ''}`))
+  for (const step of Object.values(after.steps)) {
+    const narrated = step.narrationIds.some(id => JSON.stringify(after.narrations[id]) !== JSON.stringify(before.narrations[id]))
+    if (!narrated && JSON.stringify(step) === JSON.stringify(before.steps[step.id])) continue
+    // the component the step plays, where its narration shows, else any block it shows
+    const block = step.visuals.find(visual => after.blocks[visual.blockId]?.type === 'component')?.blockId ?? step.visuals.find(visual => visual.visible)?.blockId ?? step.visuals[0]?.blockId
+    const place = { section: step.sectionId, ...block ? { block } : {} }
+    const key = `${place.section}\0${place.block ?? ''}`
+    if (!seen.has(key)) { seen.add(key); places.push(place) }
+  }
+  return places.slice(0, CHANGED_PLACES)
 }

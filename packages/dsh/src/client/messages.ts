@@ -18,6 +18,10 @@ const zh = {
   history: '版本历史',
   settings: '设置',
   help: '帮助',
+  mascot: '小猫',
+  mascotHint: 'AI 助手工作时，对话和文稿旁的小猫会演示它在做什么：思考、阅读、修改或等你确认。',
+  mascotShow: '显示',
+  mascotHide: '隐藏',
   close: '关闭',
   toggleSide: '显示或隐藏对话记录',
   keys: {
@@ -90,6 +94,10 @@ const en: ClientMessages = {
   history: 'Version History',
   settings: 'Settings',
   help: 'Help',
+  mascot: 'Kitten',
+  mascotHint: 'While the AI Assistant works, a kitten beside the chat and the document acts out what it is doing: thinking, reading, changing the document, or waiting for you.',
+  mascotShow: 'Show',
+  mascotHide: 'Hide',
   close: 'Close',
   toggleSide: 'Show or Hide Chat History',
   keys: {

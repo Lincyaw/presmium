@@ -63,7 +63,8 @@ const rules = [
   },
   { name: 'DeepSeek Harness only in dsh and studio', dirs: ['.'], forbid: (spec, _file, pkgDir) => DSH.test(spec) && !DSH_PACKAGES.includes(pkgName(pkgDir)) },
   { name: 'the workbench\'s panels know no host', pkgs: ['workbench'], dirs: ['.'], skip: ['test'], forbid: spec => vue(spec) || DSH.test(spec) || /^@lincyaw\/host(\/|$)/.test(spec) },
-  { name: 'the design system only uses framework-free icons', pkgs: ['design'], dirs: ['.'], skip: ['test'], forbid: spec => !spec.startsWith('.') && spec !== 'lucide' },
+  // tools/ holds the mascot's sheet builder, which runs in Node and is not published
+  { name: 'the design system only uses framework-free icons', pkgs: ['design'], dirs: ['.'], skip: ['test', 'tools'], forbid: spec => !spec.startsWith('.') && spec !== 'lucide' },
   { name: 'outputs do not use the workbench', pkgs: pkg => isProductPackage(pkg) || pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/workbench(\/|$)/.test(spec) },
 ]
 

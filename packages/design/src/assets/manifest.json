@@ -16,6 +16,17 @@
       "variants": "One inline SVG for light and dark; accent fill and background-colored P follow the host tokens."
     },
     {
+      "id": "presmium-mascot",
+      "kind": "mascot",
+      "owner": "Presmium repository contributors",
+      "license": "Apache-2.0",
+      "licenseEvidence": "../../LICENSE",
+      "source": "../../tools/mascot/poses.ts",
+      "entry": "./mascot.ts",
+      "usage": "The Presmium kitten (a black Bombay silhouette) showing what the assistant and long tasks are doing; key poses drawn by tools/mascot/draw.ts, played by mountMascot().",
+      "variants": "mascot/cat.png (black cat, light backgrounds) and mascot/cat-light.png (white cat, dark backgrounds); both 3 px per drawing unit, frames 4:3, sized by --pm-size-mascot and --pm-size-mascot-sm."
+    },
+    {
       "id": "semantic-icons",
       "kind": "icon-library",
       "sourcePackage": "lucide",

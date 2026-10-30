@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
 import type { CompileJob, OutputTarget } from '@lincyaw/kernel'
 import type { IconName } from '@lincyaw/design'
-import { PmBadge, PmButton, PmDialog, PmEmpty, PmIcon, PmIconButton, PmNotice } from '../components.tsx'
+import { PmBadge, PmButton, PmDialog, PmEmpty, PmIcon, PmIconButton, PmMascot, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { failureReason, timeAgo } from '../messages.ts'
 
@@ -104,6 +105,10 @@ function JobItem({ job, label, current, onPlay }: { job: CompileJob, label: stri
         </p>
         {job.state === 'running' && progress && (
           <div className="pmw-job__progress">
+            {/* the kitten runs along the bar to how far the job has come; with no total yet it walks at the start */}
+            <span className="pmw-job__runner" style={{ '--pmw-job-done': progress.total ? Math.min(1, (progress.done ?? 0) / progress.total) : 0 } as CSSProperties}>
+              <PmMascot size="small" action={progress.total ? 'run' : 'walk'} />
+            </span>
             <progress max={progress.total ?? 1} value={progress.total ? progress.done ?? 0 : undefined} aria-label={label} />
             <span>{t.jobProgress(t.jobPhases[progress.phase] ?? t.outputLabels[progress.phase] ?? progress.phase, progress.done, progress.total)}</span>
           </div>

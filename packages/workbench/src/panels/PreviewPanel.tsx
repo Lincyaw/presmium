@@ -6,6 +6,7 @@ import { PmButton, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { slideAspect } from '../workbench.ts'
 import { failureReason } from '../messages.ts'
+import { PreviewChangeTrail } from './ChangeTrail.tsx'
 
 /**
  * The open document as its readers see it (the web form or the slides), with the tools for what the author points at.
@@ -28,6 +29,7 @@ export function PreviewPanel({ active = true, onPresentationAction, presentation
   const reload = useWorkbenchState(state => state.previewReload)
   const aspect = useWorkbenchState(state => (state.previewRenderer === 'slides' ? slideAspect(state.ir) : undefined))
   const container = useRef<HTMLDivElement>(null)
+  const stage = useRef<HTMLDivElement>(null)
   const pool = useRef<ReturnType<typeof createPreviewPool>>()
   const [loads, setLoads] = useState(0)
   const [{ ready, mismatch, identityFailure, handshakeFailure, canvasGate }, setStatus] = useState<PreviewFrameStatus>({ ready: false })
@@ -68,8 +70,9 @@ export function PreviewPanel({ active = true, onPresentationAction, presentation
       {failure && <PmNotice tone="danger"><span>{t.previewFailed(failureReason(t, failure))}</span><PmButton small onClick={() => workbench.retryPreview()}>{t.retry}</PmButton></PmNotice>}
       {(!ready || !snapshotMatches) && !failure && !handshakeFailure && !(renderer === 'slides' && preview && !preview.slides) && <p className="pmw-muted pmw-preview__loading">{presentation && ready && !snapshotMatches && !preparing ? t.presentationOutdated : address ? t.previewLoading : t.previewPreparing}</p>}
       {renderer === 'slides' && preview && !preview.slides && <p className="pmw-muted pmw-preview__loading">{t.noSlides}</p>}
-      <div className="pmw-preview__stage">
+      <div ref={stage} className="pmw-preview__stage">
         <div ref={container} className="pmw-preview__frames" data-renderer={renderer} data-pending-snapshot={!snapshotMatches || undefined} data-presentation-gated={presentation && canvasGate || undefined} style={aspect === undefined ? undefined : { '--pmw-slide-aspect': aspect } as CSSProperties} />
+        {!presentation && <PreviewChangeTrail stage={stage} frames={container} />}
       </div>
     </section>
   )
