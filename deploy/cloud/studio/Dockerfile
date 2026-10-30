@@ -21,7 +21,8 @@ RUN pnpm install --frozen-lockfile \
  && pnpm --filter @lincyaw/skills run skills
 # JupyterHub's single-user server around Studio (deploy/cloud/hub): Hub authenticates every request.
 RUN python3 -m venv /opt/hub \
- && /opt/hub/bin/pip install --no-cache-dir jupyterhub==5.5.4 jupyter-server-proxy==4.6.0 \
+ && /opt/hub/bin/pip install --no-cache-dir jupyterhub==5.5.4 jupyter-server-proxy==4.6.0 ipykernel==6.30.1 \
+ && /opt/hub/bin/python -m ipykernel install --prefix=/opt/hub --name python3 \
  && mkdir -p /work && chown 1000:1000 /work
 COPY deploy/cloud/studio/jupyter_server_config.py /etc/jupyter/jupyter_server_config.py
 COPY deploy/cloud/studio/presmium_hub.py deploy/cloud/studio/control.mjs deploy/cloud/studio/share-build.mjs ./deploy/cloud/studio/

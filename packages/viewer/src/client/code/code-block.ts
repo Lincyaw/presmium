@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
-import { currentLocale, OPERATIONS, useService, useStartReport, useStaticRender } from '@lincyaw/host'
+import { currentLocale, OPERATIONS, PmIconButton, useService, useStartReport, useStaticRender } from '@lincyaw/host'
 import type { Operations } from '@lincyaw/host'
 import { blockState, EXECUTOR, errorMessage, failedRun } from '@lincyaw/kernel'
 import type { CodeNode, IRBlock, RecordedRun, RunRequest, RunResult } from '@lincyaw/kernel'
@@ -39,7 +39,13 @@ export function CodeBlockView(props: { block: IRBlock, step: number, expanded?: 
   const listings = !variants.length ? [h(CodeView, { lang: node.lang, value: node.value, highlight: props.expanded ? undefined : node.highlight?.[state] })] : shown === undefined ? variants.map(v => h('div', { key: v.label, className: 'pm-code-block__variant' }, [h('p', { className: 'pm-code-block__label' }, v.label), h(CodeView, { lang: node.lang, value: v.value })])) : [h(VariantView, { lang: node.lang, value: variants[shown]!.value })]
   const echo = node.echo !== false; const runnable = !owned && echo && node.run && node.run.when !== 'compile'; const editable = runnable && !variants.length && !node.highlight?.length && !printed; const t = viewerMessages().code; const available = mounted && executor
   if (editable && (editing || edited !== undefined)) listings.splice(0, listings.length, editing ? h(CodeEditor, { lang: node.lang, value: edited ?? node.value, onChange: setEdited, onRun: run }) : h(CodeView, { lang: node.lang, value: edited! }))
-  const controls = runnable ? h('div', { className: 'pm-code-block__run' }, [h('button', { type: 'button', disabled: running || !available, onClick: run }, running ? t.running : live ? t.rerun : t.run), editable ? h('button', { type: 'button', className: 'pm-code-block__edit', 'aria-pressed': editing, onClick: () => setEditing(!editing) }, editing ? t.doneEditing : t.edit) : null, edited !== undefined && edited !== node.value ? h('button', { type: 'button', onClick: () => { setEdited(undefined); setEditing(false) } }, t.revert) : null, node.run?.session ? h('button', { type: 'button', disabled: !available, 'data-session': node.run.session, onClick: async () => { stop(); await executor?.endSession?.(node.run!.session!); show(undefined) } }, t.resetRunSession) : null, mounted && !executor && report ? h('span', { className: 'pm-code-block__hint' }, t.unavailable) : null]) : null
+  const controls = runnable ? h('div', { className: 'pm-code-block__run', role: 'group', 'aria-label': t.actions }, [
+    h(PmIconButton, { icon: 'play', label: live ? t.rerun : t.run, hint: running ? t.running : live ? t.rerun : t.run, small: true, loading: running, disabled: !available, onClick: run }),
+    editable ? h(PmIconButton, { icon: editing ? 'check' : 'edit', label: editing ? t.doneEditing : t.edit, small: true, 'aria-pressed': editing, onClick: () => setEditing(!editing) }) : null,
+    edited !== undefined && edited !== node.value ? h(PmIconButton, { icon: 'undo', label: t.revert, small: true, onClick: () => { setEdited(undefined); setEditing(false) } }) : null,
+    node.run?.session ? h(PmIconButton, { icon: 'refresh', label: t.resetRunSession, small: true, disabled: !available, 'data-session': node.run.session, onClick: async () => { stop(); await executor?.endSession?.(node.run!.session!); show(undefined) } }) : null,
+    mounted && !executor && report ? h('span', { className: 'pm-code-block__hint' }, t.unavailable) : null,
+  ]) : null
   const runs = owned ? [] : live ? [live] : node.outputs ?? []; const prose = !echo && !live && runs.length > 0 && runs.every(isProseOutput); const prefix = section?.section.id ?? props.block.id
   const outputs = runs.length ? h('div', { className: `pm-outputs${prose ? ' pm-outputs--prose' : ''}`, 'data-source': live ? 'live' : 'recorded' }, runs.map((r, i) => runOutput(r, (r as RecordedRun).cacheKey || i, prefix, { prose, note: fallback }))) : null
   const bar = originBar(node, shown, currentLocale())

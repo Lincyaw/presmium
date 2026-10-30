@@ -44,12 +44,21 @@ def _prepare():
 
 
 def _load_jupyter_server_extension(app):
+    if os.environ.get('PRESMIUM_RUNTIME_ONLY') == '1':
+        # A named execution server runs kernels and terminals, without a second Studio or its private files.
+        return
     prefix = app.base_url  # /user/<name>/
     origin = os.environ['PRESMIUM_HUB_ORIGIN']
     _prepare()
+    # The sample's proxy environment uses this author's own authenticated single-user server.
+    # Keep the server token in the workspace service, never in document JSON or browser settings.
+    studio_env = os.environ.copy()
+    if 'PRESMIUM_ENV_LAB_URL' not in studio_env:
+        studio_env['PRESMIUM_ENV_LAB_URL'] = f'http://127.0.0.1:{app.port}{prefix}'
+        studio_env['PRESMIUM_ENV_LAB_TOKEN'] = os.environ['JUPYTERHUB_API_TOKEN']
     subprocess.Popen(['node', f'{PRESMIUM}/packages/studio/bin/presmium-studio.mjs', SPACE,
                       '--port', str(STUDIO_PORT), '--public-url', f'{origin}{prefix}studio/',
-                      '--preview-url', f'{origin}{prefix}preview/', '--preview-port', str(PREVIEW_PORT)])
+                      '--preview-url', f'{origin}{prefix}preview/', '--preview-port', str(PREVIEW_PORT)], env=studio_env)
     subprocess.Popen(['node', f'{PRESMIUM}/deploy/cloud/studio/control.mjs', str(CONTROL_PORT)])
 
     class Open(JupyterHandler):

@@ -23,6 +23,14 @@ demand a fresh login before the console spawns a user (`refresh_pre_spawn = Fals
 Deploy only the authorized Compose project; preserve unrelated containers and volumes. Do not print `.env`,
 tokens or API keys.
 
+Documents can request an operator-defined JupyterHub profile with `kind: 'jupyter', auth: 'hub', profile: 'python'`
+under `metadata.execute.environments`. Explicit Run or terminal-open calls the plugin's preparation route before
+using its existing proxy; never spawn on compile, probe or a proxy getter. The Studio token may manage only its
+owner's servers. Named runtime servers use separate volumes, profile limits and `PRESMIUM_RUNTIME_ONLY=1`, not a
+second Studio or the author's private volume. Keep `CLOUD_ENVIRONMENT_PROFILES` and the named-server limit on the Hub.
+Verify first spawn, reuse, restart, unknown profiles, page disposal and cross-user rejection; idle culling stops
+named servers and removes their Hub records while retaining their volumes.
+
 Verify with a real loopback deployment and Chromium: register, open Studio through the Hub, open a document
 (previews load below `/user/<name>/preview/`), share, a second account's copy, MCP through `/mcp` with an access
 token, stop and reopen (files kept), another user's 403 on every `/user/<name>/` path, and the console in

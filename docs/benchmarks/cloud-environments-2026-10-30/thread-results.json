@@ -1,0 +1,418 @@
+[
+  {
+    "trial": "run-1793321432528248913-2c-1t",
+    "threads": 1,
+    "importMs": 2813.71413,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 3040.725647,
+        "webBuildMs": 43851.141892,
+        "totalMs": 46891.867539,
+        "errors": [],
+        "sections": 8
+      },
+      {
+        "phase": "warm",
+        "compileMs": 29.4784989999971,
+        "webBuildMs": 85.04330499999924,
+        "totalMs": 114.52180399999634,
+        "errors": [],
+        "sections": 8
+      }
+    ]
+  },
+  {
+    "trial": "run-1793321482666268145-4c-1t",
+    "threads": 1,
+    "importMs": 2646.713949,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 287.69288499999993,
+        "webBuildMs": 12492.975673,
+        "totalMs": 12780.668558,
+        "errors": [],
+        "sections": 8
+      },
+      {
+        "phase": "warm",
+        "compileMs": 34.76078100000086,
+        "webBuildMs": 79.96457699999883,
+        "totalMs": 114.72535799999969,
+        "errors": [],
+        "sections": 8
+      }
+    ]
+  },
+  {
+    "trial": "run-1793321498551106938-4c-2t",
+    "threads": 2,
+    "importMs": 2450.002744,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 274.079839,
+        "webBuildMs": 7633.778429,
+        "totalMs": 7907.858268,
+        "errors": [],
+        "sections": 8
+      },
+      {
+        "phase": "warm",
+        "compileMs": 92.56095300000015,
+        "webBuildMs": 76.49543199999971,
+        "totalMs": 169.05638499999986,
+        "errors": [],
+        "sections": 8
+      }
+    ]
+  },
+  {
+    "trial": "run-1793321509433770806-4c-4t",
+    "threads": 4,
+    "importMs": 2371.6735740000004,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 274.03991399999995,
+        "webBuildMs": 5594.389359,
+        "totalMs": 5868.429273,
+        "errors": [],
+        "sections": 8
+      },
+      {
+        "phase": "warm",
+        "compileMs": 66.40383999999904,
+        "webBuildMs": 70.10547700000097,
+        "totalMs": 136.509317,
+        "errors": [],
+        "sections": 8
+      }
+    ]
+  },
+  {
+    "trial": "run-1793321518125808164-4c-4t",
+    "threads": 4,
+    "importMs": 2373.304636,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 281.18703000000005,
+        "webBuildMs": 4614.395135000001,
+        "totalMs": 4895.582165,
+        "errors": [],
+        "sections": 8
+      },
+      {
+        "phase": "warm",
+        "compileMs": 66.85654599999998,
+        "webBuildMs": 68.8901190000006,
+        "totalMs": 135.74666500000058,
+        "errors": [],
+        "sections": 8
+      }
+    ]
+  },
+  {
+    "trial": "run-1793321525816174482-4c-2t",
+    "threads": 2,
+    "importMs": 2379.965135,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 265.08302700000013,
+        "webBuildMs": 4479.927797,
+        "totalMs": 4745.010824000001,
+        "errors": [],
+        "sections": 8
+      },
+      {
+        "phase": "warm",
+        "compileMs": 22.58900900000026,
+        "webBuildMs": 71.83091699999932,
+        "totalMs": 94.41992599999958,
+        "errors": [],
+        "sections": 8
+      }
+    ]
+  },
+  {
+    "trial": "run-1793321533318609458-4c-1t",
+    "threads": 1,
+    "importMs": 2542.672029,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 269.6233070000003,
+        "webBuildMs": 6046.428126,
+        "totalMs": 6316.0514330000005,
+        "errors": [],
+        "sections": 8
+      },
+      {
+        "phase": "warm",
+        "compileMs": 29.51966700000048,
+        "webBuildMs": 70.58957199999895,
+        "totalMs": 100.10923899999943,
+        "errors": [],
+        "sections": 8
+      }
+    ]
+  },
+  {
+    "trial": "run-1793321542550885153-2c-1t",
+    "threads": 1,
+    "importMs": 2502.5935289999998,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 261.87379100000044,
+        "webBuildMs": 9084.947986,
+        "totalMs": 9346.821777,
+        "errors": [],
+        "sections": 8
+      },
+      {
+        "phase": "warm",
+        "compileMs": 38.36518299999989,
+        "webBuildMs": 78.30879800000002,
+        "totalMs": 116.67398099999991,
+        "errors": [],
+        "sections": 8
+      }
+    ]
+  },
+  {
+    "trial": "run-1793321717970342326-4c-2t",
+    "threads": 2,
+    "importMs": 2488.134542,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 273.3106109999999,
+        "webBuildMs": 24966.643475999997,
+        "totalMs": 25239.954087,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 1533512
+      },
+      {
+        "phase": "warm",
+        "compileMs": 24.135902000001806,
+        "webBuildMs": 74.17171099999905,
+        "totalMs": 98.30761300000086,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 1548360
+      }
+    ]
+  },
+  {
+    "trial": "run-1793321746113239088-2c-1t",
+    "threads": 1,
+    "importMs": 2687.501562,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 276.7039289999998,
+        "webBuildMs": 16948.194659999997,
+        "totalMs": 17224.898588999997,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 1683348
+      },
+      {
+        "phase": "warm",
+        "compileMs": 23.386474999999336,
+        "webBuildMs": 74.53577000000223,
+        "totalMs": 97.92224500000157,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 1698196
+      }
+    ]
+  },
+  {
+    "trial": "run-1793321766406921933-4c-4t",
+    "threads": 4,
+    "importMs": 2531.763112,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 270.20322499999975,
+        "webBuildMs": 4822.846792,
+        "totalMs": 5093.050017,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 2127176
+      },
+      {
+        "phase": "warm",
+        "compileMs": 21.400416999999834,
+        "webBuildMs": 70.63817900000049,
+        "totalMs": 92.03859600000033,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 2142024
+      }
+    ]
+  },
+  {
+    "trial": "run-1793321774417716762-4c-1t",
+    "threads": 1,
+    "importMs": 2814.606515,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 281.69252400000005,
+        "webBuildMs": 4204.968282,
+        "totalMs": 4486.660806,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 1871564
+      },
+      {
+        "phase": "warm",
+        "compileMs": 29.378536999999596,
+        "webBuildMs": 69.58818200000042,
+        "totalMs": 98.96671900000001,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 1885388
+      }
+    ]
+  },
+  {
+    "trial": "run-1793321782111123892-4c-1t",
+    "threads": 1,
+    "importMs": 2597.655182,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 307.8788450000002,
+        "webBuildMs": 4044.8260819999996,
+        "totalMs": 4352.704927,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 1895128
+      },
+      {
+        "phase": "warm",
+        "compileMs": 29.293547000000217,
+        "webBuildMs": 70.95277299999998,
+        "totalMs": 100.2463200000002,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 1909976
+      }
+    ]
+  },
+  {
+    "trial": "run-1793321789477103892-4c-4t",
+    "threads": 4,
+    "importMs": 2454.410183,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 278.211902,
+        "webBuildMs": 3099.8130449999994,
+        "totalMs": 3378.0249469999994,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 2028812
+      },
+      {
+        "phase": "warm",
+        "compileMs": 42.246196000000054,
+        "webBuildMs": 86.743109,
+        "totalMs": 128.98930500000006,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 2037516
+      }
+    ]
+  },
+  {
+    "trial": "run-1793321795724411509-2c-1t",
+    "threads": 1,
+    "importMs": 2554.513464,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 268.4835009999997,
+        "webBuildMs": 5371.945851,
+        "totalMs": 5640.429352,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 1906980
+      },
+      {
+        "phase": "warm",
+        "compileMs": 29.674055999999837,
+        "webBuildMs": 76.02022900000156,
+        "totalMs": 105.6942850000014,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 1921828
+      }
+    ]
+  },
+  {
+    "trial": "run-1793321804298251506-4c-2t",
+    "threads": 2,
+    "importMs": 2561.941002,
+    "sourceHash": "6d4591b611a56a6d89f50d85790a9f8926fe570956159429ea5070363e0ed0a3",
+    "sourceUnchanged": true,
+    "results": [
+      {
+        "phase": "cold",
+        "compileMs": 291.1659139999997,
+        "webBuildMs": 3497.024918,
+        "totalMs": 3788.190832,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 1921492
+      },
+      {
+        "phase": "warm",
+        "compileMs": 24.29576300000008,
+        "webBuildMs": 69.91256599999997,
+        "totalMs": 94.20832900000005,
+        "errors": [],
+        "sections": 8,
+        "maxRssKiB": 1936340
+      }
+    ]
+  }
+]

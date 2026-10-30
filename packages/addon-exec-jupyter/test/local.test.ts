@@ -118,7 +118,6 @@ print(x + 1)
   it('probes real kernel specs, fingerprints the runtime, and reports unreachable or incompatible environments without credentials', async () => {
     expect(await jupyterProvider.probe!('remote', spec, context)).toBeUndefined()
     expect(await jupyterProvider.probe!('remote', { ...spec, kernel: 'missing-presmium-kernel' }, context)).toContain('has no kernel missing-presmium-kernel')
-    expect(await jupyterProvider.probe!('remote', { ...spec, auth: 'hub' }, context)).toContain('auth: hub is reserved')
     const refusedContext = { ...context, secret: (name: string) => name.endsWith('_TOKEN') ? 'invalid-test-token' : context.secret(name) }
     expect(await jupyterProvider.probe!('remote', spec, refusedContext)).toContain('refused the token')
     const remote = await executor()

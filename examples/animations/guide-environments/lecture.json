@@ -22,7 +22,9 @@
       "environments": {
         "lab": {
           "kind": "jupyter",
-          "auth": "proxy",
+          "auth": "hub",
+          "profile": "python",
+          "kernel": "python3",
           "languages": [
             "python"
           ]
@@ -429,7 +431,7 @@
           "children": [
             {
               "type": "text",
-              "text": "lab 使用 proxy 认证：浏览器经实际 Presmium 服务转发到 Jupyter，令牌不写入文稿。运营者在服务进程设置 PRESMIUM_ENV_LAB_URL 与 PRESMIUM_ENV_LAB_TOKEN；未配置或只打开静态网站时，保持真实不可用状态。"
+              "text": "lab 声明 hub 认证、python 环境规格和 python3 内核。点击运行后，云端通过 JupyterHub 启动或复用当前用户的独立环境，再执行代码；仅打开文稿不会启动它。令牌不写入文稿。"
             }
           ]
         },
@@ -439,7 +441,7 @@
           "children": [
             {
               "type": "text",
-              "text": "env 认证仅用于构建时执行；prompt 由读者在浏览器输入自己的凭据；none 只适用于可信的无认证服务。hub 目前只是保留契约，尚不能连接 JupyterHub，不能当成已实现功能。"
+              "text": "环境规格由运营者映射到镜像与资源限制。未配置 Hub 的本地服务可改用 proxy，并由运营者设置 PRESMIUM_ENV_LAB_URL 与 PRESMIUM_ENV_LAB_TOKEN。env 用于构建时执行，prompt 由读者输入自己的凭据，none 只用于可信的无认证服务；静态页面不能启动 Hub 环境。"
             }
           ]
         }

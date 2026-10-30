@@ -64,3 +64,18 @@ requirements:
   docs:
   - path: docs/cloud-deployment.md
   notes: 回环部署真实运行；公网 HTTPS、用户卷容量配额与 Kubernetes 未验证。
+- id: REQ-007
+  title: 文稿声明并按需启动运行环境
+  description: IR 的具名 Jupyter 环境通过 auth hub 与 profile 选择运营者的规格，点击运行或连接终端时启动或复用当前用户的 Hub 命名服务器；独立卷、资源限制、空闲回收及重启会话恢复沿用 Hub 与现有 Jupyter 代理。
+  priority: P0
+  status: implemented
+  code:
+  - path: packages/kernel/src/contracts/execution.ts
+  - path: packages/addon-exec-jupyter/src/node/hub.ts
+  - path: packages/addon-exec-jupyter/src/node/proxy.ts
+  - path: packages/addon-exec-jupyter/src/client/jupyter-client.ts
+  - path: deploy/cloud/hub/jupyterhub_config.py
+  docs:
+  - path: docs/cloud-deployment.md
+  - path: docs/benchmarks/cloud-hub-environments-2026-10-30.md
+  notes: team 回环部署首次启动、并发复用、独立资源卷、真实内核运行、跨用户拒绝与空闲回收通过；查看和编译不启动环境。

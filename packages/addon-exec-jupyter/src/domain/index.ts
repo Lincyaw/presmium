@@ -14,6 +14,7 @@ export {
   operatorVariables,
   originOf,
   proxyPath,
+  preparePath,
   RUNS_DIR,
 } from './config.ts'
 export { argsPrelude } from './args.ts'

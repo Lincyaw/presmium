@@ -187,6 +187,8 @@ Video 的[手动字幕时间组合](https://www.figma.com/design/CjQ5JFn3PuGXx0N
 
 公共 CSS 已覆盖按钮、图标按钮、输入、菜单、错误字段和 loading 的适用状态；已知内容形状的加载使用骨架占位（第 5.6 节）。公共 loading 使用 `loading`（Lucide LoaderCircle），按钮包装负责 `aria-busy` 与重复提交拦截。处理中使用独立的状态图标位，不受调用方 Icon 或 Show icon 属性替换，动作名称和尺寸保持稳定；业务页面不得用转圈字符、私有 SVG 或自定义透明度填补。
 
+查看器代码块的运行、编辑、还原与重置会话使用 host 的 `PmIconButton` Compact 变体，沿用已定义的 IconButton 与 Tooltip 状态。业务 CSS 只排列图标组，不再覆盖按钮的描边、内距或颜色。运行中保留动作名称，公共 loading 图标和 `aria-busy` 表示进度；编辑态用勾选图标与 `aria-pressed`，提示和无障碍名称使用包内的中英文目录。
+
 Danger 动作默认使用危险色文字和浅色表面；悬停增加 1px 危险色内边界，按下使用现有 2px 描边令牌，不靠不断加深背景降低文字对比度。固定控件外尺寸与排版，焦点仍单独叠加。其余普通控件的 hover／pressed 使用既有 chrome／sunk 语义表面。上述状态由公共 CSS 定义，页面只选择公开属性。
 
 ### 5.2 按钮、输入与表单

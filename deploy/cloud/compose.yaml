@@ -193,6 +193,8 @@ services:
       CLOUD_STUDIO_MEMORY: ${CLOUD_STUDIO_MEMORY:-4G}
       CLOUD_STUDIO_CPUS: ${CLOUD_STUDIO_CPUS:-2}
       CLOUD_STUDIO_IDLE_SECONDS: ${CLOUD_STUDIO_IDLE_SECONDS:-1800}
+      CLOUD_ENVIRONMENT_PROFILES: ${CLOUD_ENVIRONMENT_PROFILES:-}
+      CLOUD_ENVIRONMENT_LIMIT: ${CLOUD_ENVIRONMENT_LIMIT:-3}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - hub-data:/srv/jupyterhub/data
