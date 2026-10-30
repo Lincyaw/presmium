@@ -1,7 +1,7 @@
 import { useMessages, useStore } from '@lincyaw/host'
 import { slideChapters, slideShape } from '@lincyaw/kernel'
 import type { IRSection, SlideShape } from '@lincyaw/kernel'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { SECTION_CONTEXT } from '../section-context.ts'
 import { useViewer } from '../viewer-state.ts'
@@ -31,29 +31,26 @@ export function SlideFit({ shape, scale: fixed, children, overlay }: { shape: Sl
   ])
 }
 
+// The shrink is measured after layout and before paint and written to the element itself, not through a render:
+// a render would come a frame late, and the new slide would show for that frame at full size.
 function SlideBody({ zoom, children }: { zoom?: number, children?: ReactNode }) {
   const frame = useRef<HTMLDivElement>(null)
   const content = useRef<HTMLDivElement>(null)
-  const [fit, setFit] = useState({ scale: 1, left: 0 })
-  useEffect(() => {
-    let pending = 0
+  useLayoutEffect(() => {
+    const outer = frame.current, inner = content.current
+    if (!outer || !inner) return
     const measure = () => {
-      const outer = frame.current, inner = content.current
-      if (!outer || !inner) return
       const scale = Math.min(1, outer.clientHeight / Math.max(1, inner.scrollHeight), outer.clientWidth / Math.max(1, inner.scrollWidth))
       const left = Math.max(0, (outer.clientWidth - inner.offsetWidth * scale) / 2)
-      setFit(value => Math.abs(scale - value.scale) > 0.005 || Math.abs(left - value.left) > 0.5 ? { scale, left } : value)
+      inner.style.transform = scale < 1 ? `translateX(${left}px) scale(${scale})` : ''
     }
-    const observer = new ResizeObserver(() => { cancelAnimationFrame(pending); pending = requestAnimationFrame(measure) })
-    if (frame.current) observer.observe(frame.current)
-    if (content.current) observer.observe(content.current)
+    const observer = new ResizeObserver(measure)
+    observer.observe(outer)
+    observer.observe(inner)
     measure()
-    return () => { observer.disconnect(); cancelAnimationFrame(pending) }
+    return () => observer.disconnect()
   }, [])
-  return h('div', { ref: frame, className: 'pm-slide__body' }, h('div', { ref: content, className: 'pm-slide__content', style: {
-    ...(zoom ? { zoom } : {}),
-    ...(fit.scale < 1 ? { transform: `translateX(${fit.left}px) scale(${fit.scale})` } : {}),
-  } }, children))
+  return h('div', { ref: frame, className: 'pm-slide__body' }, h('div', { ref: content, className: 'pm-slide__content', style: zoom ? { zoom } : undefined }, children))
 }
 
 export function SlideFace({ section, step, view = 'present' }: { section: IRSection, step: number, view?: string }) { const { viewer, chapters } = useSlides(); const doc = useStore(viewer.doc); const t = useMessages(MESSAGES); const { sections } = doc; const options = slideOptions(section, section.index === 1 && sections.length > 1); const chapter = options.layout === 'cover' || options.layout === 'full' ? undefined : chapters.get(section.id); const done = Math.min(step, section.steps); return h(SECTION_CONTEXT.Provider, { value: { section, step, view } }, h('div', { class: ['pm-slide', `pm-slide--${options.layout}`, options.className], 'data-section': section.id, 'data-slide': section.index, 'data-step': step }, [chapter ? h('p', { className: 'pm-slide__chapter' }, chapter) : null, h(SlideBody, { key: section.id, zoom: options.zoom }, [h(options.layout === 'cover' ? 'h1' : 'h2', { className: 'pm-slide__title' }, section.title), ...visuals(section, step)]), options.layout === 'full' ? null : h('footer', { className: 'pm-slide__footer' }, [options.layout === 'cover' ? null : h('span', { className: 'pm-slide__deck' }, doc.meta.title), section.steps > 0 ? h('span', { className: 'pm-slide__steps', role: 'img', 'aria-label': t.steps(done, section.steps), style: { '--pm-slide-steps': section.steps } }, Array.from({ length: section.steps }, (_, i) => h('span', { key: i, 'data-done': i < done ? '' : undefined }))) : null, h('span', { className: 'pm-slide__page' }, `${section.index} / ${sections.length}`)]), h('div', { className: 'pm-slide__layers' }, layers(view, 'slide', { section: section.id, step }))])) }
