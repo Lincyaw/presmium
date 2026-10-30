@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef,
 import type { ReactNode } from 'react'
 import { CommentEditorSubmitExtension, CommentsExtension } from '@blocknote/core/comments'
 import { components } from '@blocknote/mantine'
-import { ComponentsContext, FloatingComposer, FloatingComposerController, useBlockNoteEditor, useComponentsContext, useExtension } from '@blocknote/react'
+import { ComponentsContext, FloatingComposer, PositionPopover, useBlockNoteEditor, useComponentsContext, useCreateBlockNote, useDictionary, useEditorState, useExtension, useExtensionState } from '@blocknote/react'
 import type { ComponentProps } from '@blocknote/react'
 import type { BlockNoteEditor } from '@blocknote/core'
 import { TextSelection } from '@tiptap/pm/state'
@@ -65,6 +65,8 @@ export function NewCommentDraftProvider({ children }: { children?: ReactNode }) 
       const positions = store.newDraftPositions(nextTarget, editor)
       if (!positions) { setFailure(true); return }
       comments.stopPendingComment()
+      // ProseMirror scrolls to a selection only while the DOM selection is in the editor, and the pressed button is gone.
+      editor.focus()
       editor.transact(transaction => transaction.setSelection(TextSelection.create(transaction.doc, positions.from, positions.to)).scrollIntoView())
       // The public controller creates the actual editor; this is only its strictly committed handoff.
       prepared.current = { record: next, origin: candidate, doc: editor.prosemirrorState.doc, selection: editor.prosemirrorState.selection, version }
@@ -77,17 +79,43 @@ export function NewCommentDraftProvider({ children }: { children?: ReactNode }) 
   return <NEW_DRAFT_OWNER.Provider value={{ editor, latest, prepared, restore, failure }}>{children}</NEW_DRAFT_OWNER.Provider>
 }
 
-/** Closing hides the native form; permanent discard is an exact backup action. */
+/**
+ * BlockNote's FloatingComposerController, assembled from the same public parts but without its modal focus manager.
+ * That manager marks everything outside the form with `aria-hidden`, and when the document holds a live region (a
+ * block's notice) it walks into the document and marks the blocks themselves: ProseMirror reads those attributes as
+ * an edit and redraws every block, which collapses the canvas (it scrolls away) and takes the focus from the form.
+ * The comment editor focuses itself (`autoFocus`, without scrolling), as in a thread's reply form.
+ * Closing hides the native form; permanent discard is an exact backup action.
+ */
 export function DocumentNewCommentController() {
   const owner = useContext(NEW_DRAFT_OWNER), context = useContext(COMMENT_EDITOR_CONTEXT), comments = useExtension(CommentsExtension)
+  const editor = useBlockNoteEditor(), dict = useDictionary()
+  const pendingComment = useExtensionState(CommentsExtension, { editor, selector: state => state.pendingComment })
+  const newCommentEditor = useCreateBlockNote({
+    trailingBlock: false,
+    dictionary: { ...dict, placeholders: { ...dict.placeholders, emptyDocument: dict.placeholders.new_comment } },
+    schema: comments.commentEditorSchema,
+    extensions: [CommentEditorSubmitExtension({ submitOnEnter: comments.submitOnEnter, onSubmit: async commentEditor => {
+      await comments.createThread({ initialComment: { body: commentEditor.document } })
+      comments.stopPendingComment()
+      editor.transact(transaction => { transaction.setSelection(TextSelection.create(transaction.doc, transaction.selection.to)) })
+      editor.focus()
+    } })],
+  }, [pendingComment])
+  const position = useEditorState({ editor, selector: ({ editor }) => pendingComment ? { from: editor.prosemirrorState.selection.from, to: editor.prosemirrorState.selection.to } : undefined })
   const floating = useMemo(() => commentFloating(), [])
-  return <FloatingComposerController floatingComposer={DocumentNewCommentComposer} floatingUIOptions={{ useFloatingOptions: { ...floating, onOpenChange(open) {
-    if (open || !owner || owner.latest.current?.composing || owner.latest.current?.editor.prosemirrorView.composing) return
-    try { context?.store.beforeAction?.() } catch { return }
-    comments.stopPendingComment()
-    if (!owner.editor.prosemirrorView.isDestroyed) owner.editor.focus()
-  } } }} />
+  return <PositionPopover position={position} focusManagerProps={{ disabled: true }} elementProps={{ style: { zIndex: COMPOSER_LAYER } }}
+    useFloatingOptions={{ placement: 'bottom', ...floating, open: pendingComment, onOpenChange(open) {
+      if (open || !owner || owner.latest.current?.composing || owner.latest.current?.editor.prosemirrorView.composing) return
+      try { context?.store.beforeAction?.() } catch { return }
+      comments.stopPendingComment()
+      if (!owner.editor.prosemirrorView.isDestroyed) owner.editor.focus()
+    } }}>
+    <DocumentNewCommentComposer newCommentEditor={newCommentEditor} />
+  </PositionPopover>
 }
+// BlockNote's layer for the new-comment form, above its toolbars and thread cards.
+const COMPOSER_LAYER = 60
 
 function DocumentNewCommentComposer({ newCommentEditor }: { newCommentEditor: CommentEditor }) {
   const owner = useContext(NEW_DRAFT_OWNER), context = useContext(COMMENT_EDITOR_CONTEXT), nativeComponents = useComponentsContext()!
