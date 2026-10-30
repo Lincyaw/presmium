@@ -17,7 +17,7 @@ export interface OperatorSide {
 
 export function operatorConnection(name: string, spec: EnvironmentSpec, side: OperatorSide): OperatorConnection {
   const auth = authOf(spec)
-  if (auth === 'hub') return { unavailable: 'auth: hub is reserved and not available yet' }
+  if (auth === 'hub') return { unavailable: 'auth: hub starts an operator-defined profile on explicit browser execution; it is not started by a build or an environment probe' }
   if (auth === 'none') {
     const url = typeof spec.url === 'string' ? spec.url : undefined
     if (!originOf(url)) return { unavailable: 'auth: none connects to the deck\'s url, which is missing or not an http(s) address' }

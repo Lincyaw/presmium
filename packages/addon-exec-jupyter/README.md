@@ -23,6 +23,20 @@ It is a Presmium plugin: its components work on the web page and in the slides. 
 
 The operator gives each environment's address and token in `PRESMIUM_ENV_<name>_URL` and `PRESMIUM_ENV_<name>_TOKEN`; documents hold no credentials.
 
+On a configured JupyterHub deployment, a document can instead request a named profile:
+
+```json
+{
+  "kind": "jupyter",
+  "auth": "hub",
+  "profile": "python",
+  "kernel": "python3",
+  "languages": ["python"]
+}
+```
+
+Place this object at `metadata.execute.environments.lab`. Live code blocks use `execution.executor: "presmium.env.lab"`; blocks with the same `execution.session` share a kernel. Clicking Run or opening a terminal starts or reuses the current user's `env-python` server. Reading, compiling, probing and static output do not start servers. The operator maps profiles to images and resource limits; document URLs and images cannot override that mapping. Tokens stay on the server. See the [cloud deployment guide](https://github.com/Lincyaw/presmium/blob/main/docs/cloud-deployment.md#文稿中的-jupyter-环境).
+
 ## Documentation
 
 - [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/locales/en/lecture.json) (Chinese: `site/guide/lecture.json`)

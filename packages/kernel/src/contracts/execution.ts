@@ -92,6 +92,8 @@ export interface EnvironmentSpec {
   kernel?: string
   languages?: string[]
   auth?: EnvironmentAuth
+  /** Operator-defined JupyterHub environment profile; images and resource limits stay on the Hub. */
+  profile?: string
   image?: string
   path?: string
   [option: string]: unknown

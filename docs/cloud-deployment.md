@@ -65,6 +65,20 @@ ssh -N -L 18787:127.0.0.1:18787 <服务器>
 
 AI 助手使用作者在 Studio 的“设置 → 模型”中填写的 API Key。云端不提供、也不计费模型用量。Studio 容器可以访问互联网，以连接作者自己的模型服务。
 
+### 文稿中的 Jupyter 环境
+
+Studio 镜像包含 `ipykernel` 与 `python3` 内核。启动时，若没有显式设置 `PRESMIUM_ENV_LAB_URL`，扩展会把具名环境 `lab` 指向该用户自己的 Jupyter single-user server，并只向 Studio 子进程提供服务器令牌。文稿可声明 `metadata.execute.environments.lab = { kind: 'jupyter', auth: 'proxy', kernel: 'python3', languages: ['python'] }`，代码块通过 `presmium.env.lab` 执行器使用它；相同的 `execution.session` 复用同一内核。终端组件也可使用 `lab`。
+
+地址与令牌由服务端配置，不能写进 `lecture.json`。显式配置 `PRESMIUM_ENV_LAB_URL` 时会保留运营者提供的地址与令牌组合。修改镜像后，已运行的 Studio 仍使用旧镜像，需要保存文稿并重新启动该 Studio 才能采用新内核。
+
+需要由文稿按需启动独立环境时，声明 `auth: 'hub', profile: 'python', kernel: 'python3'`，代码块和终端继续引用同一个环境名。点击运行或打开终端时，服务端通过当前用户的 Hub 令牌启动或复用命名服务器 `env-python`，然后挂载已有的 Jupyter 代理；仅阅读、编译或探测不会启动它。环境重启后，下一次运行会根据 Hub 的启动时间重建客户端会话。静态产物没有启动服务，需要在 Studio 或提供对应服务的网页中运行。
+
+Hub 默认提供 `python` 规格，使用 Studio 镜像中的 Python 内核，以运行环境模式启动，不启动第二份 Studio。它使用独立的用户环境卷，默认 1 CPU、1 GiB，不挂载作者的 Studio 卷。运营者用 `CLOUD_ENVIRONMENT_PROFILES` 指定规格映射，例如 `{"python":{"image":"presmium-cloud-studio:<发布标签>","memory":"1G","cpus":1}}`；自定义镜像必须提供兼容的 `jupyterhub-singleuser`、所需内核、非 root 用户以及可写 `/work`。规格名为最多 32 字符的小写字母、数字与连字符，首字符为字母。文稿不能覆盖镜像、用户身份、资源限制或连接地址。
+
+`CLOUD_ENVIRONMENT_LIMIT` 默认允许每用户最多 3 个命名环境。同一用户相同规格跨文稿复用，重置代码会话只关闭内核，空闲环境由现有 idle culler 停止并删除 Hub 的命名服务器记录，环境卷保留；也可在 Hub 的服务器管理界面停止。Studio 的 Hub 令牌只可管理及访问该用户的服务器，环境自身的令牌只可访问该环境。修改规格映射后重启 Hub；已经运行的环境需要停止后再启动才采用新镜像与限制。
+
+Docker 开发容器运行未在云端用户容器中启用；其环境包导出可独立使用。默认连接验证与线程测量见 [云端执行环境与线程测量](benchmarks/cloud-environments-2026-10-30/README.md)，按声明启动的验收另行记录。
+
 ## 5. 管理、日志与排障
 
 ```sh

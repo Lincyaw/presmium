@@ -23,7 +23,7 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore }: {
   const positionFailure = useWorkbenchState(state => state.documentPositionFailure)
   const locale = useWorkbenchState(state => state.locale), messages = DOCUMENT_EDITOR_MESSAGES[locale]
   const navigation = useWorkbenchState(state => state.documentNavigation)
-  const readOnly = useWorkbenchState(state => workbench.client.capabilities?.readOnly === true || Boolean(state.authoring?.member && !hasRole(state.authoring.member, 'editor')) || Boolean(state.authoring?.loading) || isAgentChanging(state))
+  const readOnly = useWorkbenchState(state => state.mode !== 'editing' || workbench.client.capabilities?.readOnly === true || Boolean(state.authoring?.member && !hasRole(state.authoring.member, 'editor')) || Boolean(state.authoring?.loading) || isAgentChanging(state))
   const container = useRef<HTMLElement>(null)
   const consumedNavigation = useRef<string>()
   const bodyEditor = useRef<NativeDocumentEditor>()

@@ -1,8 +1,8 @@
-import { environmentExecutor, isRecord } from '@lincyaw/kernel'
+import { environmentExecutor, errorMessage, failedRun, isRecord } from '@lincyaw/kernel'
 import type { EnvironmentSpec, Executor, RunResult } from '@lincyaw/kernel'
 import { currentLocale, pluginRoutePath, serverClient } from '@lincyaw/host'
 import type { ServerConnection } from '@jupyterlab/services'
-import { authOf, baseUrl, cleanupPath, EXEC_JUPYTER_ID, jupyterKernelName, languagesOf, originOf, proxyPath } from '../domain/index.ts'
+import { authOf, baseUrl, cleanupPath, EXEC_JUPYTER_ID, jupyterKernelName, languagesOf, originOf, preparePath, proxyPath } from '../domain/index.ts'
 import type { JupyterTerminals, TerminalSession } from '../domain/index.ts'
 import { createJupyterKernels } from '../shared/kernels.ts'
 import type { JupyterKernels } from '../shared/kernels.ts'
@@ -62,6 +62,7 @@ async function sanitized(result: RunResult): Promise<RunResult> {
 export function createJupyterClient(environments: Record<string, EnvironmentSpec>): JupyterClient {
   const settings = new Map<string, Promise<ServerConnection.ISettings>>()
   const proxyDocuments = new Map<string, string>()
+  const generations = new Map<string, string>()
   let disposing: Promise<void> | undefined
 
   const unavailable = (name: string): string | undefined => {
@@ -70,8 +71,7 @@ export function createJupyterClient(environments: Record<string, EnvironmentSpec
     if (!spec) return t.unknown(name)
     const auth = authOf(spec)
     if (auth === 'env') return t.envOnly(name)
-    if (auth === 'hub') return t.hubReserved(name)
-    if (auth === 'proxy') return serverClient().available ? undefined : t.proxyStatic(name)
+    if (auth === 'proxy' || auth === 'hub') return serverClient().available ? undefined : t.proxyStatic(name)
     return originOf(typeof spec.url === 'string' ? spec.url.replace('{user}', 'x') : undefined) ? undefined : t.noUrl(name)
   }
 
@@ -80,9 +80,23 @@ export function createJupyterClient(environments: Record<string, EnvironmentSpec
     if (reason) throw new Error(reason)
     const spec = environments[name]!
     const { ServerConnection } = await loadJupyterServices()
-    if (authOf(spec) === 'proxy') {
+    if (['proxy', 'hub'].includes(authOf(spec))) {
       const document = await servedDocument()
       proxyDocuments.set(name, document)
+      if (authOf(spec) === 'hub') {
+        let response: Response
+        try {
+          response = await serverClient().fetch(EXEC_JUPYTER_ID, preparePath(name), { method: 'POST' })
+        } catch {
+          throw Object.assign(new Error(messages().reasons['hub-unavailable']), { code: 'hub-unavailable' })
+        }
+        const answer: unknown = await response.json().catch(() => undefined)
+        if (!response.ok) {
+          const code = isRecord(answer) && typeof answer.error === 'string' ? answer.error : 'hub-unavailable'
+          throw Object.assign(new Error(messages().reasons[code] ?? messages().reasons['hub-unavailable']), { code })
+        }
+        generations.set(name, isRecord(answer) && typeof answer.generation === 'string' ? answer.generation : '')
+      }
       const base = `${location.origin}${pluginRoutePath(serverClient(), EXEC_JUPYTER_ID)}${proxyPath(name)}/`
       class DocumentSocket extends WebSocket {
         constructor(url: string | URL, protocols?: string | string[]) {
@@ -145,12 +159,12 @@ export function createJupyterClient(environments: Record<string, EnvironmentSpec
   const terminals = new Set<TerminalSession>()
   const kernelPools: JupyterKernels[] = []
   const executors = Object.entries(environments).map(([name, spec]): Executor => {
-    const kernels = createJupyterKernels({
+    const makeKernels = () => createJupyterKernels({
       executorId: environmentExecutor(name),
       kernelName: jupyterKernelName(spec),
       languages: languagesOf(spec),
       settings: () => settingsFor(name),
-      ...(authOf(spec) === 'proxy' ? {
+      ...(['proxy', 'hub'].includes(authOf(spec)) ? {
         shutdown: (kernel: string, directory: string) => {
           const request = fetch(`${pluginRoutePath(serverClient(), EXEC_JUPYTER_ID)}${cleanupPath(name)}`, {
             method: 'POST',
@@ -174,11 +188,39 @@ export function createJupyterClient(environments: Record<string, EnvironmentSpec
         timedOut: seconds => messages().timedOut(seconds),
       },
     })
+    let kernels = makeKernels()
+    let generation: string | undefined
+    let preparing: Promise<void> | undefined
     kernelPools.push(kernels)
     return {
       id: environmentExecutor(name),
       supports: lang => kernels.supports(lang),
-      run: async (request, signal) => sanitized(await kernels.run(request, signal)),
+      run: async (request, signal) => {
+        if (disposing || signal?.aborted) return failedRun(environmentExecutor(name), messages().cancelled)
+        if (authOf(spec) === 'hub') {
+          try {
+            if (!preparing) {
+              settings.delete(name)
+              preparing = settingsFor(name).then(async () => {
+                if (disposing) return
+                const next = generations.get(name)
+                if (generation !== undefined && generation !== next) {
+                  await kernels.dispose().catch(() => {})
+                  if (disposing) return
+                  kernels = makeKernels()
+                  kernelPools.push(kernels)
+                }
+                generation = next
+              }).finally(() => { preparing = undefined })
+            }
+            await preparing
+          } catch (error) {
+            return failedRun(environmentExecutor(name), errorMessage(error))
+          }
+        }
+        if (disposing || signal?.aborted) return failedRun(environmentExecutor(name), messages().cancelled)
+        return sanitized(await kernels.run(request, signal))
+      },
       endSession: session => kernels.endSession(session),
     }
   })
@@ -202,9 +244,13 @@ export function createJupyterClient(environments: Record<string, EnvironmentSpec
     terminals: {
       unavailable,
       async openTerminal(name, events) {
+        if (disposing) throw new Error(messages().cancelled)
+        if (authOf(environments[name] ?? { kind: 'jupyter' }) === 'hub') settings.delete(name)
         const connection = await settingsFor(name)
+        if (disposing) throw new Error(messages().cancelled)
         try {
           const session = await openTerminal(connection, events)
+          if (disposing) { await session.close(); throw new Error(messages().cancelled) }
           terminals.add(session)
           return {
             ...session,

@@ -30,6 +30,10 @@ export function cleanupPath(name: string): string {
   return `cleanup/${envKey(name).toLowerCase()}`
 }
 
+export function preparePath(name: string): string {
+  return `prepare/${envKey(name).toLowerCase()}`
+}
+
 export function authOf(spec: EnvironmentSpec): EnvironmentAuth {
   const auth = spec.auth
   return auth === 'none' || auth === 'proxy' || auth === 'prompt' || auth === 'hub' ? auth : 'env'

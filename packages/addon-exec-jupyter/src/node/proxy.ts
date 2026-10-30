@@ -1,10 +1,11 @@
-import { isRecord, problemResponse } from '@lincyaw/kernel'
+import { isRecord, jsonResponse, problemResponse } from '@lincyaw/kernel'
 import type { EnvironmentSpec, ProxySpec, Route, ServerContext, ServerContribution } from '@lincyaw/kernel'
-import { authOf, cleanupPath, operatorConnection, proxyPath } from '../domain/index.ts'
+import { authOf, cleanupPath, operatorConnection, preparePath, proxyPath } from '../domain/index.ts'
 import type { Connection } from '../domain/index.ts'
 import { shutdownJupyterKernel } from '../shared/kernel-lifecycle.ts'
 import { nodeSettings } from './connection.ts'
 import { declaredEnvironments } from './declared.ts'
+import { HubEnvironmentError, prepareHubEnvironment } from './hub.ts'
 
 function proxyHeaders(connection: Connection): Record<string, string> {
   const target = new URL(connection.url)
@@ -23,15 +24,24 @@ interface Mount {
 export function jupyterProxy(ctx: ServerContext): ServerContribution {
   const reported = new Set<string>()
   const cleaning = new Map<string, Promise<void>>()
+  const prepared = new Map<string, { profile: unknown, connection: Connection }>()
+  const preparing = new Map<string, Promise<{ connection: Connection, generation: string }>>()
+  const lifetime = new AbortController()
+  const hubKey = (name: string, spec: EnvironmentSpec) => JSON.stringify([name, spec.profile])
   const mounts = (): Map<string, Mount> => {
     const found = new Map<string, Mount>()
     for (const [name, spec] of declaredEnvironments(ctx.deckDir)) {
-      if (authOf(spec) !== 'proxy') continue
+      if (!['proxy', 'hub'].includes(authOf(spec))) continue
       found.set(name, mount(name, spec))
     }
     return found
   }
   const mount = (name: string, spec: EnvironmentSpec): Mount => {
+    if (authOf(spec) === 'hub') {
+      const known = prepared.get(hubKey(name, spec))
+      if (!known || known.profile !== spec.profile) return { reason: 'hub-environment-not-prepared' }
+      return { connection: known.connection, proxy: { path: proxyPath(name), target: known.connection.url, headers: proxyHeaders(known.connection), role: 'reader' } }
+    }
     const resolved = operatorConnection(name, spec, { secret: name => ctx.secret(name) })
     if ('connection' in resolved) {
       return { connection: resolved.connection, proxy: { path: proxyPath(name), target: resolved.connection.url, headers: proxyHeaders(resolved.connection), role: 'reader' } }
@@ -49,6 +59,40 @@ export function jupyterProxy(ctx: ServerContext): ServerContribution {
     },
     get routes() {
       const routes: Record<string, Route> = {}
+      for (const [name, spec] of declaredEnvironments(ctx.deckDir)) {
+        if (authOf(spec) !== 'hub') continue
+        routes[preparePath(name)] = {
+          role: 'reader',
+          maxBody: 1024,
+          async handle(request) {
+            if (request.method !== 'POST') return problemResponse(405, 'POST')
+            if (lifetime.signal.aborted) return problemResponse(503, 'hub-unavailable')
+            const key = hubKey(name, spec)
+            let task = preparing.get(key)
+            if (!task) {
+              // Shared starts outlive one disconnected tab, but are always bounded.
+              if (preparing.size >= 32) return problemResponse(429, 'hub-unavailable')
+              task = prepareHubEnvironment(spec, { secret: name => ctx.secret(name) }, AbortSignal.any([lifetime.signal, AbortSignal.timeout(250_000)]))
+                .finally(() => preparing.delete(key))
+              preparing.set(key, task)
+            }
+            try {
+              const { connection, generation } = await task
+              const current = declaredEnvironments(ctx.deckDir).get(name)
+              if (lifetime.signal.aborted || !current || authOf(current) !== 'hub' || current.profile !== spec.profile) {
+                return problemResponse(409, 'hub-profile-changed')
+              }
+              prepared.set(key, { profile: spec.profile, connection })
+              return jsonResponse({ generation })
+            } catch (error) {
+              prepared.delete(key)
+              const code = error instanceof HubEnvironmentError ? error.code : 'hub-unavailable'
+              ctx.log.warn(`environment "${name}": ${code}`)
+              return problemResponse(error instanceof HubEnvironmentError ? error.status : 502, code)
+            }
+          },
+        }
+      }
       for (const [name, found] of mounts()) {
         if (found.connection) {
           const connection = found.connection
@@ -90,7 +134,8 @@ export function jupyterProxy(ctx: ServerContext): ServerContribution {
       return routes
     },
     async close() {
-      await Promise.allSettled(cleaning.values())
+      lifetime.abort()
+      await Promise.allSettled([...cleaning.values(), ...preparing.values()])
     },
   }
 }

@@ -39,6 +39,7 @@ const zh = {
     sourceTitle: (where: string) => `${where}（按住 Alt 单击任一内容块，在编辑器中打开）`,
   },
   code: {
+    actions: '代码操作',
     executorFailed: (_id: string, message: string) => `无法运行代码：${message}`,
     run: '运行',
     rerun: '重新运行',
@@ -106,6 +107,7 @@ const en: Messages = {
     sourceTitle: where => `${where} (Alt+click any block to open it in the editor)`,
   },
   code: {
+    actions: 'Code actions',
     executorFailed: (_id, message) => `Couldn’t run the code: ${message}`,
     run: 'Run',
     rerun: 'Run Again',

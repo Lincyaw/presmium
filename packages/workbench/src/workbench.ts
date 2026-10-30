@@ -306,6 +306,7 @@ export class Workbench {
   #runtimeDocument?: string
   #jobsDocument?: string
   readonly #jobObservers = new Set<symbol>()
+  readonly #previewObservers = new Set<symbol>()
   #previewReads = 0
   #presentationPreparation = 0
   #presentationController?: AbortController
@@ -925,7 +926,7 @@ export class Workbench {
   #syncRuntimeStreams(): void {
     const document = this.#state.document
     const jobs = document !== undefined && this.#jobObservers.size > 0
-    const runtime = document !== undefined && !jobs && (this.#state.webView === 'present' || this.#state.previewRenderer === 'slides')
+    const runtime = document !== undefined && !jobs && (this.#previewObservers.size > 0 || this.#state.webView === 'present' || this.#state.previewRenderer === 'slides')
     if (!runtime || this.#runtimeDocument !== document) {
       this.#unsubscribeIr?.(); this.#unsubscribeIr = undefined; this.#runtimeDocument = undefined
     }
@@ -936,6 +937,14 @@ export class Workbench {
       this.#unsubscribeIr = this.client.subscribeIr(document!, event => void this.#handleIrEvent(document!, event), () => void this.#readIr(document!))
       void this.#readIr(document!)
     }
+  }
+
+  /** A visible reader or presentation shares the existing optional IR stream. */
+  observePreviewRuntime(): () => void {
+    const token = Symbol('preview')
+    this.#previewObservers.add(token)
+    this.#syncRuntimeStreams()
+    return () => { if (this.#previewObservers.delete(token)) this.#syncRuntimeStreams() }
   }
 
   /** Follows export status only while a consumer is visible; it displaces the optional IR stream. */

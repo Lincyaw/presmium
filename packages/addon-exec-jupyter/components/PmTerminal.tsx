@@ -95,7 +95,8 @@ export default function PmTerminal({
     } catch (error) {
       if (revision !== generation.current) return
       close()
-      setFailure(errorMessage(error))
+      const code = (error as { code?: unknown } | undefined)?.code
+      setFailure(failureText(errorMessage(error), typeof code === 'string' ? code : undefined))
       setState('failed')
     }
   }
@@ -128,7 +129,7 @@ export default function PmTerminal({
         <p className="pm-terminal__note">{unavailable}</p>
       ) : failure ? (
         <p className="pm-terminal__note" role="alert">
-          {t.terminalFailed(failureText(failure))}
+          {t.terminalFailed(failure)}
         </p>
       ) : null}
       <div

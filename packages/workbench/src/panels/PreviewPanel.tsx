@@ -16,6 +16,7 @@ export function PreviewPanel({ active = true, onPresentationAction, presentation
   presentationAction.current = onPresentationAction
   const t = useMessages()
   const workbench = useWorkbench()
+  useEffect(() => active ? workbench.observePreviewRuntime() : undefined, [workbench, active])
   const document = useWorkbenchState(state => state.document)
   const documents = useWorkbenchState(state => state.documents)
   const preview = useWorkbenchState(state => state.preview)

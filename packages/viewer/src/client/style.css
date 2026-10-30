@@ -215,20 +215,8 @@
 
 .pm-code-block__run {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--pm-space-1);
   align-items: center;
-  font-size: 0.85em;
-}
-
-.pm-code-block__run button {
-  padding: 0.125rem 0.75rem;
-  border: var(--pm-size-hairline) solid var(--pm-c-brand);
-  border-radius: 0.25rem;
-  color: var(--pm-c-brand);
-}
-
-.pm-code-block__run button:disabled {
-  opacity: 0.6;
 }
 
 .pm-code-block__hint {
