@@ -5,29 +5,41 @@ description: "Choose and implement teaching animation in a Presmium lecture.json
 
 # Teaching with animation
 
-Read the teaching document's `lecture.json` and the relevant project code before choosing an effect. Presmium-owned normalized document IR is the only editable authority; animation implementations are referenced project files. Do not add a MyST directive or Markdown source as a second input.
+Work top down: each layer decides the next, and its details are in the reference it names. Read the teaching document's `lecture.json` and the relevant project code before choosing anything.
 
-## Choose what to show
+## 1. Ground rules
+
+- Presmium-owned normalized document IR is the only editable authority; animation implementations are referenced project files. Do not add a MyST directive or Markdown source as a second input.
+- A step rests on the final frame of its state, and that frame is at once the still on the web page, the slide and the held shot of the video. So a piece is designed as a strip of rest frames, and motion is what carries one into the next.
+- Every state is reconstructible when selected in any order: the look is a function of the step and the time only. An earlier playback side effect is not state.
+
+## 2. What to show
 
 - Reveal existing text or list items when order is the lesson. Bind explicit content/item IDs and step states.
 - Highlight or replace code when the lesson is a program's changing state. Code highlights and variants reference stable step IDs.
 - Use a scene when objects must move, morph or be connected. Its definition declares implementation, parameter Schema and stable state IDs; a component block supplies instance parameters.
 
-Before building anything longer than a single move, read [Story](references/story.md): write the thesis, find the picture that proves it, choose the narrative shape, storyboard the rest frames, script the narration, and review with a cold viewer. [Storyboards](references/storyboards.md) has filled-in examples for popular science, papers, courses, data stories and products. Read [Scenarios](references/scenarios.md) for teaching patterns, [Procedural](references/procedural.md) for motion computed from mathematics (inverse kinematics, ropes, curves, fields, flocks) and how to keep it seekable, [Libraries](references/libraries.md) for implementation choices, [Timeline](references/timeline.md) for step/narration alignment and [Lengths](references/lengths.md) when the piece has a target length (1, 5, 10, 30 or 60 s) or is a promo, teaser, sting or loop to export as video. The gallery has one `lecture.json` per animation library and project files under `scenes/`; `gallery/story` is the worked narrated example, and `gallery/catalog/<deck>` holds ready pieces (transitions, camera moves, annotation, product screens, code, captions) whose text, images and data are parameters. [Libraries](references/libraries.md) "Find an effect" indexes all of them. Inspect the closest real example instead of inventing an API.
+## 3. The kind of piece
 
-## Implement through public scene APIs
+A teaching segment, an explainer or paper video, a promo, a product demo and a data story differ in how they open, hold, pace, use text, sound and pictures. Name the kind in the brief; it sets those defaults, and the person's brief or a reference overrides them ([Story](references/story.md), Kinds of piece).
 
-Keep animation code in `scenes/<name>.ts` or another project file. Use the installed `@lincyaw/addon-motion/scene` public exports and the existing gallery's `defineScene`, `gsapScene`, `animeScene`, `motionScene`, `d3Scene`, `threeScene` or `remotionScene` patterns as applicable. Read the actual public types before choosing an adapter; libraries expose different runtime capabilities.
+## 4. From brief to storyboard
 
-Register an explicit component definition in `definitions` with a file implementation reference, parameter Schema and declared states. Insert a component block pointing to it; put its state on the corresponding section's steps. Stable state IDs describe implementation states, not the component's position in the document. Existing migrated numeric bindings retain explicit `legacyIndex`; do not rename their numbers into guessed semantic states.
+[Story](references/story.md) is the process, each stage ending in a check: brief, thesis, central picture, three storylines for the person to pick, a storyboard of rest frames with what carries each boundary, the script, an animatic the person approves, motion, review against the spec and with cold viewers. [Storyboards](references/storyboards.md) has filled-in examples for popular science, papers, courses, data stories and products; [Scenarios](references/scenarios.md) the usual pictures for each subject.
 
-Every state must be reconstructible when selected in any order. Use deterministic values and rebuild from the current step/time; dispose animation timelines, subscriptions, canvas/WebGL resources and timers. An earlier playback side effect is not state.
+## 5. Motion, rhythm and sound
 
-Use design tokens for component styling. Reuse the project's semantic icons and public host controls. Provide readable static fallback data and report unsupported rendering capabilities.
+[Lengths](references/lengths.md): what each second shows at 1, 5, 10, 30 and 60 s, the rules every piece follows, the polish list, measured rhythm, carrying beats instead of replacing them, an operated camera, product screens, sound and music, and how to build and export a film.
 
-## Align and verify
+## 6. Implementation
 
-Narration is structured in `narrations`; steps name narration IDs. Cue targets use stable block IDs. Timing and voice inheritance belong in `production`, never a second timing object on a step or scene. See `presmium-present/references/lecture.md` for synthesis and playback.
+Keep animation code in `scenes/<name>.ts` or another project file, using the installed `@lincyaw/addon-motion/scene` public exports (`defineScene`, `gsapScene`, `animeScene`, `motionScene`, `d3Scene`, `threeScene`, `remotionScene`); read the actual public types before choosing one. [Libraries](references/libraries.md) picks the library by the picture, lists each one's pitfalls and indexes every gallery piece under "Find an effect"; [Timeline](references/timeline.md) aligns steps and narration; [Procedural](references/procedural.md) covers motion computed from mathematics and where assets come from. The gallery has one `lecture.json` per animation library, `gallery/lengths` (pieces by length and the shared `kit/`), `gallery/films`, `gallery/story` (the worked narrated example) and `gallery/catalog/<deck>` (ready pieces whose text, images and data are parameters). Inspect the closest real example instead of inventing an API.
+
+Register an explicit component definition in `definitions` with a file implementation reference, parameter Schema and declared states. Insert a component block pointing to it; put its state on the corresponding section's steps. Stable state IDs describe implementation states, not the component's position in the document. Existing migrated numeric bindings retain explicit `legacyIndex`; do not rename their numbers into guessed semantic states. Use design tokens for styling, reuse the project's semantic icons and public host controls, dispose timelines, subscriptions, canvas/WebGL resources and timers, provide readable static fallback data and report unsupported rendering capabilities.
+
+## 7. Voice, verify and deliver
+
+Narration is structured in `narrations`; steps name narration IDs. Cue targets use stable block IDs. Timing and voice inheritance belong in `production`, never a second timing object on a step or scene. The voice comes from the workspace's speech engine (Volcengine built in, or an OpenAI-compatible service); see `presmium-present/references/lecture.md` for synthesis, playback and export.
 
 Validate the edited document, then build only the relevant form. Open the actual result, jump forward and backward in arbitrary order, and inspect the static fallback if it matters. Do not claim an animation works merely because JSON validation or compilation succeeded.
 

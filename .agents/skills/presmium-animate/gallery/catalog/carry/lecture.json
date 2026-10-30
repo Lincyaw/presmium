@@ -1,0 +1,511 @@
+{
+  "schemaVersion": 1,
+  "id": "document-catalog-carry",
+  "metadata": {
+    "title": "承接",
+    "lang": "zh-CN",
+    "description": "一段 15 秒的短片：每个边界都有东西活过去，镜头由人操作。",
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture"
+    ],
+    "renderers": {
+      "web": {},
+      "lecture": {}
+    }
+  },
+  "sectionOrder": [
+    "film"
+  ],
+  "sections": {
+    "film": {
+      "id": "film",
+      "title": "一个点",
+      "level": 1,
+      "children": [
+        "film--notes",
+        "film--shot"
+      ],
+      "stepOrder": [
+        "film--step-0",
+        "film--step-1",
+        "film--step-2",
+        "film--step-3",
+        "film--step-4",
+        "film--step-5"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "film--notes": {
+      "id": "film--notes",
+      "type": "text",
+      "content": [
+        {
+          "id": "film--notes--n0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一个点依次变成 Presmium 做出的每一样东西：文稿、步骤、幻灯片、视频的一帧，最后是片名。整片是一个 defineScene 场景，每拍一个状态；每个边界都用一种不同的承接动作（morphRect、ribbon、iris、镜头拉远加 hop、seal），镜头有跟随、甩、静止时零漂移、落地震动，背后是一层远处的点阵。动作来自 gallery/lengths/scenes/kit/fx/moves.ts 与 camera.ts。"
+            }
+          ]
+        },
+        {
+          "id": "film--notes--n1",
+          "type": "table",
+          "headerRows": 1,
+          "children": [
+            {
+              "id": "film--notes--n1--r0",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "film--notes--n1--r0c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "时间"
+                    }
+                  ]
+                },
+                {
+                  "id": "film--notes--n1--r0c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "画面"
+                    }
+                  ]
+                },
+                {
+                  "id": "film--notes--n1--r0c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "带入下一拍"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "film--notes--n1--r1",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "film--notes--n1--r1c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "0–1.2 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "film--notes--n1--r1c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "强调色的点从上方落到正中，落地压扁、回弹，镜头随之一震；0.85 s 起静止"
+                    }
+                  ]
+                },
+                {
+                  "id": "film--notes--n1--r1c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "点本身：morphRect 把这个圆角矩形展开成文稿页"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "film--notes--n1--r2",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "film--notes--n1--r2c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "1.2–3.4 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "film--notes--n1--r2c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "点展开成 lecture.json 的一页，镜头跟着从 2.4 倍拉到 1 倍；三个块的线条依次从块后升起；2.5 s 起静止"
+                    }
+                  ]
+                },
+                {
+                  "id": "film--notes--n1--r2c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "这一页：它成为弹性轨道的第一格"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "film--notes--n1--r3",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "film--notes--n1--r3c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "3.4–4.9 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "film--notes--n1--r3c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "连击三下（3.55、3.95、4.35 s）：先点亮步骤 1，再两次把轨道换到步骤 2、3，页面回弹、文字滞后；每一下镜头同向推近一级（1 → 1.42 倍）并轻震"
+                    }
+                  ]
+                },
+                {
+                  "id": "film--notes--n1--r3c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "步骤 3 的圆点：光圈从它打开"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "film--notes--n1--r4",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "film--notes--n1--r4c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "4.9–7.1 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "film--notes--n1--r4c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "光圈从圆点打开到盖满画面，露出幻灯片“注意力”，内容弹入；6.1 s 起静止"
+                    }
+                  ]
+                },
+                {
+                  "id": "film--notes--n1--r4c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "整个画面：镜头拉远，幻灯片成了播放器里的一帧"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "film--notes--n1--r5",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "film--notes--n1--r5c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "7.1–9.6 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "film--notes--n1--r5c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "镜头拉远到播放器（log 空间变焦），关键节点沿弧线跳到时间轴上成为播放头，落地压扁、轨道震动，进度条随后填上；8.9 s 起静止"
+                    }
+                  ]
+                },
+                {
+                  "id": "film--notes--n1--r5c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "播放键：它长成转动的封印"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "film--notes--n1--r6",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "film--notes--n1--r6c0",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "9.6–15 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "film--notes--n1--r6c1",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "镜头甩到播放键，播放键长成一面转半圈的强调色圆盘铺满画面；标志弹入，Presmium 逐字落下压扁，口号升起；11.7 s 起静止 3.3 s"
+                    }
+                  ]
+                },
+                {
+                  "id": "film--notes--n1--r6c2",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "片尾（裸切也可以，这里用封印承接）"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "film--shot": {
+      "id": "film--shot",
+      "type": "component",
+      "definitionId": "film--shot--definition",
+      "parameters": {
+        "scene": "one-dot",
+        "alt": "一个强调色的点落下，展开成文稿的一页；三下连击依次点亮三个步骤；光圈从步骤 3 的圆点打开出幻灯片；镜头拉远，幻灯片是视频的一帧，节点跳上时间轴成为播放头；播放键长成转动的圆盘，片名 Presmium 落下。"
+      }
+    }
+  },
+  "steps": {
+    "film--step-0": {
+      "id": "film--step-0",
+      "sectionId": "film",
+      "visuals": [
+        {
+          "blockId": "film--notes",
+          "visible": false
+        },
+        {
+          "blockId": "film--shot",
+          "visible": true,
+          "state": "dot"
+        }
+      ],
+      "narrationIds": []
+    },
+    "film--step-1": {
+      "id": "film--step-1",
+      "sectionId": "film",
+      "visuals": [
+        {
+          "blockId": "film--notes",
+          "visible": false
+        },
+        {
+          "blockId": "film--shot",
+          "visible": true,
+          "state": "doc"
+        }
+      ],
+      "narrationIds": []
+    },
+    "film--step-2": {
+      "id": "film--step-2",
+      "sectionId": "film",
+      "visuals": [
+        {
+          "blockId": "film--notes",
+          "visible": false
+        },
+        {
+          "blockId": "film--shot",
+          "visible": true,
+          "state": "steps"
+        }
+      ],
+      "narrationIds": []
+    },
+    "film--step-3": {
+      "id": "film--step-3",
+      "sectionId": "film",
+      "visuals": [
+        {
+          "blockId": "film--notes",
+          "visible": false
+        },
+        {
+          "blockId": "film--shot",
+          "visible": true,
+          "state": "slide"
+        }
+      ],
+      "narrationIds": []
+    },
+    "film--step-4": {
+      "id": "film--step-4",
+      "sectionId": "film",
+      "visuals": [
+        {
+          "blockId": "film--notes",
+          "visible": false
+        },
+        {
+          "blockId": "film--shot",
+          "visible": true,
+          "state": "video"
+        }
+      ],
+      "narrationIds": []
+    },
+    "film--step-5": {
+      "id": "film--step-5",
+      "sectionId": "film",
+      "visuals": [
+        {
+          "blockId": "film--notes",
+          "visible": false
+        },
+        {
+          "blockId": "film--shot",
+          "visible": true,
+          "state": "title"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "film--shot--definition": {
+      "id": "film--shot--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/one-dot.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "states": [
+        {
+          "id": "dot",
+          "title": "点落下"
+        },
+        {
+          "id": "doc",
+          "title": "点展开成文稿"
+        },
+        {
+          "id": "steps",
+          "title": "三下：步骤"
+        },
+        {
+          "id": "slide",
+          "title": "光圈打开幻灯片"
+        },
+        {
+          "id": "video",
+          "title": "拉远：视频的一帧"
+        },
+        {
+          "id": "title",
+          "title": "封印成片尾"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          1200,
+          2200,
+          1500,
+          2200,
+          2500,
+          5400
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一个强调色的点落下，展开成文稿的一页；三下连击依次点亮三个步骤；光圈从步骤 3 的圆点打开出幻灯片；镜头拉远，幻灯片是视频的一帧，节点跳上时间轴成为播放头；播放键长成转动的圆盘，片名 Presmium 落下。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      },
+      "trailingPauseMs": 0
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

@@ -8,15 +8,26 @@ Each stage ends in a check; don't start the next stage before the check passes. 
 
 | Stage | Write | Check |
 |---|---|---|
-| 0. Brief | Audience and what they already know; what they believe before and should believe after; the form that matters most (web page, slides or video); the length, as a range. Ask only what only the person can answer; state the rest as one line of assumptions (length, aspect, music or voice, each paid item with its free option) | Before and after fit on one line each |
+| 0. Brief | The kind of piece (below), which decides the defaults; audience and what they already know; what they believe before and should believe after; the form that matters most (web page, slides or video); the length, as a range. Ask only what only the person can answer, one to three questions a round and never the same one twice; state the rest as one line of assumptions (length, aspect, music or voice, each paid item with its free option). Keep the requirements as a table: requirement, evidence, what it affects, recommendation, still to confirm | Before and after fit on one line each |
 | 1. Thesis | "看完后，观众明白 X，因为他们看到了 Y" (After watching, the viewer understands X because they saw Y), X in 25 汉字 or fewer; the same claim as And–But–Therefore | Someone who has seen nothing restates it; the ABT has exactly one But |
 | 2. Central picture | Three candidate pictures; keep the one in which X becomes a visible property that changes. Draw the money frame: the one still that proves X | Shown for 3 s to a cold viewer, the money frame alone gets something close to X back. If it needs a caption, keep looking |
-| 3. Shape | Three different storylines, one of them bold, each with its shape, its form (below), its first 2 s, its beats, look and sound; recommend one. Then for the chosen one: where its turn falls (usually 40–60% in); one spatial convention; one meaning per colour; the misconception to confront and the parts to name first | The person picked a storyline (stop and wait, unless they asked for the file or for no stops); the turn is a change in the picture, not a sentence |
+| 3. Shape | Three storylines that differ in the idea the picture is made of (one element transforming through everything, one camera move through scale, a chain reaction, a split that becomes one), not three orders of the same cards; one of them bold. Each with its shape, its form (below), its first 2 s, its beats, what carries every boundary and what it rules out, look and sound; never the last piece's look or a gallery film's beats by default. Recommend one. Then for the chosen one: where its turn falls (usually 40–60% in); one spatial convention; one meaning per colour; the misconception to confront and the parts to name first | The person picked a storyline (stop and wait, unless they asked for the file or for no stops); the turn is a change in the picture, not a sentence |
 | 4. Storyboard | One row per step: the rest frame (the still), what moves, what the viewer now understands, why | The strip of rest frames at thumbnail size tells the story with no sound |
 | 5. Script | The narration of each step; when its words come; cues | Read aloud with a timer: each step's narration fits its state, or the state is lengthened on purpose |
 | 6. Animatic | The scene drawing only each state's rest frame, with cuts between them; the narration attached; build and export | The durations add up to the length; every payoff rests at least 2 s; the person approved the contact sheet of rest frames (stop and wait; a note on one frame changes only that frame) |
 | 7. Motion | The movement between rest frames, one transition at a time, by `lengths.md` | Every motion's why says what it means (cause, the same object, converging); delete the ones whose why is "looks nice" |
 | 8. Review | Cold viewers, cheapest test first (below); then the final export and the delivery note | Two of three retell the thesis in their own words and get the prediction question right. Export the final only after check and review pass and the person approved the preview (or asked for the file, or for no stops) |
+
+**Kinds of piece.** Name the kind in the brief; it sets the defaults below, and the person's brief or a reference overrides any of them. A piece that mixes kinds takes each part's row.
+
+| | Teaching segment | Explainer or paper video | Promo, launch, teaser | Product demo | Data story |
+|---|---|---|---|---|---|
+| Opens on | the concrete case or question | the puzzle or the result | the result or a striking picture; brand docked by 5 s | the finished result, then the start | the encoding, then the first turning point |
+| Holds | dead still | dead still | still, or one light breathing; the camera still | still on each result | paused at turning points |
+| Rhythm | one idea per 6–15 s step | 8–10 s segments, a pattern break each 60–90 s | measured (`lengths.md`, rule 8), a burst of hits | one close-up per operation, the camera follows the pointer | a constant clock, paused, never slowed |
+| Text | key words beside their part | key words, formula terms coloured | one short line at a time, or none | the interface's own text; captions when there is no voice | the chart's labels, a source line |
+| Sound | narration, no music | narration, a quiet bed at most | music bed and designed effects | narration over a ducked bed, interface sounds | narration or none |
+| Pictures | built from the state | built from the state, the author's own data | the product's real marks and screens | the interface rebuilt from its real tokens, or screenshots | the real data, sourced on screen |
 
 Studios work the same way: script, storyboard, an animatic timed against scratch audio, then animation (Thomas and Johnston, *The Illusion of Life*, ch. 3; Catmull, *Creativity, Inc.*, ch. 5). In Presmium the animatic is cheap: a scene whose states draw their final frames, the real narration and `presmium-lecture export`.
 
@@ -82,6 +93,8 @@ The strongest pieces in the gallery have one picture that is the argument: in th
 
 **Forms** say how shots join, whatever the shape: one continuous take; a chain where each shot's last object becomes the next one's first; an endless zoom; match cuts on shape or motion; a split screen that becomes one; one frame that rebuilds itself. A film uses one form throughout.
 
+**From a reference.** When the person brings a clip whose feel they want, measure it before building: the share of still frames, the cut times and where the cuts bunch into bursts (the ffmpeg commands in `lengths.md`, Build and export), how much of the frame the largest element takes, what moves inside a beat, how things enter and leave. Take its rule, not its frames: the one rule every object obeys, its numbers (palette, grid, type size), and what its tool made cheap; leave its order of scenes and its cuts. A new subject on the reference's beats is a copy.
+
 Paper videos are designed to the venue's clock (SIGGRAPH's Fast Forward 20 s narrated or 10 s silent, a CHI preview 30 s, ECCV summaries 60–120 s, a Three Minute Thesis 3:00, journal video abstracts 4–5 minutes), say one thing to remember, show the baseline in the same frame and tag every number with its table. Result first suits short pieces and method or systems papers, not theory (open with the puzzle), clinical abstracts (the design comes first, because credibility depends on it) or a thesis talk (a human question). By length: 10 s is ABT compressed into setup, change, result, hold; 60 s is ABT, puzzle first or predict first; 3–6 minutes is 起承转合 or a chain of causes inside SCQA, with the misconception at the turn; promos use problem–agitate–solve, the sparkline or the heartbeat; data uses one picture over time shaped establisher → initial → peak → release (Amini et al., CHI 2015).
 
 ## 4. Storyboard the rest frames first
@@ -102,7 +115,8 @@ C. Picture  the central picture; the money frame; each readout and how the pictu
             playful: spring damping 0.45–0.6). BANNED: the default looks this piece avoids, added to after every render
 D. Steps    | # | State | Start–end | Rest frame | What moves (one thing; cause → effect) | Viewer now understands |
             | Viewer does (predict, quiz, run) | Narration | Words come (with / after / cue) | On-screen text (one line at most) |
-            | Reads (what the eye reads, in order, each with its time window; windows never overlap) | Sound | Why |
+            | Reads (what the eye reads, in order, each with its time window; windows never overlap) | Sound |
+            | Carries into the next (the element that survives the boundary and what it does, or "cut" and why) | Why |
 E. Checks   durations add up; the thumbnail strip reads silent; read-aloud timing; animatic screened; the review results
 ```
 
@@ -110,7 +124,7 @@ Put the filled worksheet in the piece's reading-view notes, as the gallery does:
 
 ## 5. Write the script
 
-- **Budget by rate.** Plan 3.5 汉字 a second, holds included (English: about 2.5 words). The Edge voice zh-CN-XiaoxiaoNeural speaks about 4.3 汉字 a second, the rate Chinese newscasters hold at near-full intelligibility (Chan and Lee 2005); the flow-matching video this guide studies speaks 4.9, nearly without pause. A step lasts the longest of its state, its narration plus the trailing pause, and its minimum hold, so narration longer than the state stretches the step without asking.
+- **Budget by rate.** Plan 3.5 汉字 a second, holds included (English: about 2.5 words). Synthesized Chinese voices speak about 4–4.5 汉字 a second, the rate Chinese newscasters hold at near-full intelligibility (Chan and Lee 2005); measure the chosen voice, since the engine is the workspace's own (Volcengine built in, or any OpenAI-compatible service, `presmium-present`); the flow-matching video this guide studies speaks 4.9, nearly without pause. A step lasts the longest of its state, its narration plus the trailing pause, and its minimum hold, so narration longer than the state stretches the step without asking.
 - **Write to the corners of the picture**: say what the picture can't show (cause, size, consequence), never what it shows. "如图所示，红点越来越多" says nothing; "一个病人传三个，三个传九个" says the rule.
 - **Speak the words; don't print them over moving pictures.** Narration with the picture beats text with it (modality d = 1.17); narration plus the same text on screen is worse than narration alone (redundancy d = 0.69). One or two key words beside the part they name are fine (spatial contiguity); captions are a separate track, not on-screen text.
 - **Say it while it happens** (temporal contiguity d = 1.30): the narration and its motion share a step. `narrationStart: "with-animation"` (the default) for a mechanism; `"after-animation"` when the picture should land first and the words name it (a result, a surprise); a narration cue on the key word (`point` or `spot` to aim the eye, a pause timed in `production.cueTimings`) when the words lead.
@@ -146,6 +160,8 @@ Interactive explainers let the reader drag; a lecture video can't. Script the ma
 
 ## 9. Review from a cold seat
 
+Two reviews, different seats. **Against the spec**: a fresh agent gets the brief, the requirements table, the LOOK line, the storyboard and the rules, but not the reasons given while making it, and returns each rule as met or not with the frame number (three frames a shot: mid-entry, peak, settled); an input it lacks is "can't verify", and each fix goes back to the stage it belongs to. **Against understanding**: the cold viewers below. Feedback that is vague ("节奏不对") gets one question about which moment before anything changes; first drafts usually run fast, so start a notch slower.
+
 Cheapest first; never ask "看懂了吗" (people say yes when they haven't), and never review with the team that made it: people tapping a song's rhythm expected listeners to name half the songs, and listeners named 3 of 120 (Heath and Heath, *Made to Stick*).
 
 | Test | How | It catches |
@@ -178,7 +194,7 @@ A cold viewer saying "clear" is not a pass: Muller's clear video raised confiden
 8. **The flaw at one point**: zoom on one crossing; the network's arrow is the average of the lines through it.
 9. **The fix as numbered steps on the same planes**, and the result as a side-by-side.
 
-The example's worksheet is in its reading view. Its data come from `gallery/story/scenes/data/flow-matching.py` (a 200,000-parameter MLP trained for 30,000 rounds, then Reflow), and the scene `scenes/flow-matching.ts` (Three.js) reads every readout from that file. The camera moves between the states: round the planes in the intro, above the one path for Euler, through the noise plane to face the logo for the result. Where the subject is too small for the picture (the path bends 0.25 across a time axis 3.4 long), space is magnified about it for those states rather than cut to a flat view. Its narration is synthesized with the Edge voice and committed as the document's speech cache.
+The example's worksheet is in its reading view. Its data come from `gallery/story/scenes/data/flow-matching.py` (a 200,000-parameter MLP trained for 30,000 rounds, then Reflow), and the scene `scenes/flow-matching.ts` (Three.js) reads every readout from that file. The camera moves between the states: round the planes in the intro, above the one path for Euler, through the noise plane to face the logo for the result. Where the subject is too small for the picture (the path bends 0.25 across a time axis 3.4 long), space is magnified about it for those states rather than cut to a flat view. Its narration is synthesized with a Chinese TTS voice and committed as the document's speech cache.
 
 ## Anti-patterns
 
@@ -199,7 +215,9 @@ The example's worksheet is in its reading view. Its data come from `gallery/stor
 | A predict step with no time, or one that leaks the answer | A held question with options; the answer on the next step |
 | A hook from the news on every frame | The news in the first step only; the rest timeless |
 | A lone-genius history | One dated step that credits the chain |
-| A long piece with one rhythm | Change shot length, view or scale at each part; silence before the turn |
+| A long piece with one rhythm; a film on a metronome | Change shot length, view or scale at each part; silence before the turn; in a film, shot lengths that vary 4× and still frames for a quarter of it (`lengths.md`, rule 8) |
+| Beats that replace each other, page after page | Something survives every boundary and moves into the next beat; bare cuts only in a burst of hits and into the end card (`lengths.md`, Carry) |
+| Labels or a second pointer added to explain a picture that doesn't say it | Build the idea into the picture; make the closing claim out of objects already on screen (seven ticking tool rows gather into "seven tools") |
 | A default look: a dark void with glow and particles, a purple-blue gradient, everything fading up, three cards in a row, a KPI grid, a title over a dimmed screenshot | The LOOK line of the worksheet; glow, particles and glass only as one moment of light (`lengths.md`, polish 6) |
 | A piece padded to the length asked for | A length is a range; cut, don't pad |
 
