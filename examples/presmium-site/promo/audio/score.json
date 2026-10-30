@@ -65,15 +65,7 @@
       "kind": "clicker"
     },
     {
-      "at": 34.3637,
-      "kind": "clicker"
-    },
-    {
       "at": 34.9091,
-      "kind": "clicker"
-    },
-    {
-      "at": 35.4546,
       "kind": "clicker"
     },
     {
@@ -99,5 +91,5 @@
     "lra": 4.6,
     "normalization": "linear"
   },
-  "fingerprint": "sha256:776a7748f6eff5d16f83e50bee93094ba016bed7e14bd5a47a590321ec078bfc"
+  "fingerprint": "sha256:8ecb8cf70f3d92772a7a11aa5e95b11e443f1e09eda8b2c6c96cb45b88347635"
 }

@@ -38,15 +38,15 @@ export const T = {
   assistantClick: beat(38),
   composerClick: beat(40),
   sendClick: beat(42),
-  /** The AI's change arrives on the drop; the preview's steps 2, 3, 4 are pressed on the next three beats. */
+  /** The AI's change arrives on the drop; the preview's steps 2, 3, 4 (N = 2, 4, 8) are pressed on the next three beats. */
   previewClicks: [beat(49), beat(50), beat(51)],
   pushToLesson: bar(13),
   /** The classroom is fully in (the crossfade ends here); its step starts here. */
   lessonIn: beat(54),
-  /** The class opens on the slide the studio's preview ended on (learning rate 2.2, update 3); the clicker then plays
-   * the 0.35 run, five presses. */
+  /** The class opens on the slide the studio's preview ended on (N = 8, slide 3 of the fit section); the clicker then
+   * steps through N = 16, 32 and 64, a press every other beat, the last half a bar before the payoff. */
   firstSlide: 3,
-  clicker: [beat(62), beat(63), beat(64), beat(65), beat(66)],
+  clicker: [beat(62), beat(64), beat(66)],
   aha: bar(17),
   pushToWeb: beat(74),
   webIn: bar(19),

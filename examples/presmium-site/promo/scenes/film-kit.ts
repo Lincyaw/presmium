@@ -1,6 +1,7 @@
 // What every shot of the film shares: a 16:9 frame in container units (1cqw is 1% of the frame's width), a camera,
-// the pointer, the one line of words a shot may show, and the flat illustrations it is set in: a night room, a
-// classroom, a laptop, a phone and a browser window. Real application pixels go inside the devices' screens.
+// the pointer, the one line of words a shot may show, and the places it is set in: photographs of a desk at night, a
+// blackboard and a lecture hall (`promo/assets/photos.md`), and drawn devices on them: a laptop, a phone and a browser
+// window. Real application pixels go inside the devices' screens.
 import { gsapScene } from '@lincyaw/addon-motion/scene'
 
 type GsapBuild = Parameters<typeof gsapScene>[0]
@@ -29,6 +30,7 @@ const BASE = `
   .pf-layer { position: absolute; inset: 0; overflow: hidden; }
   .pf-hero { position: absolute; pointer-events: none; }
   .pf .pf-fill { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .pf .pf-photo { object-fit: cover; }
   .pf-abs { position: absolute; }
   .pf-line { position: absolute; left: 0; right: 0; bottom: 6cqh; display: flex; justify-content: center; pointer-events: none; }
   .pf-line span { font-size: 2.95cqw; font-weight: 600; letter-spacing: 0.005em; padding: 0.75cqw 2.3cqw; border-radius: 99cqw; white-space: nowrap;
@@ -41,22 +43,6 @@ const BASE = `
   .pf-pointer i { position: absolute; left: -1.3cqw; top: -1.3cqw; width: 2.6cqw; height: 2.6cqw; border-radius: 50%; border: 0.2cqw solid var(--pm-color-film-violet); }
   .pf-finger { position: absolute; left: -1.4cqw; top: -1.4cqw; width: 2.8cqw; height: 2.8cqw; border-radius: 50%; background: color-mix(in srgb, var(--pm-color-film-ink) 22%, transparent); border: 0.18cqw solid color-mix(in srgb, var(--pm-color-sheen) 80%, transparent); }
 
-  .pf-night { background: linear-gradient(180deg, var(--pm-color-film-night), var(--pm-color-film-dusk)); }
-  .pf-glow { position: absolute; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--pm-color-film-lamp) 42%, transparent), transparent); }
-  .pf-window { position: absolute; right: 7cqw; top: 9cqh; width: 17cqw; height: 30cqh; border-radius: 0.6cqw; background: color-mix(in srgb, var(--pm-color-film-night) 70%, var(--pm-color-film-dusk));
-    border: 0.5cqw solid color-mix(in srgb, var(--pm-color-film-dusk) 70%, var(--pm-color-film-silver)); overflow: hidden; }
-  .pf-window::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 0.4cqw; background: color-mix(in srgb, var(--pm-color-film-dusk) 70%, var(--pm-color-film-silver)); }
-  .pf-moon { position: absolute; right: 2.4cqw; top: 2.4cqw; width: 3.2cqw; height: 3.2cqw; border-radius: 50%; background: var(--pm-color-film-chalk); box-shadow: 0 0 2.4cqw color-mix(in srgb, var(--pm-color-film-chalk) 50%, transparent); }
-  .pf-star { position: absolute; width: 0.3cqw; height: 0.3cqw; border-radius: 50%; background: var(--pm-color-film-chalk); }
-  .pf-lamp { position: absolute; left: 5cqw; bottom: 17cqh; width: 12cqw; height: 34cqh; }
-  .pf-lamp b { position: absolute; left: 1cqw; top: 0; width: 10cqw; height: 7cqw; background: var(--pm-color-film-lamp); clip-path: polygon(22% 0, 78% 0, 100% 100%, 0 100%); }
-  .pf-lamp i { position: absolute; left: 5.6cqw; top: 6.5cqw; width: 0.8cqw; bottom: 1cqw; background: color-mix(in srgb, var(--pm-color-film-dusk) 55%, var(--pm-color-film-silver)); }
-  .pf-lamp u { position: absolute; left: 3cqw; bottom: 0; width: 6cqw; height: 1.2cqw; border-radius: 0.6cqw 0.6cqw 0 0; background: color-mix(in srgb, var(--pm-color-film-dusk) 55%, var(--pm-color-film-silver)); }
-  .pf-desk { position: absolute; left: 0; right: 0; bottom: 0; height: 17cqh; background: color-mix(in srgb, var(--pm-color-film-wood) 62%, var(--pm-color-film-night)); }
-  .pf-desk::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1.2cqh; background: color-mix(in srgb, var(--pm-color-film-wood) 82%, var(--pm-color-film-lamp)); }
-  .pf-mug { position: absolute; right: 9cqw; bottom: 14cqh; width: 5cqw; height: 6cqw; border-radius: 0 0 1cqw 1cqw; background: var(--pm-color-film-lilac); }
-  .pf-mug::after { content: ''; position: absolute; right: -1.6cqw; top: 1.2cqw; width: 2cqw; height: 2.6cqw; border: 0.6cqw solid var(--pm-color-film-lilac); border-left: 0; border-radius: 0 1.4cqw 1.4cqw 0; }
-
   .pf-day { background: radial-gradient(60cqw 50cqh at 18% 22%, color-mix(in srgb, var(--pm-color-film-lilac) 34%, transparent), transparent),
     radial-gradient(55cqw 55cqh at 85% 85%, color-mix(in srgb, var(--pm-color-film-silver) 90%, transparent), transparent), var(--pm-color-film-paper); }
 
@@ -67,8 +53,11 @@ const BASE = `
   .pf-base::before { content: ''; position: absolute; left: 50%; top: 0; width: 10cqw; height: 1cqh; margin-left: -5cqw; border-radius: 0 0 0.6cqw 0.6cqw; background: color-mix(in srgb, var(--pm-color-film-silver) 70%, var(--pm-color-film-dusk)); }
   .pf-screen { position: absolute; overflow: hidden; background: var(--pm-color-sheen); }
 
-  .pf-phone { position: absolute; left: 38cqw; top: 9cqh; width: 24cqw; height: 47cqw; border-radius: 3.6cqw; background: var(--pm-color-film-ink); padding: 0.8cqw;
-    box-shadow: 0 2cqw 5cqw color-mix(in srgb, var(--pm-color-film-ink) 30%, transparent); }
+  .pf-phone { position: absolute; left: 30cqw; top: 9cqh; width: 24cqw; height: 47cqw; border-radius: 3.6cqw; padding: 0.8cqw;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--pm-color-film-silver) 34%, var(--pm-color-film-ink)), var(--pm-color-film-ink) 22%, var(--pm-color-film-ink) 70%, color-mix(in srgb, var(--pm-color-film-lamp) 30%, var(--pm-color-film-ink)));
+    box-shadow: inset 0 0 0 0.16cqw color-mix(in srgb, var(--pm-color-film-silver) 26%, transparent), -1.2cqw 1.8cqw 1.4cqw color-mix(in srgb, var(--pm-color-film-night) 55%, transparent), -3cqw 4cqw 6cqw color-mix(in srgb, var(--pm-color-film-night) 45%, transparent); }
+  .pf-phone::after { content: ''; position: absolute; inset: 0.8cqw; z-index: 4; border-radius: 2.8cqw; pointer-events: none;
+    background: linear-gradient(118deg, color-mix(in srgb, var(--pm-color-sheen) 9%, transparent), transparent 34%, transparent 72%, color-mix(in srgb, var(--pm-color-film-lamp) 7%, transparent)); }
   .pf-phone-screen { position: relative; width: 100%; height: 100%; border-radius: 2.8cqw; overflow: hidden; background: var(--pm-color-film-paper); }
   .pf-phone-screen::before { content: ''; position: absolute; z-index: 3; left: 50%; top: 0.7cqw; width: 6cqw; height: 1.5cqw; margin-left: -3cqw; border-radius: 99cqw; background: var(--pm-color-film-ink); }
 
@@ -111,19 +100,40 @@ const POINTER = `<div class="pf-pointer-layer"><div class="pf-pointer"><i></i><s
 /** A fingertip on a phone screen, for the same presses. */
 const FINGER = `<div class="pf-pointer-layer"><div class="pf-pointer"><i></i><div class="pf-finger"></div></div></div>`
 
-/** The pieces of a night room around a laptop or phone: wall and window, the lamp's light, the desk. */
-export const nightRoom = (desk = true) => `
-  <div class="pf-fill pf-night"></div>
-  <div class="pf-window"><div class="pf-moon"></div>${[[3, 5], [7, 11], [11, 4], [5, 20], [13, 16]].map(([x, y]) => `<span class="pf-star" style="left:${x}cqw;top:${y}cqh"></span>`).join('')}</div>
-  <div class="pf-glow" style="left:-14cqw;top:6cqh;width:62cqw;height:96cqh"></div>
-  ${desk ? '<div class="pf-desk"></div>' : ''}
-  <div class="pf-lamp"><b></b><i></i><u></u></div>`
+/**
+ * The teacher's desk at night, photographed: the desk lamp on the right, the background a little out of focus. The lamp
+ * glows over it, and a phone's screen throws its light on the desk once it is on.
+ */
+export const DESK_CSS = `
+  .pf-lampglow { position: absolute; left: 44cqw; top: -22cqh; width: 50cqw; height: 88cqh; border-radius: 50%; mix-blend-mode: screen; pointer-events: none;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--pm-color-film-lamp) 30%, transparent), transparent); }
+  .pf-screenlight { position: absolute; left: 14cqw; top: 2cqh; width: 56cqw; height: 100cqh; border-radius: 50%; mix-blend-mode: screen; pointer-events: none;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--pm-color-film-silver) 22%, transparent), transparent); }
+  .pf-lie { position: absolute; inset: 0; transform-origin: 42% 60%; transform: perspective(110cqw) rotateX(9deg) rotateZ(-3deg); }
+`
+export const nightDesk = () => `${image('photo-night-desk', 'pf-fill pf-photo')}<div class="pf-lampglow"></div><div class="pf-screenlight"></div>`
+
+/**
+ * The same desk with the laptop standing on it, facing the camera: the photograph larger and further out of focus, set
+ * so the lamp burns just right of the screen, the lamp's glow, the screen's light on the desk in front, and the
+ * laptop's shadow under its base.
+ */
+export const LAPTOP_DESK_CSS = `
+  .pf .pf-deskwide { position: absolute; left: -1.6cqw; top: -12cqh; width: 130cqw; height: 73.125cqw; object-fit: cover; filter: blur(0.3cqw) brightness(0.85); }
+  .pf-laptopglow { position: absolute; left: 66cqw; top: -18cqh; width: 44cqw; height: 80cqh; border-radius: 50%; mix-blend-mode: screen; pointer-events: none;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--pm-color-film-lamp) 30%, transparent), transparent); }
+  .pf-laptoplight { position: absolute; left: 6cqw; top: 58cqh; width: 88cqw; height: 50cqh; border-radius: 50%; mix-blend-mode: screen; pointer-events: none;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--pm-color-film-silver) 26%, transparent), transparent); }
+  .pf-laptopshadow { position: absolute; left: 8cqw; width: 84cqw; top: 77cqh; height: 8cqh; border-radius: 50%;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--pm-color-film-night) 80%, transparent), transparent); }
+`
+export const laptopDesk = () => `${image('photo-night-desk', 'pf-deskwide')}<div class="pf-laptopglow"></div><div class="pf-laptoplight"></div><div class="pf-laptopshadow"></div>`
 
 /** A laptop whose screen is `{ x: .18, y: .12, w: .64, h: .64 }` of the frame. */
 export const LAPTOP_SCREEN: Box = { x: 0.18, y: 0.12, w: 0.64, h: 0.64 }
 export const laptop = (screen: string) => `<div class="pf-laptop"></div><div class="pf-base"></div><div class="pf-screen" style="left:18cqw;top:12cqh;width:64cqw;height:64cqh">${screen}</div>`
 
-/** A phone centred in the frame; its screen holds a chat (or anything else). */
+/** A phone on the desk, left of the lamp; its screen holds a chat (or anything else). */
 export const phone = (screen: string) => `<div class="pf-phone"><div class="pf-phone-screen">${screen}</div></div>`
 
 export interface Message { who: 'lin' | 'wang' | 'me', text: string, className?: string }
@@ -133,7 +143,7 @@ export const message = ({ who, text, className = '' }: Message) =>
 /** The course group chat on the teacher's phone. */
 export const chat = (clock: string, items: string) => `<div class="pf-chat">
   <div class="pf-status"><span>${clock}</span><span></span></div>
-  <div class="pf-head"><b>‹</b>Intro to ML · class chat<small>(46)</small></div>
+  <div class="pf-head"><b>‹</b>Signals &amp; Fourier · class chat<small>(46)</small></div>
   <div class="pf-thread"><div class="pf-list">${items}</div></div>
   <div class="pf-input"><span></span><b></b></div>
 </div>`

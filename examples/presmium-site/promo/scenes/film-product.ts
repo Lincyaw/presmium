@@ -3,7 +3,7 @@
 // presentation and website; only the transitions between them are animated here. Each of these is a part of the
 // film's one continuous scene (`film.ts`): its `.pf-hero` is the chart the camera carries from one place to the next.
 import { brandMarkup } from '@lincyaw/design'
-import { asset, at, fit, image, laptop, LAPTOP_SCREEN as S, line, nightRoom, onScreen, type Shot } from './film-kit.ts'
+import { asset, at, fit, image, laptop, LAPTOP_DESK_CSS, LAPTOP_SCREEN as S, laptopDesk, line, onScreen, type Shot } from './film-kit.ts'
 import { bar, beat, DROP, FADE, T } from './timeline.ts'
 
 /** A part's times: film seconds, less the film time the part starts at. */
@@ -16,47 +16,52 @@ const cam = (x: number, y: number, s: number) => {
   return { x: keep(p.x, S.x, S.w), y: keep(p.y, S.y, S.h), s }
 }
 
-// Capture coordinates (CSS pixels of 1600 × 900): the two lines of the picked paragraph, the comment button of the
+// Capture coordinates (CSS pixels of 1600 × 900): the three lines of the picked paragraph, the comment button of the
 // selection toolbar, the comment box and its save button, the AI Assistant's composer and send button.
-const LINES = [[558.5, 260.8, 723.6, 24], [558.5, 284.8, 688.7, 24], [558.5, 308.8, 329.8, 24]] as const
-const COMMENT_FRAMES = [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 50]
+const LINES = [[558.5, 469.3, 666.9, 24], [558.5, 493.3, 717.6, 24], [558.5, 517.3, 140.6, 24]] as const
+/** The comment box after every third character of its 54. */
+const COMMENT_FRAMES = Array.from({ length: 19 }, (_, i) => i * 3)
 const clipOf = ([x, y, w, h]: readonly number[], i: number) =>
   `<div class="a-sel a-sel${i + 1}" style="${at(x!, y!, w!, h!)}"><img src="${asset('studio-selected')}" alt="" style="left:${-x! / w! * 100}%;top:${-y! / h! * 100}%;width:${1600 / w! * 100}%;height:${900 / h! * 100}%"></div>`
-// The preview's own step buttons under the animation: button n is at x = 424 + 34(n − 1), y = 738.
-const stepButton = (n: number) => onScreen(S, 424 + 34 * (n - 1), 738)
+// The preview's own step buttons under the animation: button n is at x = 423.5 + 34(n − 1), y = 703.
+const stepButton = (n: number) => onScreen(S, 423.5 + 34 * (n - 1), 703)
+/** The figure in the preview after the AI's change: the turning circles and the error chart. */
+const PREVIEW_FIGURE = at(408.5, 287.3, 704, 396)
+/** After the change the canvas scrolls from where the draft stood to the new figure: a capture at each stop. */
+const SCROLL_FRAMES = [0, 1, 2, 3]
 
 /**
- * 13.1–29.5 s. That night, at the laptop: the teacher picks the paragraph and writes what it should become, asks the
- * AI Assistant to apply it, waits through the build, and the comparison arrives on the drop. The preview's steps play
- * and the camera pushes into the chart.
+ * 13.1–29.5 s. That night, at the laptop on the desk: the teacher picks the paragraph and writes what it should become,
+ * asks the AI Assistant to apply it, waits through the build, and the turning circles arrive on the drop. Three
+ * presses of the preview's steps draw the note with 2, 4 and 8 circles, and the camera pushes into the figure.
  */
 export const studio: Shot = {
-  css: `
+  css: `${LAPTOP_DESK_CSS}
     .a-sel { position: absolute; overflow: hidden; }
     .a-sel img { position: absolute; max-width: none; }
-    .pf .a-frame { position: absolute; left: ${547.5 / 16}%; top: ${341 / 9}%; width: ${352 / 16}%; height: auto; }
+    .pf .a-frame { position: absolute; left: ${453 / 16}%; top: ${549.5 / 9}%; width: ${352 / 16}%; height: auto; }
     .d-typed { position: absolute; overflow: hidden; }
     .d-typed img { position: absolute; max-width: none; }
     .d-sweep { position: absolute; left: 0; right: 0; top: 0; height: 40%; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--pm-color-sheen) 85%, transparent) 55%, transparent); }
   `,
-  stage: `${nightRoom()}<div class="pf-mug"></div>${laptop(`
+  stage: `${laptopDesk()}${laptop(`
     ${image('studio-before')}${LINES.map(clipOf).join('')}${image('studio-selected', 'pf-fill a-selected')}
     ${image('studio-comment', 'pf-fill a-comment')}${COMMENT_FRAMES.map(i => image(`comment-${String(i).padStart(2, '0')}`, `a-frame a-f${i}`)).join('')}
     ${image('studio-commented', 'pf-fill a-commented')}
     ${image('studio-ai', 'pf-fill d-ai')}
     <div class="d-typed" style="${at(1216, 494, 357, 52)}"><img src="${asset('studio-ai-typed')}" alt="" style="left:${-1216 / 357 * 100}%;top:${-494 / 52 * 100}%;width:${1600 / 357 * 100}%;height:${900 / 52 * 100}%"></div>
     ${image('studio-ai-typed', 'pf-fill d-ready')}${image('studio-ai-working', 'pf-fill d-working')}
-    ${image('studio-after', 'pf-fill d-after')}${[2, 3, 4].map(n => image(`studio-after-${n}`, `pf-fill d-after${n}`)).join('')}
-    <div class="d-sweep"></div><div class="pf-hero" style="${at(446.4, 337.6, 608, 288)}"></div>`)}`,
+    ${SCROLL_FRAMES.map(i => image(`studio-after-s${i}`, `pf-fill d-scroll d-s${i}`)).join('')}${image('studio-after', 'pf-fill d-after')}${[2, 3, 4].map(n => image(`studio-after-${n}`, `pf-fill d-after${n}`)).join('')}
+    <div class="d-sweep"></div><div class="pf-hero" style="${PREVIEW_FIGURE}"></div>`)}`,
   over: `${line('This time, show it.', 'pf-line--night a-line1')}${line('Mark the spot. Say what you want.', 'a-line2')}${line('The AI does the rest.', 'd-line')}`,
   play(k, gsap, tl) {
     const t = clock(T.studio)
     k.camSet({ x: 0.5, y: 0.5, s: 1 })
     k.say('.a-line1', 0.25, 2.3)
-    k.cam(0.7, cam(913, 290, 2.3), 0.9)
+    k.cam(0.7, cam(920, 505, 2.2), 0.9)
     // Drag across the lines; the real selection is uncovered under the pointer, then the toolbar appears.
     const [l1, l2, l3] = LINES
-    k.pointerAt(1.2, onScreen(S, 820, 440))
+    k.pointerAt(1.2, onScreen(S, 820, 650))
     k.point(1.25, onScreen(S, l1[0] + 2, l1[1] + 12), 0.35)
     k.wipe('.a-sel1', 1.62, 0.26)
     k.point(1.62, onScreen(S, l1[0] + l1[2], l1[1] + 12), 0.26, 'none')
@@ -66,23 +71,23 @@ export const studio: Shot = {
     k.point(2.12, onScreen(S, l3[0] + l3[2], l3[1] + 12), 0.16, 'none')
     k.show('.a-selected', 2.3)
     const comment = t(T.commentClick)
-    k.point(comment - 0.4, onScreen(S, 1127, 235), 0.35)
+    k.point(comment - 0.4, onScreen(S, 1127, 443.5), 0.35)
     k.click(comment)
     // The comment box, typed into: each frame is the real box after three more characters.
     k.show('.a-comment', comment + 0.05)
-    k.cam(comment + 0.05, cam(850, 360, 2.4), 0.7)
-    k.point(comment + 0.15, onScreen(S, 1010, 560), 0.5)
+    k.cam(comment + 0.05, cam(700, 600, 2.4), 0.7)
+    k.point(comment + 0.15, onScreen(S, 900, 740), 0.5)
     COMMENT_FRAMES.forEach((i, j) => {
       k.show(`.a-f${i}`, j ? comment + 0.25 + j * 0.125 : comment + 0.05)
       if (j < COMMENT_FRAMES.length - 1) k.hide(`.a-f${i}`, comment + 0.25 + (j + 1) * 0.125 + 0.01)
     })
     const save = t(T.saveClick)
-    k.point(save - 0.45, onScreen(S, 858, 446), 0.4)
+    k.point(save - 0.45, onScreen(S, 763.5, 654.5), 0.4)
     k.click(save)
     // Saved: the paragraph is marked and the comment sits beside it, waiting.
     k.show('.a-commented', save + 0.08)
-    k.hide('.a-f50', save + 0.08)
-    k.cam(save + 0.08, cam(985, 290, 1.95), 0.8)
+    k.hide(`.a-f${COMMENT_FRAMES.at(-1)}`, save + 0.08)
+    k.cam(save + 0.08, cam(985, 400, 1.95), 0.8)
     k.say('.a-line2', save + 0.15, t(T.sendClick) - 0.3)
     // The AI Assistant opens from its button in the top bar.
     const assistant = t(T.assistantClick)
@@ -103,95 +108,75 @@ export const studio: Shot = {
     // The stop-down: the whole screen, still, through the build while the AI works.
     k.cam(send + 0.15, { x: 0.5, y: 0.44, s: 1.25 }, 0.9)
     k.say('.d-line', send + 0.3, t(DROP) - 0.35)
-    // On the drop the page is back with the animation; a light passes down it once.
+    // On the drop the page is back with the figure below the paragraph, scrolls to it, and a light passes down it once.
     const drop = t(DROP)
-    k.show('.d-after', drop)
+    SCROLL_FRAMES.forEach(i => k.show(`.d-s${i}`, drop + i * 0.08))
+    k.show('.d-after', drop + SCROLL_FRAMES.length * 0.08)
     gsap.set('.d-sweep', { yPercent: -100, autoAlpha: 0 })
     tl.to('.d-sweep', { yPercent: 250, autoAlpha: 1, duration: 0.55, ease: 'power1.out' }, drop)
     tl.to('.d-sweep', { autoAlpha: 0, duration: 0.15 }, drop + 0.45)
-    k.cam(drop, cam(760, 560, 1.9), 0.5, 'expo.out')
-    // Pressing the preview's steps plays the comparison, one step a beat.
-    k.pointerAt(drop + 0.1, onScreen(S, 640, 810))
+    k.cam(drop, cam(760, 500, 1.9), 0.5, 'expo.out')
+    // Pressing the preview's steps draws the note with 2, 4 and 8 circles, one step a beat.
+    k.pointerAt(drop + 0.1, onScreen(S, 600, 780))
     T.previewClicks.forEach((press, i) => {
       k.point(t(press) - 0.32, stepButton(i + 2), 0.28)
       k.click(t(press))
       k.show(`.d-after${i + 2}`, t(press) + 0.06)
     })
-    k.point(t(T.previewClicks[2]) + 0.25, onScreen(S, 700, 830), 0.35)
+    k.point(t(T.previewClicks[2]) + 0.25, onScreen(S, 640, 790), 0.35)
     k.pointerOff(t(T.pushToLesson) - 0.15)
   },
 }
 
-/** The slide's chart, as fractions of the slide: the same figure the studio previewed. */
-const SLIDE_CHART = 'left:25%;top:37.78%;width:48.35%;height:40.27%'
+/** The slide is the figure, edge to edge: the same figure the studio previewed. */
+const SLIDE_FIGURE = 'left:0;top:0;width:100%;height:100%'
+/** The slides of the fit section, N = 1, 2, 4 … 64, each at its finished frame. */
+const SLIDES = 7
 
 /**
- * 29.2–41.5 s. Next morning, in class: the studio's chart becomes the slide's chart on the projector screen, the camera
- * pulls out to the room, and each press of the clicker is one step on the screen.
+ * The projected picture in the lecture-hall photograph, in frame percentages: the screen faces the camera nearly
+ * square on, so the 16:9 slides sit on it as an axis-aligned box. The heads and the pendant lamp in front of it are cut
+ * from the same photograph (`photo-lecture-front`) and lie over the slides.
+ */
+const PROJECTION = 'left:23.743cqw;top:20.4cqh;width:42.163cqw;height:42.152cqh'
+
+/**
+ * 29.2–41.5 s. Next morning, in class: the studio's chart becomes the slide's chart on the projection screen, the
+ * camera pulls out to the room, and each press of the clicker is one step on the screen.
  */
 export const lesson: Shot = {
   css: `
-    .c-wall { background: linear-gradient(180deg, color-mix(in srgb, var(--pm-color-film-silver) 80%, var(--pm-color-film-paper)), var(--pm-color-film-silver)); }
-    .c-screen { position: absolute; left: 12cqw; top: 4cqh; width: 76cqw; height: 76cqh; background: var(--pm-color-sheen); box-shadow: 0 0 0 0.4cqw color-mix(in srgb, var(--pm-color-film-dusk) 25%, var(--pm-color-film-silver)), 0 2cqw 6cqw color-mix(in srgb, var(--pm-color-film-ink) 14%, transparent); }
-    .c-mask { position: absolute; left: 0; right: 0; top: 80%; bottom: 0; background: var(--pm-color-sheen); }
-    .c-roller { position: absolute; left: 10.5cqw; top: 1.2cqh; width: 79cqw; height: 2.4cqh; border-radius: 99cqw; background: color-mix(in srgb, var(--pm-color-film-dusk) 60%, var(--pm-color-film-silver)); }
-    .c-row { position: absolute; left: 0; right: 0; display: flex; justify-content: center; }
-    .c-back { bottom: 17cqh; gap: 3.2cqw; }
-    .c-front { bottom: 3cqh; gap: 5cqw; }
-    .c-kid { position: relative; width: 9cqw; height: 11cqw; transform-origin: 50% 100%; --kid: var(--pm-color-film-dusk); }
-    .c-kid b { position: absolute; left: 50%; top: 0; width: 4.4cqw; height: 4.4cqw; margin-left: -2.2cqw; border-radius: 50%; background: var(--kid); }
-    .c-kid i { position: absolute; left: 0; right: 0; top: 3.7cqw; bottom: 0; border-radius: 3.4cqw 3.4cqw 0 0; background: var(--kid); }
-    .c-back .c-kid { width: 6.5cqw; height: 8cqw; --kid: color-mix(in srgb, var(--pm-color-film-dusk) 55%, var(--pm-color-film-silver)); }
-    .c-back .c-kid b { width: 3.2cqw; height: 3.2cqw; margin-left: -1.6cqw; }
-    .c-back .c-kid i { top: 2.7cqw; }
-    .c-oh { position: absolute; left: 27cqw; top: 64cqh; padding: 0.4cqw 1cqw; border-radius: 1cqw 1cqw 1cqw 0.2cqw; background: var(--pm-color-sheen); font-size: 1.7cqw; font-weight: 600;
-      box-shadow: 0 0.4cqw 1.4cqw color-mix(in srgb, var(--pm-color-film-ink) 16%, transparent); }
-    .c-hand { position: absolute; left: 69cqw; top: 66cqh; width: 9cqw; height: 26cqh; transform: rotate(-18deg); transform-origin: 50% 100%; }
-    .c-sleeve { position: absolute; left: 2.2cqw; top: 6cqh; width: 4.8cqw; height: 24cqh; border-radius: 1.2cqw 1.2cqw 0 0; background: var(--pm-color-film-violet); }
-    .c-fist { position: absolute; left: 1.9cqw; top: 2.7cqh; width: 5.4cqw; height: 6cqh; border-radius: 1.8cqw 1.8cqw 1.2cqw 1.2cqw; background: color-mix(in srgb, var(--pm-color-film-wood) 55%, var(--pm-color-film-lamp)); }
-    .c-clicker { position: absolute; left: 3.3cqw; top: 0; width: 2.7cqw; height: 6.8cqh; border-radius: 1.2cqw 1.2cqw 0.6cqw 0.6cqw; background: var(--pm-color-film-ink); }
-    .c-btn { position: absolute; left: 0.75cqw; top: 1cqh; width: 1.2cqw; height: 1.2cqw; border-radius: 50%; background: var(--pm-color-film-lamp); }
-    .c-ring { position: absolute; left: -0.15cqw; top: -0.6cqh; width: 3cqw; height: 3cqw; border-radius: 50%; border: 0.2cqw solid var(--pm-color-film-lamp); }
+    .c-screen { position: absolute; ${PROJECTION}; background: var(--pm-color-sheen); filter: brightness(0.97) sepia(0.06); }
+    .c-oh { position: absolute; left: 41cqw; top: 62.5cqh; padding: 0.45cqw 1.1cqw; border-radius: 1.1cqw 1.1cqw 1.1cqw 0.2cqw; background: var(--pm-color-sheen); font-size: 1.9cqw; font-weight: 600;
+      box-shadow: 0 0.4cqw 1.4cqw color-mix(in srgb, var(--pm-color-film-night) 40%, transparent); }
   `,
-  stage: `<div class="pf-fill c-wall"></div><div class="c-roller"></div>
-    <div class="c-screen">${Array.from({ length: 9 }, (_, i) => image(`slide-${i}`, `pf-fill c-slide c-s${i}`)).join('')}<div class="c-mask"></div><div class="pf-hero" style="${SLIDE_CHART}"></div></div>
-    <div class="c-row c-back">${Array.from({ length: 7 }, (_, i) => `<div class="c-kid c-b${i}"><b></b><i></i></div>`).join('')}</div>
-    <div class="c-row c-front">${Array.from({ length: 5 }, (_, i) => `<div class="c-kid c-k${i}"><b></b><i></i></div>`).join('')}</div>
-    <div class="c-oh">Oh, I see!</div>
-    <div class="c-hand"><div class="c-sleeve"></div><div class="c-clicker"><div class="c-btn"></div><div class="c-ring"></div></div><div class="c-fist"></div></div>`,
+  stage: `${image('photo-lecture-hall', 'pf-fill pf-photo')}
+    <div class="c-screen">${Array.from({ length: SLIDES }, (_, i) => image(`slide-${i}`, `pf-fill c-slide c-s${i}`)).join('')}<div class="pf-hero" style="${SLIDE_FIGURE}"></div></div>
+    ${image('photo-lecture-front', 'pf-fill pf-photo')}
+    <div class="c-oh">Oh, I see!</div>`,
   over: line('In class: one click, one step.'),
   pointer: 'none',
   play(k, gsap, tl) {
     const t = clock(T.lessonIn - FADE)
-    // While the steps play the chart is about two thirds of the frame; the heads and the clicker are at its foot.
-    const steps = fit(k.measure('.pf-hero'), { x: 0.5, y: 0.42, w: 0.66 })
+    // While the steps play the screen is about two thirds of the frame, with the audience's heads below it.
+    const steps = fit(k.measure('.pf-hero'), { x: 0.5, y: 0.4, w: 0.64 })
     k.cam(FADE, steps, bar(14) - T.lessonIn, 'power2.inOut')
     k.say('.pf-line', t(bar(14)) + 0.05, t(beat(62)) - 0.45)
-    const slides = Array.from({ length: 9 }, (_, i) => `.c-s${i}`)
+    // The clicker is off screen; each press (and its sound, in the score) is one step on the slide.
+    const slides = Array.from({ length: SLIDES }, (_, i) => `.c-s${i}`)
     gsap.set(slides.filter((_, i) => i !== T.firstSlide), { autoAlpha: 0 })
-    gsap.set('.c-ring', { autoAlpha: 0, scale: 0.4 })
-    const press = (at: number, step: number) => {
-      tl.to('.c-btn', { keyframes: [{ scale: 0.75, duration: 0.08 }, { scale: 1, duration: 0.2, ease: 'back.out(3)' }] }, at)
-      tl.fromTo('.c-ring', { autoAlpha: 0.9, scale: 0.4 }, { autoAlpha: 0, scale: 1.6, duration: 0.45, ease: 'power2.out', immediateRender: false }, at)
-      tl.to('.c-hand', { keyframes: [{ rotation: -21, duration: 0.08 }, { rotation: -18, duration: 0.2 }] }, at)
-      k.show(slides[step]!, at + 0.06, 0.1)
-      k.hide(slides[step - 1]!, at + 0.16)
-    }
-    // The studio's chart, the line swung past the data at learning rate 2.2: heads tilt. Then 0.35 from the same start.
-    const tilt = t(beat(58)) + 0.35
-    tl.to(['.c-k1', '.c-b2'], { rotation: 7, duration: 0.35, ease: 'power2.out' }, tilt)
-    tl.to(['.c-k3', '.c-b5'], { rotation: -7, duration: 0.35, ease: 'power2.out' }, tilt + 0.1)
-    T.clicker.forEach((at, i) => press(t(at), T.firstSlide + 1 + i))
-    tl.to(['.c-k1', '.c-b2', '.c-k3', '.c-b5'], { rotation: 0, duration: 0.4, ease: 'power2.inOut' }, t(T.clicker[0]) - 0.5)
+    T.clicker.forEach((at, i) => {
+      const step = T.firstSlide + 1 + i
+      k.show(slides[step]!, t(at) + 0.06, 0.1)
+      k.hide(slides[step - 1]!, t(at) + 0.16)
+    })
     // The payoff on the bar, then nothing moves.
-    const aha = t(T.aha)
-    k.enter('.c-oh', aha, { scale: 0.5, yPercent: 30 }, 0.4)
-    tl.to(['.c-k0', '.c-k2', '.c-k4', '.c-b1', '.c-b3'], { keyframes: [{ yPercent: 4, duration: 0.12 }, { yPercent: 0, duration: 0.2 }], stagger: 0.05 }, aha)
+    k.enter('.c-oh', t(T.aha), { scale: 0.5, yPercent: 30 }, 0.4)
   },
 }
 
-/** The course web page is 2385 CSS pixels tall at 1440 wide; it is already scrolled to the comparison. */
-const PAGE = { width: 1440, height: 2385, scroll: 560, chart: [429.8, 873.4, 607, 284.4] as const }
+/** The course web page is 3693 CSS pixels tall at 1440 wide; it is already scrolled to the figure, set to N = 64. */
+const PAGE = { width: 1440, height: 3693, scroll: 1190, chart: [392, 1605.2, 704, 396] as const }
 const WEB_WIDTH = 68
 const pagePx = (px: number) => px / PAGE.width * WEB_WIDTH
 

@@ -4,7 +4,7 @@
   "metadata": {
     "title": "Make complex things clear",
     "lang": "en",
-    "description": "A student asks a question late at night. The teacher marks a paragraph in Presmium and has the AI add an animation; the same chart is taught step by step in class, read on the course website and sent as a video, and the student replies \"Got it\". Music: \"Newer Wave\" by Kevin MacLeod (incompetech.com), CC BY 4.0.",
+    "description": "A student asks a question late at night. The teacher marks a paragraph in Presmium and has the AI add an animation; the same figure is taught step by step in class, read on the course website and sent as a video, and the student replies \"Got it\". Music: \"Newer Wave\" by Kevin MacLeod (incompetech.com), CC BY 4.0.",
     "plugins": [
       "@lincyaw/addon-motion",
       "@lincyaw/addon-lecture"
@@ -292,7 +292,7 @@
       "kind": "audio",
       "location": "audio/score.ogg",
       "title": "Make complex things clear · score (music: “Newer Wave”, Kevin MacLeod, CC BY 4.0)",
-      "fingerprint": "sha256:776a7748f6eff5d16f83e50bee93094ba016bed7e14bd5a47a590321ec078bfc",
+      "fingerprint": "sha256:8ecb8cf70f3d92772a7a11aa5e95b11e443f1e09eda8b2c6c96cb45b88347635",
       "mediaType": "audio/ogg"
     }
   },
@@ -343,7 +343,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "Late at night, the teacher's phone lights up. In the class chat, Sam asks: \"Why does a bigger learning rate make training worse, not better?\""
+                  "value": "Late at night, the teacher's phone lights up. In the class chat, Sam asks: \"How can a bunch of spinning circles draw any shape?\""
                 }
               ]
             }
@@ -397,7 +397,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "Last class's blackboard: the same overshoot drawn three times and erased twice. Drew it three times. Still didn't click."
+                  "value": "Last class's blackboard: a square wave, built from sin x, then + sin 3x/3, then + sin 5x/5, drawn three times and erased twice. Drew it three times. Still didn't click."
                 }
               ]
             }
@@ -463,7 +463,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "That night, in Presmium, the teacher selects the paragraph on the update rule and leaves a comment: \"Animate this: α = 2.2 vs 0.35 from the same start.\" The AI Assistant applies it, and the page comes back with the comparison animation."
+                  "value": "That night, in Presmium, the teacher selects the paragraph on the corners of the note and leaves a comment: \"Animate this: draw the note with 1, 2, 4 … 64 circles.\" The AI Assistant applies it, and the page comes back with the turning circles, drawing the note with 2, 4, then 8 circles."
                 }
               ]
             },
@@ -472,7 +472,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "Next morning in class, the same chart is on the screen. Each click is one step: with 2.2 the line swings further out; back at the same start with 0.35, it settles onto the data. \"Oh, I see!\""
+                  "value": "Next morning in class, the same figure is on the screen, at 8 circles. Each click is one step: 16, 32, then 64 circles, and the curve closes in on the note while the error falls below half a percent. \"Oh, I see!\""
                 }
               ]
             },
@@ -481,7 +481,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "After class, the same chart is on the course website."
+                  "value": "After class, the same figure, at 64 circles, is on the course website."
                 }
               ]
             },
@@ -490,7 +490,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "And in the lesson video in the class chat: missed a step? Drag it back. Sam replies: \"Got it! The steps were too big, so it kept overshooting.\""
+                  "value": "And in the lesson video in the class chat: missed a step? Drag it back. Sam replies: \"Got it! Each circle adds a finer detail, so more circles get closer to the shape.\""
                 }
               ]
             }
