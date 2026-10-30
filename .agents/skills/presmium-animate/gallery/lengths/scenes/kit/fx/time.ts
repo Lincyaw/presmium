@@ -35,6 +35,33 @@ export function spring01(t: number, { duration = 0.5, bounce = 0.2 } = {}): numb
   return 1 - Math.exp(-zeta * w0 * t) * (Math.cos(wd * t) + ((zeta * w0) / wd) * Math.sin(wd * t))
 }
 
+/**
+ * A damped spring's step response 0 → 1 at tau (s), by damping ratio `zeta` (.4 bouncy … .8 firm, 1 critical) and
+ * natural frequency `omega` (rad/s): the physical form, for moves tuned by feel rather than by duration.
+ */
+export function damped(tau: number, zeta = 0.6, omega = 20): number {
+  if (tau <= 0) return 0
+  if (zeta < 1) {
+    const wd = omega * Math.sqrt(1 - zeta * zeta)
+    return 1 - Math.exp(-zeta * omega * tau) * (Math.cos(wd * tau) + ((zeta * omega) / wd) * Math.sin(wd * tau))
+  }
+  if (zeta === 1) return 1 - Math.exp(-omega * tau) * (1 + omega * tau)
+  const q = omega * Math.sqrt(zeta * zeta - 1), r1 = -zeta * omega + q, r2 = -zeta * omega - q
+  return 1 - (r2 * Math.exp(r1 * tau) - r1 * Math.exp(r2 * tau)) / (r2 - r1)
+}
+
+/** d/dtau of `damped`, progress per second: squash from the speed of a spring. */
+export function dampedVel(tau: number, zeta = 0.6, omega = 20): number {
+  if (tau <= 0) return 0
+  if (zeta < 1) {
+    const s = Math.sqrt(1 - zeta * zeta)
+    return (omega / s) * Math.exp(-zeta * omega * tau) * Math.sin(omega * s * tau)
+  }
+  if (zeta === 1) return omega * omega * tau * Math.exp(-omega * tau)
+  const q = omega * Math.sqrt(zeta * zeta - 1), r1 = -zeta * omega + q, r2 = -zeta * omega - q
+  return (omega * omega * (Math.exp(r1 * tau) - Math.exp(r2 * tau))) / (r1 - r2)
+}
+
 /** A damped oscillation: amplitude `a`, frequency `f` (Hz), decay time `tau` (s); 0 before t = 0. */
 export const wobble = (t: number, a: number, f: number, tau: number) => (t <= 0 ? 0 : a * Math.exp(-t / tau) * Math.sin(2 * Math.PI * f * t))
 
@@ -60,7 +87,13 @@ export const ease = {
   out4: (p: number) => 1 - (1 - p) ** 4,
   inOut2: (p: number) => (p < 0.5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2),
   inOut3: (p: number) => (p < 0.5 ? 4 * p ** 3 : 1 - (-2 * p + 2) ** 3 / 2),
+  inOut5: (p: number) => (p < 0.5 ? 16 * p ** 5 : 1 - (-2 * p + 2) ** 5 / 2),
+  /** smootherstep: a soft S for travel that starts and stops at rest. */
+  smoother: (p: number) => p * p * p * (p * (p * 6 - 15) + 10),
+  inOutSine: (p: number) => -(Math.cos(Math.PI * p) - 1) / 2,
   outExpo: (p: number) => (p >= 1 ? 1 : 1 - 2 ** (-10 * p)),
+  /** Expo in-out: a whip, still at both ends and nearly all the travel in the middle. */
+  inOutExpo: (p: number) => (p <= 0 ? 0 : p >= 1 ? 1 : p < 0.5 ? 2 ** (20 * p - 10) / 2 : (2 - 2 ** (-20 * p + 10)) / 2),
   /** back.out(s): passes 1 and comes back; s = 1.7 overshoots by about 10%. */
   backOut: (s = 1.7) => (p: number) => 1 + (s + 1) * (p - 1) ** 3 + s * (p - 1) ** 2,
 }
