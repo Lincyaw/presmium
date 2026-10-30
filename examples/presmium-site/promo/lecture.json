@@ -4,7 +4,7 @@
   "metadata": {
     "title": "Make complex things clear",
     "lang": "en",
-    "description": "A student asks a question late at night. The teacher marks a paragraph in Presmium and has the AI add an animation, teaches it step by step the next day, then shares the lesson as a website and a video, and the student replies \"Got it\".",
+    "description": "A student asks a question late at night. The teacher marks a paragraph in Presmium and has the AI add an animation; the same chart is taught step by step in class, read on the course website and sent as a video, and the student replies \"Got it\". Music: \"Newer Wave\" by Kevin MacLeod (incompetech.com), CC BY 4.0.",
     "plugins": [
       "@lincyaw/addon-motion",
       "@lincyaw/addon-lecture"
@@ -19,12 +19,6 @@
     "film-question",
     "film-board",
     "film-ask",
-    "film-done",
-    "film-forms",
-    "film-lesson",
-    "film-website",
-    "film-video",
-    "film-reply",
     "film-brand"
   ],
   "sections": {
@@ -68,127 +62,16 @@
     },
     "film-ask": {
       "id": "film-ask",
-      "title": "Mark it, say it",
+      "title": "Show it, then share it",
       "level": 2,
       "children": [
         "ask-scene"
       ],
       "stepOrder": [
-        "ask-step"
-      ],
-      "layout": {
-        "type": "stack",
-        "renderers": {
-          "slides": {
-            "layout": "full"
-          }
-        }
-      }
-    },
-    "film-done": {
-      "id": "film-done",
-      "title": "The AI does the rest",
-      "level": 2,
-      "children": [
-        "done-scene"
-      ],
-      "stepOrder": [
-        "done-step"
-      ],
-      "layout": {
-        "type": "stack",
-        "renderers": {
-          "slides": {
-            "layout": "full"
-          }
-        }
-      }
-    },
-    "film-forms": {
-      "id": "film-forms",
-      "title": "Class, website, video",
-      "level": 2,
-      "children": [
-        "forms-scene"
-      ],
-      "stepOrder": [
-        "forms-step"
-      ],
-      "layout": {
-        "type": "stack",
-        "renderers": {
-          "slides": {
-            "layout": "full"
-          }
-        }
-      }
-    },
-    "film-lesson": {
-      "id": "film-lesson",
-      "title": "One click, one step",
-      "level": 2,
-      "children": [
-        "lesson-scene"
-      ],
-      "stepOrder": [
-        "lesson-step"
-      ],
-      "layout": {
-        "type": "stack",
-        "renderers": {
-          "slides": {
-            "layout": "full"
-          }
-        }
-      }
-    },
-    "film-website": {
-      "id": "film-website",
-      "title": "After class, online",
-      "level": 2,
-      "children": [
-        "website-scene"
-      ],
-      "stepOrder": [
-        "website-step"
-      ],
-      "layout": {
-        "type": "stack",
-        "renderers": {
-          "slides": {
-            "layout": "full"
-          }
-        }
-      }
-    },
-    "film-video": {
-      "id": "film-video",
-      "title": "Send the video",
-      "level": 2,
-      "children": [
-        "video-scene"
-      ],
-      "stepOrder": [
+        "ask-step",
+        "lesson-step",
+        "website-step",
         "video-step"
-      ],
-      "layout": {
-        "type": "stack",
-        "renderers": {
-          "slides": {
-            "layout": "full"
-          }
-        }
-      }
-    },
-    "film-reply": {
-      "id": "film-reply",
-      "title": "Got it",
-      "level": 2,
-      "children": [
-        "reply-scene"
-      ],
-      "stepOrder": [
-        "reply-step"
       ],
       "layout": {
         "type": "stack",
@@ -204,7 +87,8 @@
       "title": "Presmium",
       "level": 2,
       "children": [
-        "brand-scene"
+        "brand-scene",
+        "brand-credits"
       ],
       "stepOrder": [
         "brand-step"
@@ -244,54 +128,6 @@
         "shot": "ask"
       }
     },
-    "done-scene": {
-      "id": "done-scene",
-      "type": "component",
-      "definitionId": "done-shot",
-      "parameters": {
-        "shot": "done"
-      }
-    },
-    "forms-scene": {
-      "id": "forms-scene",
-      "type": "component",
-      "definitionId": "forms-shot",
-      "parameters": {
-        "shot": "forms"
-      }
-    },
-    "lesson-scene": {
-      "id": "lesson-scene",
-      "type": "component",
-      "definitionId": "lesson-shot",
-      "parameters": {
-        "shot": "lesson"
-      }
-    },
-    "website-scene": {
-      "id": "website-scene",
-      "type": "component",
-      "definitionId": "website-shot",
-      "parameters": {
-        "shot": "website"
-      }
-    },
-    "video-scene": {
-      "id": "video-scene",
-      "type": "component",
-      "definitionId": "video-shot",
-      "parameters": {
-        "shot": "video"
-      }
-    },
-    "reply-scene": {
-      "id": "reply-scene",
-      "type": "component",
-      "definitionId": "reply-shot",
-      "parameters": {
-        "shot": "reply"
-      }
-    },
     "brand-scene": {
       "id": "brand-scene",
       "type": "component",
@@ -299,6 +135,64 @@
       "parameters": {
         "shot": "brand"
       }
+    },
+    "brand-credits": {
+      "id": "brand-credits",
+      "type": "text",
+      "content": [
+        {
+          "id": "brand-credits--p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Music: “Newer Wave” by Kevin MacLeod ("
+            },
+            {
+              "type": "link",
+              "href": "https://incompetech.com",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "incompetech.com"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "), licensed under "
+            },
+            {
+              "type": "link",
+              "href": "http://creativecommons.org/licenses/by/4.0/",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Creative Commons: By Attribution 4.0"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": ". Interface sounds: Kenney “Interface Sounds” ("
+            },
+            {
+              "type": "link",
+              "href": "https://kenney.nl/assets/interface-sounds",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "kenney.nl"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "), CC0."
+            }
+          ]
+        }
+      ]
     }
   },
   "steps": {
@@ -333,79 +227,43 @@
         {
           "blockId": "ask-scene",
           "visible": true,
-          "state": "show"
-        }
-      ],
-      "narrationIds": []
-    },
-    "done-step": {
-      "id": "done-step",
-      "sectionId": "film-done",
-      "visuals": [
-        {
-          "blockId": "done-scene",
-          "visible": true,
-          "state": "show"
-        }
-      ],
-      "narrationIds": []
-    },
-    "forms-step": {
-      "id": "forms-step",
-      "sectionId": "film-forms",
-      "visuals": [
-        {
-          "blockId": "forms-scene",
-          "visible": true,
-          "state": "show"
+          "state": "studio"
         }
       ],
       "narrationIds": []
     },
     "lesson-step": {
       "id": "lesson-step",
-      "sectionId": "film-lesson",
+      "sectionId": "film-ask",
       "visuals": [
         {
-          "blockId": "lesson-scene",
+          "blockId": "ask-scene",
           "visible": true,
-          "state": "show"
+          "state": "lesson"
         }
       ],
       "narrationIds": []
     },
     "website-step": {
       "id": "website-step",
-      "sectionId": "film-website",
+      "sectionId": "film-ask",
       "visuals": [
         {
-          "blockId": "website-scene",
+          "blockId": "ask-scene",
           "visible": true,
-          "state": "show"
+          "state": "website"
         }
       ],
       "narrationIds": []
     },
     "video-step": {
       "id": "video-step",
-      "sectionId": "film-video",
+      "sectionId": "film-ask",
       "visuals": [
         {
-          "blockId": "video-scene",
+          "blockId": "ask-scene",
           "visible": true,
-          "state": "show"
-        }
-      ],
-      "narrationIds": []
-    },
-    "reply-step": {
-      "id": "reply-step",
-      "sectionId": "film-reply",
-      "visuals": [
-        {
-          "blockId": "reply-scene",
-          "visible": true,
-          "state": "show"
+          "state": "video"
         }
       ],
       "narrationIds": []
@@ -418,6 +276,10 @@
           "blockId": "brand-scene",
           "visible": true,
           "state": "show"
+        },
+        {
+          "blockId": "brand-credits",
+          "visible": false
         }
       ],
       "narrationIds": []
@@ -429,8 +291,8 @@
       "id": "film-score",
       "kind": "audio",
       "location": "audio/score.ogg",
-      "title": "Make complex things clear · original score",
-      "fingerprint": "sha256:aacc7e31ca06e7eea3e6708c78817da4bda27c378d5b0073dd3b91e181e7aa30",
+      "title": "Make complex things clear · score (music: “Newer Wave”, Kevin MacLeod, CC BY 4.0)",
+      "fingerprint": "sha256:776a7748f6eff5d16f83e50bee93094ba016bed7e14bd5a47a590321ec078bfc",
       "mediaType": "audio/ogg"
     }
   },
@@ -452,12 +314,6 @@
               "question",
               "board",
               "ask",
-              "done",
-              "forms",
-              "lesson",
-              "website",
-              "video",
-              "reply",
               "brand"
             ]
           }
@@ -477,7 +333,7 @@
         "name": "PmScene",
         "language": "typescript",
         "durations": [
-          6000
+          8728
         ],
         "fallback": {
           "type": "root",
@@ -512,12 +368,6 @@
               "question",
               "board",
               "ask",
-              "done",
-              "forms",
-              "lesson",
-              "website",
-              "video",
-              "reply",
               "brand"
             ]
           }
@@ -537,7 +387,7 @@
         "name": "PmScene",
         "language": "typescript",
         "durations": [
-          5000
+          4363
         ],
         "fallback": {
           "type": "root",
@@ -572,12 +422,6 @@
               "question",
               "board",
               "ask",
-              "done",
-              "forms",
-              "lesson",
-              "website",
-              "video",
-              "reply",
               "brand"
             ]
           }
@@ -589,7 +433,16 @@
       },
       "states": [
         {
-          "id": "show"
+          "id": "studio"
+        },
+        {
+          "id": "lesson"
+        },
+        {
+          "id": "website"
+        },
+        {
+          "id": "video"
         }
       ],
       "data": {
@@ -597,7 +450,10 @@
         "name": "PmScene",
         "language": "typescript",
         "durations": [
-          8000
+          16364,
+          11999,
+          4364,
+          8727
         ],
         "fallback": {
           "type": "root",
@@ -607,367 +463,34 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "In Presmium, the teacher selects the paragraph on the update rule and leaves a comment: \"Animate this: α = 2.2 vs 0.35 from the same start.\" Mark the spot. Say what you want."
+                  "value": "That night, in Presmium, the teacher selects the paragraph on the update rule and leaves a comment: \"Animate this: α = 2.2 vs 0.35 from the same start.\" The AI Assistant applies it, and the page comes back with the comparison animation."
                 }
               ]
-            }
-          ]
-        }
-      }
-    },
-    "done-shot": {
-      "id": "done-shot",
-      "kind": "scene",
-      "schemaVersion": 1,
-      "implementation": {
-        "type": "file",
-        "path": "scenes/film.ts"
-      },
-      "parameterSchema": {
-        "type": "object",
-        "properties": {
-          "shot": {
-            "type": "string",
-            "enum": [
-              "question",
-              "board",
-              "ask",
-              "done",
-              "forms",
-              "lesson",
-              "website",
-              "video",
-              "reply",
-              "brand"
-            ]
-          }
-        },
-        "required": [
-          "shot"
-        ],
-        "additionalProperties": false
-      },
-      "states": [
-        {
-          "id": "show"
-        }
-      ],
-      "data": {
-        "plugin": "presmium.motion",
-        "name": "PmScene",
-        "language": "typescript",
-        "durations": [
-          7000
-        ],
-        "fallback": {
-          "type": "root",
-          "children": [
+            },
             {
               "type": "paragraph",
               "children": [
                 {
                   "type": "text",
-                  "value": "The teacher asks the AI Assistant to apply the comment. The page now has the comparison animation, the version history records the AI's change, and the preview steps through it."
+                  "value": "Next morning in class, the same chart is on the screen. Each click is one step: with 2.2 the line swings further out; back at the same start with 0.35, it settles onto the data. \"Oh, I see!\""
                 }
               ]
-            }
-          ]
-        }
-      }
-    },
-    "forms-shot": {
-      "id": "forms-shot",
-      "kind": "scene",
-      "schemaVersion": 1,
-      "implementation": {
-        "type": "file",
-        "path": "scenes/film.ts"
-      },
-      "parameterSchema": {
-        "type": "object",
-        "properties": {
-          "shot": {
-            "type": "string",
-            "enum": [
-              "question",
-              "board",
-              "ask",
-              "done",
-              "forms",
-              "lesson",
-              "website",
-              "video",
-              "reply",
-              "brand"
-            ]
-          }
-        },
-        "required": [
-          "shot"
-        ],
-        "additionalProperties": false
-      },
-      "states": [
-        {
-          "id": "show"
-        }
-      ],
-      "data": {
-        "plugin": "presmium.motion",
-        "name": "PmScene",
-        "language": "typescript",
-        "durations": [
-          3000
-        ],
-        "fallback": {
-          "type": "root",
-          "children": [
+            },
             {
               "type": "paragraph",
               "children": [
                 {
                   "type": "text",
-                  "value": "The same document can be presented in class, published as a website, or exported as a video."
+                  "value": "After class, the same chart is on the course website."
                 }
               ]
-            }
-          ]
-        }
-      }
-    },
-    "lesson-shot": {
-      "id": "lesson-shot",
-      "kind": "scene",
-      "schemaVersion": 1,
-      "implementation": {
-        "type": "file",
-        "path": "scenes/film.ts"
-      },
-      "parameterSchema": {
-        "type": "object",
-        "properties": {
-          "shot": {
-            "type": "string",
-            "enum": [
-              "question",
-              "board",
-              "ask",
-              "done",
-              "forms",
-              "lesson",
-              "website",
-              "video",
-              "reply",
-              "brand"
-            ]
-          }
-        },
-        "required": [
-          "shot"
-        ],
-        "additionalProperties": false
-      },
-      "states": [
-        {
-          "id": "show"
-        }
-      ],
-      "data": {
-        "plugin": "presmium.motion",
-        "name": "PmScene",
-        "language": "typescript",
-        "durations": [
-          10000
-        ],
-        "fallback": {
-          "type": "root",
-          "children": [
+            },
             {
               "type": "paragraph",
               "children": [
                 {
                   "type": "text",
-                  "value": "Next morning in class, the slides are on the screen. Each click is one step: with 2.2 the line swings further out; back at the same start with 0.35, it settles onto the data."
-                }
-              ]
-            }
-          ]
-        }
-      }
-    },
-    "website-shot": {
-      "id": "website-shot",
-      "kind": "scene",
-      "schemaVersion": 1,
-      "implementation": {
-        "type": "file",
-        "path": "scenes/film.ts"
-      },
-      "parameterSchema": {
-        "type": "object",
-        "properties": {
-          "shot": {
-            "type": "string",
-            "enum": [
-              "question",
-              "board",
-              "ask",
-              "done",
-              "forms",
-              "lesson",
-              "website",
-              "video",
-              "reply",
-              "brand"
-            ]
-          }
-        },
-        "required": [
-          "shot"
-        ],
-        "additionalProperties": false
-      },
-      "states": [
-        {
-          "id": "show"
-        }
-      ],
-      "data": {
-        "plugin": "presmium.motion",
-        "name": "PmScene",
-        "language": "typescript",
-        "durations": [
-          5500
-        ],
-        "fallback": {
-          "type": "root",
-          "children": [
-            {
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "value": "After class, the lesson is a page of the course website, ready to read again."
-                }
-              ]
-            }
-          ]
-        }
-      }
-    },
-    "video-shot": {
-      "id": "video-shot",
-      "kind": "scene",
-      "schemaVersion": 1,
-      "implementation": {
-        "type": "file",
-        "path": "scenes/film.ts"
-      },
-      "parameterSchema": {
-        "type": "object",
-        "properties": {
-          "shot": {
-            "type": "string",
-            "enum": [
-              "question",
-              "board",
-              "ask",
-              "done",
-              "forms",
-              "lesson",
-              "website",
-              "video",
-              "reply",
-              "brand"
-            ]
-          }
-        },
-        "required": [
-          "shot"
-        ],
-        "additionalProperties": false
-      },
-      "states": [
-        {
-          "id": "show"
-        }
-      ],
-      "data": {
-        "plugin": "presmium.motion",
-        "name": "PmScene",
-        "language": "typescript",
-        "durations": [
-          6000
-        ],
-        "fallback": {
-          "type": "root",
-          "children": [
-            {
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "value": "The teacher exports the lesson as a video and sends it to the class chat. Missed a step? Drag it back."
-                }
-              ]
-            }
-          ]
-        }
-      }
-    },
-    "reply-shot": {
-      "id": "reply-shot",
-      "kind": "scene",
-      "schemaVersion": 1,
-      "implementation": {
-        "type": "file",
-        "path": "scenes/film.ts"
-      },
-      "parameterSchema": {
-        "type": "object",
-        "properties": {
-          "shot": {
-            "type": "string",
-            "enum": [
-              "question",
-              "board",
-              "ask",
-              "done",
-              "forms",
-              "lesson",
-              "website",
-              "video",
-              "reply",
-              "brand"
-            ]
-          }
-        },
-        "required": [
-          "shot"
-        ],
-        "additionalProperties": false
-      },
-      "states": [
-        {
-          "id": "show"
-        }
-      ],
-      "data": {
-        "plugin": "presmium.motion",
-        "name": "PmScene",
-        "language": "typescript",
-        "durations": [
-          3500
-        ],
-        "fallback": {
-          "type": "root",
-          "children": [
-            {
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "value": "Sam replies: \"Got it! The steps were too big, so it kept overshooting.\""
+                  "value": "And in the lesson video in the class chat: missed a step? Drag it back. Sam replies: \"Got it! The steps were too big, so it kept overshooting.\""
                 }
               ]
             }
@@ -992,12 +515,6 @@
               "question",
               "board",
               "ask",
-              "done",
-              "forms",
-              "lesson",
-              "website",
-              "video",
-              "reply",
               "brand"
             ]
           }
@@ -1017,7 +534,7 @@
         "name": "PmScene",
         "language": "typescript",
         "durations": [
-          6000
+          6545
         ],
         "fallback": {
           "type": "root",
@@ -1027,7 +544,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "Presmium. Make complex things clear. Open source, free to use."
+                  "value": "Make complex things clear. Presmium. Open source, free to use."
                 }
               ]
             }
@@ -1046,43 +563,31 @@
     },
     "stepOverrides": {
       "question-step": {
-        "minimumHoldMs": 6000,
+        "minimumHoldMs": 8728,
         "trailingPauseMs": 0
       },
       "board-step": {
-        "minimumHoldMs": 5000,
+        "minimumHoldMs": 4363,
         "trailingPauseMs": 0
       },
       "ask-step": {
-        "minimumHoldMs": 8000,
-        "trailingPauseMs": 0
-      },
-      "done-step": {
-        "minimumHoldMs": 7000,
-        "trailingPauseMs": 0
-      },
-      "forms-step": {
-        "minimumHoldMs": 3000,
+        "minimumHoldMs": 16364,
         "trailingPauseMs": 0
       },
       "lesson-step": {
-        "minimumHoldMs": 10000,
+        "minimumHoldMs": 11999,
         "trailingPauseMs": 0
       },
       "website-step": {
-        "minimumHoldMs": 5500,
+        "minimumHoldMs": 4364,
         "trailingPauseMs": 0
       },
       "video-step": {
-        "minimumHoldMs": 6000,
-        "trailingPauseMs": 0
-      },
-      "reply-step": {
-        "minimumHoldMs": 3500,
+        "minimumHoldMs": 8727,
         "trailingPauseMs": 0
       },
       "brand-step": {
-        "minimumHoldMs": 6000,
+        "minimumHoldMs": 6545,
         "trailingPauseMs": 0
       }
     },
@@ -1092,7 +597,7 @@
         "assetId": "film-score",
         "sourceRange": {
           "startMs": 0,
-          "endMs": 6000
+          "endMs": 8728
         },
         "attachment": {
           "stepId": "question-step",
@@ -1105,8 +610,8 @@
         "id": "score-board",
         "assetId": "film-score",
         "sourceRange": {
-          "startMs": 6000,
-          "endMs": 11000
+          "startMs": 8728,
+          "endMs": 13091
         },
         "attachment": {
           "stepId": "board-step",
@@ -1119,8 +624,8 @@
         "id": "score-ask",
         "assetId": "film-score",
         "sourceRange": {
-          "startMs": 11000,
-          "endMs": 19000
+          "startMs": 13091,
+          "endMs": 29455
         },
         "attachment": {
           "stepId": "ask-step",
@@ -1130,39 +635,11 @@
         "muted": false
       },
       {
-        "id": "score-done",
-        "assetId": "film-score",
-        "sourceRange": {
-          "startMs": 19000,
-          "endMs": 26000
-        },
-        "attachment": {
-          "stepId": "done-step",
-          "offsetMs": 0
-        },
-        "volume": 1,
-        "muted": false
-      },
-      {
-        "id": "score-forms",
-        "assetId": "film-score",
-        "sourceRange": {
-          "startMs": 26000,
-          "endMs": 29000
-        },
-        "attachment": {
-          "stepId": "forms-step",
-          "offsetMs": 0
-        },
-        "volume": 1,
-        "muted": false
-      },
-      {
         "id": "score-lesson",
         "assetId": "film-score",
         "sourceRange": {
-          "startMs": 29000,
-          "endMs": 39000
+          "startMs": 29455,
+          "endMs": 41454
         },
         "attachment": {
           "stepId": "lesson-step",
@@ -1175,8 +652,8 @@
         "id": "score-website",
         "assetId": "film-score",
         "sourceRange": {
-          "startMs": 39000,
-          "endMs": 44500
+          "startMs": 41454,
+          "endMs": 45818
         },
         "attachment": {
           "stepId": "website-step",
@@ -1189,8 +666,8 @@
         "id": "score-video",
         "assetId": "film-score",
         "sourceRange": {
-          "startMs": 44500,
-          "endMs": 50500
+          "startMs": 45818,
+          "endMs": 54545
         },
         "attachment": {
           "stepId": "video-step",
@@ -1200,25 +677,11 @@
         "muted": false
       },
       {
-        "id": "score-reply",
-        "assetId": "film-score",
-        "sourceRange": {
-          "startMs": 50500,
-          "endMs": 54000
-        },
-        "attachment": {
-          "stepId": "reply-step",
-          "offsetMs": 0
-        },
-        "volume": 1,
-        "muted": false
-      },
-      {
         "id": "score-brand",
         "assetId": "film-score",
         "sourceRange": {
-          "startMs": 54000,
-          "endMs": 60000
+          "startMs": 54545,
+          "endMs": 61090
         },
         "attachment": {
           "stepId": "brand-step",

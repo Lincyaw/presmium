@@ -1,0 +1,6 @@
+Interface Sounds (1.0) by Kenney (www.kenney.nl), https://kenney.nl/assets/interface-sounds
+License: Creative Commons Zero, CC0 (http://creativecommons.org/publicdomain/zero/1.0/)
+
+click.ogg    = Audio/click_001.ogg   (mouse clicks in the studio)
+clicker.ogg  = Audio/toggle_002.ogg  (the presentation clicker's button)
+tap.ogg      = Audio/tick_004.ogg    (a fingertip on the phone)

@@ -86,9 +86,10 @@ const docUrl = site.documents?.find(doc => doc.id === 'learn')?.href || `${base}
 const promoUrl = site.documents?.find(doc => doc.id === 'promo')?.href || `${base}promo/`
 const command = 'presmium new my-site --type site'
 // The film is played from its source: the film document's presentation with its lecture, drawn live by the browser
-// at the viewer's resolution. Each chapter starts at the first step of one of its sections.
-const CHAPTERS = [['film-question', '00:00'], ['film-ask', '00:11'], ['film-lesson', '00:29'], ['film-website', '00:39']] as const
-function playFilm(section: string) {
+// at the viewer's resolution. Each chapter starts at a step of a section: the film from the studio on is one section
+// whose steps are the studio, the class, the website and the video.
+const CHAPTERS = [['film-question', 0, '00:00'], ['film-ask', 0, '00:13'], ['film-ask', 1, '00:29'], ['film-ask', 2, '00:41']] as const
+function playFilm(section: string, step = 0) {
   const frame = document.getElementById('film-frame')!
   let live = frame.querySelector('iframe')
   if (!live) {
@@ -98,7 +99,7 @@ function playFilm(section: string) {
     live.allow = 'autoplay; fullscreen'
     frame.replaceChildren(live)
   }
-  live.src = `${promoUrl}slides/?view=present&track=script&section=${section}&step=0&autoplay`
+  live.src = `${promoUrl}slides/?view=present&track=script&section=${section}&step=${step}&autoplay`
   live.focus()
 }
 const icon = (name: Parameters<typeof iconMarkup>[0]) => iconMarkup(name)
@@ -128,7 +129,7 @@ function render() {
         <div class="hero-art" role="img" aria-label="${t.sourceLabel}"><div class="document-card"><div class="window-bar"><span>lecture.json</span>${icon('document')}</div><span class="tiny-label">PRESMIUM / 001</span><h2>${t.file}</h2><p>${t.sourceNote}</p><div class="content-lines"><i></i><i></i></div>${chart()}<div class="document-bottom"><span>${icon('check')} ${t.ready}</span><span>01 / 03</span></div></div><div class="output-row">${t.formats.map((f,i)=>`<div class="output-card">${icon((['website','slides','video'] as const)[i]!)}<span>${f}</span><b>0${i+1}</b></div>`).join('')}</div><div class="art-caption"><span class="status-dot"></span>${t.sourceLabel}</div></div>
       </section>
       <section class="features wrap" id="features"><div class="section-heading"><p class="eyebrow">PRESMIUM / ${t.substatement}</p><h2>${t.statement}</h2></div><div class="feature-grid">${t.features.map(([n,title,body,i])=>`<article><div class="feature-top"><span>${n}</span>${icon(i as Parameters<typeof iconMarkup>[0])}</div><h3>${title}</h3><p>${body}</p></article>`).join('')}</div></section>
-      <section class="film-section wrap" id="film"><div class="section-heading film-heading"><div><p class="eyebrow">${t.filmTag}</p><h2>${t.filmTitle}</h2></div><p>${t.filmLead}</p></div><div class="player-frame" id="film-frame"><button class="film-poster" id="film-play" aria-label="${t.filmPlay}"><img src="${base}presmium-60s-poster.png" alt=""><span class="film-play">${icon('play')}</span></button></div><div class="film-meta"><span>${t.filmHint}</span><div><a class="pm-ui-link" href="${base}presmium-60s.webm" download>${t.filmDownload}${icon('download')}</a><a class="pm-ui-link" href="${docUrl}">${t.filmSource}${icon('chevron-right')}</a><a class="pm-ui-link" href="${promoUrl}">${t.filmScript}${icon('chevron-right')}</a></div></div><div class="chapter-list">${t.chapters.map((c,i)=>`<button class="pm-ui-button pm-ui-button--ghost" data-section="${CHAPTERS[i]![0]}"><span>${CHAPTERS[i]![1]}</span>${c}</button>`).join('')}</div></section>
+      <section class="film-section wrap" id="film"><div class="section-heading film-heading"><div><p class="eyebrow">${t.filmTag}</p><h2>${t.filmTitle}</h2></div><p>${t.filmLead}</p></div><div class="player-frame" id="film-frame"><button class="film-poster" id="film-play" aria-label="${t.filmPlay}"><img src="${base}presmium-60s-poster.png" alt=""><span class="film-play">${icon('play')}</span></button></div><div class="film-meta"><span>${t.filmHint}</span><div><a class="pm-ui-link" href="${base}presmium-60s.webm" download>${t.filmDownload}${icon('download')}</a><a class="pm-ui-link" href="${docUrl}">${t.filmSource}${icon('chevron-right')}</a><a class="pm-ui-link" href="${promoUrl}">${t.filmScript}${icon('chevron-right')}</a></div></div><div class="chapter-list">${t.chapters.map((c,i)=>`<button class="pm-ui-button pm-ui-button--ghost" data-section="${CHAPTERS[i]![0]}" data-step="${CHAPTERS[i]![1]}"><span>${CHAPTERS[i]![2]}</span>${c}</button>`).join('')}</div></section>
       <section class="collection wrap" id="source"><div class="section-heading"><p class="eyebrow">${t.collectionTag}</p><h2>${t.collectionTitle}</h2><p class="section-lead">${t.collectionLead}</p></div><div class="collection-grid">${t.cards.map(([tag,title,body,label,i],index)=>`<article><div class="card-label">${icon(i as Parameters<typeof iconMarkup>[0])}<span>${tag}</span></div><h3>${title}</h3><p>${body}</p><a class="pm-ui-link" href="${[docUrl,sourceUrl,'#start'][index]}">${label}${icon('chevron-right')}</a></article>`).join('')}</div></section>
       <section class="faq wrap"><h2>${t.faqTitle}</h2><div>${t.faqs.map(([q,a],i)=>`<details${i===0?' open':''}><summary>${q}${icon('plus')}</summary><p>${a}</p></details>`).join('')}</div></section>
       <section class="start wrap" id="start"><p class="eyebrow">PRESMIUM</p><h2>${t.cta}</h2><p>${t.ctaLead}</p><div class="command"><code>${command}</code><button class="pm-ui-icon-button pm-ui-icon-button--ghost" id="copy" aria-label="${t.copy}">${icon('copy')}</button></div><span id="copy-status" role="status"></span><p class="install">${t.install} <code>pnpm add -g @lincyaw/presmium</code></p></section>
@@ -145,7 +146,7 @@ function render() {
     catch { const range = document.createRange(); range.selectNodeContents(document.querySelector('.command code')!); getSelection()?.removeAllRanges(); getSelection()?.addRange(range) }
   }
   document.getElementById('film-play')!.onclick = () => playFilm(CHAPTERS[0][0])
-  document.querySelectorAll<HTMLButtonElement>('[data-section]').forEach(button => button.onclick = () => playFilm(button.dataset.section!))
+  document.querySelectorAll<HTMLButtonElement>('[data-section]').forEach(button => button.onclick = () => playFilm(button.dataset.section!, Number(button.dataset.step)))
   syncMotion()
 }
 function syncMotion() {

@@ -7,7 +7,7 @@
     "source": "node tools/package-source.mjs",
     "dev": "presmium serve .",
     "check": "presmium check promo && presmium check learn",
-    "score": "node promo/tools/soundtrack.ts && ffmpeg -loglevel error -y -i promo/audio/score.wav -c:a libopus -b:a 160k -map_metadata -1 -fflags +bitexact -flags:a +bitexact promo/audio/score.ogg",
+    "score": "node promo/tools/score.mjs",
     "lesson-film": "presmium-lecture export learn --out public/presmium-lesson.webm --size 1280x720 --fps 24",
     "film": "presmium-lecture export promo --out public/presmium-60s.webm --size 1920x1080 --fps 30"
   },

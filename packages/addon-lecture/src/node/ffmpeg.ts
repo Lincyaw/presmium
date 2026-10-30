@@ -41,7 +41,8 @@ export function startFfmpeg(ffmpeg: Ffmpeg, video: FfmpegVideo): FfmpegEncoder {
   video.subtitles.forEach((_, i) => args.push('-map', `${i + (video.audio ? 2 : 1)}:s`))
   // Even sides for 4:2:0; slides are text, so the quality is set by a constant rate factor rather than a bitrate.
   args.push('-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', '-pix_fmt', 'yuv420p', '-g', String(Math.round(video.fps * 10)))
-  if (format === 'mp4') args.push('-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-c:a', 'aac', '-b:a', '192k', '-c:s', 'mov_text', '-movflags', '+faststart+use_metadata_tags')
+  // FFmpeg's AAC noise substitution turns some music into bursts above the source's true peak; it is off.
+  if (format === 'mp4') args.push('-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-c:a', 'aac', '-b:a', '192k', '-aac_pns', '0', '-c:s', 'mov_text', '-movflags', '+faststart+use_metadata_tags')
   else args.push('-c:v', 'libvpx-vp9', '-crf', '24', '-b:v', '0', '-deadline', 'good', '-cpu-used', '2', '-row-mt', '1', '-c:a', 'libopus', '-b:a', '128k', '-c:s', 'webvtt')
   video.subtitles.forEach(({ name, language }, i) => {
     if (language) args.push(`-metadata:s:s:${i}`, `language=${language}`)
