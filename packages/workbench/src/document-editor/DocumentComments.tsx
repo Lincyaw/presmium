@@ -6,6 +6,7 @@ import { FloatingThreadController, getReferenceText, Thread, useBlockNoteEditor,
 import type { ComponentProps, ThreadProps } from '@blocknote/react'
 import type { Locale } from '../messages.ts'
 import { PmButton, PmEmpty, PmNotice, PmSelect } from '../components.tsx'
+import { enterSubmits } from './comments.ts'
 import type { DocumentCommentEditorHandle, DocumentThreadStore } from './comments.ts'
 import type { CommentDrafts, CommentDraftCandidate, CommentDraftRecord, CommentDraftReference, CommentDraftOperation } from './comment-drafts.ts'
 import { isNewCommentDraft, sameCommentDraftTarget } from './comment-drafts.ts'
@@ -182,7 +183,7 @@ export function DocumentCommentEditor(props: ComponentProps['Comments']['Editor'
     const value = context.store.bindEditor(props.editor, props.editable, threadId)
     setHandle(value)
     const original = props.editor.getExtension(CommentEditorSubmitExtension)
-    let guarded: typeof original
+    let guarded: typeof original, stopEnter = () => {}
     if (original && value.target && drafts) {
       props.editor.replaceExtension(original, CommentEditorSubmitExtension({ onSubmit: async () => {
         if (composing.current || !active.current) return
@@ -197,6 +198,8 @@ export function DocumentCommentEditor(props: ComponentProps['Comments']['Editor'
         } finally { submitting.current = false }
       } }))
       guarded = props.editor.getExtension(CommentEditorSubmitExtension)
+      const extension = guarded
+      stopEnter = enterSubmits(props.editor, () => extension?.submit())
       context.store.refreshEditorCallbacks()
     }
     const stop = props.editor.onChange(() => {
@@ -211,7 +214,7 @@ export function DocumentCommentEditor(props: ComponentProps['Comments']['Editor'
       setRevision(value => value + 1)
     })
     return () => {
-      active.current = false; ++input.current; stop()
+      active.current = false; ++input.current; stop(); stopEnter()
       if (original && guarded && !props.editor.prosemirrorView.isDestroyed && props.editor.getExtension(CommentEditorSubmitExtension) === guarded) props.editor.replaceExtension(guarded, original)
       value.close()
     }

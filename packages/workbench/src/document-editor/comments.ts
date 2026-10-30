@@ -218,7 +218,7 @@ export class DocumentThreadStore extends ThreadStore {
     const existing = !editable, target = matches.length === 1 ? matches[0] : undefined
     const editing: CommentEditing = { threadId: target?.thread.id, commentId: target?.comment.id, baseline: target ? commentBase(target.comment) : undefined, body: target?.body, editable: false, closed: false, listeners: new Set() }
     const original = existing ? editor.getExtension(CommentEditorSubmitExtension) : undefined
-    let guarded: typeof original
+    let guarded: typeof original, stopEnter = () => {}
     if (original) {
       editor.replaceExtension(original, CommentEditorSubmitExtension({ onSubmit: async () => {
         try { this.beforeAction?.() } catch { this.#failEdit(editing, 'unavailable'); return }
@@ -229,6 +229,8 @@ export class DocumentThreadStore extends ThreadStore {
         await result
       } }))
       guarded = editor.getExtension(CommentEditorSubmitExtension)
+      const extension = guarded
+      stopEnter = enterSubmits(editor, () => extension?.submit())
       // The parent Comment reads submit during render; publish a fresh view without a source edit.
       this.#publishView()
     }
@@ -257,7 +259,7 @@ export class DocumentThreadStore extends ThreadStore {
       subscribe: listener => { editing.listeners.add(listener); return () => editing.listeners.delete(listener) },
       close: () => {
         if (editing.closed) return
-        setEditable(false); editing.closed = true; editing.listeners.clear()
+        setEditable(false); editing.closed = true; editing.listeners.clear(); stopEnter()
         if (original && guarded && !editor.prosemirrorView.isDestroyed && editor.getExtension(CommentEditorSubmitExtension) === guarded) editor.replaceExtension(guarded, original)
       },
     }
@@ -328,6 +330,24 @@ export class DocumentThreadStore extends ThreadStore {
 function displayName(member: Member | undefined): string | undefined {
   const name = member?.name.trim()
   return name && !(member!.id === LOCAL_AUTHOR.id && member!.name === LOCAL_AUTHOR.name) ? name : undefined
+}
+
+/**
+ * Plain Enter submits through `submit`. A submit extension put in place with `replaceExtension` lands after the
+ * editor's default keymap, which splits the block on Enter first, so only its Mod-Enter shortcut would ever run.
+ * Same conditions as BlockNote's own Enter shortcut; returns the cleanup.
+ */
+export function enterSubmits(editor: CommentEditor, submit: () => unknown): () => void {
+  const dom = editor.prosemirrorView.dom
+  const onKeyDown = (event: KeyboardEvent) => {
+    const view = editor.prosemirrorView
+    if (event.key !== 'Enter' || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return
+    if (!view.editable || view.composing || event.isComposing || event.keyCode === 229) return
+    event.preventDefault(); event.stopPropagation()
+    if (!event.repeat) void submit()
+  }
+  dom.addEventListener('keydown', onKeyDown, true)
+  return () => dom.removeEventListener('keydown', onKeyDown, true)
 }
 
 export function nativeComments(store: DocumentThreadStore, username: string) {
