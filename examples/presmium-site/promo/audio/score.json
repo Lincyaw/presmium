@@ -1,85 +1,103 @@
 {
-  "title": "Make complex things clear · original score",
-  "originalComposition": true,
-  "speech": false,
-  "sampledRecordings": false,
-  "sampleRate": 48000,
-  "channels": 2,
-  "bitDepth": 16,
-  "durationSeconds": 60,
-  "bpm": 120,
-  "phases": [
+  "title": "Make complex things clear · score",
+  "music": {
+    "title": "Newer Wave",
+    "author": "Kevin MacLeod",
+    "url": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Newer%20Wave.mp3",
+    "license": "CC BY 4.0",
+    "from": 30.5678,
+    "length": 62,
+    "credit": "Music: \"Newer Wave\" by Kevin MacLeod (incompetech.com). Licensed under Creative Commons: By Attribution 4.0 License, http://creativecommons.org/licenses/by/4.0/",
+    "excerpt": {
+      "from": 30.5678,
+      "seconds": 61.090292,
+      "fadeOutSeconds": 0.3
+    }
+  },
+  "effects": {
+    "pack": "Kenney Interface Sounds 1.0 (CC0), https://kenney.nl/assets/interface-sounds",
+    "levels": {
+      "click": 0.32,
+      "clicker": 0.3,
+      "tap": 0.36
+    },
+    "attacks": {
+      "click": 0.0008,
+      "clicker": 0.0001,
+      "tap": 0.0304
+    }
+  },
+  "presses": [
     {
-      "id": "question",
-      "from": 0,
-      "to": 6,
-      "rms": 0.06457200744749181,
-      "peak": 0.3318241536617279
+      "at": 15.8187,
+      "kind": "click"
     },
     {
-      "id": "board",
-      "from": 6,
-      "to": 11,
-      "rms": 0.08681234203274925,
-      "peak": 0.36364689469337463
+      "at": 19.0913,
+      "kind": "click"
     },
     {
-      "id": "ask",
-      "from": 11,
-      "to": 19,
-      "rms": 0.1178411821895942,
-      "peak": 0.5161561965942383
+      "at": 20.7277,
+      "kind": "click"
     },
     {
-      "id": "done",
-      "from": 19,
-      "to": 26,
-      "rms": 0.12533744200796892,
-      "peak": 0.8199999928474426
+      "at": 21.8185,
+      "kind": "click"
     },
     {
-      "id": "forms",
-      "from": 26,
-      "to": 29,
-      "rms": 0.0948729503735045,
-      "peak": 0.5294674634933472
+      "at": 22.9094,
+      "kind": "click"
     },
     {
-      "id": "lesson",
-      "from": 29,
-      "to": 39,
-      "rms": 0.11281451665054153,
-      "peak": 0.6756520867347717
+      "at": 26.7275,
+      "kind": "click"
     },
     {
-      "id": "website",
-      "from": 39,
-      "to": 44.5,
-      "rms": 0.10160937152934714,
-      "peak": 0.40217944979667664
+      "at": 27.2729,
+      "kind": "click"
     },
     {
-      "id": "video",
-      "from": 44.5,
-      "to": 50.5,
-      "rms": 0.10860130218996236,
-      "peak": 0.5224294662475586
+      "at": 27.8184,
+      "kind": "click"
     },
     {
-      "id": "reply",
-      "from": 50.5,
-      "to": 54,
-      "rms": 0.11023434365733516,
-      "peak": 0.5489794015884399
+      "at": 33.8182,
+      "kind": "clicker"
     },
     {
-      "id": "brand",
-      "from": 54,
-      "to": 60,
-      "rms": 0.11022401727658003,
-      "peak": 0.5817065238952637
+      "at": 34.3637,
+      "kind": "clicker"
+    },
+    {
+      "at": 34.9091,
+      "kind": "clicker"
+    },
+    {
+      "at": 35.4546,
+      "kind": "clicker"
+    },
+    {
+      "at": 36,
+      "kind": "clicker"
+    },
+    {
+      "at": 47.9997,
+      "kind": "tap"
+    },
+    {
+      "at": 50.1815,
+      "kind": "tap"
     }
   ],
-  "bytes": 11520044,
-  "sha256": "16f6aa578ef21ae257e66aaf9ffdde27197600cc0bdd6236c62090e082bce23a"
+  "target": {
+    "lufs": -16,
+    "truePeak": -1.5
+  },
+  "measured": {
+    "integratedLufs": -15.9,
+    "truePeakDbtp": -2.4,
+    "lra": 4.6,
+    "normalization": "linear"
+  },
+  "fingerprint": "sha256:776a7748f6eff5d16f83e50bee93094ba016bed7e14bd5a47a590321ec078bfc"
 }

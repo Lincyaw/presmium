@@ -1,2 +1,4 @@
-# The score is generated (pnpm score); the document plays its Opus encoding.
+# The score is generated (pnpm score); the document plays its Opus encoding. The recording it is cut from is
+# downloaded once by the same command.
 promo/audio/score.wav
+promo/audio/source/

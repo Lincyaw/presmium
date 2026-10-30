@@ -26,10 +26,12 @@ const BASE = `
   .pf * { box-sizing: border-box; }
   .pf img { display: block; user-select: none; max-width: none; }
   .pf-stage { position: absolute; inset: 0; transform-origin: 0 0; }
+  .pf-layer { position: absolute; inset: 0; overflow: hidden; }
+  .pf-hero { position: absolute; pointer-events: none; }
   .pf .pf-fill { position: absolute; inset: 0; width: 100%; height: 100%; }
   .pf-abs { position: absolute; }
   .pf-line { position: absolute; left: 0; right: 0; bottom: 6cqh; display: flex; justify-content: center; pointer-events: none; }
-  .pf-line span { font-size: 2.6cqw; font-weight: 600; letter-spacing: 0.005em; padding: 0.75cqw 2.3cqw; border-radius: 99cqw; white-space: nowrap;
+  .pf-line span { font-size: 2.95cqw; font-weight: 600; letter-spacing: 0.005em; padding: 0.75cqw 2.3cqw; border-radius: 99cqw; white-space: nowrap;
     background: color-mix(in srgb, var(--pm-color-film-paper) 94%, transparent); box-shadow: 0 0.4cqw 2.4cqw color-mix(in srgb, var(--pm-color-film-ink) 16%, transparent); }
   .pf-line--night span { background: color-mix(in srgb, var(--pm-color-film-night) 78%, transparent); color: var(--pm-color-film-chalk); box-shadow: none; }
 
@@ -70,7 +72,7 @@ const BASE = `
   .pf-phone-screen { position: relative; width: 100%; height: 100%; border-radius: 2.8cqw; overflow: hidden; background: var(--pm-color-film-paper); }
   .pf-phone-screen::before { content: ''; position: absolute; z-index: 3; left: 50%; top: 0.7cqw; width: 6cqw; height: 1.5cqw; margin-left: -3cqw; border-radius: 99cqw; background: var(--pm-color-film-ink); }
 
-  .pf-chat { position: absolute; inset: 0; display: flex; flex-direction: column; font-size: 1.4cqw; }
+  .pf-chat { position: absolute; inset: 0; display: flex; flex-direction: column; font-size: 1.55cqw; }
   .pf-status { height: 3.2cqw; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0.9cqw 2.2cqw 0; font-size: 1.05cqw; font-weight: 600; }
   .pf-status span:last-child { width: 2cqw; height: 0.95cqw; border-radius: 0.25cqw; border: 0.14cqw solid currentColor; position: relative; }
   .pf-status span:last-child::after { content: ''; position: absolute; inset: 0.14cqw; right: 0.5cqw; background: currentColor; border-radius: 0.1cqw; }
@@ -88,7 +90,7 @@ const BASE = `
   .pf-avatar--me { background: var(--pm-color-film-board); }
   .pf-who { font-size: 0.85cqw; color: color-mix(in srgb, var(--pm-color-film-ink) 50%, transparent); margin-bottom: 0.25cqw; }
   .pf-msg--me .pf-who { display: none; }
-  .pf-bubble { max-width: 15cqw; padding: 0.7cqw 1cqw; border-radius: 0.3cqw 1.1cqw 1.1cqw 1.1cqw; background: var(--pm-color-sheen); line-height: 1.45;
+  .pf-bubble { max-width: 16.5cqw; padding: 0.7cqw 1cqw; border-radius: 0.3cqw 1.1cqw 1.1cqw 1.1cqw; background: var(--pm-color-sheen); line-height: 1.45;
     box-shadow: 0 0.1cqw 0.3cqw color-mix(in srgb, var(--pm-color-film-ink) 8%, transparent); }
   .pf-msg--me .pf-bubble { border-radius: 1.1cqw 0.3cqw 1.1cqw 1.1cqw; background: color-mix(in srgb, var(--pm-color-film-lilac) 42%, var(--pm-color-sheen)); }
   .pf-typing { display: flex; gap: 0.35cqw; padding: 1cqw 1.1cqw; }
@@ -139,9 +141,11 @@ export const chat = (clock: string, items: string) => `<div class="pf-chat">
 /** The words of a shot, in the one place words go. */
 export const line = (text: string, className = '') => `<div class="pf-line ${className}"><span>${text}</span></div>`
 
+const pointerMarkup = (pointer: Shot['pointer'] = 'arrow') => pointer === 'arrow' ? POINTER : pointer === 'finger' ? FINGER : ''
+
 /** Fills `root` with the frame: a camera stage holding the picture, the pointer above it, and the shot's lines. */
-export function frame(root: HTMLElement, css: string, stage: string, over = '', pointer: 'arrow' | 'finger' | 'none' = 'arrow') {
-  root.innerHTML = `<div class="pf"><style>${BASE}${css}</style><div class="pf-stage">${stage}${pointer === 'arrow' ? POINTER : pointer === 'finger' ? FINGER : ''}</div>${over}</div>`
+export function frame(root: HTMLElement, shot: Shot) {
+  root.innerHTML = `<div class="pf"><style>${BASE}${shot.css}</style><div class="pf-stage">${shot.stage}${pointerMarkup(shot.pointer)}</div>${shot.over ?? ''}</div>`
   return root.firstElementChild as HTMLElement
 }
 
@@ -152,11 +156,11 @@ export async function ready(root: HTMLElement) {
 }
 
 /** The verbs every shot uses, bound to its timeline. Times are seconds from the start of the shot. */
-export function kit(gsap: Gsap, tl: Timeline, root: HTMLElement) {
+export function kit(gsap: Gsap, tl: Timeline, root: HTMLElement, film: Element = root.firstElementChild!) {
   const stage = root.querySelector('.pf-stage')!
   const layer = root.querySelector('.pf-pointer-layer')
   const camVars = (c: Spot & { s: number }) => ({ xPercent: (0.5 - c.x * c.s) * 100, yPercent: (0.5 - c.y * c.s) * 100, scale: c.s })
-  const frameBox = root.firstElementChild!.getBoundingClientRect()
+  const frameBox = film.getBoundingClientRect()
   if (layer) gsap.set(layer, { autoAlpha: 0 })
   return {
     /** Where an element is laid out, in frame fractions; call it before the shot moves the camera or the element. */
@@ -208,4 +212,73 @@ export interface Shot {
   over?: string
   pointer?: 'arrow' | 'finger' | 'none'
   play(k: Kit, gsap: Gsap, tl: Timeline, root: HTMLElement): void
+}
+
+/** A camera: the frame point it centres on and its zoom. */
+export type Camera = Spot & { s: number }
+/** Where a box should stand on screen: its centre and its width, in frame fractions. */
+export type Place = Spot & { w: number }
+
+/** The camera that shows `box` (laid out, in frame fractions) at `place` on screen: a hero framed to a size. */
+export function fit(box: Box, place: Place): Camera {
+  const s = place.w / box.w
+  return { x: box.x + box.w / 2 - (place.x - 0.5) / s, y: box.y + box.h / 2 - (place.y - 0.5) / s, s }
+}
+
+/**
+ * One shot of a chain. It has its own layer, camera stage, pointer and words, and its own timeline placed at `start`
+ * (seconds on the scene's timeline; its `play` uses times from that start). `hero` marks the element a carry frames:
+ * the thing that is the same on both sides of the handoff.
+ */
+export interface Part extends Shot { id: string, start: number, hero?: string }
+
+/**
+ * A handoff between two parts. The outgoing camera pushes in until the outgoing hero fills `place`; the incoming
+ * layer starts with its own hero framed at exactly that place, crossfades in over `fade`, and is fully in at `at`,
+ * where its own timeline pulls the camera out. The incoming part starts at `at - fade`.
+ */
+export interface Carry { from: string, to: string, at: number, push: number, fade: number, place: Place }
+
+/** Beats that carry into each other: shots in their own layers, played on one timeline, handed over by carries. */
+export interface Chain { parts: Part[], carries: Carry[] }
+
+/** Fills `root` with the frame holding one layer per part, the later ones above. */
+export function frameChain(root: HTMLElement, { parts }: Chain) {
+  root.innerHTML = `<div class="pf"><style>${BASE}${parts.map(part => part.css).join('\n')}</style>${parts.map(part =>
+    `<div class="pf-layer" data-part="${part.id}"><div class="pf-stage">${part.stage}${pointerMarkup(part.pointer)}</div>${part.over ?? ''}</div>`).join('')}</div>`
+  return root.firstElementChild as HTMLElement
+}
+
+/** Builds every part's timeline inside its layer (selectors find only that layer's elements) and adds the carries. */
+export function playChain(gsap: Gsap, tl: Timeline, root: HTMLElement, chain: Chain) {
+  const film = root.firstElementChild!
+  const layer = (id: string) => film.querySelector<HTMLElement>(`[data-part="${id}"]`)!
+  const part = (id: string) => chain.parts.find(p => p.id === id)!
+  // Heroes are measured as laid out, before any camera or part moves anything.
+  const box = (el: Element): Box => {
+    const f = film.getBoundingClientRect(), r = el.getBoundingClientRect()
+    return { x: (r.left - f.left) / f.width, y: (r.top - f.top) / f.height, w: r.width / f.width, h: r.height / f.height }
+  }
+  const heroes = new Map(chain.parts.filter(p => p.hero).map(p => [p.id, box(layer(p.id).querySelector(p.hero!)!)]))
+  const kits = new Map<string, Kit>()
+  chain.parts.forEach((p, i) => {
+    const el = layer(p.id)
+    if (i > 0) gsap.set(el, { autoAlpha: 0 })
+    gsap.context(() => {
+      const child = gsap.timeline()
+      const k = kit(gsap, child, el, film)
+      kits.set(p.id, k)
+      p.play(k, gsap, child, el)
+      tl.add(child, p.start)
+    }, el)
+  })
+  for (const c of chain.carries) {
+    const from = part(c.from), to = part(c.to)
+    if (Math.abs(to.start - (c.at - c.fade)) > 1e-6) throw new Error(`part ${to.id} must start when the carry from ${from.id} begins to fade`)
+    // The push lands before the fade, so the two framings match while one layer replaces the other.
+    kits.get(from.id)!.cam(c.at - c.fade - c.push - from.start, fit(heroes.get(from.id)!, c.place), c.push, 'power3.inOut')
+    kits.get(to.id)!.camSet(fit(heroes.get(to.id)!, c.place))
+    tl.fromTo(layer(to.id), { autoAlpha: 0 }, { autoAlpha: 1, duration: c.fade, ease: 'none', immediateRender: false }, c.at - c.fade)
+    tl.set(layer(from.id), { autoAlpha: 0 }, c.at)
+  }
 }

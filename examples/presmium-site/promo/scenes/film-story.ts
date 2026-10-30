@@ -1,6 +1,7 @@
 // The story around the product: the student's question at night, the blackboard where it was not answered, the
 // video the teacher sends after class, and the reply. One chat thread carries the question to its answer.
 import { chat, image, line, message, nightRoom, phone, type Shot } from './film-kit.ts'
+import { bar, beat, FADE, T } from './timeline.ts'
 
 const QUESTION = 'Why does a bigger learning rate make training worse, not better?'
 const OLD = [
@@ -8,7 +9,7 @@ const OLD = [
   message({ who: 'me', text: 'Yes, by Friday night.' }),
 ].join('')
 
-/** 0–6 s. A phone lights up on a dark desk; a student's question arrives in the course group. */
+/** 0–8.7 s. A phone lights up on a dark desk on the bar; a student's question arrives in the course group on the next. */
 export const question: Shot = {
   css: `
     .q-dark { position: absolute; inset: 0; z-index: 2; background: var(--pm-color-film-night); }
@@ -20,20 +21,21 @@ export const question: Shot = {
   pointer: 'none',
   play(k, gsap, tl) {
     k.camSet({ x: 0.5, y: 0.5, s: 1 })
-    k.cam(0, { x: 0.5, y: 0.47, s: 1.1 }, 6, 'sine.inOut')
+    // A slow push while the room wakes and the question lands, then the frame holds still on the question.
+    k.cam(0, { x: 0.5, y: 0.47, s: 1.1 }, bar(3), 'sine.inOut')
     gsap.set('.pf-glow', { autoAlpha: 0.35 })
-    tl.to('.pf-glow', { autoAlpha: 1, duration: 0.9, ease: 'power1.out' }, 0)
+    tl.to('.pf-glow', { autoAlpha: 1, duration: 1.4, ease: 'power1.out' }, 0)
     // The screen wakes and the phone buzzes once.
-    tl.to('.q-dark', { autoAlpha: 0, duration: 0.25, ease: 'power1.out' }, 0.6)
-    tl.to('.pf-phone', { keyframes: [{ xPercent: -1.2 }, { xPercent: 1.2 }, { xPercent: -0.9 }, { xPercent: 0.9 }, { xPercent: 0 }], duration: 0.32, ease: 'none' }, 0.6)
+    tl.to('.q-dark', { autoAlpha: 0, duration: 0.25, ease: 'power1.out' }, T.wake)
+    tl.to('.pf-phone', { keyframes: [{ xPercent: -1.2 }, { xPercent: 1.2 }, { xPercent: -0.9 }, { xPercent: 0.9 }, { xPercent: 0 }], duration: 0.32, ease: 'none' }, T.wake)
     // The student is typing, then the question lands where the dots were.
     gsap.set('.q-new', { display: 'none' })
-    k.enter('.q-typing', 1.2, { yPercent: 40, scale: 0.9 }, 0.35)
-    tl.to('.q-typing .pf-typing i', { yPercent: -60, duration: 0.16, stagger: 0.08, repeat: 3, yoyo: true, ease: 'sine.inOut' }, 1.35)
-    tl.set('.q-typing', { display: 'none' }, 2.15)
-    tl.set('.q-new', { display: 'flex' }, 2.15)
-    k.enter('.q-new', 2.15, { yPercent: 25, scale: 0.94 }, 0.5)
-    tl.to('.q-new .pf-bubble', { keyframes: [{ scale: 1.04, duration: 0.14, ease: 'power2.out' }, { scale: 1, duration: 0.35, ease: 'back.out(2.5)' }] }, 2.35)
+    k.enter('.q-typing', T.typing, { yPercent: 40, scale: 0.9 }, 0.35)
+    tl.to('.q-typing .pf-typing i', { yPercent: -60, duration: 0.13, stagger: 0.08, repeat: 5, yoyo: true, ease: 'sine.inOut' }, T.typing + 0.15)
+    tl.set('.q-typing', { display: 'none' }, T.question)
+    tl.set('.q-new', { display: 'flex' }, T.question)
+    k.enter('.q-new', T.question, { yPercent: 25, scale: 0.94 }, 0.5)
+    tl.to('.q-new .pf-bubble', { keyframes: [{ scale: 1.04, duration: 0.14, ease: 'power2.out' }, { scale: 1, duration: 0.35, ease: 'back.out(2.5)' }] }, T.question + 0.2)
   },
 }
 
@@ -44,7 +46,7 @@ const zigzag = (xs: number[], dy = 0) => xs.map((x, i) => `${i ? 'L' : 'M'}${x} 
 const dots = (xs: number[], cls: string, dy = 0) => xs.map(x => `<circle class="b-dot ${cls}" cx="${x}" cy="${onCurve(x) + dy}" r="9"/>`).join('')
 const TRIES = [[560, 1040, 470, 1130], [575, 1030, 455, 1150, 405], [552, 1050, 462, 1140, 398]]
 
-/** 6–11 s. The blackboard of the last lesson: the same overshoot drawn three times, erased twice, still unclear. */
+/** 8.7–13.1 s. The blackboard of the last lesson: the same overshoot drawn three times, erased twice, still unclear. */
 export const board: Shot = {
   css: `
     .b-board { position: absolute; left: 3cqw; top: 4cqh; right: 3cqw; bottom: 13cqh; border-radius: 0.6cqw; background: var(--pm-color-film-board);
@@ -81,7 +83,7 @@ export const board: Shot = {
   pointer: 'none',
   play(k, gsap, tl) {
     k.camSet({ x: 0.5, y: 0.5, s: 1.02 })
-    k.cam(0, { x: 0.5, y: 0.48, s: 1.07 }, 5, 'sine.inOut')
+    k.cam(0, { x: 0.5, y: 0.48, s: 1.07 }, bar(2), 'sine.inOut')
     const draw = (target: string, t: number, duration: number) => { gsap.set(target, { drawSVG: 0 }); tl.to(target, { drawSVG: '100%', duration, ease: 'power2.inOut' }, t) }
     draw('.b-axis', 0, 0.35)
     draw('.b-curve', 0.15, 0.55)
@@ -107,7 +109,8 @@ export const board: Shot = {
     rub(2.1, '.b-smudge2', '.b-try2', '36cqh')
     tl.to('.b-eraser', { left: '70cqw', top: '79cqh', rotation: 0, duration: 0.25, ease: 'power2.in' }, 2.72)
     draw('.b-mark', 3.05, 0.4)
-    k.say('.pf-line', 2.85)
+    // The line comes early enough to be read twice before the cut.
+    k.say('.pf-line', beat(2))
   },
 }
 
@@ -130,85 +133,90 @@ const FRAMES = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 /** The lesson video lasts 21.6 s, 1.8 s a state; the training states start at 1.8 s. */
 const progress = (frame: number) => (frame * 1.8 + 0.9) / 21.6
 
-/** 44.5–50.5 s. The exported lesson goes to the group; on the phone it plays, and the scrubber goes back to a step. */
+
+/** The video frame's chart, as fractions of the frame: the same figure as the website's and the slide's. */
+const VIDEO_CHART = 'left:25%;top:37.78%;width:48.28%;height:40.14%'
+
+/**
+ * 45.6–54.5 s. The website's chart becomes the lesson video playing on the teacher's phone; the camera pulls back to
+ * the phone, a finger drags the video back to a step, the player closes into its card in the class chat, and the
+ * student who asked writes the answer in their own words.
+ */
 export const video: Shot = {
   css: `${VIDEO_CSS}
-    .v-player { position: absolute; inset: 0; z-index: 2; background: var(--pm-color-film-night); display: flex; flex-direction: column; justify-content: center; color: var(--pm-color-sheen); }
+    .v-player { position: absolute; inset: 0; z-index: 2; background: var(--pm-color-film-night); display: flex; flex-direction: column; justify-content: center; color: var(--pm-color-sheen); transform-origin: 0 0; }
     .v-screen { position: relative; width: 100%; aspect-ratio: 16 / 9; background: var(--pm-color-sheen); }
     .v-frame { position: absolute; inset: 0; width: 100%; height: 100%; }
-    .v-title { position: absolute; left: 1.6cqw; right: 1.6cqw; top: 5cqw; font-size: 1.1cqw; font-weight: 600; }
+    .v-close { position: absolute; left: 1.2cqw; top: 4.4cqw; width: 2.4cqw; height: 2.4cqw; display: grid; place-items: center; font-size: 1.5cqw; line-height: 1; }
+    .v-title { position: absolute; left: 4.2cqw; right: 1.6cqw; top: 4.85cqw; font-size: 1.1cqw; font-weight: 600; }
     .v-bar { position: absolute; left: 1.6cqw; right: 1.6cqw; bottom: 9cqw; height: 0.35cqw; border-radius: 99cqw; background: color-mix(in srgb, var(--pm-color-sheen) 30%, transparent); }
     .v-done { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; border-radius: 99cqw; background: var(--pm-color-film-lilac); transform-origin: 0 50%; }
     .v-knob { position: absolute; top: 50%; left: 0; width: 1.3cqw; height: 1.3cqw; margin: -0.65cqw 0 0 -0.65cqw; border-radius: 50%; background: var(--pm-color-sheen); }
     .v-clock { position: absolute; left: 1.6cqw; bottom: 6.4cqw; font-size: 0.95cqw; color: color-mix(in srgb, var(--pm-color-sheen) 75%, transparent); }
+    .r-new .pf-bubble { font-weight: 600; }
   `,
-  stage: `<div class="pf-fill pf-day"></div>${phone(`${nextDay(VIDEO_CARD)}
-    <div class="v-player"><div class="v-title">How does the learning rate move a prediction line?</div>
-      <div class="v-screen">${FRAMES.map(n => image(`lesson-${String(n).padStart(2, '0')}`, `v-frame v-f${n}`)).join('')}</div>
-      <div class="v-bar"><div class="v-done"></div><div class="v-knob"></div></div><div class="v-clock">0:03 / 0:22</div></div>`)}`,
-  over: `${line('Export a video. Send it to the class.', 'v-line1')}${line('Missed a step? Drag it back.', 'v-line2')}`,
+  stage: `<div class="pf-fill pf-day"></div>${phone(`${nextDay(`${VIDEO_CARD}
+    <div class="pf-msg r-typing"><div class="pf-avatar pf-avatar--lin">S</div><div><div class="pf-who">Sam</div><div class="pf-bubble pf-typing"><i></i><i></i><i></i></div></div></div>
+    ${message({ who: 'lin', text: 'Got it! The steps were too big, so it kept overshooting.', className: 'r-new' })}`)}
+    <div class="v-player"><div class="v-close">✕</div><div class="v-title">How does the learning rate move a prediction line?</div>
+      <div class="v-screen">${FRAMES.map(n => image(`lesson-${String(n).padStart(2, '0')}`, `v-frame v-f${n}`)).join('')}<div class="pf-hero" style="${VIDEO_CHART}"></div></div>
+      <div class="v-bar"><div class="v-done"></div><div class="v-knob"></div></div><div class="v-clock">0:18 / 0:22</div></div>`)}`,
+  over: `${line('Or send it as a video.', 'v-line1')}${line('Missed a step? Drag it back.', 'v-line2')}`,
   pointer: 'finger',
   play(k, gsap, tl, root) {
-    const thumb = k.measure('.v-sent .v-thumb'), bar = k.measure('.v-bar')
-    const knob = (n: number) => ({ x: bar.x + bar.w * progress(n), y: bar.y + bar.h / 2 })
-    k.camSet({ x: 0.5, y: 0.5, s: 1 })
-    k.cam(0, { x: 0.5, y: 0.52, s: 1.04 }, 1.8, 'sine.inOut')
-    // Once it plays, move in on the video so the lesson can be seen.
-    k.cam(1.95, { x: 0.5, y: 0.6, s: 1.7 }, 0.7)
-    k.say('.v-line1', 0.3, 2.9)
-    k.enter('.v-sent', 0.55, { xPercent: 18, scale: 0.92 }, 0.5)
-    // A tap opens the video; the player grows out of the card.
-    k.pointerAt(1.3, { x: thumb.x + thumb.w * 0.6, y: thumb.y + thumb.h * 1.4 })
-    k.point(1.3, { x: thumb.x + thumb.w / 2, y: thumb.y + thumb.h / 2 }, 0.35)
-    k.click(1.7)
-    gsap.set('.v-player', { autoAlpha: 0, scale: 0.55, yPercent: 14 })
-    tl.to('.v-player', { autoAlpha: 1, scale: 1, yPercent: 0, duration: 0.4, ease: 'power3.out' }, 1.85)
-    k.pointerOff(1.9)
-    // Playback, then the scrubber is dragged back to the second step and plays on from there.
+    const t = (film: number) => film - (T.videoIn - FADE)
+    // Measured as laid out: the card's thumbnail, the player and its picture, the scrubber, the close button.
+    const thumb = k.measure('.v-sent .v-thumb'), player = k.measure('.v-player'), screen = k.measure('.v-screen')
+    const scrub = k.measure('.v-bar'), close = k.measure('.v-close')
+    const knob = (n: number) => ({ x: scrub.x + scrub.w * progress(n), y: scrub.y + scrub.h / 2 })
+    const end = { x: scrub.x + scrub.w * (progress(9) + 0.06), y: scrub.y + scrub.h / 2 }
+    // Pull back from the chart to the phone: the whole player, its close button and its scrubber above the words.
+    k.cam(FADE, { x: 0.5, y: 0.54, s: 1.2 }, beat(86) - T.videoIn, 'power2.inOut')
+    k.say('.v-line1', t(T.videoIn) + 0.6, t(T.scrubGrab) - 0.35)
+    k.say('.v-line2', t(T.scrubGrab) - 0.1, t(T.closeTap) - 0.1)
+    // Near its end, the video shows the last state, the one the website showed, and plays out its last seconds.
     const clock = root.querySelector('.v-clock')!
     const frames = [...root.querySelectorAll<HTMLElement>('.v-frame')]
-    const showFrame = (n: number, t: number) => {
-      frames.forEach((frame, i) => tl.set(frame, { autoAlpha: i + 1 === n ? 1 : 0 }, t))
-      tl.set(clock, { text: `0:${String(Math.round(progress(n) * 21.6)).padStart(2, '0')} / 0:22` }, t)
+    const showFrame = (n: number, at: number) => {
+      frames.forEach((frame, i) => tl.set(frame, { autoAlpha: i + 1 === n ? 1 : 0 }, at))
+      tl.set(clock, { text: `0:${String(Math.round(progress(n) * 21.6)).padStart(2, '0')} / 0:22` }, at)
     }
-    gsap.set(frames, { autoAlpha: 0 }); gsap.set(frames[0]!, { autoAlpha: 1 })
-    gsap.set('.v-done', { scaleX: progress(1) }); gsap.set('.v-knob', { left: `${progress(1) * 100}%` })
-    const play = [[2.25, 2], [2.6, 3], [2.95, 4], [3.3, 5], [3.65, 6]] as const
-    play.forEach(([t, n]) => showFrame(n, t))
-    tl.to('.v-done', { scaleX: progress(6), duration: 1.4, ease: 'none' }, 2.25)
-    tl.to('.v-knob', { left: `${progress(6) * 100}%`, duration: 1.4, ease: 'none' }, 2.25)
-    k.say('.v-line2', 3.15)
-    k.pointerAt(3.75, knob(6))
-    tl.to('.v-knob', { scale: 1.5, duration: 0.15 }, 3.95)
-    k.point(4.05, knob(2), 0.7, 'power2.inOut')
-    tl.to('.v-done', { scaleX: progress(2), duration: 0.7, ease: 'power2.inOut' }, 4.05)
-    tl.to('.v-knob', { left: `${progress(2) * 100}%`, duration: 0.7, ease: 'power2.inOut' }, 4.05)
-    ;[[4.15, 5], [4.3, 4], [4.45, 3], [4.6, 2]].forEach(([t, n]) => showFrame(n!, t!))
-    tl.to('.v-knob', { scale: 1, duration: 0.2 }, 4.8)
-    k.pointerOff(4.9)
-    showFrame(3, 5.25)
-    showFrame(4, 5.75)
-    tl.to('.v-done', { scaleX: progress(4), duration: 1.2, ease: 'none' }, 4.8)
-    tl.to('.v-knob', { left: `${progress(4) * 100}%`, duration: 1.2, ease: 'none' }, 4.8)
-  },
-}
-
-/** 50.5–54 s. Back in the thread: the student who asked writes the answer in their own words. */
-export const reply: Shot = {
-  css: `${VIDEO_CSS} .r-new .pf-bubble { font-weight: 600; }`,
-  stage: `<div class="pf-fill pf-day"></div>${phone(nextDay(`${VIDEO_CARD}
-    <div class="pf-msg r-typing"><div class="pf-avatar pf-avatar--lin">S</div><div><div class="pf-who">Sam</div><div class="pf-bubble pf-typing"><i></i><i></i><i></i></div></div></div>
-    ${message({ who: 'lin', text: 'Got it! The steps were too big, so it kept overshooting.', className: 'r-new' })}`))}`,
-  pointer: 'none',
-  play(k, gsap, tl) {
-    k.camSet({ x: 0.5, y: 0.5, s: 1.06 })
-    k.cam(0, { x: 0.5, y: 0.56, s: 1.16 }, 3.5, 'sine.inOut')
+    gsap.set(frames, { autoAlpha: 0 }); gsap.set(frames[8]!, { autoAlpha: 1 })
+    gsap.set('.v-done', { scaleX: progress(9) }); gsap.set('.v-knob', { left: `${progress(9) * 100}%` })
+    tl.to('.v-done', { scaleX: progress(9) + 0.06, duration: t(T.scrubGrab), ease: 'none' }, 0)
+    tl.to('.v-knob', { left: `${(progress(9) + 0.06) * 100}%`, duration: t(T.scrubGrab), ease: 'none' }, 0)
+    // A fingertip takes the knob and drags it back to the second step; the frames run backwards under it.
+    const grab = t(T.scrubGrab)
+    k.pointerAt(grab - 0.35, { x: end.x + 0.02, y: end.y + 0.04 })
+    k.point(grab - 0.3, end, 0.28)
+    k.click(grab)
+    tl.to('.v-knob', { scale: 1.5, duration: 0.1 }, grab)
+    k.point(grab + 0.1, knob(2), 0.7, 'power2.inOut')
+    tl.to('.v-done', { scaleX: progress(2), duration: 0.7, ease: 'power2.inOut' }, grab + 0.1)
+    tl.to('.v-knob', { left: `${progress(2) * 100}%`, duration: 0.7, ease: 'power2.inOut' }, grab + 0.1)
+    ;[8, 7, 6, 5, 4, 3, 2].forEach((n, i) => showFrame(n, grab + 0.15 + i * 0.09))
+    tl.to('.v-knob', { scale: 1, duration: 0.2 }, grab + 0.85)
+    // It plays on from there, a state a beat.
+    T.playOn.forEach((at, i) => showFrame(3 + i, t(at)))
+    tl.to('.v-done', { scaleX: progress(4) + 0.02, duration: t(T.closeTap) - grab - 0.8, ease: 'none' }, grab + 0.8)
+    tl.to('.v-knob', { left: `${(progress(4) + 0.02) * 100}%`, duration: t(T.closeTap) - grab - 0.8, ease: 'none' }, grab + 0.8)
+    // A tap on ✕ closes the player back into its card: the picture shrinks onto the thumbnail it grew from.
+    const tap = t(T.closeTap)
+    k.point(t(T.playOn[1]), { x: close.x + close.w / 2, y: close.y + close.h / 2 }, 0.4)
+    k.click(tap)
+    k.pointerOff(tap + 0.2)
+    const s = thumb.w / screen.w
+    const dx = thumb.x - player.x - s * (screen.x - player.x), dy = thumb.y - player.y - s * (screen.y - player.y)
+    tl.to('.v-player', { scale: s, xPercent: dx / player.w * 100, yPercent: dy / player.h * 100, duration: 0.4, ease: 'power3.in' }, tap + 0.06)
+    tl.to('.v-player', { autoAlpha: 0, duration: 0.1, ease: 'none' }, tap + 0.38)
+    k.cam(tap + 0.2, { x: 0.5, y: 0.6, s: 1.3 }, 0.8)
+    // Back in the thread: the student who asked writes the answer in their own words.
     gsap.set('.r-new', { display: 'none' })
-    k.enter('.r-typing', 0.25, { yPercent: 40, scale: 0.9 }, 0.3)
-    tl.to('.r-typing .pf-typing i', { yPercent: -60, duration: 0.14, stagger: 0.07, repeat: 1, yoyo: true, ease: 'sine.inOut' }, 0.4)
-    tl.set('.r-typing', { display: 'none' }, 0.85)
-    tl.set('.r-new', { display: 'flex' }, 0.85)
-    k.enter('.r-new', 0.85, { yPercent: 25, scale: 0.94 }, 0.5)
-    tl.to('.r-new .pf-bubble', { keyframes: [{ scale: 1.05, duration: 0.14, ease: 'power2.out' }, { scale: 1, duration: 0.35, ease: 'back.out(2.5)' }] }, 1.05)
+    k.enter('.r-typing', t(T.typingReply), { yPercent: 40, scale: 0.9 }, 0.25)
+    tl.to('.r-typing .pf-typing i', { yPercent: -60, duration: 0.1, stagger: 0.06, repeat: 1, yoyo: true, ease: 'sine.inOut' }, t(T.typingReply) + 0.1)
+    tl.set('.r-typing', { display: 'none' }, t(T.reply))
+    tl.set('.r-new', { display: 'flex' }, t(T.reply))
+    k.enter('.r-new', t(T.reply), { yPercent: 25, scale: 0.94 }, 0.45)
+    tl.to('.r-new .pf-bubble', { keyframes: [{ scale: 1.05, duration: 0.14, ease: 'power2.out' }, { scale: 1, duration: 0.35, ease: 'back.out(2.5)' }] }, t(T.reply) + 0.15)
   },
 }
