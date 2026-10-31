@@ -1,0 +1,5165 @@
+{
+ "schemaVersion": 1,
+ "id": "animation-algorithms",
+ "metadata": {
+  "title": "算法与代码",
+  "lang": "zh-CN",
+  "description": "算法的每一步、数据结构的变化与代码本身：搜索、排序、树与栈、协议，以及代码的输入、导览、对比与运行。",
+  "tags": [
+   "动画参考"
+  ],
+  "plugins": [
+   "@lincyaw/addon-motion",
+   "@lincyaw/addon-lecture"
+  ],
+  "renderers": {
+   "web": {},
+   "lecture": {}
+  }
+ },
+ "sectionOrder": [
+  "search",
+  "gsap-draw-svg",
+  "anime-graph-bfs",
+  "gsap-keyframes",
+  "motion-scan",
+  "sort",
+  "gsap-swap",
+  "anime-bubble-swap",
+  "motion-reorder",
+  "remotion-swap",
+  "gsap-nested",
+  "structures",
+  "motion-spring",
+  "three-hanoi",
+  "anime-binary-set",
+  "gsap-merge",
+  "dc-decision-tree",
+  "systems",
+  "motion-packet",
+  "anime-hash-scramble",
+  "code",
+  "dc-code-typing",
+  "dc-code-focus",
+  "dc-code-diff",
+  "dc-code-morph",
+  "dc-terminal-run"
+ ],
+ "sections": {
+  "search": {
+   "id": "search",
+   "title": "搜索与遍历",
+   "level": 1,
+   "children": [
+    "search--intro"
+   ],
+   "stepOrder": [
+    "search--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "gsap-draw-svg": {
+   "id": "gsap-draw-svg",
+   "title": "描线：DrawSVG 画出广度优先搜索",
+   "level": 2,
+   "children": [
+    "gsap-draw-svg--draw-svg-scene",
+    "gsap-draw-svg--paragraph-1",
+    "gsap-draw-svg--paragraph-2",
+    "gsap-draw-svg--paragraph-3",
+    "gsap-draw-svg--paragraph-4"
+   ],
+   "stepOrder": [
+    "gsap-draw-svg--step-0",
+    "gsap-draw-svg--step-1",
+    "gsap-draw-svg--step-2",
+    "gsap-draw-svg--step-3"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "anime-graph-bfs": {
+   "id": "anime-graph-bfs",
+   "title": "图上的高亮路径：广度优先搜索",
+   "level": 2,
+   "children": [
+    "anime-graph-bfs--graph-bfs-scene",
+    "anime-graph-bfs--paragraph-1",
+    "anime-graph-bfs--paragraph-2",
+    "anime-graph-bfs--paragraph-3",
+    "anime-graph-bfs--paragraph-4"
+   ],
+   "stepOrder": [
+    "anime-graph-bfs--step-0",
+    "anime-graph-bfs--step-1",
+    "anime-graph-bfs--step-2",
+    "anime-graph-bfs--step-3"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "gsap-keyframes": {
+   "id": "gsap-keyframes",
+   "title": "关键帧：二分查找的指针",
+   "level": 2,
+   "children": [
+    "gsap-keyframes--keyframes-scene",
+    "gsap-keyframes--paragraph-1",
+    "gsap-keyframes--paragraph-2",
+    "gsap-keyframes--paragraph-3"
+   ],
+   "stepOrder": [
+    "gsap-keyframes--step-0",
+    "gsap-keyframes--step-1",
+    "gsap-keyframes--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-scan": {
+   "id": "motion-scan",
+   "title": "离散跳动：steps 缓动的线性查找与二分查找",
+   "level": 2,
+   "children": [
+    "motion-scan--scan-scene",
+    "motion-scan--paragraph-1",
+    "motion-scan--paragraph-2"
+   ],
+   "stepOrder": [
+    "motion-scan--step-0",
+    "motion-scan--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "sort": {
+   "id": "sort",
+   "title": "排序与交换",
+   "level": 1,
+   "children": [
+    "sort--intro"
+   ],
+   "stepOrder": [
+    "sort--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "gsap-swap": {
+   "id": "gsap-swap",
+   "title": "交换位置：关键帧数组画出弧线",
+   "level": 2,
+   "children": [
+    "gsap-swap--swap-scene",
+    "gsap-swap--paragraph-1",
+    "gsap-swap--paragraph-2",
+    "gsap-swap--paragraph-3"
+   ],
+   "stepOrder": [
+    "gsap-swap--step-0",
+    "gsap-swap--step-1",
+    "gsap-swap--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "anime-bubble-swap": {
+   "id": "anime-bubble-swap",
+   "title": "交换与排序：多段补间同一属性",
+   "level": 2,
+   "children": [
+    "anime-bubble-swap--bubble-swap-scene",
+    "anime-bubble-swap--paragraph-1",
+    "anime-bubble-swap--paragraph-2",
+    "anime-bubble-swap--paragraph-3",
+    "anime-bubble-swap--paragraph-4"
+   ],
+   "stepOrder": [
+    "anime-bubble-swap--step-0",
+    "anime-bubble-swap--step-1",
+    "anime-bubble-swap--step-2",
+    "anime-bubble-swap--step-3"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-reorder": {
+   "id": "motion-reorder",
+   "title": "列表重排：冒泡排序的每一趟",
+   "level": 2,
+   "children": [
+    "motion-reorder--reorder-scene",
+    "motion-reorder--paragraph-1",
+    "motion-reorder--paragraph-2",
+    "motion-reorder--paragraph-3",
+    "motion-reorder--paragraph-4"
+   ],
+   "stepOrder": [
+    "motion-reorder--step-0",
+    "motion-reorder--step-1",
+    "motion-reorder--step-2",
+    "motion-reorder--step-3"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "remotion-swap": {
+   "id": "remotion-swap",
+   "title": "比较与交换",
+   "level": 2,
+   "children": [
+    "remotion-swap--swap-scene",
+    "remotion-swap--paragraph-1",
+    "remotion-swap--paragraph-2",
+    "remotion-swap--paragraph-3"
+   ],
+   "stepOrder": [
+    "remotion-swap--step-0",
+    "remotion-swap--step-1",
+    "remotion-swap--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "gsap-nested": {
+   "id": "gsap-nested",
+   "title": "嵌套时间轴：选择排序",
+   "level": 2,
+   "children": [
+    "gsap-nested--nested-scene",
+    "gsap-nested--paragraph-1",
+    "gsap-nested--paragraph-2",
+    "gsap-nested--paragraph-3",
+    "gsap-nested--paragraph-4"
+   ],
+   "stepOrder": [
+    "gsap-nested--step-0",
+    "gsap-nested--step-1",
+    "gsap-nested--step-2",
+    "gsap-nested--step-3"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "structures": {
+   "id": "structures",
+   "title": "数据结构",
+   "level": 1,
+   "children": [
+    "structures--intro"
+   ],
+   "stepOrder": [
+    "structures--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-spring": {
+   "id": "motion-spring",
+   "title": "弹簧弹出：一棵二叉搜索树逐层长出",
+   "level": 2,
+   "children": [
+    "motion-spring--spring-scene",
+    "motion-spring--paragraph-1",
+    "motion-spring--paragraph-2",
+    "motion-spring--paragraph-3"
+   ],
+   "stepOrder": [
+    "motion-spring--step-0",
+    "motion-spring--step-1",
+    "motion-spring--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "three-hanoi": {
+   "id": "three-hanoi",
+   "title": "关键帧数据：AnimationClip 与 AnimationMixer",
+   "level": 2,
+   "children": [
+    "three-hanoi--hanoi-scene",
+    "three-hanoi--paragraph-1",
+    "three-hanoi--paragraph-2",
+    "three-hanoi--paragraph-3",
+    "three-hanoi--paragraph-4"
+   ],
+   "stepOrder": [
+    "three-hanoi--step-0",
+    "three-hanoi--step-1",
+    "three-hanoi--step-2",
+    "three-hanoi--step-3"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "anime-binary-set": {
+   "id": "anime-binary-set",
+   "title": "离散变化：二进制计数",
+   "level": 2,
+   "children": [
+    "anime-binary-set--binary-set-scene",
+    "anime-binary-set--paragraph-1",
+    "anime-binary-set--paragraph-2"
+   ],
+   "stepOrder": [
+    "anime-binary-set--step-0",
+    "anime-binary-set--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "gsap-merge": {
+   "id": "gsap-merge",
+   "title": "合并：两个词元合成一个",
+   "level": 2,
+   "children": [
+    "gsap-merge--merge-scene",
+    "gsap-merge--paragraph-1",
+    "gsap-merge--paragraph-2",
+    "gsap-merge--paragraph-3"
+   ],
+   "stepOrder": [
+    "gsap-merge--step-0",
+    "gsap-merge--step-1",
+    "gsap-merge--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "dc-decision-tree": {
+   "id": "dc-decision-tree",
+   "title": "决策树：逐层长出，再走一遍",
+   "level": 2,
+   "children": [
+    "dc-decision-tree--notes",
+    "dc-decision-tree--shot"
+   ],
+   "stepOrder": [
+    "dc-decision-tree--step-0",
+    "dc-decision-tree--step-1",
+    "dc-decision-tree--step-2",
+    "dc-decision-tree--step-3"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "systems": {
+   "id": "systems",
+   "title": "协议与哈希",
+   "level": 1,
+   "children": [
+    "systems--intro"
+   ],
+   "stepOrder": [
+    "systems--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-packet": {
+   "id": "motion-packet",
+   "title": "关键帧与 times：一次往返与三次握手",
+   "level": 2,
+   "children": [
+    "motion-packet--packet-scene",
+    "motion-packet--paragraph-1",
+    "motion-packet--paragraph-2"
+   ],
+   "stepOrder": [
+    "motion-packet--step-0",
+    "motion-packet--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "anime-hash-scramble": {
+   "id": "anime-hash-scramble",
+   "title": "乱码揭示：哈希的雪崩效应",
+   "level": 2,
+   "children": [
+    "anime-hash-scramble--hash-scramble-scene",
+    "anime-hash-scramble--paragraph-1",
+    "anime-hash-scramble--paragraph-2",
+    "anime-hash-scramble--paragraph-3"
+   ],
+   "stepOrder": [
+    "anime-hash-scramble--step-0",
+    "anime-hash-scramble--step-1",
+    "anime-hash-scramble--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "code": {
+   "id": "code",
+   "title": "代码",
+   "level": 1,
+   "children": [
+    "code--intro"
+   ],
+   "stepOrder": [
+    "code--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "dc-code-typing": {
+   "id": "dc-code-typing",
+   "title": "代码输入：光标跟着字往前走",
+   "level": 2,
+   "children": [
+    "dc-code-typing--notes",
+    "dc-code-typing--shot"
+   ],
+   "stepOrder": [
+    "dc-code-typing--step-0"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "dc-code-focus": {
+   "id": "dc-code-focus",
+   "title": "代码导览：滚到一段，照亮一段",
+   "level": 2,
+   "children": [
+    "dc-code-focus--notes",
+    "dc-code-focus--shot"
+   ],
+   "stepOrder": [
+    "dc-code-focus--step-0",
+    "dc-code-focus--step-1",
+    "dc-code-focus--step-2",
+    "dc-code-focus--step-3"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "dc-code-diff": {
+   "id": "dc-code-diff",
+   "title": "代码对比：先标出删改，再应用",
+   "level": 2,
+   "children": [
+    "dc-code-diff--notes",
+    "dc-code-diff--shot"
+   ],
+   "stepOrder": [
+    "dc-code-diff--step-0",
+    "dc-code-diff--step-1",
+    "dc-code-diff--step-2",
+    "dc-code-diff--step-3"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "dc-code-morph": {
+   "id": "dc-code-morph",
+   "title": "代码变形：同一段逻辑的三种写法",
+   "level": 2,
+   "children": [
+    "dc-code-morph--notes",
+    "dc-code-morph--shot"
+   ],
+   "stepOrder": [
+    "dc-code-morph--step-0",
+    "dc-code-morph--step-1",
+    "dc-code-morph--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "dc-terminal-run": {
+   "id": "dc-terminal-run",
+   "title": "终端运行：输入命令，逐行输出，落在结果上",
+   "level": 2,
+   "children": [
+    "dc-terminal-run--notes",
+    "dc-terminal-run--shot"
+   ],
+   "stepOrder": [
+    "dc-terminal-run--step-0",
+    "dc-terminal-run--step-1",
+    "dc-terminal-run--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  }
+ },
+ "blocks": {
+  "search--intro": {
+   "id": "search--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "search--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "指针移动、逐个比较与图上的遍历，每一步对应一次判断。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-draw-svg--draw-svg-scene": {
+   "id": "gsap-draw-svg--draw-svg-scene",
+   "type": "component",
+   "definitionId": "gsap-draw-svg--draw-svg-scene--definition",
+   "parameters": {
+    "scene": "gsap/draw-svg",
+    "alt": "一棵七个节点的树：边按层画出，节点依次被访问，最后描出从 A 到 F 的路径。"
+   }
+  },
+  "gsap-draw-svg--paragraph-1": {
+   "id": "gsap-draw-svg--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-draw-svg--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "节点出现，从根 A 开始访问。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-draw-svg--paragraph-2": {
+   "id": "gsap-draw-svg--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-draw-svg--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第一层的两条边从 A 画向 B 和 C，它们被访问。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-draw-svg--paragraph-3": {
+   "id": "gsap-draw-svg--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-draw-svg--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第二层的四条边画出，D、E、F、G 依次被访问。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-draw-svg--paragraph-4": {
+   "id": "gsap-draw-svg--paragraph-4",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-draw-svg--paragraph-4--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "从 A 经 C 到 F 的路径描成一条粗线。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-graph-bfs--graph-bfs-scene": {
+   "id": "anime-graph-bfs--graph-bfs-scene",
+   "type": "component",
+   "definitionId": "anime-graph-bfs--graph-bfs-scene--definition",
+   "parameters": {
+    "scene": "anime/graph-bfs",
+    "alt": "从 A 出发的广度优先搜索，每一步展开一层，树边沿父到子的方向画出。"
+   }
+  },
+  "anime-graph-bfs--paragraph-1": {
+   "id": "anime-graph-bfs--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-graph-bfs--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "图里有七个节点，搜索从 A 开始。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-graph-bfs--paragraph-2": {
+   "id": "anime-graph-bfs--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-graph-bfs--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第一层：A 的邻居 B 和 C 被访问，两条树边亮起。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-graph-bfs--paragraph-3": {
+   "id": "anime-graph-bfs--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-graph-bfs--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第二层：D、E、F 被访问。C 到 E 的边不是树边，E 已经由 B 找到。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-graph-bfs--paragraph-4": {
+   "id": "anime-graph-bfs--paragraph-4",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-graph-bfs--paragraph-4--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "最后一层只剩 G，搜索结束。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-keyframes--keyframes-scene": {
+   "id": "gsap-keyframes--keyframes-scene",
+   "type": "component",
+   "definitionId": "gsap-keyframes--keyframes-scene--definition",
+   "parameters": {
+    "scene": "gsap/keyframes",
+    "alt": "在十个有序数中二分查找 23：指针跳到中点，不可能的一半变淡，第三次找到。"
+   }
+  },
+  "gsap-keyframes--paragraph-1": {
+   "id": "gsap-keyframes--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-keyframes--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "指针指向中点 16，16 小于 23，左半边变淡。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-keyframes--paragraph-2": {
+   "id": "gsap-keyframes--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-keyframes--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "指针跳到剩下部分的中点 56，56 大于 23，右边变淡。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-keyframes--paragraph-3": {
+   "id": "gsap-keyframes--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-keyframes--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "指针跳到 23，找到了，这一格弹一下。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-scan--scan-scene": {
+   "id": "motion-scan--scan-scene",
+   "type": "component",
+   "definitionId": "motion-scan--scan-scene--definition",
+   "parameters": {
+    "scene": "motion/scan",
+    "alt": "在有序数组里找 61：线性查找一格一格走了八次，二分查找两次就找到。"
+   }
+  },
+  "motion-scan--paragraph-1": {
+   "id": "motion-scan--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-scan--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "线性查找：指针一格一格向右，比较到第八次才找到 61。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-scan--paragraph-2": {
+   "id": "motion-scan--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-scan--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "二分查找：先看中间的 34，比 61 小，丢掉左半边；再看 61，找到了，只比较了两次。"
+      }
+     ]
+    }
+   ]
+  },
+  "sort--intro": {
+   "id": "sort--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "sort--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "元素交换位置、逐趟推进，排好的部分逐渐固定。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-swap--swap-scene": {
+   "id": "gsap-swap--swap-scene",
+   "type": "component",
+   "definitionId": "gsap-swap--swap-scene--definition",
+   "parameters": {
+    "scene": "gsap/swap-arc",
+    "alt": "数组中下标 1 与 4 的两个格子被选中，一个从上方、一个从下方绕过去交换位置。"
+   }
+  },
+  "gsap-swap--paragraph-1": {
+   "id": "gsap-swap--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-swap--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "下标 1 和 4 的两个格子被选中。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-swap--paragraph-2": {
+   "id": "gsap-swap--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-swap--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "它们交换位置：一个从上方绕过去，一个从下方。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-swap--paragraph-3": {
+   "id": "gsap-swap--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-swap--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "落地时压扁一下再弹回，颜色恢复。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-bubble-swap--bubble-swap-scene": {
+   "id": "anime-bubble-swap--bubble-swap-scene",
+   "type": "component",
+   "definitionId": "anime-bubble-swap--bubble-swap-scene--definition",
+   "parameters": {
+    "scene": "anime/bubble-swap",
+    "alt": "冒泡排序：相邻两根柱子比较，前者大就交换；每一遍把最大的送到末尾。"
+   }
+  },
+  "anime-bubble-swap--paragraph-1": {
+   "id": "anime-bubble-swap--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-bubble-swap--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第一遍：相邻两根依次比较，大的往右换，9 到了最右边。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-bubble-swap--paragraph-2": {
+   "id": "anime-bubble-swap--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-bubble-swap--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第二遍：8 到了倒数第二位。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-bubble-swap--paragraph-3": {
+   "id": "anime-bubble-swap--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-bubble-swap--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第三遍：6 就位，这时整个数组其实已经有序。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-bubble-swap--paragraph-4": {
+   "id": "anime-bubble-swap--paragraph-4",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-bubble-swap--paragraph-4--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "剩下的柱子一起标为就位，排序完成。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-reorder--reorder-scene": {
+   "id": "motion-reorder--reorder-scene",
+   "type": "component",
+   "definitionId": "motion-reorder--reorder-scene--definition",
+   "parameters": {
+    "scene": "motion/reorder",
+    "alt": "六个数的冒泡排序，每一步是一趟，较大的数从上方越过较小的数。"
+   }
+  },
+  "motion-reorder--paragraph-1": {
+   "id": "motion-reorder--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-reorder--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第一趟：相邻两个比较，前面大就交换，9 被一路换到最右边。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-reorder--paragraph-2": {
+   "id": "motion-reorder--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-reorder--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第二趟：8 归位到倒数第二格。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-reorder--paragraph-3": {
+   "id": "motion-reorder--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-reorder--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第三趟：2 和 1、5 和 3 交换后，整列有序。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-reorder--paragraph-4": {
+   "id": "motion-reorder--paragraph-4",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-reorder--paragraph-4--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "排好了：从左到右依次亮起。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-swap--swap-scene": {
+   "id": "remotion-swap--swap-scene",
+   "type": "component",
+   "definitionId": "remotion-swap--swap-scene--definition",
+   "parameters": {
+    "scene": "remotion/swap",
+    "alt": "冒泡排序的一次比较与交换：前两个数 5 和 3 被标亮，沿弧线交换位置，然后变成绿色。"
+   }
+  },
+  "remotion-swap--paragraph-1": {
+   "id": "remotion-swap--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-swap--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "比较前两个数，5 比 3 大，它们被标亮。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-swap--paragraph-2": {
+   "id": "remotion-swap--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-swap--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "两个数沿着弧线交换位置，一个从上面过，一个从下面过。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-swap--paragraph-3": {
+   "id": "remotion-swap--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-swap--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "交换完成，这一对变成绿色，5 向右冒了一格。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-nested--nested-scene": {
+   "id": "gsap-nested--nested-scene",
+   "type": "component",
+   "definitionId": "gsap-nested--nested-scene--definition",
+   "parameters": {
+    "scene": "gsap/nested",
+    "alt": "五根柱子做选择排序：每一趟扫描找出最小值，换到未排序部分的最前面。"
+   }
+  },
+  "gsap-nested--paragraph-1": {
+   "id": "gsap-nested--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-nested--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第一趟：从左到右扫描，最小的 1 换到最前面，变成绿色。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-nested--paragraph-2": {
+   "id": "gsap-nested--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-nested--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第二趟：在剩下的柱子中找到 3，它已经在位置上。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-nested--paragraph-3": {
+   "id": "gsap-nested--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-nested--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第三趟：找到 5，与 8 交换。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-nested--paragraph-4": {
+   "id": "gsap-nested--paragraph-4",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-nested--paragraph-4--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第四趟：找到 6，排序完成。"
+      }
+     ]
+    }
+   ]
+  },
+  "structures--intro": {
+   "id": "structures--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "structures--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "树逐层生长、栈与盘子的移动、位的变化与合并。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-spring--spring-scene": {
+   "id": "motion-spring--spring-scene",
+   "type": "component",
+   "definitionId": "motion-spring--spring-scene--definition",
+   "parameters": {
+    "scene": "motion/spring-tree",
+    "alt": "二叉搜索树逐层出现：先画边，再让节点带着回弹弹出。"
+   }
+  },
+  "motion-spring--paragraph-1": {
+   "id": "motion-spring--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-spring--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "根节点 8 弹出来。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-spring--paragraph-2": {
+   "id": "motion-spring--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-spring--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第二层：先画出两条边，4 和 12 依次弹出。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-spring--paragraph-3": {
+   "id": "motion-spring--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-spring--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第三层的四个叶子依次弹出。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-hanoi--hanoi-scene": {
+   "id": "three-hanoi--hanoi-scene",
+   "type": "component",
+   "definitionId": "three-hanoi--hanoi-scene--definition",
+   "parameters": {
+    "scene": "three/hanoi",
+    "alt": "三个圆盘的汉诺塔：七次移动写成关键帧轨道，正在移动的圆盘变成橙色。"
+   }
+  },
+  "three-hanoi--paragraph-1": {
+   "id": "three-hanoi--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-hanoi--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "架子转到正面，三个圆盘叠在 A 柱上。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-hanoi--paragraph-2": {
+   "id": "three-hanoi--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-hanoi--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "前三步把上面两个圆盘挪到 B 柱，给最大的圆盘让路。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-hanoi--paragraph-3": {
+   "id": "three-hanoi--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-hanoi--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "最大的圆盘从 A 移到 C。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-hanoi--paragraph-4": {
+   "id": "three-hanoi--paragraph-4",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-hanoi--paragraph-4--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "最后三步把两个小圆盘从 B 移到 C 上，完成。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-binary-set--binary-set-scene": {
+   "id": "anime-binary-set--binary-set-scene",
+   "type": "component",
+   "definitionId": "anime-binary-set--binary-set-scene--definition",
+   "parameters": {
+    "scene": "anime/binary-set",
+    "alt": "四位二进制计数器从 0 数到 15，每一位翻转时变色。"
+   }
+  },
+  "anime-binary-set--paragraph-1": {
+   "id": "anime-binary-set--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-binary-set--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "四个位，从高到低是 8、4、2、1。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-binary-set--paragraph-2": {
+   "id": "anime-binary-set--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-binary-set--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "从 0 数到 15，最低位每次都翻转，进位从右向左传。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-merge--merge-scene": {
+   "id": "gsap-merge--merge-scene",
+   "type": "component",
+   "definitionId": "gsap-merge--merge-scene--definition",
+   "parameters": {
+    "scene": "gsap/merge",
+    "alt": "四个汉字两两合并成「机器」「学习」，再合并成「机器学习」。"
+   }
+  },
+  "gsap-merge--paragraph-1": {
+   "id": "gsap-merge--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-merge--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "四个字依次出现，每个字是一个词元。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-merge--paragraph-2": {
+   "id": "gsap-merge--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-merge--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "「机」与「器」、「学」与「习」两两合并：右边的词元收拢消失，左边的换成新词。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-merge--paragraph-3": {
+   "id": "gsap-merge--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-merge--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "两个词再合并成一个词元「机器学习」。"
+      }
+     ]
+    }
+   ]
+  },
+  "dc-decision-tree--notes": {
+   "id": "dc-decision-tree--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "dc-decision-tree--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "讲一个判断流程时用：问题树一层层长出来，再沿一个具体情况从根走到答案；没走的分支随之变暗，答案填色并轻轻放大。"
+      }
+     ]
+    },
+    {
+     "id": "dc-decision-tree--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "root 1.2 s：根问题弹出；grow 3 s：每层占等长一段，连线先从父节点画出，分支标签在拐角淡入，子节点在连线到达时弹出（原因先于结果）；trace 3 s：强调色的线一段段走下选中的分支，到达的节点描边变色，没走的分支在线经过后暗到三分之一；answer 2.3 s：答案节点填色、放大 8% 再回落，停住。"
+      }
+     ]
+    },
+    {
+     "id": "dc-decision-tree--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：tree（节点 label、到它的分支名 edge、children）、path（每层选第几个孩子，从 0 起）、orientation（vertical 自上而下，horizontal 自左向右）。D3 的 tree 布局决定位置；节点宽度按字符列数计算。"
+      }
+     ]
+    }
+   ]
+  },
+  "dc-decision-tree--shot": {
+   "id": "dc-decision-tree--shot",
+   "type": "component",
+   "definitionId": "dc-decision-tree--shot--definition",
+   "parameters": {
+    "scene": "dc/decision-tree",
+    "alt": "决策树：数据量很大吗？是 → 需要稳定排序？否 → 怕最坏情况？否 → 快速排序；其余分支为插入排序、归并排序、堆排序。"
+   }
+  },
+  "systems--intro": {
+   "id": "systems--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "systems--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "消息往返与哈希的雪崩效应。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-packet--packet-scene": {
+   "id": "motion-packet--packet-scene",
+   "type": "component",
+   "definitionId": "motion-packet--packet-scene--definition",
+   "parameters": {
+    "scene": "motion/packet",
+    "alt": "客户端与服务器之间：一个请求去了又回来；然后是 TCP 的三次握手。"
+   }
+  },
+  "motion-packet--paragraph-1": {
+   "id": "motion-packet--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-packet--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "请求发到服务器，在那里停一下，变成响应回来，这一来一回就是 RTT。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-packet--paragraph-2": {
+   "id": "motion-packet--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-packet--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "建立连接要三次握手：SYN 过去，SYN-ACK 回来，ACK 再过去。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-hash-scramble--hash-scramble-scene": {
+   "id": "anime-hash-scramble--hash-scramble-scene",
+   "type": "component",
+   "definitionId": "anime-hash-scramble--hash-scramble-scene--definition",
+   "parameters": {
+    "scene": "anime/hash-scramble",
+    "alt": "hello 的 SHA-256 摘要从乱码中显现；把最后一个字母改成 p，摘要完全变了。"
+   }
+  },
+  "anime-hash-scramble--paragraph-1": {
+   "id": "anime-hash-scramble--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-hash-scramble--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "hello 的 SHA-256 摘要从左到右从乱码中显现出来。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-hash-scramble--paragraph-2": {
+   "id": "anime-hash-scramble--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-hash-scramble--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "把最后一个字母 o 改成 p，只差一个字母。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-hash-scramble--paragraph-3": {
+   "id": "anime-hash-scramble--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-hash-scramble--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "新的摘要每一位都可能变，看不出和原来的任何关系，这是雪崩效应。"
+      }
+     ]
+    }
+   ]
+  },
+  "code--intro": {
+   "id": "code--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "code--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "代码的输入、逐段导览、修改对比、写法变形与终端运行。"
+      }
+     ]
+    }
+   ]
+  },
+  "dc-code-typing--notes": {
+   "id": "dc-code-typing--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "dc-code-typing--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "现场写一段代码时用：代码带着颜色逐字出现，光标始终在最前面；缩进一次出现，中文注释一个字一个字地来。"
+      }
+     ]
+    },
+    {
+     "id": "dc-code-typing--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "0–0.45 s 编辑器升起；0.5 s 起约每秒 14 个字符（观众能跟读的速度），节奏由固定种子决定：词内连打、换行与注释前稍停；每行开始时行号出现；打完后光标以 530 ms 闪烁，静止约 2 秒。代码比状态长时整体压缩。"
+      }
+     ]
+    },
+    {
+     "id": "dc-code-typing--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：code、lang、file。"
+      }
+     ]
+    }
+   ]
+  },
+  "dc-code-typing--shot": {
+   "id": "dc-code-typing--shot",
+   "type": "component",
+   "definitionId": "dc-code-typing--shot--definition",
+   "parameters": {
+    "scene": "dc/code-typing",
+    "alt": "代码输入：softmax 函数逐字写出，带一行中文注释。"
+   }
+  },
+  "dc-code-focus--notes": {
+   "id": "dc-code-focus--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "dc-code-focus--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "带读一个比窗口长的文件时用：每一步滚到一段代码，高亮带跟着滑过去，其余行变暗，旁边浮出一句短注。"
+      }
+     ]
+    },
+    {
+     "id": "dc-code-focus--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "overview 1.5 s：编辑器升起，显示文件开头。每个 focus：0–0.85 s 滚动使这一段居中，高亮带随之从上一段滑到这一段（第一次则在滚动落定后从左扫入）；0.85 s 起其余行暗到三分之一；1.15 s 起短注在高亮带右侧浮现，上一条短注先在 0.2 s 内离开。"
+      }
+     ]
+    },
+    {
+     "id": "dc-code-focus--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：code、lang、file、focus（每项 from、to 为行号，note 为不超过九个字的短注；状态数 = focus 数 + 1）。聚焦行由高亮扫入，其余行变暗。"
+      }
+     ]
+    }
+   ]
+  },
+  "dc-code-focus--shot": {
+   "id": "dc-code-focus--shot",
+   "type": "component",
+   "definitionId": "dc-code-focus--shot--definition",
+   "parameters": {
+    "scene": "dc/code-focus",
+    "alt": "代码导览：BFS 函数依次滚到“起点入队”“取出队头”“记距离，入队”三段，高亮并注释。"
+   }
+  },
+  "dc-code-diff--notes": {
+   "id": "dc-code-diff--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "dc-code-diff--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "讲一次修改时用：先看旧代码，要删的行先变红，新行再一行行撑开（下面的行被推下去，看得出插在哪里），最后删去的行收起、颜色褪去，标题栏弹出“−1 +3”，停在干净的新代码上。"
+      }
+     ]
+    },
+    {
+     "id": "dc-code-diff--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "0–1 s 编辑器升起；1–2.2 s 删除行依次标红，先出“−”号再横扫底色（原因先于结果）；2.2–3.7 s 新行从零高度展开，底色先到、文字晚 60 ms；3.7–6 s 删除行收起，底色褪去，改动计数弹出，静止 1.6 s。"
+      }
+     ]
+    },
+    {
+     "id": "dc-code-diff--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：before、after（前后两版代码，按行做最长公共子序列对比）、lang（python、js、shell）、file（标题栏文件名）。"
+      }
+     ]
+    }
+   ]
+  },
+  "dc-code-diff--shot": {
+   "id": "dc-code-diff--shot",
+   "type": "component",
+   "definitionId": "dc-code-diff--shot--definition",
+   "parameters": {
+    "scene": "dc/code-diff",
+    "alt": "代码对比：mean 函数的文档字符串被改写，并新增空列表判断，删除行标红收起，新增行标绿展开。"
+   }
+  },
+  "dc-code-morph--notes": {
+   "id": "dc-code-morph--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "dc-code-morph--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "讲重构、讲同一件事的几种写法时用：留下的词滑到新位置，要走的先沉下去，新来的最后浮上来；标题栏的版本名随落位切换。"
+      }
+     ]
+    },
+    {
+     "id": "dc-code-morph--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "每个后续状态：0–0.25 s 离开的词下沉淡出；0.15–0.8 s 留下的词同时滑到新的列和行（换行的词途中略抬起，看得见它走过去）；0.75 s 起新词以 30 ms 间隔浮现；其余时间静止。默认：for 循环 → 列表推导式 → 生成器表达式，x * x 从循环末尾飞到推导式开头。"
+      }
+     ]
+    },
+    {
+     "id": "dc-code-morph--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：versions（每个状态一版代码）、labels（每版的名字）、lang、file。词先按最长公共子序列配对，剩下的相同单词再就近配对；标点不跨位置配对。"
+      }
+     ]
+    }
+   ]
+  },
+  "dc-code-morph--shot": {
+   "id": "dc-code-morph--shot",
+   "type": "component",
+   "definitionId": "dc-code-morph--shot--definition",
+   "parameters": {
+    "scene": "dc/code-morph",
+    "alt": "代码变形：四行 for 循环变成一行列表推导式，再变成用 sum 的生成器表达式，相同的词滑到新位置。"
+   }
+  },
+  "dc-terminal-run--notes": {
+   "id": "dc-terminal-run--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "dc-terminal-run--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "演示一条命令的运行过程时用：命令按人手的节奏敲出，回车后输出一行行打印，最后一行结果以成功色落定，新的提示符闪烁。"
+      }
+     ]
+    },
+    {
+     "id": "dc-terminal-run--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "type 2.6 s：终端升起，0.5 s 起约每秒 14 个字符敲入命令，打完光标闪烁一拍；run 2.4 s：回车，0.3 s 后每 0.32 s 打印一行；done 2 s：结果行以成功色出现并轻微回弹（全片唯一的回弹，表示“完成”），随后新提示符出现。标题栏右侧标“示意输出”。"
+      }
+     ]
+    },
+    {
+     "id": "dc-terminal-run--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：command、output（每行一项；以 ✓ 开头为成功色，✗ 或“错误”开头为危险色）、prompt、title、tag。"
+      }
+     ]
+    }
+   ]
+  },
+  "dc-terminal-run--shot": {
+   "id": "dc-terminal-run--shot",
+   "type": "component",
+   "definitionId": "dc-terminal-run--shot--definition",
+   "parameters": {
+    "scene": "dc/terminal-run",
+    "alt": "终端运行：输入 python train.py --epochs 3，打印三轮训练的损失与准确率（示意输出），最后显示模型已保存。"
+   }
+  }
+ },
+ "steps": {
+  "search--step": {
+   "id": "search--step",
+   "sectionId": "search",
+   "visuals": [
+    {
+     "blockId": "search--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "gsap-draw-svg--step-0": {
+   "id": "gsap-draw-svg--step-0",
+   "sectionId": "gsap-draw-svg",
+   "visuals": [
+    {
+     "blockId": "gsap-draw-svg--draw-svg-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-draw-svg--paragraph-1--narration"
+   ]
+  },
+  "gsap-draw-svg--step-1": {
+   "id": "gsap-draw-svg--step-1",
+   "sectionId": "gsap-draw-svg",
+   "visuals": [
+    {
+     "blockId": "gsap-draw-svg--draw-svg-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-draw-svg--paragraph-2--narration"
+   ]
+  },
+  "gsap-draw-svg--step-2": {
+   "id": "gsap-draw-svg--step-2",
+   "sectionId": "gsap-draw-svg",
+   "visuals": [
+    {
+     "blockId": "gsap-draw-svg--draw-svg-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-draw-svg--paragraph-3--narration"
+   ]
+  },
+  "gsap-draw-svg--step-3": {
+   "id": "gsap-draw-svg--step-3",
+   "sectionId": "gsap-draw-svg",
+   "visuals": [
+    {
+     "blockId": "gsap-draw-svg--draw-svg-scene",
+     "visible": true,
+     "state": "legacy-3"
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-draw-svg--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-draw-svg--paragraph-4--narration"
+   ]
+  },
+  "anime-graph-bfs--step-0": {
+   "id": "anime-graph-bfs--step-0",
+   "sectionId": "anime-graph-bfs",
+   "visuals": [
+    {
+     "blockId": "anime-graph-bfs--graph-bfs-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-graph-bfs--paragraph-1--narration"
+   ]
+  },
+  "anime-graph-bfs--step-1": {
+   "id": "anime-graph-bfs--step-1",
+   "sectionId": "anime-graph-bfs",
+   "visuals": [
+    {
+     "blockId": "anime-graph-bfs--graph-bfs-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-graph-bfs--paragraph-2--narration"
+   ]
+  },
+  "anime-graph-bfs--step-2": {
+   "id": "anime-graph-bfs--step-2",
+   "sectionId": "anime-graph-bfs",
+   "visuals": [
+    {
+     "blockId": "anime-graph-bfs--graph-bfs-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-graph-bfs--paragraph-3--narration"
+   ]
+  },
+  "anime-graph-bfs--step-3": {
+   "id": "anime-graph-bfs--step-3",
+   "sectionId": "anime-graph-bfs",
+   "visuals": [
+    {
+     "blockId": "anime-graph-bfs--graph-bfs-scene",
+     "visible": true,
+     "state": "legacy-3"
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "anime-graph-bfs--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-graph-bfs--paragraph-4--narration"
+   ]
+  },
+  "gsap-keyframes--step-0": {
+   "id": "gsap-keyframes--step-0",
+   "sectionId": "gsap-keyframes",
+   "visuals": [
+    {
+     "blockId": "gsap-keyframes--keyframes-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "gsap-keyframes--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-keyframes--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-keyframes--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-keyframes--paragraph-1--narration"
+   ]
+  },
+  "gsap-keyframes--step-1": {
+   "id": "gsap-keyframes--step-1",
+   "sectionId": "gsap-keyframes",
+   "visuals": [
+    {
+     "blockId": "gsap-keyframes--keyframes-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "gsap-keyframes--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-keyframes--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-keyframes--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-keyframes--paragraph-2--narration"
+   ]
+  },
+  "gsap-keyframes--step-2": {
+   "id": "gsap-keyframes--step-2",
+   "sectionId": "gsap-keyframes",
+   "visuals": [
+    {
+     "blockId": "gsap-keyframes--keyframes-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "gsap-keyframes--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-keyframes--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-keyframes--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-keyframes--paragraph-3--narration"
+   ]
+  },
+  "motion-scan--step-0": {
+   "id": "motion-scan--step-0",
+   "sectionId": "motion-scan",
+   "visuals": [
+    {
+     "blockId": "motion-scan--scan-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-scan--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-scan--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-scan--paragraph-1--narration"
+   ]
+  },
+  "motion-scan--step-1": {
+   "id": "motion-scan--step-1",
+   "sectionId": "motion-scan",
+   "visuals": [
+    {
+     "blockId": "motion-scan--scan-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-scan--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-scan--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-scan--paragraph-2--narration"
+   ]
+  },
+  "sort--step": {
+   "id": "sort--step",
+   "sectionId": "sort",
+   "visuals": [
+    {
+     "blockId": "sort--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "gsap-swap--step-0": {
+   "id": "gsap-swap--step-0",
+   "sectionId": "gsap-swap",
+   "visuals": [
+    {
+     "blockId": "gsap-swap--swap-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "gsap-swap--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-swap--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-swap--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-swap--paragraph-1--narration"
+   ]
+  },
+  "gsap-swap--step-1": {
+   "id": "gsap-swap--step-1",
+   "sectionId": "gsap-swap",
+   "visuals": [
+    {
+     "blockId": "gsap-swap--swap-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "gsap-swap--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-swap--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-swap--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-swap--paragraph-2--narration"
+   ]
+  },
+  "gsap-swap--step-2": {
+   "id": "gsap-swap--step-2",
+   "sectionId": "gsap-swap",
+   "visuals": [
+    {
+     "blockId": "gsap-swap--swap-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "gsap-swap--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-swap--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-swap--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-swap--paragraph-3--narration"
+   ]
+  },
+  "anime-bubble-swap--step-0": {
+   "id": "anime-bubble-swap--step-0",
+   "sectionId": "anime-bubble-swap",
+   "visuals": [
+    {
+     "blockId": "anime-bubble-swap--bubble-swap-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-bubble-swap--paragraph-1--narration"
+   ]
+  },
+  "anime-bubble-swap--step-1": {
+   "id": "anime-bubble-swap--step-1",
+   "sectionId": "anime-bubble-swap",
+   "visuals": [
+    {
+     "blockId": "anime-bubble-swap--bubble-swap-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-bubble-swap--paragraph-2--narration"
+   ]
+  },
+  "anime-bubble-swap--step-2": {
+   "id": "anime-bubble-swap--step-2",
+   "sectionId": "anime-bubble-swap",
+   "visuals": [
+    {
+     "blockId": "anime-bubble-swap--bubble-swap-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-bubble-swap--paragraph-3--narration"
+   ]
+  },
+  "anime-bubble-swap--step-3": {
+   "id": "anime-bubble-swap--step-3",
+   "sectionId": "anime-bubble-swap",
+   "visuals": [
+    {
+     "blockId": "anime-bubble-swap--bubble-swap-scene",
+     "visible": true,
+     "state": "legacy-3"
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "anime-bubble-swap--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-bubble-swap--paragraph-4--narration"
+   ]
+  },
+  "motion-reorder--step-0": {
+   "id": "motion-reorder--step-0",
+   "sectionId": "motion-reorder",
+   "visuals": [
+    {
+     "blockId": "motion-reorder--reorder-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-reorder--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-reorder--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-reorder--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "motion-reorder--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-reorder--paragraph-1--narration"
+   ]
+  },
+  "motion-reorder--step-1": {
+   "id": "motion-reorder--step-1",
+   "sectionId": "motion-reorder",
+   "visuals": [
+    {
+     "blockId": "motion-reorder--reorder-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-reorder--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-reorder--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-reorder--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "motion-reorder--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-reorder--paragraph-2--narration"
+   ]
+  },
+  "motion-reorder--step-2": {
+   "id": "motion-reorder--step-2",
+   "sectionId": "motion-reorder",
+   "visuals": [
+    {
+     "blockId": "motion-reorder--reorder-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "motion-reorder--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-reorder--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-reorder--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "motion-reorder--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-reorder--paragraph-3--narration"
+   ]
+  },
+  "motion-reorder--step-3": {
+   "id": "motion-reorder--step-3",
+   "sectionId": "motion-reorder",
+   "visuals": [
+    {
+     "blockId": "motion-reorder--reorder-scene",
+     "visible": true,
+     "state": "legacy-3"
+    },
+    {
+     "blockId": "motion-reorder--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-reorder--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-reorder--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "motion-reorder--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-reorder--paragraph-4--narration"
+   ]
+  },
+  "remotion-swap--step-0": {
+   "id": "remotion-swap--step-0",
+   "sectionId": "remotion-swap",
+   "visuals": [
+    {
+     "blockId": "remotion-swap--swap-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "remotion-swap--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-swap--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-swap--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-swap--paragraph-1--narration"
+   ]
+  },
+  "remotion-swap--step-1": {
+   "id": "remotion-swap--step-1",
+   "sectionId": "remotion-swap",
+   "visuals": [
+    {
+     "blockId": "remotion-swap--swap-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "remotion-swap--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-swap--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-swap--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-swap--paragraph-2--narration"
+   ]
+  },
+  "remotion-swap--step-2": {
+   "id": "remotion-swap--step-2",
+   "sectionId": "remotion-swap",
+   "visuals": [
+    {
+     "blockId": "remotion-swap--swap-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "remotion-swap--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-swap--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-swap--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-swap--paragraph-3--narration"
+   ]
+  },
+  "gsap-nested--step-0": {
+   "id": "gsap-nested--step-0",
+   "sectionId": "gsap-nested",
+   "visuals": [
+    {
+     "blockId": "gsap-nested--nested-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "gsap-nested--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-nested--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-nested--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-nested--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-nested--paragraph-1--narration"
+   ]
+  },
+  "gsap-nested--step-1": {
+   "id": "gsap-nested--step-1",
+   "sectionId": "gsap-nested",
+   "visuals": [
+    {
+     "blockId": "gsap-nested--nested-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "gsap-nested--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-nested--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-nested--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-nested--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-nested--paragraph-2--narration"
+   ]
+  },
+  "gsap-nested--step-2": {
+   "id": "gsap-nested--step-2",
+   "sectionId": "gsap-nested",
+   "visuals": [
+    {
+     "blockId": "gsap-nested--nested-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "gsap-nested--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-nested--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-nested--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-nested--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-nested--paragraph-3--narration"
+   ]
+  },
+  "gsap-nested--step-3": {
+   "id": "gsap-nested--step-3",
+   "sectionId": "gsap-nested",
+   "visuals": [
+    {
+     "blockId": "gsap-nested--nested-scene",
+     "visible": true,
+     "state": "legacy-3"
+    },
+    {
+     "blockId": "gsap-nested--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-nested--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-nested--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-nested--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-nested--paragraph-4--narration"
+   ]
+  },
+  "structures--step": {
+   "id": "structures--step",
+   "sectionId": "structures",
+   "visuals": [
+    {
+     "blockId": "structures--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "motion-spring--step-0": {
+   "id": "motion-spring--step-0",
+   "sectionId": "motion-spring",
+   "visuals": [
+    {
+     "blockId": "motion-spring--spring-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-spring--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-spring--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-spring--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-spring--paragraph-1--narration"
+   ]
+  },
+  "motion-spring--step-1": {
+   "id": "motion-spring--step-1",
+   "sectionId": "motion-spring",
+   "visuals": [
+    {
+     "blockId": "motion-spring--spring-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-spring--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-spring--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-spring--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-spring--paragraph-2--narration"
+   ]
+  },
+  "motion-spring--step-2": {
+   "id": "motion-spring--step-2",
+   "sectionId": "motion-spring",
+   "visuals": [
+    {
+     "blockId": "motion-spring--spring-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "motion-spring--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-spring--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-spring--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-spring--paragraph-3--narration"
+   ]
+  },
+  "three-hanoi--step-0": {
+   "id": "three-hanoi--step-0",
+   "sectionId": "three-hanoi",
+   "visuals": [
+    {
+     "blockId": "three-hanoi--hanoi-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "three-hanoi--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-hanoi--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-hanoi--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-hanoi--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-hanoi--paragraph-1--narration"
+   ]
+  },
+  "three-hanoi--step-1": {
+   "id": "three-hanoi--step-1",
+   "sectionId": "three-hanoi",
+   "visuals": [
+    {
+     "blockId": "three-hanoi--hanoi-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "three-hanoi--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-hanoi--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-hanoi--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-hanoi--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-hanoi--paragraph-2--narration"
+   ]
+  },
+  "three-hanoi--step-2": {
+   "id": "three-hanoi--step-2",
+   "sectionId": "three-hanoi",
+   "visuals": [
+    {
+     "blockId": "three-hanoi--hanoi-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "three-hanoi--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-hanoi--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-hanoi--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-hanoi--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-hanoi--paragraph-3--narration"
+   ]
+  },
+  "three-hanoi--step-3": {
+   "id": "three-hanoi--step-3",
+   "sectionId": "three-hanoi",
+   "visuals": [
+    {
+     "blockId": "three-hanoi--hanoi-scene",
+     "visible": true,
+     "state": "legacy-3"
+    },
+    {
+     "blockId": "three-hanoi--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-hanoi--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-hanoi--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-hanoi--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-hanoi--paragraph-4--narration"
+   ]
+  },
+  "anime-binary-set--step-0": {
+   "id": "anime-binary-set--step-0",
+   "sectionId": "anime-binary-set",
+   "visuals": [
+    {
+     "blockId": "anime-binary-set--binary-set-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "anime-binary-set--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-binary-set--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-binary-set--paragraph-1--narration"
+   ]
+  },
+  "anime-binary-set--step-1": {
+   "id": "anime-binary-set--step-1",
+   "sectionId": "anime-binary-set",
+   "visuals": [
+    {
+     "blockId": "anime-binary-set--binary-set-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "anime-binary-set--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-binary-set--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-binary-set--paragraph-2--narration"
+   ]
+  },
+  "gsap-merge--step-0": {
+   "id": "gsap-merge--step-0",
+   "sectionId": "gsap-merge",
+   "visuals": [
+    {
+     "blockId": "gsap-merge--merge-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "gsap-merge--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-merge--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-merge--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-merge--paragraph-1--narration"
+   ]
+  },
+  "gsap-merge--step-1": {
+   "id": "gsap-merge--step-1",
+   "sectionId": "gsap-merge",
+   "visuals": [
+    {
+     "blockId": "gsap-merge--merge-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "gsap-merge--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-merge--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-merge--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-merge--paragraph-2--narration"
+   ]
+  },
+  "gsap-merge--step-2": {
+   "id": "gsap-merge--step-2",
+   "sectionId": "gsap-merge",
+   "visuals": [
+    {
+     "blockId": "gsap-merge--merge-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "gsap-merge--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-merge--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-merge--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-merge--paragraph-3--narration"
+   ]
+  },
+  "dc-decision-tree--step-0": {
+   "id": "dc-decision-tree--step-0",
+   "sectionId": "dc-decision-tree",
+   "visuals": [
+    {
+     "blockId": "dc-decision-tree--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-decision-tree--shot",
+     "visible": true,
+     "state": "root"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-decision-tree--step-1": {
+   "id": "dc-decision-tree--step-1",
+   "sectionId": "dc-decision-tree",
+   "visuals": [
+    {
+     "blockId": "dc-decision-tree--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-decision-tree--shot",
+     "visible": true,
+     "state": "grow"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-decision-tree--step-2": {
+   "id": "dc-decision-tree--step-2",
+   "sectionId": "dc-decision-tree",
+   "visuals": [
+    {
+     "blockId": "dc-decision-tree--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-decision-tree--shot",
+     "visible": true,
+     "state": "trace"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-decision-tree--step-3": {
+   "id": "dc-decision-tree--step-3",
+   "sectionId": "dc-decision-tree",
+   "visuals": [
+    {
+     "blockId": "dc-decision-tree--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-decision-tree--shot",
+     "visible": true,
+     "state": "answer"
+    }
+   ],
+   "narrationIds": []
+  },
+  "systems--step": {
+   "id": "systems--step",
+   "sectionId": "systems",
+   "visuals": [
+    {
+     "blockId": "systems--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "motion-packet--step-0": {
+   "id": "motion-packet--step-0",
+   "sectionId": "motion-packet",
+   "visuals": [
+    {
+     "blockId": "motion-packet--packet-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-packet--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-packet--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-packet--paragraph-1--narration"
+   ]
+  },
+  "motion-packet--step-1": {
+   "id": "motion-packet--step-1",
+   "sectionId": "motion-packet",
+   "visuals": [
+    {
+     "blockId": "motion-packet--packet-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-packet--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-packet--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-packet--paragraph-2--narration"
+   ]
+  },
+  "anime-hash-scramble--step-0": {
+   "id": "anime-hash-scramble--step-0",
+   "sectionId": "anime-hash-scramble",
+   "visuals": [
+    {
+     "blockId": "anime-hash-scramble--hash-scramble-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "anime-hash-scramble--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-hash-scramble--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-hash-scramble--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-hash-scramble--paragraph-1--narration"
+   ]
+  },
+  "anime-hash-scramble--step-1": {
+   "id": "anime-hash-scramble--step-1",
+   "sectionId": "anime-hash-scramble",
+   "visuals": [
+    {
+     "blockId": "anime-hash-scramble--hash-scramble-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "anime-hash-scramble--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-hash-scramble--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-hash-scramble--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-hash-scramble--paragraph-2--narration"
+   ]
+  },
+  "anime-hash-scramble--step-2": {
+   "id": "anime-hash-scramble--step-2",
+   "sectionId": "anime-hash-scramble",
+   "visuals": [
+    {
+     "blockId": "anime-hash-scramble--hash-scramble-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "anime-hash-scramble--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-hash-scramble--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-hash-scramble--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-hash-scramble--paragraph-3--narration"
+   ]
+  },
+  "code--step": {
+   "id": "code--step",
+   "sectionId": "code",
+   "visuals": [
+    {
+     "blockId": "code--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-code-typing--step-0": {
+   "id": "dc-code-typing--step-0",
+   "sectionId": "dc-code-typing",
+   "visuals": [
+    {
+     "blockId": "dc-code-typing--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-code-typing--shot",
+     "visible": true,
+     "state": "type"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-code-focus--step-0": {
+   "id": "dc-code-focus--step-0",
+   "sectionId": "dc-code-focus",
+   "visuals": [
+    {
+     "blockId": "dc-code-focus--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-code-focus--shot",
+     "visible": true,
+     "state": "overview"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-code-focus--step-1": {
+   "id": "dc-code-focus--step-1",
+   "sectionId": "dc-code-focus",
+   "visuals": [
+    {
+     "blockId": "dc-code-focus--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-code-focus--shot",
+     "visible": true,
+     "state": "focus-1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-code-focus--step-2": {
+   "id": "dc-code-focus--step-2",
+   "sectionId": "dc-code-focus",
+   "visuals": [
+    {
+     "blockId": "dc-code-focus--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-code-focus--shot",
+     "visible": true,
+     "state": "focus-2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-code-focus--step-3": {
+   "id": "dc-code-focus--step-3",
+   "sectionId": "dc-code-focus",
+   "visuals": [
+    {
+     "blockId": "dc-code-focus--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-code-focus--shot",
+     "visible": true,
+     "state": "focus-3"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-code-diff--step-0": {
+   "id": "dc-code-diff--step-0",
+   "sectionId": "dc-code-diff",
+   "visuals": [
+    {
+     "blockId": "dc-code-diff--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-code-diff--shot",
+     "visible": true,
+     "state": "before"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-code-diff--step-1": {
+   "id": "dc-code-diff--step-1",
+   "sectionId": "dc-code-diff",
+   "visuals": [
+    {
+     "blockId": "dc-code-diff--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-code-diff--shot",
+     "visible": true,
+     "state": "mark"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-code-diff--step-2": {
+   "id": "dc-code-diff--step-2",
+   "sectionId": "dc-code-diff",
+   "visuals": [
+    {
+     "blockId": "dc-code-diff--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-code-diff--shot",
+     "visible": true,
+     "state": "add"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-code-diff--step-3": {
+   "id": "dc-code-diff--step-3",
+   "sectionId": "dc-code-diff",
+   "visuals": [
+    {
+     "blockId": "dc-code-diff--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-code-diff--shot",
+     "visible": true,
+     "state": "apply"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-code-morph--step-0": {
+   "id": "dc-code-morph--step-0",
+   "sectionId": "dc-code-morph",
+   "visuals": [
+    {
+     "blockId": "dc-code-morph--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-code-morph--shot",
+     "visible": true,
+     "state": "loop"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-code-morph--step-1": {
+   "id": "dc-code-morph--step-1",
+   "sectionId": "dc-code-morph",
+   "visuals": [
+    {
+     "blockId": "dc-code-morph--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-code-morph--shot",
+     "visible": true,
+     "state": "comprehension"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-code-morph--step-2": {
+   "id": "dc-code-morph--step-2",
+   "sectionId": "dc-code-morph",
+   "visuals": [
+    {
+     "blockId": "dc-code-morph--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-code-morph--shot",
+     "visible": true,
+     "state": "generator"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-terminal-run--step-0": {
+   "id": "dc-terminal-run--step-0",
+   "sectionId": "dc-terminal-run",
+   "visuals": [
+    {
+     "blockId": "dc-terminal-run--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-terminal-run--shot",
+     "visible": true,
+     "state": "type"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-terminal-run--step-1": {
+   "id": "dc-terminal-run--step-1",
+   "sectionId": "dc-terminal-run",
+   "visuals": [
+    {
+     "blockId": "dc-terminal-run--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-terminal-run--shot",
+     "visible": true,
+     "state": "run"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-terminal-run--step-2": {
+   "id": "dc-terminal-run--step-2",
+   "sectionId": "dc-terminal-run",
+   "visuals": [
+    {
+     "blockId": "dc-terminal-run--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-terminal-run--shot",
+     "visible": true,
+     "state": "done"
+    }
+   ],
+   "narrationIds": []
+  }
+ },
+ "narrations": {
+  "gsap-draw-svg--paragraph-1--narration": {
+   "id": "gsap-draw-svg--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "节点出现，从根 A 开始访问。"
+    }
+   ]
+  },
+  "gsap-draw-svg--paragraph-2--narration": {
+   "id": "gsap-draw-svg--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第一层的两条边从 A 画向 B 和 C，它们被访问。"
+    }
+   ]
+  },
+  "gsap-draw-svg--paragraph-3--narration": {
+   "id": "gsap-draw-svg--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第二层的四条边画出，D、E、F、G 依次被访问。"
+    }
+   ]
+  },
+  "gsap-draw-svg--paragraph-4--narration": {
+   "id": "gsap-draw-svg--paragraph-4--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "从 A 经 C 到 F 的路径描成一条粗线。"
+    }
+   ]
+  },
+  "anime-graph-bfs--paragraph-1--narration": {
+   "id": "anime-graph-bfs--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "图里有七个节点，搜索从 A 开始。"
+    }
+   ]
+  },
+  "anime-graph-bfs--paragraph-2--narration": {
+   "id": "anime-graph-bfs--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第一层：A 的邻居 B 和 C 被访问，两条树边亮起。"
+    }
+   ]
+  },
+  "anime-graph-bfs--paragraph-3--narration": {
+   "id": "anime-graph-bfs--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第二层：D、E、F 被访问。C 到 E 的边不是树边，E 已经由 B 找到。"
+    }
+   ]
+  },
+  "anime-graph-bfs--paragraph-4--narration": {
+   "id": "anime-graph-bfs--paragraph-4--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "最后一层只剩 G，搜索结束。"
+    }
+   ]
+  },
+  "gsap-keyframes--paragraph-1--narration": {
+   "id": "gsap-keyframes--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "指针指向中点 16，16 小于 23，左半边变淡。"
+    }
+   ]
+  },
+  "gsap-keyframes--paragraph-2--narration": {
+   "id": "gsap-keyframes--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "指针跳到剩下部分的中点 56，56 大于 23，右边变淡。"
+    }
+   ]
+  },
+  "gsap-keyframes--paragraph-3--narration": {
+   "id": "gsap-keyframes--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "指针跳到 23，找到了，这一格弹一下。"
+    }
+   ]
+  },
+  "motion-scan--paragraph-1--narration": {
+   "id": "motion-scan--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "线性查找：指针一格一格向右，比较到第八次才找到 61。"
+    }
+   ]
+  },
+  "motion-scan--paragraph-2--narration": {
+   "id": "motion-scan--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "二分查找：先看中间的 34，比 61 小，丢掉左半边；再看 61，找到了，只比较了两次。"
+    }
+   ]
+  },
+  "gsap-swap--paragraph-1--narration": {
+   "id": "gsap-swap--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "下标 1 和 4 的两个格子被选中。"
+    }
+   ]
+  },
+  "gsap-swap--paragraph-2--narration": {
+   "id": "gsap-swap--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "它们交换位置：一个从上方绕过去，一个从下方。"
+    }
+   ]
+  },
+  "gsap-swap--paragraph-3--narration": {
+   "id": "gsap-swap--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "落地时压扁一下再弹回，颜色恢复。"
+    }
+   ]
+  },
+  "anime-bubble-swap--paragraph-1--narration": {
+   "id": "anime-bubble-swap--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第一遍：相邻两根依次比较，大的往右换，9 到了最右边。"
+    }
+   ]
+  },
+  "anime-bubble-swap--paragraph-2--narration": {
+   "id": "anime-bubble-swap--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第二遍：8 到了倒数第二位。"
+    }
+   ]
+  },
+  "anime-bubble-swap--paragraph-3--narration": {
+   "id": "anime-bubble-swap--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第三遍：6 就位，这时整个数组其实已经有序。"
+    }
+   ]
+  },
+  "anime-bubble-swap--paragraph-4--narration": {
+   "id": "anime-bubble-swap--paragraph-4--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "剩下的柱子一起标为就位，排序完成。"
+    }
+   ]
+  },
+  "motion-reorder--paragraph-1--narration": {
+   "id": "motion-reorder--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第一趟：相邻两个比较，前面大就交换，9 被一路换到最右边。"
+    }
+   ]
+  },
+  "motion-reorder--paragraph-2--narration": {
+   "id": "motion-reorder--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第二趟：8 归位到倒数第二格。"
+    }
+   ]
+  },
+  "motion-reorder--paragraph-3--narration": {
+   "id": "motion-reorder--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第三趟：2 和 1、5 和 3 交换后，整列有序。"
+    }
+   ]
+  },
+  "motion-reorder--paragraph-4--narration": {
+   "id": "motion-reorder--paragraph-4--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "排好了：从左到右依次亮起。"
+    }
+   ]
+  },
+  "remotion-swap--paragraph-1--narration": {
+   "id": "remotion-swap--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "比较前两个数，5 比 3 大，它们被标亮。"
+    }
+   ]
+  },
+  "remotion-swap--paragraph-2--narration": {
+   "id": "remotion-swap--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "两个数沿着弧线交换位置，一个从上面过，一个从下面过。"
+    }
+   ]
+  },
+  "remotion-swap--paragraph-3--narration": {
+   "id": "remotion-swap--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "交换完成，这一对变成绿色，5 向右冒了一格。"
+    }
+   ]
+  },
+  "gsap-nested--paragraph-1--narration": {
+   "id": "gsap-nested--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第一趟：从左到右扫描，最小的 1 换到最前面，变成绿色。"
+    }
+   ]
+  },
+  "gsap-nested--paragraph-2--narration": {
+   "id": "gsap-nested--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第二趟：在剩下的柱子中找到 3，它已经在位置上。"
+    }
+   ]
+  },
+  "gsap-nested--paragraph-3--narration": {
+   "id": "gsap-nested--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第三趟：找到 5，与 8 交换。"
+    }
+   ]
+  },
+  "gsap-nested--paragraph-4--narration": {
+   "id": "gsap-nested--paragraph-4--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第四趟：找到 6，排序完成。"
+    }
+   ]
+  },
+  "motion-spring--paragraph-1--narration": {
+   "id": "motion-spring--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "根节点 8 弹出来。"
+    }
+   ]
+  },
+  "motion-spring--paragraph-2--narration": {
+   "id": "motion-spring--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第二层：先画出两条边，4 和 12 依次弹出。"
+    }
+   ]
+  },
+  "motion-spring--paragraph-3--narration": {
+   "id": "motion-spring--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第三层的四个叶子依次弹出。"
+    }
+   ]
+  },
+  "three-hanoi--paragraph-1--narration": {
+   "id": "three-hanoi--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "架子转到正面，三个圆盘叠在 A 柱上。"
+    }
+   ]
+  },
+  "three-hanoi--paragraph-2--narration": {
+   "id": "three-hanoi--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "前三步把上面两个圆盘挪到 B 柱，给最大的圆盘让路。"
+    }
+   ]
+  },
+  "three-hanoi--paragraph-3--narration": {
+   "id": "three-hanoi--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "最大的圆盘从 A 移到 C。"
+    }
+   ]
+  },
+  "three-hanoi--paragraph-4--narration": {
+   "id": "three-hanoi--paragraph-4--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "最后三步把两个小圆盘从 B 移到 C 上，完成。"
+    }
+   ]
+  },
+  "anime-binary-set--paragraph-1--narration": {
+   "id": "anime-binary-set--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "四个位，从高到低是 8、4、2、1。"
+    }
+   ]
+  },
+  "anime-binary-set--paragraph-2--narration": {
+   "id": "anime-binary-set--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "从 0 数到 15，最低位每次都翻转，进位从右向左传。"
+    }
+   ]
+  },
+  "gsap-merge--paragraph-1--narration": {
+   "id": "gsap-merge--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "四个字依次出现，每个字是一个词元。"
+    }
+   ]
+  },
+  "gsap-merge--paragraph-2--narration": {
+   "id": "gsap-merge--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "「机」与「器」、「学」与「习」两两合并：右边的词元收拢消失，左边的换成新词。"
+    }
+   ]
+  },
+  "gsap-merge--paragraph-3--narration": {
+   "id": "gsap-merge--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "两个词再合并成一个词元「机器学习」。"
+    }
+   ]
+  },
+  "motion-packet--paragraph-1--narration": {
+   "id": "motion-packet--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "请求发到服务器，在那里停一下，变成响应回来，这一来一回就是 RTT。"
+    }
+   ]
+  },
+  "motion-packet--paragraph-2--narration": {
+   "id": "motion-packet--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "建立连接要三次握手：SYN 过去，SYN-ACK 回来，ACK 再过去。"
+    }
+   ]
+  },
+  "anime-hash-scramble--paragraph-1--narration": {
+   "id": "anime-hash-scramble--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "hello 的 SHA-256 摘要从左到右从乱码中显现出来。"
+    }
+   ]
+  },
+  "anime-hash-scramble--paragraph-2--narration": {
+   "id": "anime-hash-scramble--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "把最后一个字母 o 改成 p，只差一个字母。"
+    }
+   ]
+  },
+  "anime-hash-scramble--paragraph-3--narration": {
+   "id": "anime-hash-scramble--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "新的摘要每一位都可能变，看不出和原来的任何关系，这是雪崩效应。"
+    }
+   ]
+  }
+ },
+ "assets": {},
+ "definitions": {
+  "gsap-draw-svg--draw-svg-scene--definition": {
+   "id": "gsap-draw-svg--draw-svg-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/gsap/draw-svg.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    },
+    {
+     "id": "legacy-3",
+     "legacyIndex": 3
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1200,
+     1400,
+     1200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一棵七个节点的树：边按层画出，节点依次被访问，最后描出从 A 到 F 的路径。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "anime-graph-bfs--graph-bfs-scene--definition": {
+   "id": "anime-graph-bfs--graph-bfs-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/anime/graph-bfs.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    },
+    {
+     "id": "legacy-3",
+     "legacyIndex": 3
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1200,
+     1300,
+     1000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "从 A 出发的广度优先搜索，每一步展开一层，树边沿父到子的方向画出。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "gsap-keyframes--keyframes-scene--definition": {
+   "id": "gsap-keyframes--keyframes-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/gsap/keyframes.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     1600,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "在十个有序数中二分查找 23：指针跳到中点，不可能的一半变淡，第三次找到。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-scan--scan-scene--definition": {
+   "id": "motion-scan--scan-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/scan.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "在有序数组里找 61：线性查找一格一格走了八次，二分查找两次就找到。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "gsap-swap--swap-scene--definition": {
+   "id": "gsap-swap--swap-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/gsap/swap-arc.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     800,
+     1400,
+     1000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "数组中下标 1 与 4 的两个格子被选中，一个从上方、一个从下方绕过去交换位置。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "anime-bubble-swap--bubble-swap-scene--definition": {
+   "id": "anime-bubble-swap--bubble-swap-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/anime/bubble-swap.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    },
+    {
+     "id": "legacy-3",
+     "legacyIndex": 3
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     1400,
+     1200,
+     800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "冒泡排序：相邻两根柱子比较，前者大就交换；每一遍把最大的送到末尾。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-reorder--reorder-scene--definition": {
+   "id": "motion-reorder--reorder-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/reorder.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    },
+    {
+     "id": "legacy-3",
+     "legacyIndex": 3
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1500,
+     1100,
+     1100,
+     1000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "六个数的冒泡排序，每一步是一趟，较大的数从上方越过较小的数。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "remotion-swap--swap-scene--definition": {
+   "id": "remotion-swap--swap-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/remotion/swap.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     800,
+     1000,
+     600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "冒泡排序的一次比较与交换：前两个数 5 和 3 被标亮，沿弧线交换位置，然后变成绿色。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "gsap-nested--nested-scene--definition": {
+   "id": "gsap-nested--nested-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/gsap/nested.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    },
+    {
+     "id": "legacy-3",
+     "legacyIndex": 3
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2000,
+     2000,
+     2000,
+     2000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "五根柱子做选择排序：每一趟扫描找出最小值，换到未排序部分的最前面。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-spring--spring-scene--definition": {
+   "id": "motion-spring--spring-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/spring-tree.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1200,
+     1400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "二叉搜索树逐层出现：先画边，再让节点带着回弹弹出。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "three-hanoi--hanoi-scene--definition": {
+   "id": "three-hanoi--hanoi-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/three/hanoi.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    },
+    {
+     "id": "legacy-3",
+     "legacyIndex": 3
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     2400,
+     1000,
+     2400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "三个圆盘的汉诺塔：七次移动写成关键帧轨道，正在移动的圆盘变成橙色。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "anime-binary-set--binary-set-scene--definition": {
+   "id": "anime-binary-set--binary-set-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/anime/binary-set.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     800,
+     3000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "四位二进制计数器从 0 数到 15，每一位翻转时变色。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "gsap-merge--merge-scene--definition": {
+   "id": "gsap-merge--merge-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/gsap/merge.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1400,
+     1200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "四个汉字两两合并成「机器」「学习」，再合并成「机器学习」。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "dc-decision-tree--shot--definition": {
+   "id": "dc-decision-tree--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/dc/decision-tree.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "scene": {
+      "type": "string",
+      "title": "场景文件"
+     },
+     "alt": {
+      "type": "string",
+      "title": "替代文本"
+     },
+     "tree": {
+      "type": "object",
+      "title": "问题树",
+      "description": "节点：label、edge、children"
+     },
+     "path": {
+      "type": "array",
+      "title": "要走的路径",
+      "items": {
+       "type": "number"
+      }
+     },
+     "orientation": {
+      "type": "string",
+      "title": "方向",
+      "enum": [
+       "vertical",
+       "horizontal"
+      ]
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "root"
+    },
+    {
+     "id": "grow"
+    },
+    {
+     "id": "trace"
+    },
+    {
+     "id": "answer"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     3000,
+     3000,
+     2300
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "决策树：数据量很大吗？是 → 需要稳定排序？否 → 怕最坏情况？否 → 快速排序；其余分支为插入排序、归并排序、堆排序。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-packet--packet-scene--definition": {
+   "id": "motion-packet--packet-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/packet.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2200,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "客户端与服务器之间：一个请求去了又回来；然后是 TCP 的三次握手。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "anime-hash-scramble--hash-scramble-scene--definition": {
+   "id": "anime-hash-scramble--hash-scramble-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/anime/hash-scramble.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     600,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "hello 的 SHA-256 摘要从乱码中显现；把最后一个字母改成 p，摘要完全变了。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "dc-code-typing--shot--definition": {
+   "id": "dc-code-typing--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/dc/code-typing.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "scene": {
+      "type": "string",
+      "title": "场景文件"
+     },
+     "alt": {
+      "type": "string",
+      "title": "替代文本"
+     },
+     "code": {
+      "type": "string",
+      "title": "代码"
+     },
+     "lang": {
+      "type": "string",
+      "title": "语言"
+     },
+     "file": {
+      "type": "string",
+      "title": "文件名"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "type"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     7000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "代码输入：softmax 函数逐字写出，带一行中文注释。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "dc-code-focus--shot--definition": {
+   "id": "dc-code-focus--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/dc/code-focus.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "scene": {
+      "type": "string",
+      "title": "场景文件"
+     },
+     "alt": {
+      "type": "string",
+      "title": "替代文本"
+     },
+     "code": {
+      "type": "string",
+      "title": "代码"
+     },
+     "lang": {
+      "type": "string",
+      "title": "语言"
+     },
+     "file": {
+      "type": "string",
+      "title": "文件名"
+     },
+     "focus": {
+      "type": "array",
+      "title": "依次聚焦的段落",
+      "items": {
+       "type": "object",
+       "properties": {
+        "from": {
+         "type": "number",
+         "title": "起始行"
+        },
+        "to": {
+         "type": "number",
+         "title": "结束行"
+        },
+        "note": {
+         "type": "string",
+         "title": "短注"
+        }
+       }
+      }
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "overview"
+    },
+    {
+     "id": "focus-1"
+    },
+    {
+     "id": "focus-2"
+    },
+    {
+     "id": "focus-3"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1500,
+     2500,
+     2500,
+     3000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "代码导览：BFS 函数依次滚到“起点入队”“取出队头”“记距离，入队”三段，高亮并注释。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "dc-code-diff--shot--definition": {
+   "id": "dc-code-diff--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/dc/code-diff.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "scene": {
+      "type": "string",
+      "title": "场景文件"
+     },
+     "alt": {
+      "type": "string",
+      "title": "替代文本"
+     },
+     "before": {
+      "type": "string",
+      "title": "修改前的代码"
+     },
+     "after": {
+      "type": "string",
+      "title": "修改后的代码"
+     },
+     "lang": {
+      "type": "string",
+      "title": "语言",
+      "description": "python、js 或 shell"
+     },
+     "file": {
+      "type": "string",
+      "title": "文件名"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "before"
+    },
+    {
+     "id": "mark"
+    },
+    {
+     "id": "add"
+    },
+    {
+     "id": "apply"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1200,
+     1500,
+     2300
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "代码对比：mean 函数的文档字符串被改写，并新增空列表判断，删除行标红收起，新增行标绿展开。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "dc-code-morph--shot--definition": {
+   "id": "dc-code-morph--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/dc/code-morph.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "scene": {
+      "type": "string",
+      "title": "场景文件"
+     },
+     "alt": {
+      "type": "string",
+      "title": "替代文本"
+     },
+     "versions": {
+      "type": "array",
+      "title": "各版本代码",
+      "items": {
+       "type": "string"
+      }
+     },
+     "labels": {
+      "type": "array",
+      "title": "版本名",
+      "items": {
+       "type": "string"
+      }
+     },
+     "lang": {
+      "type": "string",
+      "title": "语言"
+     },
+     "file": {
+      "type": "string",
+      "title": "文件名"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "loop"
+    },
+    {
+     "id": "comprehension"
+    },
+    {
+     "id": "generator"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1500,
+     2500,
+     3000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "代码变形：四行 for 循环变成一行列表推导式，再变成用 sum 的生成器表达式，相同的词滑到新位置。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "dc-terminal-run--shot--definition": {
+   "id": "dc-terminal-run--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/dc/terminal-run.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "scene": {
+      "type": "string",
+      "title": "场景文件"
+     },
+     "alt": {
+      "type": "string",
+      "title": "替代文本"
+     },
+     "command": {
+      "type": "string",
+      "title": "命令"
+     },
+     "output": {
+      "type": "array",
+      "title": "输出行",
+      "items": {
+       "type": "string"
+      }
+     },
+     "prompt": {
+      "type": "string",
+      "title": "提示符"
+     },
+     "title": {
+      "type": "string",
+      "title": "窗口标题"
+     },
+     "tag": {
+      "type": "string",
+      "title": "右上角标注"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "type"
+    },
+    {
+     "id": "run"
+    },
+    {
+     "id": "done"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2600,
+     2400,
+     2000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "终端运行：输入 python train.py --epochs 3，打印三轮训练的损失与准确率（示意输出），最后显示模型已保存。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  }
+ },
+ "production": {
+  "defaults": {
+   "voiceSource": {
+    "type": "none"
+   },
+   "trailingPauseMs": 0
+  },
+  "stepOverrides": {},
+  "mediaClips": []
+ }
+}

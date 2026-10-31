@@ -1,6 +1,6 @@
 # Presmium Gallery
 
-示例工作区，共 29 份文稿。每份文稿的内容都在自己的 `lecture.json` 中，代码与媒体文件由文稿引用。
+示例工作区，共 25 份文稿。每份文稿的内容都在自己的 `lecture.json` 中，代码与媒体文件由文稿引用。
 
 ## 功能合集
 
@@ -31,7 +31,7 @@
 | [产品宣传片](promo/lecture.json) | 真实工作台、课堂与网站画面组成的产品短片 |
 | [冒泡排序](bubble-sort/lecture.json) | 一趟冒泡排序：代码、GSAP 动画、讲解点击的计数组件与光标提示，合成为带字幕的讲授 |
 | [代码写成的动画](libraries/lecture.json) | GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节动画，再到讲授视频 |
-| [动画效果参考](animation-library/) | 六种动画库、时间线、时长片段、影片、Flow Matching 和八份分类效果目录 |
+| [动画效果参考](animation-library/) | 按场景整理的动画：算法与代码、数据与图表、数学与机器学习、文字与字幕、强调与标注、概念与结构、产品演示、转场与镜头、路径与三维、动效技法；另有时长规格、宣传片、分镜示范与时间轴 |
 
 发布的网站中，首页的“示例”进入示例库，按功能合集、教程、课程、影片与动画参考分类展示；分类取自各文稿 `metadata.tags` 的第一个类别标签。功能与页面的对应见 [FEATURES.md](FEATURES.md) 和 [features.json](features.json)。产品首页与影片制作见 [产品站点说明](PRODUCT-SITE.md)。
 

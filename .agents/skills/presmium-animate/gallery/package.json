@@ -2,7 +2,7 @@
   "name": "presmium-animate-gallery",
   "private": true,
   "type": "module",
-  "description": "The effect gallery of the presmium-animate skill: one lecture per animation library, built here to check its scenes",
+  "description": "The effect gallery of the presmium-animate skill: scene sources by library and catalog, shown in documents by scenario",
   "dependencies": {
     "@lincyaw/addon-lecture": "workspace:*",
     "@lincyaw/addon-motion": "workspace:*",

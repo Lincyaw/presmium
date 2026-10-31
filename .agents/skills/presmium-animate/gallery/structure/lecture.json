@@ -1,0 +1,4302 @@
+{
+ "schemaVersion": 1,
+ "id": "animation-structure",
+ "metadata": {
+  "title": "概念与结构",
+  "lang": "zh-CN",
+  "description": "一个概念与它的组成：逐个呈现、卡片、清单、中心与分支。",
+  "tags": [
+   "动画参考"
+  ],
+  "plugins": [
+   "@lincyaw/addon-motion",
+   "@lincyaw/addon-lecture"
+  ],
+  "renderers": {
+   "web": {},
+   "lecture": {}
+  }
+ },
+ "sectionOrder": [
+  "sequence",
+  "gsap-stagger-grid",
+  "anime-grid-ripple",
+  "motion-stagger",
+  "remotion-sequence-steps",
+  "remotion-spring-pop",
+  "motion-labels",
+  "cards",
+  "gsap-flip-3d",
+  "anime-flip-cards",
+  "motion-flip",
+  "gsap-flip-fit",
+  "show-card-grid",
+  "show-carousel",
+  "diagrams",
+  "anime-draw-fill",
+  "show-hub-spokes",
+  "show-surround",
+  "show-checklist"
+ ],
+ "sections": {
+  "sequence": {
+   "id": "sequence",
+   "title": "逐个呈现",
+   "level": 1,
+   "children": [
+    "sequence--intro"
+   ],
+   "stepOrder": [
+    "sequence--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "gsap-stagger-grid": {
+   "id": "gsap-stagger-grid",
+   "title": "依次出现：网格上的 stagger",
+   "level": 2,
+   "children": [
+    "gsap-stagger-grid--stagger-grid-scene",
+    "gsap-stagger-grid--paragraph-1",
+    "gsap-stagger-grid--paragraph-2",
+    "gsap-stagger-grid--paragraph-3"
+   ],
+   "stepOrder": [
+    "gsap-stagger-grid--step-0",
+    "gsap-stagger-grid--step-1",
+    "gsap-stagger-grid--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "anime-grid-ripple": {
+   "id": "anime-grid-ripple",
+   "title": "网格错峰：stagger 的 grid、from 与 axis",
+   "level": 2,
+   "children": [
+    "anime-grid-ripple--grid-ripple-scene",
+    "anime-grid-ripple--paragraph-1",
+    "anime-grid-ripple--paragraph-2",
+    "anime-grid-ripple--paragraph-3"
+   ],
+   "stepOrder": [
+    "anime-grid-ripple--step-0",
+    "anime-grid-ripple--step-1",
+    "anime-grid-ripple--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-stagger": {
+   "id": "motion-stagger",
+   "title": "错开出现：stagger 从中间、按距离、带缓动",
+   "level": 2,
+   "children": [
+    "motion-stagger--stagger-scene",
+    "motion-stagger--paragraph-1",
+    "motion-stagger--paragraph-2",
+    "motion-stagger--paragraph-3"
+   ],
+   "stepOrder": [
+    "motion-stagger--step-0",
+    "motion-stagger--step-1",
+    "motion-stagger--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "remotion-sequence-steps": {
+   "id": "remotion-sequence-steps",
+   "title": "一步一个 Sequence",
+   "level": 2,
+   "children": [
+    "remotion-sequence-steps--sequence-steps-scene",
+    "remotion-sequence-steps--paragraph-1",
+    "remotion-sequence-steps--paragraph-2",
+    "remotion-sequence-steps--paragraph-3"
+   ],
+   "stepOrder": [
+    "remotion-sequence-steps--step-0",
+    "remotion-sequence-steps--step-1",
+    "remotion-sequence-steps--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "remotion-spring-pop": {
+   "id": "remotion-spring-pop",
+   "title": "弹簧：spring()",
+   "level": 2,
+   "children": [
+    "remotion-spring-pop--spring-pop-scene",
+    "remotion-spring-pop--paragraph-1",
+    "remotion-spring-pop--paragraph-2"
+   ],
+   "stepOrder": [
+    "remotion-spring-pop--step-0",
+    "remotion-spring-pop--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-labels": {
+   "id": "motion-labels",
+   "title": "编排：标签与相对时间",
+   "level": 2,
+   "children": [
+    "motion-labels--labels-scene",
+    "motion-labels--paragraph-1",
+    "motion-labels--paragraph-2"
+   ],
+   "stepOrder": [
+    "motion-labels--step-0",
+    "motion-labels--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "cards": {
+   "id": "cards",
+   "title": "卡片",
+   "level": 1,
+   "children": [
+    "cards--intro"
+   ],
+   "stepOrder": [
+    "cards--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "gsap-flip-3d": {
+   "id": "gsap-flip-3d",
+   "title": "三维变换：翻卡片与层叠",
+   "level": 2,
+   "children": [
+    "gsap-flip-3d--flip-3d-scene",
+    "gsap-flip-3d--paragraph-1",
+    "gsap-flip-3d--paragraph-2",
+    "gsap-flip-3d--paragraph-3"
+   ],
+   "stepOrder": [
+    "gsap-flip-3d--step-0",
+    "gsap-flip-3d--step-1",
+    "gsap-flip-3d--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "anime-flip-cards": {
+   "id": "anime-flip-cards",
+   "title": "三维翻转：概念卡片",
+   "level": 2,
+   "children": [
+    "anime-flip-cards--flip-cards-scene",
+    "anime-flip-cards--paragraph-1",
+    "anime-flip-cards--paragraph-2"
+   ],
+   "stepOrder": [
+    "anime-flip-cards--step-0",
+    "anime-flip-cards--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-flip": {
+   "id": "motion-flip",
+   "title": "三维翻转：问答卡片",
+   "level": 2,
+   "children": [
+    "motion-flip--flip-scene",
+    "motion-flip--paragraph-1",
+    "motion-flip--paragraph-2"
+   ],
+   "stepOrder": [
+    "motion-flip--step-0",
+    "motion-flip--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "gsap-flip-fit": {
+   "id": "gsap-flip-fit",
+   "title": "布局过渡：Flip.fit 的目标值",
+   "level": 2,
+   "children": [
+    "gsap-flip-fit--flip-fit-scene",
+    "gsap-flip-fit--paragraph-1",
+    "gsap-flip-fit--paragraph-2",
+    "gsap-flip-fit--paragraph-3"
+   ],
+   "stepOrder": [
+    "gsap-flip-fit--step-0",
+    "gsap-flip-fit--step-1",
+    "gsap-flip-fit--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "show-card-grid": {
+   "id": "show-card-grid",
+   "title": "卡片网格与聚焦",
+   "level": 2,
+   "children": [
+    "show-card-grid--notes",
+    "show-card-grid--shot"
+   ],
+   "stepOrder": [
+    "show-card-grid--step-0",
+    "show-card-grid--step-1"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "show-carousel": {
+   "id": "show-carousel",
+   "title": "旋转木马：甩出、越过、吸附",
+   "level": 2,
+   "children": [
+    "show-carousel--notes",
+    "show-carousel--shot"
+   ],
+   "stepOrder": [
+    "show-carousel--step-0",
+    "show-carousel--step-1"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "diagrams": {
+   "id": "diagrams",
+   "title": "关系图与清单",
+   "level": 1,
+   "children": [
+    "diagrams--intro"
+   ],
+   "stepOrder": [
+    "diagrams--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "anime-draw-fill": {
+   "id": "anime-draw-fill",
+   "title": "先描边再填色：示意图的方框",
+   "level": 2,
+   "children": [
+    "anime-draw-fill--draw-fill-scene",
+    "anime-draw-fill--paragraph-1",
+    "anime-draw-fill--paragraph-2",
+    "anime-draw-fill--paragraph-3"
+   ],
+   "stepOrder": [
+    "anime-draw-fill--step-0",
+    "anime-draw-fill--step-1",
+    "anime-draw-fill--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "show-hub-spokes": {
+   "id": "show-hub-spokes",
+   "title": "中心与分支",
+   "level": 2,
+   "children": [
+    "show-hub-spokes--notes",
+    "show-hub-spokes--shot"
+   ],
+   "stepOrder": [
+    "show-hub-spokes--step-0",
+    "show-hub-spokes--step-1",
+    "show-hub-spokes--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "show-surround": {
+   "id": "show-surround",
+   "title": "包围：过载的压力",
+   "level": 2,
+   "children": [
+    "show-surround--notes",
+    "show-surround--shot"
+   ],
+   "stepOrder": [
+    "show-surround--step-0",
+    "show-surround--step-1",
+    "show-surround--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "show-checklist": {
+   "id": "show-checklist",
+   "title": "要点清单",
+   "level": 2,
+   "children": [
+    "show-checklist--notes",
+    "show-checklist--shot"
+   ],
+   "stepOrder": [
+    "show-checklist--step-0",
+    "show-checklist--step-1",
+    "show-checklist--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  }
+ },
+ "blocks": {
+  "sequence--intro": {
+   "id": "sequence--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "sequence--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "网格与列表依次出现，按步骤编排。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-stagger-grid--stagger-grid-scene": {
+   "id": "gsap-stagger-grid--stagger-grid-scene",
+   "type": "component",
+   "definitionId": "gsap-stagger-grid--stagger-grid-scene--definition",
+   "parameters": {
+    "scene": "gsap/stagger-grid",
+    "alt": "六行十列的方格从中心向外依次出现，一道波从左上角扫过，再逐行缩成圆点。"
+   }
+  },
+  "gsap-stagger-grid--paragraph-1": {
+   "id": "gsap-stagger-grid--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-stagger-grid--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "方格从中心向外依次出现："
+      },
+      {
+       "type": "text",
+       "text": "stagger",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 的 "
+      },
+      {
+       "type": "text",
+       "text": "grid",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 与 "
+      },
+      {
+       "type": "text",
+       "text": "from: 'center'",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 按到中心的距离排出先后。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-stagger-grid--paragraph-2": {
+   "id": "gsap-stagger-grid--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-stagger-grid--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一道波从左上角扫向右下角，每格亮一下再暗回去。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-stagger-grid--paragraph-3": {
+   "id": "gsap-stagger-grid--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-stagger-grid--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "从最后一行开始，一行一行地缩成圆点。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-grid-ripple--grid-ripple-scene": {
+   "id": "anime-grid-ripple--grid-ripple-scene",
+   "type": "component",
+   "definitionId": "anime-grid-ripple--grid-ripple-scene--definition",
+   "parameters": {
+    "scene": "anime/grid-ripple",
+    "alt": "十五乘九的网格从中心长出，再从一个格子向外荡开波纹，最后逐行扫过。"
+   }
+  },
+  "anime-grid-ripple--paragraph-1": {
+   "id": "anime-grid-ripple--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-grid-ripple--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "格子从中心向外长出来，延迟按到中心的距离算。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-grid-ripple--paragraph-2": {
+   "id": "anime-grid-ripple--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-grid-ripple--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "从第三行第四列的格子开始，波纹一圈一圈向外荡开。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-grid-ripple--paragraph-3": {
+   "id": "anime-grid-ripple--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-grid-ripple--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "只按行算距离，网格一行一行地扫过去，像卷积核滑过图像。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-stagger--stagger-scene": {
+   "id": "motion-stagger--stagger-scene",
+   "type": "component",
+   "definitionId": "motion-stagger--stagger-scene--definition",
+   "parameters": {
+    "scene": "motion/ripple",
+    "alt": "一句话的词从中间向两边出现；网格从中心泛起一圈圈波纹，再从最后一格开始退回。"
+   }
+  },
+  "motion-stagger--paragraph-1": {
+   "id": "motion-stagger--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-stagger--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "句子的词从中间向两端依次出现。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-stagger--paragraph-2": {
+   "id": "motion-stagger--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-stagger--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "网格从中心泛起波纹：离中心越远，开始得越晚。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-stagger--paragraph-3": {
+   "id": "motion-stagger--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-stagger--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "从最后一格开始退回原色，越到后面越密。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-sequence-steps--sequence-steps-scene": {
+   "id": "remotion-sequence-steps--sequence-steps-scene",
+   "type": "component",
+   "definitionId": "remotion-sequence-steps--sequence-steps-scene--definition",
+   "parameters": {
+    "scene": "remotion/sequence-steps",
+    "alt": "三张卡片“分词”“嵌入”“注意力”依次弹出，箭头连起它们，每张卡片显示自己的局部帧。"
+   }
+  },
+  "remotion-sequence-steps--paragraph-1": {
+   "id": "remotion-sequence-steps--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-sequence-steps--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第一步是一个从 at(0) 开始的 Sequence，卡片里的帧从 0 数起。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-sequence-steps--paragraph-2": {
+   "id": "remotion-sequence-steps--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-sequence-steps--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第二步的 Sequence 从 at(1) 开始，新卡片的局部帧也从 0 数起，前一张卡片留在原处。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-sequence-steps--paragraph-3": {
+   "id": "remotion-sequence-steps--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-sequence-steps--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第三步同样如此。不给 durationInFrames，前面的步骤就一直留在画面上。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-spring-pop--spring-pop-scene": {
+   "id": "remotion-spring-pop--spring-pop-scene",
+   "type": "component",
+   "definitionId": "remotion-spring-pop--spring-pop-scene--definition",
+   "parameters": {
+    "scene": "remotion/spring-pop",
+    "alt": "标题 spring() 弹出；四个小球用不同的弹簧参数冲向同一条终点线。"
+   }
+  },
+  "remotion-spring-pop--paragraph-1": {
+   "id": "remotion-spring-pop--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-spring-pop--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "标题按弹簧弹出，稍微冲过头再回到原大小。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-spring-pop--paragraph-2": {
+   "id": "remotion-spring-pop--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-spring-pop--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "四个小球同时出发：默认参数会冲过终点再回来，damping 200 平稳停下，overshootClamping 到线就停，mass 3 起步更慢。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-labels--labels-scene": {
+   "id": "motion-labels--labels-scene",
+   "type": "component",
+   "definitionId": "motion-labels--labels-scene--definition",
+   "parameters": {
+    "scene": "motion/labels",
+    "alt": "编译器的五个阶段依次出现，箭头连接；然后逐个强调，出现说明文字。"
+   }
+  },
+  "motion-labels--paragraph-1": {
+   "id": "motion-labels--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-labels--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "源码、词法分析、语法树、中间表示、机器码，一段接一段出现。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-labels--paragraph-2": {
+   "id": "motion-labels--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-labels--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "每一段依次跳一下：它只看前一段的产物。"
+      }
+     ]
+    }
+   ]
+  },
+  "cards--intro": {
+   "id": "cards--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "cards--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "翻卡片、布局过渡、卡片网格与旋转木马。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-flip-3d--flip-3d-scene": {
+   "id": "gsap-flip-3d--flip-3d-scene",
+   "type": "component",
+   "definitionId": "gsap-flip-3d--flip-3d-scene--definition",
+   "parameters": {
+    "scene": "gsap/flip-3d",
+    "alt": "Q、K、V 三张卡片翻到背面显示含义，再叠成三层。"
+   }
+  },
+  "gsap-flip-3d--paragraph-1": {
+   "id": "gsap-flip-3d--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-flip-3d--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "三张卡片向前倒下，落到位置上。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-flip-3d--paragraph-2": {
+   "id": "gsap-flip-3d--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-flip-3d--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "每张卡片翻过来，背面写着它的含义。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-flip-3d--paragraph-3": {
+   "id": "gsap-flip-3d--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-flip-3d--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "卡片移到中间，在深度方向分开，整叠倾斜，像三层。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-flip-cards--flip-cards-scene": {
+   "id": "anime-flip-cards--flip-cards-scene",
+   "type": "component",
+   "definitionId": "anime-flip-cards--flip-cards-scene--definition",
+   "parameters": {
+    "scene": "anime/flip-cards",
+    "alt": "三张概念卡片发到桌面，再依次翻面显示解释。"
+   }
+  },
+  "anime-flip-cards--paragraph-1": {
+   "id": "anime-flip-cards--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-flip-cards--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "三张卡片，正面是术语。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-flip-cards--paragraph-2": {
+   "id": "anime-flip-cards--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-flip-cards--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "依次翻过来，背面是一句话的解释。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-flip--flip-scene": {
+   "id": "motion-flip--flip-scene",
+   "type": "component",
+   "definitionId": "motion-flip--flip-scene--definition",
+   "parameters": {
+    "scene": "motion/flip",
+    "alt": "三张问答卡片发到桌上，再依次翻面显示答案。"
+   }
+  },
+  "motion-flip--paragraph-1": {
+   "id": "motion-flip--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-flip--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "三张卡片，正面是问题。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-flip--paragraph-2": {
+   "id": "motion-flip--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-flip--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "依次翻过来，背面是公式。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-flip-fit--flip-fit-scene": {
+   "id": "gsap-flip-fit--flip-fit-scene",
+   "type": "component",
+   "definitionId": "gsap-flip-fit--flip-fit-scene--definition",
+   "parameters": {
+    "scene": "gsap/flip-fit",
+    "alt": "束搜索：五个候选句子中概率最高的两个依次移入右侧的两个位置。"
+   }
+  },
+  "gsap-flip-fit--paragraph-1": {
+   "id": "gsap-flip-fit--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-flip-fit--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "五个候选及其概率依次出现。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-flip-fit--paragraph-2": {
+   "id": "gsap-flip-fit--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-flip-fit--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "概率最高的 the cat ran 移入第一个位置，大小与位置正好吻合。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-flip-fit--paragraph-3": {
+   "id": "gsap-flip-fit--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-flip-fit--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第二高的 the dog sat 移入第二个位置，其余的候选变淡。"
+      }
+     ]
+    }
+   ]
+  },
+  "show-card-grid--notes": {
+   "id": "show-card-grid--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "show-card-grid--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一样东西由哪些部分组成、一门课有哪些材料、一个产品有哪些功能，然后点出今天讲的那一个。卡片从有意义的起点（左上、中心、末尾或边缘）错峰进入自己的格子：淡入加短距离上升，不过冲；落下后图标再画出来。第二个状态把选中的卡片抬起并染上强调色，其余退到 40%。"
+      }
+     ]
+    },
+    {
+     "id": "show-card-grid--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "items（label、body、icon：web / slides / notebook / video / pencil / quiz / chat）、from（start / center / end / edges）、columns（0 为自动）、focus（选中的序号，−1 不聚焦）。"
+      }
+     ]
+    },
+    {
+     "id": "show-card-grid--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "相近作品：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "stagger-cascade（均匀错峰）、stagger-lattice（从中心扩散的网格错峰）和 mk-placeholder-grid（N 宫格媒体）都是这里的 from 与 columns。"
+      }
+     ]
+    },
+    {
+     "id": "show-card-grid--notes--n3",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "show-card-grid--notes--n3--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-card-grid--notes--n3--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "show-card-grid--notes--n3--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "show-card-grid--notes--n3--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-card-grid--notes--n3--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-card-grid--notes--n3--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.1–1.2 s"
+          }
+         ]
+        },
+        {
+         "id": "show-card-grid--notes--n3--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "六张卡片按网格错峰升入格子（每张 0.5 s，总错峰封顶 0.6 s 并缓动）"
+          }
+         ]
+        },
+        {
+         "id": "show-card-grid--notes--n3--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "列表不是庆祝，不过冲；大网格也不会更慢"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-card-grid--notes--n3--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-card-grid--notes--n3--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "卡片落下后 0.15 s"
+          }
+         ]
+        },
+        {
+         "id": "show-card-grid--notes--n3--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "图标线条画出"
+          }
+         ]
+        },
+        {
+         "id": "show-card-grid--notes--n3--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先容器后细节"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-card-grid--notes--n3--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-card-grid--notes--n3--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.6–2.0 s"
+          }
+         ]
+        },
+        {
+         "id": "show-card-grid--notes--n3--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "“Notebook”抬起 4%，边框和底色变强调色，其余退到 40%"
+          }
+         ]
+        },
+        {
+         "id": "show-card-grid--notes--n3--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "网格是背景，这一张是下一镜的主角"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-card-grid--notes--n3--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-card-grid--notes--n3--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.0–3.8 s"
+          }
+         ]
+        },
+        {
+         "id": "show-card-grid--notes--n3--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停住"
+          }
+         ]
+        },
+        {
+         "id": "show-card-grid--notes--n3--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果停住"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "show-card-grid--shot": {
+   "id": "show-card-grid--shot",
+   "type": "component",
+   "definitionId": "show-card-grid--shot--definition",
+   "parameters": {
+    "alt": "讲义、幻灯片、Notebook、讲解视频、小测、讨论六张卡片错峰组成网格，随后 Notebook 被突出。"
+   }
+  },
+  "show-carousel--notes": {
+   "id": "show-carousel--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "show-carousel--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "“这些都是例子”的画廊，然后停在今天要讲的那一个。一圈卡片被甩动：起步最快、迅速减速、越过选中的卡片一点再以零速度吸回；快的时候整个舞台沿运动方向模糊，静止时清晰。每张卡片的深度只由它在路径上的位置决定，同时驱动大小、透明度和层叠。随后选中的卡片放大、染上强调色，说明升起。"
+      }
+     ]
+    },
+    {
+     "id": "show-carousel--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "items、pick（选中的序号）、caption、path（circle 俯视的环 / arc 微笑形弧线，卡片沿切线转 / line 平直轨道）。"
+      }
+     ]
+    },
+    {
+     "id": "show-carousel--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "相近作品：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "旋转路径由 path 参数选择，甩出后吸附到中央也由这个场景完成。"
+      }
+     ]
+    },
+    {
+     "id": "show-carousel--notes--n3",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "show-carousel--notes--n3--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-carousel--notes--n3--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "show-carousel--notes--n3--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "show-carousel--notes--n3--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-carousel--notes--n3--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-carousel--notes--n3--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.1–1.5 s"
+          }
+         ]
+        },
+        {
+         "id": "show-carousel--notes--n3--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "环被甩动：f(p) = 1 − (1 − p)²(1 − a·p)，越过目标 4% 后零速度吸回；舞台模糊与速度成正比"
+          }
+         ]
+        },
+        {
+         "id": "show-carousel--notes--n3--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一个函数给出甩、减速、越过、吸附；速度感由速度算出"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-carousel--notes--n3--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-carousel--notes--n3--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.6–2.0 s"
+          }
+         ]
+        },
+        {
+         "id": "show-carousel--notes--n3--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "“蛋白质结构预测”放大 10%、变强调色，其余变暗"
+          }
+         ]
+        },
+        {
+         "id": "show-carousel--notes--n3--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画廊是背景，这一个是主角"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-carousel--notes--n3--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-carousel--notes--n3--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.9–4.0 s"
+          }
+         ]
+        },
+        {
+         "id": "show-carousel--notes--n3--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "说明升起，停住"
+          }
+         ]
+        },
+        {
+         "id": "show-carousel--notes--n3--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先看到它，再读它"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "show-carousel--shot": {
+   "id": "show-carousel--shot",
+   "type": "component",
+   "definitionId": "show-carousel--shot--definition",
+   "parameters": {
+    "alt": "八张应用场景卡片排成一圈被甩动，减速后停在“蛋白质结构预测”，下方写着 AlphaFold：从氨基酸序列预测三维结构。"
+   }
+  },
+  "diagrams--intro": {
+   "id": "diagrams--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "diagrams--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "示意图、中心与分支、包围与要点清单。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-draw-fill--draw-fill-scene": {
+   "id": "anime-draw-fill--draw-fill-scene",
+   "type": "component",
+   "definitionId": "anime-draw-fill--draw-fill-scene--definition",
+   "parameters": {
+    "scene": "anime/draw-fill",
+    "alt": "处理器五级流水线：五个方框依次描出边框，箭头连起来，再逐级填色。"
+   }
+  },
+  "anime-draw-fill--paragraph-1": {
+   "id": "anime-draw-fill--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-draw-fill--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "五级流水线的方框一个接一个描出边框，写上名字。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-draw-fill--paragraph-2": {
+   "id": "anime-draw-fill--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-draw-fill--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "箭头把相邻的两级连起来。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-draw-fill--paragraph-3": {
+   "id": "anime-draw-fill--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-draw-fill--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "每个时钟周期一条指令前进一级，方框按顺序填上颜色。"
+      }
+     ]
+    }
+   ]
+  },
+  "show-hub-spokes--notes": {
+   "id": "show-hub-spokes--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "show-hub-spokes--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一个概念由哪几部分组成、一个产品有哪几项能力时用。中心先出现，然后按讲解的顺序一次画一条连线，连线到了，那一部分才亮起；上一部分随之回到平静，所以任何时刻只有一个焦点。最后所有部分恢复同样的分量，整幅图作为一个整体停住。"
+      }
+     ]
+    },
+    {
+     "id": "show-hub-spokes--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "hub（中心文字）、parts（各部分，按讲解顺序，从十二点钟方向顺时针排列）。spokes 状态的时长平均分给各部分，部分多时把它加长。"
+      }
+     ]
+    },
+    {
+     "id": "show-hub-spokes--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "相近作品：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "需要环绕运动时用 5s/turntable。"
+      }
+     ]
+    },
+    {
+     "id": "show-hub-spokes--notes--n3",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "show-hub-spokes--notes--n3--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-hub-spokes--notes--n3--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "show-hub-spokes--notes--n3--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "show-hub-spokes--notes--n3--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-hub-spokes--notes--n3--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-hub-spokes--notes--n3--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.8 s"
+          }
+         ]
+        },
+        {
+         "id": "show-hub-spokes--notes--n3--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "中心从 0.92 放大到 1.04 再回到 1，一圈光环扩散"
+          }
+         ]
+        },
+        {
+         "id": "show-hub-spokes--notes--n3--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "主角先出场，4% 过冲表示“新”"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-hub-spokes--notes--n3--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-hub-spokes--notes--n3--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.8–4.3 s"
+          }
+         ]
+        },
+        {
+         "id": "show-hub-spokes--notes--n3--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "每 0.7 s：连线从中心边缘画到某一部分（0.4 s），中心轻顿一下；线到了，这一部分弹入并染上强调色，上一部分回到平静"
+          }
+         ]
+        },
+        {
+         "id": "show-hub-spokes--notes--n3--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先因后果；一次一个焦点，顺序就是讲解顺序"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-hub-spokes--notes--n3--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-hub-spokes--notes--n3--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "4.3–6.3 s"
+          }
+         ]
+        },
+        {
+         "id": "show-hub-spokes--notes--n3--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "各部分回到同样的分量，连线统一成淡强调色，整体 1% 呼吸"
+          }
+         ]
+        },
+        {
+         "id": "show-hub-spokes--notes--n3--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "最后读到的是一整幅图；停住的画面不显得死"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "show-hub-spokes--shot": {
+   "id": "show-hub-spokes--shot",
+   "type": "component",
+   "definitionId": "show-hub-spokes--shot--definition",
+   "parameters": {
+    "alt": "中心圆写着 Transformer，五条连线依次画向自注意力、前馈网络、残差连接、层归一化和位置编码。"
+   }
+  },
+  "show-surround--notes": {
+   "id": "show-surround--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "show-surround--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "讲“问题”的镜头：一个人或一个概念被太多东西包围（要学的概念、要管的工具、要处理的消息）。主体先单独出现；然后标签从画面外沿径向飞入，落在一圈椭圆上，到达越来越密；每落一个，画面边缘暗一档、主体的边框向警示色走一档。最后整圈向中心收紧，边缘最暗，停住，等下一个镜头给出答案。主体始终不动：它被包围，而不是被推近。"
+      }
+     ]
+    },
+    {
+     "id": "show-surround--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "subject（中心）、chips（包围的标签，6–14 个效果最好）、seed（标签的随机倾角与角度扰动）。"
+      }
+     ]
+    },
+    {
+     "id": "show-surround--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "相近作品：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "overwhelm-surround（从四周加速飞入）并入：这里的到达时间按序号的平方根排布，正是“越来越快”。"
+      }
+     ]
+    },
+    {
+     "id": "show-surround--notes--n3",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "show-surround--notes--n3--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-surround--notes--n3--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "show-surround--notes--n3--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "show-surround--notes--n3--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-surround--notes--n3--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-surround--notes--n3--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.8 s"
+          }
+         ]
+        },
+        {
+         "id": "show-surround--notes--n3--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "主体卡片升入画面中央"
+          }
+         ]
+        },
+        {
+         "id": "show-surround--notes--n3--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先看清被包围的是谁"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-surround--notes--n3--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-surround--notes--n3--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.8–3.2 s"
+          }
+         ]
+        },
+        {
+         "id": "show-surround--notes--n3--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "标签从画面外沿径向飞入，落在环上，间隔越来越短（飞行 0.6→0.35 s）；每次落地，边缘暗一档，主体边框向警示色走一档"
+          }
+         ]
+        },
+        {
+         "id": "show-surround--notes--n3--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "压力由节奏传达，而不是写出来；每个冲击都有反应"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-surround--notes--n3--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-surround--notes--n3--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.2–3.8 s"
+          }
+         ]
+        },
+        {
+         "id": "show-surround--notes--n3--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "整圈向中心收紧（power3.inOut），边缘最暗，边框变成警示色"
+          }
+         ]
+        },
+        {
+         "id": "show-surround--notes--n3--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "包围完成"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-surround--notes--n3--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-surround--notes--n3--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.8–5.4 s"
+          }
+         ]
+        },
+        {
+         "id": "show-surround--notes--n3--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "整圈向内 1% 呼吸，停住"
+          }
+         ]
+        },
+        {
+         "id": "show-surround--notes--n3--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "给下一镜的“答案”留出画面"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "show-surround--shot": {
+   "id": "show-surround--shot",
+   "type": "component",
+   "definitionId": "show-surround--shot--definition",
+   "parameters": {
+    "alt": "“初学者”卡片被线性代数、反向传播、过拟合等十二个概念标签从四周包围并逐渐收紧。"
+   }
+  },
+  "show-checklist--notes": {
+   "id": "show-checklist--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "show-checklist--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一节课的要点、一篇论文的贡献、一次实验的结论。一次一行：圆圈画出、勾随后落下，文字从基线后的槽里升起（遮罩而不是淡入），再用强调色下划线扫过这一行的关键短语。下一行开始时上一行退成次要色，最后全部恢复，作为一份总结停住。"
+      }
+     ]
+    },
+    {
+     "id": "show-checklist--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "title、items（text 与 key：key 是 text 中要划线的短语）。items 状态的时长平均分给各行，配讲解时把它拉长即可。"
+      }
+     ]
+    },
+    {
+     "id": "show-checklist--notes--n3",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "show-checklist--notes--n3--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-checklist--notes--n3--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "show-checklist--notes--n3--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "show-checklist--notes--n3--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-checklist--notes--n3--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-checklist--notes--n3--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.7 s"
+          }
+         ]
+        },
+        {
+         "id": "show-checklist--notes--n3--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "标题升入，短强调线画出"
+          }
+         ]
+        },
+        {
+         "id": "show-checklist--notes--n3--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先说这是什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-checklist--notes--n3--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-checklist--notes--n3--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "每行 1.3 s"
+          }
+         ]
+        },
+        {
+         "id": "show-checklist--notes--n3--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "圆圈 0.3 s → 勾 0.2 s → 文字从槽中升起 0.45 s → 关键短语下划线 0.4 s；上一行退成次要色"
+          }
+         ]
+        },
+        {
+         "id": "show-checklist--notes--n3--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一次一个焦点；每行只记一个短语"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-checklist--notes--n3--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-checklist--notes--n3--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "4.6–6.8 s"
+          }
+         ]
+        },
+        {
+         "id": "show-checklist--notes--n3--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "所有行恢复全色，停住"
+          }
+         ]
+        },
+        {
+         "id": "show-checklist--notes--n3--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "最后读到的是整份总结"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "show-checklist--shot": {
+   "id": "show-checklist--shot",
+   "type": "component",
+   "definitionId": "show-checklist--shot--definition",
+   "parameters": {
+    "alt": "“本节要点”下三行依次打勾出现，关键短语“增长最快”“每一步走多远”“震荡”被划线。"
+   }
+  }
+ },
+ "steps": {
+  "sequence--step": {
+   "id": "sequence--step",
+   "sectionId": "sequence",
+   "visuals": [
+    {
+     "blockId": "sequence--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "gsap-stagger-grid--step-0": {
+   "id": "gsap-stagger-grid--step-0",
+   "sectionId": "gsap-stagger-grid",
+   "visuals": [
+    {
+     "blockId": "gsap-stagger-grid--stagger-grid-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "gsap-stagger-grid--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-stagger-grid--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-stagger-grid--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-stagger-grid--paragraph-1--narration"
+   ]
+  },
+  "gsap-stagger-grid--step-1": {
+   "id": "gsap-stagger-grid--step-1",
+   "sectionId": "gsap-stagger-grid",
+   "visuals": [
+    {
+     "blockId": "gsap-stagger-grid--stagger-grid-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "gsap-stagger-grid--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-stagger-grid--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-stagger-grid--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-stagger-grid--paragraph-2--narration"
+   ]
+  },
+  "gsap-stagger-grid--step-2": {
+   "id": "gsap-stagger-grid--step-2",
+   "sectionId": "gsap-stagger-grid",
+   "visuals": [
+    {
+     "blockId": "gsap-stagger-grid--stagger-grid-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "gsap-stagger-grid--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-stagger-grid--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-stagger-grid--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-stagger-grid--paragraph-3--narration"
+   ]
+  },
+  "anime-grid-ripple--step-0": {
+   "id": "anime-grid-ripple--step-0",
+   "sectionId": "anime-grid-ripple",
+   "visuals": [
+    {
+     "blockId": "anime-grid-ripple--grid-ripple-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "anime-grid-ripple--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-grid-ripple--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-grid-ripple--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-grid-ripple--paragraph-1--narration"
+   ]
+  },
+  "anime-grid-ripple--step-1": {
+   "id": "anime-grid-ripple--step-1",
+   "sectionId": "anime-grid-ripple",
+   "visuals": [
+    {
+     "blockId": "anime-grid-ripple--grid-ripple-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "anime-grid-ripple--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-grid-ripple--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-grid-ripple--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-grid-ripple--paragraph-2--narration"
+   ]
+  },
+  "anime-grid-ripple--step-2": {
+   "id": "anime-grid-ripple--step-2",
+   "sectionId": "anime-grid-ripple",
+   "visuals": [
+    {
+     "blockId": "anime-grid-ripple--grid-ripple-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "anime-grid-ripple--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-grid-ripple--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-grid-ripple--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-grid-ripple--paragraph-3--narration"
+   ]
+  },
+  "motion-stagger--step-0": {
+   "id": "motion-stagger--step-0",
+   "sectionId": "motion-stagger",
+   "visuals": [
+    {
+     "blockId": "motion-stagger--stagger-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-stagger--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-stagger--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-stagger--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-stagger--paragraph-1--narration"
+   ]
+  },
+  "motion-stagger--step-1": {
+   "id": "motion-stagger--step-1",
+   "sectionId": "motion-stagger",
+   "visuals": [
+    {
+     "blockId": "motion-stagger--stagger-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-stagger--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-stagger--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-stagger--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-stagger--paragraph-2--narration"
+   ]
+  },
+  "motion-stagger--step-2": {
+   "id": "motion-stagger--step-2",
+   "sectionId": "motion-stagger",
+   "visuals": [
+    {
+     "blockId": "motion-stagger--stagger-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "motion-stagger--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-stagger--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-stagger--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-stagger--paragraph-3--narration"
+   ]
+  },
+  "remotion-sequence-steps--step-0": {
+   "id": "remotion-sequence-steps--step-0",
+   "sectionId": "remotion-sequence-steps",
+   "visuals": [
+    {
+     "blockId": "remotion-sequence-steps--sequence-steps-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "remotion-sequence-steps--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-sequence-steps--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-sequence-steps--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-sequence-steps--paragraph-1--narration"
+   ]
+  },
+  "remotion-sequence-steps--step-1": {
+   "id": "remotion-sequence-steps--step-1",
+   "sectionId": "remotion-sequence-steps",
+   "visuals": [
+    {
+     "blockId": "remotion-sequence-steps--sequence-steps-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "remotion-sequence-steps--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-sequence-steps--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-sequence-steps--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-sequence-steps--paragraph-2--narration"
+   ]
+  },
+  "remotion-sequence-steps--step-2": {
+   "id": "remotion-sequence-steps--step-2",
+   "sectionId": "remotion-sequence-steps",
+   "visuals": [
+    {
+     "blockId": "remotion-sequence-steps--sequence-steps-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "remotion-sequence-steps--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-sequence-steps--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-sequence-steps--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-sequence-steps--paragraph-3--narration"
+   ]
+  },
+  "remotion-spring-pop--step-0": {
+   "id": "remotion-spring-pop--step-0",
+   "sectionId": "remotion-spring-pop",
+   "visuals": [
+    {
+     "blockId": "remotion-spring-pop--spring-pop-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "remotion-spring-pop--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-spring-pop--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-spring-pop--paragraph-1--narration"
+   ]
+  },
+  "remotion-spring-pop--step-1": {
+   "id": "remotion-spring-pop--step-1",
+   "sectionId": "remotion-spring-pop",
+   "visuals": [
+    {
+     "blockId": "remotion-spring-pop--spring-pop-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "remotion-spring-pop--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-spring-pop--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-spring-pop--paragraph-2--narration"
+   ]
+  },
+  "motion-labels--step-0": {
+   "id": "motion-labels--step-0",
+   "sectionId": "motion-labels",
+   "visuals": [
+    {
+     "blockId": "motion-labels--labels-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-labels--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-labels--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-labels--paragraph-1--narration"
+   ]
+  },
+  "motion-labels--step-1": {
+   "id": "motion-labels--step-1",
+   "sectionId": "motion-labels",
+   "visuals": [
+    {
+     "blockId": "motion-labels--labels-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-labels--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-labels--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-labels--paragraph-2--narration"
+   ]
+  },
+  "cards--step": {
+   "id": "cards--step",
+   "sectionId": "cards",
+   "visuals": [
+    {
+     "blockId": "cards--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "gsap-flip-3d--step-0": {
+   "id": "gsap-flip-3d--step-0",
+   "sectionId": "gsap-flip-3d",
+   "visuals": [
+    {
+     "blockId": "gsap-flip-3d--flip-3d-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "gsap-flip-3d--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-flip-3d--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-flip-3d--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-flip-3d--paragraph-1--narration"
+   ]
+  },
+  "gsap-flip-3d--step-1": {
+   "id": "gsap-flip-3d--step-1",
+   "sectionId": "gsap-flip-3d",
+   "visuals": [
+    {
+     "blockId": "gsap-flip-3d--flip-3d-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "gsap-flip-3d--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-flip-3d--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-flip-3d--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-flip-3d--paragraph-2--narration"
+   ]
+  },
+  "gsap-flip-3d--step-2": {
+   "id": "gsap-flip-3d--step-2",
+   "sectionId": "gsap-flip-3d",
+   "visuals": [
+    {
+     "blockId": "gsap-flip-3d--flip-3d-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "gsap-flip-3d--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-flip-3d--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-flip-3d--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-flip-3d--paragraph-3--narration"
+   ]
+  },
+  "anime-flip-cards--step-0": {
+   "id": "anime-flip-cards--step-0",
+   "sectionId": "anime-flip-cards",
+   "visuals": [
+    {
+     "blockId": "anime-flip-cards--flip-cards-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "anime-flip-cards--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-flip-cards--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-flip-cards--paragraph-1--narration"
+   ]
+  },
+  "anime-flip-cards--step-1": {
+   "id": "anime-flip-cards--step-1",
+   "sectionId": "anime-flip-cards",
+   "visuals": [
+    {
+     "blockId": "anime-flip-cards--flip-cards-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "anime-flip-cards--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-flip-cards--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-flip-cards--paragraph-2--narration"
+   ]
+  },
+  "motion-flip--step-0": {
+   "id": "motion-flip--step-0",
+   "sectionId": "motion-flip",
+   "visuals": [
+    {
+     "blockId": "motion-flip--flip-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-flip--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-flip--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-flip--paragraph-1--narration"
+   ]
+  },
+  "motion-flip--step-1": {
+   "id": "motion-flip--step-1",
+   "sectionId": "motion-flip",
+   "visuals": [
+    {
+     "blockId": "motion-flip--flip-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-flip--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-flip--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-flip--paragraph-2--narration"
+   ]
+  },
+  "gsap-flip-fit--step-0": {
+   "id": "gsap-flip-fit--step-0",
+   "sectionId": "gsap-flip-fit",
+   "visuals": [
+    {
+     "blockId": "gsap-flip-fit--flip-fit-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "gsap-flip-fit--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-flip-fit--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-flip-fit--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-flip-fit--paragraph-1--narration"
+   ]
+  },
+  "gsap-flip-fit--step-1": {
+   "id": "gsap-flip-fit--step-1",
+   "sectionId": "gsap-flip-fit",
+   "visuals": [
+    {
+     "blockId": "gsap-flip-fit--flip-fit-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "gsap-flip-fit--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-flip-fit--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-flip-fit--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-flip-fit--paragraph-2--narration"
+   ]
+  },
+  "gsap-flip-fit--step-2": {
+   "id": "gsap-flip-fit--step-2",
+   "sectionId": "gsap-flip-fit",
+   "visuals": [
+    {
+     "blockId": "gsap-flip-fit--flip-fit-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "gsap-flip-fit--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-flip-fit--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-flip-fit--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-flip-fit--paragraph-3--narration"
+   ]
+  },
+  "show-card-grid--step-0": {
+   "id": "show-card-grid--step-0",
+   "sectionId": "show-card-grid",
+   "visuals": [
+    {
+     "blockId": "show-card-grid--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-card-grid--shot",
+     "visible": true,
+     "state": "assemble"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-card-grid--step-1": {
+   "id": "show-card-grid--step-1",
+   "sectionId": "show-card-grid",
+   "visuals": [
+    {
+     "blockId": "show-card-grid--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-card-grid--shot",
+     "visible": true,
+     "state": "focus"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-carousel--step-0": {
+   "id": "show-carousel--step-0",
+   "sectionId": "show-carousel",
+   "visuals": [
+    {
+     "blockId": "show-carousel--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-carousel--shot",
+     "visible": true,
+     "state": "spin"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-carousel--step-1": {
+   "id": "show-carousel--step-1",
+   "sectionId": "show-carousel",
+   "visuals": [
+    {
+     "blockId": "show-carousel--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-carousel--shot",
+     "visible": true,
+     "state": "pick"
+    }
+   ],
+   "narrationIds": []
+  },
+  "diagrams--step": {
+   "id": "diagrams--step",
+   "sectionId": "diagrams",
+   "visuals": [
+    {
+     "blockId": "diagrams--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "anime-draw-fill--step-0": {
+   "id": "anime-draw-fill--step-0",
+   "sectionId": "anime-draw-fill",
+   "visuals": [
+    {
+     "blockId": "anime-draw-fill--draw-fill-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "anime-draw-fill--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-draw-fill--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-draw-fill--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-draw-fill--paragraph-1--narration"
+   ]
+  },
+  "anime-draw-fill--step-1": {
+   "id": "anime-draw-fill--step-1",
+   "sectionId": "anime-draw-fill",
+   "visuals": [
+    {
+     "blockId": "anime-draw-fill--draw-fill-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "anime-draw-fill--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-draw-fill--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-draw-fill--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-draw-fill--paragraph-2--narration"
+   ]
+  },
+  "anime-draw-fill--step-2": {
+   "id": "anime-draw-fill--step-2",
+   "sectionId": "anime-draw-fill",
+   "visuals": [
+    {
+     "blockId": "anime-draw-fill--draw-fill-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "anime-draw-fill--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-draw-fill--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-draw-fill--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-draw-fill--paragraph-3--narration"
+   ]
+  },
+  "show-hub-spokes--step-0": {
+   "id": "show-hub-spokes--step-0",
+   "sectionId": "show-hub-spokes",
+   "visuals": [
+    {
+     "blockId": "show-hub-spokes--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-hub-spokes--shot",
+     "visible": true,
+     "state": "hub"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-hub-spokes--step-1": {
+   "id": "show-hub-spokes--step-1",
+   "sectionId": "show-hub-spokes",
+   "visuals": [
+    {
+     "blockId": "show-hub-spokes--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-hub-spokes--shot",
+     "visible": true,
+     "state": "spokes"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-hub-spokes--step-2": {
+   "id": "show-hub-spokes--step-2",
+   "sectionId": "show-hub-spokes",
+   "visuals": [
+    {
+     "blockId": "show-hub-spokes--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-hub-spokes--shot",
+     "visible": true,
+     "state": "hold"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-surround--step-0": {
+   "id": "show-surround--step-0",
+   "sectionId": "show-surround",
+   "visuals": [
+    {
+     "blockId": "show-surround--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-surround--shot",
+     "visible": true,
+     "state": "subject"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-surround--step-1": {
+   "id": "show-surround--step-1",
+   "sectionId": "show-surround",
+   "visuals": [
+    {
+     "blockId": "show-surround--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-surround--shot",
+     "visible": true,
+     "state": "crowd"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-surround--step-2": {
+   "id": "show-surround--step-2",
+   "sectionId": "show-surround",
+   "visuals": [
+    {
+     "blockId": "show-surround--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-surround--shot",
+     "visible": true,
+     "state": "close"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-checklist--step-0": {
+   "id": "show-checklist--step-0",
+   "sectionId": "show-checklist",
+   "visuals": [
+    {
+     "blockId": "show-checklist--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-checklist--shot",
+     "visible": true,
+     "state": "title"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-checklist--step-1": {
+   "id": "show-checklist--step-1",
+   "sectionId": "show-checklist",
+   "visuals": [
+    {
+     "blockId": "show-checklist--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-checklist--shot",
+     "visible": true,
+     "state": "items"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-checklist--step-2": {
+   "id": "show-checklist--step-2",
+   "sectionId": "show-checklist",
+   "visuals": [
+    {
+     "blockId": "show-checklist--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-checklist--shot",
+     "visible": true,
+     "state": "hold"
+    }
+   ],
+   "narrationIds": []
+  }
+ },
+ "narrations": {
+  "gsap-stagger-grid--paragraph-1--narration": {
+   "id": "gsap-stagger-grid--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "方格从中心向外依次出现：stagger 的 grid 与 from: 'center' 按到中心的距离排出先后。"
+    }
+   ]
+  },
+  "gsap-stagger-grid--paragraph-2--narration": {
+   "id": "gsap-stagger-grid--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "一道波从左上角扫向右下角，每格亮一下再暗回去。"
+    }
+   ]
+  },
+  "gsap-stagger-grid--paragraph-3--narration": {
+   "id": "gsap-stagger-grid--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "从最后一行开始，一行一行地缩成圆点。"
+    }
+   ]
+  },
+  "anime-grid-ripple--paragraph-1--narration": {
+   "id": "anime-grid-ripple--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "格子从中心向外长出来，延迟按到中心的距离算。"
+    }
+   ]
+  },
+  "anime-grid-ripple--paragraph-2--narration": {
+   "id": "anime-grid-ripple--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "从第三行第四列的格子开始，波纹一圈一圈向外荡开。"
+    }
+   ]
+  },
+  "anime-grid-ripple--paragraph-3--narration": {
+   "id": "anime-grid-ripple--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "只按行算距离，网格一行一行地扫过去，像卷积核滑过图像。"
+    }
+   ]
+  },
+  "motion-stagger--paragraph-1--narration": {
+   "id": "motion-stagger--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "句子的词从中间向两端依次出现。"
+    }
+   ]
+  },
+  "motion-stagger--paragraph-2--narration": {
+   "id": "motion-stagger--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "网格从中心泛起波纹：离中心越远，开始得越晚。"
+    }
+   ]
+  },
+  "motion-stagger--paragraph-3--narration": {
+   "id": "motion-stagger--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "从最后一格开始退回原色，越到后面越密。"
+    }
+   ]
+  },
+  "remotion-sequence-steps--paragraph-1--narration": {
+   "id": "remotion-sequence-steps--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第一步是一个从 at(0) 开始的 Sequence，卡片里的帧从 0 数起。"
+    }
+   ]
+  },
+  "remotion-sequence-steps--paragraph-2--narration": {
+   "id": "remotion-sequence-steps--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第二步的 Sequence 从 at(1) 开始，新卡片的局部帧也从 0 数起，前一张卡片留在原处。"
+    }
+   ]
+  },
+  "remotion-sequence-steps--paragraph-3--narration": {
+   "id": "remotion-sequence-steps--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第三步同样如此。不给 durationInFrames，前面的步骤就一直留在画面上。"
+    }
+   ]
+  },
+  "remotion-spring-pop--paragraph-1--narration": {
+   "id": "remotion-spring-pop--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "标题按弹簧弹出，稍微冲过头再回到原大小。"
+    }
+   ]
+  },
+  "remotion-spring-pop--paragraph-2--narration": {
+   "id": "remotion-spring-pop--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "四个小球同时出发：默认参数会冲过终点再回来，damping 200 平稳停下，overshootClamping 到线就停，mass 3 起步更慢。"
+    }
+   ]
+  },
+  "motion-labels--paragraph-1--narration": {
+   "id": "motion-labels--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "源码、词法分析、语法树、中间表示、机器码，一段接一段出现。"
+    }
+   ]
+  },
+  "motion-labels--paragraph-2--narration": {
+   "id": "motion-labels--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "每一段依次跳一下：它只看前一段的产物。"
+    }
+   ]
+  },
+  "gsap-flip-3d--paragraph-1--narration": {
+   "id": "gsap-flip-3d--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "三张卡片向前倒下，落到位置上。"
+    }
+   ]
+  },
+  "gsap-flip-3d--paragraph-2--narration": {
+   "id": "gsap-flip-3d--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "每张卡片翻过来，背面写着它的含义。"
+    }
+   ]
+  },
+  "gsap-flip-3d--paragraph-3--narration": {
+   "id": "gsap-flip-3d--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "卡片移到中间，在深度方向分开，整叠倾斜，像三层。"
+    }
+   ]
+  },
+  "anime-flip-cards--paragraph-1--narration": {
+   "id": "anime-flip-cards--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "三张卡片，正面是术语。"
+    }
+   ]
+  },
+  "anime-flip-cards--paragraph-2--narration": {
+   "id": "anime-flip-cards--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "依次翻过来，背面是一句话的解释。"
+    }
+   ]
+  },
+  "motion-flip--paragraph-1--narration": {
+   "id": "motion-flip--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "三张卡片，正面是问题。"
+    }
+   ]
+  },
+  "motion-flip--paragraph-2--narration": {
+   "id": "motion-flip--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "依次翻过来，背面是公式。"
+    }
+   ]
+  },
+  "gsap-flip-fit--paragraph-1--narration": {
+   "id": "gsap-flip-fit--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "五个候选及其概率依次出现。"
+    }
+   ]
+  },
+  "gsap-flip-fit--paragraph-2--narration": {
+   "id": "gsap-flip-fit--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "概率最高的 the cat ran 移入第一个位置，大小与位置正好吻合。"
+    }
+   ]
+  },
+  "gsap-flip-fit--paragraph-3--narration": {
+   "id": "gsap-flip-fit--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第二高的 the dog sat 移入第二个位置，其余的候选变淡。"
+    }
+   ]
+  },
+  "anime-draw-fill--paragraph-1--narration": {
+   "id": "anime-draw-fill--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "五级流水线的方框一个接一个描出边框，写上名字。"
+    }
+   ]
+  },
+  "anime-draw-fill--paragraph-2--narration": {
+   "id": "anime-draw-fill--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "箭头把相邻的两级连起来。"
+    }
+   ]
+  },
+  "anime-draw-fill--paragraph-3--narration": {
+   "id": "anime-draw-fill--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "每个时钟周期一条指令前进一级，方框按顺序填上颜色。"
+    }
+   ]
+  }
+ },
+ "assets": {},
+ "definitions": {
+  "gsap-stagger-grid--stagger-grid-scene--definition": {
+   "id": "gsap-stagger-grid--stagger-grid-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/gsap/stagger-grid.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1400,
+     1600,
+     1200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "六行十列的方格从中心向外依次出现，一道波从左上角扫过，再逐行缩成圆点。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "anime-grid-ripple--grid-ripple-scene--definition": {
+   "id": "anime-grid-ripple--grid-ripple-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/anime/grid-ripple.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     900,
+     1500,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "十五乘九的网格从中心长出，再从一个格子向外荡开波纹，最后逐行扫过。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-stagger--stagger-scene--definition": {
+   "id": "motion-stagger--stagger-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/ripple.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     900,
+     1300,
+     1300
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一句话的词从中间向两边出现；网格从中心泛起一圈圈波纹，再从最后一格开始退回。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "remotion-sequence-steps--sequence-steps-scene--definition": {
+   "id": "remotion-sequence-steps--sequence-steps-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/remotion/sequence-steps.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1000,
+     1000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "三张卡片“分词”“嵌入”“注意力”依次弹出，箭头连起它们，每张卡片显示自己的局部帧。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "remotion-spring-pop--spring-pop-scene--definition": {
+   "id": "remotion-spring-pop--spring-pop-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/remotion/spring-pop.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "标题 spring() 弹出；四个小球用不同的弹簧参数冲向同一条终点线。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-labels--labels-scene--definition": {
+   "id": "motion-labels--labels-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/labels.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2200,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "编译器的五个阶段依次出现，箭头连接；然后逐个强调，出现说明文字。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "gsap-flip-3d--flip-3d-scene--definition": {
+   "id": "gsap-flip-3d--flip-3d-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/gsap/flip-3d.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1400,
+     1400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "Q、K、V 三张卡片翻到背面显示含义，再叠成三层。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "anime-flip-cards--flip-cards-scene--definition": {
+   "id": "anime-flip-cards--flip-cards-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/anime/flip-cards.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "三张概念卡片发到桌面，再依次翻面显示解释。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-flip--flip-scene--definition": {
+   "id": "motion-flip--flip-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/flip.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1500
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "三张问答卡片发到桌上，再依次翻面显示答案。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "gsap-flip-fit--flip-fit-scene--definition": {
+   "id": "gsap-flip-fit--flip-fit-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/gsap/flip-fit.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1200,
+     1200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "束搜索：五个候选句子中概率最高的两个依次移入右侧的两个位置。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "show-card-grid--shot--definition": {
+   "id": "show-card-grid--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/show/card-grid.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文字"
+     },
+     "items": {
+      "type": "array",
+      "title": "卡片",
+      "items": {
+       "type": "object",
+       "properties": {
+        "label": {
+         "type": "string",
+         "title": "名称"
+        },
+        "body": {
+         "type": "string",
+         "title": "说明"
+        },
+        "icon": {
+         "type": "string",
+         "title": "图标"
+        }
+       }
+      }
+     },
+     "from": {
+      "type": "string",
+      "title": "错峰起点",
+      "enum": [
+       "start",
+       "center",
+       "end",
+       "edges"
+      ]
+     },
+     "columns": {
+      "type": "number",
+      "title": "列数"
+     },
+     "focus": {
+      "type": "number",
+      "title": "聚焦序号"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "assemble"
+    },
+    {
+     "id": "focus"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     2200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "讲义、幻灯片、Notebook、讲解视频、小测、讨论六张卡片错峰组成网格，随后 Notebook 被突出。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "show-carousel--shot--definition": {
+   "id": "show-carousel--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/show/carousel.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文字"
+     },
+     "items": {
+      "type": "array",
+      "title": "卡片",
+      "items": {
+       "type": "string"
+      }
+     },
+     "pick": {
+      "type": "number",
+      "title": "选中序号"
+     },
+     "caption": {
+      "type": "string",
+      "title": "说明"
+     },
+     "path": {
+      "type": "string",
+      "title": "路径",
+      "enum": [
+       "circle",
+       "arc",
+       "line"
+      ]
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "spin"
+    },
+    {
+     "id": "pick"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     2400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "八张应用场景卡片排成一圈被甩动，减速后停在“蛋白质结构预测”，下方写着 AlphaFold：从氨基酸序列预测三维结构。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "anime-draw-fill--draw-fill-scene--definition": {
+   "id": "anime-draw-fill--draw-fill-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/anime/draw-fill.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1400,
+     1200,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "处理器五级流水线：五个方框依次描出边框，箭头连起来，再逐级填色。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "show-hub-spokes--shot--definition": {
+   "id": "show-hub-spokes--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/show/hub-spokes.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文字"
+     },
+     "hub": {
+      "type": "string",
+      "title": "中心"
+     },
+     "parts": {
+      "type": "array",
+      "title": "各部分",
+      "items": {
+       "type": "string"
+      }
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "hub"
+    },
+    {
+     "id": "spokes"
+    },
+    {
+     "id": "hold"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     800,
+     3500,
+     2000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "中心圆写着 Transformer，五条连线依次画向自注意力、前馈网络、残差连接、层归一化和位置编码。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "show-surround--shot--definition": {
+   "id": "show-surround--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/show/surround.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文字"
+     },
+     "subject": {
+      "type": "string",
+      "title": "中心"
+     },
+     "chips": {
+      "type": "array",
+      "title": "包围的标签",
+      "items": {
+       "type": "string"
+      }
+     },
+     "seed": {
+      "type": "number",
+      "title": "随机种子"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "subject"
+    },
+    {
+     "id": "crowd"
+    },
+    {
+     "id": "close"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     800,
+     2400,
+     2200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "“初学者”卡片被线性代数、反向传播、过拟合等十二个概念标签从四周包围并逐渐收紧。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "show-checklist--shot--definition": {
+   "id": "show-checklist--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/show/checklist.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文字"
+     },
+     "title": {
+      "type": "string",
+      "title": "标题"
+     },
+     "items": {
+      "type": "array",
+      "title": "要点",
+      "items": {
+       "type": "object",
+       "properties": {
+        "text": {
+         "type": "string",
+         "title": "文字"
+        },
+        "key": {
+         "type": "string",
+         "title": "关键短语"
+        }
+       }
+      }
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "title"
+    },
+    {
+     "id": "items"
+    },
+    {
+     "id": "hold"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     700,
+     3900,
+     2200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "“本节要点”下三行依次打勾出现，关键短语“增长最快”“每一步走多远”“震荡”被划线。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  }
+ },
+ "production": {
+  "defaults": {
+   "voiceSource": {
+    "type": "none"
+   },
+   "trailingPauseMs": 0
+  },
+  "stepOverrides": {},
+  "mediaClips": []
+ }
+}

@@ -30,7 +30,7 @@ const messages = {
       tutorials: ['教程', '按编号步骤介绍工作台中的编辑、讲稿、配音与导出。'],
       courses: ['课程', '带讲解的完整课程，可放映，也可导出为讲授视频。'],
       films: ['影片', '由文稿生成的产品短片。'],
-      animation: ['动画参考', '六种动画库的写法与分类效果目录，可直接复用。'],
+      animation: ['动画参考', '按场景整理的动画：算法、数据、数学、文字、标注、产品演示、转场与三维等，可直接复用。'],
     },
     collectionTag: '这个网站也是用 Presmium 做的', collectionTitle: '做一个自己的网站',
     collectionLead: '首页想怎么设计都行，文稿一份一份往里加。自带课程、文档、展示三种主题，做好的网站可以直接放到 GitHub Pages 这类静态托管上。',
@@ -73,7 +73,7 @@ const messages = {
       tutorials: ['Tutorials', 'Numbered steps through editing, scripts, voiceover and export in the workbench.'],
       courses: ['Courses', 'Complete narrated courses, ready to present or export as lecture videos.'],
       films: ['Films', 'Product films made from documents.'],
-      animation: ['Animation references', 'Scenes written with six animation libraries and a catalog of effects, ready to reuse.'],
+      animation: ['Animation references', 'Animations by scenario: algorithms, data, mathematics, text, annotation, product demos, transitions and 3D, ready to reuse.'],
     },
     collectionTag: 'This website was made with Presmium too', collectionTitle: 'Build your own website',
     collectionLead: 'Design the homepage however you like and keep adding documents. Choose a course, docs or showcase theme, and put the result on GitHub Pages or any static host.',
@@ -111,7 +111,7 @@ type SiteDocument = NonNullable<typeof site.documents>[number]
 const CATEGORIES = [['collections', '功能合集', 'overview'], ['tutorials', '教程', 'edit'], ['courses', '课程', 'notebook'], ['films', '影片', 'video'], ['animation', '动画参考', 'sparkle']] as const
 type Category = typeof CATEGORIES[number][0]
 // Within a category the library follows this reading order; any other document keeps the site's order after them.
-const ORDER = ['showcase-content', 'showcase-steps', 'showcase-code', 'showcase-classroom', 'showcase-publishing', 'tutorial-editing', 'tutorial-narration', 'learn', 'bubble-sort', 'libraries', 'animation-library/timeline', 'animation-library/lengths', 'animation-library/story', 'animation-library/films']
+const ORDER = ['showcase-content', 'showcase-steps', 'showcase-code', 'showcase-classroom', 'showcase-publishing', 'tutorial-editing', 'tutorial-narration', 'learn', 'bubble-sort', 'libraries', ...['algorithms', 'data', 'math-ml', 'text', 'emphasis', 'structure', 'product', 'transitions', 'paths-3d', 'craft', 'timeline', 'lengths', 'story', 'films'].map(name => `animation-library/${name}`)]
 const rank = (doc: SiteDocument) => { const at = ORDER.indexOf(doc.id); return at === -1 ? ORDER.length : at }
 const documents = (site.documents ?? []).map((doc, index) => ({ doc, index })).sort((a, b) => rank(a.doc) - rank(b.doc) || a.index - b.index).map(({ doc }) => doc)
 const categoryOf = (doc: SiteDocument) => CATEGORIES.find(([, tag]) => doc.tags?.includes(tag))?.[0]

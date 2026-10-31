@@ -1,0 +1,4266 @@
+{
+ "schemaVersion": 1,
+ "id": "animation-emphasis",
+ "metadata": {
+  "title": "强调与标注",
+  "lang": "zh-CN",
+  "description": "把注意力引到一处：动效强调、手绘标注、标注框与聚光。",
+  "tags": [
+   "动画参考"
+  ],
+  "plugins": [
+   "@lincyaw/addon-motion",
+   "@lincyaw/addon-lecture"
+  ],
+  "renderers": {
+   "web": {},
+   "lecture": {}
+  }
+ },
+ "sectionOrder": [
+  "motion",
+  "gsap-emphasis",
+  "motion-emphasis",
+  "motion-blur",
+  "motion-pulse",
+  "remotion-loop-pulse",
+  "sketch",
+  "mark-pen-annotate",
+  "mark-keyword-marks",
+  "show-outline-callout",
+  "mark-sketch-checklist",
+  "mark-sketch-flow",
+  "show-whiteboard-sketch",
+  "callouts",
+  "mark-callout",
+  "mark-speech-bubble",
+  "mark-spotlight"
+ ],
+ "sections": {
+  "motion": {
+   "id": "motion",
+   "title": "动效强调",
+   "level": 1,
+   "children": [
+    "motion--intro"
+   ],
+   "stepOrder": [
+    "motion--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "gsap-emphasis": {
+   "id": "gsap-emphasis",
+   "title": "强调：弹跳、抖动、脉冲与自定义缓动",
+   "level": 2,
+   "children": [
+    "gsap-emphasis--emphasis-scene",
+    "gsap-emphasis--paragraph-1",
+    "gsap-emphasis--paragraph-2",
+    "gsap-emphasis--paragraph-3",
+    "gsap-emphasis--paragraph-4"
+   ],
+   "stepOrder": [
+    "gsap-emphasis--step-0",
+    "gsap-emphasis--step-1",
+    "gsap-emphasis--step-2",
+    "gsap-emphasis--step-3"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-emphasis": {
+   "id": "motion-emphasis",
+   "title": "强调：高亮条移动、变色、抖动",
+   "level": 2,
+   "children": [
+    "motion-emphasis--emphasis-scene",
+    "motion-emphasis--paragraph-1",
+    "motion-emphasis--paragraph-2",
+    "motion-emphasis--paragraph-3"
+   ],
+   "stepOrder": [
+    "motion-emphasis--step-0",
+    "motion-emphasis--step-1",
+    "motion-emphasis--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-blur": {
+   "id": "motion-blur",
+   "title": "景深：用模糊把注意力引到一张卡片",
+   "level": 2,
+   "children": [
+    "motion-blur--blur-scene",
+    "motion-blur--paragraph-1",
+    "motion-blur--paragraph-2",
+    "motion-blur--paragraph-3"
+   ],
+   "stepOrder": [
+    "motion-blur--step-0",
+    "motion-blur--step-1",
+    "motion-blur--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-pulse": {
+   "id": "motion-pulse",
+   "title": "重复：心跳与广播",
+   "level": 2,
+   "children": [
+    "motion-pulse--pulse-scene",
+    "motion-pulse--paragraph-1",
+    "motion-pulse--paragraph-2"
+   ],
+   "stepOrder": [
+    "motion-pulse--step-0",
+    "motion-pulse--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "remotion-loop-pulse": {
+   "id": "remotion-loop-pulse",
+   "title": "循环：Loop",
+   "level": 2,
+   "children": [
+    "remotion-loop-pulse--loop-pulse-scene",
+    "remotion-loop-pulse--paragraph-1",
+    "remotion-loop-pulse--paragraph-2"
+   ],
+   "stepOrder": [
+    "remotion-loop-pulse--step-0",
+    "remotion-loop-pulse--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "sketch": {
+   "id": "sketch",
+   "title": "手绘标注",
+   "level": 1,
+   "children": [
+    "sketch--intro"
+   ],
+   "stepOrder": [
+    "sketch--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "mark-pen-annotate": {
+   "id": "mark-pen-annotate",
+   "title": "马克笔标注",
+   "level": 2,
+   "children": [
+    "mark-pen-annotate--notes",
+    "mark-pen-annotate--shot"
+   ],
+   "stepOrder": [
+    "mark-pen-annotate--step-0",
+    "mark-pen-annotate--step-1",
+    "mark-pen-annotate--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "mark-keyword-marks": {
+   "id": "mark-keyword-marks",
+   "title": "关键词标记",
+   "level": 2,
+   "children": [
+    "mark-keyword-marks--notes",
+    "mark-keyword-marks--shot"
+   ],
+   "stepOrder": [
+    "mark-keyword-marks--step-0",
+    "mark-keyword-marks--step-1",
+    "mark-keyword-marks--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "show-outline-callout": {
+   "id": "show-outline-callout",
+   "title": "圈出重点",
+   "level": 2,
+   "children": [
+    "show-outline-callout--notes",
+    "show-outline-callout--shot"
+   ],
+   "stepOrder": [
+    "show-outline-callout--step-0",
+    "show-outline-callout--step-1"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "mark-sketch-checklist": {
+   "id": "mark-sketch-checklist",
+   "title": "手绘清单",
+   "level": 2,
+   "children": [
+    "mark-sketch-checklist--notes",
+    "mark-sketch-checklist--shot"
+   ],
+   "stepOrder": [
+    "mark-sketch-checklist--step-0",
+    "mark-sketch-checklist--step-1",
+    "mark-sketch-checklist--step-2",
+    "mark-sketch-checklist--step-3"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "mark-sketch-flow": {
+   "id": "mark-sketch-flow",
+   "title": "手绘流程图",
+   "level": 2,
+   "children": [
+    "mark-sketch-flow--notes",
+    "mark-sketch-flow--shot"
+   ],
+   "stepOrder": [
+    "mark-sketch-flow--step-0",
+    "mark-sketch-flow--step-1",
+    "mark-sketch-flow--step-2",
+    "mark-sketch-flow--step-3",
+    "mark-sketch-flow--step-4"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "show-whiteboard-sketch": {
+   "id": "show-whiteboard-sketch",
+   "title": "白板手绘",
+   "level": 2,
+   "children": [
+    "show-whiteboard-sketch--notes",
+    "show-whiteboard-sketch--shot"
+   ],
+   "stepOrder": [
+    "show-whiteboard-sketch--step-0",
+    "show-whiteboard-sketch--step-1"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "callouts": {
+   "id": "callouts",
+   "title": "标注框与聚光",
+   "level": 1,
+   "children": [
+    "callouts--intro"
+   ],
+   "stepOrder": [
+    "callouts--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "mark-callout": {
+   "id": "mark-callout",
+   "title": "标注框",
+   "level": 2,
+   "children": [
+    "mark-callout--notes",
+    "mark-callout--shot"
+   ],
+   "stepOrder": [
+    "mark-callout--step-0",
+    "mark-callout--step-1"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "mark-speech-bubble": {
+   "id": "mark-speech-bubble",
+   "title": "对话气泡",
+   "level": 2,
+   "children": [
+    "mark-speech-bubble--notes",
+    "mark-speech-bubble--shot"
+   ],
+   "stepOrder": [
+    "mark-speech-bubble--step-0",
+    "mark-speech-bubble--step-1"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "mark-spotlight": {
+   "id": "mark-spotlight",
+   "title": "聚光",
+   "level": 2,
+   "children": [
+    "mark-spotlight--notes",
+    "mark-spotlight--shot"
+   ],
+   "stepOrder": [
+    "mark-spotlight--step-0",
+    "mark-spotlight--step-1",
+    "mark-spotlight--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  }
+ },
+ "blocks": {
+  "motion--intro": {
+   "id": "motion--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "弹跳、抖动、脉冲与景深。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-emphasis--emphasis-scene": {
+   "id": "gsap-emphasis--emphasis-scene",
+   "type": "component",
+   "definitionId": "gsap-emphasis--emphasis-scene--definition",
+   "parameters": {
+    "scene": "gsap/emphasis",
+    "alt": "三个选项落下弹跳，错误的选项抖动变红，正确的选项跳动变绿，下面画出下划线。"
+   }
+  },
+  "gsap-emphasis--paragraph-1": {
+   "id": "gsap-emphasis--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-emphasis--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "三个选项落下，落地时压扁再弹起。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-emphasis--paragraph-2": {
+   "id": "gsap-emphasis--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-emphasis--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "冒泡排序是 O(n²)，这个选项左右抖动并变红。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-emphasis--paragraph-3": {
+   "id": "gsap-emphasis--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-emphasis--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "归并排序是对的，它跳动两次并变绿。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-emphasis--paragraph-4": {
+   "id": "gsap-emphasis--paragraph-4",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-emphasis--paragraph-4--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "下划线按自定义的缓动曲线划出，略微超过再回到原位。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-emphasis--emphasis-scene": {
+   "id": "motion-emphasis--emphasis-scene",
+   "type": "component",
+   "definitionId": "motion-emphasis--emphasis-scene--definition",
+   "parameters": {
+    "scene": "motion/emphasis",
+    "alt": "一段求平均值的代码：高亮条先框住循环，再移到 return 一行变红并抖动，最后多余的“- 1”弹一下。"
+   }
+  },
+  "motion-emphasis--paragraph-1": {
+   "id": "motion-emphasis--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-emphasis--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "循环这两行把所有数加起来。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-emphasis--paragraph-2": {
+   "id": "motion-emphasis--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-emphasis--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "问题在 return 这一行：高亮条移过去，变红，抖一抖。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-emphasis--paragraph-3": {
+   "id": "motion-emphasis--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-emphasis--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "多减了一个 1。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-blur--blur-scene": {
+   "id": "motion-blur--blur-scene",
+   "type": "component",
+   "definitionId": "motion-blur--blur-scene--definition",
+   "parameters": {
+    "scene": "motion/blur",
+    "alt": "机器学习的四种范式卡片：先依次出现，再让正在讲的一张清晰放大，其他的模糊变淡。"
+   }
+  },
+  "motion-blur--paragraph-1": {
+   "id": "motion-blur--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-blur--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "四种学习范式。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-blur--paragraph-2": {
+   "id": "motion-blur--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-blur--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "先讲强化学习：它放大，其余变模糊。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-blur--paragraph-3": {
+   "id": "motion-blur--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-blur--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "再讲自监督学习。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-pulse--pulse-scene": {
+   "id": "motion-pulse--pulse-scene",
+   "type": "component",
+   "definitionId": "motion-pulse--pulse-scene--definition",
+   "parameters": {
+    "scene": "motion/pulse",
+    "alt": "领导者节点跳动四下，然后向外发出一圈圈广播，周围的节点依次响应。"
+   }
+  },
+  "motion-pulse--paragraph-1": {
+   "id": "motion-pulse--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-pulse--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "领导者的心跳：放大缩小，重复四下。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-pulse--paragraph-2": {
+   "id": "motion-pulse--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-pulse--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "广播：波纹一圈圈向外扩散，节点依次亮起。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-loop-pulse--loop-pulse-scene": {
+   "id": "remotion-loop-pulse--loop-pulse-scene",
+   "type": "component",
+   "definitionId": "remotion-loop-pulse--loop-pulse-scene--definition",
+   "parameters": {
+    "scene": "remotion/loop-pulse",
+    "alt": "客户端与服务器之间，请求和响应的小方块来回往返，服务器周围一圈圈脉冲。"
+   }
+  },
+  "remotion-loop-pulse--paragraph-1": {
+   "id": "remotion-loop-pulse--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-loop-pulse--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "客户端和服务器之间连着一条线路。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-loop-pulse--paragraph-2": {
+   "id": "remotion-loop-pulse--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-loop-pulse--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "请求一次次发往服务器，响应一次次返回，服务器上的光圈不断扩散。"
+      }
+     ]
+    }
+   ]
+  },
+  "sketch--intro": {
+   "id": "sketch--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "sketch--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "马克笔圈画、关键词标记、圈出重点与手绘图示。"
+      }
+     ]
+    }
+   ]
+  },
+  "mark-pen-annotate--notes": {
+   "id": "mark-pen-annotate--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "mark-pen-annotate--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "讲公式、代码、图时最直接的“指”：一支马克笔滑到目标，手绘一笔标注（圈、下划线、荧光笔、删除线、方框、括号或箭头），墨迹正好落在笔尖下，抬笔让开后再出现说明文字。每个标注一个步骤，前面的标注在下一笔落下时淡到 40%，保持一次一个焦点。"
+      }
+     ]
+    },
+    {
+     "id": "mark-pen-annotate--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "marks",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 是标注列表，每项 "
+      },
+      {
+       "type": "text",
+       "text": "shape",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（loop、underline、highlight、strike、box、bracket、arrow）、目标框 "
+      },
+      {
+       "type": "text",
+       "text": "x",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "y",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "w",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "h",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（舞台 %）、说明 "
+      },
+      {
+       "type": "text",
+       "text": "label",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "；箭头另有起点 "
+      },
+      {
+       "type": "text",
+       "text": "fromX",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "fromY",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。"
+      },
+      {
+       "type": "text",
+       "text": "ink",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 选墨色令牌；"
+      },
+      {
+       "type": "text",
+       "text": "backdrop",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "code",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "svg",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "guides",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 选底图。步骤数决定用前几个标注；每步约 2.2–2.6 秒，最后一步留出停留。"
+      }
+     ]
+    }
+   ]
+  },
+  "mark-pen-annotate--shot": {
+   "id": "mark-pen-annotate--shot",
+   "type": "component",
+   "definitionId": "mark-pen-annotate--shot--definition",
+   "parameters": {
+    "scene": "mark/pen-annotate",
+    "alt": "一支马克笔先圈出公式里的 softmax，再划出分母 √dk，最后从左下画箭头指向 V，每次画完在旁边写上说明。"
+   }
+  },
+  "mark-keyword-marks--notes": {
+   "id": "mark-keyword-marks--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "mark-keyword-marks--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "讲一句定义、一条结论时用：句子先出现，再一步一个关键词地标出来，每个词用自己的笔法（下划线、圈、荧光笔、删除线、方框、括号），可以带一条细线连出的短注释（Vox 解说片的手势）。瞄准靠词本身：场景在绘制时量出关键词在舞台上的位置，换字体、换行都对得上。"
+      }
+     ]
+    },
+    {
+     "id": "mark-keyword-marks--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "text",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 句子；"
+      },
+      {
+       "type": "text",
+       "text": "marks",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 每项 "
+      },
+      {
+       "type": "text",
+       "text": "word",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（句中第一次出现处）、"
+      },
+      {
+       "type": "text",
+       "text": "style",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（loop、underline、highlight、strike、box、bracket）、可选 "
+      },
+      {
+       "type": "text",
+       "text": "note",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "；"
+      },
+      {
+       "type": "text",
+       "text": "ink",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 墨色令牌。每步一个标记，第一步含句子出现，约 2.4 秒。"
+      }
+     ]
+    }
+   ]
+  },
+  "mark-keyword-marks--shot": {
+   "id": "mark-keyword-marks--shot",
+   "type": "component",
+   "definitionId": "mark-keyword-marks--shot--definition",
+   "parameters": {
+    "scene": "mark/keyword-marks",
+    "alt": "句子“注意力把每个词的表示，变成所有词表示的加权平均”出现，依次划出“每个词”、圈出“所有词”、用荧光笔涂“加权平均”，并连出注释“权重 = softmax(相似度)”。"
+   }
+  },
+  "show-outline-callout--notes": {
+   "id": "show-outline-callout--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "show-outline-callout--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "图、表或列表已经在屏幕上，要指出其中一行是论点：一支笔从左上角顺时针把它圈起来，笔端有一个亮点；圈闭合时扩散一圈，然后其余各行退后、选中行变成强调色。先圈（原因），再暗（结果）。"
+      }
+     ]
+    },
+    {
+     "id": "show-outline-callout--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "header、rows（每行的 cells）、pick（圈哪一行）、caption（数据出处，或注明示意）。"
+      }
+     ]
+    },
+    {
+     "id": "show-outline-callout--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "相近作品：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "fx/motion/border-beam 让光沿卡片边缘跑一圈，强调整张卡片；这里圈出已有内容的一部分，用于指认。"
+      }
+     ]
+    },
+    {
+     "id": "show-outline-callout--notes--n3",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "show-outline-callout--notes--n3--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-outline-callout--notes--n3--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "show-outline-callout--notes--n3--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "show-outline-callout--notes--n3--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-outline-callout--notes--n3--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-outline-callout--notes--n3--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.9 s"
+          }
+         ]
+        },
+        {
+         "id": "show-outline-callout--notes--n3--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "表头和四行依次升入"
+          }
+         ]
+        },
+        {
+         "id": "show-outline-callout--notes--n3--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先读完整个对比"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-outline-callout--notes--n3--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-outline-callout--notes--n3--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.0–1.6 s"
+          }
+         ]
+        },
+        {
+         "id": "show-outline-callout--notes--n3--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "圆角框从左上角顺时针画出，亮点骑在笔端（power2.inOut）"
+          }
+         ]
+        },
+        {
+         "id": "show-outline-callout--notes--n3--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画的动作把目光带到那一行"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-outline-callout--notes--n3--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-outline-callout--notes--n3--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.6–2.0 s"
+          }
+         ]
+        },
+        {
+         "id": "show-outline-callout--notes--n3--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "闭合处扩散一圈"
+          }
+         ]
+        },
+        {
+         "id": "show-outline-callout--notes--n3--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "闭合的反应"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-outline-callout--notes--n3--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-outline-callout--notes--n3--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.65–1.95 s"
+          }
+         ]
+        },
+        {
+         "id": "show-outline-callout--notes--n3--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "其余行退到 35%，选中行变强调色"
+          }
+         ]
+        },
+        {
+         "id": "show-outline-callout--notes--n3--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先因后果"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-outline-callout--notes--n3--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-outline-callout--notes--n3--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.0–3.5 s"
+          }
+         ]
+        },
+        {
+         "id": "show-outline-callout--notes--n3--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停住"
+          }
+         ]
+        },
+        {
+         "id": "show-outline-callout--notes--n3--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果停住"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "show-outline-callout--shot": {
+   "id": "show-outline-callout--shot",
+   "type": "component",
+   "definitionId": "show-outline-callout--shot--definition",
+   "parameters": {
+    "alt": "四行对比表，“+ 两者结合 78.6”被顺时针圈出并突出，其余行变淡，下方注明示意数据。"
+   }
+  },
+  "mark-sketch-checklist--notes": {
+   "id": "mark-sketch-checklist--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "mark-sketch-checklist--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一节课的目标或小结：标题先划线、再圈出关键词，然后列出各项，讲完一项勾一项。勾用成功色，勾落下后这一行由灰变黑。"
+      }
+     ]
+    },
+    {
+     "id": "mark-sketch-checklist--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 标题；"
+      },
+      {
+       "type": "text",
+       "text": "keyword",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 要圈的词（须在标题中）；"
+      },
+      {
+       "type": "text",
+       "text": "items",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 各项。步骤为 "
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 加每项一步。"
+      }
+     ]
+    }
+   ]
+  },
+  "mark-sketch-checklist--shot": {
+   "id": "mark-sketch-checklist--shot",
+   "type": "component",
+   "definitionId": "mark-sketch-checklist--shot--definition",
+   "parameters": {
+    "scene": "mark/sketch-checklist",
+    "alt": "纸卡片上写着“读懂注意力的三步”，标题下划一道线、“三步”被圈出，下面三项依次打勾：算相似度、归一化、加权求和。"
+   }
+  },
+  "mark-sketch-flow--notes": {
+   "id": "mark-sketch-flow--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "mark-sketch-flow--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "像在黑板上画流水线：按数据顺序一步画一个节点，箭头先到，方框再围出来，标签最后升起。关键节点用强调色并打斜线，全图只有它一处强调。"
+      }
+     ]
+    },
+    {
+     "id": "mark-sketch-flow--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "nodes",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 节点名（步骤数决定画几个；五个以内一行，多了排成来回两行）；"
+      },
+      {
+       "type": "text",
+       "text": "key",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 关键节点的序号（从 0 起）。"
+      }
+     ]
+    }
+   ]
+  },
+  "mark-sketch-flow--shot": {
+   "id": "mark-sketch-flow--shot",
+   "type": "component",
+   "definitionId": "mark-sketch-flow--shot--definition",
+   "parameters": {
+    "scene": "mark/sketch-flow",
+    "alt": "一张手绘流程图逐个画出：分词、词向量、注意力 ×6、前馈层、下一个词，箭头先到，方框后画，“注意力 ×6”用强调色并打斜线。"
+   }
+  },
+  "show-whiteboard-sketch--notes": {
+   "id": "show-whiteboard-sketch--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "show-whiteboard-sketch--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "像老师在白板上边讲边画：示意图一笔一笔出现，一支笔始终骑在正在画的那一笔的笔尖上。每个框画闭合后，框里的字才出现；最后一笔用强调色圈出关键的那个框。适合讲流程、结构、因果链的开场，比直接出现的框图更有“正在推导”的感觉。"
+      }
+     ]
+    },
+    {
+     "id": "show-whiteboard-sketch--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "strokes（每一笔的 SVG 路径，accent: true 的那一笔用强调色）、viewBox（框住这些笔画的 SVG 视框，自定义笔画时默认 0 0 1000 560）、labels（文字、位置和在第几笔之后出现）、caption（画完后的说明）、seed（手抖的随机种子）。默认画“数据 → 模型 → 预测”。"
+      }
+     ]
+    },
+    {
+     "id": "show-whiteboard-sketch--notes--n3",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "show-whiteboard-sketch--notes--n3--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-whiteboard-sketch--notes--n3--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–3.5 s"
+          }
+         ]
+        },
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "七笔依次画出：三个手绘框、两支箭头；每笔时长随长度的 0.7 次方增长，笔内先加速后减速；笔与笔之间抬笔（放大 12%，影子落开）跳到下一笔起点"
+          }
+         ]
+        },
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "笔和墨同一个进度，任意跳转都对得上；短笔不被吞掉，长笔不拖沓"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-whiteboard-sketch--notes--n3--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "框闭合时"
+          }
+         ]
+        },
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "框里的字浮现"
+          }
+         ]
+        },
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先因后果"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-whiteboard-sketch--notes--n3--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.1–3.5 s"
+          }
+         ]
+        },
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "最后一笔：强调色的圈圈住“模型”"
+          }
+         ]
+        },
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "关键之处最后画、颜色不同"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-whiteboard-sketch--notes--n3--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.8–4.05 s"
+          }
+         ]
+        },
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "笔加速退向右下方"
+          }
+         ]
+        },
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "退场比进场快"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-whiteboard-sketch--notes--n3--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.95–6.4 s"
+          }
+         ]
+        },
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "说明文字升起，停住"
+          }
+         ]
+        },
+        {
+         "id": "show-whiteboard-sketch--notes--n3--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画完再读字，一次只看一件事"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "show-whiteboard-sketch--shot": {
+   "id": "show-whiteboard-sketch--shot",
+   "type": "component",
+   "definitionId": "show-whiteboard-sketch--shot--definition",
+   "parameters": {
+    "alt": "手绘的“数据 → 模型 → 预测”示意图一笔一笔画出，“模型”被强调色圈出，下方写着“从数据学一个映射，再用它做预测”。"
+   }
+  },
+  "callouts--intro": {
+   "id": "callouts--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "callouts--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "标注框、对话气泡与聚光。"
+      }
+     ]
+    }
+   ]
+  },
+  "mark-callout--notes": {
+   "id": "mark-callout--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "mark-callout--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "指着图的一个局部说话时用：手绘椭圆或方框圈住目标，可选斜线填充，曲线连到标签；标签带着动量落下，圈住的形状被“撞”得轻轻一缩。每个标注一步，前面的淡到 40%。"
+      }
+     ]
+    },
+    {
+     "id": "mark-callout--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "callouts",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 每项 "
+      },
+      {
+       "type": "text",
+       "text": "shape",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（ellipse 或 box）、目标框 "
+      },
+      {
+       "type": "text",
+       "text": "x",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "y",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "w",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "h",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、标签 "
+      },
+      {
+       "type": "text",
+       "text": "label",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 及其中心 "
+      },
+      {
+       "type": "text",
+       "text": "lx",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "ly",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（都是舞台 %）、"
+      },
+      {
+       "type": "text",
+       "text": "connector",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（line、arrow、none）、"
+      },
+      {
+       "type": "text",
+       "text": "fill",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（斜线填充）；"
+      },
+      {
+       "type": "text",
+       "text": "ink",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "；底图参数同上，默认是示意的损失曲线图。"
+      }
+     ]
+    }
+   ]
+  },
+  "mark-callout--shot": {
+   "id": "mark-callout--shot",
+   "type": "component",
+   "definitionId": "mark-callout--shot--definition",
+   "parameters": {
+    "scene": "mark/callout",
+    "alt": "损失曲线图上，先用手绘椭圆圈出曲线上的小鼓包并打上斜线，标签“学习率预热”带箭头指向它；再用方框框出两条曲线末端的差距，标签“最终损失更低”。"
+   }
+  },
+  "mark-speech-bubble--notes": {
+   "id": "mark-speech-bubble--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "mark-speech-bubble--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "对图的某处发一句评论，或者做对话：手绘气泡的尾巴指向舞台上的一点，轮廓一笔画出并收在尾尖，纸色填充后逐字打出文字。一步一个气泡，上一个先退场。"
+      }
+     ]
+    },
+    {
+     "id": "mark-speech-bubble--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "bubbles",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 每项气泡框 "
+      },
+      {
+       "type": "text",
+       "text": "x",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "y",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "w",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "h",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、尾尖 "
+      },
+      {
+       "type": "text",
+       "text": "tx",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "ty",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（都是舞台 %）和 "
+      },
+      {
+       "type": "text",
+       "text": "text",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "；底图参数同上。"
+      }
+     ]
+    }
+   ]
+  },
+  "mark-speech-bubble--shot": {
+   "id": "mark-speech-bubble--shot",
+   "type": "component",
+   "definitionId": "mark-speech-bubble--shot--definition",
+   "parameters": {
+    "scene": "mark/speech-bubble",
+    "alt": "损失曲线图上，手绘气泡的尾巴指向曲线的小鼓包，写着“这个小鼓包是学习率预热”；随后换成指向曲线末端的气泡“训练越久，差距越稳定”。"
+   }
+  },
+  "mark-spotlight--notes": {
+   "id": "mark-spotlight--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "mark-spotlight--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "逐行讲代码、逐项讲公式时用：画面其余部分压暗，柔边的圆角亮区贴合目标框，一步换一个目标，亮区滑过去（同一个物体换位置，不是切换），标签跟着换。"
+      }
+     ]
+    },
+    {
+     "id": "mark-spotlight--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "targets",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 每项目标框 "
+      },
+      {
+       "type": "text",
+       "text": "x",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "y",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "w",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "h",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（舞台 %）和 "
+      },
+      {
+       "type": "text",
+       "text": "label",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "；"
+      },
+      {
+       "type": "text",
+       "text": "dim",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 压暗程度（0–1，默认 0.82）；底图参数同上，默认是代码，第 k 行的框见开头的瞄准说明。"
+      }
+     ]
+    }
+   ]
+  },
+  "mark-spotlight--shot": {
+   "id": "mark-spotlight--shot",
+   "type": "component",
+   "definitionId": "mark-spotlight--shot--definition",
+   "parameters": {
+    "scene": "mark/spotlight",
+    "alt": "一段注意力代码，画面变暗，只留一块柔边的亮区，依次照亮计算相似度、softmax 和加权求和三行，旁边的标签说明每一行。"
+   }
+  }
+ },
+ "steps": {
+  "motion--step": {
+   "id": "motion--step",
+   "sectionId": "motion",
+   "visuals": [
+    {
+     "blockId": "motion--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "gsap-emphasis--step-0": {
+   "id": "gsap-emphasis--step-0",
+   "sectionId": "gsap-emphasis",
+   "visuals": [
+    {
+     "blockId": "gsap-emphasis--emphasis-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-emphasis--paragraph-1--narration"
+   ]
+  },
+  "gsap-emphasis--step-1": {
+   "id": "gsap-emphasis--step-1",
+   "sectionId": "gsap-emphasis",
+   "visuals": [
+    {
+     "blockId": "gsap-emphasis--emphasis-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-emphasis--paragraph-2--narration"
+   ]
+  },
+  "gsap-emphasis--step-2": {
+   "id": "gsap-emphasis--step-2",
+   "sectionId": "gsap-emphasis",
+   "visuals": [
+    {
+     "blockId": "gsap-emphasis--emphasis-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-emphasis--paragraph-3--narration"
+   ]
+  },
+  "gsap-emphasis--step-3": {
+   "id": "gsap-emphasis--step-3",
+   "sectionId": "gsap-emphasis",
+   "visuals": [
+    {
+     "blockId": "gsap-emphasis--emphasis-scene",
+     "visible": true,
+     "state": "legacy-3"
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-emphasis--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-emphasis--paragraph-4--narration"
+   ]
+  },
+  "motion-emphasis--step-0": {
+   "id": "motion-emphasis--step-0",
+   "sectionId": "motion-emphasis",
+   "visuals": [
+    {
+     "blockId": "motion-emphasis--emphasis-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-emphasis--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-emphasis--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-emphasis--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-emphasis--paragraph-1--narration"
+   ]
+  },
+  "motion-emphasis--step-1": {
+   "id": "motion-emphasis--step-1",
+   "sectionId": "motion-emphasis",
+   "visuals": [
+    {
+     "blockId": "motion-emphasis--emphasis-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-emphasis--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-emphasis--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-emphasis--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-emphasis--paragraph-2--narration"
+   ]
+  },
+  "motion-emphasis--step-2": {
+   "id": "motion-emphasis--step-2",
+   "sectionId": "motion-emphasis",
+   "visuals": [
+    {
+     "blockId": "motion-emphasis--emphasis-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "motion-emphasis--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-emphasis--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-emphasis--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-emphasis--paragraph-3--narration"
+   ]
+  },
+  "motion-blur--step-0": {
+   "id": "motion-blur--step-0",
+   "sectionId": "motion-blur",
+   "visuals": [
+    {
+     "blockId": "motion-blur--blur-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-blur--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-blur--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-blur--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-blur--paragraph-1--narration"
+   ]
+  },
+  "motion-blur--step-1": {
+   "id": "motion-blur--step-1",
+   "sectionId": "motion-blur",
+   "visuals": [
+    {
+     "blockId": "motion-blur--blur-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-blur--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-blur--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-blur--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-blur--paragraph-2--narration"
+   ]
+  },
+  "motion-blur--step-2": {
+   "id": "motion-blur--step-2",
+   "sectionId": "motion-blur",
+   "visuals": [
+    {
+     "blockId": "motion-blur--blur-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "motion-blur--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-blur--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-blur--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-blur--paragraph-3--narration"
+   ]
+  },
+  "motion-pulse--step-0": {
+   "id": "motion-pulse--step-0",
+   "sectionId": "motion-pulse",
+   "visuals": [
+    {
+     "blockId": "motion-pulse--pulse-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-pulse--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-pulse--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-pulse--paragraph-1--narration"
+   ]
+  },
+  "motion-pulse--step-1": {
+   "id": "motion-pulse--step-1",
+   "sectionId": "motion-pulse",
+   "visuals": [
+    {
+     "blockId": "motion-pulse--pulse-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-pulse--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-pulse--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-pulse--paragraph-2--narration"
+   ]
+  },
+  "remotion-loop-pulse--step-0": {
+   "id": "remotion-loop-pulse--step-0",
+   "sectionId": "remotion-loop-pulse",
+   "visuals": [
+    {
+     "blockId": "remotion-loop-pulse--loop-pulse-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "remotion-loop-pulse--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-loop-pulse--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-loop-pulse--paragraph-1--narration"
+   ]
+  },
+  "remotion-loop-pulse--step-1": {
+   "id": "remotion-loop-pulse--step-1",
+   "sectionId": "remotion-loop-pulse",
+   "visuals": [
+    {
+     "blockId": "remotion-loop-pulse--loop-pulse-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "remotion-loop-pulse--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-loop-pulse--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-loop-pulse--paragraph-2--narration"
+   ]
+  },
+  "sketch--step": {
+   "id": "sketch--step",
+   "sectionId": "sketch",
+   "visuals": [
+    {
+     "blockId": "sketch--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-pen-annotate--step-0": {
+   "id": "mark-pen-annotate--step-0",
+   "sectionId": "mark-pen-annotate",
+   "visuals": [
+    {
+     "blockId": "mark-pen-annotate--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-pen-annotate--shot",
+     "visible": true,
+     "state": "mark-1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-pen-annotate--step-1": {
+   "id": "mark-pen-annotate--step-1",
+   "sectionId": "mark-pen-annotate",
+   "visuals": [
+    {
+     "blockId": "mark-pen-annotate--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-pen-annotate--shot",
+     "visible": true,
+     "state": "mark-2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-pen-annotate--step-2": {
+   "id": "mark-pen-annotate--step-2",
+   "sectionId": "mark-pen-annotate",
+   "visuals": [
+    {
+     "blockId": "mark-pen-annotate--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-pen-annotate--shot",
+     "visible": true,
+     "state": "mark-3"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-keyword-marks--step-0": {
+   "id": "mark-keyword-marks--step-0",
+   "sectionId": "mark-keyword-marks",
+   "visuals": [
+    {
+     "blockId": "mark-keyword-marks--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-keyword-marks--shot",
+     "visible": true,
+     "state": "mark-1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-keyword-marks--step-1": {
+   "id": "mark-keyword-marks--step-1",
+   "sectionId": "mark-keyword-marks",
+   "visuals": [
+    {
+     "blockId": "mark-keyword-marks--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-keyword-marks--shot",
+     "visible": true,
+     "state": "mark-2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-keyword-marks--step-2": {
+   "id": "mark-keyword-marks--step-2",
+   "sectionId": "mark-keyword-marks",
+   "visuals": [
+    {
+     "blockId": "mark-keyword-marks--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-keyword-marks--shot",
+     "visible": true,
+     "state": "mark-3"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-outline-callout--step-0": {
+   "id": "show-outline-callout--step-0",
+   "sectionId": "show-outline-callout",
+   "visuals": [
+    {
+     "blockId": "show-outline-callout--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-outline-callout--shot",
+     "visible": true,
+     "state": "table"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-outline-callout--step-1": {
+   "id": "show-outline-callout--step-1",
+   "sectionId": "show-outline-callout",
+   "visuals": [
+    {
+     "blockId": "show-outline-callout--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-outline-callout--shot",
+     "visible": true,
+     "state": "circle"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-sketch-checklist--step-0": {
+   "id": "mark-sketch-checklist--step-0",
+   "sectionId": "mark-sketch-checklist",
+   "visuals": [
+    {
+     "blockId": "mark-sketch-checklist--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-sketch-checklist--shot",
+     "visible": true,
+     "state": "title"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-sketch-checklist--step-1": {
+   "id": "mark-sketch-checklist--step-1",
+   "sectionId": "mark-sketch-checklist",
+   "visuals": [
+    {
+     "blockId": "mark-sketch-checklist--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-sketch-checklist--shot",
+     "visible": true,
+     "state": "check-1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-sketch-checklist--step-2": {
+   "id": "mark-sketch-checklist--step-2",
+   "sectionId": "mark-sketch-checklist",
+   "visuals": [
+    {
+     "blockId": "mark-sketch-checklist--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-sketch-checklist--shot",
+     "visible": true,
+     "state": "check-2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-sketch-checklist--step-3": {
+   "id": "mark-sketch-checklist--step-3",
+   "sectionId": "mark-sketch-checklist",
+   "visuals": [
+    {
+     "blockId": "mark-sketch-checklist--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-sketch-checklist--shot",
+     "visible": true,
+     "state": "check-3"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-sketch-flow--step-0": {
+   "id": "mark-sketch-flow--step-0",
+   "sectionId": "mark-sketch-flow",
+   "visuals": [
+    {
+     "blockId": "mark-sketch-flow--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-sketch-flow--shot",
+     "visible": true,
+     "state": "node-1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-sketch-flow--step-1": {
+   "id": "mark-sketch-flow--step-1",
+   "sectionId": "mark-sketch-flow",
+   "visuals": [
+    {
+     "blockId": "mark-sketch-flow--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-sketch-flow--shot",
+     "visible": true,
+     "state": "node-2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-sketch-flow--step-2": {
+   "id": "mark-sketch-flow--step-2",
+   "sectionId": "mark-sketch-flow",
+   "visuals": [
+    {
+     "blockId": "mark-sketch-flow--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-sketch-flow--shot",
+     "visible": true,
+     "state": "node-3"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-sketch-flow--step-3": {
+   "id": "mark-sketch-flow--step-3",
+   "sectionId": "mark-sketch-flow",
+   "visuals": [
+    {
+     "blockId": "mark-sketch-flow--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-sketch-flow--shot",
+     "visible": true,
+     "state": "node-4"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-sketch-flow--step-4": {
+   "id": "mark-sketch-flow--step-4",
+   "sectionId": "mark-sketch-flow",
+   "visuals": [
+    {
+     "blockId": "mark-sketch-flow--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-sketch-flow--shot",
+     "visible": true,
+     "state": "node-5"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-whiteboard-sketch--step-0": {
+   "id": "show-whiteboard-sketch--step-0",
+   "sectionId": "show-whiteboard-sketch",
+   "visuals": [
+    {
+     "blockId": "show-whiteboard-sketch--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-whiteboard-sketch--shot",
+     "visible": true,
+     "state": "draw"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-whiteboard-sketch--step-1": {
+   "id": "show-whiteboard-sketch--step-1",
+   "sectionId": "show-whiteboard-sketch",
+   "visuals": [
+    {
+     "blockId": "show-whiteboard-sketch--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-whiteboard-sketch--shot",
+     "visible": true,
+     "state": "caption"
+    }
+   ],
+   "narrationIds": []
+  },
+  "callouts--step": {
+   "id": "callouts--step",
+   "sectionId": "callouts",
+   "visuals": [
+    {
+     "blockId": "callouts--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-callout--step-0": {
+   "id": "mark-callout--step-0",
+   "sectionId": "mark-callout",
+   "visuals": [
+    {
+     "blockId": "mark-callout--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-callout--shot",
+     "visible": true,
+     "state": "callout-1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-callout--step-1": {
+   "id": "mark-callout--step-1",
+   "sectionId": "mark-callout",
+   "visuals": [
+    {
+     "blockId": "mark-callout--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-callout--shot",
+     "visible": true,
+     "state": "callout-2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-speech-bubble--step-0": {
+   "id": "mark-speech-bubble--step-0",
+   "sectionId": "mark-speech-bubble",
+   "visuals": [
+    {
+     "blockId": "mark-speech-bubble--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-speech-bubble--shot",
+     "visible": true,
+     "state": "say-1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-speech-bubble--step-1": {
+   "id": "mark-speech-bubble--step-1",
+   "sectionId": "mark-speech-bubble",
+   "visuals": [
+    {
+     "blockId": "mark-speech-bubble--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-speech-bubble--shot",
+     "visible": true,
+     "state": "say-2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-spotlight--step-0": {
+   "id": "mark-spotlight--step-0",
+   "sectionId": "mark-spotlight",
+   "visuals": [
+    {
+     "blockId": "mark-spotlight--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-spotlight--shot",
+     "visible": true,
+     "state": "target-1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-spotlight--step-1": {
+   "id": "mark-spotlight--step-1",
+   "sectionId": "mark-spotlight",
+   "visuals": [
+    {
+     "blockId": "mark-spotlight--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-spotlight--shot",
+     "visible": true,
+     "state": "target-2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-spotlight--step-2": {
+   "id": "mark-spotlight--step-2",
+   "sectionId": "mark-spotlight",
+   "visuals": [
+    {
+     "blockId": "mark-spotlight--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-spotlight--shot",
+     "visible": true,
+     "state": "target-3"
+    }
+   ],
+   "narrationIds": []
+  }
+ },
+ "narrations": {
+  "gsap-emphasis--paragraph-1--narration": {
+   "id": "gsap-emphasis--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "三个选项落下，落地时压扁再弹起。"
+    }
+   ]
+  },
+  "gsap-emphasis--paragraph-2--narration": {
+   "id": "gsap-emphasis--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "冒泡排序是 O(n²)，这个选项左右抖动并变红。"
+    }
+   ]
+  },
+  "gsap-emphasis--paragraph-3--narration": {
+   "id": "gsap-emphasis--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "归并排序是对的，它跳动两次并变绿。"
+    }
+   ]
+  },
+  "gsap-emphasis--paragraph-4--narration": {
+   "id": "gsap-emphasis--paragraph-4--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "下划线按自定义的缓动曲线划出，略微超过再回到原位。"
+    }
+   ]
+  },
+  "motion-emphasis--paragraph-1--narration": {
+   "id": "motion-emphasis--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "循环这两行把所有数加起来。"
+    }
+   ]
+  },
+  "motion-emphasis--paragraph-2--narration": {
+   "id": "motion-emphasis--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "问题在 return 这一行：高亮条移过去，变红，抖一抖。"
+    }
+   ]
+  },
+  "motion-emphasis--paragraph-3--narration": {
+   "id": "motion-emphasis--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "多减了一个 1。"
+    }
+   ]
+  },
+  "motion-blur--paragraph-1--narration": {
+   "id": "motion-blur--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "四种学习范式。"
+    }
+   ]
+  },
+  "motion-blur--paragraph-2--narration": {
+   "id": "motion-blur--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "先讲强化学习：它放大，其余变模糊。"
+    }
+   ]
+  },
+  "motion-blur--paragraph-3--narration": {
+   "id": "motion-blur--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "再讲自监督学习。"
+    }
+   ]
+  },
+  "motion-pulse--paragraph-1--narration": {
+   "id": "motion-pulse--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "领导者的心跳：放大缩小，重复四下。"
+    }
+   ]
+  },
+  "motion-pulse--paragraph-2--narration": {
+   "id": "motion-pulse--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "广播：波纹一圈圈向外扩散，节点依次亮起。"
+    }
+   ]
+  },
+  "remotion-loop-pulse--paragraph-1--narration": {
+   "id": "remotion-loop-pulse--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "客户端和服务器之间连着一条线路。"
+    }
+   ]
+  },
+  "remotion-loop-pulse--paragraph-2--narration": {
+   "id": "remotion-loop-pulse--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "请求一次次发往服务器，响应一次次返回，服务器上的光圈不断扩散。"
+    }
+   ]
+  }
+ },
+ "assets": {},
+ "definitions": {
+  "gsap-emphasis--emphasis-scene--definition": {
+   "id": "gsap-emphasis--emphasis-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/gsap/emphasis.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    },
+    {
+     "id": "legacy-3",
+     "legacyIndex": 3
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     1000,
+     1000,
+     1000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "三个选项落下弹跳，错误的选项抖动变红，正确的选项跳动变绿，下面画出下划线。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-emphasis--emphasis-scene--definition": {
+   "id": "motion-emphasis--emphasis-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/emphasis.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     800,
+     1300,
+     1000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一段求平均值的代码：高亮条先框住循环，再移到 return 一行变红并抖动，最后多余的“- 1”弹一下。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-blur--blur-scene--definition": {
+   "id": "motion-blur--blur-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/blur.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     900,
+     800,
+     800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "机器学习的四种范式卡片：先依次出现，再让正在讲的一张清晰放大，其他的模糊变淡。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-pulse--pulse-scene--definition": {
+   "id": "motion-pulse--pulse-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/pulse.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     2300
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "领导者节点跳动四下，然后向外发出一圈圈广播，周围的节点依次响应。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "remotion-loop-pulse--loop-pulse-scene--definition": {
+   "id": "remotion-loop-pulse--loop-pulse-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/remotion/loop-pulse.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     600,
+     2400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "客户端与服务器之间，请求和响应的小方块来回往返，服务器周围一圈圈脉冲。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "mark-pen-annotate--shot--definition": {
+   "id": "mark-pen-annotate--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/mark/pen-annotate.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "marks": {
+      "title": "标注（每步一个）",
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "shape": {
+         "title": "形状",
+         "type": "string",
+         "enum": [
+          "loop",
+          "underline",
+          "highlight",
+          "strike",
+          "box",
+          "bracket",
+          "arrow"
+         ]
+        },
+        "x": {
+         "title": "左边（舞台宽度的 %）",
+         "type": "number"
+        },
+        "y": {
+         "title": "上边（舞台高度的 %）",
+         "type": "number"
+        },
+        "w": {
+         "title": "宽（%）",
+         "type": "number"
+        },
+        "h": {
+         "title": "高（%）",
+         "type": "number"
+        },
+        "label": {
+         "title": "说明",
+         "type": "string"
+        },
+        "fromX": {
+         "title": "箭头起点 x（%）",
+         "type": "number"
+        },
+        "fromY": {
+         "title": "箭头起点 y（%）",
+         "type": "number"
+        }
+       }
+      }
+     },
+     "ink": {
+      "title": "墨色（设计令牌名）",
+      "type": "string",
+      "enum": [
+       "accent",
+       "danger",
+       "ok",
+       "warn",
+       "ink"
+      ]
+     },
+     "backdrop": {
+      "title": "底图",
+      "type": "string",
+      "enum": [
+       "formula",
+       "code",
+       "figure",
+       "none"
+      ]
+     },
+     "code": {
+      "title": "代码（底图为 code 时，每行一条）",
+      "type": "string"
+     },
+     "svg": {
+      "title": "自己的底图（16:9 的 SVG 文本，盖过 backdrop）",
+      "type": "string"
+     },
+     "guides": {
+      "title": "显示 10% 网格，用来读出目标的百分比",
+      "type": "boolean"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "mark-1"
+    },
+    {
+     "id": "mark-2"
+    },
+    {
+     "id": "mark-3"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2600,
+     2200,
+     3600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一支马克笔先圈出公式里的 softmax，再划出分母 √dk，最后从左下画箭头指向 V，每次画完在旁边写上说明。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "mark-keyword-marks--shot--definition": {
+   "id": "mark-keyword-marks--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/mark/keyword-marks.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "text": {
+      "title": "句子",
+      "type": "string"
+     },
+     "marks": {
+      "title": "标记（每步一个）",
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "word": {
+         "title": "关键词",
+         "type": "string"
+        },
+        "style": {
+         "title": "笔法",
+         "type": "string",
+         "enum": [
+          "loop",
+          "underline",
+          "highlight",
+          "strike",
+          "box",
+          "bracket"
+         ]
+        },
+        "note": {
+         "title": "注释（可选）",
+         "type": "string"
+        }
+       }
+      }
+     },
+     "ink": {
+      "title": "墨色（设计令牌名）",
+      "type": "string",
+      "enum": [
+       "accent",
+       "danger",
+       "ok",
+       "warn",
+       "ink"
+      ]
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "mark-1"
+    },
+    {
+     "id": "mark-2"
+    },
+    {
+     "id": "mark-3"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2400,
+     1800,
+     3000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "句子“注意力把每个词的表示，变成所有词表示的加权平均”出现，依次划出“每个词”、圈出“所有词”、用荧光笔涂“加权平均”，并连出注释“权重 = softmax(相似度)”。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "show-outline-callout--shot--definition": {
+   "id": "show-outline-callout--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/show/outline-callout.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文字"
+     },
+     "header": {
+      "type": "array",
+      "title": "表头",
+      "items": {
+       "type": "string"
+      }
+     },
+     "rows": {
+      "type": "array",
+      "title": "行",
+      "items": {
+       "type": "object",
+       "properties": {
+        "cells": {
+         "type": "array",
+         "title": "单元格",
+         "items": {
+          "type": "string"
+         }
+        }
+       }
+      }
+     },
+     "pick": {
+      "type": "number",
+      "title": "圈出的行"
+     },
+     "caption": {
+      "type": "string",
+      "title": "出处"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "table"
+    },
+    {
+     "id": "circle"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     900,
+     2600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "四行对比表，“+ 两者结合 78.6”被顺时针圈出并突出，其余行变淡，下方注明示意数据。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "mark-sketch-checklist--shot--definition": {
+   "id": "mark-sketch-checklist--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/mark/sketch-checklist.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "title": {
+      "title": "标题",
+      "type": "string"
+     },
+     "keyword": {
+      "title": "要圈出的词",
+      "type": "string"
+     },
+     "items": {
+      "title": "各项（每步勾一项）",
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "title"
+    },
+    {
+     "id": "check-1"
+    },
+    {
+     "id": "check-2"
+    },
+    {
+     "id": "check-3"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     3000,
+     1300,
+     1300,
+     2600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "纸卡片上写着“读懂注意力的三步”，标题下划一道线、“三步”被圈出，下面三项依次打勾：算相似度、归一化、加权求和。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "mark-sketch-flow--shot--definition": {
+   "id": "mark-sketch-flow--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/mark/sketch-flow.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "nodes": {
+      "title": "节点（每步一个）",
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "key": {
+      "title": "关键节点序号（从 0 起）",
+      "type": "number"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "node-1"
+    },
+    {
+     "id": "node-2"
+    },
+    {
+     "id": "node-3"
+    },
+    {
+     "id": "node-4"
+    },
+    {
+     "id": "node-5"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1100,
+     1300,
+     1600,
+     1300,
+     2600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一张手绘流程图逐个画出：分词、词向量、注意力 ×6、前馈层、下一个词，箭头先到，方框后画，“注意力 ×6”用强调色并打斜线。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "show-whiteboard-sketch--shot--definition": {
+   "id": "show-whiteboard-sketch--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/show/whiteboard-sketch.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文字"
+     },
+     "strokes": {
+      "type": "array",
+      "title": "笔画",
+      "items": {
+       "type": "object",
+       "properties": {
+        "d": {
+         "type": "string",
+         "title": "路径"
+        },
+        "accent": {
+         "type": "boolean",
+         "title": "强调色"
+        }
+       }
+      }
+     },
+     "labels": {
+      "type": "array",
+      "title": "文字",
+      "items": {
+       "type": "object",
+       "properties": {
+        "text": {
+         "type": "string",
+         "title": "文字"
+        },
+        "x": {
+         "type": "number",
+         "title": "x"
+        },
+        "y": {
+         "type": "number",
+         "title": "y"
+        },
+        "after": {
+         "type": "number",
+         "title": "在第几笔后出现"
+        }
+       }
+      }
+     },
+     "viewBox": {
+      "type": "string",
+      "title": "视框"
+     },
+     "caption": {
+      "type": "string",
+      "title": "说明"
+     },
+     "seed": {
+      "type": "number",
+      "title": "随机种子"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "draw"
+    },
+    {
+     "id": "caption"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     3800,
+     2600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "手绘的“数据 → 模型 → 预测”示意图一笔一笔画出，“模型”被强调色圈出，下方写着“从数据学一个映射，再用它做预测”。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "mark-callout--shot--definition": {
+   "id": "mark-callout--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/mark/callout.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "callouts": {
+      "title": "标注（每步一个）",
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "shape": {
+         "title": "形状",
+         "type": "string",
+         "enum": [
+          "ellipse",
+          "box"
+         ]
+        },
+        "x": {
+         "title": "左边（舞台宽度的 %）",
+         "type": "number"
+        },
+        "y": {
+         "title": "上边（舞台高度的 %）",
+         "type": "number"
+        },
+        "w": {
+         "title": "宽（%）",
+         "type": "number"
+        },
+        "h": {
+         "title": "高（%）",
+         "type": "number"
+        },
+        "label": {
+         "title": "标签",
+         "type": "string"
+        },
+        "lx": {
+         "title": "标签中心 x（%）",
+         "type": "number"
+        },
+        "ly": {
+         "title": "标签中心 y（%）",
+         "type": "number"
+        },
+        "connector": {
+         "title": "连线",
+         "type": "string",
+         "enum": [
+          "line",
+          "arrow",
+          "none"
+         ]
+        },
+        "fill": {
+         "title": "斜线填充",
+         "type": "boolean"
+        }
+       }
+      }
+     },
+     "ink": {
+      "title": "墨色（设计令牌名）",
+      "type": "string",
+      "enum": [
+       "accent",
+       "danger",
+       "ok",
+       "warn",
+       "ink"
+      ]
+     },
+     "backdrop": {
+      "title": "底图",
+      "type": "string",
+      "enum": [
+       "formula",
+       "code",
+       "figure",
+       "none"
+      ]
+     },
+     "code": {
+      "title": "代码（底图为 code 时，每行一条）",
+      "type": "string"
+     },
+     "svg": {
+      "title": "自己的底图（16:9 的 SVG 文本，盖过 backdrop）",
+      "type": "string"
+     },
+     "guides": {
+      "title": "显示 10% 网格，用来读出目标的百分比",
+      "type": "boolean"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "callout-1"
+    },
+    {
+     "id": "callout-2"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2600,
+     3200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "损失曲线图上，先用手绘椭圆圈出曲线上的小鼓包并打上斜线，标签“学习率预热”带箭头指向它；再用方框框出两条曲线末端的差距，标签“最终损失更低”。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "mark-speech-bubble--shot--definition": {
+   "id": "mark-speech-bubble--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/mark/speech-bubble.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "bubbles": {
+      "title": "气泡（每步一个）",
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "x": {
+         "title": "左边（舞台宽度的 %）",
+         "type": "number"
+        },
+        "y": {
+         "title": "上边（舞台高度的 %）",
+         "type": "number"
+        },
+        "w": {
+         "title": "宽（%）",
+         "type": "number"
+        },
+        "h": {
+         "title": "高（%）",
+         "type": "number"
+        },
+        "tx": {
+         "title": "尾尖 x（%）",
+         "type": "number"
+        },
+        "ty": {
+         "title": "尾尖 y（%）",
+         "type": "number"
+        },
+        "text": {
+         "title": "文字",
+         "type": "string"
+        }
+       }
+      }
+     },
+     "backdrop": {
+      "title": "底图",
+      "type": "string",
+      "enum": [
+       "formula",
+       "code",
+       "figure",
+       "none"
+      ]
+     },
+     "code": {
+      "title": "代码（底图为 code 时，每行一条）",
+      "type": "string"
+     },
+     "svg": {
+      "title": "自己的底图（16:9 的 SVG 文本，盖过 backdrop）",
+      "type": "string"
+     },
+     "guides": {
+      "title": "显示 10% 网格，用来读出目标的百分比",
+      "type": "boolean"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "say-1"
+    },
+    {
+     "id": "say-2"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     3000,
+     3200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "损失曲线图上，手绘气泡的尾巴指向曲线的小鼓包，写着“这个小鼓包是学习率预热”；随后换成指向曲线末端的气泡“训练越久，差距越稳定”。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "mark-spotlight--shot--definition": {
+   "id": "mark-spotlight--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/mark/spotlight.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "targets": {
+      "title": "目标（每步一个）",
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "x": {
+         "title": "左边（舞台宽度的 %）",
+         "type": "number"
+        },
+        "y": {
+         "title": "上边（舞台高度的 %）",
+         "type": "number"
+        },
+        "w": {
+         "title": "宽（%）",
+         "type": "number"
+        },
+        "h": {
+         "title": "高（%）",
+         "type": "number"
+        },
+        "label": {
+         "title": "标签",
+         "type": "string"
+        }
+       }
+      }
+     },
+     "dim": {
+      "title": "压暗程度（0–1）",
+      "type": "number"
+     },
+     "backdrop": {
+      "title": "底图",
+      "type": "string",
+      "enum": [
+       "formula",
+       "code",
+       "figure",
+       "none"
+      ]
+     },
+     "code": {
+      "title": "代码（底图为 code 时，每行一条）",
+      "type": "string"
+     },
+     "svg": {
+      "title": "自己的底图（16:9 的 SVG 文本，盖过 backdrop）",
+      "type": "string"
+     },
+     "guides": {
+      "title": "显示 10% 网格，用来读出目标的百分比",
+      "type": "boolean"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "target-1"
+    },
+    {
+     "id": "target-2"
+    },
+    {
+     "id": "target-3"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2000,
+     1800,
+     2600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一段注意力代码，画面变暗，只留一块柔边的亮区，依次照亮计算相似度、softmax 和加权求和三行，旁边的标签说明每一行。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  }
+ },
+ "production": {
+  "defaults": {
+   "voiceSource": {
+    "type": "none"
+   },
+   "trailingPauseMs": 0
+  },
+  "stepOverrides": {},
+  "mediaClips": []
+ }
+}

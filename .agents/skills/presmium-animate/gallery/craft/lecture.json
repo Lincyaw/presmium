@@ -1,0 +1,3238 @@
+{
+ "schemaVersion": 1,
+ "id": "animation-craft",
+ "metadata": {
+  "title": "动效技法",
+  "lang": "zh-CN",
+  "description": "缓动与弹簧、关键帧与定格、退场与庆祝、变量驱动的布局。",
+  "tags": [
+   "动画参考"
+  ],
+  "plugins": [
+   "@lincyaw/addon-motion",
+   "@lincyaw/addon-lecture"
+  ],
+  "renderers": {
+   "web": {},
+   "lecture": {}
+  }
+ },
+ "sectionOrder": [
+  "easing",
+  "anime-easing-lanes",
+  "motion-easings",
+  "remotion-easing",
+  "motion-spring-compare",
+  "remotion-spring-chain",
+  "remotion-beam-prune",
+  "frames",
+  "anime-ball-keyframes",
+  "remotion-freeze",
+  "remotion-posterize",
+  "show-stop-motion",
+  "exits",
+  "show-physical-exit",
+  "show-confetti",
+  "tools",
+  "gsap-utils",
+  "motion-cssvar"
+ ],
+ "sections": {
+  "easing": {
+   "id": "easing",
+   "title": "缓动与弹簧",
+   "level": 1,
+   "children": [
+    "easing--intro"
+   ],
+   "stepOrder": [
+    "easing--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "anime-easing-lanes": {
+   "id": "anime-easing-lanes",
+   "title": "缓动函数一览",
+   "level": 2,
+   "children": [
+    "anime-easing-lanes--easing-lanes-scene",
+    "anime-easing-lanes--paragraph-1",
+    "anime-easing-lanes--paragraph-2"
+   ],
+   "stepOrder": [
+    "anime-easing-lanes--step-0",
+    "anime-easing-lanes--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-easings": {
+   "id": "motion-easings",
+   "title": "缓动一览",
+   "level": 2,
+   "children": [
+    "motion-easings--easings-scene",
+    "motion-easings--paragraph-1",
+    "motion-easings--paragraph-2"
+   ],
+   "stepOrder": [
+    "motion-easings--step-0",
+    "motion-easings--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "remotion-easing": {
+   "id": "remotion-easing",
+   "title": "缓动函数一览",
+   "level": 2,
+   "children": [
+    "remotion-easing--easing-scene",
+    "remotion-easing--paragraph-1",
+    "remotion-easing--paragraph-2"
+   ],
+   "stepOrder": [
+    "remotion-easing--step-0",
+    "remotion-easing--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-spring-compare": {
+   "id": "motion-spring-compare",
+   "title": "弹簧对比：回弹越大，停得越晚",
+   "level": 2,
+   "children": [
+    "motion-spring-compare--spring-compare-scene",
+    "motion-spring-compare--paragraph-1",
+    "motion-spring-compare--paragraph-2"
+   ],
+   "stepOrder": [
+    "motion-spring-compare--step-0",
+    "motion-spring-compare--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "remotion-spring-chain": {
+   "id": "remotion-spring-chain",
+   "title": "用 measureSpring 串联",
+   "level": 2,
+   "children": [
+    "remotion-spring-chain--spring-chain-scene",
+    "remotion-spring-chain--paragraph-1",
+    "remotion-spring-chain--paragraph-2"
+   ],
+   "stepOrder": [
+    "remotion-spring-chain--step-0",
+    "remotion-spring-chain--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "remotion-beam-prune": {
+   "id": "remotion-beam-prune",
+   "title": "反向弹簧：退出",
+   "level": 2,
+   "children": [
+    "remotion-beam-prune--beam-prune-scene",
+    "remotion-beam-prune--paragraph-1",
+    "remotion-beam-prune--paragraph-2"
+   ],
+   "stepOrder": [
+    "remotion-beam-prune--step-0",
+    "remotion-beam-prune--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "frames": {
+   "id": "frames",
+   "title": "关键帧与定格",
+   "level": 1,
+   "children": [
+    "frames--intro"
+   ],
+   "stepOrder": [
+    "frames--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "anime-ball-keyframes": {
+   "id": "anime-ball-keyframes",
+   "title": "关键帧：弹跳的球",
+   "level": 2,
+   "children": [
+    "anime-ball-keyframes--ball-keyframes-scene",
+    "anime-ball-keyframes--paragraph-1",
+    "anime-ball-keyframes--paragraph-2"
+   ],
+   "stepOrder": [
+    "anime-ball-keyframes--step-0",
+    "anime-ball-keyframes--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "remotion-freeze": {
+   "id": "remotion-freeze",
+   "title": "定格：Freeze",
+   "level": 2,
+   "children": [
+    "remotion-freeze--freeze-scene",
+    "remotion-freeze--paragraph-1",
+    "remotion-freeze--paragraph-2"
+   ],
+   "stepOrder": [
+    "remotion-freeze--step-0",
+    "remotion-freeze--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "remotion-posterize": {
+   "id": "remotion-posterize",
+   "title": "定格动画：posterize",
+   "level": 2,
+   "children": [
+    "remotion-posterize--posterize-scene",
+    "remotion-posterize--paragraph-1",
+    "remotion-posterize--paragraph-2"
+   ],
+   "stepOrder": [
+    "remotion-posterize--step-0",
+    "remotion-posterize--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "show-stop-motion": {
+   "id": "show-stop-motion",
+   "title": "定格动画：一拍二",
+   "level": 2,
+   "children": [
+    "show-stop-motion--notes",
+    "show-stop-motion--shot"
+   ],
+   "stepOrder": [
+    "show-stop-motion--step-0",
+    "show-stop-motion--step-1"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "exits": {
+   "id": "exits",
+   "title": "退场与庆祝",
+   "level": 1,
+   "children": [
+    "exits--intro"
+   ],
+   "stepOrder": [
+    "exits--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "show-physical-exit": {
+   "id": "show-physical-exit",
+   "title": "物理退场：排除选项",
+   "level": 2,
+   "children": [
+    "show-physical-exit--notes",
+    "show-physical-exit--shot"
+   ],
+   "stepOrder": [
+    "show-physical-exit--step-0",
+    "show-physical-exit--step-1",
+    "show-physical-exit--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "show-confetti": {
+   "id": "show-confetti",
+   "title": "彩纸庆祝",
+   "level": 2,
+   "children": [
+    "show-confetti--notes",
+    "show-confetti--shot"
+   ],
+   "stepOrder": [
+    "show-confetti--step-0",
+    "show-confetti--step-1"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "tools": {
+   "id": "tools",
+   "title": "变量与工具",
+   "level": 1,
+   "children": [
+    "tools--intro"
+   ],
+   "stepOrder": [
+    "tools--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "gsap-utils": {
+   "id": "gsap-utils",
+   "title": "工具函数：mapRange、interpolate、distribute",
+   "level": 2,
+   "children": [
+    "gsap-utils--utils-scene",
+    "gsap-utils--paragraph-1",
+    "gsap-utils--paragraph-2",
+    "gsap-utils--paragraph-3"
+   ],
+   "stepOrder": [
+    "gsap-utils--step-0",
+    "gsap-utils--step-1",
+    "gsap-utils--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-cssvar": {
+   "id": "motion-cssvar",
+   "title": "一个 CSS 变量驱动整个布局",
+   "level": 2,
+   "children": [
+    "motion-cssvar--cssvar-scene",
+    "motion-cssvar--paragraph-1",
+    "motion-cssvar--paragraph-2"
+   ],
+   "stepOrder": [
+    "motion-cssvar--step-0",
+    "motion-cssvar--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  }
+ },
+ "blocks": {
+  "easing--intro": {
+   "id": "easing--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "easing--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "缓动函数与弹簧参数的对比和串联。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-easing-lanes--easing-lanes-scene": {
+   "id": "anime-easing-lanes--easing-lanes-scene",
+   "type": "component",
+   "definitionId": "anime-easing-lanes--easing-lanes-scene--definition",
+   "parameters": {
+    "scene": "anime/easing-lanes",
+    "alt": "十种缓动函数并排比较：同样的距离、同样的时长，快慢分布不同。"
+   }
+  },
+  "anime-easing-lanes--paragraph-1": {
+   "id": "anime-easing-lanes--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-easing-lanes--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "同一段距离、同样的时长，每一行用一种缓动跑过去。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-easing-lanes--paragraph-2": {
+   "id": "anime-easing-lanes--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-easing-lanes--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "再跑回来，不对称的缓动这时显出另一面。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-easings--easings-scene": {
+   "id": "motion-easings--easings-scene",
+   "type": "component",
+   "definitionId": "motion-easings--easings-scene--definition",
+   "parameters": {
+    "scene": "motion/easings",
+    "alt": "九种缓动并排：左边是缓动曲线，右边的点用同样的缓动跑过去再跑回来。"
+   }
+  },
+  "motion-easings--paragraph-1": {
+   "id": "motion-easings--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-easings--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "同时出发，同时到达，快慢不同：backOut 冲过头再回来，anticipate 先后退再冲，steps 一格一格跳。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-easings--paragraph-2": {
+   "id": "motion-easings--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-easings--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "再跑回来。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-easing--easing-scene": {
+   "id": "remotion-easing--easing-scene",
+   "type": "component",
+   "definitionId": "remotion-easing--easing-scene--definition",
+   "parameters": {
+    "scene": "remotion/easing",
+    "alt": "七行小球用七种缓动函数从左跑到右，每行左边画出缓动曲线。"
+   }
+  },
+  "remotion-easing--paragraph-1": {
+   "id": "remotion-easing--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-easing--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "前四行：匀速、两头慢、先快后慢、自定义贝塞尔曲线。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-easing--paragraph-2": {
+   "id": "remotion-easing--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-easing--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "后三行：back 和 elastic 冲过终点再回来，bounce 在终点弹跳。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-spring-compare--spring-compare-scene": {
+   "id": "motion-spring-compare--spring-compare-scene",
+   "type": "component",
+   "definitionId": "motion-spring-compare--spring-compare-scene--definition",
+   "parameters": {
+    "scene": "motion/spring-compare",
+    "alt": "五个弹簧并排：回弹 0、0.25、0.5、0.75，以及用刚度与阻尼定义的弹簧。"
+   }
+  },
+  "motion-spring-compare--paragraph-1": {
+   "id": "motion-spring-compare--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-spring-compare--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "同样的视觉时长，回弹越大，越要来回晃几下才停。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-spring-compare--paragraph-2": {
+   "id": "motion-spring-compare--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-spring-compare--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "再弹回来。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-spring-chain--spring-chain-scene": {
+   "id": "remotion-spring-chain--spring-chain-scene",
+   "type": "component",
+   "definitionId": "remotion-spring-chain--spring-chain-scene--definition",
+   "parameters": {
+    "scene": "remotion/spring-chain",
+    "alt": "五级流水线的方块依次落下，每一块在前一块停稳的那一帧开始。"
+   }
+  },
+  "remotion-spring-chain--paragraph-1": {
+   "id": "remotion-spring-chain--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-spring-chain--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "取指、译码、执行、访存、写回依次落下，前一块停稳下一块才开始。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-spring-chain--paragraph-2": {
+   "id": "remotion-spring-chain--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-spring-chain--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "measureSpring 给出一次弹簧要多少帧，五级加起来就是总时长。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-beam-prune--beam-prune-scene": {
+   "id": "remotion-beam-prune--beam-prune-scene",
+   "type": "component",
+   "definitionId": "remotion-beam-prune--beam-prune-scene--definition",
+   "parameters": {
+    "scene": "remotion/beam-prune",
+    "alt": "束搜索的五个候选词弹入；束宽为 2，概率低的三个反向弹出，留下的两个靠拢。"
+   }
+  },
+  "remotion-beam-prune--paragraph-1": {
+   "id": "remotion-beam-prune--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-beam-prune--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "五个候选词带着概率弹进来。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-beam-prune--paragraph-2": {
+   "id": "remotion-beam-prune--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-beam-prune--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "束宽是 2：后三个按反向的弹簧退出，猫和狗留下来。"
+      }
+     ]
+    }
+   ]
+  },
+  "frames--intro": {
+   "id": "frames--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "frames--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "关键帧、定格与一拍二的定格动画。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-ball-keyframes--ball-keyframes-scene": {
+   "id": "anime-ball-keyframes--ball-keyframes-scene",
+   "type": "component",
+   "definitionId": "anime-ball-keyframes--ball-keyframes-scene--definition",
+   "parameters": {
+    "scene": "anime/ball-keyframes",
+    "alt": "小球落下弹起，一次比一次低；再演一遍，落地时压扁、弹起时拉长。"
+   }
+  },
+  "anime-ball-keyframes--paragraph-1": {
+   "id": "anime-ball-keyframes--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-ball-keyframes--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "用百分比关键帧排出每次弹起的高度，一次比一次低。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-ball-keyframes--paragraph-2": {
+   "id": "anime-ball-keyframes--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-ball-keyframes--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "再落一次，每次触地都压扁再拉长，看起来更有弹性。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-freeze--freeze-scene": {
+   "id": "remotion-freeze--freeze-scene",
+   "type": "component",
+   "definitionId": "remotion-freeze--freeze-scene--definition",
+   "parameters": {
+    "scene": "remotion/freeze",
+    "alt": "一个抛体沿抛物线飞过；随后画面定格在最高点，画出水平速度的箭头。"
+   }
+  },
+  "remotion-freeze--paragraph-1": {
+   "id": "remotion-freeze--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-freeze--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "小球斜抛出去，虚线是它的轨迹。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-freeze--paragraph-2": {
+   "id": "remotion-freeze--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-freeze--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "画面定格在最高点：竖直速度为零，只剩水平速度。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-posterize--posterize-scene": {
+   "id": "remotion-posterize--posterize-scene",
+   "type": "component",
+   "definitionId": "remotion-posterize--posterize-scene--definition",
+   "parameters": {
+    "scene": "remotion/posterize",
+    "alt": "两个小球同时落下弹跳，左边逐帧平滑，右边每五帧才动一次；之后一个时钟的指针每秒跳一格。"
+   }
+  },
+  "remotion-posterize--paragraph-1": {
+   "id": "remotion-posterize--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-posterize--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "同样的弹跳，左边每帧都动，右边每五帧才更新一次，像定格动画。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-posterize--paragraph-2": {
+   "id": "remotion-posterize--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-posterize--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "时钟的指针每秒跳一格，用的也是 posterize。"
+      }
+     ]
+    }
+   ]
+  },
+  "show-stop-motion--notes": {
+   "id": "show-stop-motion--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "show-stop-motion--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "手工感的步骤动画：每一步是一张剪纸，被抛进来落在线上。整段只用一个量化的时钟 ts = floor(t·fps)/fps，画面只在这些拍子上变化；落地那一拍压扁，接着回弹、站稳；落地时火花闪三拍；停住时边缘“沸腾”（每两拍换一次抖动），像手绘逐帧。适合面向低龄或轻松题材的流程讲解。"
+      }
+     ]
+    },
+    {
+     "id": "show-stop-motion--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "labels（最多四步）、fps（8 / 10 / 12）、boil（停住时是否沸腾）。"
+      }
+     ]
+    },
+    {
+     "id": "show-stop-motion--notes--n3",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "show-stop-motion--notes--n3--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-stop-motion--notes--n3--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "show-stop-motion--notes--n3--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "show-stop-motion--notes--n3--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-stop-motion--notes--n3--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-stop-motion--notes--n3--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.2–2.8 s"
+          }
+         ]
+        },
+        {
+         "id": "show-stop-motion--notes--n3--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "每 0.7 s 抛入一张剪纸，约五拍飞行，落地压扁到 125%×70%，三拍内回弹站稳；影子随高度变淡变宽"
+          }
+         ]
+        },
+        {
+         "id": "show-stop-motion--notes--n3--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "量化的时间给出逐帧的手工感；每次冲击都有反应"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-stop-motion--notes--n3--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-stop-motion--notes--n3--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "落地后 0–3 拍"
+          }
+         ]
+        },
+        {
+         "id": "show-stop-motion--notes--n3--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "两颗火花大小交替闪"
+          }
+         ]
+        },
+        {
+         "id": "show-stop-motion--notes--n3--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "冲击的反应"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-stop-motion--notes--n3--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-stop-motion--notes--n3--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "落地后 1 拍"
+          }
+         ]
+        },
+        {
+         "id": "show-stop-motion--notes--n3--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "步骤名出现"
+          }
+         ]
+        },
+        {
+         "id": "show-stop-motion--notes--n3--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先落地，再命名"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-stop-motion--notes--n3--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-stop-motion--notes--n3--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3–5 s"
+          }
+         ]
+        },
+        {
+         "id": "show-stop-motion--notes--n3--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一排剪纸停住，边缘每两拍沸腾一次"
+          }
+         ]
+        },
+        {
+         "id": "show-stop-motion--notes--n3--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停住的画面仍然“活着”，且是时间的函数"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "show-stop-motion--shot": {
+   "id": "show-stop-motion--shot",
+   "type": "component",
+   "definitionId": "show-stop-motion--shot--definition",
+   "parameters": {
+    "alt": "圆、方、三角、星四张剪纸依次以定格动画的节奏抛入并落在线上，下方是收集、清洗、训练、评估。"
+   }
+  },
+  "exits--intro": {
+   "id": "exits--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "exits--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "带重量的退场与彩纸庆祝。"
+      }
+     ]
+    }
+   ]
+  },
+  "show-physical-exit--notes": {
+   "id": "show-physical-exit--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "show-physical-exit--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "讲排除法、错误选项、被淘汰的方案。错的卡片先被打叉（原因），然后带着动量离开画面，不淡出：抛出（先微微后仰，再沿抛物线飞出并越转越快）、坠落（铰一下后按重力加速下落）或侧滑（加速并沿运动方向拉长）。剩下的那张移到中央、放大、打勾，同一个物体保持身份。"
+      }
+     ]
+    },
+    {
+     "id": "show-physical-exit--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "question、options、exits（要排除的选项序号与方式 toss / drop / slide，按顺序退场）。"
+      }
+     ]
+    },
+    {
+     "id": "show-physical-exit--notes--n3",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "show-physical-exit--notes--n3--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-physical-exit--notes--n3--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "show-physical-exit--notes--n3--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "show-physical-exit--notes--n3--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-physical-exit--notes--n3--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-physical-exit--notes--n3--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1 s"
+          }
+         ]
+        },
+        {
+         "id": "show-physical-exit--notes--n3--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "问题，然后三张卡片间隔 70 ms 升入"
+          }
+         ]
+        },
+        {
+         "id": "show-physical-exit--notes--n3--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先读完所有选项"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-physical-exit--notes--n3--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-physical-exit--notes--n3--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1–1.95 s"
+          }
+         ]
+        },
+        {
+         "id": "show-physical-exit--notes--n3--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "“换更大的模型”被打叉、边框变危险色；0.25 s 后铰一下，按重力坠出画面"
+          }
+         ]
+        },
+        {
+         "id": "show-physical-exit--notes--n3--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先因后果；退场加速、比进场快"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-physical-exit--notes--n3--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-physical-exit--notes--n3--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.95–2.9 s"
+          }
+         ]
+        },
+        {
+         "id": "show-physical-exit--notes--n3--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "“调大学习率”被打叉；后仰 0.12 s 预备，沿抛物线向左上抛出并旋转"
+          }
+         ]
+        },
+        {
+         "id": "show-physical-exit--notes--n3--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "预备动作让抛出有力量；不淡出，动量看得见"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-physical-exit--notes--n3--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-physical-exit--notes--n3--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3–3.6 s"
+          }
+         ]
+        },
+        {
+         "id": "show-physical-exit--notes--n3--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "剩下的“检查数据与标签”移到中央并放大 10%（power3.inOut）"
+          }
+         ]
+        },
+        {
+         "id": "show-physical-exit--notes--n3--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "保持身份：移动它，而不是换一张"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-physical-exit--notes--n3--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-physical-exit--notes--n3--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.45–5.2 s"
+          }
+         ]
+        },
+        {
+         "id": "show-physical-exit--notes--n3--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "边框变强调色，勾画出，停住"
+          }
+         ]
+        },
+        {
+         "id": "show-physical-exit--notes--n3--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果停住"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "show-physical-exit--shot": {
+   "id": "show-physical-exit--shot",
+   "type": "component",
+   "definitionId": "show-physical-exit--shot--definition",
+   "parameters": {
+    "alt": "问题“训练损失不下降，先查什么？”下三张选项卡，两张被打叉后坠落和抛出画面，“检查数据与标签”移到中央并打勾。"
+   }
+  },
+  "show-confetti--notes": {
+   "id": "show-confetti--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "show-confetti--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一个结果达成时庆祝一次：全部测试通过、实验成功、课程结束。徽章先弹入（庆祝可以过冲约 20%），落定时两门礼炮从下角向内上方喷出彩纸。每片彩纸按带阻力和重力的解析式飞行：快速射出、减速、以终端速度飘落，自转并翻面闪动。整场只用一次。"
+      }
+     ]
+    },
+    {
+     "id": "show-confetti--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "text、count（彩纸数量）、seed（同一种子每次都是同一场彩纸）。颜色取设计令牌里的强调、成功、警示、危险、紫与灯黄，是画面内容。"
+      }
+     ]
+    },
+    {
+     "id": "show-confetti--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "相近作品：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "fx/remotion/pop-burst 用于一个新元素弹出；这里是更大的、只用一次的庆祝。"
+      }
+     ]
+    },
+    {
+     "id": "show-confetti--notes--n3",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "show-confetti--notes--n3--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-confetti--notes--n3--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "show-confetti--notes--n3--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "show-confetti--notes--n3--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-confetti--notes--n3--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-confetti--notes--n3--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.1–0.6 s"
+          }
+         ]
+        },
+        {
+         "id": "show-confetti--notes--n3--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "徽章从 0.6 弹到约 1.2 再回到 1（bounce 0.45）"
+          }
+         ]
+        },
+        {
+         "id": "show-confetti--notes--n3--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先有结果（原因）"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-confetti--notes--n3--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-confetti--notes--n3--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.7–1.3 s"
+          }
+         ]
+        },
+        {
+         "id": "show-confetti--notes--n3--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "两门礼炮喷出彩纸，迅速减速"
+          }
+         ]
+        },
+        {
+         "id": "show-confetti--notes--n3--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "再有欢呼（结果）"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-confetti--notes--n3--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-confetti--notes--n3--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.3–2.8 s"
+          }
+         ]
+        },
+        {
+         "id": "show-confetti--notes--n3--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "彩纸以终端速度飘落，自转、翻面"
+          }
+         ]
+        },
+        {
+         "id": "show-confetti--notes--n3--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "有重量的纸，不是粒子特效"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-confetti--notes--n3--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-confetti--notes--n3--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.8–3.3 s"
+          }
+         ]
+        },
+        {
+         "id": "show-confetti--notes--n3--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "彩纸在最后 0.5 s 淡出，徽章停住"
+          }
+         ]
+        },
+        {
+         "id": "show-confetti--notes--n3--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "庆祝过后留下结果"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "show-confetti--shot": {
+   "id": "show-confetti--shot",
+   "type": "component",
+   "definitionId": "show-confetti--shot--definition",
+   "parameters": {
+    "alt": "绿色徽章“全部 128 个测试通过”弹出，两侧礼炮喷出彩纸并飘落。"
+   }
+  },
+  "tools--intro": {
+   "id": "tools--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "tools--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一个变量驱动整个布局，以及数值映射工具。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-utils--utils-scene": {
+   "id": "gsap-utils--utils-scene",
+   "type": "component",
+   "definitionId": "gsap-utils--utils-scene--definition",
+   "parameters": {
+    "scene": "gsap/utils",
+    "alt": "十二根柱子从中间向两边长出，按数值着色，再按大小排好。"
+   }
+  },
+  "gsap-utils--paragraph-1": {
+   "id": "gsap-utils--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-utils--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "柱子从中间向两边依次长到各自的高度。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-utils--paragraph-2": {
+   "id": "gsap-utils--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-utils--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "每根柱子的颜色按数值在两种颜色间混合，越高越亮。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-utils--paragraph-3": {
+   "id": "gsap-utils--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-utils--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "柱子移到按大小排序后的位置，标签跟着走。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-cssvar--cssvar-scene": {
+   "id": "motion-cssvar--cssvar-scene",
+   "type": "component",
+   "definitionId": "motion-cssvar--cssvar-scene--definition",
+   "parameters": {
+    "scene": "motion/cssvar",
+    "alt": "数据集的训练与测试划分：分割点移动时，两部分的宽度、分割线和颜色深浅一起变化。"
+   }
+  },
+  "motion-cssvar--paragraph-1": {
+   "id": "motion-cssvar--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-cssvar--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "训练集从一半扩到 70%。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-cssvar--paragraph-2": {
+   "id": "motion-cssvar--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-cssvar--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "再扩到 90%，分割线冲过头一点再回来。"
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "steps": {
+  "easing--step": {
+   "id": "easing--step",
+   "sectionId": "easing",
+   "visuals": [
+    {
+     "blockId": "easing--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "anime-easing-lanes--step-0": {
+   "id": "anime-easing-lanes--step-0",
+   "sectionId": "anime-easing-lanes",
+   "visuals": [
+    {
+     "blockId": "anime-easing-lanes--easing-lanes-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "anime-easing-lanes--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-easing-lanes--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-easing-lanes--paragraph-1--narration"
+   ]
+  },
+  "anime-easing-lanes--step-1": {
+   "id": "anime-easing-lanes--step-1",
+   "sectionId": "anime-easing-lanes",
+   "visuals": [
+    {
+     "blockId": "anime-easing-lanes--easing-lanes-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "anime-easing-lanes--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-easing-lanes--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-easing-lanes--paragraph-2--narration"
+   ]
+  },
+  "motion-easings--step-0": {
+   "id": "motion-easings--step-0",
+   "sectionId": "motion-easings",
+   "visuals": [
+    {
+     "blockId": "motion-easings--easings-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-easings--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-easings--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-easings--paragraph-1--narration"
+   ]
+  },
+  "motion-easings--step-1": {
+   "id": "motion-easings--step-1",
+   "sectionId": "motion-easings",
+   "visuals": [
+    {
+     "blockId": "motion-easings--easings-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-easings--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-easings--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-easings--paragraph-2--narration"
+   ]
+  },
+  "remotion-easing--step-0": {
+   "id": "remotion-easing--step-0",
+   "sectionId": "remotion-easing",
+   "visuals": [
+    {
+     "blockId": "remotion-easing--easing-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "remotion-easing--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-easing--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-easing--paragraph-1--narration"
+   ]
+  },
+  "remotion-easing--step-1": {
+   "id": "remotion-easing--step-1",
+   "sectionId": "remotion-easing",
+   "visuals": [
+    {
+     "blockId": "remotion-easing--easing-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "remotion-easing--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-easing--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-easing--paragraph-2--narration"
+   ]
+  },
+  "motion-spring-compare--step-0": {
+   "id": "motion-spring-compare--step-0",
+   "sectionId": "motion-spring-compare",
+   "visuals": [
+    {
+     "blockId": "motion-spring-compare--spring-compare-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-spring-compare--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-spring-compare--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-spring-compare--paragraph-1--narration"
+   ]
+  },
+  "motion-spring-compare--step-1": {
+   "id": "motion-spring-compare--step-1",
+   "sectionId": "motion-spring-compare",
+   "visuals": [
+    {
+     "blockId": "motion-spring-compare--spring-compare-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-spring-compare--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-spring-compare--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-spring-compare--paragraph-2--narration"
+   ]
+  },
+  "remotion-spring-chain--step-0": {
+   "id": "remotion-spring-chain--step-0",
+   "sectionId": "remotion-spring-chain",
+   "visuals": [
+    {
+     "blockId": "remotion-spring-chain--spring-chain-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "remotion-spring-chain--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-spring-chain--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-spring-chain--paragraph-1--narration"
+   ]
+  },
+  "remotion-spring-chain--step-1": {
+   "id": "remotion-spring-chain--step-1",
+   "sectionId": "remotion-spring-chain",
+   "visuals": [
+    {
+     "blockId": "remotion-spring-chain--spring-chain-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "remotion-spring-chain--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-spring-chain--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-spring-chain--paragraph-2--narration"
+   ]
+  },
+  "remotion-beam-prune--step-0": {
+   "id": "remotion-beam-prune--step-0",
+   "sectionId": "remotion-beam-prune",
+   "visuals": [
+    {
+     "blockId": "remotion-beam-prune--beam-prune-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "remotion-beam-prune--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-beam-prune--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-beam-prune--paragraph-1--narration"
+   ]
+  },
+  "remotion-beam-prune--step-1": {
+   "id": "remotion-beam-prune--step-1",
+   "sectionId": "remotion-beam-prune",
+   "visuals": [
+    {
+     "blockId": "remotion-beam-prune--beam-prune-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "remotion-beam-prune--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-beam-prune--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-beam-prune--paragraph-2--narration"
+   ]
+  },
+  "frames--step": {
+   "id": "frames--step",
+   "sectionId": "frames",
+   "visuals": [
+    {
+     "blockId": "frames--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "anime-ball-keyframes--step-0": {
+   "id": "anime-ball-keyframes--step-0",
+   "sectionId": "anime-ball-keyframes",
+   "visuals": [
+    {
+     "blockId": "anime-ball-keyframes--ball-keyframes-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "anime-ball-keyframes--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-ball-keyframes--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-ball-keyframes--paragraph-1--narration"
+   ]
+  },
+  "anime-ball-keyframes--step-1": {
+   "id": "anime-ball-keyframes--step-1",
+   "sectionId": "anime-ball-keyframes",
+   "visuals": [
+    {
+     "blockId": "anime-ball-keyframes--ball-keyframes-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "anime-ball-keyframes--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-ball-keyframes--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-ball-keyframes--paragraph-2--narration"
+   ]
+  },
+  "remotion-freeze--step-0": {
+   "id": "remotion-freeze--step-0",
+   "sectionId": "remotion-freeze",
+   "visuals": [
+    {
+     "blockId": "remotion-freeze--freeze-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "remotion-freeze--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-freeze--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-freeze--paragraph-1--narration"
+   ]
+  },
+  "remotion-freeze--step-1": {
+   "id": "remotion-freeze--step-1",
+   "sectionId": "remotion-freeze",
+   "visuals": [
+    {
+     "blockId": "remotion-freeze--freeze-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "remotion-freeze--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-freeze--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-freeze--paragraph-2--narration"
+   ]
+  },
+  "remotion-posterize--step-0": {
+   "id": "remotion-posterize--step-0",
+   "sectionId": "remotion-posterize",
+   "visuals": [
+    {
+     "blockId": "remotion-posterize--posterize-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "remotion-posterize--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-posterize--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-posterize--paragraph-1--narration"
+   ]
+  },
+  "remotion-posterize--step-1": {
+   "id": "remotion-posterize--step-1",
+   "sectionId": "remotion-posterize",
+   "visuals": [
+    {
+     "blockId": "remotion-posterize--posterize-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "remotion-posterize--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-posterize--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-posterize--paragraph-2--narration"
+   ]
+  },
+  "show-stop-motion--step-0": {
+   "id": "show-stop-motion--step-0",
+   "sectionId": "show-stop-motion",
+   "visuals": [
+    {
+     "blockId": "show-stop-motion--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-stop-motion--shot",
+     "visible": true,
+     "state": "throw"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-stop-motion--step-1": {
+   "id": "show-stop-motion--step-1",
+   "sectionId": "show-stop-motion",
+   "visuals": [
+    {
+     "blockId": "show-stop-motion--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-stop-motion--shot",
+     "visible": true,
+     "state": "hold"
+    }
+   ],
+   "narrationIds": []
+  },
+  "exits--step": {
+   "id": "exits--step",
+   "sectionId": "exits",
+   "visuals": [
+    {
+     "blockId": "exits--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-physical-exit--step-0": {
+   "id": "show-physical-exit--step-0",
+   "sectionId": "show-physical-exit",
+   "visuals": [
+    {
+     "blockId": "show-physical-exit--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-physical-exit--shot",
+     "visible": true,
+     "state": "options"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-physical-exit--step-1": {
+   "id": "show-physical-exit--step-1",
+   "sectionId": "show-physical-exit",
+   "visuals": [
+    {
+     "blockId": "show-physical-exit--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-physical-exit--shot",
+     "visible": true,
+     "state": "reject"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-physical-exit--step-2": {
+   "id": "show-physical-exit--step-2",
+   "sectionId": "show-physical-exit",
+   "visuals": [
+    {
+     "blockId": "show-physical-exit--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-physical-exit--shot",
+     "visible": true,
+     "state": "remain"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-confetti--step-0": {
+   "id": "show-confetti--step-0",
+   "sectionId": "show-confetti",
+   "visuals": [
+    {
+     "blockId": "show-confetti--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-confetti--shot",
+     "visible": true,
+     "state": "pass"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-confetti--step-1": {
+   "id": "show-confetti--step-1",
+   "sectionId": "show-confetti",
+   "visuals": [
+    {
+     "blockId": "show-confetti--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-confetti--shot",
+     "visible": true,
+     "state": "burst"
+    }
+   ],
+   "narrationIds": []
+  },
+  "tools--step": {
+   "id": "tools--step",
+   "sectionId": "tools",
+   "visuals": [
+    {
+     "blockId": "tools--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "gsap-utils--step-0": {
+   "id": "gsap-utils--step-0",
+   "sectionId": "gsap-utils",
+   "visuals": [
+    {
+     "blockId": "gsap-utils--utils-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "gsap-utils--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-utils--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-utils--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-utils--paragraph-1--narration"
+   ]
+  },
+  "gsap-utils--step-1": {
+   "id": "gsap-utils--step-1",
+   "sectionId": "gsap-utils",
+   "visuals": [
+    {
+     "blockId": "gsap-utils--utils-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "gsap-utils--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-utils--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-utils--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-utils--paragraph-2--narration"
+   ]
+  },
+  "gsap-utils--step-2": {
+   "id": "gsap-utils--step-2",
+   "sectionId": "gsap-utils",
+   "visuals": [
+    {
+     "blockId": "gsap-utils--utils-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "gsap-utils--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-utils--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-utils--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-utils--paragraph-3--narration"
+   ]
+  },
+  "motion-cssvar--step-0": {
+   "id": "motion-cssvar--step-0",
+   "sectionId": "motion-cssvar",
+   "visuals": [
+    {
+     "blockId": "motion-cssvar--cssvar-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-cssvar--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-cssvar--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-cssvar--paragraph-1--narration"
+   ]
+  },
+  "motion-cssvar--step-1": {
+   "id": "motion-cssvar--step-1",
+   "sectionId": "motion-cssvar",
+   "visuals": [
+    {
+     "blockId": "motion-cssvar--cssvar-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-cssvar--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-cssvar--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-cssvar--paragraph-2--narration"
+   ]
+  }
+ },
+ "narrations": {
+  "anime-easing-lanes--paragraph-1--narration": {
+   "id": "anime-easing-lanes--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "同一段距离、同样的时长，每一行用一种缓动跑过去。"
+    }
+   ]
+  },
+  "anime-easing-lanes--paragraph-2--narration": {
+   "id": "anime-easing-lanes--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "再跑回来，不对称的缓动这时显出另一面。"
+    }
+   ]
+  },
+  "motion-easings--paragraph-1--narration": {
+   "id": "motion-easings--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "同时出发，同时到达，快慢不同：backOut 冲过头再回来，anticipate 先后退再冲，steps 一格一格跳。"
+    }
+   ]
+  },
+  "motion-easings--paragraph-2--narration": {
+   "id": "motion-easings--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "再跑回来。"
+    }
+   ]
+  },
+  "remotion-easing--paragraph-1--narration": {
+   "id": "remotion-easing--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "前四行：匀速、两头慢、先快后慢、自定义贝塞尔曲线。"
+    }
+   ]
+  },
+  "remotion-easing--paragraph-2--narration": {
+   "id": "remotion-easing--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "后三行：back 和 elastic 冲过终点再回来，bounce 在终点弹跳。"
+    }
+   ]
+  },
+  "motion-spring-compare--paragraph-1--narration": {
+   "id": "motion-spring-compare--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "同样的视觉时长，回弹越大，越要来回晃几下才停。"
+    }
+   ]
+  },
+  "motion-spring-compare--paragraph-2--narration": {
+   "id": "motion-spring-compare--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "再弹回来。"
+    }
+   ]
+  },
+  "remotion-spring-chain--paragraph-1--narration": {
+   "id": "remotion-spring-chain--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "取指、译码、执行、访存、写回依次落下，前一块停稳下一块才开始。"
+    }
+   ]
+  },
+  "remotion-spring-chain--paragraph-2--narration": {
+   "id": "remotion-spring-chain--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "measureSpring 给出一次弹簧要多少帧，五级加起来就是总时长。"
+    }
+   ]
+  },
+  "remotion-beam-prune--paragraph-1--narration": {
+   "id": "remotion-beam-prune--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "五个候选词带着概率弹进来。"
+    }
+   ]
+  },
+  "remotion-beam-prune--paragraph-2--narration": {
+   "id": "remotion-beam-prune--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "束宽是 2：后三个按反向的弹簧退出，猫和狗留下来。"
+    }
+   ]
+  },
+  "anime-ball-keyframes--paragraph-1--narration": {
+   "id": "anime-ball-keyframes--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "用百分比关键帧排出每次弹起的高度，一次比一次低。"
+    }
+   ]
+  },
+  "anime-ball-keyframes--paragraph-2--narration": {
+   "id": "anime-ball-keyframes--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "再落一次，每次触地都压扁再拉长，看起来更有弹性。"
+    }
+   ]
+  },
+  "remotion-freeze--paragraph-1--narration": {
+   "id": "remotion-freeze--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "小球斜抛出去，虚线是它的轨迹。"
+    }
+   ]
+  },
+  "remotion-freeze--paragraph-2--narration": {
+   "id": "remotion-freeze--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "画面定格在最高点：竖直速度为零，只剩水平速度。"
+    }
+   ]
+  },
+  "remotion-posterize--paragraph-1--narration": {
+   "id": "remotion-posterize--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "同样的弹跳，左边每帧都动，右边每五帧才更新一次，像定格动画。"
+    }
+   ]
+  },
+  "remotion-posterize--paragraph-2--narration": {
+   "id": "remotion-posterize--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "时钟的指针每秒跳一格，用的也是 posterize。"
+    }
+   ]
+  },
+  "gsap-utils--paragraph-1--narration": {
+   "id": "gsap-utils--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "柱子从中间向两边依次长到各自的高度。"
+    }
+   ]
+  },
+  "gsap-utils--paragraph-2--narration": {
+   "id": "gsap-utils--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "每根柱子的颜色按数值在两种颜色间混合，越高越亮。"
+    }
+   ]
+  },
+  "gsap-utils--paragraph-3--narration": {
+   "id": "gsap-utils--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "柱子移到按大小排序后的位置，标签跟着走。"
+    }
+   ]
+  },
+  "motion-cssvar--paragraph-1--narration": {
+   "id": "motion-cssvar--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "训练集从一半扩到 70%。"
+    }
+   ]
+  },
+  "motion-cssvar--paragraph-2--narration": {
+   "id": "motion-cssvar--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "再扩到 90%，分割线冲过头一点再回来。"
+    }
+   ]
+  }
+ },
+ "assets": {},
+ "definitions": {
+  "anime-easing-lanes--easing-lanes-scene--definition": {
+   "id": "anime-easing-lanes--easing-lanes-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/anime/easing-lanes.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1800,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "十种缓动函数并排比较：同样的距离、同样的时长，快慢分布不同。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-easings--easings-scene--definition": {
+   "id": "motion-easings--easings-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/easings.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1800,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "九种缓动并排：左边是缓动曲线，右边的点用同样的缓动跑过去再跑回来。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "remotion-easing--easing-scene--definition": {
+   "id": "remotion-easing--easing-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/remotion/easing.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1400,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "七行小球用七种缓动函数从左跑到右，每行左边画出缓动曲线。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-spring-compare--spring-compare-scene--definition": {
+   "id": "motion-spring-compare--spring-compare-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/spring-compare.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2300,
+     2300
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "五个弹簧并排：回弹 0、0.25、0.5、0.75，以及用刚度与阻尼定义的弹簧。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "remotion-spring-chain--spring-chain-scene--definition": {
+   "id": "remotion-spring-chain--spring-chain-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/remotion/spring-chain.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2600,
+     800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "五级流水线的方块依次落下，每一块在前一块停稳的那一帧开始。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "remotion-beam-prune--beam-prune-scene--definition": {
+   "id": "remotion-beam-prune--beam-prune-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/remotion/beam-prune.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "束搜索的五个候选词弹入；束宽为 2，概率低的三个反向弹出，留下的两个靠拢。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "anime-ball-keyframes--ball-keyframes-scene--definition": {
+   "id": "anime-ball-keyframes--ball-keyframes-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/anime/ball-keyframes.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2400,
+     2600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "小球落下弹起，一次比一次低；再演一遍，落地时压扁、弹起时拉长。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "remotion-freeze--freeze-scene--definition": {
+   "id": "remotion-freeze--freeze-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/remotion/freeze.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     1000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一个抛体沿抛物线飞过；随后画面定格在最高点，画出水平速度的箭头。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "remotion-posterize--posterize-scene--definition": {
+   "id": "remotion-posterize--posterize-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/remotion/posterize.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2400,
+     3200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "两个小球同时落下弹跳，左边逐帧平滑，右边每五帧才动一次；之后一个时钟的指针每秒跳一格。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "show-stop-motion--shot--definition": {
+   "id": "show-stop-motion--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/show/stop-motion.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文字"
+     },
+     "labels": {
+      "type": "array",
+      "title": "步骤",
+      "items": {
+       "type": "string"
+      }
+     },
+     "fps": {
+      "type": "number",
+      "title": "每秒拍数"
+     },
+     "boil": {
+      "type": "boolean",
+      "title": "沸腾"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "throw"
+    },
+    {
+     "id": "hold"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     3000,
+     2000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "圆、方、三角、星四张剪纸依次以定格动画的节奏抛入并落在线上，下方是收集、清洗、训练、评估。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "show-physical-exit--shot--definition": {
+   "id": "show-physical-exit--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/show/physical-exit.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文字"
+     },
+     "question": {
+      "type": "string",
+      "title": "问题"
+     },
+     "options": {
+      "type": "array",
+      "title": "选项",
+      "items": {
+       "type": "string"
+      }
+     },
+     "exits": {
+      "type": "array",
+      "title": "退场",
+      "items": {
+       "type": "object",
+       "properties": {
+        "index": {
+         "type": "number",
+         "title": "选项序号"
+        },
+        "mode": {
+         "type": "string",
+         "title": "方式",
+         "enum": [
+          "toss",
+          "drop",
+          "slide"
+         ]
+        }
+       }
+      }
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "options"
+    },
+    {
+     "id": "reject"
+    },
+    {
+     "id": "remain"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     2000,
+     2200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "问题“训练损失不下降，先查什么？”下三张选项卡，两张被打叉后坠落和抛出画面，“检查数据与标签”移到中央并打勾。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "show-confetti--shot--definition": {
+   "id": "show-confetti--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/show/confetti.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文字"
+     },
+     "text": {
+      "type": "string",
+      "title": "徽章文字"
+     },
+     "count": {
+      "type": "number",
+      "title": "彩纸数量"
+     },
+     "seed": {
+      "type": "number",
+      "title": "随机种子"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "pass"
+    },
+    {
+     "id": "burst"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     700,
+     2600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "绿色徽章“全部 128 个测试通过”弹出，两侧礼炮喷出彩纸并飘落。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "gsap-utils--utils-scene--definition": {
+   "id": "gsap-utils--utils-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/gsap/utils.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1400,
+     1000,
+     1200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "十二根柱子从中间向两边长出，按数值着色，再按大小排好。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-cssvar--cssvar-scene--definition": {
+   "id": "motion-cssvar--cssvar-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/cssvar.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1100,
+     1100
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "数据集的训练与测试划分：分割点移动时，两部分的宽度、分割线和颜色深浅一起变化。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  }
+ },
+ "production": {
+  "defaults": {
+   "voiceSource": {
+    "type": "none"
+   },
+   "trailingPauseMs": 0
+  },
+  "stepOverrides": {},
+  "mediaClips": []
+ }
+}
