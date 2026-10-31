@@ -1,5 +1,11 @@
 # @lincyaw/addon-motion
 
+## 1.0.0-rc.5
+
+### Patch Changes
+
+- 502e516: A presentation asked to play a lecture no longer shows the slides' untimed captions while the lecture loads, and a scene's "Loading the animation…" appears only when loading takes over a second (`--pm-delay-notice`), so a quick load goes from nothing to the picture.
+
 ## 1.0.0-rc.4
 
 No changes in this release.

@@ -1,5 +1,15 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.5
+
+### Patch Changes
+
+- 4da0afc: A workspace build tells each document's slides where its lecture is built, so the presentation no longer probes `slides/lecture/` first.
+- Updated dependencies [e1fcfaf]
+  - @lincyaw/kernel@1.0.0-rc.5
+  - @lincyaw/compiler@1.0.0-rc.5
+  - @lincyaw/server@1.0.0-rc.5
+
 ## 1.0.0-rc.4
 
 ### Patch Changes

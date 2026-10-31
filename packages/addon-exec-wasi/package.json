@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/addon-exec-wasi",
-  "version": "1.0.0-rc.4",
+  "version": "1.0.0-rc.5",
   "description": "Presmium plugin: run C, C++, Ruby and SQLite programs in WebAssembly, in the browser and at build time",
   "license": "Apache-2.0",
   "repository": {
