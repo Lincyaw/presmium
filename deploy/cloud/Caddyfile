@@ -34,6 +34,8 @@
 
 # JupyterHub: sign-in to Studio and every user's Studio below /user/<name>/.
 {$CLOUD_HUB_HOST} {
+	@studioAssets path_regexp ^/user/[^/]+/(preview/__app/(v|d)/|studio/(plugins/$|assets/))
+	encode @studioAssets zstd gzip
 	reverse_proxy hub:8000 {
 		flush_interval -1
 	}
