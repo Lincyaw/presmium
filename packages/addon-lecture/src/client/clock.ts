@@ -78,20 +78,32 @@ export interface ClockMedia {
 
 const DRIFT_MS = 250
 
+/** A part of an audio file on the timeline: from `start` for `duration`, playing the file from `sourceStartMs`. */
+interface Clip { start: number, duration: number, sourceStartMs: number, volume: number, muted: boolean }
+
+/**
+ * Plays the timeline's audio with one element per file: a clip is where on the timeline a part of its file plays,
+ * so clips that continue one another (a score cut at every step) run on in one element, without a pause, a seek or a
+ * click at their boundary. A file gets another element only for clips of it that overlap in time.
+ */
 export class MediaClock extends SilentClock {
-  private readonly media: { el: HTMLAudioElement, start: number, duration: number, sourceStartMs: number }[]
+  private readonly voices: { el: HTMLAudioElement, clips: Clip[] }[] = []
 
   constructor(duration: number, media: ClockMedia[]) {
     super(duration)
-    this.media = media.map(({ url, start, duration: length, sourceStartMs = 0, volume = 1, muted = false }) => {
+    for (const { url, start, duration: length, sourceStartMs = 0, volume = 1, muted = false } of [...media].sort((a, b) => a.start - b.start)) {
+      const clip = { start, duration: length, sourceStartMs, volume, muted }
+      const free = this.voices.find(voice => voice.el.src === new URL(url, location.href).href && voice.clips.at(-1)!.start + voice.clips.at(-1)!.duration <= start)
+      if (free) {
+        free.clips.push(clip)
+        continue
+      }
       const el = new Audio()
       el.preload = 'auto'
       el.onerror = () => this.fail(new Error([url, el.error?.message].filter(Boolean).join(': ')))
       el.src = url
-      el.volume = volume
-      el.muted = muted
-      return { el, start, duration: length, sourceStartMs }
-    })
+      this.voices.push({ el, clips: [clip] })
+    }
   }
 
   private fail(error: Error): void {
@@ -99,8 +111,16 @@ export class MediaClock extends SilentClock {
     this.error.set(error)
   }
 
+  private static clipAt(clips: readonly Clip[], t: number): Clip | undefined {
+    return clips.find(clip => t >= clip.start && t < clip.start + clip.duration)
+  }
+
   private mediaAt(t: number) {
-    return this.media.find(m => t >= m.start && t < m.start + m.duration)
+    for (const voice of this.voices) {
+      const clip = MediaClock.clipAt(voice.clips, t)
+      if (clip) return { el: voice.el, ...clip }
+    }
+    return undefined
   }
 
   override now(): number {
@@ -121,37 +141,42 @@ export class MediaClock extends SilentClock {
 
   override pause(): void {
     super.pause()
-    for (const { el } of this.media) el.pause()
+    for (const { el } of this.voices) el.pause()
   }
 
   override seek(t: number): void {
     super.seek(t)
-    for (const m of this.media) {
-      if (t >= m.start && t < m.start + m.duration) m.el.currentTime = (m.sourceStartMs + t - m.start) / 1000
-      else m.el.pause()
+    for (const { el, clips } of this.voices) {
+      const clip = MediaClock.clipAt(clips, t)
+      if (clip) el.currentTime = (clip.sourceStartMs + t - clip.start) / 1000
+      else el.pause()
     }
     this.tick()
   }
 
   override setRate(rate: number): void {
     super.setRate(rate)
-    for (const { el } of this.media) el.playbackRate = rate
+    for (const { el } of this.voices) el.playbackRate = rate
   }
 
   override tick(): void {
     super.tick()
     const t = this.now()
-    for (const m of this.media) {
-      if (!this.playing.getSnapshot() || t < m.start || t >= m.start + m.duration) {
-        if (!m.el.paused) m.el.pause()
+    for (const { el, clips } of this.voices) {
+      const clip = this.playing.getSnapshot() ? MediaClock.clipAt(clips, t) : undefined
+      if (!clip) {
+        if (!el.paused) el.pause()
         continue
       }
-      const offset = (m.sourceStartMs + t - m.start) / 1000
-      if (m.el.paused || Math.abs(m.el.currentTime - offset) * 1000 > DRIFT_MS) m.el.currentTime = offset
-      m.el.playbackRate = this.rate.getSnapshot()
-      if (m.el.paused) void m.el.play().then(() => {
-        const at = super.now()
-        if (!this.playing.getSnapshot() || at < m.start || at >= m.start + m.duration) m.el.pause()
+      el.volume = clip.volume
+      el.muted = clip.muted
+      // Where the file should be now; the element is moved only when it is elsewhere (a jump, or a clip that does not
+      // continue the last one), never at the boundary between clips that continue each other.
+      const offset = (clip.sourceStartMs + t - clip.start) / 1000
+      if (Math.abs(el.currentTime - offset) * 1000 > DRIFT_MS) el.currentTime = offset
+      el.playbackRate = this.rate.getSnapshot()
+      if (el.paused) void el.play().then(() => {
+        if (!this.playing.getSnapshot() || !MediaClock.clipAt(clips, super.now())) el.pause()
       }).catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return
         // Autoplay without the reader's gesture: not a failure, playback waits for their click.
@@ -167,7 +192,7 @@ export class MediaClock extends SilentClock {
 
   override dispose(): void {
     super.dispose()
-    for (const { el } of this.media) {
+    for (const { el } of this.voices) {
       el.pause()
       el.onerror = null
       const url = el.src
