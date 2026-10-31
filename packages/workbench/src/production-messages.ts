@@ -1,6 +1,9 @@
 import type { Locale } from './messages.ts'
 
 const zh = {
+  library: '页面与素材', pages: '页面', media: '音频素材', properties: '步骤属性', narration: '讲稿', voiceTab: '配音', captionsTab: '字幕',
+  searchPages: '搜索页面', pageResults: (count: number) => `${count} 页`, pageSteps: (count: number) => `${count} 个步骤`, noPages: '没有匹配的页面',
+  resizeLibrary: '调整页面列表与画面宽度', issueCount: (count: number) => `${count} 项问题`,
   resizeProperties: '调整画面与讲稿宽度', resizeTimeline: '调整画面与时间线高度',
   title: '视频制作', back: '返回文稿', preview: '画面', script: '讲稿与配音', outputs: '导出',
   step: '当前步骤', page: '页面', prepare: '准备画面', preparing: '正在准备画面…',
@@ -67,6 +70,9 @@ const zh = {
 export const PRODUCTION_MESSAGES: Record<Locale, typeof zh> = {
   'zh-CN': zh,
   en: {
+    library: 'Pages and Assets', pages: 'Pages', media: 'Audio Assets', properties: 'Step Properties', narration: 'Script', voiceTab: 'Voiceover', captionsTab: 'Captions',
+    searchPages: 'Search Pages', pageResults: count => `${count} ${count === 1 ? 'page' : 'pages'}`, pageSteps: count => `${count} ${count === 1 ? 'step' : 'steps'}`, noPages: 'No matching pages',
+    resizeLibrary: 'Resize page list and visuals', issueCount: count => `${count} ${count === 1 ? 'Issue' : 'Issues'}`,
     resizeProperties: 'Resize visuals and script', resizeTimeline: 'Resize visuals and timeline',
     title: 'Video Production', back: 'Back to Document', preview: 'Visuals', script: 'Script and Voiceover', outputs: 'Export',
     step: 'Current step', page: 'Page', prepare: 'Prepare Visuals', preparing: 'Preparing visuals…',

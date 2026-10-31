@@ -115,7 +115,7 @@ export function PresentView() {
             : null,
         ]),
         !pending && captions && !timedCaptions && narration.some(item => item.text.trim()) ? h(PmCaption, { overlay: true, label: t.present.captions, lines: narration.map(item => item.text).filter(text => text.trim()), lang: doc.meta.lang }) : null,
-        h('div', { ref: bar, class: 'pm-present__bar' }, [
+        h('div', { ref: bar, class: 'pm-present__bar', hidden: viewer.options.externalControls || undefined }, [
           button(t.present.prev, () => viewer.prev(), 'chevron-left', 'ArrowLeft', { className: 'pm-present__previous', disabled: pending }),
           button(t.present.next, () => viewer.next(), 'chevron-right', 'ArrowRight', { className: 'pm-present__next', disabled: pending }),
           ...pending ? [] : layers('present', 'bar'),

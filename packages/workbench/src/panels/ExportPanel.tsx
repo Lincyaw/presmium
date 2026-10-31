@@ -24,7 +24,7 @@ function iconOf(target: string): IconName {
  * Making the document into files, as Word's Export: what it can be made into, each a button, and what was made, by the
  * author or the AI, newest first, with its progress, its log, and the file to open, play or download.
  */
-export function ExportPanel({ documentOnly = false, onClose }: { documentOnly?: boolean, onClose(): void }) {
+export function ExportPanel({ documentOnly = false, embedded = false, onClose }: { documentOnly?: boolean, embedded?: boolean, onClose(): void }) {
   const t = useMessages()
   const workbench = useWorkbench()
   const document = useWorkbenchState(state => state.document)
@@ -42,15 +42,15 @@ export function ExportPanel({ documentOnly = false, onClose }: { documentOnly?: 
   const label = (id: string) => labelOf(targets.find(target => target.id === id) ?? { id, label: {} })
   const busy = (id: string) => jobs.some(job => job.target === id && (job.state === 'queued' || job.state === 'running'))
   return (
-    <section className="pmw-pane" aria-labelledby="pmw-export-title">
-      <header className="pmw-pane__header">
+    <section className="pmw-pane" aria-labelledby={embedded ? undefined : 'pmw-export-title'} aria-label={embedded ? t.exportPane : undefined}>
+      {!embedded && <header className="pmw-pane__header">
         <h2 id="pmw-export-title" className="pmw-pane__title">{documentOnly ? t.documentExport : t.exportPane}</h2>
         <PmIconButton small icon="close" label={t.close} onClick={onClose} />
-      </header>
+      </header>}
       {failure && <PmNotice tone="danger">{t.outputFailed(t.jobFailureReasons[failure] ?? failureReason(t, failure))}</PmNotice>}
       {preparing && <PmNotice>{preparing.canCancel ? t.outputConfirmingSave : t.outputStarting} {preparing.canCancel && <PmButton small onClick={() => workbench.cancelJobPreparation()}>{t.cancelOutput}</PmButton>}</PmNotice>}
-      <h3 id="pmw-export-make" className="pmw-export__subtitle">{t.makeLabel}</h3>
-      <ul className="pmw-export__targets" aria-labelledby="pmw-export-make">
+      {!embedded && <h3 id="pmw-export-make" className="pmw-export__subtitle">{t.makeLabel}</h3>}
+      <ul className="pmw-export__targets" aria-labelledby={embedded ? undefined : 'pmw-export-make'} aria-label={embedded ? t.makeLabel : undefined}>
         {targets.map(target => (
           <li key={target.id}>
             <PmButton small loading={preparing?.target === target.id} icon={iconOf(target.id)} aria-label={t.makeOutput(labelOf(target))} disabled={busy(target.id) || preparing !== undefined} onClick={() => void workbench.startJob(target.id)}>{labelOf(target)}</PmButton>

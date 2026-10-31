@@ -30,6 +30,7 @@
   flex-wrap: nowrap;
   min-width: 0;
 }
+.pm-present .pm-present__bar[hidden] { display: none; }
 @media (max-width: 479px) {
   .pm-present__bar:has(.pm-lecture-player) .pm-present__previous,
   .pm-present__bar:has(.pm-lecture-player) .pm-present__next,
