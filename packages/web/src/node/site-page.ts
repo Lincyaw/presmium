@@ -58,7 +58,7 @@ export function pageHtml(input: PageHtmlInput): string {
   <head>
     ${head.join('\n    ')}
   </head>
-  <body>
+  <body${config.site?.shell.theme?.name ? ` data-pm-site-theme-name="${escapeHtml(config.site.shell.theme.name)}"` : ''}>
     <div id="app">${input.body ?? ''}</div>
   </body>
 </html>
