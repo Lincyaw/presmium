@@ -143,6 +143,16 @@ export interface TimedCaptions {
 }
 export const TIMED_CAPTIONS = defineService<TimedCaptions>('presmium.timedCaptions')
 
+/**
+ * A component that draws asynchronously (a scene loading its code) holds the page as not yet drawn until it has: the
+ * viewer tells an embedding page when the current slide is drawn (`notifyEmbedder`).
+ */
+export interface PageReadiness {
+  readonly pending: Store<number>
+  hold(): Unsubscribe
+}
+export const PAGE_READINESS = defineService<PageReadiness>('presmium.pageReadiness')
+
 export interface StepClockDriver {
   readonly elapsed: Store<number | undefined>
   readonly recording?: boolean

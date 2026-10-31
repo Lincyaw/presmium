@@ -5,6 +5,8 @@ export interface HomeDocument {
   lang?: string
   tags?: string[]
   href: string
+  /** Its presentation, below its pages, when it asks for one (`renderers.slides`). */
+  slides?: string
   description?: string
   pages?: number
   problems?: { errors: number, warnings: number }

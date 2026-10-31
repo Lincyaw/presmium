@@ -1,6 +1,6 @@
 import { existsSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
-import { DEFAULT_LANG, DOCUMENT_ENTRY, deckLocale, docBlocks, isRecord, nodeMdast, NON_FILE_URL, safeDecodeURIComponent } from '@lincyaw/kernel'
+import { DEFAULT_LANG, DOCUMENT_ENTRY, SLIDES_DIR, deckLocale, docBlocks, isRecord, nodeMdast, NON_FILE_URL, safeDecodeURIComponent } from '@lincyaw/kernel'
 import type { DocumentLink, Finding, IRDocument, MdastNode, RenderContext, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
 import { findInstalledPackage, isInside } from '@lincyaw/kernel/node'
 import { crossFormLinks, pageLink, searchDocuments, sectionLinks, sitePageLayout, siteShell, translationPages, urlPath, WEB_MESSAGES, webPages } from '../domain/index.ts'
@@ -117,7 +117,8 @@ export function homeDocuments(site: SiteSpec, base: string, compiled: ReadonlyMa
     const snapshot = compiled.get(dir) ?? doc
     const root = documentBase(base, dir)
     const card = snapshot ? cardOf(snapshot, root) : description?.trim() ? { description: description.trim() } : {}
-    return { dir, title, ...own ? { lang: own } : {}, ...tags?.length ? { tags } : {}, href: root, ...card }
+    const slides = (snapshot ? snapshot.config.renderers.slides !== undefined : entry.slides) ? { slides: `${root}${SLIDES_DIR}/` } : {}
+    return { dir, title, ...own ? { lang: own } : {}, ...tags?.length ? { tags } : {}, href: root, ...slides, ...card }
   })
 }
 

@@ -24,12 +24,22 @@ export function notModified(request: Request, etag: string, headers: Record<stri
   return request.headers.get('if-none-match')?.split(',').some(tag => tag.trim() === etag) ? new Response(null, { status: 304, headers: { ...headers, ETag: etag } }) : undefined
 }
 
-export function serveFile(deckDir: string, file: string | undefined, request: Request): Response {
+/** What the caller knows of the file: a tag of its content (else its size and time make one) and its media type. */
+export interface ServedFile {
+  etag?: string
+  mediaType?: string
+}
+
+export function serveFile(deckDir: string, file: string | undefined, request: Request, known: ServedFile = {}): Response {
+  if (known.etag) {
+    const unchanged = notModified(request, known.etag, { 'Cache-Control': MEDIA_CACHE })
+    if (unchanged) return unchanged
+  }
   const fd = file === undefined ? undefined : openInDeck(deckDir, file)
   if (fd === undefined) return problemResponse(404, 'no such file')
   const { size, mtimeMs } = fstatSync(fd)
-  const etag = `"${size.toString(36)}-${Math.round(mtimeMs).toString(36)}"`
-  const headers = { 'Content-Type': TYPES[extname(file!)] ?? 'application/octet-stream', 'Accept-Ranges': 'bytes', 'Cache-Control': MEDIA_CACHE, ETag: etag }
+  const etag = known.etag ?? `"${size.toString(36)}-${Math.round(mtimeMs).toString(36)}"`
+  const headers = { 'Content-Type': known.mediaType ?? TYPES[extname(file!)] ?? 'application/octet-stream', 'Accept-Ranges': 'bytes', 'Cache-Control': MEDIA_CACHE, ETag: etag }
   const body = (start: number, end: number) => Readable.toWeb(createReadStream('', { fd, start, end })) as ReadableStream<Uint8Array>
   const empty = (response: Response) => {
     closeSync(fd)

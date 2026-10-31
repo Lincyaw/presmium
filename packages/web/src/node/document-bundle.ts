@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { irBlocks } from '@lincyaw/kernel'
 import type { IRDocument, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { collectBrowserModules, deckPackage, emptyClientModules, isRestartablePackage } from './client-modules.ts'
+import { imageCache, ImageEncoder } from './images.ts'
 import { quietDirectives } from './viewer-app.ts'
 
 /**
@@ -17,6 +18,8 @@ const BUNDLE_MANIFEST = 'bundle.json'
 export const BUNDLE_ENTRY = 'document.js'
 const DOCUMENT_MODULE = '\0presmium-document-bundle:'
 const KEEP = 3
+// Changes when a bundle built before would differ now from one built of the same code: 2 imports images as WebP.
+const FORMAT = 2
 
 export interface DocumentBundleInput {
   deckDir: string
@@ -55,6 +58,29 @@ export interface DocumentBundle {
   restartable: boolean
   /** The names of the document's own components. */
   components: string[]
+  /**
+   * What the entry loads, as its build records it: its chunks, those it may import later (scenes), by path in the
+   * bundle, and the app's shared modules among their imports, by specifier. A page preloads them with the entry.
+   */
+  loads: { files: string[], shared: string[] }
+}
+
+interface OutputFile { type: string, fileName: string, isEntry?: boolean, imports?: string[], dynamicImports?: string[], moduleIds?: string[] }
+
+/** The chunks an entry imports, at once or later, and the external modules among their imports. */
+function entryLoads(bundle: Record<string, OutputFile>, externals: ReadonlySet<string>): DocumentBundle['loads'] {
+  const byName = new Map(Object.values(bundle).map(file => [file.fileName, file]))
+  const files = new Set<string>(), shared = new Set<string>()
+  const visit = (name: string) => {
+    if (externals.has(name)) shared.add(name)
+    const file = byName.get(name)
+    if (!file || files.has(name)) return
+    files.add(name)
+    for (const next of [...file.imports ?? [], ...file.dynamicImports ?? []]) visit(next)
+  }
+  for (const file of byName.values()) if (file.isEntry) visit(file.fileName)
+  files.delete(BUNDLE_ENTRY)
+  return { files: [...files], shared: [...shared] }
 }
 
 interface DocumentCode {
@@ -101,14 +127,14 @@ ${ids.map((id, i) => `  ${JSON.stringify(id)}: module${i},`).join('\n')}
 }
 export const restartable = ${modules.restartable}
 `
-  const key = createHash('sha256').update(JSON.stringify([input.externals.toSorted(), entry, generated])).digest('hex').slice(0, 16)
+  const key = createHash('sha256').update(JSON.stringify([FORMAT, input.externals.toSorted(), entry, generated])).digest('hex').slice(0, 16)
   return { key, entry, generated, restartable: modules.restartable, components: [...components.keys()] }
 }
 
 function readBundle(dir: string): DocumentBundle | undefined {
   try {
     const bundle = JSON.parse(readFileSync(join(dir, BUNDLE_MANIFEST), 'utf8')) as DocumentBundle
-    return Object.entries(bundle.inputs).every(([file, known]) => stamp(file) === known) ? { ...bundle, components: bundle.components ?? [], dir } : undefined
+    return Object.entries(bundle.inputs).every(([file, known]) => stamp(file) === known) && bundle.loads ? { ...bundle, components: bundle.components ?? [], dir } : undefined
   } catch {
     return undefined
   }
@@ -155,6 +181,7 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
   const { generated } = code
   const externals = new Set(input.externals)
   const inputs: Record<string, string> = {}
+  let loads: DocumentBundle['loads'] = { files: [], shared: [] }
   const { build } = await import('vite')
   await build({
     configFile: false,
@@ -165,6 +192,7 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
     esbuild: { jsx: 'automatic' },
     publicDir: false,
     plugins: [
+      new ImageEncoder(imageCache(input.workspaceRoot)).vitePlugin(),
       {
         name: 'presmium:document-bundle',
         // Before Vite's own resolution: the app's modules stay imports by name.
@@ -179,7 +207,8 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
         load(id: string) {
           return id.startsWith(DOCUMENT_MODULE) ? generated[id.slice(DOCUMENT_MODULE.length)] : undefined
         },
-        generateBundle(_: unknown, bundle: Record<string, { type: string, moduleIds?: string[] }>) {
+        generateBundle(_: unknown, bundle: Record<string, OutputFile>) {
+          loads = entryLoads(bundle, externals)
           for (const chunk of Object.values(bundle)) {
             for (const id of chunk.moduleIds ?? []) {
               const file = id.replace(/[?#].*$/s, '')
@@ -215,7 +244,7 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
   const content = createHash('sha256').update(readFileSync(join(work, 'out', BUNDLE_ENTRY))).digest('hex').slice(0, 8)
   const name = `${code.key}-${content}`
   const out = join(input.outDir, name)
-  const bundle: DocumentBundle = { key: name, dir: out, inputs, restartable: code.restartable, components: code.components }
+  const bundle: DocumentBundle = { key: name, dir: out, inputs, restartable: code.restartable, components: code.components, loads }
   writeFileSync(join(work, 'out', BUNDLE_MANIFEST), `${JSON.stringify(bundle, null, 2)}\n`)
   rmSync(out, { recursive: true, force: true })
   renameSync(join(work, 'out'), out)

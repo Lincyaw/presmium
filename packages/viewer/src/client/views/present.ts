@@ -1,5 +1,6 @@
 import { FocusScope } from '@radix-ui/react-focus-scope'
-import { PmApprovals, PmCaption, PmCaptionProvider, PmIcon, TIMED_CAPTIONS, useService, PLAYBACK_CONTROL, presmiumService } from '@lincyaw/host'
+import { PAGE_READINESS, PmApprovals, PmCaption, PmCaptionProvider, PmIcon, TIMED_CAPTIONS, useService, PLAYBACK_CONTROL, presmiumService } from '@lincyaw/host'
+import { notifyEmbedder } from '@lincyaw/kernel'
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@lincyaw/host'
 import { h } from '../element.ts'
@@ -39,6 +40,17 @@ export function PresentView() {
     const [fullscreen, setFullscreen] = useState(false)
     const [captions, setCaptions] = useState(true)
     const timedCaptions = useStore(useService(TIMED_CAPTIONS)?.active, false)
+    // The page that embeds the presentation learns when the current slide is drawn: no component still loading,
+    // checked after the slide's components have mounted and taken their holds.
+    const loading = useStore(useService(PAGE_READINESS)?.pending, 0)
+    useEffect(() => {
+      if (loading > 0) {
+        notifyEmbedder({ drawn: false, section: section?.id, step })
+        return
+      }
+      const frame = requestAnimationFrame(() => notifyEmbedder({ drawn: true, section: section?.id, step }))
+      return () => cancelAnimationFrame(frame)
+    }, [loading, section?.id, step])
     const overview = useStore(overviewOpen)
     const doc = useStore(viewer.doc)
     useStore(viewer.options.confirmedRevision)

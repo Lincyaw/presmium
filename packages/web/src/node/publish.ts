@@ -5,6 +5,7 @@ import { irBlocks, mapHtmlUrls, NON_FILE_URL, publishedUrl, withPublishedAssets 
 import type { DocumentLink, IRBlock, IRDocument, IRSection, LocalAsset, MdastNode, RenderContext, SourcePos } from '@lincyaw/kernel'
 import { copyPublished, fileVersion } from '@lincyaw/kernel/node'
 import katex from 'katex'
+import type { ImageEncoder } from './images.ts'
 
 export const MEDIA = 'media'
 
@@ -96,7 +97,16 @@ export class PublicationCache {
   }
 }
 
-export function publishedDocument(doc: IRDocument, ctx: RenderContext, publicDir: string, base: string, documentPage?: DocumentPage, cache?: PublicationCache): IRDocument {
+export interface PublishOptions {
+  /** Where a link to another document of the site leads. */
+  documentPage?: DocumentPage
+  /** The sections published before, kept by a server that publishes the document again on each change. */
+  cache?: PublicationCache
+  /** Encodes the raster images a build publishes (none while a server previews the document). */
+  images?: ImageEncoder
+}
+
+export function publishedDocument(doc: IRDocument, ctx: RenderContext, publicDir: string, base: string, { documentPage, cache, images }: PublishOptions = {}): IRDocument {
   const { deckDir } = ctx
   const copy: IRDocument = structuredClone(cache ? { ...doc, sections: [] } : doc)
   const media = join(publicDir, MEDIA)
@@ -108,8 +118,9 @@ export function publishedDocument(doc: IRDocument, ctx: RenderContext, publicDir
     if (linked) return documentPage(linked)
     const asset = localAsset(ctx, source, url)
     if (!asset) return undefined
-    copyPublished(asset, media)
-    return publishedUrl(asset, url, { prefix: `${base}${MEDIA}/` })
+    const published = images ? images.publish(asset, media) : asset
+    if (!images) copyPublished(asset, media)
+    return publishedUrl(published, url, { prefix: `${base}${MEDIA}/` })
   }
   const mdast = (node: MdastNode, source: SourcePos) => {
     if (LINKED.has(node.type) && typeof node.url === 'string') node.url = publish(node.url, source) ?? node.url

@@ -78,14 +78,14 @@ export function publishLanding(landing: Extract<IndependentLanding, { kind: 'pag
 
 /** The public content collection available to a free-form HTML template. */
 export function siteContent(site: SiteSpec, base: string, lang: string, documents: HomeDocument[]): SiteContent {
-  // A template may link the workspace theme's stylesheets and mark its root with `data-pm-site-theme-name`.
+  // The template's page links the workspace theme's stylesheets; it marks its root with `data-pm-site-theme-name`.
   const { name, stylesheets } = siteTheme(shellOptions(site), lang)
   return {
     schemaVersion: 1,
     title: siteTitle(site, lang),
     base,
     lang,
-    documents: documents.map(({ dir, title, href, description, lang, tags, pages }) => ({ id: dir, title, href, description, lang, tags, pages })),
+    documents: documents.map(({ dir, title, href, slides, description, lang, tags, pages }) => ({ id: dir, title, href, slides, description, lang, tags, pages })),
     ...name ? { theme: { name, stylesheets: stylesheets ?? [] } } : {},
   }
 }

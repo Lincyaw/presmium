@@ -27,8 +27,13 @@
   "bin": {
     "presmium": "./bin/presmium.mjs"
   },
+  "exports": {
+    "./site": "./src/site.ts",
+    "./package.json": "./package.json"
+  },
   "files": [
-    "bin"
+    "bin",
+    "src"
   ],
   "dependencies": {
     "@lincyaw/cli": "workspace:*",

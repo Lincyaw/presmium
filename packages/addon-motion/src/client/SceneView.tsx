@@ -1,5 +1,6 @@
 import {
   NAVIGATION,
+  PAGE_READINESS,
   PLAYBACK_CONTROL,
   PmIconButton,
   STEP_CLOCK,
@@ -52,6 +53,9 @@ export default function SceneView(props: SceneProps) {
   const [status, setStatus] = useState<
     'loading' | 'ready' | 'missing' | 'failed'
   >('loading')
+  // The page is not drawn while this scene loads its code (an embedding page waits for it).
+  const readiness = useService(PAGE_READINESS)
+  useEffect(() => (status === 'loading' ? readiness?.hold() : undefined), [status, readiness])
   const [failure, setFailure] = useState('')
   const stage = useRef<HTMLDivElement>(null)
   const instance = useRef<Scene | undefined>(undefined)

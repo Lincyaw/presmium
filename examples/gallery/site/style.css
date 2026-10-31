@@ -79,7 +79,6 @@ p { text-wrap: pretty; }
 .film-poster[data-cover] .film-play { animation: film-waiting var(--pm-duration-pulse) ease-in-out infinite alternate; }
 @keyframes film-waiting { to { opacity: 0.45; } }
 /* The film loading ahead: on screen, so its scene loads, but invisible behind the page. */
-.film-warm { position: fixed; left: 0; top: 0; z-index: -1; width: var(--pm-site-wide-width); aspect-ratio: 16 / 9; border: 0; opacity: 0; pointer-events: none; }
 .film-poster:hover .film-play, .film-poster:focus-visible .film-play { transform: scale(1.06); }
 .film-poster:focus-visible { outline: var(--pm-size-stroke) solid var(--pm-color-accent); outline-offset: calc(var(--pm-size-stroke) * -2); }
 /* The live presentation: the 16:9 film above the lecture player's control bar. */

@@ -1456,6 +1456,9 @@ importers:
       minisearch:
         specifier: 7.2.0
         version: 7.2.0
+      p-limit:
+        specifier: 7.3.3
+        version: 7.3.3
       react:
         specifier: 18.3.1
         version: 18.3.1

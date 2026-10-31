@@ -1,8 +1,8 @@
-import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, readdirSync, rmSync } from 'node:fs'
 import { isAbsolute, join, resolve } from 'node:path'
 import { build, Compiler } from '@lincyaw/compiler'
 import type { Compilation, RunStats } from '@lincyaw/compiler'
-import { errorMessage, isRecord } from '@lincyaw/kernel'
+import { APP_DIR, errorMessage, isRecord, SLIDES_DIR } from '@lincyaw/kernel'
 import type { Finding, IRDocument, SiteSpec } from '@lincyaw/kernel'
 import { listDocuments, readWorkspaceConfig } from './config.ts'
 import { siteContext, siteDocument, siteIR, siteSpec, siteTranslations, webRenderer } from './site.ts'
@@ -25,7 +25,7 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
   for (const document of found) {
     const compilation = await new Compiler(join(config.root, document.entry), { bundled: options.bundled, settings: config.settings }).compile({ pruneCache: true })
     compilations.push(compilation)
-    const to = presentations(compilation, `${base}${urlPath(document.dir)}/`, siteLook(config.site, config.root))
+    const to = presentations(compilation, base, `${base}${urlPath(document.dir)}/`, siteLook(config.site, config.root))
     if (to.length > 0) forms.push({ dir: document.dir, compilation, to })
     const translated = await siteTranslations(compilation)
     findings.push(...compilation.doc.diagnostics, ...translated.findings)
@@ -50,7 +50,7 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
       const report = await build(compilation, { outDir: work, to })
       findings.push(...report.findings)
       for (const form of to) if (existsSync(join(work, form))) cpSync(join(work, form), join(outDir, dir, form), { recursive: true })
-      if (to.includes('slides')) shareSlidesApp(join(outDir, dir, 'slides'), `${base}${urlPath(dir)}/slides/`, outDir, base)
+      if (to.includes('slides')) moveApps(join(outDir, dir, SLIDES_DIR), outDir)
     } catch (error) {
       findings.push({ checkId: 'presmium.render', severity: 'error', message: `document ${dir}: its ${to.join(' and ')} failed: ${errorMessage(error)}` })
     }
@@ -90,31 +90,26 @@ function siteLook(site: Record<string, unknown>, root: string): Record<string, u
 
 const urlPath = (dir: string) => dir.split('/').map(encodeURIComponent).join('/')
 
-/**
- * Every document's slides run the same viewer app: it moves to the site's `_app/<key>/`, beside the web pages' own,
- * so a reader downloads it once for all the presentations of the site, and the slides' page points there.
- */
-function shareSlidesApp(slides: string, slidesBase: string, outDir: string, base: string): void {
-  const app = join(slides, '_app')
-  if (!existsSync(app)) return
-  for (const key of readdirSync(app)) if (!existsSync(join(outDir, '_app', key))) cpSync(join(app, key), join(outDir, '_app', key), { recursive: true })
-  rmSync(app, { recursive: true, force: true })
-  const page = join(slides, 'index.html')
-  writeFileSync(page, readFileSync(page, 'utf8').replaceAll(`${slidesBase}_app/`, `${base}_app/`))
+/** The presentation's viewer app goes where its page names it (`appBase`): with the site's own, downloaded once for all. */
+function moveApps(presentation: string, outDir: string): void {
+  const apps = join(presentation, APP_DIR)
+  if (!existsSync(apps)) return
+  for (const key of readdirSync(apps)) if (!existsSync(join(outDir, APP_DIR, key))) cpSync(join(apps, key), join(outDir, APP_DIR, key), { recursive: true })
+  rmSync(apps, { recursive: true, force: true })
 }
 
 /**
  * The presentation forms a document asks for (`metadata.renderers.slides` or `lecture`), set to be served below its
- * pages at `prefix`: the slides at `slides/`, and the web pages and the slides linked to each other.
+ * pages at `prefix`, with its viewer app below the site's `base`: the slides at `slides/`, and the web pages and the slides linked to each other.
  */
-function presentations(compilation: Compilation, prefix: string, look: Record<string, unknown>): string[] {
+function presentations(compilation: Compilation, base: string, prefix: string, look: Record<string, unknown>): string[] {
   const { renderers } = compilation.doc.config
   const to = PRESENTATIONS.filter(form => renderers[form] !== undefined)
   if (to.length === 0) return to
-  if (to.includes('slides')) renderers.slides = { ...look, ...isRecord(renderers.slides) ? renderers.slides : {}, base: `${prefix}slides/` }
+  if (to.includes('slides')) renderers.slides = { ...look, ...isRecord(renderers.slides) ? renderers.slides : {}, base: `${prefix}${SLIDES_DIR}/`, appBase: base }
   const settings = compilation.doc.config.presmium ??= {}
   const web = isRecord(settings['presmium.web']) ? settings['presmium.web'] : {}
-  settings['presmium.web'] = { ...web, webUrl: prefix, ...to.includes('slides') ? { slidesUrl: `${prefix}slides/` } : {} }
+  settings['presmium.web'] = { ...web, webUrl: prefix, ...to.includes('slides') ? { slidesUrl: `${prefix}${SLIDES_DIR}/` } : {} }
   // The slides find the lecture where it is built, without probing `slides/lecture/` first.
   if (to.includes('lecture')) {
     const lecture = isRecord(settings['presmium.lecture']) ? settings['presmium.lecture'] : {}

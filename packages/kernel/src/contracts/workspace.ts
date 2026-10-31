@@ -94,6 +94,8 @@ export interface DocumentSummary {
   description?: string
   lang?: string
   tags?: string[]
+  /** Whether its metadata asks for a presentation (`renderers.slides`), which a site serves below its pages. */
+  slides?: boolean
 }
 
 /** @experimental The workspace service's answer to `documents`. */

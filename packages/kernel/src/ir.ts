@@ -326,10 +326,22 @@ export interface SiteDocument {
   description?: string
   lang?: string
   tags?: string[]
+  /** Whether it has a presentation, before its IR is compiled (`DocumentSummary.slides`). */
+  slides?: boolean
   doc?: IRDocument
   translations?: { lang: string, doc: IRDocument }[]
   nodeVitePlugins?: NodeVitePlugin[]
 }
+
+/**
+ * A built site keeps its viewer apps below its path, each at `<APP_DIR>/<key>/` by its content. A presentation built as
+ * part of a site (renderer option `appBase`, the site's path) names its app there, so the site's pages and all its
+ * presentations load one app.
+ */
+export const APP_DIR = '_app'
+
+/** A site serves a document's presentation (`renderers.slides`) below the document's pages, at `<document>/<SLIDES_DIR>/`. */
+export const SLIDES_DIR = 'slides'
 
 export interface SiteSpec {
   title: string
