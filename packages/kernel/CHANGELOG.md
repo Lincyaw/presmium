@@ -1,5 +1,14 @@
 # @lincyaw/kernel
 
+## 1.0.0-rc.14
+
+### Patch Changes
+
+- eb70da8: A site's template homepage can play its presentations well. A presentation in a frame tells the embedding page when its scene is drawn and what its lecture is doing (`presmium:state` messages), and `@lincyaw/presmium/site` gives templates `prefetchPresentation` and `whenPresentationReady`; the site data lists each document's presentation (`slides`), also under `presmium serve` before a document is compiled; the theme's stylesheets are linked in the template's head. Where a browser refuses to autoplay, the large Play button is the design system's `PmIconButton variant="overlay"`.
+  
+  Images are encoded as WebP where they are published (document media, and images scenes and templates import), cached by their content in `.presmium/images/`, before the offline service worker lists the files; nothing is renamed afterwards. A presentation preloads what Vite's build records its scenes and plugins load. A site's presentations name the site's viewer app directly (`appBase`). `presmium serve` answers a lecture's audio with 304 from the file's known hash without reading it, and streams it with byte ranges otherwise. The stale-deploy reload waits until the page is online and reloads at most once in 30 seconds.
+- 5c57e92: A page or presentation downloads about half the JavaScript before it shows anything (the promo film's presentation: 526 KB to 295 KB gzipped, 67 to 47 requests before its first scene). The kernel and host declare their modules free of side effects, so a page no longer carries JSON Schema validation, JSON patches, the HTML parser or Radix's menus and radio groups it does not use; the workbench's preview protocol loads only in an embedded page; the HTML parser for HTML written in Markdown, the parsers of code outputs, the HTML writer of highlighted code and the animation between code variants load when a document uses them (before the first render, so the server's render and the browser's agree); a lecture's video encoders load with the first recording; and what every page runs first is one file instead of dozens.
+
 ## 1.0.0-rc.13
 
 No changes in this release.

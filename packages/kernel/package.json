@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/kernel",
-  "version": "1.0.0-rc.13",
+  "version": "1.0.0-rc.14",
   "description": "Presmium's shared kernel: the IR and plugin contracts, the service registry, anchors and checks",
   "license": "Apache-2.0",
   "repository": {
