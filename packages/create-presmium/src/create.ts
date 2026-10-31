@@ -156,5 +156,6 @@ function agentFiles(dir: string, skills: string[]): void {
 function gitInit(dir: string): void {
   const inside = spawnSync('git', ['rev-parse', '--is-inside-work-tree'], { cwd: dir, encoding: 'utf8' })
   if (inside.error || inside.stdout.trim() === 'true') return
-  spawnSync('git', ['init', '--quiet'], { cwd: dir, stdio: 'ignore' })
+  // The Pages workflow publishes on pushes to main, whatever the machine's default branch is.
+  spawnSync('git', ['init', '--quiet', '--initial-branch=main'], { cwd: dir, stdio: 'ignore' })
 }
