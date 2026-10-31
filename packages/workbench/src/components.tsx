@@ -34,23 +34,32 @@ export function PmSplitHandle({ label, className, ...props }: ComponentProps<typ
   return <ResizableSeparator {...props} aria-label={label} className={cls('pm-ui-split-handle', className)} />
 }
 
+/** Shared chrome for docked editors; content and actions remain owned by the caller. */
+export function PmPanelHeader({ title, meta, leading, actions }: { title: string, meta?: ReactNode, leading?: ReactNode, actions?: ReactNode }) {
+  return <header className="pm-ui-panel-header">
+    {leading}<h2 className="pm-ui-panel-header__title">{title}</h2>
+    {meta && <span className="pm-ui-panel-header__meta">{meta}</span>}
+    {actions && <div className="pm-ui-panel-header__actions">{actions}</div>}
+  </header>
+}
+
 /** One tab stop, with arrow/Home/End navigation supplied by Radix. */
-export function PmToolbar({ label, children, className }: { label: string, children: ReactNode, className?: string }) {
-  return <Toolbar.Root className={className} aria-label={label} loop>{children}</Toolbar.Root>
+export function PmToolbar({ label, children, className, scroll }: { label: string, children: ReactNode, className?: string, scroll?: boolean }) {
+  return <Toolbar.Root className={cls(scroll && 'pm-ui-toolbar-scroll', className)} aria-label={label} loop>{children}</Toolbar.Root>
 }
 export const PmToolbarButton = Toolbar.Button
 
 export interface Choice { value: string, label: string, icon?: IconName, disabled?: boolean }
-export function PmTabs({ value, tabs, label, iconOnly, density = 'compact', idPrefix, onValueChange, children }: { value: string, tabs: Choice[], label: string, iconOnly?: boolean, density?: ControlDensity, idPrefix?: string, onValueChange(value: string): void, children?: ReactNode }) {
-  return <Tabs.Root value={value} onValueChange={onValueChange} activationMode="manual" className="pm-ui-tabs-root" data-density={density}>
+export function PmTabs({ value, tabs, label, iconOnly, density = 'compact', variant = 'default', idPrefix, onValueChange, children }: { value: string, tabs: Choice[], label: string, iconOnly?: boolean, density?: ControlDensity, variant?: 'default' | 'dock', idPrefix?: string, onValueChange(value: string): void, children?: ReactNode }) {
+  return <Tabs.Root value={value} onValueChange={onValueChange} activationMode="manual" className="pm-ui-tabs-root" data-density={density} data-variant={variant}>
     <Tabs.List className="pm-ui-tabs" aria-label={label}>{tabs.map(tab => {
       const trigger = <Tabs.Trigger className="pm-ui-tab" value={tab.value} id={idPrefix ? `${idPrefix}-${tab.value}-tab` : undefined} aria-controls={idPrefix ? `${idPrefix}-${tab.value}-panel` : undefined} disabled={tab.disabled} aria-label={tab.label} data-icon-only={iconOnly || undefined}>{tab.icon && <PmIcon name={tab.icon} />}{!iconOnly && tab.label}</Tabs.Trigger>
       return iconOnly ? <PmTooltip key={tab.value} label={tab.label}>{trigger}</PmTooltip> : <span key={tab.value} className="pm-ui-tab-slot">{trigger}</span>
     })}</Tabs.List>{children}
   </Tabs.Root>
 }
-export function PmTabPanel({ value, children }: { value: string, children: ReactNode }) {
-  return <Tabs.Content value={value} className="pm-ui-tab-panel">{children}</Tabs.Content>
+export function PmTabPanel({ value, keepMounted, children }: { value: string, keepMounted?: boolean, children: ReactNode }) {
+  return <Tabs.Content value={value} forceMount={keepMounted || undefined} data-keep-mounted={keepMounted || undefined} className="pm-ui-tab-panel">{children}</Tabs.Content>
 }
 export function PmSegmented({ label, value, options, density = 'compact', disabled, onChange }: { label: string, value: string, options: Choice[], density?: ControlDensity, disabled?: boolean, onChange(value: string): void }) {
   return <RadioGroup.Root className="pm-ui-segmented" aria-label={label} value={value} onValueChange={onChange} orientation="horizontal" data-density={density} disabled={disabled}>
@@ -133,7 +142,7 @@ export function PmSearchList({ label, searchLabel, searchPlaceholder, items, val
     <RadioGroup.Root ref={list} id={`${id}-results`} className="pm-ui-search-list__results" aria-labelledby={`${id}-label`} aria-describedby={[describedBy, errorId].filter(Boolean).join(' ') || undefined} aria-invalid={error ? true : undefined} aria-busy={loading || undefined} value={value ?? ''} disabled={blocked} orientation="vertical" loop onValueChange={next => { if (!blocked) onValueChange(next) }}>
       {matches.map((item, index) => <RadioGroup.Item key={item.value} value={item.value} disabled={item.disabled} className="pm-ui-search-list__option" aria-labelledby={`${id}-option-${index}`} aria-describedby={item.description ? `${id}-description-${index}` : undefined} onClick={() => { if (!blocked && !item.disabled && !navigating.current) onActivate?.(item.value) }} onKeyDown={event => { if (event.key === 'Enter' && onActivate && !blocked && !item.disabled) { event.preventDefault(); onActivate(item.value) } }}>
         {item.icon && <PmIcon name={item.icon} />}
-        <span className="pm-ui-search-list__text"><span id={`${id}-option-${index}`}>{item.label}</span>{item.description && <span id={`${id}-description-${index}`} className="pm-ui-search-list__description">{item.description}</span>}</span>
+        <span className="pm-ui-search-list__text"><span id={`${id}-option-${index}`} className="pm-ui-search-list__label" title={item.label}>{item.label}</span>{item.description && <span id={`${id}-description-${index}`} className="pm-ui-search-list__description">{item.description}</span>}</span>
         <span className="pm-ui-search-list__check" aria-hidden="true">{item.value === value && <PmIcon name="check" />}</span>
       </RadioGroup.Item>)}
       {!matches.length && !loading && !error && <p className="pm-ui-search-list__empty">{emptyLabel}</p>}
@@ -151,12 +160,12 @@ export function PmCard({ variant = 'default', className, children, ...rest }: { 
   return <div className={cls('pm-ui-card', variant !== 'default' && `pm-ui-card--${variant}`, className)} {...rest}>{children}</div>
 }
 
-export function PmField({ label, inline, group, hint, error, htmlFor, hintId, errorId, density, children }: { label: string, inline?: boolean, group?: boolean, hint?: ReactNode, error?: ReactNode, htmlFor?: string, hintId?: string, errorId?: string, density?: ControlDensity, children?: ReactNode }) {
+export function PmField({ label, labelHidden, inline, group, hint, error, htmlFor, hintId, errorId, density, children }: { label: string, labelHidden?: boolean, inline?: boolean, group?: boolean, hint?: ReactNode, error?: ReactNode, htmlFor?: string, hintId?: string, errorId?: string, density?: ControlDensity, children?: ReactNode }) {
   const feedback = <>{hint && <span id={hintId} className="pm-ui-field__hint">{hint}</span>}{error && <span id={errorId} className="pm-ui-field__error" role="alert">{error}</span>}</>
   if (group) return <div className="pm-ui-field" data-density={density} role="group" aria-label={label}><span className="pm-ui-field__label">{label}</span>{children}{feedback}</div>
   return (
     <label className={cls('pm-ui-field', inline && 'pm-ui-field--inline')} data-density={density} htmlFor={htmlFor}>
-      {inline ? <>{children}<span id={htmlFor ? `${htmlFor}-label` : undefined} className="pm-ui-field__label">{label}</span></> : <><span id={htmlFor ? `${htmlFor}-label` : undefined} className="pm-ui-field__label">{label}</span>{children}</>}
+      {inline ? <>{children}<span id={htmlFor ? `${htmlFor}-label` : undefined} className="pm-ui-field__label">{label}</span></> : <><span id={htmlFor ? `${htmlFor}-label` : undefined} className={labelHidden ? 'pm-ui-sr-only' : 'pm-ui-field__label'}>{label}</span>{children}</>}
       {feedback}
     </label>
   )
@@ -169,10 +178,10 @@ function useField({ id, hint, error, 'aria-describedby': describedBy }: { id?: s
   return { id: controlId, hintId: hint ? `${controlId}-hint` : undefined, errorId: error ? `${controlId}-error` : undefined,
     describedBy: [describedBy, hint && `${controlId}-hint`, error && `${controlId}-error`].filter(Boolean).join(' ') || undefined }
 }
-export const PmInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & FieldProps & { prefixIcon?: IconName, suffix?: ReactNode, width?: 'number' | 'time' }>(function PmInput({ label, hint, error, density = 'compact', prefixIcon, suffix, width, className, ...rest }, ref) {
+export const PmInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & FieldProps & { labelHidden?: boolean, prefixIcon?: IconName, suffix?: ReactNode, width?: 'number' | 'time' }>(function PmInput({ label, labelHidden, hint, error, density = 'compact', prefixIcon, suffix, width, className, ...rest }, ref) {
   const field = useField({ ...rest, hint, error })
   const input = <input {...rest} ref={ref} id={field.id} data-density={density} data-width={width} aria-labelledby={rest['aria-labelledby'] ?? (rest['aria-label'] ? undefined : `${field.id}-label`)} aria-invalid={error ? true : rest['aria-invalid']} aria-describedby={field.describedBy} className={cls('pm-ui-input', className)} />
-  return <PmField label={label} hint={hint} error={error} htmlFor={field.id} hintId={field.hintId} errorId={field.errorId} density={density}>
+  return <PmField label={label} labelHidden={labelHidden} hint={hint} error={error} htmlFor={field.id} hintId={field.hintId} errorId={field.errorId} density={density}>
     {prefixIcon || suffix ? <span className="pm-ui-control" data-width={width} data-density={density}>{prefixIcon && <span className="pm-ui-control__prefix"><PmIcon name={prefixIcon} /></span>}{input}{suffix && <span className="pm-ui-control__suffix">{suffix}</span>}</span> : input}
   </PmField>
 })
@@ -188,9 +197,9 @@ export const PmTextarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes
     <textarea {...rest} ref={element => { node.current = element; if (typeof ref === 'function') ref(element); else if (ref) ref.current = element }} id={field.id} data-density={density} aria-labelledby={rest['aria-labelledby'] ?? (rest['aria-label'] ? undefined : `${field.id}-label`)} aria-invalid={error ? true : rest['aria-invalid']} aria-describedby={field.describedBy} className={cls('pm-ui-textarea', className)} />
   </PmField>
 })
-export const PmSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement> & FieldProps>(function PmSelect({ label, hint, error, density = 'compact', className, children, ...rest }, ref) {
+export const PmSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement> & FieldProps & { labelHidden?: boolean }>(function PmSelect({ label, labelHidden, hint, error, density = 'compact', className, children, ...rest }, ref) {
   const field = useField({ ...rest, hint, error })
-  return <PmField label={label} hint={hint} error={error} htmlFor={field.id} hintId={field.hintId} errorId={field.errorId} density={density}>
+  return <PmField label={label} labelHidden={labelHidden} hint={hint} error={error} htmlFor={field.id} hintId={field.hintId} errorId={field.errorId} density={density}>
     <select {...rest} ref={ref} id={field.id} data-density={density} aria-labelledby={rest['aria-labelledby'] ?? (rest['aria-label'] ? undefined : `${field.id}-label`)} aria-invalid={error ? true : rest['aria-invalid']} aria-describedby={field.describedBy} className={cls('pm-ui-select', className)}>{children}</select>
   </PmField>
 })
@@ -515,6 +524,8 @@ export interface TimelineProps {
   density?: ControlDensity
   /** Omit the fallback step strip when the surrounding editor already provides step navigation. */
   showSteps?: boolean
+  /** A flush docked editor, with status and zoom in the same tool row. */
+  variant?: 'default' | 'editor'
 }
 
 const timelineTime = (ms: number) => `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${(ms % 60000 / 1000).toFixed(3).padStart(6, '0')}`
@@ -529,7 +540,7 @@ function waveformPath(samples: readonly number[] | undefined): string | undefine
 }
 
 /** Data-only timeline; source, playback, seeking authority and all labels remain with its caller. */
-export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, currentTimeMs, selectedStepId, zoom, onZoomChange, onSelectStep, onSelectSegment, segmentPicker, onSeek, seekDisabled, disabled, loading, seeking, density = 'compact', showSteps = true }: TimelineProps) {
+export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, currentTimeMs, selectedStepId, zoom, onZoomChange, onSelectStep, onSelectSegment, segmentPicker, onSeek, seekDisabled, disabled, loading, seeking, density = 'compact', showSteps = true, variant = 'default' }: TimelineProps) {
   const hintId = useId()
   const viewport = useRef<HTMLDivElement>(null), tick = useRef<HTMLSpanElement>(null), composing = useRef(false)
   const [width, setWidth] = useState(0), [tickWidth, setTickWidth] = useState(1), [localZoom, setLocalZoom] = useState(1), [raw, setRaw] = useState<string>(), [previewTime, setPreviewTime] = useState<number>()
@@ -574,12 +585,14 @@ export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, 
     const marks = Array.from({ length: Math.min(200, Math.floor(span / unit) + 1) }, (_, index) => index * unit)
     return [0, ...marks.filter(time => time > 0 && time < span && Math.min(time, span - time) / span * width * scale >= tickWidth), span]
   }, [span, timed, width, scale, tickWidth])
-  return <section className="pm-ui-timeline" data-density={density} data-disabled={blocked || undefined} data-segment-picker={segmentPicker?.track} aria-label={label} aria-busy={loading || seeking || undefined}>
+  const status = <div className="pm-ui-timeline__status" role="status">{loading ? labels.loading : timing === 'unknown' || span === undefined ? labels.unknown : `${timing === 'estimated' ? `${labels.estimated} · ` : ''}${timelineTime(span)}`}</div>
+  return <section className="pm-ui-timeline" data-variant={variant} data-density={density} data-disabled={blocked || undefined} data-segment-picker={segmentPicker?.track} aria-label={label} aria-busy={loading || seeking || undefined}>
     <div className="pm-ui-timeline__tools">
-      <PmInput label={`${labels.position} (${labels.seconds})`} width="time" density={density} inputMode="decimal" maxLength={32} value={raw ?? (position === undefined ? '' : (position / 1000).toFixed(3))} placeholder={labels.unknown} error={invalid ? labels.invalidPosition : undefined} disabled={cannotSeek}
+      <PmInput label={`${labels.position} (${labels.seconds})`} labelHidden={variant === 'editor'} width="time" density={density} inputMode="decimal" maxLength={32} value={raw ?? (position === undefined ? '' : (position / 1000).toFixed(3))} placeholder={labels.unknown} error={invalid ? labels.invalidPosition : undefined} disabled={cannotSeek}
         onChange={event => setRaw(event.target.value)} onBlur={commitPosition}
         onCompositionStart={() => { composing.current = true }} onCompositionEnd={() => { composing.current = false }}
         onKeyDown={event => { if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return; if (event.key === 'Enter') { event.preventDefault(); commitPosition() } else if (event.key === 'Escape') setRaw(undefined) }} />
+      {variant === 'editor' && status}
       <div className="pm-ui-timeline__zoom">
         <PmIconButton icon="minus" label={labels.zoomOut} density={density} disabled={blocked || scale <= 1} onClick={() => zoomTo(scale / 2)} />
         <output className="pm-ui-timeline__scale">{Math.round(scale * 100)}%</output>
@@ -587,9 +600,9 @@ export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, 
         <PmIconButton icon="fit" label={labels.fit} density={density} disabled={blocked} onClick={() => { zoomTo(1); viewport.current?.scrollTo({ left: 0 }) }} />
       </div>
     </div>
-    <div className="pm-ui-timeline__status" role="status">{loading ? labels.loading : timing === 'unknown' || span === undefined ? labels.unknown : `${timing === 'estimated' ? `${labels.estimated} · ` : ''}${timelineTime(span)}`}</div>
+    {variant !== 'editor' && status}
     <div className="pm-ui-timeline__tracks">
-      <div className="pm-ui-timeline__labels" aria-hidden="true">{timed && <><span /><span /></>}{tracks.map(track => <span key={track.id}>{track.label}</span>)}</div>
+      <div className="pm-ui-timeline__labels" aria-hidden="true">{timed && <><span /><span /></>}{tracks.map(track => <span key={track.id} data-track-label="">{track.label}</span>)}</div>
       <div ref={viewport} className="pm-ui-timeline__viewport" tabIndex={0} aria-label={label} aria-describedby={hintId}>
         <div className="pm-ui-timeline__canvas" style={{ width: timed ? `${width * scale}px` : '100%' }}>
           {timed && <><div className="pm-ui-timeline__ruler" aria-hidden="true" onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); requestSeek((event.clientX - rect.left) / rect.width * span!) }}>

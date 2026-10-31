@@ -1,6 +1,6 @@
 import { createSharedStates, installHost, HostProvider, createStore, useStore, presmiumReport, presmiumService, setSiteBase } from '@lincyaw/host'
 import type { HostAdapter, SharedStates, Store } from '@lincyaw/host'
-import { deckLocale, irBlocks, PREVIEW_PRESENTATION_PARAM, reportPreview } from '@lincyaw/kernel'
+import { deckLocale, irBlocks, PREVIEW_KEYS_PARAM, PREVIEW_PRESENTATION_PARAM, reportPreview } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import { createViewer, ViewerProvider, BlockPreview, OverlayViewOutlet, PageViewOutlet, registerComponent, SlidesPrint } from '@lincyaw/viewer'
 import type { Viewer } from '@lincyaw/viewer'
@@ -100,6 +100,7 @@ export function createPageApp(input: PageAppInput): PageApp {
   const viewer = current = createViewer(initial, {
     renderer: 'web',
     embedded,
+    externalControls: embedded && typeof location !== 'undefined' && new URL(location.href).searchParams.get(PREVIEW_KEYS_PARAM) === 'playback',
     ...embedded && !config.block && typeof location !== 'undefined' && new URL(location.href).searchParams.get(PREVIEW_PRESENTATION_PARAM) === 'confirmed' ? { confirmedRevision: createStore<string | undefined>(undefined) } : {},
     ...embedded && !config.block ? { refreshPresentation: () => reportPreview({ type: 'presentation-action', action: 'refresh' }), exitPresentation: () => reportPreview({ type: 'presentation-action', action: 'exit' }) } : {},
     documentIdentity: JSON.stringify([config.base, config.document]),

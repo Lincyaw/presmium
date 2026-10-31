@@ -43,6 +43,10 @@ BlockNote 的公共适配类为 `pm-ui-block-editor`，由工作台的全篇 `Bl
 
 ## 2. Tokens、公共控件与业务布局
 
+停靠编辑器复用 `PmPanelHeader`（标题、上下文与操作槽）、`PmTabs variant="dock"`（下划线选中态、独立滚动内容）、`PmTabPanel keepMounted`（保留编辑器身份，未激活内容隐藏）与 `PmToolbar scroll`（单行滚动）。Figma 对应 [PanelHeader](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=313-7410)、[DockedTabs](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=313-7432) 与[亮暗实例](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=313-7839)。`PmInput`／`PmSelect` 的 `labelHidden` 只隐藏可视标签，仍保留关联名称，复用既有紧凑输入控件外观。`PmSearchList` 的两行选项使用自动高度，主标题省略显示并保留完整 title。
+
+`PmTimeline variant="editor"` 用于底部停靠轨道：取消卡片外框，位置输入、时长状态与缩放共用一行，三轨使用 `--pm-timeline-editor-track-height`；轨道的类型由标签与底色共同表达，选择、悬停和焦点仍由公共控件定义。现有卡片变体保留原行为，制作页另传 `showSteps=false`。Figma Timeline 的 `Layout=Editor` 提供 Compact 下的 Ready／Focus／Estimated／Unknown／Loading／Disabled 六态。
+
 实现按三层进行：令牌定义视觉取值，公共控件定义形态和交互，业务区域只负责组合。新增需求先检查已有控件的公开属性；能力不足时先扩展公共层，再让页面使用。
 
 业务 CSS 允许定义网格、分栏、对齐、容器宽度、内容溢出和使用令牌的区域间距。布局最好落在控件外的容器上。禁止通过后代选择器、附加业务类、内联样式、`!important` 或重新定义全局令牌，改变某页按钮或输入框的外观。控件自身的大小、强调等级和状态由公开属性选择。
