@@ -130,6 +130,7 @@
   --pm-timeline-label-width: 5.5rem;
   --pm-timeline-tick-width: 5rem;
   --pm-timeline-wave-height: 1.25rem;
+  --pm-split-handle-size: 0.5rem;
   --pm-shadow-control-focus: 0 0 0 var(--pm-space-px) var(--pm-color-accent-line);
   --pm-shadow-control-error-focus: 0 0 0 calc(var(--pm-space-px) * 3) var(--pm-color-accent-line);
 
@@ -165,6 +166,8 @@
   --pm-block-preview-max-height: 40rem;
   --pm-narration-editor-height: 12rem;
   --pm-narration-editor-compact-height: 5rem;
+  --pm-production-page-width: 24rem;
+  --pm-production-feedback-height: 20rem;
   --pm-tooltip-width: 18rem;
   /* A placeholder in the shape of content still loading: a line of text and a heading. */
   --pm-skeleton-line: 0.75rem;

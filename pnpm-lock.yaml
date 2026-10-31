@@ -1565,6 +1565,9 @@ importers:
       katex:
         specifier: 0.18.10
         version: 0.18.10
+      react-resizable-panels:
+        specifier: 4.14.5
+        version: 4.14.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
     devDependencies:
       '@lincyaw/compiler':
         specifier: workspace:*

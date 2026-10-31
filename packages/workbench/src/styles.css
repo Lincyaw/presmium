@@ -960,31 +960,36 @@
 }
 
 /* Production owns layout; fields, choices and dialogs retain their public component styles. */
-.pmw-production { position: relative; display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
-.pmw-production__selection { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: var(--pm-space-3); padding: var(--pm-space-2) var(--pm-space-3); }
+.pmw-production { position: relative; display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.pmw-production__controls { display: flex; flex: none; flex-wrap: wrap; align-items: end; gap: var(--pm-space-2) var(--pm-space-3); padding: var(--pm-space-2) var(--pm-space-3); }
+.pmw-production__page { flex: 1; min-width: 0; max-width: var(--pm-production-page-width); }
+.pmw-production__workarea { position: relative; display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.pmw-production__main { min-width: 0; min-height: 0; }
+.pmw-production__steps { flex: 1; min-width: 0; }
 .pmw-production__body { position: relative; display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 .pmw-production__body[data-wide] { flex-direction: row; }
-.pmw-production__body[data-background], .pmw-production__visuals[data-background] { position: absolute; inset: 0; visibility: hidden; }
 .pmw-production__visuals { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
-.pmw-production__frame { display: flex; flex: 1; min-width: 0; min-height: var(--pm-block-preview-min-height); }
+.pmw-production__frame { display: flex; flex: 1; min-width: 0; min-height: 0; }
 .pmw-production__frame > .pmw-preview { flex: 1; }
 .pmw-production__properties { display: flex; flex: 1; flex-direction: column; gap: var(--pm-space-3); min-width: 0; min-height: 0; padding: var(--pm-space-3); overflow-y: auto; }
-.pmw-production__body[data-wide] > .pmw-production__properties { flex: 0 0 var(--pm-aside-width); box-sizing: border-box; }
+.pmw-production__properties { box-sizing: border-box; }
 .pmw-production__outputs { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; }
 .pmw-production [hidden] { display: none; }
 .pmw-voice__form { display: flex; flex-direction: column; gap: var(--pm-space-3); min-width: 0; }
 .pmw-voice__actions { display: flex; flex-wrap: wrap; gap: var(--pm-space-2); }
 .pmw-audio-recording { display: flex; flex-direction: column; gap: var(--pm-space-3); min-width: 0; }
 .pmw-voice__steps { display: flex; flex-wrap: wrap; gap: var(--pm-space-1); max-height: var(--pm-block-preview-height); overflow-y: auto; }
-@media (max-width: 767px) {
-  .pmw-production__selection { grid-template-columns: minmax(0, 1fr); }
-}
-.pmw-production__status { padding: var(--pm-space-2) var(--pm-space-3); }
-.pmw-production__transport { display: flex; flex-wrap: wrap; align-items: end; gap: var(--pm-space-2); padding: var(--pm-space-2) var(--pm-space-3); }
+.pmw-production__status { display: flex; flex: none; align-items: center; gap: var(--pm-space-2); min-width: 0; padding: var(--pm-space-1) var(--pm-space-3); }
+.pmw-production__status-summary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pmw-production__feedback { display: flex; flex-direction: column; gap: var(--pm-space-2); max-height: min(60vh, var(--pm-production-feedback-height)); overflow-y: auto; }
+.pmw-production__transport { display: flex; flex: none; flex-wrap: wrap; align-items: end; gap: var(--pm-space-2); margin-inline-start: auto; }
 .pmw-production__transport > output { align-self: center; }
 .pmw-production__timeline { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: var(--pm-space-3); }
-.pmw-production__timeline[data-wide] { flex: none; }
-.pmw-production__issues { padding: var(--pm-space-2) var(--pm-space-3); }
+.pmw-production__workarea[data-wide] .pmw-production__timeline { border-top: var(--pm-size-hairline) solid var(--pm-color-line); padding: var(--pm-space-2) var(--pm-space-3); }
+@media (max-width: 767px) {
+  .pmw-production__page { flex-basis: 100%; max-width: none; }
+  .pmw-production__transport { flex: 1; }
+}
 .pmw-transcription, .pmw-transcription__atoms { display: grid; gap: var(--pm-space-3); min-width: 0; }
 .pmw-transcription__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pm-space-2); min-width: 0; }
 .pmw-transcription__actions > span { min-width: 0; overflow-wrap: anywhere; }

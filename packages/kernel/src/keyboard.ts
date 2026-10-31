@@ -1,6 +1,6 @@
 // Which key presses a page shortcut may take. Text entry, editors and open menus or dialogs keep every key. A control
 // the keyboard moved to keeps the keys it uses itself: Space presses a button or toggles a checkbox, and the arrows move
-// a slider, a select, the items of a toolbar or tab list, or scroll a focusable region. A click leaves the focus on the
+// a slider, a select, a pane separator, the items of a toolbar or tab list, or scroll a focusable region. A click leaves the focus on the
 // clicked control; Space and the arrows then mean what they mean everywhere else on the page (play or pause, the next
 // step) instead of pressing that control again.
 
@@ -34,6 +34,9 @@ export function keyBelongsToTarget(event: KeyboardEvent): boolean {
   if (!(target instanceof Element)) return false
   if ((target as HTMLElement).isContentEditable || target.closest(TEXT) || target.closest(LAYER)) return true
   if (event.key !== ' ' && !NAVIGATION_KEYS.has(event.key)) return false
+  // Resize handles keep their keys after pointer focus too; resizing must never
+  // navigate a teaching step or start its playback.
+  if (target.closest('[role="separator"]')) return true
   if (sources.get(target.ownerDocument)?.byPointer.has(target)) return false
   const region = (target as HTMLElement).tabIndex >= 0 && !target.matches(`${PRESSABLE}, ${NAVIGABLE}`)
   return region || Boolean(target.closest(event.key === ' ' ? PRESSABLE : NAVIGABLE))

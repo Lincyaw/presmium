@@ -8,7 +8,8 @@ import * as Tabs from '@radix-ui/react-tabs'
 import * as Toolbar from '@radix-ui/react-toolbar'
 import * as RadioGroup from '@radix-ui/react-radio-group'
 import { forwardRef, useEffect, useId, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, InputHTMLAttributes, ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
+import type { ComponentProps, CSSProperties, InputHTMLAttributes, ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
+import { Group as ResizableGroup, Panel as ResizablePanel, Separator as ResizableSeparator } from 'react-resizable-panels'
 import { PmButton, PmIcon, PmIconButton, PmTooltip } from './base-controls.tsx'
 import { useMascotEnabled } from './mascot-preference.ts'
 import type { ControlDensity } from './base-controls.tsx'
@@ -18,6 +19,20 @@ export { PmSortableList } from './sortable-list.tsx'
 export type { SortableListItem, SortableListLabels, SortableListProps } from './sortable-list.tsx'
 
 const cls = (...names: (string | false | undefined | null)[]) => names.filter(Boolean).join(' ')
+
+/** The dependency owns pointer capture, iframe shielding, constraints and keyboard resizing. */
+export function PmSplitGroup({ className, orientation = 'horizontal', ...props }: ComponentProps<typeof ResizableGroup>) {
+  return <ResizableGroup {...props} orientation={orientation} data-pm-orientation={orientation} className={cls('pm-ui-split-group', className)} />
+}
+export function PmSplitPanel({ className, hidden, background, scroll, style, ...props }: ComponentProps<typeof ResizablePanel> & { background?: boolean, scroll?: boolean }) {
+  // Panel assigns className/style to its content and HTML attributes to its
+  // sizing element. Mark that outer element explicitly for hiding and retention.
+  return <ResizablePanel {...props} hidden={hidden} data-pm-split-panel="" data-pm-background={background || undefined} aria-hidden={background || props['aria-hidden']} {...background ? { inert: '' } : {}}
+    style={{ overflow: scroll ? 'auto' : 'hidden', ...style }} className={cls('pm-ui-split-panel', className)} />
+}
+export function PmSplitHandle({ label, className, ...props }: ComponentProps<typeof ResizableSeparator> & { label: string }) {
+  return <ResizableSeparator {...props} aria-label={label} className={cls('pm-ui-split-handle', className)} />
+}
 
 /** One tab stop, with arrow/Home/End navigation supplied by Radix. */
 export function PmToolbar({ label, children, className }: { label: string, children: ReactNode, className?: string }) {
@@ -498,6 +513,8 @@ export interface TimelineProps {
   loading?: boolean
   seeking?: boolean
   density?: ControlDensity
+  /** Omit the fallback step strip when the surrounding editor already provides step navigation. */
+  showSteps?: boolean
 }
 
 const timelineTime = (ms: number) => `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${(ms % 60000 / 1000).toFixed(3).padStart(6, '0')}`
@@ -512,7 +529,7 @@ function waveformPath(samples: readonly number[] | undefined): string | undefine
 }
 
 /** Data-only timeline; source, playback, seeking authority and all labels remain with its caller. */
-export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, currentTimeMs, selectedStepId, zoom, onZoomChange, onSelectStep, onSelectSegment, segmentPicker, onSeek, seekDisabled, disabled, loading, seeking, density = 'compact' }: TimelineProps) {
+export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, currentTimeMs, selectedStepId, zoom, onZoomChange, onSelectStep, onSelectSegment, segmentPicker, onSeek, seekDisabled, disabled, loading, seeking, density = 'compact', showSteps = true }: TimelineProps) {
   const hintId = useId()
   const viewport = useRef<HTMLDivElement>(null), tick = useRef<HTMLSpanElement>(null), composing = useRef(false)
   const [width, setWidth] = useState(0), [tickWidth, setTickWidth] = useState(1), [localZoom, setLocalZoom] = useState(1), [raw, setRaw] = useState<string>(), [previewTime, setPreviewTime] = useState<number>()
@@ -594,7 +611,7 @@ export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, 
       onChange={event => { const segment = pickerSegments.find(segment => segment.id === event.target.value); if (segment && !cannotSeek) onSelectSegment?.(segmentPicker.track, segment) }}>
       <option value="">{segmentPicker.placeholder}</option>{pickerSegments.map(segment => <option key={segment.id} value={segment.id} disabled={segment.disabled}>{timelineTime(segment.startMs!)} · {segment.label}</option>)}
     </PmSelect></div>}
-    <div className="pm-ui-timeline__steps">{steps.map(segment => <PmButton key={segment.stepId} density={density} disabled={blocked || segment.disabled} aria-pressed={segment.stepId === selectedStepId} variant={segment.stepId === selectedStepId ? 'accent' : 'default'} onClick={() => onSelectStep(segment.stepId!)}>{segment.label}</PmButton>)}</div>
+    {showSteps && <div className="pm-ui-timeline__steps">{steps.map(segment => <PmButton key={segment.stepId} density={density} disabled={blocked || segment.disabled} aria-pressed={segment.stepId === selectedStepId} variant={segment.stepId === selectedStepId ? 'accent' : 'default'} onClick={() => onSelectStep(segment.stepId!)}>{segment.label}</PmButton>)}</div>}
     {!tracks.some(track => track.segments.length) && <PmNotice>{labels.empty}</PmNotice>}
     <p id={hintId} className="pm-ui-sr-only">{labels.seekHint}</p>
   </section>
