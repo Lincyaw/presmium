@@ -10,7 +10,7 @@ import type { Studio } from './fixtures/workbench/studio.ts'
 
 // The workbench's Export pane: the document's builds and exports as jobs of the workspace service.
 
-const EXAMPLE = fileURLToPath(new URL('../examples/animations', import.meta.url))
+const EXAMPLE = fileURLToPath(new URL('../examples/gallery', import.meta.url))
 
 test.use({ locale: 'zh-CN', actionTimeout: 30_000 })
 test.describe.configure({ mode: 'serial', timeout: 240_000 })

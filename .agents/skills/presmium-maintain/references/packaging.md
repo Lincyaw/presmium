@@ -38,11 +38,11 @@ Copy `packages/addon-guide/package.json` and adapt it. Official plugins are name
   official plugin declares both and is compatible.
 - **Install.** After adding a package or dependency run `pnpm install` at the root and commit
   `pnpm-lock.yaml`.
-- **The example.** `examples/animations/` contains two complete courses and eight user-facing feature
-  guides. Add an authorable scenario to the relevant guide and its `features.json` index when a public
+- **The example.** `examples/gallery/` contains the complete public gallery: two courses, nine feature
+  guides, the Fourier lesson, product film and linked skill animation references. Add an authorable scenario to the relevant guide and its `features.json` index when a public
   capability changes; declare real service, hardware and credential prerequisites. Regression and
   deliberate failure documents stay in `e2e/fixtures/<group>/` ([testing](testing.md)). To use a plugin
-  in the public workspace, declare it in `examples/animations/package.json` and in the document's
+  in the public workspace, declare it in `examples/gallery/package.json` and in the document's
   `metadata.plugins`.
 - **Tests.** Under the owner's current rule (SKILL.md, Verify) a new package gets no tests; verify it by a
   real build of its fixture document. When the owner asks for tests, the existing shape is: a spec

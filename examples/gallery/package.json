@@ -1,12 +1,17 @@
 {
-  "name": "presmium-animations",
+  "name": "presmium-gallery",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "presmium serve .",
-    "build": "node tools/course.mjs build",
+    "build": "node tools/build.mjs",
     "check": "node tools/course.mjs check",
-    "ir": "node tools/course.mjs ir"
+    "ir": "node tools/course.mjs ir",
+    "source": "node tools/package-source.mjs",
+    "score": "node promo/tools/score.mjs",
+    "lesson-film": "presmium-lecture export learn --out public/presmium-lesson.webm --size 1280x720 --fps 24",
+    "film": "presmium-lecture export promo --out public/presmium-60s.webm --size 1920x1080 --fps 30",
+    "check:site": "presmium check promo && presmium check learn"
   },
   "dependencies": {
     "@lincyaw/addon-assistant": "workspace:*",
@@ -27,8 +32,10 @@
     "@lincyaw/addon-stage": "workspace:*",
     "@lincyaw/cli": "workspace:*",
     "@lincyaw/compiler": "workspace:*",
+    "@lincyaw/design": "workspace:*",
     "@lincyaw/host": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
+    "@lincyaw/presmium": "workspace:*",
     "@lincyaw/render-notebook": "workspace:*",
     "@lincyaw/render-slides": "workspace:*",
     "@lincyaw/viewer": "workspace:*",
@@ -41,5 +48,6 @@
     "preview": {
       "restartable": true
     }
-  }
+  },
+  "description": "Presmium gallery: courses, feature guides, Fourier lesson and product film"
 }

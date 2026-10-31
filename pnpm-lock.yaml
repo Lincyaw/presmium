@@ -154,7 +154,7 @@ importers:
         specifier: 1.64.1
         version: 1.64.1
 
-  examples/animations:
+  examples/gallery:
     dependencies:
       '@lincyaw/addon-assistant':
         specifier: workspace:*
@@ -210,12 +210,18 @@ importers:
       '@lincyaw/compiler':
         specifier: workspace:*
         version: link:../../packages/compiler
+      '@lincyaw/design':
+        specifier: workspace:*
+        version: link:../../packages/design
       '@lincyaw/host':
         specifier: workspace:*
         version: link:../../packages/host
       '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../../packages/kernel
+      '@lincyaw/presmium':
+        specifier: workspace:*
+        version: link:../../packages/presmium
       '@lincyaw/render-notebook':
         specifier: workspace:*
         version: link:../../packages/render-notebook
@@ -234,36 +240,6 @@ importers:
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
-      yaml:
-        specifier: 2.9.0
-        version: 2.9.0
-
-  examples/presmium-site:
-    dependencies:
-      '@lincyaw/addon-code':
-        specifier: workspace:*
-        version: link:../../packages/addon-code
-      '@lincyaw/addon-lecture':
-        specifier: workspace:*
-        version: link:../../packages/addon-lecture
-      '@lincyaw/addon-motion':
-        specifier: workspace:*
-        version: link:../../packages/addon-motion
-      '@lincyaw/compiler':
-        specifier: workspace:*
-        version: link:../../packages/compiler
-      '@lincyaw/design':
-        specifier: workspace:*
-        version: link:../../packages/design
-      '@lincyaw/presmium':
-        specifier: workspace:*
-        version: link:../../packages/presmium
-      '@lincyaw/render-slides':
-        specifier: workspace:*
-        version: link:../../packages/render-slides
-      '@lincyaw/web':
-        specifier: workspace:*
-        version: link:../../packages/web
       yaml:
         specifier: 2.9.0
         version: 2.9.0

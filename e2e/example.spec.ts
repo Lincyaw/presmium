@@ -7,7 +7,7 @@ import { expect, test } from '@playwright/test'
 import { serve as staticSite } from './fixtures/deck.ts'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
-const EXAMPLE = join(ROOT, 'examples/animations')
+const EXAMPLE = join(ROOT, 'examples/gallery')
 const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
 const LECTURES = [{ dir: 'bubble-sort', title: '冒泡排序' }, { dir: 'libraries', title: '代码写成的动画' }]
 

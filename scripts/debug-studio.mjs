@@ -22,7 +22,7 @@ if (values.help) {
   --headed              Show the isolated Chromium window
 
 Copies the workspace into an isolated Studio; leaves the original files and running services alone.
-Without a workspace, uses a fresh copy of examples/animations. Captures browser errors, console
+Without a workspace, uses a fresh copy of examples/gallery. Captures browser errors, console
 warnings/errors, failed HTTP/network requests, slow requests, long tasks and service logs before
 navigation. Saves events.jsonl, summary.json, diagnostics and screenshots on failure. Does not collect
 request headers/bodies or cookies. Query strings and known launch tokens are removed from reports.`)
@@ -86,7 +86,7 @@ try {
   let fixture = positionals[0] && resolve(positionals[0])
   if (!fixture) {
     example = mkdtempSync(join(tmpdir(), 'presmium-debug-example-'))
-    execFileSync(process.execPath, [join(root, 'examples/animations/try.mjs'), example], { stdio: 'ignore' })
+    execFileSync(process.execPath, [join(root, 'examples/gallery/try.mjs'), example], { stdio: 'ignore' })
     fixture = example
   }
   console.error(`Debug evidence: ${directory}`)

@@ -1,10 +1,13 @@
-# Presmium 示例：用代码讲课
+# Presmium Gallery
 
-本仓库的中文公开示例，包括两讲完整课程和按主题组织的功能导览。
+统一示例工作区：两讲完整课程、九份功能导览、傅里叶小课、产品宣传片，以及 18 份动画效果参考，共 31 份主文稿。
 每份文稿的唯一内容入口是 `lecture.json`；项目代码和媒体文件由文稿显式引用。
 
 | 讲义 | 内容 |
 |---|---|
+| [傅里叶级数小课](learn/lecture.json) | 转动的圆怎样画出音符与五角星，含英文译文 |
+| [产品宣传片](promo/lecture.json) | 真实工作台、课堂与网站画面组成的产品短片 |
+| [动画效果参考](animation-library/) | 六种动画库、时间线、时长片段、影片、Flow Matching 和八份分类效果目录 |
 | [冒泡排序](bubble-sort/lecture.json) | 一趟冒泡排序：代码、GSAP 动画、讲解点击的计数组件与光标提示，最后合成为带字幕的讲授 |
 | [代码写成的动画](libraries/lecture.json) | GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节动画，再到讲到哪里点哪里与讲授视频 |
 | [功能导览：动手编辑一份讲义](guide-authoring/lecture.json) | 用午餐预算材料练习复制页面、表格改字、每步讲稿、混合时机与继承、原生批注、保存和历史 |
@@ -17,7 +20,9 @@
 | [功能导览：可选执行环境](guide-environments/lecture.json) | Docker 环境包、WASI、WGSL、jax-js、Python GPU 桥、Jupyter 与离线运行资源 |
 | [功能导览：联网资源](guide-network/lecture.json) | YouTube、PlantUML 与真实 HTTPS 媒体，独立说明网络及服务条件 |
 
-第一次使用建议先打开“动手编辑一份讲义”，按原页→副本→讲稿→保存的顺序完成练习。已有工作台副本不会自动同步仓库示例；需要新材料时可在仓库根目录用 `pnpm studio examples/animations` 打开当前源工作区，或另建独立副本，保留自己原来的修改。
+运行 `pnpm studio`，在文稿列表选择示例。首次启动会把此目录（包括软链接的动画效果参考）物化到 `.presmium/gallery-workspace/`，之后复用这个独立 git 仓库。旧的 `.presmium/example-workspace/` 不会被覆盖。需要另一份最新副本时，在仓库根目录运行 `node examples/gallery/try.mjs <新目录>`，再运行 `pnpm studio <新目录>`。
+
+完整课程、小课与宣传片的源码在此目录。`animation-library` 是指向 `.agents/skills/presmium-animate/gallery` 的相对软链接；技能参考只维护一份，复制时变成真实文件，满足工作台的编辑路径校验。技能的 `references/` 解释方法，效果源码留在技能 `gallery/`，无需把完整产品示例塞进技能。产品首页与影片制作详见 [产品站点说明](PRODUCT-SITE.md)。
 
 功能与章节的对应关系见 [功能索引](FEATURES.md)，另有 [机器可读清单](features.json)。索引中的 `mode` 区分现场演示、操作指引、需额外能力的场景与当前明确门槛。
 讲稿导览默认不配音，不会因打开文稿调用语音服务。当前工作台旁栏可编辑每步讲稿与时机，完整音色、配音任务和独立视频制作入口尚未组合；相关页面按真实服务与配置前提说明，不冒充已经开放的按钮。可选环境导览也不会自动启动 Docker、远端内核或 GPU；WASI 运行资源可显式保存后离线使用。联网导览不作为离线验收的一部分。
@@ -35,13 +40,13 @@
 
 | 命令 | 结果 |
 |---|---|
-| `pnpm studio` | 首次把示例复制到 `.presmium/example-workspace`（独立的 git 仓库，含合成缓存与给 AI 的 `AGENTS.md`），启动可编辑工作台；之后复用该副本 |
+| `pnpm studio` | 首次把全部示例复制到 `.presmium/gallery-workspace`（独立的 git 仓库，含合成缓存与给 AI 的 `AGENTS.md`），启动可编辑工作台；之后复用该副本 |
 | `pnpm demo:check` | 检查两讲 |
-| `pnpm demo:build` | 构建整个工作区的网页站点，并为原有两讲补充幻灯片、notebook 与讲授 |
+| `pnpm demo:build` | 构建全部示例的网页站点；为原有两讲补充幻灯片、notebook 与讲授，为小课和宣传片补充放映与讲授 |
 | `pnpm demo:ir` | 输出两讲的 IR |
-| `presmium serve examples/animations` | 从示例源码启动工作区预览 |
+| `presmium serve examples/gallery` | 从示例源码启动工作区预览 |
 
-在示例工作区目录（仓库中的 `examples/animations` 或工作台独立副本）定向检查功能导览：
+在示例工作区目录（工作台独立副本，或仓库中的 `examples/gallery`（软链接参考文稿需先复制再编辑））定向检查功能导览：
 
 ```sh
 presmium check guide-classroom --json

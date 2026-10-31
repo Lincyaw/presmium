@@ -46,7 +46,7 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@lincyaw/presmium` | npm | `pnpm add -g @lincyaw/presmium`：`presmium` 命令连同三个渲染端与全部官方插件；文稿与工作区中找不到的插件从它的依赖中找，项目里装有 `@lincyaw/presmium` 时全局命令转交给项目里的那一份；`presmium new` 运行 `create-presmium` |
 | `create-presmium` | npm | `presmium new` 与 `pnpm create presmium`：新建讲义、工作区或插件项目（不在 `@lincyaw` 作用域中：`pnpm create presmium` 运行的就是这个名字的包；它的模板在打包时从各自的源复制，在源码仓库中直接用源） |
 | `presmium-vscode` | 否 | VS Code 扩展：按平台预打包为 `.vsix`，含语言服务、网页渲染端与完整 Studio 运行时，附加到 GitHub Release；不发布到 npm，扩展市场发布另行处理 |
-| `presmium-animations` | 否 | 公开示例：两讲用代码写动画的讲义（`examples/animations`） |
+| `presmium-gallery` | 否 | 统一公开示例：课程、导览、小课、宣传片与技能动画参考（`examples/gallery`） |
 | `presmium-animate-gallery` | 否 | presmium-animate 技能自带的效果合集，每个动画库一讲，在这里构建以检查场景（`.agents/skills/presmium-animate/gallery`）；技能发布时不带依赖与构建产物 |
 | `presmium-regression-fixture` | 否 | 集成测试的私有文稿与依赖（`e2e/fixtures/regression`） |
 | `presmium-docs` | 否 | 文档站（`site/`），一个 Presmium 工作区，`pnpm --filter presmium-docs build` 构建 |

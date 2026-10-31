@@ -6,7 +6,7 @@ import { join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
-const target = resolve(process.argv[2] ?? '.presmium/example-workspace')
+const target = resolve(process.argv[2] ?? '.presmium/gallery-workspace')
 if (existsSync(target) && readdirSync(target).length) throw new Error(`${target} already exists and is not empty`)
 // A lecture's .presmium/ keeps what is committed with it (the synthesis cache), not the working files of builds.
 const KEPT = new Set(['speech', 'speech.lock.json'])
@@ -16,11 +16,13 @@ const copied = (source) => {
   const deck = parts.indexOf('.presmium')
   return deck === -1 || deck === parts.length - 1 || KEPT.has(parts[deck + 1])
 }
-cpSync(here, target, { recursive: true, filter: copied })
+// Skill galleries stay at their canonical source paths. The editable copy has
+// real directories, as the workspace's source writer deliberately rejects symlinks.
+cpSync(here, target, { recursive: true, dereference: true, filter: copied })
 symlinkSync(join(here, 'node_modules'), join(target, 'node_modules'), 'junction')
 writeFileSync(join(target, '.gitignore'), 'node_modules\ndist/\n**/.presmium/*\n!**/.presmium/speech/\n!**/.presmium/speech.lock.json\n')
 const git = args => execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Presmium example', '-c', 'user.email=example@presmium.invalid', '-c', 'commit.gpgSign=false', ...args], { cwd: target, stdio: 'pipe' })
 git(['init', '-q', '-b', 'main'])
 git(['add', '-A'])
-git(['commit', '-q', '-m', 'Presmium example: courses and feature guides'])
-console.log(`example workspace: ${target}`)
+git(['commit', '-q', '-m', 'Presmium gallery: courses, feature guides and animation references'])
+console.log(`gallery workspace: ${target}`)

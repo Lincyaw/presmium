@@ -35,7 +35,7 @@ jobs:
         run: |
           node --input-type=module -e "
             import { readFileSync, writeFileSync } from 'node:fs'
-            const path = 'examples/animations/presmium.workspace.yaml'
+            const path = 'examples/gallery/presmium.workspace.yaml'
             const text = readFileSync(path, 'utf8')
             if (!/^site:$/m.test(text)) throw new Error('missing site configuration')
             writeFileSync(path, text.replace(/^site:$/m, 'site:\n  base: ' + JSON.stringify(process.env.BASE)))
@@ -44,7 +44,7 @@ jobs:
       - run: pnpm demo:build
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: examples/animations/dist/web
+          path: examples/gallery/dist/web
 
   deploy:
     name: Deploy

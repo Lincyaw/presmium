@@ -182,23 +182,27 @@ that a dependency already handles.
 
 `pnpm studio [directory]` starts the workbench; open the full address it prints, stop with `Ctrl+C`.
 Editing and preview need no model. Without a directory it prepares, on first run, an independent copy of
-the example in `.presmium/example-workspace` (its own git repository, with the speech cache and an
-`AGENTS.md` for the AI) via `examples/animations/try.mjs`, and reuses it afterwards.
+the gallery in `.presmium/gallery-workspace` (its own git repository, with the speech cache and an
+`AGENTS.md` for the AI) via `examples/gallery/try.mjs`, and reuses it afterwards. Linked skill
+examples are materialized as regular files, preserving the workspace source writer’s symlink protections.
 
-`examples/animations/` is the public example workspace: two complete Chinese courses (bubble sort and
-animations written in code), plus nine topic guides indexed by `examples/animations/FEATURES.md` and
-`features.json`. The guides cover the official plugins and public components, with real prerequisites
+`examples/gallery/` is the unified public workspace: two complete Chinese courses, nine topic guides,
+the Fourier lesson, the product film and 18 animation reference documents (31 main documents).
+`animation-library` links to the canonical `.agents/skills/presmium-animate/gallery`; do not duplicate those
+sources or move complete product examples into skills. Method guidance stays in skill `references/`.
+The topic guides are indexed by `examples/gallery/FEATURES.md` and `features.json`. The guides cover the official plugins and public components, with real prerequisites
 and explicit capability limits. `demo:check` and `demo:ir` still target the original two courses;
 `demo:build` includes every document's web page and adds slides, notebook and narrated lecture for the
-two complete courses only.
+two complete courses; the Fourier lesson and product film also get slides and lecture outputs.
 
 The original courses have matching narration audio committed in `<document>/.presmium/speech/` and
 `speech.lock.json`; builds need no speech engine while those requests remain unchanged. After editing
 narration, explicitly generate the affected targets with a real engine, commit their matching cache and
 lock, and check the changed document without an engine using `presmium check <document>`.
 Verification documents and deliberate failure cases stay in `e2e/fixtures/<group>/`; the old BPE
-course stays only in `e2e/fixtures/regression/`. Existing user copies in `.presmium/example-workspace`
-are reused and must not be overwritten to refresh the examples.
+course stays only in `e2e/fixtures/regression/`. Existing user copies in `.presmium/gallery-workspace` are reused; the older
+`.presmium/example-workspace` is preserved. Neither may be overwritten to refresh examples.
+Use `node examples/gallery/try.mjs <new-directory>` for a fresh, editable gallery.
 
 From source, `pnpm add -g ./packages/presmium` makes the global CLI this checkout; `pnpm add -g
 ./packages/studio` does the same for `presmium-studio`. Commands written for users use only pnpm and the

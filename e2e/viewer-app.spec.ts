@@ -62,7 +62,7 @@ test.beforeAll(() => {
   mkdirSync(work, { recursive: true })
   dir = mkdtempSync(join(work, 'e2e-viewer-app-'))
   rmSync(dir, { recursive: true })
-  execFileSync(process.execPath, [join(ROOT, 'examples/animations/try.mjs'), dir], { stdio: 'pipe' })
+  execFileSync(process.execPath, [join(ROOT, 'examples/gallery/try.mjs'), dir], { stdio: 'pipe' })
   cpSync(fileURLToPath(new URL('./fixtures/viewer-app/runtime-files', import.meta.url)), join(dir, 'runtime-files'), { recursive: true })
   cache = mkdtempSync(join(work, 'e2e-viewer-cache-'))
 })

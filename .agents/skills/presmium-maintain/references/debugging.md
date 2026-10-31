@@ -46,7 +46,7 @@ For a stalling or broken front end, in this order:
    `presmium__get_runtime` and so on. No window feedback only means no browser has been observed, not that
    the page is healthy. `get_diagnostics` reads the reported snapshot without compiling; `check_document` explicitly runs compilation and plugin checks. Neither replaces observing the browser.
 2. Reproduce in an isolated copy, from the repository root: `pnpm debug:studio [<workspace>] --document
-   <document directory>` (without a workspace it uses a fresh copy of `examples/animations`). It copies
+   <document directory>` (without a workspace it uses a fresh copy of `examples/gallery`). It copies
    the workspace and runs its own state directory, service ports and Chromium; the original files and running
    services are left alone. Before navigation it captures page and iframe exceptions, console warnings and
    errors, HTTP and network failures, slow requests, long tasks and the preview handshake, and puts the
