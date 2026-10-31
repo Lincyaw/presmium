@@ -1,5 +1,15 @@
 # @lincyaw/web
 
+## 1.0.0-rc.3
+
+### Minor Changes
+
+- f3b035a: Sites take a theme of their own: `site.theme` names a theme directory or an installed theme package whose `theme.json` extends a built-in theme and sets its parameters, design tokens for the light and dark appearance, web fonts and stylesheets. Pages link the published theme files and carry `data-pm-site-theme-name`; HTML template homepages receive the stylesheets in the site data.
+
+### Patch Changes
+
+- @lincyaw/design@1.0.0-rc.3
+
 ## 1.0.0-rc.2
 
 ### Minor Changes

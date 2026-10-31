@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/classroom-server",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.3",
   "description": "Presmium's classroom sync server: y-websocket rooms",
   "license": "Apache-2.0",
   "repository": {

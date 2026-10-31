@@ -1,5 +1,17 @@
 # @lincyaw/language-server
 
+## 1.0.0-rc.3
+
+### Patch Changes
+
+- Updated dependencies [f3b035a]
+  - @lincyaw/web@1.0.0-rc.3
+  - @lincyaw/cli@1.0.0-rc.3
+  - @lincyaw/compiler@1.0.0-rc.3
+  - @lincyaw/host@1.0.0-rc.3
+  - @lincyaw/kernel@1.0.0-rc.3
+  - @lincyaw/viewer@1.0.0-rc.3
+
 ## 1.0.0-rc.2
 
 ### Patch Changes

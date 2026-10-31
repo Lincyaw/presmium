@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/addon-motion",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.3",
   "description": "Presmium plugin: animated scenes on the step's time, with GSAP, Anime.js, Motion, Three.js, Remotion and D3",
   "license": "Apache-2.0",
   "repository": {
