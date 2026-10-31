@@ -33,6 +33,24 @@ const APPEARANCE = `(() => {
   if (asked === 'dark' || (asked !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark')
 })()`
 
+/**
+ * A page cached before a new deployment names an app version the deployment removed: its scripts and the modules they
+ * import then fail. The page loads once more, from the network, and gets the current version; at most once in 30 s.
+ */
+const STALE = `(() => {
+  const key = 'presmium-stale-reload'
+  const reload = () => {
+    let last = 0
+    try { last = Number(sessionStorage.getItem(key)) || 0 } catch {}
+    if (Date.now() - last < 30000) return
+    try { sessionStorage.setItem(key, String(Date.now())) } catch {}
+    location.reload()
+  }
+  addEventListener('vite:preloadError', (event) => { event.preventDefault(); reload() })
+  addEventListener('unhandledrejection', (event) => { if (/dynamically imported module|Importing a module script failed|error loading dynamically imported module/i.test(String(event.reason && event.reason.message || event.reason))) reload() })
+  addEventListener('error', (event) => { const el = event.target; if (el && el.tagName === 'SCRIPT' && el.type === 'module') reload() }, true)
+})()`
+
 const json = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c')
 
 export function pageHtml(input: PageHtmlInput): string {
@@ -45,6 +63,7 @@ export function pageHtml(input: PageHtmlInput): string {
     `<title>${escapeHtml(input.title)}</title>`,
     ...(input.meta ?? []).map(tag => `<meta ${attributes(tag)}>`),
     `<script>${APPEARANCE}</script>`,
+    `<script>${STALE}</script>`,
     `<script type="importmap">${json({ imports })}</script>`,
     ...entry.css.map(file => `<link rel="stylesheet" href="${escapeHtml(`${appUrl}${file}`)}">`),
     // A workspace theme's fonts, tokens and styles come after the app's, so that they override them.

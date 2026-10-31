@@ -1,6 +1,6 @@
 import { componentErrors, createServerClient, pluginsOf, presmiumReport, provideServer, registerPresmiumPlugin, reportPluginFailure, setHostActive, startHost } from '@lincyaw/host'
 import type { ServerClient, SharedStates, SyncTransports } from '@lincyaw/host'
-import { errorMessage } from '@lincyaw/kernel'
+import { errorMessage, reportStaleModule } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import { PmComponentFallback, tryInstallViewerPlugin, withSlideGlobals } from '@lincyaw/viewer'
 import type { Viewer } from '@lincyaw/viewer'
@@ -31,6 +31,7 @@ export async function startRuntime(loaders: RuntimeModules['plugins'], doc: IRDo
   const modules = await Promise.all(loaders.map(load => load().catch((error) => {
     failed = true
     console.error('[presmium] a plugin module failed to load', error)
+    reportStaleModule(error)
     return {}
   })))
   const plugins = modules.flatMap(module => pluginsOf(module))

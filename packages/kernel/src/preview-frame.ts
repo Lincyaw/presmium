@@ -1221,3 +1221,14 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
     },
   }
 }
+
+const STALE_MODULE = /dynamically imported module|Importing a module script failed|error loading dynamically imported module/i
+
+/**
+ * A module that failed to load because a new deployment removed the version this (cached) page names: the page asks to
+ * load again (`vite:preloadError`, which the page's head answers with one reload). Other failures are left alone.
+ */
+export function reportStaleModule(error: unknown): void {
+  if (typeof window === 'undefined' || !STALE_MODULE.test(String(error instanceof Error ? error.message : error))) return
+  window.dispatchEvent(new Event('vite:preloadError', { cancelable: true }))
+}

@@ -15,7 +15,7 @@ import {
   useViewRole,
 } from '@lincyaw/host'
 import type { PlaybackLease } from '@lincyaw/host'
-import { errorMessage } from '@lincyaw/kernel'
+import { errorMessage, reportStaleModule } from '@lincyaw/kernel'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { SceneProps } from '../../components/PmScene.tsx'
@@ -124,6 +124,7 @@ export default function SceneView(props: SceneProps) {
     setStatus('failed')
     setFailure(errorMessage(error))
     console.error(`[presmium.motion] the scene ${props.scene} failed`, error)
+    reportStaleModule(error)
   }
   useEffect(() => {
     const before = followedNavigation.current
