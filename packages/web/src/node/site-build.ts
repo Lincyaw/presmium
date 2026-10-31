@@ -14,6 +14,7 @@ import { writeServiceWorker } from './offline.ts'
 import { publishedDocument, publishedFile } from './publish.ts'
 import { APP_DIR, CODE_DIR, contentKey, copyApp, copyPublic, copyRuntimeAssets, runtimeAssets, searchIndex } from './site-files.ts'
 import { documentBase, documentPage, documentSiteConfig, homeDocument, homeDocuments, isSingle, landingConfig, landingDocument, languageLabel, LIST_PAGE, siteLanguage, siteLanguages, siteNeighbours, siteShellBelow, siteTitle, sitemapPages, translationOf } from './site-model.ts'
+import { optimizeImages } from './optimize.ts'
 import { publishedSite } from './site-assets.ts'
 import { themedSite } from './site-theme.ts'
 import { loadLanding, publishLanding, siteContent } from './landing.ts'
@@ -274,6 +275,11 @@ export async function buildSite(site: SiteSpec, ctx: RenderContext, documents: r
     ])
     await writeSitemap(join(ctx.outDir, 'sitemap.xml'), sitemap.hostname, ctx.base, pages)
   }
+  await reportOptimized(ctx, await optimizeImages(ctx.outDir))
+}
+
+async function reportOptimized(ctx: RenderContext, { images, saved }: { images: number, saved: number }): Promise<void> {
+  if (images > 0) ctx.log?.(`${images} images encoded as WebP, ${Math.round(saved / 1024)} KB smaller`)
 }
 
 /** The animation libraries a scene engine loads when its first scene is made, by the start of their file names. */
@@ -329,4 +335,5 @@ export async function buildSlidesSite(doc: IRDocument, ctx: RenderContext, nodeP
   }
   const preload = code ? scenePreloads(join(ctx.outDir, CODE_DIR, code), `${ctx.base}${CODE_DIR}/${code}/`, built) : []
   writeFileSync(join(ctx.outDir, 'index.html'), pageHtml({ entry: appEntry(built.app), appUrl: built.appUrl, shared: built.app.manifest.shared, config, title: doc.meta.title, preload }))
+  await reportOptimized(ctx, await optimizeImages(ctx.outDir))
 }

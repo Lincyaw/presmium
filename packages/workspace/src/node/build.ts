@@ -3,7 +3,7 @@ import { isAbsolute, join, resolve } from 'node:path'
 import { build, Compiler } from '@lincyaw/compiler'
 import type { Compilation, RunStats } from '@lincyaw/compiler'
 import { errorMessage, isRecord } from '@lincyaw/kernel'
-import type { Finding } from '@lincyaw/kernel'
+import type { Finding, IRDocument, SiteSpec } from '@lincyaw/kernel'
 import { listDocuments, readWorkspaceConfig } from './config.ts'
 import { siteContext, siteDocument, siteIR, siteSpec, siteTranslations, webRenderer } from './site.ts'
 
@@ -21,8 +21,10 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
   const site = siteSpec(config, [])
   const base = siteBase(config.site.base)
   const forms: { dir: string, compilation: Compilation, to: string[] }[] = []
+  const compilations: Compilation[] = []
   for (const document of found) {
     const compilation = await new Compiler(join(config.root, document.entry), { bundled: options.bundled, settings: config.settings }).compile({ pruneCache: true })
+    compilations.push(compilation)
     const to = presentations(compilation, `${base}${urlPath(document.dir)}/`, siteLook(config.site, config.root))
     if (to.length > 0) forms.push({ dir: document.dir, compilation, to })
     const translated = await siteTranslations(compilation)
@@ -33,6 +35,7 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
   const outDir = join(resolve(options.outDir ?? join(config.root, 'dist')), 'web')
   const renderer = await webRenderer(config.root, options.bundled)
   const ctx = siteContext({ root: config.root, outDir, workDir: join(config.root, '.presmium', 'site'), base, findings })
+  ctx.pluginDirs = pluginsByName(site, compilations)
   try {
     await renderer.buildSite!(site, ctx)
   } catch (error) {
@@ -53,6 +56,28 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
     }
   }
   return { outDir, documents, findings }
+}
+
+/**
+ * The site's documents name their plugins by package, as a presentation built alone does, so the pages and the
+ * presentations share one viewer app (its key follows the plugin names); the site resolves each name to the directory
+ * it was loaded from. A name that two documents load from different directories stays a directory, to tell them apart.
+ */
+function pluginsByName(site: SiteSpec, compilations: readonly Compilation[]): Record<string, string> {
+  const dirs = new Map<string, Set<string>>(), names = new Map<string, string>()
+  for (const { plugins } of compilations) for (const { name, dir } of plugins) {
+    let own = dirs.get(name)
+    if (!own) dirs.set(name, own = new Set())
+    own.add(dir)
+    names.set(dir, name)
+  }
+  const unique = new Map([...dirs].filter(([, own]) => own.size === 1).map(([name, own]) => [name, [...own][0]!]))
+  const byName = (doc: IRDocument): IRDocument => ({ ...doc, config: { ...doc.config, plugins: doc.config.plugins.map(dir => names.has(dir) && unique.has(names.get(dir)!) ? names.get(dir)! : dir) } })
+  for (const entry of site.documents) {
+    if (entry.doc) entry.doc = byName(entry.doc)
+    for (const translation of entry.translations ?? []) translation.doc = byName(translation.doc)
+  }
+  return Object.fromEntries(unique)
 }
 
 const PRESENTATIONS = ['slides', 'lecture']
