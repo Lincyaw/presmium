@@ -1,4 +1,4 @@
-import { PmCaption, PmDrawer, PmIconButton, PmMenu, PmTabs, PRODUCTION_PLAYBACK, TIMED_CAPTIONS, useMessages, useServer, useService, useStore } from '@lincyaw/host'
+import { PmCaption, PmDrawer, PmIcon, PmIconButton, PmMenu, PmTabs, PRODUCTION_PLAYBACK, TIMED_CAPTIONS, useMessages, useServer, useService, useStore } from '@lincyaw/host'
 import type { MenuItem } from '@lincyaw/host'
 import { isPreviewEmbedded } from '@lincyaw/kernel'
 import { useEffect, useMemo, useState } from 'react'
@@ -58,6 +58,8 @@ export default function PlayerPanel(_props: { view?: string }) {
     }
     return () => { if (keyboardPlayer.getSnapshot() === player) keyboardPlayer.set(undefined) }
   }, [player, status, failure, controlled])
+  // The browser would not start the sound without the reader: a large Play waits for their click.
+  const blocked = useStore(player?.clock.blocked, false)
   const time = useStore(player?.time, 0),
     clockPlaying = useStore(player?.clock.playing, false),
     rate = useStore(player?.clock.rate, 1)
@@ -173,6 +175,7 @@ export default function PlayerPanel(_props: { view?: string }) {
     else if (option === 'close') play(undefined)
   }
   return <>
+    {blocked && <div className="pm-lecture-start"><button type="button" className="pm-lecture-start__button" aria-label={t.player.play} onClick={() => void player.play()}><PmIcon name="play" /></button></div>}
     {(captions || current?.unsaid) && (current || manual) && caption && <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang}
       data-stale={current && stale.has(current.id) ? 'true' : undefined} hint={current && stale.has(current.id) ? t.player.stale : undefined} />}
     {panel && <PmDrawer open label={panel === 'transcript' ? t.player.transcript : t.player.chapters} onClose={() => setPanel(undefined)}>
