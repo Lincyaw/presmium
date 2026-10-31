@@ -1,5 +1,12 @@
 # @lincyaw/web
 
+## 1.0.0-rc.9
+
+### Patch Changes
+
+- fcaaa81: A page cached from before a new deployment, whose app version the deployment removed, loads again once from the network instead of staying on "Loading the animation…" with its scripts and scenes failing to load.
+- @lincyaw/design@1.0.0-rc.9
+
 ## 1.0.0-rc.8
 
 ### Patch Changes
