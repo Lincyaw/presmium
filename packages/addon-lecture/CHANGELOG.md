@@ -1,5 +1,11 @@
 # @lincyaw/addon-lecture
 
+## 1.0.0-rc.11
+
+### Patch Changes
+
+- e189d3f: A lecture loads each audio file once, however many clips are cut from it (a score split per step was fetched once per clip), and `presmium serve` lets the browser keep media and revalidate it by its tag (`ETag`, 304) instead of `no-store`.
+
 ## 1.0.0-rc.10
 
 No changes in this release.
