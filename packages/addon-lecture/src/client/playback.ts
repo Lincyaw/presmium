@@ -18,14 +18,25 @@ async function createClock(track: LectureTrack, source: LectureSource, signal?: 
   const length = trackDuration(track)
   const segments = audioSegments(track)
   if (!segments.length) return new SilentClock(length)
+  // Clips cut from one file (a score split per step) share one download.
+  const files = new Map<string, Promise<string>>()
+  const fileOf = (segment: typeof segments[number]) => {
+    const key = segment.sha256 ?? segment.assetId ?? segment.src
+    let url = files.get(key)
+    if (!url) {
+      url = track.binding && source.productionMedia && segment.clipId ? source.productionMedia(track.binding, segment.clipId, signal) : source.media(track.id, segment.src)
+      files.set(key, url)
+    }
+    return url
+  }
   const loaded = await Promise.allSettled(segments.map(async (segment): Promise<ClockMedia> => {
     if (track.binding && source.productionMedia && !segment.clipId) throw new Error('production-clip-unavailable')
-    const url = track.binding && source.productionMedia && segment.clipId ? await source.productionMedia(track.binding, segment.clipId, signal) : await source.media(track.id, segment.src)
+    const url = await fileOf(segment)
     return { url, start: segment.start, duration: segment.duration, sourceStartMs: segment.sourceStartMs, volume: segment.volume, muted: segment.muted }
   }))
   const media = loaded.flatMap(result => result.status === 'fulfilled' ? [result.value] : [])
   const failed = loaded.find(result => result.status === 'rejected')
-  if (failed || signal?.aborted) { for (const { url } of media) if (url.startsWith('blob:')) URL.revokeObjectURL(url); if (failed) throw failed.reason; signal?.throwIfAborted() }
+  if (failed || signal?.aborted) { for (const url of new Set(media.map(item => item.url))) if (url.startsWith('blob:')) URL.revokeObjectURL(url); if (failed) throw failed.reason; signal?.throwIfAborted() }
   return new MediaClock(length, media)
 }
 function installExportHook(player: LecturePlayer, clock: StepClock | undefined): void {

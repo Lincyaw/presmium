@@ -14,16 +14,29 @@ const TYPES: Record<string, string> = {
   '.mp3': 'audio/mpeg',
 }
 
+/**
+ * Media may change while the author works, so the browser keeps it but asks again each time (`no-cache`): an unchanged
+ * file answers 304 by its tag, and a reader who plays the same piece again, or several clips of one file, loads it once.
+ */
+export const MEDIA_CACHE = 'private, no-cache'
+
+export function notModified(request: Request, etag: string, headers: Record<string, string>): Response | undefined {
+  return request.headers.get('if-none-match')?.split(',').some(tag => tag.trim() === etag) ? new Response(null, { status: 304, headers: { ...headers, ETag: etag } }) : undefined
+}
+
 export function serveFile(deckDir: string, file: string | undefined, request: Request): Response {
   const fd = file === undefined ? undefined : openInDeck(deckDir, file)
   if (fd === undefined) return problemResponse(404, 'no such file')
-  const { size } = fstatSync(fd)
-  const headers = { 'Content-Type': TYPES[extname(file!)] ?? 'application/octet-stream', 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-store' }
+  const { size, mtimeMs } = fstatSync(fd)
+  const etag = `"${size.toString(36)}-${Math.round(mtimeMs).toString(36)}"`
+  const headers = { 'Content-Type': TYPES[extname(file!)] ?? 'application/octet-stream', 'Accept-Ranges': 'bytes', 'Cache-Control': MEDIA_CACHE, ETag: etag }
   const body = (start: number, end: number) => Readable.toWeb(createReadStream('', { fd, start, end })) as ReadableStream<Uint8Array>
   const empty = (response: Response) => {
     closeSync(fd)
     return response
   }
+  const unchanged = notModified(request, etag, headers)
+  if (unchanged) return empty(unchanged)
   const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get('range') ?? '')
   if (!range || (!range[1] && !range[2])) {
     if (size === 0 || request.method === 'HEAD') return empty(new Response(null, { headers: { ...headers, 'Content-Length': String(size) } }))
