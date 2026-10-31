@@ -105,6 +105,9 @@
   /* The mascot's frame is 4:3; these are its widths: small beside a line of text, and full size. */
   --pm-size-mascot-sm: 3.5rem;
   --pm-size-mascot: 7rem;
+  /* The button that starts a lecture the browser would not autoplay. */
+  --pm-size-start: 5rem;
+  --pm-size-start-icon: 2rem;
   --pm-size-badge: 1.25rem;
   --pm-size-avatar: 1.75rem;
   --pm-size-divider: 1.25rem;

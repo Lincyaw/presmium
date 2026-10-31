@@ -6,6 +6,8 @@ export interface TrackClock {
   readonly playing: Readonly<Store<boolean>>
   readonly rate: Readonly<Store<number>>
   readonly error: Readonly<Store<Error | undefined>>
+  /** The browser refused to start the sound before the reader acted on this page (autoplay): playback waits for them. */
+  readonly blocked: Readonly<Store<boolean>>
   play(): void
   pause(): void
   seek(t: number): void
@@ -18,6 +20,7 @@ export class SilentClock implements TrackClock {
   readonly playing = createStore(false)
   readonly rate = createStore(1)
   readonly error = createStore<Error | undefined>(undefined)
+  readonly blocked = createStore(false)
   protected at = 0
   protected since = performance.now()
   protected readonly duration: number
@@ -33,6 +36,7 @@ export class SilentClock implements TrackClock {
 
   play(): void {
     if (this.playing.getSnapshot()) return
+    this.blocked.set(false)
     if (this.at >= this.duration) this.at = 0
     this.since = performance.now()
     this.playing.set(true)
@@ -150,6 +154,12 @@ export class MediaClock extends SilentClock {
         if (!this.playing.getSnapshot() || at < m.start || at >= m.start + m.duration) m.el.pause()
       }).catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return
+        // Autoplay without the reader's gesture: not a failure, playback waits for their click.
+        if (error instanceof DOMException && error.name === 'NotAllowedError') {
+          this.pause()
+          this.blocked.set(true)
+          return
+        }
         this.fail(error instanceof Error ? error : new Error(String(error)))
       })
     }

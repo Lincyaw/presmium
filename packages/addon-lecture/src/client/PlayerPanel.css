@@ -118,3 +118,36 @@ html.pm-lecture-exporting .pm-slide-fit__canvas {
     display: none;
   }
 }
+
+/* A lecture the browser would not autoplay waits here, centred on the slide, for the reader's click. */
+.pm-lecture-start {
+  position: fixed;
+  inset: 0;
+  z-index: var(--pm-z-lecture-player);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.pm-lecture-start__button {
+  display: grid;
+  place-items: center;
+  width: var(--pm-size-start);
+  height: var(--pm-size-start);
+  border: 0;
+  border-radius: var(--pm-radius-pill);
+  background: color-mix(in srgb, var(--pm-color-ink) 78%, transparent);
+  color: var(--pm-color-bg);
+  box-shadow: var(--pm-shadow-float);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.pm-lecture-start__button:hover {
+  background: var(--pm-color-ink);
+}
+
+.pm-lecture-start__button .pm-ui-icon {
+  width: var(--pm-size-start-icon);
+  height: var(--pm-size-start-icon);
+}
