@@ -39,3 +39,11 @@
 - Figma 同步公共 [PanelHeader](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=313-7410)、[DockedTabs](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=313-7432)、Timeline 的六个 Compact Editor 状态及[亮暗审阅实例](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=313-7839)，最终截图已查看。
 
 截图：`/private/tmp/presmium-editing-workspace-light-20261031.png`、`/private/tmp/presmium-editing-workspace-dark-20261031.png`、`/private/tmp/presmium-editing-workspace-narrow-light-20261031.png`、`/private/tmp/presmium-editing-workspace-narrow-dark-20261031.png`。
+
+## 后续调整：缩小底部时间线
+
+按作者反馈收紧 editor 时间线：轨道文字从 13px 降至 12px，刻度与时长从 12px 降至 11px，轨道从 40px 降至 28px，行间距从 8px 降至 4px，标签列从 88px 降至 64px。工具栏控件仍为原来的 30px 紧凑尺寸，公共卡片时间线不变。默认上下分栏改为 71%／29%。Figma 同步六个 Editor 状态及对应的字号、行高、列宽变量，亮暗组件截图已查看。
+
+在同样的 1710 × 788 CSS 视口，底部面板从约 267px 降至 203px，预览帧从 358px 增至 421px；第三轨底部为 778px，三轨均可见。实际字号为 12px／11px，三轨均为 28px，工具栏 39px。D3 本页输入 1.500 秒后仍定位到总时间 00:02.000 与步骤 2。桌面亮暗及 684 × 315 CSS 窄屏亮暗均查看，未见横向溢出；结束后恢复缩放与跟随系统主题。
+
+客户端构建、1430 文件类型检查、49 样式令牌检查、`git diff --check` 与独立审查通过。未新增或运行测试套件。截图：`/private/tmp/presmium-compact-timeline-light-20261031.png`、`/private/tmp/presmium-compact-timeline-dark-20261031.png`、`/private/tmp/presmium-compact-timeline-narrow-light-20261031.png`、`/private/tmp/presmium-compact-timeline-narrow-dark-20261031.png`。

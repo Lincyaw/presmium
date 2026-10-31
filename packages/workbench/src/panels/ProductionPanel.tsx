@@ -196,7 +196,7 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
     {!declared && <PmNotice tone="accent"><span>{p.enableHint}</span><PmButton small loading={enabling} disabled={blocked || closing} onClick={() => void enable()}>{p.enable}</PmButton></PmNotice>}
     {!wide && <PmSegmented label={p.title} value={tab} options={[{ value: 'library', label: p.library }, { value: 'preview', label: p.preview }, { value: 'properties', label: p.properties }, { value: 'timeline', label: p.timeline }]} onChange={setTab} />}
     <PmSplitGroup orientation="vertical" disabled={!wide} className="pmw-production__workarea">
-      <PmSplitPanel id="production-main" defaultSize="62%" minSize={wide ? '32%' : 0} className="pmw-production__main" background={backgroundBody}>
+      <PmSplitPanel id="production-main" defaultSize="71%" minSize={wide ? '32%' : 0} className="pmw-production__main" background={backgroundBody}>
         <PmSplitGroup disabled={!wide} className="pmw-production__body">
           <PmSplitPanel id="production-library" defaultSize="18%" minSize={wide ? '12%' : 0} maxSize={wide ? '30%' : '100%'} className="pmw-production__library" hidden={!wide && tab !== 'library'}>
             <PmPanelHeader title={p.library} />
@@ -252,7 +252,7 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
         </PmSplitGroup>
       </PmSplitPanel>
       {wide && <PmSplitHandle label={p.resizeTimeline} />}
-      <PmSplitPanel id="production-timeline" defaultSize="38%" minSize={wide ? '22%' : 0} maxSize={wide ? '65%' : '100%'} scroll className="pmw-production__timeline" hidden={!wide && tab !== 'timeline'}>
+      <PmSplitPanel id="production-timeline" defaultSize="29%" minSize={wide ? '18%' : 0} maxSize={wide ? '65%' : '100%'} scroll className="pmw-production__timeline" hidden={!wide && tab !== 'timeline'}>
         <ProductionTimeline plan={plan} sectionId={sectionId} stepId={stepId} active={wide || tab === 'timeline'} current={planCurrent} seekEnabled={canPlay && !playerBusy && !preparing && !planBusy}
           loading={planBusy && !planCurrent} seeking={seeking} disabled={blocked || closing} onSelectStep={id => { const step = document.steps[id]; if (step) select(step.sectionId, id) }}
           onSeek={timeMs => { if (plan) void control({ binding: plan.binding, action: 'seek', timeMs }) }} />

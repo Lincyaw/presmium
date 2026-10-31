@@ -1978,10 +1978,12 @@
 .pm-ui-timeline__wave path { fill: none; stroke: currentColor; stroke-width: 1; }
 .pm-ui-timeline__steps { display: flex; flex-wrap: wrap; gap: var(--pm-space-2); }
 .pm-ui-timeline__steps > .pm-ui-button { min-width: var(--pm-control-hit-area); }
-.pm-ui-timeline[data-variant='editor'] { gap: 0; min-height: 0; padding: 0; border: 0; border-radius: 0; }
-.pm-ui-timeline[data-variant='editor'] .pm-ui-timeline__tools { flex: none; align-items: center; padding: var(--pm-space-2) var(--pm-space-3); border-bottom: var(--pm-size-hairline) solid var(--pm-color-line); }
+.pm-ui-timeline[data-variant='editor'] { gap: 0; min-height: 0; padding: 0; border: 0; border-radius: 0; font-size: var(--pm-text-xs); }
+.pm-ui-timeline[data-variant='editor'] .pm-ui-timeline__tools { flex: none; align-items: center; padding: var(--pm-space-1) var(--pm-space-2); border-bottom: var(--pm-size-hairline) solid var(--pm-color-line); }
 .pm-ui-timeline[data-variant='editor'] .pm-ui-timeline__zoom { margin-inline-start: auto; }
-.pm-ui-timeline[data-variant='editor'] .pm-ui-timeline__tracks { padding: var(--pm-space-2) var(--pm-space-3); }
+.pm-ui-timeline[data-variant='editor'] .pm-ui-timeline__tracks { grid-template-columns: var(--pm-timeline-editor-label-width) minmax(0, 1fr); padding: var(--pm-space-1) var(--pm-space-2); }
+.pm-ui-timeline[data-variant='editor'] .pm-ui-timeline__canvas, .pm-ui-timeline[data-variant='editor'] .pm-ui-timeline__labels { gap: var(--pm-space-1); }
+.pm-ui-timeline[data-variant='editor'] .pm-ui-timeline__ruler, .pm-ui-timeline[data-variant='editor'] .pm-ui-timeline__status { font-size: var(--pm-timeline-editor-meta-font); }
 .pm-ui-timeline[data-variant='editor'] .pm-ui-timeline__track { height: var(--pm-timeline-editor-track-height); }
 .pm-ui-timeline[data-variant='editor'] .pm-ui-timeline__ruler, .pm-ui-timeline[data-variant='editor'] .pm-ui-timeline__labels > span:first-child:not([data-track-label]) { height: var(--pm-size-badge); }
 .pm-ui-timeline[data-variant='editor'] .pm-ui-timeline__labels > [data-track-label] { height: var(--pm-timeline-editor-track-height); }
