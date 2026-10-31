@@ -35,7 +35,7 @@ singleuser:
   extraEnv:
     # 浏览器的 WebSocket 不能带请求头，令牌只能写在地址中。JupyterHub 5 起单用户服务器只在请求带
     # Sec-Fetch-Mode: websocket 时接受地址中的令牌，而 Chromium 的 WebSocket 握手不带它：不设置时
-    # 内核与终端的 WebSocket 得到 403（docs/design-v0.7.md 第 11 节的先行验证）。
+    # 内核与终端的 WebSocket 得到 403。
     JUPYTERHUB_ALLOW_TOKEN_IN_URL: "1"
   cpu: { limit: 2, guarantee: 0.5 }
   memory: { limit: 4G, guarantee: 1G }

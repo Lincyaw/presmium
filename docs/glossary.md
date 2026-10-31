@@ -1,56 +1,44 @@
 # 界面术语与文案规范
 
-状态：规范，界面文本的唯一来源。更新日期：2026-10-29。
+本文是 Presmium 界面文本的唯一来源，规定 zh-CN 与 en 中的名称、命令、状态词与写法。范围是所有面向作者、讲者与读者的文本：工作台、查看器与站点外壳、插件的读者界面、MCP 审批与工具错误、命令行输出、VS Code 扩展。其他文档的用词与本文冲突时以本文为准。语言如何选择见 [架构](architecture.md)。
 
-本文规定 Presmium 所有面向作者、讲者与读者的界面文本在 zh-CN 与 en 中的名称、命令、状态词与写法：工作台（`@lincyaw/workbench`、`@lincyaw/dsh` 的客户端与补丁中的标签）、查看器与站点外壳、插件的读者界面、MCP 审批与工具错误、命令行输出、VS Code 扩展。语言如何选择见 [架构 5.7 节](architecture.md#57-界面语言)；对象的数据来源与界面约束见 [UI/UX RFC 第 2 节](rfc-workbench-uiux.md#2-用户对象与统一术语)；系统消息的结构见 [控件规范 5.7 节](design-system.md#57-系统消息)。三处与本文冲突时以本文的名称为准，并同步修正它们。
-
-参照的是商业软件的正式措辞：zh-CN 以 Microsoft Office（Word、PowerPoint）的官方简体中文本地化为首选，没有对应时参照 Keynote、Adobe Premiere Pro 与 Google 文档的简体中文版；en 以 Microsoft Office 的美国英语为首选。界面不出现口语、内部名称、开发者用语和另一语言的词。
+zh-CN 以 Microsoft Office 的简体中文本地化为首选，没有对应时参照 Keynote、Adobe Premiere Pro 与 Google 文档；en 以 Microsoft Office 的美国英语为首选。界面不出现口语、内部名称、开发者用语和另一语言的词。
 
 ## 1. 语言与地区
 
 - zh-CN 为简体中文（中国大陆），en 为美国英语（`color`、`canceled`、`center`、`gray`）。
-- 两种语言的文本同时增删、同时修改，含义一致，键集相同（`scripts/check-i18n.mjs` 的 A 类）。en 中不出现汉字，zh-CN 中不出现整句英文。
-- 两种语言保持相同的名称：同一对象、命令或状态在全部界面用本文同一行的词。新增术语先加进本文，再写入目录。
-- 品牌、格式与标准名称两种语言相同：Presmium、Presmium Studio、PDF、PowerPoint、Notebook（Jupyter Notebook）、LaTeX、PNG、AI。服务商的品牌按它自己的本地化写法：火山引擎 / Volcengine（其中的“引擎”是品牌的一部分，不是“语音服务”一行不用的词）。
-- AI 助手的预设名称是产品名 Presmium，两种语言相同，不另写说明。
-- 写进产物的文字（新页面标题、副本名称、Notebook 中的说明）按文稿的 `lang`，不按界面语言（架构 5.7 节）。
-- 工作台的界面语言是“设置 → 语言”中的选择（未选择时看 `navigator.language`）；命令行（`presmium`、`presmium studio`、`presmium-mcp`、`create-presmium`）按系统语言（`LC_ALL`、`LC_MESSAGES`、`LANG`）选 zh-CN 或 en，与 `create-presmium` 相同。
+- 两种语言的文本同时修改，含义一致，键集相同。en 中不出现汉字，zh-CN 中不出现整句英文。
+- 同一对象、命令或状态在全部界面用本文同一行的词。新增术语先加进本文，再写入目录。
+- 品牌、格式与标准名称两种语言相同：Presmium、Presmium Studio、PDF、PowerPoint、Notebook、LaTeX、PNG、AI。AI 助手的预设名称是 Presmium。
+- 服务商品牌按它自己的本地化写法，如火山引擎 / Volcengine。品牌名可以含有单独不用的词（“火山引擎”中的“引擎”）。
+- 写进产物的文字（新页面标题、副本名称、Notebook 中的说明）按文稿的 `lang`，不按界面语言。
+- 工作台按“设置 → 语言”的选择，未选择时看 `navigator.language`；命令行按系统语言（`LC_ALL`、`LC_MESSAGES`、`LANG`）。
 
 ## 2. zh-CN 写法
 
-- 标点用全角：，。、；：？（）“”‘’《》。数字、单位、快捷键与代码内部保留半角，例如 `Ctrl+Z`、`8 MiB`。
-- 引号用“”，嵌套用‘’；不用「」『』和直引号 `"`。引用原文与名称都用“”。
-- 汉字与拉丁字母、阿拉伯数字之间加一个半角空格：“第 3 页”“AI 助手”“导出 PDF”。全角标点两侧不加空格。
-- 省略号用单个“…”（U+2026）：进行中的状态（“正在保存…”）和打开对话框、需要进一步输入的命令（“重命名…”“导出…”）。不用“……”“...”。
-- 不用感叹号、语气词（吧、呢、啦、哦、呀、嘛）、表情与敬称“您”；用“你”时只在确有必要的说明中，命令与状态不称呼作者。
-- 按钮与菜单项用动词或动宾短语（“新建批注”“导出视频”），不用句子，不加句号；标签、窗格与对话框标题用名词短语。
-- 完整的句子以句号结尾；只有一个短语的状态与标签不加句号。
-- 失败的写法：状态标签用“X失败”（“保存失败”“导出失败”）；消息用“无法X”开头，说明原因、输入是否保留与下一步（“无法保存文稿。草稿已保留，请重试。”）。不用“没能”“没法”“出错了”“搞定”。
-- 请求作者操作时用“请…”开头的祈使句，一条消息至多一个“请”。
-- 命令行消息的程序名前缀是程序名的写法，两种语言都用半角冒号加一个空格：“presmium: 找不到 …”“presmium studio: 日志在 …”。前缀之后的正文按本节的写法。
+- 标点用全角。数字、单位、快捷键与代码保留半角（`Ctrl+Z`、`8 MiB`）。
+- 引号用“”，嵌套用‘’；不用「」『』和直引号。
+- 汉字后接拉丁字母或阿拉伯数字时加一个半角空格（“第 3 页”“AI 助手”“导出 PDF”）。全角标点两侧不加空格。
+- 省略号用单个“…”：进行中的状态（“正在保存…”），以及打开对话框或还需输入的命令（“重命名…”）。
+- 不用感叹号、语气词、表情与敬称“您”。命令与状态不称呼作者。
+- 按钮与菜单项用动词或动宾短语，不加句号；标签、窗格与对话框标题用名词短语。完整的句子以句号结尾。
+- 失败状态写“X失败”；失败消息以“无法X”开头，说明原因、输入是否保留与下一步（“无法保存文稿。草稿已保留，请重试。”）。不用“没能”“没法”“出错了”。
+- 请求作者操作用“请…”，一条消息至多一个“请”。
+- 命令行消息以程序名加半角冒号和空格开头：“presmium: 找不到 …”。
 
 ## 3. en 写法
 
-大小写分两种，按文本的作用选择，与 Microsoft Office 一致：
-
-| 用 Title Case | 用 sentence case |
-|---|---|
-| 命令：按钮、菜单项、工具栏按钮的名称与其工具提示中的命令名（`New Comment`、`Make a Copy`、`Export Video…`） | 系统消息、错误、确认对话框的正文与问题（`Delete “Lecture 3”?`） |
-| 有名字的界面区域：窗格、视图、标签页、对话框与页面的标题（`Navigation Pane`、`Version History`、`Presenter View`、`Settings`） | 字段标签、选项、复选框、单选项与分段控件的选项（`Page title`、`During animation`） |
-| 设置的分节名（`General`、`Models`、`Keyboard Shortcuts`） | 状态词（`Saving…`、`Saved`、`Export failed`）、占位文字、提示与说明 |
-| 待确认操作的标题：它们是对话框的标题（`Export Document (Website, Slides)`、`Undo Last Change`） | |
-
-- Title Case 的规则依照 Microsoft Style Guide：每个词首字母大写，但冠词（a、an、the）、并列连词（and、but、or、nor、for、so、yet）与不超过四个字母的介词（at、by、for、from、in、into、of、off、on、onto、out、over、to、up、with）小写，位于首尾时除外。
-- 句中提到某个命令或区域时保留它的大小写：`Choose New Comment.`、`Open Version History.`
-- 串列用 Oxford comma：`slides, captions, and animations`。
-- 省略号用单个 “…”（U+2026），规则同 zh-CN：进行中的状态，以及打开对话框、需要进一步输入的命令。
-- 引号用弯引号 “ ” 与 ‘ ’，撇号用 ’。不用感叹号、`Oops`、`Awesome` 一类语气词与表情。
-- 可以用 Microsoft 界面常见的缩约（`Couldn’t`、`can’t`），同一目录中一致；失败状态写作 `X failed`，消息写作 `Couldn’t X. …`，说明原因、输入是否保留与下一步。
-- 称呼作者时用 you；AI 在句中写作 the AI，名称见第 4 节“AI 助手”。
+- Title Case：命令（按钮、菜单项、工具栏按钮及其提示中的命令名，`New Comment`、`Export Video…`）；有名字的区域（窗格、视图、标签页、对话框与页面标题，`Version History`、`Presenter View`）；设置的分节名；待确认操作的标题。
+- sentence case：系统消息、错误、确认对话框的正文；字段标签、选项、复选框与分段控件的选项（`Page title`）；状态词（`Saving…`、`Export failed`）、占位文字与提示。
+- Title Case 依照 Microsoft Style Guide：冠词、并列连词与不超过四个字母的介词小写，位于首尾时除外。句中提到命令或区域时保留其大小写（`Open Version History.`）。
+- 串列用 Oxford comma。省略号用单个 “…”，规则同 zh-CN。
+- 引号用 “ ” 与 ‘ ’，撇号用 ’。不用感叹号与 `Oops` 一类语气词。
+- 缩约（`Couldn’t`）在同一目录中一致；失败状态写 `X failed`，消息写 `Couldn’t X. …`。
+- 称呼作者用 you；AI 在句中写 the AI。
 
 ## 4. 产品对象
 
-“不用”一列中加反引号的词由 `scripts/check-i18n.mjs` 在目录中报告：含汉字的词查 zh-CN 文本，其余的词（整词、不分大小写）查两种语言的文本。只在特定上下文中不用的词写在“含义与用法”中，不加反引号。
+“不用”一列中加反引号的词由 `scripts/check-i18n.mjs` 报告：含汉字的词查 zh-CN 文本，其余的词（整词、不分大小写）查两种语言的文本。只在特定上下文中不用的词不加反引号。
 
 | zh-CN | English | 含义与用法 | 不用 |
 |---|---|---|---|
@@ -117,7 +105,7 @@
 | 课程目录 | Course Contents | 课程主题中按顺序列出内容的区域 | |
 | 批注窗格 | Comments | 列出全部批注的窗格 | `评论区` |
 | 状态栏 | Status Bar | 窗口底部的页码、字数与保存状态 | `底栏` |
-| 应用栏 | App Bar | 工作台左侧的入口栏 | `活动栏`、`Activity bar` |
+| 应用栏 | App Bar | 工作台顶部的入口栏 | `活动栏`、`Activity bar` |
 | 设置 | Settings | 设置窗口；分节为“常规 / General”“模型 / Models”“外观 / Appearance”“语言 / Language”“快捷键 / Keyboard Shortcuts”“语音服务 / Voice Service”“关于 / About” | `偏好`、`Preferences`；配置（指设置时） |
 | 帮助 | Help | 帮助与入门说明 | `说明书`、`FAQ` |
 | 滚动叙事 | Scrollytelling | 随滚动逐步显示的网页版式 | `滚动讲述` |
@@ -226,7 +214,7 @@
 
 ## 8. 不在作者界面出现的名称
 
-这些是实现与协议中的名称。作者、讲者与读者的界面、错误与 AI 的回复都不出现它们；需要时说出作者能看到的结果与下一步。开发者文档、日志、`presmium` 命令行中面向开发者的诊断、“详细信息”中复制的诊断摘要，以及面向技术作者的 VS Code 扩展（它编辑的就是 `lecture.json`）可以使用。
+这些是实现与协议中的名称，作者、讲者与读者的界面、错误与 AI 的回复都不出现，需要时说出作者能看到的结果与下一步。开发者文档、日志、命令行中面向开发者的诊断、“详细信息”中复制的诊断摘要与 VS Code 扩展可以使用。
 
 | zh-CN | English | 含义与用法 | 不用 |
 |---|---|---|---|
@@ -239,29 +227,8 @@
 | （不显示） | （不显示） | 运行时 | `内核`、`kernel`、`workbench`、`工作台` |
 | （不显示） | （不显示） | 标识；插件、步骤与内容块以名称显示 | `ID`、`stepOrder`、`fingerprint` |
 
-“工作台”是本仓库文档中对 Presmium Studio 的称呼；界面中称应用为“Presmium”，需要区分时写“Presmium Studio”。
+“工作台”是仓库文档对 Presmium Studio 的称呼；界面中称应用为“Presmium”，需要区分时写“Presmium Studio”。
 
-## 9. 已解决的冲突
+## 9. 检查
 
-2026-10-29 盘点仓库现有文本后的决定，目标写法以上表为准，现存文本的位置见 [界面文本审计](benchmarks/i18n-audit-2026-10-29.md)。
-
-- “撤消 / Undo”保留 Microsoft 的写法，`addon-stage` 的“撤销”改为“撤消”。
-- “恢复”只表示 Redo；草稿写“恢复草稿 / Recover Draft”，版本写“还原 / Restore”。en 中把 Redo 写成 restore 的文本改为 redo。
-- “放弃 / Discard”取代“丢弃”。
-- “批注 / Comment”：BlockNote 自带文本中的“评论”“添加评论”经 BlockNote 公开的 `dictionary` 选项改为“批注”“新建批注 / New Comment”。
-- “演示者视图 / Presenter View”取代“演讲者视图”“演讲者窗口”；“观众视图”取代“听众视图”。
-- “结束放映 / End Show”取代“退出放映 / Exit presentation”。
-- “编译”退出作者界面：放映的准备写“正在准备放映…”，过期写“需要更新”，命令写“更新 / Update”。
-- “生成”只用于合成配音与 AI 生成素材；导出相关的“生成”“Make”一律改为“导出 / Export”，“生成记录 / Made files”改为“导出记录 / Export History”。
-- “讲解”“讲授轨”退出作者界面：文字叫“讲稿 / Script”，音频叫“配音 / Voiceover”。en 的 `Narration` 同样改为 `Script` 或 `Voiceover`。
-- en 统一为美国英语（`Canceled`、`Colors`），命令与区域名称为 Title Case，消息与字段为 sentence case；此前“英文消息用句子大小写”的规则保留，范围以第 3 节的表为准。
-- “重新加载”取代“重新载入”；“显示 / 隐藏”取代“展开 / 收起”。
-- “对话 / Chat”统一 en 中混用的 `conversation` 与 `chat`。
-- “待确认 / Pending Approvals”，数目写在括号中，不写 `Approvals 2`。
-- zh-CN 的引号统一为“”，不再用「」引用原文。
-
-- 2026-10-29 第三阶段：命令行指出日志文件时写“日志文件 / log file”；IR 在命令行中写“运行快照 / runtime snapshot”；导出形态用“网站、幻灯片、Notebook、讲授”；工作区服务、MCP 与 Jupyter 的凭据叫“访问令牌 / access token”，“密钥 / API Key”只指模型服务；待确认操作的标题用 Title Case；命令行前缀用半角冒号；时间线片段用“删除 / Delete”；“复刻音色”可用，“克隆”仍不用于文稿；“用 AI 改写”可用；“当前代码 / Current Code”“待核对 / Unverified”。
-
-## 10. 检查
-
-`scripts/check-i18n.mjs` 盘点目录与源码：A 键集不一致，B 未翻译，C 违反本文写法或用了“不用”一列的词，D 写在目录之外的界面文字，E 命令行输出与抛出的错误，F 自行判断界面语言之处。`--strict` 时 A–C 有发现即失败，`pnpm test` 以 `--strict` 运行它。“不用”一列的词出现在同一行的推荐写法之中（“用 AI 改写”中的“AI 改写”、“访问令牌”中的“令牌”）或品牌名之中（“火山引擎”）时不算；BlockNote 的文字按工作台合并覆盖之后的词典检查。逐条判断过的误报写在 `scripts/check-i18n.allow.json` 中，每条带原因（字段标签与选项的 sentence case、命令行帮助中必须出现的命令与文件名、写进文稿的内容等）；新增一条需要说明为什么它不违反本文。Title Case 与命令的动词短语无法完全自动判断，由审阅对照第 3 节的表。
+`node scripts/check-i18n.mjs --strict`（在 `pnpm test` 中）报告：A 键集不一致，B 未翻译，C 违反本文写法或用了“不用”一列的词，D 写在目录之外的界面文字，E 命令行输出与抛出的错误，F 自行判断界面语言之处；A 到 C 有发现即失败。“不用”的词出现在同一行的推荐写法或品牌名之中时不算。BlockNote 的文字按合并覆盖之后的词典检查。逐条判断过的误报连同原因写在 `scripts/check-i18n.allow.json`。Title Case 与动词短语由审阅对照第 3 节判断。

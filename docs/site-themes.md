@@ -1,59 +1,34 @@
 # 网站主题、首页与发布
 
-Presmium 用 `presmium.workspace.yaml` 选择网站主题和品牌，网站首页可以单独设计，教学文稿继续用 `lecture.json` 编写。这个分工类似 Hugo 的页面内容与主题：首页介绍网站，文稿承载课程、步骤和讲稿，主题提供网站结构与视觉。首页不必采用教学文稿的内容结构。
+工作区的 `presmium.workspace.yaml` 选择网站主题与品牌；首页可以单独设计；教学文稿仍只在 `lecture.json` 中编写。主题决定整个网站的外观与导航，文稿的 `layout` 只决定这份文稿的正文排版。
 
-## 新建一个网站
-
-安装 Presmium 后，新建带首页和 GitHub Pages 工作流的工作区：
+## 1. 新建网站
 
 ```sh
 presmium new my-site --type site --theme course --title '我的课程'
 cd my-site
 pnpm install
-pnpm serve
+pnpm serve    # 实时预览，打开终端打印的网址
+pnpm build    # 静态网站在 dist/web/
 ```
 
-打开终端打印的完整网址。生成的项目包括：
+生成 `presmium.workspace.yaml`、独立首页 `site/home.json`、第一份文稿 `intro/lecture.json` 与 GitHub Pages 工作流 `.github/workflows/pages.yml`。`--theme` 可选 `course`、`docs`、`showcase`，默认 `course`。产物包含网页、搜索索引、查看器与引用的本地文件，读者端不需要 Presmium 服务。
 
-```text
-my-site/
-  presmium.workspace.yaml
-  site/home.json
-  intro/lecture.json
-  .github/workflows/pages.yml
-  package.json
-```
+## 2. 主题与参数
 
-`site/home.json` 是独立首页，`intro/lecture.json` 是第一份教学文稿。编辑首页文件安排封面和介绍，编辑文稿组织课程与演示；教学文稿的唯一可编辑内容入口仍是 `lecture.json`。`--theme` 可选 `course`、`docs`、`showcase`，新网站默认 `course`。
-
-导出静态网站：
-
-```sh
-pnpm build
-```
-
-产物在 `dist/web/`，网页、搜索索引、查看器和引用的本地文件一起发布。网站不需要在读者的机器上运行 Presmium 服务。
-
-## 三种预置主题
-
-| 配置值 | 名称 | 文稿列表首页 | 普通文稿 |
+| `site.theme` | 名称 | 文稿列表首页 | 文稿页 |
 |---|---|---|---|
-| `course` | 课程 / Course | 按工作区顺序显示有序课程目录 | 左侧显示课程名称与学习目录，突出阅读顺序 |
-| `docs` | 文档 / Docs | 文稿卡片网格 | 左侧页面导航、右侧页内大纲，保持原有阅读方式 |
-| `showcase` | 展示 / Showcase | 网站介绍与更大的展示卡片 | 横向页面导航，隐藏两侧目录，给正文和媒体更多空间 |
+| `course` | 课程 | 有序课程目录 | 左侧课程名与学习目录 |
+| `docs` | 文档 | 文稿卡片网格 | 左侧页面导航，右侧页内大纲 |
+| `showcase` | 展示 | 网站介绍与大展示卡片 | 横向页面导航，不显示两侧目录 |
 
-这些主题中的教学文稿共用同一正文查看器与组件。已有项目未指定主题时仍使用 `docs`。文稿列表页的介绍取自工作区的 `title` 和 `site.head.description`，独立首页的内容由 `site.landing` 指定。
-
-主题决定整个网站的外观与导航；文稿的 `layout` 选择正文排版，以及是否合成一张网页。无需为每页重新选择主题。
-
-## 工作区配置
-
-编辑工作区根目录的 `presmium.workspace.yaml`：
+未写 `theme` 时为 `docs`。
 
 ```yaml
 title: 我的课程
 documents: ['*/lecture.json']
 site:
+  base: /
   theme: course
   params:
     accent: teal
@@ -72,97 +47,58 @@ site:
     message: 按自己的节奏阅读和练习。
 ```
 
-示例中的 `assets/logo.svg` 需要是项目已有的文件；暂不使用标志时删除 `logo` 与 `logoAlt`。本地标志随产物发布；导航中的站内绝对路径会加上网站的 `base`。
-
-| 参数 | 支持值 | 默认值 |
+| 参数 | 取值 | 默认（`docs`、`course` / `showcase`） |
 |---|---|---|
-| `site.theme` | `course`、`docs`、`showcase` | `docs`；新建 `site` 项目显式写入 `course` |
-| `site.params.accent` | `blue`、`teal`、`violet`、`amber` | `docs`、`course` 为 `teal`，`showcase` 为 `violet` |
-| `site.params.typography` | `reading`（阅读字体）、`sans`（无衬线字体） | `docs`、`course` 为 `reading`，`showcase` 为 `sans` |
-| `site.params.contentWidth` | `comfortable`、`wide` | `docs`、`course` 为 `comfortable`，`showcase` 为 `wide` |
-| `site.params.logo` | 标志图片的位置 | 不显示图片标志 |
-| `site.params.logoAlt` | 标志的替代文字，也可显式填写空字符串 | 空替代文字；标志按旁边已有网站名称的装饰图处理 |
+| `site.params.accent` | `blue`、`teal`、`violet`、`amber` | `teal` / `violet` |
+| `site.params.typography` | `reading`、`sans` | `reading` / `sans` |
+| `site.params.contentWidth` | `comfortable`、`wide` | `comfortable` / `wide` |
+| `site.params.logo` | 工作区内的图片路径 | 不显示 |
+| `site.params.logoAlt` | 替代文字，可为空字符串 | 空，按装饰图处理 |
 
-配色随亮色与暗色切换；字体与宽度参数用于网站正文，不改变幻灯片画布。参数是上述固定选项，不接受任意 CSS 声明或 HTML 模板代码。
+- 显式参数覆盖主题默认值；换主题时删掉旧参数即可用新主题的默认值。参数只接受上表的取值，不接受 CSS 或 HTML。
+- 配色随亮暗切换；字体与宽度只作用于网站正文，不改变幻灯片画布。
+- `site.nav`、`footer`、`head`、`sitemap`、`lang`、`locales` 照常有效。导航中的站内绝对路径会加上 `site.base`。
+- 文稿列表页的介绍取自工作区 `title` 与 `site.head.description`。
+- 修改后重启 `pnpm serve`，或重新 `pnpm build`。
 
-脚手架按选中的主题写入默认参数。显式填写的参数覆盖主题默认值；更改 `theme` 时可删除已有参数覆盖，以使用新主题的默认值。
+## 3. 首页
 
-既有 `site.nav`、`footer`、`head`、`sitemap`、`lang` 和 `locales` 配置继续有效。
+`site.landing` 有三种写法，只能选一种；`site.home`（把根页重定向到某份文稿）不能与 `landing` 同时配置。没有 `landing` 时根页按主题显示文稿列表；有首页时完整列表在 `documents.html`。
 
-修改 `presmium.workspace.yaml` 中的网站配置后，重新启动 `pnpm serve` 查看效果，或重新运行 `pnpm build` 导出网站。
+### 3.1 JSON 首页
 
-## 单独设计首页
-
-在 `site.landing.source` 中指定一个工作区内的首页文件：
-
-```yaml
-site:
-  theme: showcase
-  landing:
-    source: ./site/home.json
-```
-
-`site/home.json` 使用独立的网站首页结构。一个只含封面和入口的页面可以这样写：
+`site.landing.source` 指向工作区内的首页文件（不列入 `documents`），也可以把同样的对象直接写在 `site.landing` 中。
 
 ```json
 {
   "schemaVersion": 1,
   "title": "我的课程",
-  "description": "讲义、演示与学习资料。",
   "hero": {
     "eyebrow": "持续更新",
     "title": "从一个示例开始",
     "description": "按自己的节奏阅读、观看与练习。",
-    "actions": [
-      { "text": "开始阅读", "link": "/intro/", "variant": "primary" }
-    ]
+    "actions": [{ "text": "开始阅读", "link": "/intro/", "variant": "primary" }]
   },
-  "sections": []
+  "sections": [
+    { "id": "highlights", "type": "features", "title": "课程亮点", "items": [{ "title": "随时阅读", "description": "每份文稿都有独立网址。" }] },
+    { "id": "lessons", "type": "documents", "title": "课程目录" }
+  ]
 }
 ```
 
-`title` 与 `sections` 必填，`hero` 可选。首页还可安排介绍、特性、媒体、文稿列表与行动入口；它没有教学步骤、讲稿或配音编排，不需要包成一份教学文稿。也可以把同样的页面对象直接写在 `site.landing` 中，省去单独的首页文件。
+`title` 与 `sections` 必填。`hero` 可有 `eyebrow`、`title`、`description`、`image`、`imageAlt`、`actions`；每个操作有 `text`、`link`，可选 `variant: primary | secondary`。`sections` 按顺序显示，每项有唯一 `id`、一个 `type`，可带 `title`、`description`：
 
-首页文件相对于工作区根目录定位，不写进 `documents`；`documents` 只列教学文稿。首页中的站内链接以网站为根，发布时使用配置的 `base`。
-
-独立 JSON 中的本地媒体相对于该 JSON 文件定位；内联配置中的媒体相对于工作区根目录定位。例如 `site/home.json` 中的 `./cover.webp` 指向 `site/cover.webp`。工作区的 `public/` 目录按原路径发布到网站根，可通过 `/files/slides.pptx` 等链接引用其中的文件。
-
-`hero` 支持 `eyebrow`、`title`、`description`、`image`、`imageAlt` 和 `actions`。每个操作填写 `text` 与 `link`，可选 `variant: primary` 或 `secondary`。
-
-`sections` 按数组顺序显示，每项必须有唯一的 `id` 与一个 `type`，可带 `title` 和 `description`：
-
-| `type` | 内容字段 | 用途 |
+| `type` | 字段 | 用途 |
 |---|---|---|
-| `features` | `items: [{ title, description?, image?, imageAlt?, link? }]` | 特性、作品或课程亮点 |
-| `text` | `body` | 独立介绍文字 |
-| `media` | `kind: image\|video`、`src`，可选 `alt`、`poster`、`captions` | 图片或视频；`captions` 是语言到 VTT 文件的映射 |
-| `documents` | 可选 `tags`、`directories` | 使用工作区的已发布文稿列表，可筛选标签与文稿目录 |
-| `cta` | `title`、`actions` | 行动入口，操作结构与 `hero.actions` 相同 |
+| `features` | `items: [{ title, description?, image?, imageAlt?, link? }]` | 特性或亮点 |
+| `text` | `body` | 介绍文字 |
+| `media` | `kind: image\|video`、`src`，可选 `alt`、`poster`、`captions`（语言到 VTT 的映射） | 图片或视频 |
+| `documents` | 可选 `tags`、`directories` | 已发布文稿列表 |
+| `cta` | `title`、`actions` | 行动入口 |
 
-例如把前面空的 `sections` 换成：
+本地媒体在 JSON 文件中相对该文件定位，内联配置中相对工作区根目录定位。工作区的 `public/` 按原路径发布到网站根（如 `/files/slides.pptx`）。
 
-```json
-[
-  {
-    "id": "highlights",
-    "type": "features",
-    "title": "课程亮点",
-    "items": [
-      { "title": "随时阅读", "description": "每份文稿都有独立网址。" },
-      { "title": "跟随演示", "description": "结合示例与教学步骤理解内容。" }
-    ]
-  },
-  {
-    "id": "lessons",
-    "type": "documents",
-    "title": "课程目录"
-  }
-]
-```
-
-### 使用自己的 HTML、CSS 和 JavaScript
-
-需要完全自行安排首页时，在 `site.landing.template` 中指定 HTML 入口，替换 `source` 配置：
+### 3.2 HTML 模板首页
 
 ```yaml
 site:
@@ -170,176 +106,56 @@ site:
     template: ./site/home.html
 ```
 
-一个完整的 `site/home.html` 可以这样开始：
-
-```html
-<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>我的课程</title>
-    <link rel="stylesheet" href="./home.css">
-  </head>
-  <body>
-    <main>
-      <h1>从一个示例开始</h1>
-      <p>按自己的节奏阅读、观看与练习。</p>
-      <h2>课程目录</h2>
-      <ul id="documents"></ul>
-    </main>
-    <script type="module" src="./home.js"></script>
-  </body>
-</html>
-```
-
-同目录的 `home.css` 负责首页自己的外观，例如：
-
-```css
-body {
-  max-width: 65rem;
-  margin-inline: auto;
-  padding: 2rem;
-  font-family: system-ui, sans-serif;
-}
-```
-
-Presmium 通过 Vite 的公开构建接口处理 HTML 入口及其 CSS、JavaScript 和本地素材，再把入口放到网站的 `index.html`。模板自己控制 HTML 的标题、正文和样式，不自动套用预置主题的查看器外壳。教学文稿的页面仍按工作区主题显示。
-
-页面会注入一个 `id="presmium-site-data"`、`type="application/json"` 的脚本元素。`site/home.js` 可以读取它来生成真实的文稿链接：
+模板的 HTML、CSS、JavaScript 与本地素材经 Vite 构建，成为网站的 `index.html`，不套用查看器外壳。页面中注入 `<script id="presmium-site-data" type="application/json">`，内容为面向读者的网站与文稿集合：
 
 ```js
-const content = JSON.parse(
-  document.getElementById('presmium-site-data').textContent
-);
-const list = document.getElementById('documents');
-
-for (const entry of content.documents) {
-  const item = document.createElement('li');
-  const link = document.createElement('a');
-  link.href = entry.href;
-  link.textContent = entry.title;
-  item.append(link);
-  list.append(item);
-}
+const site = JSON.parse(document.getElementById('presmium-site-data').textContent)
+// site: { schemaVersion, title, base, lang, documents: [{ id, title, href, description?, lang?, tags?, pages? }] }
+for (const doc of site.documents) list.append(Object.assign(document.createElement('a'), { href: doc.href, textContent: doc.title }))
 ```
 
-注入的数据只包含面向读者的网站与文稿集合，例如：
+用 `href` 可保留部署基础路径。数据不含运行快照、诊断与配置。`pnpm serve` 中刷新首页会重建模板，没有热更新。
 
-```json
-{
-  "schemaVersion": 1,
-  "title": "我的课程",
-  "base": "/my-site/",
-  "lang": "zh-CN",
-  "documents": [
-    {
-      "id": "intro",
-      "title": "开始创作",
-      "href": "/my-site/intro/",
-      "description": "从第一份内容开始。",
-      "lang": "zh-CN",
-      "tags": ["入门"],
-      "pages": 3
-    }
-  ]
-}
-```
-
-文稿的说明、语言、标签与页数可能省略；使用发布后的 `href` 可以保留部署基础路径。注入数据不包含教学运行快照、诊断、文稿配置或服务端设置。
-
-`source` 与 `template` 不能同时配置。运行 `pnpm serve` 时，刷新首页会重新构建 HTML 模板；当前不提供模板的热更新。导出或部署前仍需重新运行 `pnpm build`。
-
-### 已有文稿作为首页
-
-已有项目仍可使用字符串形式：
+### 3.3 文稿作为首页
 
 ```yaml
 site:
   landing: welcome
 ```
 
-这里的 `welcome` 是 `documents` 包含的教学文稿目录。构建会将 `welcome/lecture.json` 的所有页面额外显示在网站根页，原来的 `/welcome/` 地址与默认章节分页保留。此方式适合直接以一份讲义作为入口；独立设计的站点首页使用前面的对象配置。
+`welcome` 是 `documents` 中的文稿目录，它的全部页面额外显示在网站根页，原 `/welcome/` 地址保留。
 
-没有 `landing` 时，根页按所选主题显示文稿列表。有独立首页或文稿首页时，完整文稿列表仍可从 `documents.html` 打开。`site.home` 保留把根页重定向到指定文稿的行为，不能与任一种 `landing` 同时配置。
+## 4. 文稿的页面布局
 
-## 为文稿选择页面布局
-
-在文稿的 `lecture.json` 中设置 `metadata.renderers.web.layout`。以下为配置节选：
-
-```json
-{
-  "metadata": {
-    "renderers": {
-      "web": {
-        "layout": "wide"
-      }
-    }
-  }
-}
-```
+在 `lecture.json` 中设置 `metadata.renderers.web.layout`：
 
 | 布局 | 行为 |
 |---|---|
-| `article` | 默认文章布局，按主题显示导航与大纲 |
-| `landing` | 全部页面合成 `index.html` 中的一张网页，单栏全宽，隐藏两侧目录与页面间翻页导航 |
-| `wide` | 放宽正文并隐藏右侧大纲，适合图表与演示 |
+| `article` | 默认，按主题显示导航与大纲 |
+| `landing` | 全部页面合成一张 `index.html`，单栏全宽，不显示目录与翻页 |
+| `wide` | 放宽正文，不显示右侧大纲 |
 
-这是整份文稿的网页布局，不替代文稿各页面已有的分栏、画布或滚动叙事设置，也不改变页面、内容块和步骤的身份。
-
-`metadata.renderers.web.layout: landing` 会改变这份教学文稿本身的网页分页；它与独立网站首页的内容结构分开配置。只有旧字符串形式的 `site.landing` 才会复用一份教学文稿的全文。
-
-整个工作区构建时，主题、品牌和网站导航统一由工作区的 `site` 决定，单篇文稿可以选择自己的 `layout`。每份译本也使用它自己的 `metadata.renderers.web.layout`；未配置时使用 `article`，不会自动采用原文的布局。单独构建一份文稿时，在它的 `metadata.renderers.web` 中选择 `theme` 和 `params`：
+布局不改变页面、内容块与步骤的身份。每份译本使用自己的 `layout`，未配置时为 `article`。整个工作区构建时主题由 `site` 决定；单独构建一份文稿时在 `metadata.renderers.web` 中写 `theme` 与 `params`：
 
 ```json
-{
-  "metadata": {
-    "renderers": {
-      "web": {
-        "theme": "showcase",
-        "params": {
-          "accent": "violet",
-          "typography": "sans",
-          "contentWidth": "wide"
-        },
-        "layout": "landing"
-      }
-    }
-  }
-}
+{ "metadata": { "renderers": { "web": { "theme": "showcase", "params": { "accent": "violet" }, "layout": "landing" } } } }
 ```
 
 ```sh
 presmium build welcome --to web
 ```
 
-## 完整示例：产品首页与教学宣传片
+## 5. 发布到 GitHub Pages
 
-[产品站点示例](../examples/presmium-site/README.md) 使用独立 HTML 首页，收集宣传片与线性回归小课两份文稿。小课生成阅读版与放映版；60 秒宣传片用同一组真实训练计算，连续展示教学痛点、公式与代码如何连接预测线，以及学习率改变后的效果。成片、中文旁白、字幕和源码下载一起放回首页。
+1. 把项目推送到 GitHub 仓库。
+2. 在 Settings → Pages → Build and deployment → Source 中选择 GitHub Actions。
+3. 运行 `pages.yml` 或推送到它配置的分支。工作流用 `configure-pages` 取得基础路径并写入 `site.base`，运行 `pnpm build`，上传并部署 `dist/web/`。
+4. 打开首页、内页直链、搜索与媒体，确认都在部署地址下工作。
 
-首页提供中文／英文、亮／暗外观和移动布局。设计素材、文稿、分镜、场景、共享数学模型与构建脚本均在示例目录内。
+每个页面有自己的 HTML 文件，直链不依赖 SPA 回退，任何静态托管都可部署 `dist/web/`。Pages 只托管静态文件：阅读、步骤、动画与媒体可以运行，需要服务端的能力（代码执行等）不可用。
 
-```sh
-pnpm --filter presmium-product-site build
-pnpm --filter presmium-product-site dev
-```
+## 6. 示例与范围
 
-在实时预览中，配置了幻灯片渲染端的文稿也可使用 `<文稿路径>/slides/` 打开放映，再返回同一文稿的阅读页。静态站点仍需在自己的构建中生成并合并放映产物，示例的 `tools/build.mjs` 展示了这一过程。
+`examples/presmium-site` 是一个用 HTML 模板首页的产品站点，含宣传片与一份小课，并展示如何把放映产物合并进静态站点（`tools/build.mjs`）；在该目录运行 `pnpm build` 或 `pnpm dev`。
 
-## 发布到 GitHub Pages
-
-新建的 `site` 项目含 `.github/workflows/pages.yml`。将项目推送到 GitHub 仓库后，在仓库 **Settings → Pages → Build and deployment → Source** 中选择 **GitHub Actions**，然后运行该工作流，或推送到工作流配置的分支。
-
-工作流通过 `configure-pages` 读取网站的基础路径，把它写入工作区的 `site.base`，运行 `pnpm build`，上传 `dist/web/` 并部署。项目站点的 `/仓库名/` 路径因此用于页面、导航和素材；设置自定义域名后也由 Pages 提供实际基础路径。构建产物只需普通静态托管，其他平台可以直接部署同一个输出目录。
-
-网页的每个页面有自己的 HTML 文件，刷新直达链接不依赖 SPA 回退规则。第一次发布后，实际打开首页、内页直链、搜索和媒体，确认它们都在部署地址下工作。
-
-Pages 只托管静态文件。浏览器中的阅读、步骤、动画和已有媒体组件可以运行；需要 Presmium 服务端的能力仍需要对应服务。
-
-## 内容与能力范围
-
-网站主题不改变插件能力。现有内容插件的音视频、封面和字幕继续通过同一组件显示，本地素材随构建发布；浏览器播放仍取决于文件编码与网络可达性。
-
-PowerPoint、Word 和其他文件可以作为正文链接发布和下载。本次主题能力不包含将 Office 文件导入为可编辑文稿，或内置 Office 在线预览。主题选择也不代表自动获得这些能力。
-
-当前提供三种预置主题、上述参数、文稿布局、独立 JSON 首页、自由 HTML 模板和兼容的文稿首页；不包含主题市场、任意 React 外壳或工作台中的主题选择面板。
+Office 文件可以作为链接发布和下载，不导入为可编辑文稿，也没有在线预览。主题不提供主题市场、自定义 React 外壳或工作台中的主题选择面板。

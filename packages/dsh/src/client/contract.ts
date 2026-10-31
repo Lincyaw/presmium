@@ -62,7 +62,7 @@ export const SHELL_MODULES = [
 export const TECHNICAL_SETTINGS = { slot: 'settings.general.item', ids: ['permission', 'transcript-view', 'composer-enter', 'performance-usage'] } as const
 
 /**
- * The author's defaults for Harness's display preferences, by settings namespace (docs/rfc-workbench-uiux.md 1.1, 4.4):
+ * The author's defaults for Harness's display preferences, by settings namespace (docs/studio.md 7.2):
  * the coding view (trajectory, code diffs, every agent preset and the technical rows above) off, and the AI's work as
  * compact, collapsed summaries without token statistics.
  */
