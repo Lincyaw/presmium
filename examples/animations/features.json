@@ -1528,25 +1528,6 @@
         "section": "recording",
         "integration": "explicit whole-step recording adoption through the shared document audio service"
       }
-    ],
-    "verification": {
-      "baseline": {
-        "record": "docs/benchmarks/feature-guides-2026-10-26.md",
-        "scope": "The existing eight guides: 95 feature mappings, 16 official plugins, 18 public teaching components; earlier targeted real runs and explicit external capability limits."
-      },
-      "authoringSupplement": {
-        "record": "docs/benchmarks/feature-authoring-supplement-2026-10-26.md",
-        "scope": "New guide-authoring and the changed production/media instructions; current source inventory audit and only the targeted runtime checks recorded there."
-      },
-      "rule": "A located example is coverage; a conditional requirement or instruction is not proof that its external service, device or paid provider was exercised.",
-      "productionPlaybackSupplement": {
-        "record": "docs/benchmarks/feature-guides-2026-10-26.md",
-        "scope": "Historical timeline/silent instruction checkpoint. Its public host/iframe 24 checks and Studio 14 checks are recorded separately. Later audio-clip mixing, provider synthesis and original-recording adoption have their own evidence; this historical record does not exercise those later capabilities."
-      },
-      "originalAudioSupplement": {
-        "record": "docs/benchmarks/recording-step-adoption-ui-2026-10-27.md",
-        "scope": "Video recording/save/select/explicit wholeStep adoption/playback and acknowledgement races are verified separately. This guide provides instructions without seeded audio or provider configuration; its own targeted web/readability result is not a recording, ASR or TTS execution."
-      }
-    }
+    ]
   }
 }

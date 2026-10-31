@@ -1,94 +1,175 @@
-# Presmium 可编辑文稿 IR 与运行快照
+# Presmium 文稿 IR 与运行快照
 
-`lecture.json` 是唯一权威内容入口。它保存 Presmium 定义的可编辑教学文稿 IR；编译器派生用于阅读、放映、notebook 与讲授的运行快照。MyST 不是运行入口，不保留双格式兼容或双写。普通 Markdown 说明文件不属于教学文稿入口。
+`lecture.json` 是唯一的内容入口，保存可编辑的教学文稿 IR（`TeachingDocument`）。`@lincyaw/compiler` 从它派生运行快照（`IRDocument`），供阅读、放映、notebook 与讲授使用。
 
-领域决策见 [文稿 IR RFC](rfc-document-ir.md)，精确类型在 [document.ts](../packages/kernel/src/contracts/document.ts)，JSON Schema 和共同校验器分别在 [document-schema.ts](../packages/kernel/src/document-schema.ts) 与 [document.ts](../packages/kernel/src/document.ts)。运行快照类型独立位于 [ir.ts](../packages/kernel/src/ir.ts)。代码契约是字段定义的唯一来源，本文说明边界与操作。
+字段以代码为准，本文只写边界与规则：
+
+- 文稿实体与编辑操作：`packages/kernel/src/contracts/document.ts`
+- Schema 与校验器 `validateDocument`：`packages/kernel/src/document-schema.ts`、`document.ts`
+- 运行快照、编译步骤、渲染端：`packages/kernel/src/ir.ts`
+- 讲授计划：`packages/kernel/src/contracts/production.ts`、`production-assets.ts`
+
+作者动作见 [authoring-actions.md](authoring-actions.md)，编辑界面见 [studio.md](studio.md)，管线与插件契约见 [architecture.md](architecture.md)。
 
 ## 1. 管线
 
 ```text
 lecture.json + 引用的代码与媒体
-    │ JSON 语法、Schema、ID、引用、内容树、参数状态、媒体范围校验
+    │ validateDocument
     ▼
-可编辑 TeachingDocument ──工作区版本事务──► git 历史
-    │ 独立异步编译：状态解析、插件编译步骤、代码引用与执行、受众筛选、检查
+TeachingDocument ──工作区事务──► git 历史
+    │ 异步编译：lowering、步骤状态、插件编译步骤、代码引用与执行、受众筛选、检查
     ▼
-运行 IRDocument / snapshotId
-    ├── web：预先打包的查看器与站点外壳
-    ├── slides：同一查看器的放映画面
-    ├── notebook：Jupyter .ipynb
-    └── lecture 等插件渲染端
+IRDocument ──► web · slides（同一查看器）· notebook · lecture 等插件渲染端
 ```
 
-文档保存不等待编译成功。编译失败保留最后成功快照，明确其文稿版本与过期状态，不将它冒充当前内容。渲染端只消费运行快照；正文编辑器直接操作可编辑文稿 IR，不通过运行快照或 Markdown 中转。
+- 保存不等待编译。编译失败保留上次成功的快照并标明其文稿版本，不冒充当前内容。
+- 渲染端只读运行快照；编辑器直接操作文稿 IR，不经快照或 Markdown 中转。
+- 快照中的数字步号、`at`、`span`、发布地址与播放时刻不回写为作者格式。
 
 ## 2. 可编辑文稿
 
-`TeachingDocument` 的实体映射为 `sections`、`blocks`、`steps`、`narrations`、`assets`、`definitions`；文稿还保存 `metadata`、`sectionOrder`、`production` 与可选批注数据。实体映射键必须等于实体 `id`，有序 ID 数组表示顺序。移动实体不改变身份；复制文稿产生新的文稿 ID，块与页面身份可以在新文稿命名空间内保留。
+### 2.1 顶层结构
 
-- 页面 `Section` 保存标题、标题层级、内容块顺序、步骤顺序和布局。每页至少一个步骤，页面不再从标题语法切分。
-- 内容块为 `text`、`container`、`image`、`code`、`component`。内容所有权是一棵树，一个块只有一个父节点。跨处复用指向素材或定义，不把同一内容块挂在两处。
-- 图片块没有 `assetId` 时表示尚未选图，可以正常保存。明确的引用仍须存在且为图片；空地址不是合法素材。未选图编译为带实体定位的警告和可读回退。
-- 富文本保存有稳定身份的段落、标题、列表项、引用、代码、公式、表格及其行列。行内结构为带 marks 的文本、链接、公式、换行和版本化扩展。它不保存 Markdown 字符串，也不直接持久化 BlockNote 内部状态。
-- 步骤保存独立的视觉状态与讲稿引用。可显式继承状态；构建时解析成完整状态，任意顺序定位都能重建画面。
-- 讲稿由文字、发音替换和 cue 节点组成。字幕文字、合成文字、提示目标与字词对齐由同一结构派生。
-  `renderers.lecture.script` 已移除；文稿与工作区配置中出现该字段会报错。外部 Markdown 文件不能覆盖步骤绑定的讲稿。
-- 素材记录类型、位置与可选指纹；代码和大型媒体保持工程文件引用。组件定义记录实现引用、参数 Schema、公开状态与版本化插件数据；实例只保存自己的参数。
-- `production` 唯一拥有讲授默认值、页面与步骤覆盖、cue 延迟及媒体片段。音色来源为静音、实际 TTS 音色或录音素材。绝对播放时刻与精确成片时长属于派生计划。
+`TeachingDocument` 有 `schemaVersion`、`id`、`metadata`、`sectionOrder`，实体映射 `sections`、`blocks`、`steps`、`narrations`、`assets`、`definitions`，讲授编排 `production` 与可选的批注 `comments`。`metadata` 保存标题、`lang`、插件、插件与渲染端配置、`execute`、检查配置与译文登记；运营者设置与凭据不在其中。
 
-未知插件或扩展保留完整结构与可读回退，报告无法执行或编辑的能力。迁移的数字动画状态使用明确的 `legacyIndex`，不能猜测语义名称。旧语法的离线迁移脚本不被运行时导入。
+### 2.2 身份与引用
+
+- 映射的键等于实体 `id`；顺序只由有序 ID 数组表示。移动不改变身份。
+- 实体、富文本节点、cue、媒体片段与批注的 ID 在文稿内唯一。`page:<Section ID>` 保留给现存页面的标题锚点（`id.reserved`）。
+- 复制文稿分配新文稿 ID。复制页面为页内实体分配新 ID 并重映射页内引用；定义、素材与页外引用不变，批注不随页复制。
+- 删除不能让旧绑定静默接到别的对象。
+
+### 2.3 页面
+
+`Section` 保存标题、层级、`children`、`stepOrder`、`layout`（`stack`、`columns`、`canvas`、`scrolly`，可带渲染端提示）、可选的受众与插件配置。每页至少一个步骤。
+
+### 2.4 内容块
+
+`DocumentBlock` 是 `text`、`container`、`image`、`code`、`component` 之一，可带媒介限定 `only` 与受众 `audience`。
+
+- 内容所有权是一棵树：一个块只有一个父节点，不成环。跨处复用靠素材或定义。
+- `image` 没有 `assetId` 表示尚未选图，可以保存，编译给出警告与回退；写出的 `assetId` 必须指向图片素材。
+- `code` 保存内联 `value` 或工程文件引用 `origin`，可带 `execution`、按步骤的高亮与 `variants`。
+- `component` 引用定义，保存自己的参数，可以有子块。
+
+### 2.5 富文本
+
+`RichTextNode` 是段落、标题、列表、引用、代码、公式、表格与扩展，实际编辑单元（段落、列表项、表格行与单元格）有稳定 ID；行内 `InlineNode` 是带 marks 的文字、链接、公式、换行与扩展。不保存 Markdown 字符串，不持久化编辑器私有状态。表格按逻辑网格校验 `rowspan`、`colspan`，单元格不越界、不重叠。
+
+### 2.6 步骤
+
+`Step` 保存所属页面、画面 `visuals`（每块的可见性、命名状态、参数）、`narrationIds`，可用 `inherits` 继承另一步。未列出的块不可见。编译把继承解析成每步的完整状态，任意定位都能重建画面。顺序在 `stepOrder`，时机在 `production`。
+
+### 2.7 讲稿
+
+`Narration.content` 由 `text`、`pronunciation { display, spoken }`、`cue { action, target?, parameters? }` 组成。字幕、合成文字、提示目标与字词对齐都从它派生：字幕取 `display` 且不含 cue，合成取 `spoken`。讲稿只经步骤绑定，外部文件不能覆盖；`renderers.lecture.script` 出现即报错。转写只有显式采用才改写讲稿，来源记在 `provenance`。
+
+### 2.8 行内扩展与角色
+
+扩展节点带 `kind`、`schemaVersion`、`data` 与可读 `fallback`。lowering 时 `presmium.mdast` 扩展还原为 mdast 节点，其余成为 `presmiumExtension`；讲稿的 `pronunciation`、`cue` 成为 `presmium.lecture` 的行内角色 `say`、`cue`（`PresmiumRoleNode`）。插件用 `RoleSpec.children` 给出角色在正文中的内容。
+
+### 2.9 素材
+
+`Asset` 记录 `kind`（`image`、`audio`、`video`、`file`）、`location`、可选的标题、指纹与媒体类型。代码与大型媒体是工程文件引用，不嵌入 JSON；空地址不是合法素材。
+
+### 2.10 定义与组件实例
+
+`Definition` 记录 `kind`、`schemaVersion`、实现引用（`file`、`module`、`plugin`）、参数 Schema、公开状态 `states` 与插件数据 `data`。实例只存自己的参数；改定义影响全部引用。命名状态按声明顺序派生局部步号，`legacyIndex` 只在迁移时显式保留原数字索引。组件升级移除状态或改变参数契约时产生绑定诊断。
+
+### 2.11 讲授编排
+
+`Production` 是作者时序的唯一来源：
+
+| 字段 | 内容 |
+|---|---|
+| `defaults`、`sectionOverrides`、`stepOverrides` | 讲稿开始时机、最短停留、尾部停顿、音色来源，后者优先 |
+| `narrationOverrides` | 迁移保留的讲稿开始时机，位于页面与步骤之间 |
+| `cueTimings` | cue 的停顿时长 |
+| `captionTimings` | 作者设定的本步字幕时间（2.12） |
+| `mediaClips` | 挂在步骤上的音频片段 |
+
+- `VoiceSource` 是 `none`、`tts` 或 `recording`（可选 `sourceRange`）。
+- 讲授顺序从 `sectionOrder` 与 `stepOrder` 派生，不另存；绝对时刻与精确时长属于讲授计划（第 6 节）。
+- `MediaClip` 引用同文稿的本地音频，`sourceRange` 是文件内入点与出点，`attachment` 是步骤加步内偏移，必须完整落在已确认的步骤时段内；`volume` 为 0 到 1，`muted` 独立于音量。
+
+### 2.12 字幕时间
+
+`CaptionTiming` 有有序 `narrationIds`、两个指纹、本步 `durationMs` 与最多 32 段 `{ id, from, to, startMs, endMs }`。`from`、`to` 是本步讲稿显示文字以换行连接后的 UTF-16 范围，连续覆盖全文，端点在 grapheme 边界；时间是相对本步起点的毫秒，不重叠，不跨步。`sourceFingerprint` 覆盖讲稿、音色与本步设置，`playbackFingerprint` 覆盖实际音频、事件与确认时长；不符时报告 `production.caption-timing-stale`，映射保留但不使用。
+
+### 2.13 译文
+
+译文是完整的 `lecture.json`，放在 `locales/<语言>/`。原文在 `metadata.translations` 登记路径，译文在 `metadata.translationOf` 登记原文路径与摘要。译文按自己的目录编译，不继承原文的插件与实现路径。摘要取规范化的原文 JSON（忽略键序、空白、BOM 与两项登记），内容变了报告过期。
+
+### 2.14 组件资源
+
+组件参数中的本地文件经 `ComponentNode.assets` 声明，键是参数的点分路径（如 `files.a`、`captions.en`）；插件也可为每步的 `stepStates` 给出映射。链接检查覆盖这些文件，发布时改写对应参数中的地址。内置媒体从 `src`、`poster`、`still`、`captions` 派生映射。
+
+### 2.15 批注
+
+`comments` 保存 `DocumentThread`，锚点是两个 `DocumentTextPoint { blockId, offset }`，`blockId` 是富文本或代码的稳定 ID，或 `page:<Section ID>`。
+
+### 2.16 未知数据与迁移
+
+未知插件、扩展与插件数据完整保留，用回退显示，并报告无法执行或编辑的能力。迁移只保留明确的映射，不把序号猜成语义名；迁移脚本不被运行时导入。
 
 ## 3. 保存与校验
 
-表格按包含跨行占位的逻辑网格校验列宽；`rowspan`、`colspan` 可以组合，单元格不能越过已声明的边界或与前行跨入的单元格重叠。
+`validateDocument` 是 Web、agent、直接改文件与编译器共用的边界，检查格式版本、ID、引用、内容所有权、步骤归属、参数与状态、媒体范围；诊断 `DocumentIssue` 定位到 JSON 路径。
 
-`validateDocument` 是 Web、agent、直接文件编辑与编译器共用的 Schema 和领域校验边界。检查格式版本、全局 ID、引用、内容所有权、步骤归属、参数与状态契约、媒体范围；诊断定位到实体和 JSON 字段路径。
+一次提交依次经过：版本检查（`baseDocumentVersion`）、语法与 Schema、领域约束、一个工作区事务内的原子保存与一次历史、异步编译。
 
-工作区 `GET document` 返回可编辑内容与 `version`；`POST document/change` 使用 `baseDocumentVersion`，提交语义操作或完整 replacement。涉及的工程文件与文稿在一个工作区事务内保存并记录一次历史。已有文稿不允许悄悄改变文稿 ID，复制操作必须在创建副本前分配新身份。
+- `GET document` 返回内容与 `version`；`POST document/change` 提交 `DocumentEditOperation` 或完整替换。
+- 回执绑定文稿、请求与输入版本；旧回执不清除新草稿，冲突与失败保留输入。
+- 单用户工作区靠版本检查与事务，不用 CRDT。
 
-回执绑定文稿、提交请求与输入版本。旧回执不能清除新草稿；版本冲突和保存失败保留输入。运行快照标识不作为文稿提交版本。工程文件的 SourceEditor 事务保留权限、路径与文件版本校验，不再承担 MyST 行范围写回。
+## 4. 编辑
 
-`POST document/image` 用 multipart 提交 `DocumentImageImport` 与原图，原始文件和新增图片素材在同一次事务保存。支持 PNG、JPEG、GIF、WebP、SVG、BMP，限制及实际字节、版本和回滚验证见[图片导入记录](benchmarks/document-image-import-2026-10-27.md)。该接口检查格式头和尺寸，不承诺完整解码；正文块的绑定仍通过原生编辑器进入同一文稿保存边界。
+工作台用一个全篇 BlockNote 编辑器直接编辑文稿 IR，经公开 API 转换富文本；批注用 CommentsExtension，按 `comments` 重建。编译预览是独立入口。见 [studio.md](studio.md)。
 
-## 4. 原生编辑
+## 5. 运行快照
 
-工作台在父 React 页面挂载一个全篇 BlockNote 编辑器，页面与正文属于同一原生选区和历史。通过公开 API 在 Presmium 富文本与编辑器模型间适配。批注使用原生 CommentsExtension，依据文稿 JSON 中的讨论实体与稳定正文锚点重建原生标记和位置。
+### 5.1 结构
 
-文档编辑、编译放映和视频制作是独立入口。输入正文、添加页面、撤消、批注和保存不隐式切换到放映或字幕。编译预览不是作者编辑的 iframe；其协议只负责派生画面的定位、播放、诊断和 agent 焦点。
+`IRDocument` 有 `ir`、`source`、`meta`、`config`、`sections`、诊断、`production` 与 `productionAssets`（被引用素材的声明，随受众筛选）。`IRSection` 有页面 ID、序号、标题、深度、`steps`（`stepOrder` 长度减一）、`stepIds` 与块。`IRBlock` 有 `role`（`visual`、`narration`）、`at`、`span`、`only`、`audience`、JSON pointer 源位置与节点。
 
-## 5. 运行快照与渲染
+### 5.2 来源标记
 
-`IRDocument` 包含元数据、插件/渲染配置、章节与诊断。`IRSection` 带稳定页面身份与派生数字步号，以及对应的稳定 `stepIds`。`IRBlock` 的 `at`、`span` 与 `stepStates` 是运行时投影；`stepStates` 表达每一步的可见性、公开状态、参数与实现局部步号。它们不能回写为长期作者格式。
+`IRDocument.source` 是 `CanonicalSource { documentId, version, fingerprint }`，指向本次读取的 `lecture.json`。`version` 是原始字节（含 BOM）SHA-256 的前 20 位，等于文稿保存版本；`fingerprint` 是同一字节的 FNV-1a 64 位摘要。作者不能声明它，它不替代快照的 revision。没有它的快照只能只读渲染，不能用于试听确认或配音生成。
 
-`IRDocument.source` 是编译器写入的 `CanonicalSource { documentId, version, fingerprint }`，指向本次实际读取的 `lecture.json`。`version` 是原始 UTF-8 内容的 SHA-256 前 20 位，与文稿保存版本一致；`fingerprint` 是同一内容的 FNV-1a 64 位摘要，均包含 BOM。它位于运行快照顶层，过滤视图仍保留，不能由作者 metadata 声明，也不替代运行快照的 revision。缺少来源标记的快照可供只读渲染，不能用于新的试听确认或配音生成。
+### 5.3 步骤状态
 
-`IRSection.stepNarrations` 按稳定步骤标识保存讲稿的显示文本与讲稿标识，保留同一步多条讲稿的顺序。它直接派生自文稿，朗读替换取显示文本、提示动作不混入字幕；网页过滤掉讲授节点后仍可按步骤显示字幕。该投影不含音频、逐字对齐或估算时码，不要求配置配音服务。真实已加载的时序字幕播放器通过宿主 `TIMED_CAPTIONS` 租约取得字幕显示权，释放后恢复按步骤字幕。
+`IRBlock.stepStates` 给出每步的可见性、命名状态、参数、资源映射与局部步号 `localStep`。阅读器的场景局部控制（`StepScope.stateAt`、`step`）从它重建，不改变全文导航。
 
-制作时间线读取公开的 `ProductionPlan`（`contracts/production.ts`）。`ProductionBinding { source, irRevision, planId }` 分别绑定已保存的 canonical 文稿、完整运行快照与不可变派生计划；`irRevision` 使用工作区确认的完整 revision，不重算过滤视图的哈希。`planId` 包含实际讲授轨、词时码、事件、字幕、时机与精确音频缓存键、字节摘要和时长，因此只补齐缓存或修正词时码也会产生新计划。`sameProductionBinding` 比较完整绑定。
+### 5.4 讲稿投影
 
-计划按稳定页面、步骤与 Narration 标识给出范围；画面每步一段，跨步 cue 对应的同一音频与字幕各保留一段，并列出覆盖的 `stepIds`。所有时间使用同一讲授时钟的毫秒。`confirmed` 表示已确认，`estimated` 表示含缺配音的估时，`unknown` 不填未知的边界与总时长；只有完整确认的计划开放 `canPreview`、`canExport`。没有 Narration 的文稿可形成纯画面静音计划；有 Narration 时，显式 `voiceSource: { type: 'none' }` 使用实际动画、hold、pause 与 gap，不按文字推算时长。来源未选、尚不支持的 recording／视频片段、未声明的动画时长和没有确认时码的静音文字 cue 均保留诊断，不能冒充可播放计划。
+- `IRSection.stepNarrations` 按步骤给出讲稿的显示文字与 ID，不含音频与时码；网页按它显示步骤字幕。
+- `IRSection.captionSources` 是每步字幕依据的指纹，与文稿版本和前面的步骤无关。
+- 讲稿块 `role: 'narration'`、`only: ['lecture']`。
+- 时序字幕播放器经宿主的 `TIMED_CAPTIONS` 租约取得字幕显示权。
 
-`GET production-plan` 接收 `ProductionPlanQuery { source, irRevision }`，只查询缓存；`GET tracks/script?planId=…` 复用同一轨与绑定。Node 在读取前后检查实际源与 revision，并保留最近四份同源不可变计划供显式读取；旧计划不代表最新缓存状态。`GET production-media` 接收完整绑定与 `clipId`，只提供该计划白名单中的真实语音缓存或已检查的本地音频字节，核对服务授权与文件身份，支持范围读取，不接受任意文件路径。读取、播放与导出不隐式生成语音。
+### 5.5 节点与渲染
 
-`production.mediaClips` 支持同文稿非隐藏常规音频文件。`sourceRange` 给出实际音频内的入点与出点，`attachment` 给出稳定步骤与步内偏移；片段必须完整处于已确认步骤时段，不自动跨步或改变 cue／hold。`volume` 为 0..1，独立的 `muted` 保留原音量。编译器将被引用的资产声明投影为 `productionAssets` 并跟踪文件，受众过滤同步排除相应片段与声明。`GET production-asset` 按 `ProductionAssetQuery { source, irRevision, assetId }` 返回实际时长、SHA-256、编码与声道信息；媒体段使用 `media` 表示这份检查结果，与语音缓存的 `audio` 分开。Node 有界读取并在媒体响应与发布时复核 SHA，Mediabunny 读取实际单音轨音频；预览和导出共用同一放置、裁切与混音计算。远程、共享路径、符号链接、视频和录音采用仍拒绝。当前上限与真实验证见[本地音频记录](benchmarks/production-audio-clips-2026-10-26.md)。
+`IRNode` 是 `markdown`（mdast）、`code`、`component`。富文本直接 lowering 为 mdast；组件由定义与参数 lowering 为 `ComponentNode`；代码引用由锚点解析器读取工程文件得到 `CodeOrigin`。网页是能力最完整的参考媒介；其他渲染端按 `Support` 声明支持程度，不能交互时给静态回退，无法表示的节点进入构建诊断。
 
-原始二进制导入、尚未引用资产的检查与显式 clip 提交使用独立的[作者事务接口](audio-authoring.md)，不向运行 IR 或媒体响应写回作者内容。
+### 5.6 执行与语音缓存
 
-组件的资源映射 `assets` 使用参数的点分路径。插件可为 `stepStates` 派生该步自己的资源映射；链接检查包含这些资源，发布时同步改写该步参数中的地址，避免步骤参数覆盖已发布的 URL。内置媒体从实际 `src`、`poster`、`still` 与 `captions` 参数派生映射，并跟踪步骤专属文件；资源不存在时产生链接诊断。
+代码执行保留具名环境、会话、缓存与富输出（`RunSpec`、`RecordedRun`）。合成只读精确脚本与音色的已完成缓存，缺失时报告未生成；打开、保存与编译都不调用付费合成。
 
-普通阅读器的场景局部控制也从 `stepStates` 重建状态与参数：`StepScope.stateAt(localStep)` 与 `step(localStep)` 使用同一个首个可见作者快照。局部跳步和播放复用场景原有时钟，不改变全文导航或作者文稿。
+## 6. 讲授计划
 
-定义的命名状态按 `Definition.states` 的声明顺序派生实现局部步号。新文稿只需状态标识；`legacyIndex` 仅在迁移已有实现且需要保留原索引时显式覆盖，不是新文稿的必填字段。
+`addon-lecture` 从快照派生不可变的 `ProductionPlan`：
 
-运行节点继续为 Markdown 派生树、代码和组件。富文本直接 lowering 成结构化渲染树，不生成 Markdown 再解析。组件由定义与实例参数 lowering，代码来源由锚点解析器读取真实工程文件。mdast、HAST 和运行组件 fallback 是渲染接口，不是旧 Markdown 内容入口。
+- 绑定 `ProductionBinding { source, irRevision, planId }`。`planId` 覆盖讲授轨、词时码、事件、字幕、时机与音频的缓存键、摘要和时长，只补缓存也得到新计划。
+- 页面、步骤、讲稿按稳定 ID 给出范围，时间是同一讲授时钟的毫秒。跨步 cue 的音频与字幕各一段，列出覆盖的 `stepIds`。
+- `timing` 为 `confirmed`、`estimated`、`unknown`；只有完整确认的计划 `canPreview`、`canExport`。`voiceSource: none` 用实际动画、停留与停顿，不按字数估时。
+- 合成语音是 `audio`，导入音频是 `media`（`ProductionAssetInspection`）。预览与导出共用同一放置、裁切与混音计算。
 
-网页是能力最完整的参考媒介；幻灯片复用同一查看器与宿主。其他渲染端声明支持程度：不能交互时提供静态回退，无法表示的节点出现在构建诊断中。CSS 样式字符串经公开解析库转为 React style 对象，服务端渲染不依赖 DOM；非法样式保留正文并给出诊断。
+`GET production-plan`（`ProductionPlanQuery`）、`GET tracks/script`（`planId`）、`GET production-media`（绑定加 `clipId`，只给计划白名单中的字节）、`GET production-asset`（`ProductionAssetQuery`）都只读缓存，不生成语音。
 
-代码执行保留具名环境、会话、缓存与富输出契约。合成预览只读取精确脚本与音色的已完成缓存，缺失时报告未生成；打开文稿、保存正文或编译预览不隐式调用付费合成。
+## 7. 工作区与命令
 
-## 6. 工作区与命令
-
-工作区配置仍是 `presmium.workspace.yaml`，文稿模式只匹配 `lecture.json`，通常为 `documents: ['*/lecture.json']`。只有该入口的目录也可作为单文稿工作区。配置中的运营者设置与凭据不属于作者 metadata。
+工作区配置是 `presmium.workspace.yaml`，文稿模式只匹配 `lecture.json`，通常为 `documents: ['*/lecture.json']`；只有一份 `lecture.json` 的目录也是工作区。
 
 ```sh
 presmium new lesson --type lecture
@@ -97,7 +178,4 @@ presmium check lesson --json
 presmium build lesson --to web
 presmium ir lesson --out runtime-snapshot.json
 presmium serve .
-presmium studio .
 ```
-
-字段、命令参数与插件能力以安装版本的公开契约和 `presmium --help` 为准。验证按根 AGENTS 的定向策略运行真实文稿、服务与浏览器；不将旧 MyST 测试改写成兼容运行路径。

@@ -35,7 +35,7 @@ On a configured JupyterHub deployment, a document can instead request a named pr
 }
 ```
 
-Place this object at `metadata.execute.environments.lab`. Live code blocks use `execution.executor: "presmium.env.lab"`; blocks with the same `execution.session` share a kernel. Clicking Run or opening a terminal starts or reuses the current user's `env-python` server. Reading, compiling, probing and static output do not start servers. The operator maps profiles to images and resource limits; document URLs and images cannot override that mapping. Tokens stay on the server. See the [cloud deployment guide](https://github.com/Lincyaw/presmium/blob/main/docs/cloud-deployment.md#文稿中的-jupyter-环境).
+Place this object at `metadata.execute.environments.lab`. Live code blocks use `execution.executor: "presmium.env.lab"`; blocks with the same `execution.session` share a kernel. Clicking Run or opening a terminal starts or reuses the current user's `env-python` server. Reading, compiling, probing and static output do not start servers. The operator maps profiles to images and resource limits; document URLs and images cannot override that mapping. Tokens stay on the server. See the [cloud deployment guide](https://github.com/Lincyaw/presmium/blob/main/docs/cloud.md).
 
 ## Documentation
 

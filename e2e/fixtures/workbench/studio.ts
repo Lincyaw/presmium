@@ -1,4 +1,4 @@
-// The workbench of e2e/workbench.spec.ts started as `presmium studio` starts it (docs/design-dsh.md 11.2), with the
+// The workbench of e2e/workbench.spec.ts started as `presmium studio` starts it (docs/studio.md 11.2), with the
 // test harness of the bundle (packages/dsh/test/harness.ts): in a test home (HOME, DSH_HOME and XDG under a temporary
 // directory), the workspace of e2e/fixtures/workbench/workspace (a git repository of its own), `presmium serve` with a
 // service token and the workbench's origin as the previews' (`--preview-origin`), and DeepSeek
