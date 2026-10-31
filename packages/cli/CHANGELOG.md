@@ -1,5 +1,16 @@
 # @lincyaw/cli
 
+## 1.0.0-rc.8
+
+### Patch Changes
+
+- Updated dependencies [6b33a28]
+  - @lincyaw/workspace@1.0.0-rc.8
+  - @lincyaw/compiler@1.0.0-rc.8
+  - @lincyaw/kernel@1.0.0-rc.8
+  - @lincyaw/server@1.0.0-rc.8
+  - @lincyaw/skills@1.0.0-rc.8
+
 ## 1.0.0-rc.7
 
 ### Patch Changes

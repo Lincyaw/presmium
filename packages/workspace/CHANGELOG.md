@@ -1,5 +1,14 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.8
+
+### Patch Changes
+
+- 6b33a28: A workspace site's presentations wear the site's theme (its tokens, fonts and stylesheets), and every page built with a workspace theme carries `data-pm-site-theme-name` on its body, so the theme's tokens reach pages that do not draw the site's shell.
+- @lincyaw/compiler@1.0.0-rc.8
+  - @lincyaw/kernel@1.0.0-rc.8
+  - @lincyaw/server@1.0.0-rc.8
+
 ## 1.0.0-rc.7
 
 ### Patch Changes
