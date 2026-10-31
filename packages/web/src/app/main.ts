@@ -1,5 +1,5 @@
 import { currentLocale, OPERATIONS, pluginsOf, presmiumService, registerPresmiumPlugin, startHost, createStore, observe, runtimeRevision } from '@lincyaw/host'
-import { previewAppearance } from '@lincyaw/kernel'
+import { previewAppearance, reportStaleModule } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import { findView, syncViewerWithOperations } from '@lincyaw/viewer'
 import type { LiveUpdate } from '@lincyaw/viewer/domain'
@@ -83,6 +83,7 @@ async function bootPage(): Promise<void> {
   dark.set(isDark())
   const modules = await Promise.all(used(config.plugins ?? []).flatMap(([, own]) => own.plugins).map(load => load().catch((error: unknown) => {
     console.error('[presmium] a plugin module failed to load', error)
+    reportStaleModule(error)
     return {}
   })))
   modules.flatMap(module => pluginsOf(module)).forEach(registerPresmiumPlugin)
