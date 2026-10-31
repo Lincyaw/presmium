@@ -1,5 +1,5 @@
-import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { basename, dirname, join, resolve } from 'node:path'
 import { Readable } from 'node:stream'
 import { pathToFileURL } from 'node:url'
 import { ABSOLUTE_URL, errorMessage, isRecord } from '@lincyaw/kernel'
@@ -276,6 +276,31 @@ export async function buildSite(site: SiteSpec, ctx: RenderContext, documents: r
   }
 }
 
+/** The animation libraries a scene engine loads when its first scene is made, by the start of their file names. */
+const SCENE_LIBRARIES: Record<string, string> = { gsapScene: 'gsap', animeScene: 'anime', motionScene: 'motion', threeScene: 'three.module', d3Scene: 'd3', remotionScene: 'remotion' }
+
+/**
+ * What a presentation will load to draw its first scene, all known at build time: the document's chunks, the shared
+ * modules they import (`@lincyaw/addon-motion/scene`) and the animation library their engine loads. Preloaded with the
+ * app, they arrive together instead of each after the one that names it.
+ */
+function scenePreloads(codeDir: string, codeUrl: string, built: Built): string[] {
+  const files = [join(codeDir, BUNDLE_ENTRY), ...existsSync(join(codeDir, 'chunks')) ? readdirSync(join(codeDir, 'chunks')).filter(file => file.endsWith('.js')).map(file => join(codeDir, 'chunks', file)) : []]
+  const text = files.filter(file => existsSync(file)).map(file => readFileSync(file, 'utf8')).join('\n')
+  const urls = files.slice(1).map(file => `${codeUrl}chunks/${basename(file)}`)
+  const { shared } = built.app.manifest
+  for (const [specifier, file] of Object.entries(shared)) if (text.includes(`"${specifier}"`) || text.includes(`'${specifier}'`)) urls.push(`${built.appUrl}${file}`)
+  const assets = existsSync(join(built.appDir, 'assets')) ? readdirSync(join(built.appDir, 'assets')) : []
+  // The viewer the app opens for the slides, loaded by the app only once it runs.
+  for (const file of assets.filter(name => name.startsWith('viewer-') && name.endsWith('.js'))) urls.push(`${built.appUrl}assets/${file}`)
+  for (const [engine, library] of Object.entries(SCENE_LIBRARIES)) {
+    if (!text.includes(engine)) continue
+    const file = assets.find(name => name.startsWith(`${library}-`) && name.endsWith('.js'))
+    if (file) urls.push(`${built.appUrl}assets/${file}`)
+  }
+  return urls
+}
+
 /**
  * Builds a document's slides into `ctx.outDir`: one page that shows them (the slides form of the viewer), with the
  * document's slides view (`{only} slides`), its code and files, as the web form's are built.
@@ -302,5 +327,6 @@ export async function buildSlidesSite(doc: IRDocument, ctx: RenderContext, nodeP
     plugins: ctx.plugins,
     origins: [],
   }
-  writeFileSync(join(ctx.outDir, 'index.html'), pageHtml({ entry: appEntry(built.app), appUrl: built.appUrl, shared: built.app.manifest.shared, config, title: doc.meta.title }))
+  const preload = code ? scenePreloads(join(ctx.outDir, CODE_DIR, code), `${ctx.base}${CODE_DIR}/${code}/`, built) : []
+  writeFileSync(join(ctx.outDir, 'index.html'), pageHtml({ entry: appEntry(built.app), appUrl: built.appUrl, shared: built.app.manifest.shared, config, title: doc.meta.title, preload }))
 }
