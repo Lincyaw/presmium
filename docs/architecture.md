@@ -291,7 +291,7 @@ PDF、图片与 PowerPoint 中组件显示 IR 的 `fallback`（`useStaticRender(
 
 ## 6. 示例文稿约定
 
-- 公开示例工作区 `examples/gallery/`：两讲完整课程、九份功能导览、傅里叶小课、产品宣传片及 18 份技能动画参考，索引在 `FEATURES.md`。
+- 公开示例工作区 `examples/gallery/`：五份功能合集、两份教程、两讲完整课程、傅里叶小课、产品宣传片及 18 份技能动画参考，索引在 `FEATURES.md`。
 - `pnpm studio` 首次复制到 `.presmium/gallery-workspace`（独立 git 仓库），链接的动画参考物化为普通文件；之后复用，旧 `.presmium/example-workspace` 保留。
 - `demo:check`、`demo:ir` 只处理两讲；`demo:build` 构建工作区网页，再为两讲补充幻灯片、notebook 与讲授，并为小课和宣传片补充放映与讲授。
 - 功能回归用 `e2e/fixtures/<组>/`；旧 BPE 文稿只在 `e2e/fixtures/regression/`。

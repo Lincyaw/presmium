@@ -24,5 +24,5 @@ writeFileSync(join(target, '.gitignore'), 'node_modules\ndist/\n**/.presmium/*\n
 const git = args => execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Presmium example', '-c', 'user.email=example@presmium.invalid', '-c', 'commit.gpgSign=false', ...args], { cwd: target, stdio: 'pipe' })
 git(['init', '-q', '-b', 'main'])
 git(['add', '-A'])
-git(['commit', '-q', '-m', 'Presmium gallery: courses, feature guides and animation references'])
+git(['commit', '-q', '-m', 'Presmium gallery: courses, feature collections, tutorials and animation references'])
 console.log(`gallery workspace: ${target}`)

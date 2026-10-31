@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "id": "presmium-guide-publishing",
+  "id": "presmium-showcase-publishing",
   "metadata": {
-    "title": "Feature guide 06: reading, collaboration and publishing",
+    "title": "Reading and publishing",
     "lang": "en",
-    "description": "Editable, runnable Presmium feature examples.",
+    "description": "Search and footnotes, presenting and presenter view, per-medium output, web components, high contrast, translation, AI questions and export.",
     "plugins": [
       "@lincyaw/addon-publish",
       "@lincyaw/addon-stage",
@@ -18,39 +18,28 @@
     },
     "translationOf": {
       "entry": "../../lecture.json",
-      "digest": "4fcea8d83e1570e3a3495db360e348c18578c801a43deebf13157a18c92b3363"
-    }
+      "digest": "832444500ae1e9d9d24b3d0a60dea9bb93562ac69dc10768a4583c861bf3ec31"
+    },
+    "tags": [
+      "Collection"
+    ]
   },
   "sectionOrder": [
-    "start",
+    "g-read",
     "reading",
     "views",
-    "collaboration",
-    "scope",
-    "extension",
     "offline",
     "translation",
     "assistant",
+    "g-output",
+    "scope",
+    "extension",
     "export"
   ],
   "sections": {
-    "start": {
-      "id": "start",
-      "title": "One document, several ways to deliver it",
-      "level": 1,
-      "children": [
-        "text-1"
-      ],
-      "stepOrder": [
-        "start-step"
-      ],
-      "layout": {
-        "type": "stack"
-      }
-    },
     "reading": {
       "id": "reading",
-      "title": "Search, navigation, links and footnotes",
+      "title": "Search and footnotes",
       "level": 2,
       "children": [
         "text-7"
@@ -64,7 +53,7 @@
     },
     "views": {
       "id": "views",
-      "title": "Presentation, presenter view and teaching tools",
+      "title": "Presenting and presenter view",
       "level": 2,
       "children": [
         "text-8"
@@ -76,29 +65,14 @@
         "type": "stack"
       }
     },
-    "collaboration": {
-      "id": "collaboration",
-      "title": "Native comments, undo, saving and recovery",
-      "level": 2,
-      "children": [
-        "text-11"
-      ],
-      "stepOrder": [
-        "collaboration-step"
-      ],
-      "layout": {
-        "type": "stack"
-      }
-    },
     "scope": {
       "id": "scope",
-      "title": "Choose content for a medium and audience",
+      "title": "Per-medium output",
       "level": 2,
       "children": [
+        "text-18",
         "web-only",
-        "notebook-only",
-        "teacher-only",
-        "text-18"
+        "notebook-only"
       ],
       "stepOrder": [
         "scope-step"
@@ -109,7 +83,7 @@
     },
     "extension": {
       "id": "extension",
-      "title": "Web Components and static fallbacks",
+      "title": "Web components",
       "level": 2,
       "children": [
         "text-20",
@@ -124,11 +98,11 @@
     },
     "offline": {
       "id": "offline",
-      "title": "High contrast and offline saving",
+      "title": "High contrast and offline reading",
       "level": 2,
       "children": [
-        "contrast",
-        "text-24"
+        "text-24",
+        "contrast"
       ],
       "stepOrder": [
         "offline-step"
@@ -139,7 +113,7 @@
     },
     "translation": {
       "id": "translation",
-      "title": "Translated documents and language switching",
+      "title": "Translation",
       "level": 2,
       "children": [
         "text-27"
@@ -153,7 +127,7 @@
     },
     "assistant": {
       "id": "assistant",
-      "title": "Enable questions with a real model service",
+      "title": "AI questions",
       "level": 2,
       "children": [
         "text-30"
@@ -167,7 +141,7 @@
     },
     "export": {
       "id": "export",
-      "title": "PDF, images, PowerPoint, visual differences and notebooks",
+      "title": "Export",
       "level": 2,
       "children": [
         "text-33",
@@ -179,35 +153,37 @@
       "layout": {
         "type": "stack"
       }
+    },
+    "g-read": {
+      "id": "g-read",
+      "title": "Reading",
+      "level": 1,
+      "children": [
+        "g-read-intro"
+      ],
+      "stepOrder": [
+        "g-read-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "g-output": {
+      "id": "g-output",
+      "title": "Output and extensions",
+      "level": 1,
+      "children": [
+        "g-output-intro"
+      ],
+      "stepOrder": [
+        "g-output-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
     }
   },
   "blocks": {
-    "text-1": {
-      "id": "text-1",
-      "type": "text",
-      "content": [
-        {
-          "id": "paragraph-2",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "The website supports reading, search and interaction; slides support step-by-step teaching; notebooks retain code cells and static fallbacks. Doc edits still write only lecture.json."
-            }
-          ]
-        },
-        {
-          "id": "paragraph-3",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "Try search, the contents panel, appearance settings, fonts and narrow-screen navigation. The view menu opens presentation or presenter view without changing the authoritative content."
-            }
-          ]
-        }
-      ]
-    },
     "text-7": {
       "id": "text-7",
       "type": "text",
@@ -218,7 +194,7 @@
           "children": [
             {
               "type": "text",
-              "text": "Search for this distinctive phrase: starlight notes."
+              "text": "Search for this unusual sentence: star-river notes."
             },
             {
               "type": "extension",
@@ -241,11 +217,11 @@
           "children": [
             {
               "type": "link",
-              "href": "#collaboration",
+              "href": "#scope",
               "children": [
                 {
                   "type": "text",
-                  "text": "Jump to collaboration"
+                  "text": "Jump to “Per-medium output”"
                 }
               ]
             }
@@ -267,7 +243,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "value": "Footnotes preserve explicit identities, pairing each reference with its definition."
+                      "value": "This is a footnote."
                     }
                   ]
                 }
@@ -281,7 +257,7 @@
               "children": [
                 {
                   "type": "text",
-                  "text": "Note: footnotes preserve explicit identities, pairing each reference with its definition."
+                  "text": "This is a footnote."
                 }
               ]
             }
@@ -294,58 +270,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-9",
+          "id": "sp-2",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "Presentation supports step navigation, scripts, drawing, a black screen and freezing the audience view. Presenter view shows the current and next scene and script; multiple windows require browser permission."
-            }
-          ]
-        },
-        {
-          "id": "paragraph-10",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "Blackout and freeze are presentation states. Returning preserves the current position."
-            }
-          ]
-        }
-      ]
-    },
-    "text-11": {
-      "id": "text-11",
-      "type": "text",
-      "content": [
-        {
-          "id": "paragraph-12",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "In the workbench, select this text and add a comment with the native comment extension. One body editor handles multi-paragraph selections, insertion and undo."
-            }
-          ]
-        },
-        {
-          "id": "paragraph-13",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "The latest body and script share one versioned save actor. An old save response cannot clear new input. Conflicting or interrupted composition drafts require explicit recovery or discard."
-            }
-          ]
-        },
-        {
-          "id": "paragraph-14",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "History displays and restores real saved versions. Renaming, moving and deleting pages preserve stable identities. Deletion checks references and dependencies before changing the source."
+              "text": "Start presenting from the view menu at the top right. While presenting you can draw, black out or freeze the screen; the presenter view shows the next page and the script."
             }
           ]
         }
@@ -361,7 +291,7 @@
           "children": [
             {
               "type": "text",
-              "text": "This paragraph is only for web reading."
+              "text": "This paragraph appears only on the website."
             }
           ]
         }
@@ -380,7 +310,7 @@
           "children": [
             {
               "type": "text",
-              "text": "This paragraph only appears in notebook output."
+              "text": "This paragraph appears only in the notebook."
             }
           ]
         }
@@ -389,36 +319,17 @@
         "notebook"
       ]
     },
-    "teacher-only": {
-      "id": "teacher-only",
-      "type": "text",
-      "content": [
-        {
-          "id": "paragraph-17",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "Teacher-only phrase: ask students to explain independently before showing the answer."
-            }
-          ]
-        }
-      ],
-      "audience": [
-        "teacher"
-      ]
-    },
     "text-18": {
       "id": "text-18",
       "type": "text",
       "content": [
         {
-          "id": "paragraph-19",
+          "id": "sp-3",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "This public paragraph remains in student output. --audience student must remove teacher content from the output."
+              "text": "The next two paragraphs appear only on the website and only in the notebook."
             }
           ]
         }
@@ -429,22 +340,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-21",
+          "id": "sp-4",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "This real counter uses the browser Custom Elements API. Clicking increases its value; its button uses the shared design system. The local plugin registers it through the public browser entry."
-            }
-          ]
-        },
-        {
-          "id": "module-implementation-limit",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "Component definitions can reference project files or registered plugins. The compiler currently rejects module implementations; this example uses a real local plugin."
+              "text": "The counter below is a Web Component registered by this lecture’s local plugin."
             }
           ]
         }
@@ -491,22 +392,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-25",
+          "id": "sp-5",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "High contrast and light/dark appearance are separate settings. The publishing plugin can save a static website for offline use, after its resources have actually been cached."
-            }
-          ]
-        },
-        {
-          "id": "paragraph-26",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "Offline support depends on browser capabilities, a secure context, storage limits and resource origins. Caching a page does not make an external player or service work offline."
+              "text": "The high-contrast switch raises the contrast between text and background. A published website can be saved for offline reading."
             }
           ]
         }
@@ -517,22 +408,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-28",
+          "id": "sp-6",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "This guide includes an English translation. The language menu switches between independent canonical JSON documents with stable section and block IDs."
-            }
-          ]
-        },
-        {
-          "id": "paragraph-29",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "The original digest reflects normalized content; formatting changes do not make a translation stale. Content changes require the translation to be updated or marked stale."
+              "text": "This document has an English translation; switch with the language menu."
             }
           ]
         }
@@ -543,22 +424,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-31",
+          "id": "sp-7",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "The reading assistant uses a model service configured by the reader. Unavailable models, failed requests and cancellation must not be reported as success."
-            }
-          ]
-        },
-        {
-          "id": "paragraph-32",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "A teacher reviews classroom AI answers before explicitly sharing them. The workbench assistant, IDE and MCP are separate entry points using the same document transactions."
+              "text": "The reader’s “Ask” uses a model service the reader configures. In class, the presenter reviews an AI answer before sharing it."
             }
           ]
         }
@@ -569,22 +440,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-34",
+          "id": "sp-8",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "Build the required medium, then use the actual export tool. PDF, PNG and PowerPoint need a working Chromium; video and burned-in subtitles also need encoding tools and prepared media capabilities."
-            }
-          ]
-        },
-        {
-          "id": "paragraph-35",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "Visual differences compare actual rendered output. They complement content and interaction checks. Notebook controls become readable fallbacks or real code cells."
+              "text": "Websites, notebooks, the student edition, PDF, images and PowerPoint all come from the same document."
             }
           ]
         }
@@ -594,21 +455,42 @@
       "id": "export-commands",
       "type": "code",
       "language": "shell",
-      "value": "presmium build guide-publishing --to web,notebook\npresmium build guide-publishing --to web --audience student\n# presmium-export --help lists the actual formats supported by your installed version."
+      "value": "presmium build showcase-publishing --to web,notebook\npresmium build showcase-publishing --to web --audience student\n# presmium-export --help lists PDF, image and PowerPoint export"
+    },
+    "g-read-intro": {
+      "id": "g-read-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-read-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Search, presenting, accessibility, translation and questions."
+            }
+          ]
+        }
+      ]
+    },
+    "g-output-intro": {
+      "id": "g-output-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-output-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Per-medium content, custom web components and export formats."
+            }
+          ]
+        }
+      ]
     }
   },
   "steps": {
-    "start-step": {
-      "id": "start-step",
-      "sectionId": "start",
-      "visuals": [
-        {
-          "blockId": "text-1",
-          "visible": true
-        }
-      ],
-      "narrationIds": []
-    },
     "reading-step": {
       "id": "reading-step",
       "sectionId": "reading",
@@ -631,35 +513,20 @@
       ],
       "narrationIds": []
     },
-    "collaboration-step": {
-      "id": "collaboration-step",
-      "sectionId": "collaboration",
-      "visuals": [
-        {
-          "blockId": "text-11",
-          "visible": true
-        }
-      ],
-      "narrationIds": []
-    },
     "scope-step": {
       "id": "scope-step",
       "sectionId": "scope",
       "visuals": [
+        {
+          "blockId": "text-18",
+          "visible": true
+        },
         {
           "blockId": "web-only",
           "visible": true
         },
         {
           "blockId": "notebook-only",
-          "visible": true
-        },
-        {
-          "blockId": "teacher-only",
-          "visible": true
-        },
-        {
-          "blockId": "text-18",
           "visible": true
         }
       ],
@@ -685,11 +552,11 @@
       "sectionId": "offline",
       "visuals": [
         {
-          "blockId": "contrast",
+          "blockId": "text-24",
           "visible": true
         },
         {
-          "blockId": "text-24",
+          "blockId": "contrast",
           "visible": true
         }
       ],
@@ -727,6 +594,28 @@
         },
         {
           "blockId": "export-commands",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "g-read-step": {
+      "id": "g-read-step",
+      "sectionId": "g-read",
+      "visuals": [
+        {
+          "blockId": "g-read-intro",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "g-output-step": {
+      "id": "g-output-step",
+      "sectionId": "g-output",
+      "visuals": [
+        {
+          "blockId": "g-output-intro",
           "visible": true
         }
       ],

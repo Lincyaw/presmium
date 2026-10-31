@@ -1,0 +1,1013 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-tutorial-narration",
+  "metadata": {
+    "title": "讲稿与配音",
+    "lang": "zh-CN",
+    "description": "依次练习读音与动作标记、播放时机、时间线预览、静音讲授、AI 配音、录音、音频片段与视频导出。",
+    "plugins": [
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-speech",
+      "@lincyaw/addon-stage",
+      "@lincyaw/addon-motion"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {},
+      "lecture": {}
+    },
+    "tags": [
+      "教程"
+    ]
+  },
+  "sectionOrder": [
+    "start",
+    "g-script",
+    "script",
+    "timing",
+    "g-preview",
+    "timeline",
+    "silent",
+    "g-voice",
+    "voices",
+    "recording",
+    "media-editing",
+    "deliver"
+  ],
+  "sections": {
+    "start": {
+      "id": "start",
+      "title": "开始之前",
+      "level": 1,
+      "children": [
+        "text-1"
+      ],
+      "stepOrder": [
+        "start-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "script": {
+      "id": "script",
+      "title": "1. 讲稿里的读音、动作与停顿",
+      "level": 2,
+      "children": [
+        "text-4",
+        "production-counter"
+      ],
+      "stepOrder": [
+        "script-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "timing": {
+      "id": "timing",
+      "title": "2. 随动画讲，还是动画后讲",
+      "level": 2,
+      "children": [
+        "timing-instructions",
+        "timing-scene"
+      ],
+      "stepOrder": [
+        "timing-during",
+        "timing-after"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "timeline": {
+      "id": "timeline",
+      "title": "3. 在时间线上预览",
+      "level": 2,
+      "children": [
+        "timeline-practice"
+      ],
+      "stepOrder": [
+        "timeline-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "silent": {
+      "id": "silent",
+      "title": "4. 做一份静音讲授",
+      "level": 2,
+      "children": [
+        "silent-practice"
+      ],
+      "stepOrder": [
+        "silent-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "voices": {
+      "id": "voices",
+      "title": "5. 选择音色，生成配音",
+      "level": 2,
+      "children": [
+        "text-6"
+      ],
+      "stepOrder": [
+        "voices-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "recording": {
+      "id": "recording",
+      "title": "6. 用自己的声音录音",
+      "level": 2,
+      "children": [
+        "text-13",
+        "recording-more"
+      ],
+      "stepOrder": [
+        "recording-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "media-editing": {
+      "id": "media-editing",
+      "title": "7. 加入音频片段",
+      "level": 2,
+      "children": [
+        "text-16"
+      ],
+      "stepOrder": [
+        "media-editing-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "deliver": {
+      "id": "deliver",
+      "title": "8. 导出视频",
+      "level": 1,
+      "children": [
+        "text-19"
+      ],
+      "stepOrder": [
+        "deliver-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "g-script": {
+      "id": "g-script",
+      "title": "讲稿",
+      "level": 1,
+      "children": [
+        "g-script-intro"
+      ],
+      "stepOrder": [
+        "g-script-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "g-preview": {
+      "id": "g-preview",
+      "title": "预览",
+      "level": 1,
+      "children": [
+        "g-preview-intro"
+      ],
+      "stepOrder": [
+        "g-preview-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "g-voice": {
+      "id": "g-voice",
+      "title": "配音",
+      "level": 1,
+      "children": [
+        "g-voice-intro"
+      ],
+      "stepOrder": [
+        "g-voice-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "text-1": {
+      "id": "text-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "tn-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本教程默认静音，打开时不调用语音服务。涉及声音的步骤使用“冒泡排序”附带的配音。"
+            }
+          ]
+        }
+      ]
+    },
+    "production-counter": {
+      "id": "production-counter",
+      "type": "component",
+      "definitionId": "action-definition",
+      "parameters": {
+        "label": "讲稿动作",
+        "targetId": "production-action"
+      }
+    },
+    "text-4": {
+      "id": "text-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "tn-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本步讲稿包含三种标记：读音（SQL 读作 sequel）、触发下方计数器“加一次”的动作，以及一次停顿。点击工具栏中的“字幕”，可在讲稿栏中查看与编辑。"
+            }
+          ]
+        }
+      ]
+    },
+    "timing-scene": {
+      "id": "timing-scene",
+      "type": "component",
+      "definitionId": "timing-definition",
+      "parameters": {
+        "value": 25
+      }
+    },
+    "text-6": {
+      "id": "text-6",
+      "type": "text",
+      "content": [
+        {
+          "id": "tn-20",
+          "type": "list",
+          "ordered": true,
+          "children": [
+            {
+              "id": "tn-21",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "tn-22",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "在“设置”的“语音服务”中填写服务密钥。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "tn-23",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "tn-24",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "在“视频制作”中点击“选择音色”，选定音色及其应用范围（本步、本页或整份文稿）。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "tn-25",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "tn-26",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "点击“播放”：缺失的配音将自动生成并缓存，随后继续播放。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "tn-27",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "tn-28",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "如需一次性准备全部配音，点击“生成配音”。修改过的讲稿将标记为需要更新。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "text-13": {
+      "id": "text-13",
+      "type": "text",
+      "content": [
+        {
+          "id": "tn-29",
+          "type": "list",
+          "ordered": true,
+          "children": [
+            {
+              "id": "tn-30",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "tn-31",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "在“视频制作”的“原音频”卡中点击“开始录音”，并允许浏览器使用麦克风。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "tn-32",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "tn-33",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "录制完成后点击“停止录音”，试听后点击“保存为音频素材”。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "tn-34",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "tn-35",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "选中该录音，点击“采用为本步配音”。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "text-16": {
+      "id": "text-16",
+      "type": "text",
+      "content": [
+        {
+          "id": "tn-37",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在“音频片段”中导入本地音频，设置入点、出点、延后与音量，再点击“采用到本步”。片段与讲稿配音同时播放，原文件保持不变。"
+            }
+          ]
+        }
+      ]
+    },
+    "text-19": {
+      "id": "text-19",
+      "type": "text",
+      "content": [
+        {
+          "id": "tn-38",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "配音或静音设置完成后，在“视频制作”中点击“导出”，选择“导出视频”，即可得到带字幕的讲授视频。"
+            }
+          ]
+        }
+      ]
+    },
+    "timing-instructions": {
+      "id": "timing-instructions",
+      "type": "text",
+      "content": [
+        {
+          "id": "tn-3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一步的讲稿与动画同时开始，第二步在动画结束后开始。可在讲稿栏的“播放时机”中切换“同步动画”与“动画后”。"
+            }
+          ]
+        }
+      ]
+    },
+    "timeline-practice": {
+      "id": "timeline-practice",
+      "type": "text",
+      "content": [
+        {
+          "id": "tn-4",
+          "type": "list",
+          "ordered": true,
+          "children": [
+            {
+              "id": "tn-5",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "tn-6",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "打开“冒泡排序”，点击工具栏中的“视频制作”。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "tn-7",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "tn-8",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "底部时间线包含画面、配音与字幕三条轨道，配音轨显示音频波形。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "tn-9",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "tn-10",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "点击时间线上的步骤可跳转，拖动播放头可定位。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "tn-11",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "tn-12",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "点击“播放”，再将“播放速度”设为 1.5 倍。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "silent-practice": {
+      "id": "silent-practice",
+      "type": "text",
+      "content": [
+        {
+          "id": "tn-13",
+          "type": "list",
+          "ordered": true,
+          "children": [
+            {
+              "id": "tn-14",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "tn-15",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "新建一份文稿，在任一页面的讲稿中输入一句话。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "tn-16",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "tn-17",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "进入“视频制作”，点击“选择音色”，将“声音来源”设为“静音”。"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "tn-18",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "tn-19",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "将最短停留设为 2000 毫秒，点击“播放”：字幕按时推进，无声音输出。"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "recording-more": {
+      "id": "recording-more",
+      "type": "text",
+      "content": [
+        {
+          "id": "tn-36",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "也可导入已有音频。配置转写服务后，可将录音转写为文字，“采用讲稿”后再改用 AI 配音。"
+            }
+          ]
+        }
+      ]
+    },
+    "g-script-intro": {
+      "id": "g-script-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-script-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲稿中的标记与播放时机。"
+            }
+          ]
+        }
+      ]
+    },
+    "g-preview-intro": {
+      "id": "g-preview-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-preview-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在时间线上预览讲授，并制作静音讲授。"
+            }
+          ]
+        }
+      ]
+    },
+    "g-voice-intro": {
+      "id": "g-voice-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-voice-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "AI 配音、录音与音频片段。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "start-step": {
+      "id": "start-step",
+      "sectionId": "start",
+      "visuals": [
+        {
+          "blockId": "text-1",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "script-step": {
+      "id": "script-step",
+      "sectionId": "script",
+      "visuals": [
+        {
+          "blockId": "text-4",
+          "visible": true
+        },
+        {
+          "blockId": "production-counter",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "script-intro"
+      ]
+    },
+    "timing-during": {
+      "id": "timing-during",
+      "sectionId": "timing",
+      "visuals": [
+        {
+          "blockId": "timing-scene",
+          "visible": true,
+          "state": "during",
+          "parameters": {
+            "value": 25
+          }
+        },
+        {
+          "blockId": "timing-instructions",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "timing-script-0"
+      ]
+    },
+    "timing-after": {
+      "id": "timing-after",
+      "sectionId": "timing",
+      "visuals": [
+        {
+          "blockId": "timing-scene",
+          "visible": true,
+          "state": "after",
+          "parameters": {
+            "value": 75
+          }
+        },
+        {
+          "blockId": "timing-instructions",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "timing-script-1"
+      ]
+    },
+    "voices-step": {
+      "id": "voices-step",
+      "sectionId": "voices",
+      "visuals": [
+        {
+          "blockId": "text-6",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "recording-step": {
+      "id": "recording-step",
+      "sectionId": "recording",
+      "visuals": [
+        {
+          "blockId": "text-13",
+          "visible": true
+        },
+        {
+          "blockId": "recording-more",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "media-editing-step": {
+      "id": "media-editing-step",
+      "sectionId": "media-editing",
+      "visuals": [
+        {
+          "blockId": "text-16",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "deliver-step": {
+      "id": "deliver-step",
+      "sectionId": "deliver",
+      "visuals": [
+        {
+          "blockId": "text-19",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "timeline-step": {
+      "id": "timeline-step",
+      "sectionId": "timeline",
+      "visuals": [
+        {
+          "blockId": "timeline-practice",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "silent-step": {
+      "id": "silent-step",
+      "sectionId": "silent",
+      "visuals": [
+        {
+          "blockId": "silent-practice",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "g-script-step": {
+      "id": "g-script-step",
+      "sectionId": "g-script",
+      "visuals": [
+        {
+          "blockId": "g-script-intro",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "g-preview-step": {
+      "id": "g-preview-step",
+      "sectionId": "g-preview",
+      "visuals": [
+        {
+          "blockId": "g-preview-intro",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "g-voice-step": {
+      "id": "g-voice-step",
+      "sectionId": "g-voice",
+      "visuals": [
+        {
+          "blockId": "g-voice-intro",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "script-intro": {
+      "id": "script-intro",
+      "content": [
+        {
+          "type": "text",
+          "text": "这里展示 "
+        },
+        {
+          "type": "pronunciation",
+          "display": "SQL",
+          "spoken": "sequel"
+        },
+        {
+          "type": "text",
+          "text": " 的读音标记。"
+        },
+        {
+          "id": "add-cue",
+          "type": "cue",
+          "action": "call",
+          "target": {
+            "blockId": "production-counter"
+          },
+          "parameters": {
+            "arg": "add"
+          }
+        },
+        {
+          "type": "text",
+          "text": "计数器加一。"
+        },
+        {
+          "id": "pause-cue",
+          "type": "cue",
+          "action": "pause"
+        },
+        {
+          "type": "text",
+          "text": "现在继续。"
+        }
+      ]
+    },
+    "timing-script-0": {
+      "id": "timing-script-0",
+      "content": [
+        {
+          "type": "text",
+          "text": "这一段和动画同时开始。"
+        }
+      ]
+    },
+    "timing-script-1": {
+      "id": "timing-script-1",
+      "content": [
+        {
+          "type": "text",
+          "text": "这一段在动画结束后开始。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "action-definition": {
+      "id": "action-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "components/ActionCounter.tsx"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "显示文字"
+          },
+          "targetId": {
+            "type": "string",
+            "title": "交互目标标识",
+            "readOnly": true
+          }
+        },
+        "required": [
+          "label",
+          "targetId"
+        ]
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "讲稿可以让计数器加一。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "timing-definition": {
+      "id": "timing-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/semantic.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "title": "数值"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      },
+      "states": [
+        {
+          "id": "during",
+          "title": "随动画讲"
+        },
+        {
+          "id": "after",
+          "title": "结束后讲"
+        }
+      ],
+      "data": {
+        "durations": [
+          1200,
+          1200
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "第一步随动画讲，第二步等待动画结束再讲。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      },
+      "minimumHoldMs": 800,
+      "trailingPauseMs": 200
+    },
+    "stepOverrides": {
+      "timing-during": {
+        "narrationStart": "with-animation",
+        "minimumHoldMs": 1600,
+        "trailingPauseMs": 300
+      },
+      "timing-after": {
+        "narrationStart": "after-animation",
+        "minimumHoldMs": 1600,
+        "trailingPauseMs": 300
+      }
+    },
+    "mediaClips": [],
+    "cueTimings": {
+      "pause-cue": {
+        "pauseMs": 240
+      }
+    }
+  }
+}

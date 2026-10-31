@@ -9,7 +9,11 @@
     ],
     "renderers": {
       "web": {}
-    }
+    },
+    "tags": [
+      "动画参考"
+    ],
+    "description": "D3 数据可视化动画：比例尺与坐标轴、数据连接、条形图竞赛、层次与力导向布局、Voronoi、等值线与地理投影。"
   },
   "sectionOrder": [
     "intro",

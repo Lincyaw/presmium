@@ -15,7 +15,11 @@
       "slides": {},
       "notebook": {},
       "lecture": {}
-    }
+    },
+    "tags": [
+      "课程"
+    ],
+    "description": "一趟冒泡排序：代码、GSAP 动画、讲稿触发的计数组件与光标提示，并合成带字幕的讲授视频。"
   },
   "sectionOrder": [
     "intro",

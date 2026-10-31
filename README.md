@@ -2,7 +2,7 @@
 
 在工作台编辑教学文稿，以 lecture.json 保存唯一内容，编译为网页、幻灯片、Jupyter notebook 与讲授快照。
 
-示例统一在 [Gallery](examples/gallery/README.md)：两讲完整课程、九份[功能导览](examples/gallery/FEATURES.md)、傅里叶小课、产品宣传片与 18 份动画效果参考。运行 `pnpm studio` 即可在独立的可编辑副本中浏览全部 31 份主文稿。`pnpm demo:check` 仍只检查原有两讲；`pnpm demo:build` 构建整个 Gallery 站点。
+示例统一在 [Gallery](examples/gallery/README.md)：五份[功能合集与两份教程](examples/gallery/FEATURES.md)、两讲完整课程、傅里叶小课、产品宣传片与 18 份动画效果参考。运行 `pnpm studio` 即可在独立的可编辑副本中浏览全部 29 份主文稿。`pnpm demo:check` 仍只检查原有两讲；`pnpm demo:build` 构建整个 Gallery 站点。
 
 ## 安装
 

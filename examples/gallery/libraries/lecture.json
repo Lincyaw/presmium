@@ -14,7 +14,11 @@
       "web": {},
       "slides": {},
       "lecture": {}
-    }
+    },
+    "tags": [
+      "课程"
+    ],
+    "description": "分别用 GSAP、Anime.js、Motion、Three.js 与 Remotion 编写教学动画，并由讲稿驱动交互与讲授视频。"
   },
   "sectionOrder": [
     "intro",

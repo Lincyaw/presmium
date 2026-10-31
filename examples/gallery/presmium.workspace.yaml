@@ -1,4 +1,4 @@
-title: Presmium Gallery
+title: Presmium
 documents:
   - "*/lecture.json"
   - "animation-library/*/lecture.json"
@@ -10,90 +10,20 @@ site:
     accent: violet
     typography: sans
     contentWidth: wide
+    logo: ./site/assets/logo.svg
+    logoAlt: ""
   landing:
     template: ./site/home.html
   head:
-    description: Presmium 示例合集：完整课程、功能导览、傅里叶小课、宣传片与动画效果参考。
+    description: Presmium 示例合集：功能合集、教程、完整课程、傅里叶小课、宣传片与动画效果参考。
   footer:
     message: Presmium 示例
   nav:
-    - text: 傅里叶级数小课
-      link: /learn/
-    - text: 产品宣传片
-      link: /promo/
-    - text: 完整课程
-      items:
-        - text: 冒泡排序
-          link: /bubble-sort/
-        - text: 代码写成的动画
-          link: /libraries/
-    - text: 功能导览
-      items:
-        - text: 动手编辑一份讲义
-          link: /guide-authoring/
-        - text: 正文与富内容
-          link: /guide-content/
-        - text: 步骤与动画
-          link: /guide-steps/
-        - text: 代码与运行
-          link: /guide-code/
-        - text: 课堂互动
-          link: /guide-classroom/
-        - text: 讲稿与制作
-          link: /guide-production/
-        - text: 发布与协作
-          link: /guide-publishing/
-        - text: 可选执行环境
-          link: /guide-environments/
-        - text: 联网资源（可选）
-          link: /guide-network/
-    - text: 幻灯片
-      items:
-        - text: 冒泡排序
-          link: /bubble-sort/slides/
-        - text: 代码写成的动画
-          link: /libraries/slides/
-    - text: 动画效果参考
-      items:
-        - text: GSAP
-          link: /animation-library/gsap/
-        - text: Anime.js
-          link: /animation-library/anime/
-        - text: Motion
-          link: /animation-library/motion/
-        - text: D3
-          link: /animation-library/d3/
-        - text: Three.js
-          link: /animation-library/three/
-        - text: Remotion
-          link: /animation-library/remotion/
-        - text: 时间线
-          link: /animation-library/timeline/
-        - text: 时长与片段
-          link: /animation-library/lengths/
-        - text: 影片
-          link: /animation-library/films/
-        - text: Flow Matching
-          link: /animation-library/story/
-    - text: 效果分类
-      items:
-        - text: 标注与指针
-          link: /animation-library/catalog/annotate-cursor/
-        - text: 承接
-          link: /animation-library/catalog/carry/
-        - text: 数据与代码
-          link: /animation-library/catalog/data-code/
-        - text: 动效展柜
-          link: /animation-library/catalog/motion-showcase/
-        - text: 产品界面
-          link: /animation-library/catalog/product-ui/
-        - text: 着色器、三维与背景
-          link: /animation-library/catalog/shader-3d-bg/
-        - text: 文字与字幕
-          link: /animation-library/catalog/text-captions/
-        - text: 转场与镜头
-          link: /animation-library/catalog/transitions-camera/
-    - text: Notebook
-      items:
-        - text: 冒泡排序
-          link: /bubble-sort/notebook/lecture.ipynb
+    - text: 首页
+      link: /
+    - text: 示例
+      link: /#/examples
+    - text: 教程
+      link: /#/examples/tutorials
+    - text: GitHub
+      link: https://github.com/Lincyaw/presmium

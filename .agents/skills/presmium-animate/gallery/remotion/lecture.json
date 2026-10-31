@@ -9,7 +9,11 @@
     ],
     "renderers": {
       "web": {}
-    }
+    },
+    "tags": [
+      "动画参考"
+    ],
+    "description": "Remotion 帧驱动动画：分段序列、弹簧、打字机、逐词高亮、数字滚动、擦除转场、字幕条、定格与循环。"
   },
   "sectionOrder": [
     "intro",

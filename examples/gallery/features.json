@@ -1,10 +1,10 @@
 {
-  "description": "功能导览索引。每项指向真实可编辑文稿；启用条件不等于已经配置了外部服务。",
+  "description": "功能索引：每项指向示例文稿中演示它的页面。requires 列出需要额外准备的服务、设备或网络。",
   "features": [
     {
       "id": "canonical-rich-text",
       "title": "正文格式、换行、链接与行内公式",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "rich-text",
       "package": "@lincyaw/kernel",
       "requires": [],
@@ -13,7 +13,7 @@
     {
       "id": "display-math",
       "title": "块级公式与代码正文",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "rich-text",
       "package": "@lincyaw/viewer",
       "requires": [],
@@ -22,7 +22,7 @@
     {
       "id": "nested-task-lists",
       "title": "嵌套、有序与任务列表及引用",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "lists",
       "package": "@lincyaw/kernel",
       "requires": [],
@@ -31,7 +31,7 @@
     {
       "id": "merged-table",
       "title": "跨行跨列表格、列宽、表头与对齐",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "tables",
       "package": "@lincyaw/kernel",
       "requires": [],
@@ -40,7 +40,7 @@
     {
       "id": "columns-stack-tabs",
       "title": "分栏、堆叠与真实选项卡",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "layout",
       "package": "@lincyaw/host",
       "requires": [],
@@ -49,7 +49,7 @@
     {
       "id": "mermaid",
       "title": "Mermaid 流程图与时序图",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "diagrams",
       "package": "@lincyaw/viewer",
       "requires": [],
@@ -58,7 +58,7 @@
     {
       "id": "markmap",
       "title": "可缩放、可折叠的思维导图",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "mindmap",
       "package": "@lincyaw/addon-content",
       "requires": [],
@@ -67,7 +67,7 @@
     {
       "id": "local-video",
       "title": "本地视频与原生播放控制",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "media",
       "package": "@lincyaw/addon-content",
       "requires": [],
@@ -76,7 +76,7 @@
     {
       "id": "caption-tracks",
       "title": "中文与英文媒体字幕轨道",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "media",
       "package": "@lincyaw/addon-content",
       "requires": [],
@@ -85,7 +85,7 @@
     {
       "id": "local-audio",
       "title": "本地音频与真实解码",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "media",
       "package": "@lincyaw/addon-content",
       "requires": [],
@@ -94,7 +94,7 @@
     {
       "id": "image-alt",
       "title": "图片、替代文本与说明",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "images",
       "package": "@lincyaw/kernel",
       "requires": [],
@@ -103,7 +103,7 @@
     {
       "id": "animated-image",
       "title": "动图与减少动态效果",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "images",
       "package": "@lincyaw/addon-content",
       "requires": [],
@@ -112,7 +112,7 @@
     {
       "id": "quiz-single",
       "title": "单选自测",
-      "document": "guide-classroom",
+      "document": "showcase-classroom",
       "section": "quiz",
       "package": "@lincyaw/addon-classroom",
       "requires": [],
@@ -121,7 +121,7 @@
     {
       "id": "quiz-multiple",
       "title": "多选与正确答案反馈",
-      "document": "guide-classroom",
+      "document": "showcase-classroom",
       "section": "quiz",
       "package": "@lincyaw/addon-classroom",
       "requires": [],
@@ -130,7 +130,7 @@
     {
       "id": "predict",
       "title": "先预测再揭晓及可逆步骤",
-      "document": "guide-classroom",
+      "document": "showcase-classroom",
       "section": "prediction",
       "package": "@lincyaw/addon-classroom",
       "requires": [],
@@ -139,7 +139,7 @@
     {
       "id": "exercise",
       "title": "代码练习与真实校验",
-      "document": "guide-classroom",
+      "document": "showcase-classroom",
       "section": "exercise",
       "package": "@lincyaw/addon-classroom",
       "requires": [
@@ -150,7 +150,7 @@
     {
       "id": "questions",
       "title": "锚定提问",
-      "document": "guide-classroom",
+      "document": "showcase-classroom",
       "section": "questions",
       "package": "@lincyaw/addon-classroom",
       "requires": [
@@ -161,7 +161,7 @@
     {
       "id": "pulse",
       "title": "理解度投票",
-      "document": "guide-classroom",
+      "document": "showcase-classroom",
       "section": "questions",
       "package": "@lincyaw/addon-classroom",
       "requires": [
@@ -172,7 +172,7 @@
     {
       "id": "notes-comments",
       "title": "读者笔记与作者原生批注",
-      "document": "guide-classroom",
+      "document": "showcase-classroom",
       "section": "notes",
       "package": "@lincyaw/addon-classroom",
       "requires": [
@@ -183,7 +183,7 @@
     {
       "id": "follow",
       "title": "跟随、独立浏览与课堂归档",
-      "document": "guide-classroom",
+      "document": "showcase-classroom",
       "section": "follow",
       "package": "@lincyaw/addon-session",
       "requires": [
@@ -194,7 +194,7 @@
     {
       "id": "audience",
       "title": "教师内容与学生版输出",
-      "document": "guide-classroom",
+      "document": "showcase-classroom",
       "section": "teacher",
       "package": "@lincyaw/kernel",
       "requires": [
@@ -205,7 +205,7 @@
     {
       "id": "code-highlights",
       "title": "按步骤高亮代码",
-      "document": "guide-code",
+      "document": "showcase-code",
       "section": "highlight",
       "package": "@lincyaw/kernel",
       "requires": [],
@@ -214,7 +214,7 @@
     {
       "id": "code-variants",
       "title": "代码实现变体",
-      "document": "guide-code",
+      "document": "showcase-code",
       "section": "variants",
       "package": "@lincyaw/kernel",
       "requires": [],
@@ -223,7 +223,7 @@
     {
       "id": "code-regions",
       "title": "项目 region 引用",
-      "document": "guide-code",
+      "document": "showcase-code",
       "section": "references",
       "package": "@lincyaw/addon-code",
       "requires": [],
@@ -232,7 +232,7 @@
     {
       "id": "code-symbols",
       "title": "项目 symbol 引用",
-      "document": "guide-code",
+      "document": "showcase-code",
       "section": "references",
       "package": "@lincyaw/addon-code",
       "requires": [],
@@ -241,7 +241,7 @@
     {
       "id": "javascript-live",
       "title": "浏览器 JavaScript 与参数运行",
-      "document": "guide-code",
+      "document": "showcase-code",
       "section": "javascript",
       "package": "@lincyaw/addon-exec",
       "requires": [],
@@ -250,7 +250,7 @@
     {
       "id": "run-comparison",
       "title": "真实运行记录与差异比较",
-      "document": "guide-code",
+      "document": "showcase-code",
       "section": "javascript",
       "package": "@lincyaw/addon-exec",
       "requires": [],
@@ -259,7 +259,7 @@
     {
       "id": "python-live",
       "title": "Python 与布尔参数",
-      "document": "guide-code",
+      "document": "showcase-code",
       "section": "python",
       "package": "@lincyaw/addon-exec",
       "requires": [
@@ -270,7 +270,7 @@
     {
       "id": "compile-execution",
       "title": "构建时执行与实际缓存",
-      "document": "guide-code",
+      "document": "showcase-code",
       "section": "python",
       "package": "@lincyaw/addon-exec",
       "requires": [
@@ -281,7 +281,7 @@
     {
       "id": "execution-trace",
       "title": "逐行执行轨迹",
-      "document": "guide-code",
+      "document": "showcase-code",
       "section": "trace",
       "package": "@lincyaw/addon-exec",
       "requires": [
@@ -292,7 +292,7 @@
     {
       "id": "execution-session",
       "title": "命名会话与重置",
-      "document": "guide-code",
+      "document": "showcase-code",
       "section": "sessions",
       "package": "@lincyaw/addon-exec",
       "requires": [
@@ -303,7 +303,7 @@
     {
       "id": "execution-failure",
       "title": "错误与超时反馈",
-      "document": "guide-code",
+      "document": "showcase-code",
       "section": "failure",
       "package": "@lincyaw/addon-exec",
       "requires": [],
@@ -312,7 +312,7 @@
     {
       "id": "reader-search",
       "title": "全文搜索与真实结果跳转",
-      "document": "guide-publishing",
+      "document": "showcase-publishing",
       "section": "reading",
       "package": "@lincyaw/web",
       "requires": [],
@@ -321,7 +321,7 @@
     {
       "id": "footnotes",
       "title": "脚注与稳定语义引用",
-      "document": "guide-publishing",
+      "document": "showcase-publishing",
       "section": "reading",
       "package": "@lincyaw/kernel",
       "requires": [],
@@ -330,7 +330,7 @@
     {
       "id": "reader-navigation",
       "title": "目录、锚点、外观与窄屏导航",
-      "document": "guide-publishing",
+      "document": "showcase-publishing",
       "section": "start",
       "package": "@lincyaw/web",
       "requires": [],
@@ -339,7 +339,7 @@
     {
       "id": "presentation-tools",
       "title": "放映、演讲者视图、画笔、黑屏与冻结",
-      "document": "guide-publishing",
+      "document": "showcase-publishing",
       "section": "views",
       "package": "@lincyaw/addon-stage",
       "requires": [],
@@ -348,8 +348,8 @@
     {
       "id": "native-comments-history",
       "title": "原生批注、撤消、历史与保存恢复",
-      "document": "guide-publishing",
-      "section": "collaboration",
+      "document": "tutorial-editing",
+      "section": "comments",
       "package": "@lincyaw/workbench",
       "requires": [
         "工作台编辑视图"
@@ -359,7 +359,7 @@
     {
       "id": "medium-scope",
       "title": "媒介内容筛选",
-      "document": "guide-publishing",
+      "document": "showcase-publishing",
       "section": "scope",
       "package": "@lincyaw/kernel",
       "requires": [],
@@ -368,8 +368,8 @@
     {
       "id": "audience-scope",
       "title": "教师与学生内容的真实输出隔离",
-      "document": "guide-publishing",
-      "section": "scope",
+      "document": "showcase-classroom",
+      "section": "teacher",
       "package": "@lincyaw/compiler",
       "requires": [],
       "mode": "demonstration"
@@ -377,7 +377,7 @@
     {
       "id": "web-components",
       "title": "本地插件注册真实 Custom Element",
-      "document": "guide-publishing",
+      "document": "showcase-publishing",
       "section": "extension",
       "package": "@lincyaw/host",
       "requires": [],
@@ -386,7 +386,7 @@
     {
       "id": "high-contrast",
       "title": "高对比度开关",
-      "document": "guide-publishing",
+      "document": "showcase-publishing",
       "section": "offline",
       "package": "@lincyaw/addon-publish",
       "requires": [],
@@ -395,7 +395,7 @@
     {
       "id": "offline-read",
       "title": "离线阅读与可选运行资源缓存",
-      "document": "guide-publishing",
+      "document": "showcase-publishing",
       "section": "offline",
       "package": "@lincyaw/addon-publish",
       "requires": [
@@ -406,7 +406,7 @@
     {
       "id": "canonical-translation",
       "title": "独立 JSON 译文、语言切换与内容 digest",
-      "document": "guide-publishing",
+      "document": "showcase-publishing",
       "section": "translation",
       "package": "@lincyaw/compiler",
       "requires": [],
@@ -415,7 +415,7 @@
     {
       "id": "reader-assistant",
       "title": "阅读问答与明确的模型能力边界",
-      "document": "guide-publishing",
+      "document": "showcase-publishing",
       "section": "assistant",
       "package": "@lincyaw/addon-assistant",
       "requires": [
@@ -426,7 +426,7 @@
     {
       "id": "classroom-ai-review",
       "title": "课堂 AI 答案先审阅再分享",
-      "document": "guide-publishing",
+      "document": "showcase-publishing",
       "section": "assistant",
       "package": "@lincyaw/addon-assistant",
       "requires": [
@@ -437,7 +437,7 @@
     {
       "id": "multiformat-export",
       "title": "PDF、图片、PowerPoint 与视觉差异工具",
-      "document": "guide-publishing",
+      "document": "showcase-publishing",
       "section": "export",
       "package": "@lincyaw/cli",
       "requires": [
@@ -448,7 +448,7 @@
     {
       "id": "notebook-output",
       "title": "Notebook 静态回退与代码单元",
-      "document": "guide-publishing",
+      "document": "showcase-publishing",
       "section": "export",
       "package": "@lincyaw/render-notebook",
       "requires": [],
@@ -457,7 +457,7 @@
     {
       "id": "step-narration",
       "title": "本步讲稿与单源字幕",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "script",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -468,7 +468,7 @@
     {
       "id": "pronunciation",
       "title": "显示文字与实际读音标记",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "script",
       "package": "@lincyaw/addon-lecture",
       "requires": [],
@@ -477,7 +477,7 @@
     {
       "id": "action-cues",
       "title": "稳定动作目标与暂停 cue",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "script",
       "package": "@lincyaw/addon-lecture",
       "requires": [
@@ -488,7 +488,7 @@
     {
       "id": "narration-timing",
       "title": "随动画讲、结束后讲及最短停留",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "timing",
       "package": "@lincyaw/addon-lecture",
       "requires": [],
@@ -497,7 +497,7 @@
     {
       "id": "voice-inheritance",
       "title": "真实音色目录、继承与覆盖范围",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "voices",
       "package": "@lincyaw/addon-speech",
       "requires": [
@@ -509,8 +509,8 @@
     {
       "id": "explicit-generation",
       "title": "显式合成、任务取消与版本化音频缓存",
-      "document": "guide-production",
-      "section": "generate",
+      "document": "tutorial-narration",
+      "section": "voices",
       "package": "@lincyaw/addon-speech",
       "requires": [
         "真实语音 provider；修改讲稿后需重新明确生成",
@@ -521,7 +521,7 @@
     {
       "id": "audition-playback",
       "title": "试听、内联动画与正式播放互斥",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "voices",
       "package": "@lincyaw/host",
       "requires": [
@@ -533,7 +533,7 @@
     {
       "id": "recording-permissions",
       "title": "浏览器原音录制与权限边界",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "recording",
       "package": "@lincyaw/addon-lecture",
       "requires": [
@@ -544,7 +544,7 @@
     {
       "id": "recording-whole-step-adoption",
       "title": "原音候选保存、选材与整段本步采用",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "recording",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -555,7 +555,7 @@
     {
       "id": "aligned-subtitles",
       "title": "转写、讲稿采用与词级对齐边界",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "recording",
       "package": "@lincyaw/addon-lecture",
       "requires": [
@@ -566,7 +566,7 @@
     {
       "id": "media-editing-gate",
       "title": "本地音频片段裁切、混音与范围门槛",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "media-editing",
       "package": "@lincyaw/kernel",
       "requires": [
@@ -577,7 +577,7 @@
     {
       "id": "lecture-export",
       "title": "讲授、字幕与视频导出条件",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "deliver",
       "package": "@lincyaw/addon-lecture",
       "requires": [
@@ -588,7 +588,7 @@
     {
       "id": "local-container",
       "title": "Docker 开发容器执行",
-      "document": "guide-environments",
+      "document": "showcase-code",
       "section": "container",
       "package": "@lincyaw/addon-exec-local",
       "requires": [
@@ -599,7 +599,7 @@
     {
       "id": "environment-archive",
       "title": "下载含真实代码与 devcontainer 的环境包",
-      "document": "guide-environments",
+      "document": "showcase-code",
       "section": "container",
       "package": "@lincyaw/addon-exec-local",
       "requires": [],
@@ -608,7 +608,7 @@
     {
       "id": "wasi-languages",
       "title": "WASI 中运行 C、C++、Ruby 与 SQLite",
-      "document": "guide-environments",
+      "document": "showcase-code",
       "section": "wasi",
       "package": "@lincyaw/addon-exec-wasi",
       "requires": [
@@ -619,7 +619,7 @@
     {
       "id": "webgpu-wgsl",
       "title": "WGSL 缓冲区、dispatch 与重复执行",
-      "document": "guide-environments",
+      "document": "showcase-code",
       "section": "webgpu",
       "package": "@lincyaw/addon-exec-webgpu",
       "requires": [
@@ -630,7 +630,7 @@
     {
       "id": "jax-tensors",
       "title": "jax-js 张量与真实设备选择",
-      "document": "guide-environments",
+      "document": "showcase-code",
       "section": "tensor",
       "package": "@lincyaw/addon-exec-webgpu",
       "requires": [
@@ -641,7 +641,7 @@
     {
       "id": "python-webgpu",
       "title": "Python 到 WebGPU 的异步桥接",
-      "document": "guide-environments",
+      "document": "showcase-code",
       "section": "bridge",
       "package": "@lincyaw/addon-exec-webgpu",
       "requires": [
@@ -652,7 +652,7 @@
     {
       "id": "jupyter-proxy",
       "title": "Jupyter 代理与命名内核会话",
-      "document": "guide-environments",
+      "document": "showcase-code",
       "section": "jupyter",
       "package": "@lincyaw/addon-exec-jupyter",
       "requires": [
@@ -663,7 +663,7 @@
     {
       "id": "jupyter-terminal",
       "title": "远端终端与明确连接生命周期",
-      "document": "guide-environments",
+      "document": "showcase-code",
       "section": "terminal",
       "package": "@lincyaw/addon-exec-jupyter",
       "requires": [
@@ -674,7 +674,7 @@
     {
       "id": "jupyter-auth",
       "title": "env、proxy、prompt、none 认证边界",
-      "document": "guide-environments",
+      "document": "showcase-code",
       "section": "jupyter",
       "package": "@lincyaw/addon-exec-jupyter",
       "requires": [
@@ -685,8 +685,8 @@
     {
       "id": "offline-runtimes",
       "title": "显示实际大小、缓存运行资源后离线打开",
-      "document": "guide-environments",
-      "section": "start",
+      "document": "showcase-code",
+      "section": "env-start",
       "package": "@lincyaw/addon-publish",
       "requires": [
         "安全上下文、Service Worker 与足够本地存储"
@@ -696,7 +696,7 @@
     {
       "id": "youtube",
       "title": "真实外部 YouTube 嵌入",
-      "document": "guide-network",
+      "document": "showcase-content",
       "section": "youtube",
       "package": "@lincyaw/addon-content",
       "requires": [
@@ -707,7 +707,7 @@
     {
       "id": "plantuml",
       "title": "实际 PlantUML 外部渲染",
-      "document": "guide-network",
+      "document": "showcase-content",
       "section": "plantuml",
       "package": "@lincyaw/addon-content",
       "requires": [
@@ -718,7 +718,7 @@
     {
       "id": "remote-media",
       "title": "HTTPS 视频、音频与图片",
-      "document": "guide-network",
+      "document": "showcase-content",
       "section": "remote-media",
       "package": "@lincyaw/addon-content",
       "requires": [
@@ -729,8 +729,8 @@
     {
       "id": "remote-assets",
       "title": "外部资源本地化与离线边界",
-      "document": "guide-network",
-      "section": "remote-assets",
+      "document": "showcase-content",
+      "section": "remote-media",
       "package": "@lincyaw/addon-publish",
       "requires": [
         "仅处理作者显式授权、可合法分发的资源"
@@ -740,7 +740,7 @@
     {
       "id": "explicit-steps",
       "title": "稳定步骤与任意顺序定位",
-      "document": "guide-steps",
+      "document": "showcase-steps",
       "section": "start",
       "package": "@lincyaw/kernel",
       "requires": [],
@@ -749,7 +749,7 @@
     {
       "id": "item-reveal",
       "title": "逐项揭示和滚动叙事",
-      "document": "guide-steps",
+      "document": "showcase-steps",
       "section": "reveal",
       "package": "@lincyaw/viewer",
       "requires": [],
@@ -758,7 +758,7 @@
     {
       "id": "step-inheritance",
       "title": "继承状态与显式可见性",
-      "document": "guide-steps",
+      "document": "showcase-steps",
       "section": "inherits",
       "package": "@lincyaw/kernel",
       "requires": [],
@@ -767,7 +767,7 @@
     {
       "id": "semantic-state",
       "title": "命名状态与完整参数",
-      "document": "guide-steps",
+      "document": "showcase-steps",
       "section": "semantic",
       "package": "@lincyaw/addon-motion",
       "requires": [],
@@ -776,7 +776,7 @@
     {
       "id": "d3-animation",
       "title": "D3 数据加入的可逆状态",
-      "document": "guide-steps",
+      "document": "showcase-steps",
       "section": "d3",
       "package": "@lincyaw/addon-motion",
       "requires": [],
@@ -785,7 +785,7 @@
     {
       "id": "custom-components",
       "title": "真实组件动作与公共控件",
-      "document": "guide-steps",
+      "document": "showcase-steps",
       "section": "component",
       "package": "@lincyaw/host",
       "requires": [],
@@ -794,7 +794,7 @@
     {
       "id": "simulated-cursor",
       "title": "模拟光标移动、悬停与点击",
-      "document": "guide-steps",
+      "document": "showcase-steps",
       "section": "guidance",
       "package": "@lincyaw/addon-guide",
       "requires": [],
@@ -803,7 +803,7 @@
     {
       "id": "spotlight",
       "title": "真实目标聚光提示",
-      "document": "guide-steps",
+      "document": "showcase-steps",
       "section": "guidance",
       "package": "@lincyaw/addon-guide",
       "requires": [],
@@ -812,7 +812,7 @@
     {
       "id": "hint",
       "title": "锚定操作提示",
-      "document": "guide-steps",
+      "document": "showcase-steps",
       "section": "guidance",
       "package": "@lincyaw/addon-guide",
       "requires": [],
@@ -868,7 +868,7 @@
     {
       "id": "callouts",
       "title": "说明、提示、警告与重要边界",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "semantic",
       "package": "@lincyaw/viewer",
       "requires": [],
@@ -877,7 +877,7 @@
     {
       "id": "details",
       "title": "原生可折叠内容",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "semantic",
       "package": "@lincyaw/viewer",
       "requires": [],
@@ -886,7 +886,7 @@
     {
       "id": "definition-list",
       "title": "术语与定义列表",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "semantic",
       "package": "@lincyaw/viewer",
       "requires": [],
@@ -895,7 +895,7 @@
     {
       "id": "semantic-marks",
       "title": "键盘标记、上下标与缩写",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "semantic",
       "package": "@lincyaw/viewer",
       "requires": [],
@@ -904,7 +904,7 @@
     {
       "id": "cross-reference",
       "title": "语义交叉引用与实际章节跳转",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "semantic",
       "package": "@lincyaw/viewer",
       "requires": [],
@@ -913,7 +913,7 @@
     {
       "id": "responsive-cards",
       "title": "响应栅格与卡片链接",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "cards",
       "package": "@lincyaw/viewer",
       "requires": [],
@@ -922,7 +922,7 @@
     {
       "id": "synchronized-tabs",
       "title": "多组选项卡的同步键",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "cards",
       "package": "@lincyaw/viewer",
       "requires": [],
@@ -931,7 +931,7 @@
     {
       "id": "code-patterns",
       "title": "实际 AST pattern 引用",
-      "document": "guide-code",
+      "document": "showcase-code",
       "section": "references",
       "package": "@lincyaw/addon-code",
       "requires": [],
@@ -940,7 +940,7 @@
     {
       "id": "tracked-highlight-regions",
       "title": "按稳定步骤跟踪项目内嵌 region",
-      "document": "guide-code",
+      "document": "showcase-code",
       "section": "references",
       "package": "@lincyaw/addon-code",
       "requires": [],
@@ -949,7 +949,7 @@
     {
       "id": "page-create",
       "title": "在当前页后新建并编辑页面",
-      "document": "guide-authoring",
+      "document": "tutorial-editing",
       "section": "start",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -960,7 +960,7 @@
     {
       "id": "page-rename-move-delete",
       "title": "页面重命名、上下移动与安全删除",
-      "document": "guide-authoring",
+      "document": "tutorial-editing",
       "section": "copy",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -971,7 +971,7 @@
     {
       "id": "page-duplicate",
       "title": "复制完整页面并独立修改教学绑定",
-      "document": "guide-authoring",
+      "document": "tutorial-editing",
       "section": "copy",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -982,7 +982,7 @@
     {
       "id": "page-copy-history",
       "title": "复制作为完整事务撤消与恢复",
-      "document": "guide-authoring",
+      "document": "tutorial-editing",
       "section": "copy",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -993,7 +993,7 @@
     {
       "id": "text-page-script-panel",
       "title": "纯文字页与空页的本步讲稿旁栏",
-      "document": "guide-authoring",
+      "document": "tutorial-editing",
       "section": "scripts",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -1004,7 +1004,7 @@
     {
       "id": "body-narration-save",
       "title": "正文与讲稿连续输入后共同保存",
-      "document": "guide-authoring",
+      "document": "tutorial-editing",
       "section": "scripts",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -1015,7 +1015,7 @@
     {
       "id": "step-timing-inheritance",
       "title": "逐项显示时机来源、混合讲稿与恢复继承",
-      "document": "guide-authoring",
+      "document": "tutorial-editing",
       "section": "timing",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -1026,7 +1026,7 @@
     {
       "id": "timing-unaccepted-draft",
       "title": "无效毫秒输入保留、核对与放映门禁",
-      "document": "guide-authoring",
+      "document": "tutorial-editing",
       "section": "timing",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -1037,7 +1037,7 @@
     {
       "id": "source-save-recovery",
       "title": "原生批注、保存冲突与恢复草稿处理",
-      "document": "guide-authoring",
+      "document": "tutorial-editing",
       "section": "comments",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -1048,7 +1048,7 @@
     {
       "id": "saved-presentation",
       "title": "从已保存文稿明确进入放映",
-      "document": "guide-authoring",
+      "document": "tutorial-editing",
       "section": "delivery",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -1059,7 +1059,7 @@
     {
       "id": "saved-version-output",
       "title": "导出前保存确认、取消准备与生成记录版本",
-      "document": "guide-authoring",
+      "document": "tutorial-editing",
       "section": "delivery",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -1070,7 +1070,7 @@
     {
       "id": "native-media-exclusive",
       "title": "本地视频、音频与动画共享播放控制权",
-      "document": "guide-content",
+      "document": "showcase-content",
       "section": "media",
       "package": "@lincyaw/addon-content",
       "requires": [
@@ -1081,7 +1081,7 @@
     {
       "id": "production-three-tracks",
       "title": "当前页画面、配音与字幕三轨时间线",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "timeline",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -1092,7 +1092,7 @@
     {
       "id": "production-exact-seek",
       "title": "本页毫秒精确定位、任意步骤与缩放",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "timeline",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -1103,7 +1103,7 @@
     {
       "id": "production-shared-player",
       "title": "制作播放头与讲授共享真实时钟",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "timeline",
       "package": "@lincyaw/host",
       "requires": [
@@ -1114,7 +1114,7 @@
     {
       "id": "production-audio-waveform",
       "title": "从已有精确缓存解码真实音频波形",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "timeline",
       "package": "@lincyaw/workbench",
       "requires": [
@@ -1125,7 +1125,7 @@
     {
       "id": "production-silent-plan",
       "title": "明确静音的真实播放计划与单源字幕",
-      "document": "guide-production",
+      "document": "tutorial-narration",
       "section": "silent",
       "package": "@lincyaw/addon-lecture",
       "requires": [
@@ -1140,106 +1140,104 @@
       {
         "package": "@lincyaw/addon-assistant",
         "documents": [
-          "guide-publishing"
+          "showcase-publishing"
         ]
       },
       {
         "package": "@lincyaw/addon-classroom",
         "documents": [
-          "guide-classroom"
+          "showcase-classroom"
         ]
       },
       {
         "package": "@lincyaw/addon-code",
         "documents": [
-          "guide-code"
+          "showcase-code"
         ]
       },
       {
         "package": "@lincyaw/addon-content",
         "documents": [
-          "guide-content",
-          "guide-network"
+          "showcase-content"
         ]
       },
       {
         "package": "@lincyaw/addon-exec",
         "documents": [
-          "guide-classroom",
-          "guide-code",
-          "guide-environments"
+          "showcase-classroom",
+          "showcase-code"
         ]
       },
       {
         "package": "@lincyaw/addon-exec-jupyter",
         "documents": [
-          "guide-environments"
+          "showcase-code"
         ]
       },
       {
         "package": "@lincyaw/addon-exec-local",
         "documents": [
-          "guide-environments"
+          "showcase-code"
         ]
       },
       {
         "package": "@lincyaw/addon-exec-wasi",
         "documents": [
-          "guide-environments"
+          "showcase-code"
         ]
       },
       {
         "package": "@lincyaw/addon-exec-webgpu",
         "documents": [
-          "guide-environments"
+          "showcase-code"
         ]
       },
       {
         "package": "@lincyaw/addon-guide",
         "documents": [
-          "guide-steps"
+          "showcase-steps"
         ]
       },
       {
         "package": "@lincyaw/addon-lecture",
         "documents": [
-          "guide-authoring",
-          "guide-production"
+          "tutorial-editing",
+          "tutorial-narration"
         ]
       },
       {
         "package": "@lincyaw/addon-motion",
         "documents": [
-          "guide-production",
-          "guide-steps"
+          "showcase-steps",
+          "tutorial-narration"
         ]
       },
       {
         "package": "@lincyaw/addon-publish",
         "documents": [
-          "guide-environments",
-          "guide-network",
-          "guide-publishing"
+          "showcase-code",
+          "showcase-content",
+          "showcase-publishing"
         ]
       },
       {
         "package": "@lincyaw/addon-session",
         "documents": [
-          "guide-classroom"
+          "showcase-classroom"
         ]
       },
       {
         "package": "@lincyaw/addon-speech",
         "documents": [
-          "guide-production"
+          "tutorial-narration"
         ]
       },
       {
         "package": "@lincyaw/addon-stage",
         "documents": [
-          "guide-classroom",
-          "guide-production",
-          "guide-publishing"
+          "showcase-classroom",
+          "showcase-publishing",
+          "tutorial-narration"
         ]
       }
     ],
@@ -1247,127 +1245,127 @@
       {
         "package": "@lincyaw/addon-classroom",
         "name": "PmExercise",
-        "document": "guide-classroom",
+        "document": "showcase-classroom",
         "section": "exercise",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-classroom",
         "name": "PmPredict",
-        "document": "guide-classroom",
+        "document": "showcase-classroom",
         "section": "prediction",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-classroom",
         "name": "PmPulse",
-        "document": "guide-classroom",
+        "document": "showcase-classroom",
         "section": "questions",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-classroom",
         "name": "PmQuestionBox",
-        "document": "guide-classroom",
+        "document": "showcase-classroom",
         "section": "questions",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-classroom",
         "name": "PmQuiz",
-        "document": "guide-classroom",
+        "document": "showcase-classroom",
         "section": "quiz",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-content",
         "name": "PmMarkmap",
-        "document": "guide-content",
+        "document": "showcase-content",
         "section": "mindmap",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-content",
         "name": "PmMedia",
-        "document": "guide-content",
+        "document": "showcase-content",
         "section": "media",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-content",
         "name": "PmYoutube",
-        "document": "guide-network",
+        "document": "showcase-content",
         "section": "youtube",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-exec",
         "name": "PmRunPanel",
-        "document": "guide-code",
+        "document": "showcase-code",
         "section": "javascript",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-exec",
         "name": "PmStepRun",
-        "document": "guide-code",
+        "document": "showcase-code",
         "section": "trace",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-exec-jupyter",
         "name": "PmTerminal",
-        "document": "guide-environments",
+        "document": "showcase-code",
         "section": "terminal",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-exec-local",
         "name": "PmLocalEnv",
-        "document": "guide-environments",
+        "document": "showcase-code",
         "section": "container",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-guide",
         "name": "PmCursor",
-        "document": "guide-steps",
+        "document": "showcase-steps",
         "section": "guidance",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-guide",
         "name": "PmHint",
-        "document": "guide-steps",
+        "document": "showcase-steps",
         "section": "guidance",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-guide",
         "name": "PmSpotlight",
-        "document": "guide-steps",
+        "document": "showcase-steps",
         "section": "guidance",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-motion",
         "name": "PmScene",
-        "document": "guide-steps",
+        "document": "showcase-steps",
         "section": "semantic",
         "integration": "scene file definition"
       },
       {
         "package": "@lincyaw/addon-publish",
         "name": "PmContrastToggle",
-        "document": "guide-publishing",
+        "document": "showcase-publishing",
         "section": "offline",
         "integration": "canonical component definition"
       },
       {
         "package": "@lincyaw/addon-publish",
         "name": "PmSaveOffline",
-        "document": "guide-environments",
-        "section": "start",
+        "document": "showcase-code",
+        "section": "env-start",
         "integration": "public plugin toolbar"
       }
     ],
@@ -1384,42 +1382,42 @@
       {
         "feature": "module component definitions",
         "status": "unavailable",
-        "document": "guide-publishing",
+        "document": "showcase-publishing",
         "section": "extension",
         "reason": "当前编译器明确拒绝 module 实现；使用项目 file 或已注册 plugin。"
       },
       {
         "feature": "JupyterHub authentication",
         "status": "reserved",
-        "document": "guide-environments",
+        "document": "showcase-code",
         "section": "jupyter",
         "reason": "hub 认证仍保留但未实现；示例不提供成功连接按钮。"
       },
       {
         "feature": "Audio clip scope and unsupported video",
         "status": "conditional",
-        "document": "guide-production",
+        "document": "tutorial-narration",
         "section": "media-editing",
         "reason": "同文稿本地音频片段已可裁切、调整偏移／音量／静音并与旁白混音；须完全落入已确认步骤时段。视频与跨步片段拆分不在当前范围。"
       },
       {
         "feature": "Recording cue alignment and continuous allocation",
         "status": "pending",
-        "document": "guide-production",
+        "document": "tutorial-narration",
         "section": "silent",
         "reason": "整段原音可明确采用为当前步骤；各有效步骤完整播放一次，不自动跨步骤分段。旁白裁切、内部暂停和非起点 cue 的录音时码仍未支持。真实服务已有独立英文文件链，不表示本环境已配置服务或所有语言均可用。"
       },
       {
         "feature": "Generic component properties and shared-asset version management UI",
         "status": "pending",
-        "document": "guide-steps",
+        "document": "showcase-steps",
         "section": "semantic",
         "reason": "当前 Doc 没有通用组件参数表单或共享素材版本管理界面；状态与参数可通过实际步骤观察，定义与参数约束修改仍经 canonical JSON 或助手工程事务。"
       },
       {
         "feature": "Text-anchored cues in a silent production plan",
         "status": "conditional",
-        "document": "guide-production",
+        "document": "tutorial-narration",
         "section": "silent",
         "reason": "静音没有真实词语时码；句子中间动作 cue 保留并报告未知时序，不用字数估计冒充准确时间。本导览保留此边界，简单静音练习在新建文稿中进行。"
       }
@@ -1428,103 +1426,103 @@
     "authoringFlows": [
       {
         "id": "page-create",
-        "document": "guide-authoring",
+        "document": "tutorial-editing",
         "section": "start",
         "integration": "canonical source editing through the workbench"
       },
       {
         "id": "page-rename-move-delete",
-        "document": "guide-authoring",
+        "document": "tutorial-editing",
         "section": "copy",
         "integration": "canonical source editing through the workbench"
       },
       {
         "id": "page-duplicate",
-        "document": "guide-authoring",
+        "document": "tutorial-editing",
         "section": "copy",
         "integration": "canonical source editing through the workbench"
       },
       {
         "id": "page-copy-history",
-        "document": "guide-authoring",
+        "document": "tutorial-editing",
         "section": "copy",
         "integration": "canonical source editing through the workbench"
       },
       {
         "id": "text-page-script-panel",
-        "document": "guide-authoring",
+        "document": "tutorial-editing",
         "section": "scripts",
         "integration": "canonical source editing through the workbench"
       },
       {
         "id": "body-narration-save",
-        "document": "guide-authoring",
+        "document": "tutorial-editing",
         "section": "scripts",
         "integration": "canonical source editing through the workbench"
       },
       {
         "id": "step-timing-inheritance",
-        "document": "guide-authoring",
+        "document": "tutorial-editing",
         "section": "timing",
         "integration": "canonical source editing through the workbench"
       },
       {
         "id": "timing-unaccepted-draft",
-        "document": "guide-authoring",
+        "document": "tutorial-editing",
         "section": "timing",
         "integration": "canonical source editing through the workbench"
       },
       {
         "id": "source-save-recovery",
-        "document": "guide-authoring",
+        "document": "tutorial-editing",
         "section": "comments",
         "integration": "canonical source editing through the workbench"
       },
       {
         "id": "saved-presentation",
-        "document": "guide-authoring",
+        "document": "tutorial-editing",
         "section": "delivery",
         "integration": "canonical source editing through the workbench"
       },
       {
         "id": "saved-version-output",
-        "document": "guide-authoring",
+        "document": "tutorial-editing",
         "section": "delivery",
         "integration": "canonical source editing through the workbench"
       },
       {
         "id": "production-three-tracks",
-        "document": "guide-production",
+        "document": "tutorial-narration",
         "section": "timeline",
         "integration": "one source-bound production plan and the existing lecture player"
       },
       {
         "id": "production-exact-seek",
-        "document": "guide-production",
+        "document": "tutorial-narration",
         "section": "timeline",
         "integration": "one source-bound production plan and the existing lecture player"
       },
       {
         "id": "production-shared-player",
-        "document": "guide-production",
+        "document": "tutorial-narration",
         "section": "timeline",
         "integration": "one source-bound production plan and the existing lecture player"
       },
       {
         "id": "production-audio-waveform",
-        "document": "guide-production",
+        "document": "tutorial-narration",
         "section": "timeline",
         "integration": "one source-bound production plan and the existing lecture player"
       },
       {
         "id": "production-silent-plan",
-        "document": "guide-production",
+        "document": "tutorial-narration",
         "section": "silent",
         "integration": "one source-bound production plan and the existing lecture player"
       },
       {
         "id": "recording-whole-step-adoption",
-        "document": "guide-production",
+        "document": "tutorial-narration",
         "section": "recording",
         "integration": "explicit whole-step recording adoption through the shared document audio service"
       }

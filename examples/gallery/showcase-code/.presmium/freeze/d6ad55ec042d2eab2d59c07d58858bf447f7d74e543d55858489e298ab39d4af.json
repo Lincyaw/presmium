@@ -3,14 +3,14 @@
   "entry": "lecture.json",
   "lang": "python",
   "code": "values = [n * n for n in range(1, count + 1)]\nprint(values if verbose else sum(values))",
-  "environment": "Python 3.14.8",
-  "revision": "runner d01beb21eed32365",
+  "environment": "Python 3.13.12",
+  "revision": "runner 7877f64f68c4b354",
   "run": {
     "ok": true,
     "stdout": "30\n",
     "stderr": "",
     "exitCode": 0,
-    "durationMs": 55,
+    "durationMs": 35,
     "timedOut": false,
     "source": "live",
     "executorId": "presmium.python",
@@ -21,6 +21,6 @@
         "text": "30\n"
       }
     ],
-    "cacheKey": "2f6f17b8f4084a4779615d7c04df07f06a774726558ab0c28d84caf7cd8f49cb"
+    "cacheKey": "d6ad55ec042d2eab2d59c07d58858bf447f7d74e543d55858489e298ab39d4af"
   }
 }

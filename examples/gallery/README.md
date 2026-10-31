@@ -1,38 +1,43 @@
 # Presmium Gallery
 
-统一示例工作区：两讲完整课程、九份功能导览、傅里叶小课、产品宣传片，以及 18 份动画效果参考，共 31 份主文稿。
-每份文稿的唯一内容入口是 `lecture.json`；项目代码和媒体文件由文稿显式引用。
+示例工作区，共 29 份文稿。每份文稿的内容都在自己的 `lecture.json` 中，代码与媒体文件由文稿引用。
 
-| 讲义 | 内容 |
+## 功能合集
+
+逐页演示单项功能。
+
+| 文稿 | 内容 |
+|---|---|
+| [内容与排版](showcase-content/lecture.json) | 文字与公式、列表、表格、分栏、Mermaid 与 PlantUML、思维导图、音视频、图片、提示与折叠、在线媒体 |
+| [步骤与动画](showcase-steps/lecture.json) | 逐项揭示、继承上一步、动画状态与参数、D3、交互组件、光标与聚光提示 |
+| [代码与运行](showcase-code/lecture.json) | 按步高亮、代码变体、引用项目文件、JavaScript 与 Python、逐行执行；Docker、WASI、WebGPU、Jupyter |
+| [课堂互动](showcase-classroom/lecture.json) | 测验、预测、代码练习、提问与投票、阅读笔记、跟随主讲、学生版 |
+| [阅读与发布](showcase-publishing/lecture.json) | 搜索与脚注、放映、按媒介输出、网页组件、高对比度、译文、AI 问答、导出 |
+
+## 教程
+
+在工作台中按编号步骤操作。
+
+| 文稿 | 内容 |
+|---|---|
+| [编辑一份讲义](tutorial-editing/lecture.json) | 以“午餐预算”为材料，练习复制页面、编辑讲稿、调整播放时机、批注与版本历史、放映与导出 |
+| [讲稿与配音](tutorial-narration/lecture.json) | 读音与动作标记、播放时机、时间线、静音讲授、AI 配音、录音、音频片段、导出视频 |
+
+## 课程与参考
+
+| 文稿 | 内容 |
 |---|---|
 | [傅里叶级数小课](learn/lecture.json) | 转动的圆怎样画出音符与五角星，含英文译文 |
 | [产品宣传片](promo/lecture.json) | 真实工作台、课堂与网站画面组成的产品短片 |
+| [冒泡排序](bubble-sort/lecture.json) | 一趟冒泡排序：代码、GSAP 动画、讲解点击的计数组件与光标提示，合成为带字幕的讲授 |
+| [代码写成的动画](libraries/lecture.json) | GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节动画，再到讲授视频 |
 | [动画效果参考](animation-library/) | 六种动画库、时间线、时长片段、影片、Flow Matching 和八份分类效果目录 |
-| [冒泡排序](bubble-sort/lecture.json) | 一趟冒泡排序：代码、GSAP 动画、讲解点击的计数组件与光标提示，最后合成为带字幕的讲授 |
-| [代码写成的动画](libraries/lecture.json) | GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节动画，再到讲到哪里点哪里与讲授视频 |
-| [功能导览：动手编辑一份讲义](guide-authoring/lecture.json) | 用午餐预算材料练习复制页面、表格改字、每步讲稿、混合时机与继承、原生批注、保存和历史 |
-| [功能导览：正文与富内容](guide-content/lecture.json) | 富文本、数学、列表、合并表格、分栏、选项卡、Mermaid、思维导图与本地音视频字幕 |
-| [功能导览：步骤与动画](guide-steps/lecture.json) | 任意步骤定位、逐项揭示、继承状态、命名参数、D3、自定义组件与光标提示 |
-| [功能导览：代码与运行](guide-code/lecture.json) | 项目引用、高亮与变体、JavaScript / Python、参数、逐行轨迹、会话、运行比较与错误反馈 |
-| [功能导览：课堂互动](guide-classroom/lecture.json) | 单选、多选、先预测再揭晓、真实代码校验、锚定提问、理解度投票、笔记、学生跟随与受众输出 |
-| [功能导览：讲稿与制作](guide-production/lecture.json) | 发音、动作 cue、播放时机、音色继承与显式生成；录制和媒体编辑的实际门槛 |
-| [功能导览：发布与协作](guide-publishing/lecture.json) | 搜索、脚注、双语译文、原生 Web Component、高对比度、受众隔离、批注与导出指引 |
-| [功能导览：可选执行环境](guide-environments/lecture.json) | Docker 环境包、WASI、WGSL、jax-js、Python GPU 桥、Jupyter 与离线运行资源 |
-| [功能导览：联网资源](guide-network/lecture.json) | YouTube、PlantUML 与真实 HTTPS 媒体，独立说明网络及服务条件 |
 
-运行 `pnpm studio`，在文稿列表选择示例。首次启动会把此目录（包括软链接的动画效果参考）物化到 `.presmium/gallery-workspace/`，之后复用这个独立 git 仓库。旧的 `.presmium/example-workspace/` 不会被覆盖。需要另一份最新副本时，在仓库根目录运行 `node examples/gallery/try.mjs <新目录>`，再运行 `pnpm studio <新目录>`。
+发布的网站中，首页的“示例”进入示例库，按功能合集、教程、课程、影片与动画参考分类展示；分类取自各文稿 `metadata.tags` 的第一个类别标签。功能与页面的对应见 [FEATURES.md](FEATURES.md) 和 [features.json](features.json)。产品首页与影片制作见 [产品站点说明](PRODUCT-SITE.md)。
 
-完整课程、小课与宣传片的源码在此目录。`animation-library` 是指向 `.agents/skills/presmium-animate/gallery` 的相对软链接；技能参考只维护一份，复制时变成真实文件，满足工作台的编辑路径校验。技能的 `references/` 解释方法，效果源码留在技能 `gallery/`，无需把完整产品示例塞进技能。产品首页与影片制作详见 [产品站点说明](PRODUCT-SITE.md)。
+`animation-library` 是指向 `.agents/skills/presmium-animate/gallery` 的相对软链接，效果源码只在技能中维护一份，复制工作区时变成真实文件。
 
-功能与章节的对应关系见 [功能索引](FEATURES.md)，另有 [机器可读清单](features.json)。索引中的 `mode` 区分现场演示、操作指引、需额外能力的场景与当前明确门槛。
-讲稿导览默认不配音，不会因打开文稿调用语音服务。当前工作台旁栏可编辑每步讲稿与时机，完整音色、配音任务和独立视频制作入口尚未组合；相关页面按真实服务与配置前提说明，不冒充已经开放的按钮。可选环境导览也不会自动启动 Docker、远端内核或 GPU；WASI 运行资源可显式保存后离线使用。联网导览不作为离线验收的一部分。
-课堂导览中的个人测验和预测不需要模型或课堂服务器；全班统计、提问与跟随需要真实课堂会话，文稿写明了启用条件。
-代码导览包含真实执行入口；浏览器 Python 首次使用需加载 Pyodide，命名会话应按文稿顺序运行。
-导出 notebook 时，当前内核支持的语言成为代码单元，其它语言保留可读源码。
-
-原有两讲的 `scenes/` 是动画源码，`definitions` 声明场景、状态和时长，`steps` 绑定画面；`components/` 保存讲义自己的组件。
-这两讲的既有讲解语音保存在各自的 `.presmium/speech/`，随文稿提交。
-没有语音引擎也能播放已匹配的缓存；修改讲稿后，旧音频不会自动成为当前配音，需要配置真实引擎并明确生成。
+冒泡排序与代码写成的动画的配音缓存保存在各自的 `.presmium/speech/`，随文稿提交；没有语音服务也能播放。改过的讲稿需要配置语音服务后重新生成配音。
 
 ## 使用
 
@@ -40,18 +45,20 @@
 
 | 命令 | 结果 |
 |---|---|
-| `pnpm studio` | 首次把全部示例复制到 `.presmium/gallery-workspace`（独立的 git 仓库，含合成缓存与给 AI 的 `AGENTS.md`），启动可编辑工作台；之后复用该副本 |
-| `pnpm demo:check` | 检查两讲 |
-| `pnpm demo:build` | 构建全部示例的网页站点；为原有两讲补充幻灯片、notebook 与讲授，为小课和宣传片补充放映与讲授 |
-| `pnpm demo:ir` | 输出两讲的 IR |
+| `pnpm studio` | 首次把示例复制到 `.presmium/gallery-workspace`（独立的 git 仓库），启动工作台；之后复用这份副本 |
+| `pnpm demo:check` | 检查冒泡排序与代码写成的动画 |
+| `pnpm demo:build` | 构建全部示例的网页站点，并为完整课程、小课和宣传片补充幻灯片、notebook 与讲授 |
+| `pnpm demo:ir` | 输出两讲完整课程的 IR |
 | `presmium serve examples/gallery` | 从示例源码启动工作区预览 |
 
-在示例工作区目录（工作台独立副本，或仓库中的 `examples/gallery`（软链接参考文稿需先复制再编辑））定向检查功能导览：
+已有的工作台副本不会自动同步这里的改动。要一份最新副本，在仓库根目录运行 `node examples/gallery/try.mjs <新目录>`，再运行 `pnpm studio <新目录>`。
+
+在示例目录中检查或预览单份文稿：
 
 ```sh
-presmium check guide-classroom --json
-presmium build guide-classroom --to web
-presmium dev guide-classroom
+presmium check showcase-classroom
+presmium dev showcase-classroom
+presmium dev bubble-sort --to slides
 ```
 
-单讲预览用 `presmium dev bubble-sort --to web` 或 `--to slides`。讲授视频：`presmium build bubble-sort --to web,lecture` 之后运行 `presmium-lecture export bubble-sort --burn zh-CN`。
+讲授视频：`presmium build bubble-sort --to web,lecture` 之后运行 `presmium-lecture export bubble-sort --burn zh-CN`。
