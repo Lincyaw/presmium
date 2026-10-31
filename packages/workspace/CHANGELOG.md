@@ -1,5 +1,14 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.12
+
+### Patch Changes
+
+- ce0cd23: Smaller sites: a workspace's pages and presentations share one viewer app (its documents name their plugins by package, as a presentation built alone does), and raster images the site publishes are encoded as WebP no wider than 2400 px when that saves a fifth or more (near-lossless for PNG figures), with every reference following the new name.
+- @lincyaw/compiler@1.0.0-rc.12
+  - @lincyaw/kernel@1.0.0-rc.12
+  - @lincyaw/server@1.0.0-rc.12
+
 ## 1.0.0-rc.11
 
 ### Patch Changes
