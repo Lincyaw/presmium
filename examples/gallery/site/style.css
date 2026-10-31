@@ -30,6 +30,7 @@ p { text-wrap: pretty; }
 .topbar nav a { color: var(--pm-color-muted); text-decoration: none; }
 .topbar nav a:hover { color: var(--pm-color-ink); }
 .nav-actions { display: flex; align-items: center; gap: var(--pm-space-2); }
+.menu-button { display: none; }
 .hero { display: grid; grid-template-columns: 1.07fr 1fr; gap: var(--pm-space-12); align-items: center; min-height: var(--pm-product-hero-height); padding-block: var(--pm-space-12); }
 .eyebrow { color: var(--pm-color-product-accent); font-size: var(--pm-text-sm); font-weight: var(--pm-weight-medium); letter-spacing: var(--pm-tracking-label); }
 .hero h1 { margin-block: var(--pm-space-5) var(--pm-space-6); font-size: var(--pm-product-title); line-height: var(--pm-leading-tight); letter-spacing: -.045em; }
@@ -144,7 +145,11 @@ footer>a:last-child { font-size: var(--pm-text-xs); }
 @media (max-width: 767px) {
   .wrap { width: calc(100% - var(--pm-space-5) * 2); }
   .topbar { padding: var(--pm-space-3) var(--pm-space-5); justify-content: space-between; gap: var(--pm-space-2); }
+  .topbar { flex-wrap: wrap; }
   .topbar nav, .nav-actions>a { display: none; }
+  .menu-button { display: inline-flex; }
+  .topbar[data-open] nav { display: flex; flex-direction: column; align-items: stretch; order: 3; flex-basis: 100%; gap: 0; padding-block: var(--pm-space-2); border-top: var(--pm-size-hairline) solid var(--pm-color-line); font-size: var(--pm-text-md); }
+  .topbar[data-open] nav a { padding-block: var(--pm-space-3); }
   .hero { grid-template-columns: 1fr; gap: var(--pm-space-5); padding-block: var(--pm-space-12) var(--pm-space-8); }
   .hero h1 { font-size: var(--pm-product-title); }
   .hero-art { padding: var(--pm-space-4) 0; }
