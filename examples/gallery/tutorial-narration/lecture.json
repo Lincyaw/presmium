@@ -52,7 +52,7 @@
     },
     "script": {
       "id": "script",
-      "title": "1. 讲稿里的读音、动作与停顿",
+      "title": "讲稿里的读音、动作与停顿",
       "level": 2,
       "children": [
         "text-4",
@@ -67,7 +67,7 @@
     },
     "timing": {
       "id": "timing",
-      "title": "2. 随动画讲，还是动画后讲",
+      "title": "随动画讲，还是动画后讲",
       "level": 2,
       "children": [
         "timing-instructions",
@@ -83,7 +83,7 @@
     },
     "timeline": {
       "id": "timeline",
-      "title": "3. 在时间线上预览",
+      "title": "在时间线上预览",
       "level": 2,
       "children": [
         "timeline-practice"
@@ -97,7 +97,7 @@
     },
     "silent": {
       "id": "silent",
-      "title": "4. 做一份静音讲授",
+      "title": "做一份静音讲授",
       "level": 2,
       "children": [
         "silent-practice"
@@ -111,7 +111,7 @@
     },
     "voices": {
       "id": "voices",
-      "title": "5. 选择音色，生成配音",
+      "title": "选择音色，生成配音",
       "level": 2,
       "children": [
         "text-6"
@@ -125,7 +125,7 @@
     },
     "recording": {
       "id": "recording",
-      "title": "6. 用自己的声音录音",
+      "title": "用自己的声音录音",
       "level": 2,
       "children": [
         "text-13",
@@ -140,7 +140,7 @@
     },
     "media-editing": {
       "id": "media-editing",
-      "title": "7. 加入音频片段",
+      "title": "加入音频片段",
       "level": 2,
       "children": [
         "text-16"
@@ -154,7 +154,7 @@
     },
     "deliver": {
       "id": "deliver",
-      "title": "8. 导出视频",
+      "title": "导出视频",
       "level": 1,
       "children": [
         "text-19"

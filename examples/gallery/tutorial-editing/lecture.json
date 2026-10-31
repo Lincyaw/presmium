@@ -61,7 +61,7 @@
     },
     "copy": {
       "id": "copy",
-      "title": "1. 复制页面并修改",
+      "title": "复制页面并修改",
       "level": 1,
       "children": [
         "copy-actions",
@@ -76,7 +76,7 @@
     },
     "scripts": {
       "id": "scripts",
-      "title": "2. 编辑每一步的讲稿",
+      "title": "编辑每一步的讲稿",
       "level": 1,
       "children": [
         "scripts-actions",
@@ -91,7 +91,7 @@
     },
     "timing": {
       "id": "timing",
-      "title": "3. 调整播放时机",
+      "title": "调整播放时机",
       "level": 1,
       "children": [
         "timing-actions"
@@ -105,7 +105,7 @@
     },
     "comments": {
       "id": "comments",
-      "title": "4. 批注、撤消与历史",
+      "title": "批注、撤消与历史",
       "level": 1,
       "children": [
         "comments-actions",
@@ -120,7 +120,7 @@
     },
     "delivery": {
       "id": "delivery",
-      "title": "5. 放映与导出",
+      "title": "放映与导出",
       "level": 1,
       "children": [
         "delivery-actions",
@@ -145,7 +145,7 @@
           "children": [
             {
               "type": "text",
-              "text": "在工作台中打开本文稿，按编号 1 至 5 的页面依次操作，将“午餐预算”改为自己的方案。全程无需配置模型或语音服务。"
+              "text": "在工作台中打开本文稿，按后续页面的顺序依次操作，将“午餐预算”改为自己的方案。全程无需配置模型或语音服务。"
             }
           ]
         }
