@@ -130,7 +130,9 @@
   --pm-timeline-label-width: 5.5rem;
   --pm-timeline-tick-width: 5rem;
   --pm-timeline-wave-height: 1.25rem;
-  --pm-timeline-editor-track-height: 2.5rem;
+  --pm-timeline-editor-track-height: 1.75rem;
+  --pm-timeline-editor-label-width: 4rem;
+  --pm-timeline-editor-meta-font: 0.6875rem;
   --pm-split-handle-size: 0.5rem;
   --pm-shadow-control-focus: 0 0 0 var(--pm-space-px) var(--pm-color-accent-line);
   --pm-shadow-control-error-focus: 0 0 0 calc(var(--pm-space-px) * 3) var(--pm-color-accent-line);
