@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/addon-exec-webgpu",
-  "version": "1.0.0-rc.0",
+  "version": "1.0.0-rc.1",
   "description": "Presmium plugin: WGSL compute shaders and jax-js on the browser's GPU, recorded in Chromium at build time",
   "license": "Apache-2.0",
   "repository": {
