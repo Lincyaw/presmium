@@ -1,76 +1,92 @@
 # Presmium
 
-在工作台编辑教学文稿，以 lecture.json 保存唯一内容，编译为网页、幻灯片、Jupyter notebook 与讲授快照。
+[![npm](https://img.shields.io/npm/v/@lincyaw/presmium?label=npm)](https://www.npmjs.com/package/@lincyaw/presmium)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
-示例统一在 [Gallery](examples/gallery/README.md)：五份[功能合集与两份教程](examples/gallery/FEATURES.md)、两讲完整课程、傅里叶小课、产品宣传片与 14 份按场景整理的动画参考。运行 `pnpm studio` 即可在独立的可编辑副本中浏览全部 25 份主文稿。`pnpm demo:check` 仍只检查原有两讲；`pnpm demo:build` 构建整个 Gallery 站点。
+Presmium is an open-source presentation toolkit for teaching and technical communication. A single document, `lecture.json`, holds the text, equations, code, data, animation and narration of a lecture, and Presmium builds it into a website, slides, a Jupyter notebook and a narrated video.
 
-## 安装
+**Live examples:** [profile.aoyangfang.top/presmium](https://profile.aoyangfang.top/presmium/) — feature collections, tutorials, complete courses and an animation reference, all built from the [gallery](examples/gallery/README.md) in this repository.
 
-需要 Node.js 22.19 以上与 pnpm（`corepack enable pnpm`）。第一次全局安装前运行一次 `pnpm setup`。
+## Quick start
 
-```sh
-pnpm add -g @lincyaw/presmium
-```
+Publish a site to GitHub Pages in three steps. Presmium requires Node.js 22.19 or later and pnpm (`corepack enable pnpm`).
 
-## 使用
+1. **Create a site.**
 
-一份讲义：
+   ```sh
+   pnpm create presmium my-site --type site
+   ```
 
-```sh
-presmium new my-lecture     # 新建
-cd my-lecture
-presmium dev                # 本机预览网页与幻灯片，保存即更新
-presmium check              # 检查：文稿结构、链接、代码引用
-presmium build              # 构建到 dist/：网页、幻灯片、notebook
-```
+   The project contains a home page, a first document, a GitHub Pages workflow and a git repository on the `main` branch.
 
-多份文档组成的工作区：
+2. **Install and push to GitHub.**
 
-```sh
-presmium new my-course --type workspace
-cd my-course
-presmium serve              # 文档列表与各文档的站点，http://127.0.0.1:4310
-presmium build              # 整个站点构建到 dist/web/
-```
+   ```sh
+   cd my-site
+   pnpm install
+   git add -A && git commit -m "Create site"
+   git remote add origin https://github.com/<user>/<repository>.git
+   git push -u origin main
+   ```
 
-工作台（实验性，编辑、预览与 AI agent）：`pnpm add -g @lincyaw/studio`，然后在工作区中运行 `presmium-studio`，打开终端打印的网址。AI 助手的模型在工作台的“设置 → 模型”中填写 API Key；不配模型也能编辑和预览。
+   Commit `pnpm-lock.yaml` with the project: the workflow installs from it.
 
-放在反向代理后面或某个路径下时，用 `--public-url` 告诉工作台浏览器打开的地址，`--preview-url` 给出预览的地址（都可以带路径，例如 `https://example.com/studio/`）；`presmium serve --public-url <网址>` 同样可以把工作区服务放在路径下。
+3. **Enable GitHub Pages.** In the repository, open *Settings → Pages* and set *Source* to *GitHub Actions*. Every push to `main` then builds the site and publishes it; the workflow sets the site's base path automatically.
 
-讲义怎么写见[作者指南](site/guide/lecture.json)，插件怎么写见[插件开发指南](site/plugins/lecture.json)。
+To preview the site locally, run `pnpm serve` and open the address it prints.
 
-## 从源码使用
+## Editing
+
+`lecture.json` is read and written by tools rather than edited by hand. There are two ways to edit a document:
+
+- **In the browser.** Install Presmium Studio with `pnpm add -g @lincyaw/studio` (experimental, about 865 MB) and run `presmium-studio` in the project. The workbench provides pages, rich text, step scripts, comments, version history, slides and video production. Editing and previewing need no language model; the AI assistant uses the API key entered under *Settings → Model*.
+- **With an AI coding tool.** Open the project in Claude Code, Codex or a similar tool and describe the change. The project's `AGENTS.md` and the skills in `.agents/skills` describe the document format and how to check it.
+
+Run `presmium check` after a change to validate the document.
+
+## Command reference
+
+Install the command line with `pnpm add -g @lincyaw/presmium` (run `pnpm setup` once before the first global installation).
+
+| Command | Description |
+|---|---|
+| `presmium new <dir> --type <kind>` | Create a project: `lecture` (one document), `workspace` (several documents), `site` (a website with a home page and a GitHub Pages workflow) or `plugin` |
+| `presmium dev` | Preview one document's web page and slides, updating on save |
+| `presmium serve` | Preview a workspace: its document list and every document's site |
+| `presmium check` | Validate a document: structure, links, code references and plugin checks |
+| `presmium build` | Build into `dist/`: web pages, slides and notebooks; a workspace builds into `dist/web/` |
+
+When a server runs behind a reverse proxy or under a path, pass the public address with `--public-url` (and, for the studio, the preview address with `--preview-url`), for example `https://example.com/studio/`.
+
+Further reading: the [author guide](site/guide/lecture.json), the [plugin guide](site/plugins/lecture.json), [site themes and publishing](docs/site-themes.md) and the [architecture](docs/architecture.md).
+
+## Development
 
 ```sh
 git clone https://github.com/Lincyaw/presmium.git
 cd presmium
 pnpm install
-pnpm add -g ./packages/presmium
+pnpm add -g ./packages/presmium   # the global `presmium` now runs this checkout
+pnpm studio                       # the workbench on an editable copy of the gallery
 ```
 
-之后的 `presmium` 命令运行的就是这份源码。仓库内也可以直接启动浏览器编辑工作台：
+`pnpm studio` prepares an independent copy of the gallery in `.presmium/gallery-workspace` on first run and opens the workbench on it (port 4320 by default); `pnpm studio <dir>` opens another lecture or workspace. See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow.
 
-```sh
-pnpm studio
-```
+## Self-hosting
 
-首次自动在 `.presmium/gallery-workspace` 准备全部 Gallery 示例的独立副本，后续复用其中的文档。打开终端打印的完整网址（默认端口 4320），即可编辑、保存与预览，不配模型也能使用。用 `pnpm studio <目录>` 打开自己的讲义或工作区，`Ctrl+C` 停止。参与开发见 [CONTRIBUTING.md](CONTRIBUTING.md)。
-
-## 云端部署
-
-给多人使用：每个注册用户在 JupyterHub 上得到一个完整的工作台，可以把文稿共享成链接，别人打开后创建副本到自己的空间，也可以用访问令牌让 Claude Code 等 AI 助手经 MCP 操作自己的文稿。需要 Linux、Docker 与 Docker Compose 2.24.4 以上，以及四个指向服务器的域名（控制台、注册登录、共享内容、工作台）。
+Presmium can be deployed for a group of users: each registered user receives a complete workbench on JupyterHub, documents can be shared as links that others copy into their own space, and AI assistants such as Claude Code can work on a user's documents over MCP with an access token. Deployment requires Linux, Docker, Docker Compose 2.24.4 or later and four domains pointing to the server (console, sign-in, shared content and workbench).
 
 ```sh
 cd deploy/cloud
-bash keycloak/init-env.sh      # 生成 .env 与随机密钥
-# 编辑 .env：四个域名、CLOUD_ACME_EMAIL、CLOUD_SMTP_*
+bash keycloak/init-env.sh      # create .env with random secrets
+# edit .env: the four domains, CLOUD_ACME_EMAIL and CLOUD_SMTP_*
 docker compose --env-file .env -f compose.yaml build
 docker compose --env-file .env -f compose.yaml --profile build-studio build studio-image
 docker compose --env-file .env -f compose.yaml up -d
 ```
 
-没有域名时可以加 `-f compose.loopback.yaml` 只在本机 `127.0.0.1:18787` 上试用。资源上限、管理、备份与升级见[云端部署说明](docs/cloud.md)。
+Without domains, add `-f compose.loopback.yaml` to try the deployment on `127.0.0.1:18787`. Resource limits, administration, backups and upgrades are described in the [cloud deployment guide](docs/cloud.md).
 
-## 许可证
+## License
 
 [Apache-2.0](LICENSE)
