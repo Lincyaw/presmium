@@ -68,6 +68,11 @@ function presentations(compilation: Compilation, prefix: string): string[] {
   const settings = compilation.doc.config.presmium ??= {}
   const web = isRecord(settings['presmium.web']) ? settings['presmium.web'] : {}
   settings['presmium.web'] = { ...web, webUrl: prefix, ...to.includes('slides') ? { slidesUrl: `${prefix}slides/` } : {} }
+  // The slides find the lecture where it is built, without probing `slides/lecture/` first.
+  if (to.includes('lecture')) {
+    const lecture = isRecord(settings['presmium.lecture']) ? settings['presmium.lecture'] : {}
+    settings['presmium.lecture'] = { url: `${prefix}lecture/`, ...lecture }
+  }
   return to
 }
 
