@@ -8,7 +8,7 @@ type Locale = 'zh-CN' | 'en'
 const messages = {
   'zh-CN': {
     title: '再复杂的东西，也能讲明白', description: '写一份文稿，现场讲、做成网站、导出视频都能用。Presmium 是开源的演示工具。',
-    nav: ['功能', '影片', '示例', '下载源码'], mainNav: '主导航', ready: '可以开讲了', start: '开始使用',
+    nav: ['功能', '影片', '示例', '下载源码'], mainNav: '主导航', menu: '打开菜单', closeMenu: '关闭菜单', ready: '可以开讲了', start: '开始使用',
     eyebrow: '给每个需要把事情讲清楚的人', hero: '写一份文稿，\n讲台、网页、视频都能用。',
     lead: '课程、论文报告、技术分享、产品发布……公式、代码、数据和动画写在同一份文稿里，想改哪儿，圈出来跟 AI 说一句。\n现场一步一步讲，会后做成网站，也能导出视频。',
     watch: '看 60 秒影片', source: '打开示例文稿', sourceLabel: '一份文稿，三种用法',
@@ -51,7 +51,7 @@ const messages = {
   },
   en: {
     title: 'Make complex things clear', description: 'Write one document and present it live, publish it as a website, or export it as a video. Presmium is an open-source presentation tool.',
-    nav: ['Features', 'Watch the film', 'Examples', 'Download source'], mainNav: 'Main navigation', ready: 'Ready to present', start: 'Get started',
+    nav: ['Features', 'Watch the film', 'Examples', 'Download source'], mainNav: 'Main navigation', menu: 'Open menu', closeMenu: 'Close menu', ready: 'Ready to present', start: 'Get started',
     eyebrow: 'For anyone with something to explain', hero: 'Write it once.\nPresent it anywhere.',
     lead: 'Lectures, paper talks, tech talks, product launches. Equations, code, data and animation live in one document; to change something, mark it and tell the AI.\nPresent it step by step, then share it as a website or a video.',
     watch: 'Watch the 60-second film', source: 'Open the example', sourceLabel: 'One document, three ways to use it',
@@ -158,8 +158,8 @@ function render() {
     <a class="skip pm-ui-link" href="#main">${t.skip}</a>
     <div class="ambient" aria-hidden="true"><img class="ambient-blue" src="${new URL('./assets/ambient-blue.svg', import.meta.url)}" alt=""><img class="ambient-teal" src="${new URL('./assets/ambient-teal.svg', import.meta.url)}" alt=""><img class="ambient-violet" src="${new URL('./assets/ambient-violet.svg', import.meta.url)}" alt=""></div>
     <header class="topbar"><a class="wordmark" href="${base}">${icon('slides')}<span>Presmium</span></a>
-      <nav aria-label="${t.mainNav}"><a href="#features">${t.nav[0]}</a><a href="#film">${t.nav[1]}</a><a href="#/examples"${view.gallery ? ' aria-current="page"' : ''}>${t.nav[2]}</a><a href="${sourceUrl}">${t.nav[3]}</a></nav>
-      <div class="nav-actions"><button class="pm-ui-icon-button pm-ui-icon-button--ghost" id="appearance" aria-label="${t.appearance}">${icon('contrast')}</button><button class="pm-ui-button pm-ui-button--ghost" id="language">${t.language}</button>${button('#start',t.start,true)}</div>
+      <nav id="site-nav" aria-label="${t.mainNav}"><a href="#features">${t.nav[0]}</a><a href="#film">${t.nav[1]}</a><a href="#/examples"${view.gallery ? ' aria-current="page"' : ''}>${t.nav[2]}</a><a href="${sourceUrl}">${t.nav[3]}</a></nav>
+      <div class="nav-actions"><button class="pm-ui-icon-button pm-ui-icon-button--ghost" id="appearance" aria-label="${t.appearance}">${icon('contrast')}</button><button class="pm-ui-button pm-ui-button--ghost" id="language">${t.language}</button>${button('#start',t.start,true)}<button class="pm-ui-icon-button pm-ui-icon-button--ghost menu-button" id="menu" aria-label="${t.menu}" aria-expanded="false" aria-controls="site-nav">${icon('menu')}</button></div>
     </header>
     <main id="main">${view.gallery ? gallery(view.category) : home()}</main><footer class="wrap"><a class="wordmark" href="${base}">${icon('slides')}<span>Presmium</span></a><p>${t.footer}</p><a class="pm-ui-link" href="https://github.com/Lincyaw/presmium">GitHub ${icon('external')}</a></footer>`
   bind(t)
@@ -190,6 +190,12 @@ function gallery(category?: Category) {
     ${category ? group(category, false) || `<p class="section-lead">${t.empty}</p>` : CATEGORIES.map(([id]) => group(id, true)).join('')}</section>`
 }
 function bind(t: typeof messages[Locale]) {
+  // On narrow screens the navigation folds into the menu button; choosing a link closes it again.
+  const header = document.querySelector<HTMLElement>('.topbar')!, menu = document.getElementById('menu')!
+  const fold = (open: boolean) => { header.toggleAttribute('data-open', open); menu.setAttribute('aria-expanded', String(open)); menu.setAttribute('aria-label', open ? t.closeMenu : t.menu); menu.innerHTML = icon(open ? 'close' : 'menu') }
+  menu.onclick = () => fold(!header.hasAttribute('data-open'))
+  header.querySelectorAll('nav a').forEach(link => link.addEventListener('click', () => fold(false)))
+  header.onkeydown = event => { if (event.key === 'Escape' && header.hasAttribute('data-open')) { fold(false); menu.focus() } }
   document.getElementById('appearance')!.onclick = () => document.documentElement.classList.toggle('dark')
   document.getElementById('language')!.onclick = () => {
     locale = locale === 'zh-CN' ? 'en' : 'zh-CN'
