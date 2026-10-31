@@ -52,6 +52,23 @@
   font-family: var(--pm-font-sans);
 }
 
+/* The showcase theme shares a product homepage's surface: a cool background, a translucent header and a wordmark. */
+.pm-site[data-pm-site-theme='showcase'] {
+  background: var(--pm-color-product-bg);
+}
+
+.pm-site[data-pm-site-theme='showcase'] .pm-site-header {
+  border-bottom-color: color-mix(in srgb, var(--pm-color-line) 70%, transparent);
+  background: color-mix(in srgb, var(--pm-color-surface) 68%, transparent);
+  backdrop-filter: blur(var(--pm-product-glass-blur));
+}
+
+.pm-site[data-pm-site-theme='showcase'] .pm-site-header__title {
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-title);
+  font-weight: var(--pm-weight-semibold);
+}
+
 .pm-site-header__start {
   display: flex;
   flex: 1 1 auto;
@@ -922,6 +939,11 @@ html.pm-presenting {
   margin-inline: auto;
   padding: var(--pm-space-4) var(--pm-space-6) 0;
   overflow-x: auto;
+}
+
+/* The page buttons keep their width and the bar scrolls sideways on narrow screens. */
+.pm-site-chapterbar > * {
+  flex: none;
 }
 
 .pm-site[data-pm-site-layout='wide'] .pm-site__body {

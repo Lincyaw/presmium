@@ -9,7 +9,11 @@
     ],
     "renderers": {
       "web": {}
-    }
+    },
+    "tags": [
+      "动画参考"
+    ],
+    "description": "Motion 动画：柱状图换数据、数字滚动、列表重排、错峰出现、弹簧、画线、颜色插值、路径变形与三维翻转。"
   },
   "sectionOrder": [
     "intro",

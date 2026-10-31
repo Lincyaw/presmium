@@ -9,7 +9,11 @@
     ],
     "renderers": {
       "web": {}
-    }
+    },
+    "tags": [
+      "动画参考"
+    ],
+    "description": "Anime.js 动画：描出曲线、形状变形、逐词逐字、网格错峰、交换排序、数字滚动、画布动画与乱码揭示。"
   },
   "sectionOrder": [
     "intro",

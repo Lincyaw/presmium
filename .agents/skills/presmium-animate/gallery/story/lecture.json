@@ -13,7 +13,10 @@
     "renderers": {
       "web": {},
       "lecture": {}
-    }
+    },
+    "tags": [
+      "动画参考"
+    ]
   },
   "sectionOrder": [
     "intro",

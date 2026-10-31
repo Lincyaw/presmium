@@ -1,6 +1,6 @@
 # Presmium 产品首页与 60 秒宣传片
 
-独立 HTML 首页、傅里叶级数小课与产品宣传片组成一个可静态发布的示例。首页保留渐变背景、内容卡片、能力介绍与影片区；教学内容在 `learn/lecture.json`，宣传片在 `promo/lecture.json`，首页在 `site/home.html`。这两份文稿现与课程、功能导览和动画效果参考共用 Gallery 工作区，完整目录见 [Gallery](README.md)。
+独立 HTML 首页、傅里叶级数小课与产品宣传片组成一个可静态发布的示例。首页保留渐变背景、内容卡片、能力介绍与影片区；教学内容在 `learn/lecture.json`，宣传片在 `promo/lecture.json`，首页在 `site/home.html`。这两份文稿现与课程、功能合集、教程和动画效果参考共用 Gallery 工作区，完整目录见 [Gallery](README.md)。
 
 ## 运行
 

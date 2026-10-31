@@ -1,0 +1,1823 @@
+{
+  "schemaVersion": 1,
+  "id": "presmium-showcase-code",
+  "metadata": {
+    "title": "代码与运行",
+    "lang": "zh-CN",
+    "description": "代码引用与按步高亮，浏览器内运行 JavaScript 与 Python，以及 Docker、WASI、WebGPU、Jupyter 等运行环境。",
+    "plugins": [
+      "@lincyaw/addon-code",
+      "@lincyaw/addon-exec",
+      "@lincyaw/addon-exec-local",
+      "@lincyaw/addon-exec-wasi",
+      "@lincyaw/addon-exec-webgpu",
+      "@lincyaw/addon-exec-jupyter",
+      "@lincyaw/addon-publish"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {}
+    },
+    "execute": {
+      "environments": {
+        "lab": {
+          "kind": "jupyter",
+          "auth": "hub",
+          "profile": "python",
+          "kernel": "python3",
+          "languages": [
+            "python"
+          ]
+        }
+      }
+    },
+    "presmium": {
+      "presmium.execLocal": {
+        "workspace": "."
+      }
+    },
+    "tags": [
+      "功能合集"
+    ]
+  },
+  "sectionOrder": [
+    "g-show",
+    "highlight",
+    "variants",
+    "references",
+    "g-run",
+    "javascript",
+    "python",
+    "trace",
+    "sessions",
+    "failure",
+    "env-start",
+    "container",
+    "wasi",
+    "webgpu",
+    "tensor",
+    "bridge",
+    "jupyter",
+    "terminal"
+  ],
+  "sections": {
+    "highlight": {
+      "id": "highlight",
+      "title": "按步骤高亮",
+      "level": 2,
+      "children": [
+        "text-4",
+        "highlight-code"
+      ],
+      "stepOrder": [
+        "highlight-step",
+        "highlight-loop",
+        "highlight-output"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "variants": {
+      "id": "variants",
+      "title": "代码变体",
+      "level": 2,
+      "children": [
+        "text-6",
+        "variant-code"
+      ],
+      "stepOrder": [
+        "variants-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "references": {
+      "id": "references",
+      "title": "引用项目文件",
+      "level": 2,
+      "children": [
+        "text-8",
+        "reference-region",
+        "reference-symbol",
+        "reference-pattern"
+      ],
+      "stepOrder": [
+        "references-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "javascript": {
+      "id": "javascript",
+      "title": "JavaScript 与参数",
+      "level": 2,
+      "children": [
+        "text-11",
+        "js-panel"
+      ],
+      "stepOrder": [
+        "javascript-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "python": {
+      "id": "python",
+      "title": "Python",
+      "level": 2,
+      "children": [
+        "text-13",
+        "py-panel"
+      ],
+      "stepOrder": [
+        "python-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "trace": {
+      "id": "trace",
+      "title": "逐行执行",
+      "level": 2,
+      "children": [
+        "trace-intro",
+        "trace-panel"
+      ],
+      "stepOrder": [
+        "trace-step-0",
+        "trace-step-1",
+        "trace-step-2",
+        "trace-step-3",
+        "trace-step-4",
+        "trace-step-5",
+        "trace-step-6",
+        "trace-step-7",
+        "trace-step-8",
+        "trace-step-9"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "sessions": {
+      "id": "sessions",
+      "title": "共享会话",
+      "level": 2,
+      "children": [
+        "text-15",
+        "session-define",
+        "session-use"
+      ],
+      "stepOrder": [
+        "sessions-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "failure": {
+      "id": "failure",
+      "title": "错误与超时",
+      "level": 2,
+      "children": [
+        "text-17",
+        "failure-panel"
+      ],
+      "stepOrder": [
+        "failure-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "env-start": {
+      "id": "env-start",
+      "title": "更多运行环境",
+      "level": 1,
+      "children": [
+        "env-text-1",
+        "environment-check"
+      ],
+      "stepOrder": [
+        "env-start-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "container": {
+      "id": "container",
+      "title": "Docker 容器",
+      "level": 2,
+      "children": [
+        "env-text-4",
+        "container-panel"
+      ],
+      "stepOrder": [
+        "container-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "wasi": {
+      "id": "wasi",
+      "title": "C、C++、Ruby 与 SQLite",
+      "level": 2,
+      "children": [
+        "text-7",
+        "wasi-c",
+        "wasi-cpp",
+        "wasi-ruby",
+        "wasi-sql"
+      ],
+      "stepOrder": [
+        "wasi-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "webgpu": {
+      "id": "webgpu",
+      "title": "WebGPU 计算着色器",
+      "level": 2,
+      "children": [
+        "text-9",
+        "gpu-panel"
+      ],
+      "stepOrder": [
+        "webgpu-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "tensor": {
+      "id": "tensor",
+      "title": "jax-js 张量",
+      "level": 2,
+      "children": [
+        "env-text-11",
+        "jax-source"
+      ],
+      "stepOrder": [
+        "tensor-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "bridge": {
+      "id": "bridge",
+      "title": "Python 调用 WebGPU",
+      "level": 2,
+      "children": [
+        "env-text-13",
+        "bridge-source"
+      ],
+      "stepOrder": [
+        "bridge-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "jupyter": {
+      "id": "jupyter",
+      "title": "远端 Jupyter",
+      "level": 2,
+      "children": [
+        "env-text-15",
+        "jupyter-define",
+        "jupyter-use"
+      ],
+      "stepOrder": [
+        "jupyter-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "terminal": {
+      "id": "terminal",
+      "title": "远端终端",
+      "level": 2,
+      "children": [
+        "text-18",
+        "terminal-widget"
+      ],
+      "stepOrder": [
+        "terminal-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "g-show": {
+      "id": "g-show",
+      "title": "展示代码",
+      "level": 1,
+      "children": [
+        "g-show-intro"
+      ],
+      "stepOrder": [
+        "g-show-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "g-run": {
+      "id": "g-run",
+      "title": "浏览器内运行",
+      "level": 1,
+      "children": [
+        "g-run-intro"
+      ],
+      "stepOrder": [
+        "g-run-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "highlight-code": {
+      "id": "highlight-code",
+      "type": "code",
+      "language": "javascript",
+      "title": "sum.js",
+      "value": "const values = [1, 2, 3]\nlet total = 0\nfor (const value of values) total += value\nconsole.log(total)",
+      "highlight": {
+        "highlight-step": [
+          1,
+          2
+        ],
+        "highlight-loop": [
+          3
+        ],
+        "highlight-output": [
+          4
+        ]
+      }
+    },
+    "text-4": {
+      "id": "text-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "三步依次高亮：准备数据、累加、输出。"
+            }
+          ]
+        }
+      ]
+    },
+    "variant-code": {
+      "id": "variant-code",
+      "type": "code",
+      "language": "javascript",
+      "value": "let total = 0\nfor (const n of [1, 2, 3]) total += n",
+      "variants": [
+        {
+          "id": "loop-version",
+          "title": "循环版",
+          "value": "let total = 0\nfor (const n of [1, 2, 3]) total += n"
+        },
+        {
+          "id": "reduce-version",
+          "title": "归约版",
+          "value": "const total = [1, 2, 3].reduce((sum, n) => sum + n, 0)"
+        }
+      ]
+    },
+    "text-6": {
+      "id": "text-6",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "同一段代码的多种写法，可切换对比。"
+            }
+          ]
+        }
+      ]
+    },
+    "text-8": {
+      "id": "text-8",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-4",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "以下三段代码均取自 "
+            },
+            {
+              "type": "text",
+              "text": "code/checkout.ts",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "，分别按 region、symbol 与 pattern 选取；源文件修改后，引用内容随之更新。"
+            }
+          ]
+        }
+      ]
+    },
+    "reference-region": {
+      "id": "reference-region",
+      "type": "code",
+      "language": "typescript",
+      "origin": {
+        "anchor": "region:showcase-code/code/checkout.ts#checkout",
+        "highlightRegions": {
+          "references-step": "accumulation"
+        }
+      }
+    },
+    "reference-symbol": {
+      "id": "reference-symbol",
+      "type": "code",
+      "language": "typescript",
+      "origin": {
+        "anchor": "symbol:showcase-code/code/checkout.ts#total"
+      }
+    },
+    "js-source": {
+      "id": "js-source",
+      "type": "code",
+      "language": "javascript",
+      "value": "const values = Array.from({length: Number(n)}, (_, i) => i + 1)\nconst total = values.reduce((sum, value) => sum + value, 0)\nconsole.log(JSON.stringify({n: Number(n), total}))",
+      "execution": {
+        "when": "both",
+        "args": {
+          "n": "5"
+        }
+      }
+    },
+    "js-panel": {
+      "id": "js-panel",
+      "type": "component",
+      "definitionId": "js-panel-definition",
+      "parameters": {
+        "params": {
+          "n": 5
+        }
+      },
+      "children": [
+        "js-source"
+      ]
+    },
+    "text-11": {
+      "id": "text-11",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-5",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "将 n 由 5 改为 8 后再次运行，并选择两次运行记录，对比输出与耗时。"
+            }
+          ]
+        }
+      ]
+    },
+    "py-source": {
+      "id": "py-source",
+      "type": "code",
+      "language": "python",
+      "value": "values = [n * n for n in range(1, count + 1)]\nprint(values if verbose else sum(values))",
+      "execution": {
+        "when": "both",
+        "args": {
+          "count": "4",
+          "verbose": "false"
+        }
+      }
+    },
+    "py-panel": {
+      "id": "py-panel",
+      "type": "component",
+      "definitionId": "py-panel-definition",
+      "parameters": {
+        "params": {
+          "count": 4,
+          "verbose": false
+        }
+      },
+      "children": [
+        "py-source"
+      ]
+    },
+    "text-13": {
+      "id": "text-13",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-6",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在浏览器中通过 Pyodide 运行，首次运行需加载运行环境。"
+            }
+          ]
+        }
+      ]
+    },
+    "trace-source": {
+      "id": "trace-source",
+      "type": "code",
+      "language": "python",
+      "value": "total = 0\nfor value in [1, 2, 3]:\n    total += value\nprint(total)"
+    },
+    "trace-panel": {
+      "id": "trace-panel",
+      "type": "component",
+      "definitionId": "trace-panel-definition",
+      "parameters": {
+        "steps": 9
+      },
+      "children": [
+        "trace-source"
+      ]
+    },
+    "text-15": {
+      "id": "text-15",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-8",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "依次运行“定义”与“使用”，两段代码共享同一会话；重置会话后再次运行“使用”，将报告变量未定义。"
+            }
+          ]
+        }
+      ]
+    },
+    "session-define": {
+      "id": "session-define",
+      "type": "code",
+      "language": "python",
+      "title": "1. 定义",
+      "value": "answer = 41\nprint(\"已定义 answer\")",
+      "execution": {
+        "when": "live",
+        "session": "feature-counter"
+      }
+    },
+    "session-use": {
+      "id": "session-use",
+      "type": "code",
+      "language": "python",
+      "title": "2. 使用",
+      "value": "print(answer + 1)",
+      "execution": {
+        "when": "live",
+        "session": "feature-counter"
+      }
+    },
+    "failure-source": {
+      "id": "failure-source",
+      "type": "code",
+      "language": "javascript",
+      "value": "throw new Error(\"这是一个示例错误\")",
+      "execution": {
+        "when": "live",
+        "timeoutMs": 1500
+      }
+    },
+    "failure-panel": {
+      "id": "failure-panel",
+      "type": "component",
+      "definitionId": "failure-panel-definition",
+      "parameters": {
+        "timeout": 1500
+      },
+      "children": [
+        "failure-source"
+      ]
+    },
+    "text-17": {
+      "id": "text-17",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-9",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "代码出错或超时时，面板显示相应的错误信息。"
+            }
+          ]
+        }
+      ]
+    },
+    "reference-pattern": {
+      "id": "reference-pattern",
+      "type": "code",
+      "language": "typescript",
+      "origin": {
+        "anchor": "pattern:showcase-code/code/checkout.ts#$A.reduce($$$ARGS)"
+      }
+    },
+    "trace-intro": {
+      "id": "trace-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-7",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "逐行查看执行后的变量与输出。"
+            }
+          ]
+        }
+      ]
+    },
+    "env-text-15": {
+      "id": "env-text-15",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-16",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "运行时连接由运营者配置的 Jupyter 服务，两段代码共享同一内核会话。"
+            }
+          ]
+        }
+      ]
+    },
+    "gpu-panel": {
+      "id": "gpu-panel",
+      "type": "component",
+      "definitionId": "gpu-panel-definition",
+      "parameters": {
+        "params": {
+          "buffers": {
+            "a": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "b": [
+              10,
+              20,
+              30,
+              40
+            ],
+            "out": {
+              "size": 4
+            }
+          },
+          "dispatch": 1,
+          "repeat": 1
+        }
+      },
+      "children": [
+        "gpu-source"
+      ]
+    },
+    "jupyter-use": {
+      "id": "jupyter-use",
+      "type": "code",
+      "language": "python",
+      "title": "2. 在同一会话使用",
+      "value": "print(answer + 1)",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.env.lab",
+        "session": "feature-remote"
+      }
+    },
+    "container-source": {
+      "id": "container-source",
+      "type": "code",
+      "language": "python",
+      "value": "import platform\nprint(platform.python_version())\nprint(\"容器中的计算：\", sum(range(1, 6)))",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.container"
+      }
+    },
+    "bridge-source": {
+      "id": "bridge-source",
+      "type": "code",
+      "language": "python",
+      "value": "import presmium_gpu as gpu\nSHADER = \"@group(0) @binding(0) var<storage, read> a: array<f32>;\\n@group(0) @binding(1) var<storage, read> b: array<f32>;\\n@group(0) @binding(2) var<storage, read_write> out: array<f32>;\\n@compute @workgroup_size(64)\\nfn main(@builtin(global_invocation_id) id: vec3<u32>) {\\n if (id.x < arrayLength(&out)) { out[id.x] = a[id.x] + b[id.x]; }\\n}\"\nresult = await gpu.run(SHADER, buffers={\"a\":[1,2,3,4],\"b\":[10,20,30,40],\"out\":{\"size\":4}})\nprint(result)\nprint(\"同步桥接可用：\", gpu.can_run_sync())",
+      "execution": {
+        "when": "live"
+      }
+    },
+    "text-9": {
+      "id": "text-9",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-13",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "使用 WGSL 计算着色器完成向量加法，需要支持 WebGPU 的浏览器。"
+            }
+          ]
+        }
+      ]
+    },
+    "container-panel": {
+      "id": "container-panel",
+      "type": "component",
+      "definitionId": "container-panel-definition",
+      "parameters": {
+        "file": "hello.py"
+      },
+      "children": [
+        "container-source"
+      ]
+    },
+    "environment-check": {
+      "id": "environment-check",
+      "type": "code",
+      "language": "shell",
+      "value": "presmium check showcase-code --env"
+    },
+    "wasi-c": {
+      "id": "wasi-c",
+      "type": "code",
+      "language": "c",
+      "value": "#include <stdio.h>\nint main(void) { printf(\"C: %d\\n\", 6 * 7); return 0; }",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.wasi"
+      }
+    },
+    "env-text-13": {
+      "id": "env-text-13",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-15",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在 Python 中调用 WebGPU，需要 Pyodide 与 WebGPU 支持。"
+            }
+          ]
+        }
+      ]
+    },
+    "jax-source": {
+      "id": "jax-source",
+      "type": "code",
+      "language": "javascript",
+      "value": "import { defaultDevice, init, numpy as np } from '@jax-js/jax'\nconst devices = await init()\nif (devices.includes('webgpu')) defaultDevice('webgpu')\nconst product = np.matmul(np.array([[1,2],[3,4]]), np.array([[5,6],[7,8]]))\nconsole.log(defaultDevice(), JSON.stringify(await product.jsAsync()))",
+      "execution": {
+        "when": "live"
+      }
+    },
+    "wasi-ruby": {
+      "id": "wasi-ruby",
+      "type": "code",
+      "language": "ruby",
+      "value": "puts \"Ruby: #{6 * 7}\"",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.wasi"
+      }
+    },
+    "wasi-cpp": {
+      "id": "wasi-cpp",
+      "type": "code",
+      "language": "cpp",
+      "value": "#include <iostream>\nint main() { std::cout << \"C++: \" << 6 * 7 << std::endl; }",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.wasi"
+      }
+    },
+    "env-text-11": {
+      "id": "env-text-11",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-14",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "使用 jax-js 进行张量运算，输出中显示实际使用的设备。"
+            }
+          ]
+        }
+      ]
+    },
+    "wasi-sql": {
+      "id": "wasi-sql",
+      "type": "code",
+      "language": "sql",
+      "value": "SELECT 6 * 7 AS answer;",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.wasi"
+      }
+    },
+    "env-text-1": {
+      "id": "env-text-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-10",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "后续示例依赖额外的运行环境，打开文稿时不会自动启动。可使用下列命令检查本机已具备的环境。"
+            }
+          ]
+        }
+      ]
+    },
+    "text-7": {
+      "id": "text-7",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-12",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "通过 WebAssembly（WASI）在浏览器中运行。"
+            }
+          ]
+        }
+      ]
+    },
+    "terminal-widget": {
+      "id": "terminal-widget",
+      "type": "component",
+      "definitionId": "terminal-widget-definition",
+      "parameters": {
+        "env": "lab",
+        "rows": 10
+      }
+    },
+    "gpu-source": {
+      "id": "gpu-source",
+      "type": "code",
+      "language": "wgsl",
+      "value": "@group(0) @binding(0) var<storage, read> a: array<f32>;\n@group(0) @binding(1) var<storage, read> b: array<f32>;\n@group(0) @binding(2) var<storage, read_write> out: array<f32>;\n@compute @workgroup_size(64)\nfn main(@builtin(global_invocation_id) id: vec3<u32>) {\n if (id.x < arrayLength(&out)) { out[id.x] = a[id.x] + b[id.x]; }\n}",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.webgpu",
+        "args": {
+          "buffers": "{\"a\":[1,2,3,4],\"b\":[10,20,30,40],\"out\":{\"size\":4}}",
+          "dispatch": "1",
+          "repeat": "1"
+        }
+      }
+    },
+    "jupyter-define": {
+      "id": "jupyter-define",
+      "type": "code",
+      "language": "python",
+      "title": "1. 定义远端变量",
+      "value": "import platform\nanswer = 41\nprint(\"远端内核：\", platform.python_implementation())",
+      "execution": {
+        "when": "live",
+        "executor": "presmium.env.lab",
+        "session": "feature-remote"
+      }
+    },
+    "env-text-4": {
+      "id": "env-text-4",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-11",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "需要本机安装 Docker。“导出环境”将代码与开发容器定义打包下载。"
+            }
+          ]
+        }
+      ]
+    },
+    "text-18": {
+      "id": "text-18",
+      "type": "text",
+      "content": [
+        {
+          "id": "sk-17",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "连接后打开远端 Jupyter 终端，离开页面时自动断开。"
+            }
+          ]
+        }
+      ]
+    },
+    "g-show-intro": {
+      "id": "g-show-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-show-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "按步骤高亮、代码变体与项目文件引用。"
+            }
+          ]
+        }
+      ]
+    },
+    "g-run-intro": {
+      "id": "g-run-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-run-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "JavaScript 与 Python 在浏览器中直接运行。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "highlight-step": {
+      "id": "highlight-step",
+      "sectionId": "highlight",
+      "visuals": [
+        {
+          "blockId": "highlight-code",
+          "visible": true
+        },
+        {
+          "blockId": "text-4",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "highlight-loop": {
+      "id": "highlight-loop",
+      "sectionId": "highlight",
+      "visuals": [
+        {
+          "blockId": "highlight-code",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "highlight-output": {
+      "id": "highlight-output",
+      "sectionId": "highlight",
+      "visuals": [
+        {
+          "blockId": "highlight-code",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "variants-step": {
+      "id": "variants-step",
+      "sectionId": "variants",
+      "visuals": [
+        {
+          "blockId": "text-6",
+          "visible": true
+        },
+        {
+          "blockId": "variant-code",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "references-step": {
+      "id": "references-step",
+      "sectionId": "references",
+      "visuals": [
+        {
+          "blockId": "text-8",
+          "visible": true
+        },
+        {
+          "blockId": "reference-region",
+          "visible": true
+        },
+        {
+          "blockId": "reference-symbol",
+          "visible": true
+        },
+        {
+          "blockId": "reference-pattern",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "javascript-step": {
+      "id": "javascript-step",
+      "sectionId": "javascript",
+      "visuals": [
+        {
+          "blockId": "text-11",
+          "visible": true
+        },
+        {
+          "blockId": "js-panel",
+          "visible": true
+        },
+        {
+          "blockId": "js-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "python-step": {
+      "id": "python-step",
+      "sectionId": "python",
+      "visuals": [
+        {
+          "blockId": "text-13",
+          "visible": true
+        },
+        {
+          "blockId": "py-panel",
+          "visible": true
+        },
+        {
+          "blockId": "py-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "trace-step-0": {
+      "id": "trace-step-0",
+      "sectionId": "trace",
+      "visuals": [
+        {
+          "blockId": "trace-intro",
+          "visible": true
+        },
+        {
+          "blockId": "trace-panel",
+          "visible": true,
+          "state": "event-0"
+        },
+        {
+          "blockId": "trace-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": [],
+      "title": "开始"
+    },
+    "trace-step-1": {
+      "id": "trace-step-1",
+      "sectionId": "trace",
+      "visuals": [
+        {
+          "blockId": "trace-intro",
+          "visible": true
+        },
+        {
+          "blockId": "trace-panel",
+          "visible": true,
+          "state": "event-1"
+        },
+        {
+          "blockId": "trace-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": [],
+      "title": "事件 1"
+    },
+    "trace-step-2": {
+      "id": "trace-step-2",
+      "sectionId": "trace",
+      "visuals": [
+        {
+          "blockId": "trace-intro",
+          "visible": true
+        },
+        {
+          "blockId": "trace-panel",
+          "visible": true,
+          "state": "event-2"
+        },
+        {
+          "blockId": "trace-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": [],
+      "title": "事件 2"
+    },
+    "trace-step-3": {
+      "id": "trace-step-3",
+      "sectionId": "trace",
+      "visuals": [
+        {
+          "blockId": "trace-intro",
+          "visible": true
+        },
+        {
+          "blockId": "trace-panel",
+          "visible": true,
+          "state": "event-3"
+        },
+        {
+          "blockId": "trace-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": [],
+      "title": "事件 3"
+    },
+    "trace-step-4": {
+      "id": "trace-step-4",
+      "sectionId": "trace",
+      "visuals": [
+        {
+          "blockId": "trace-intro",
+          "visible": true
+        },
+        {
+          "blockId": "trace-panel",
+          "visible": true,
+          "state": "event-4"
+        },
+        {
+          "blockId": "trace-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": [],
+      "title": "事件 4"
+    },
+    "trace-step-5": {
+      "id": "trace-step-5",
+      "sectionId": "trace",
+      "visuals": [
+        {
+          "blockId": "trace-intro",
+          "visible": true
+        },
+        {
+          "blockId": "trace-panel",
+          "visible": true,
+          "state": "event-5"
+        },
+        {
+          "blockId": "trace-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": [],
+      "title": "事件 5"
+    },
+    "trace-step-6": {
+      "id": "trace-step-6",
+      "sectionId": "trace",
+      "visuals": [
+        {
+          "blockId": "trace-intro",
+          "visible": true
+        },
+        {
+          "blockId": "trace-panel",
+          "visible": true,
+          "state": "event-6"
+        },
+        {
+          "blockId": "trace-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": [],
+      "title": "事件 6"
+    },
+    "trace-step-7": {
+      "id": "trace-step-7",
+      "sectionId": "trace",
+      "visuals": [
+        {
+          "blockId": "trace-intro",
+          "visible": true
+        },
+        {
+          "blockId": "trace-panel",
+          "visible": true,
+          "state": "event-7"
+        },
+        {
+          "blockId": "trace-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": [],
+      "title": "事件 7"
+    },
+    "trace-step-8": {
+      "id": "trace-step-8",
+      "sectionId": "trace",
+      "visuals": [
+        {
+          "blockId": "trace-intro",
+          "visible": true
+        },
+        {
+          "blockId": "trace-panel",
+          "visible": true,
+          "state": "event-8"
+        },
+        {
+          "blockId": "trace-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": [],
+      "title": "事件 8"
+    },
+    "trace-step-9": {
+      "id": "trace-step-9",
+      "sectionId": "trace",
+      "visuals": [
+        {
+          "blockId": "trace-intro",
+          "visible": true
+        },
+        {
+          "blockId": "trace-panel",
+          "visible": true,
+          "state": "event-9"
+        },
+        {
+          "blockId": "trace-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": [],
+      "title": "事件 9"
+    },
+    "sessions-step": {
+      "id": "sessions-step",
+      "sectionId": "sessions",
+      "visuals": [
+        {
+          "blockId": "text-15",
+          "visible": true
+        },
+        {
+          "blockId": "session-define",
+          "visible": true
+        },
+        {
+          "blockId": "session-use",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "failure-step": {
+      "id": "failure-step",
+      "sectionId": "failure",
+      "visuals": [
+        {
+          "blockId": "text-17",
+          "visible": true
+        },
+        {
+          "blockId": "failure-panel",
+          "visible": true
+        },
+        {
+          "blockId": "failure-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "env-start-step": {
+      "id": "env-start-step",
+      "sectionId": "env-start",
+      "visuals": [
+        {
+          "blockId": "env-text-1",
+          "visible": true
+        },
+        {
+          "blockId": "environment-check",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "container-step": {
+      "id": "container-step",
+      "sectionId": "container",
+      "visuals": [
+        {
+          "blockId": "env-text-4",
+          "visible": true
+        },
+        {
+          "blockId": "container-panel",
+          "visible": true
+        },
+        {
+          "blockId": "container-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "wasi-step": {
+      "id": "wasi-step",
+      "sectionId": "wasi",
+      "visuals": [
+        {
+          "blockId": "text-7",
+          "visible": true
+        },
+        {
+          "blockId": "wasi-c",
+          "visible": true
+        },
+        {
+          "blockId": "wasi-cpp",
+          "visible": true
+        },
+        {
+          "blockId": "wasi-ruby",
+          "visible": true
+        },
+        {
+          "blockId": "wasi-sql",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "webgpu-step": {
+      "id": "webgpu-step",
+      "sectionId": "webgpu",
+      "visuals": [
+        {
+          "blockId": "text-9",
+          "visible": true
+        },
+        {
+          "blockId": "gpu-panel",
+          "visible": true
+        },
+        {
+          "blockId": "gpu-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "tensor-step": {
+      "id": "tensor-step",
+      "sectionId": "tensor",
+      "visuals": [
+        {
+          "blockId": "env-text-11",
+          "visible": true
+        },
+        {
+          "blockId": "jax-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "bridge-step": {
+      "id": "bridge-step",
+      "sectionId": "bridge",
+      "visuals": [
+        {
+          "blockId": "env-text-13",
+          "visible": true
+        },
+        {
+          "blockId": "bridge-source",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "jupyter-step": {
+      "id": "jupyter-step",
+      "sectionId": "jupyter",
+      "visuals": [
+        {
+          "blockId": "env-text-15",
+          "visible": true
+        },
+        {
+          "blockId": "jupyter-define",
+          "visible": true
+        },
+        {
+          "blockId": "jupyter-use",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "terminal-step": {
+      "id": "terminal-step",
+      "sectionId": "terminal",
+      "visuals": [
+        {
+          "blockId": "text-18",
+          "visible": true
+        },
+        {
+          "blockId": "terminal-widget",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "g-show-step": {
+      "id": "g-show-step",
+      "sectionId": "g-show",
+      "visuals": [
+        {
+          "blockId": "g-show-intro",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "g-run-step": {
+      "id": "g-run-step",
+      "sectionId": "g-run",
+      "visuals": [
+        {
+          "blockId": "g-run-intro",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "definitions": {
+    "js-panel-definition": {
+      "id": "js-panel-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "timeout": {
+            "type": "number",
+            "title": "执行时限（毫秒）",
+            "exclusiveMinimum": 0
+          }
+        }
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "修改 n 后点击运行，输出前 n 个正整数之和。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "py-panel-definition": {
+      "id": "py-panel-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "timeout": {
+            "type": "number",
+            "title": "执行时限（毫秒）",
+            "exclusiveMinimum": 0
+          }
+        }
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "count=4 时，平方和为 30。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "trace-panel-definition": {
+      "id": "trace-panel-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmStepRun"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "timeout": {
+            "type": "number",
+            "title": "执行时限（毫秒）",
+            "exclusiveMinimum": 0
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "event-0",
+          "title": "开始"
+        },
+        {
+          "id": "event-1",
+          "title": "事件 1"
+        },
+        {
+          "id": "event-2",
+          "title": "事件 2"
+        },
+        {
+          "id": "event-3",
+          "title": "事件 3"
+        },
+        {
+          "id": "event-4",
+          "title": "事件 4"
+        },
+        {
+          "id": "event-5",
+          "title": "事件 5"
+        },
+        {
+          "id": "event-6",
+          "title": "事件 6"
+        },
+        {
+          "id": "event-7",
+          "title": "事件 7"
+        },
+        {
+          "id": "event-8",
+          "title": "事件 8"
+        },
+        {
+          "id": "event-9",
+          "title": "事件 9"
+        }
+      ],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "按源代码逐行观察 total 的变化，最后输出 6。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "failure-panel-definition": {
+      "id": "failure-panel-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "timeout": {
+            "type": "number",
+            "title": "执行时限（毫秒）",
+            "exclusiveMinimum": 0
+          }
+        }
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "点击运行会得到一个示例错误。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "gpu-panel-definition": {
+      "id": "gpu-panel-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.exec",
+        "name": "PmRunPanel"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "timeout": {
+            "type": "number",
+            "title": "执行时限（毫秒）",
+            "exclusiveMinimum": 0
+          }
+        }
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "向量加法的结果是 [11,22,33,44]。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "container-panel-definition": {
+      "id": "container-panel-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.execLocal",
+        "name": "PmLocalEnv"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "在 Docker 容器中运行 Python，并可导出代码与容器定义。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "terminal-widget-definition": {
+      "id": "terminal-widget-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "plugin",
+        "plugin": "presmium.execJupyter",
+        "name": "PmTerminal"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [],
+      "data": {
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "远端 Jupyter 终端。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

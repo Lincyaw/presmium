@@ -9,7 +9,11 @@
     ],
     "renderers": {
       "web": {}
-    }
+    },
+    "tags": [
+      "动画参考"
+    ],
+    "description": "Three.js 三维场景：点云聚类、损失曲面与梯度下降、矩阵变换、曲面变形、沿路径运动、粒子着色器、材质与光照。"
   },
   "sectionOrder": [
     "intro",

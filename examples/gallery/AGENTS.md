@@ -1,10 +1,10 @@
 # Presmium Gallery
 
-This workspace contains 31 main documents: two complete courses, nine feature guides, a Fourier lesson, a product film and 18 animation references. Every lecture.json is its document’s editable authority.
+This workspace contains 29 main documents: two complete courses, five feature collections, two tutorials, a Fourier lesson, a product film and 18 animation references. Every lecture.json is its document’s editable authority.
 
 - `learn/` is the Fourier lesson, with its English translation.
 - `promo/` is the product film; read its storyboard before editing its scenes.
-- `guide-*/` are the nine feature guides indexed in FEATURES.md and features.json.
+- `showcase-*/` are the feature collections (one feature per page) and `tutorial-*/` the hands-on tutorials, indexed in FEATURES.md and features.json.
 - `animation-library/` comes from the presmium-animate skill gallery. In the source checkout it is a symlink; the editable workspace copy contains regular files. Keep shared scene imports intact.
 
 The two original complete courses are:

@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "id": "presmium-guide-classroom",
+  "id": "presmium-showcase-classroom",
   "metadata": {
-    "title": "功能导览 04：自测、预测与课堂互动",
+    "title": "课堂互动",
     "lang": "zh-CN",
-    "description": "可编辑、可运行的 Presmium 功能导览。",
+    "description": "测验、预测、代码练习、提问与理解度投票、阅读笔记、跟随主讲，以及教师版与学生版输出。",
     "plugins": [
       "@lincyaw/addon-classroom",
       "@lincyaw/addon-session",
@@ -15,41 +15,31 @@
       "web": {},
       "slides": {},
       "notebook": {}
-    }
+    },
+    "tags": [
+      "功能合集"
+    ]
   },
   "sectionOrder": [
-    "start",
+    "g-self",
     "quiz",
     "prediction",
     "exercise",
-    "questions",
     "notes",
+    "g-class",
+    "questions",
     "follow",
     "teacher"
   ],
   "sections": {
-    "start": {
-      "id": "start",
-      "title": "先独立练习，再加入真实课堂",
-      "level": 1,
-      "children": [
-        "text-1"
-      ],
-      "stepOrder": [
-        "start-step"
-      ],
-      "layout": {
-        "type": "stack"
-      }
-    },
     "quiz": {
       "id": "quiz",
-      "title": "单选、多选与即时自测",
+      "title": "单选与多选",
       "level": 2,
       "children": [
+        "text-6",
         "quiz-widget",
-        "multi-quiz",
-        "text-6"
+        "multi-quiz"
       ],
       "stepOrder": [
         "quiz-step"
@@ -63,8 +53,8 @@
       "title": "先预测，再揭晓",
       "level": 2,
       "children": [
-        "prediction-widget",
-        "text-9"
+        "text-9",
+        "prediction-widget"
       ],
       "stepOrder": [
         "prediction-step",
@@ -76,11 +66,11 @@
     },
     "exercise": {
       "id": "exercise",
-      "title": "代码练习与真实校验",
+      "title": "代码练习",
       "level": 2,
       "children": [
-        "exercise-widget",
-        "text-12"
+        "text-12",
+        "exercise-widget"
       ],
       "stepOrder": [
         "exercise-step"
@@ -91,7 +81,7 @@
     },
     "questions": {
       "id": "questions",
-      "title": "锚定问题与理解度投票",
+      "title": "提问与理解度投票",
       "level": 2,
       "children": [
         "question-target",
@@ -107,7 +97,7 @@
     },
     "notes": {
       "id": "notes",
-      "title": "阅读笔记与作者批注",
+      "title": "阅读笔记",
       "level": 2,
       "children": [
         "text-16"
@@ -121,7 +111,7 @@
     },
     "follow": {
       "id": "follow",
-      "title": "跟随、独立浏览与重新加入",
+      "title": "跟随主讲",
       "level": 2,
       "children": [
         "text-19"
@@ -135,7 +125,7 @@
     },
     "teacher": {
       "id": "teacher",
-      "title": "教师内容与学生输出",
+      "title": "教师版与学生版",
       "level": 2,
       "children": [
         "teacher-note",
@@ -147,46 +137,48 @@
       "layout": {
         "type": "stack"
       }
+    },
+    "g-self": {
+      "id": "g-self",
+      "title": "个人练习",
+      "level": 1,
+      "children": [
+        "g-self-intro"
+      ],
+      "stepOrder": [
+        "g-self-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "g-class": {
+      "id": "g-class",
+      "title": "课堂",
+      "level": 1,
+      "children": [
+        "g-class-intro"
+      ],
+      "stepOrder": [
+        "g-class-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
     }
   },
   "blocks": {
-    "text-1": {
-      "id": "text-1",
-      "type": "text",
-      "content": [
-        {
-          "id": "paragraph-2",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "测验与预测可以在个人阅读时使用。提问、理解度汇总、学生跟随与课堂存档需要真实课堂会话。"
-            }
-          ]
-        },
-        {
-          "id": "paragraph-3",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "presmium dev/serve 的内置同步只用于作者本机排练。对学生发布时，构建 student 受众站点，配置独立 classroom-server，并先用另一台设备验证加入。"
-            }
-          ]
-        }
-      ]
-    },
     "quiz-prompt": {
       "id": "quiz-prompt",
       "type": "text",
       "content": [
         {
-          "id": "paragraph-4",
+          "id": "sr-2",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "lecture.json 与网页运行快照之间，哪一个是可编辑权威内容？"
+              "text": "冒泡排序完成一趟后，哪个元素一定在正确位置？"
             }
           ]
         }
@@ -198,9 +190,9 @@
       "definitionId": "quiz-widget-definition",
       "parameters": {
         "options": [
-          "lecture.json",
-          "构建目录中的 ir.json",
-          "浏览器截图"
+          "最大的元素",
+          "最小的元素",
+          "第一个元素"
         ],
         "correct": [
           0
@@ -215,12 +207,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-5",
+          "id": "sr-3",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "哪些内容能直接保存在 canonical 文稿中？"
+              "text": "下面哪些是稳定的排序算法？"
             }
           ]
         }
@@ -232,9 +224,9 @@
       "definitionId": "multi-quiz-definition",
       "parameters": {
         "options": [
-          "稳定步骤与画面参数",
-          "讲稿与发音标记",
-          "已经过期的音频被当作当前配音"
+          "冒泡排序",
+          "归并排序",
+          "快速排序"
         ],
         "correct": [
           0,
@@ -250,12 +242,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-7",
+          "id": "sr-4",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "个人阅读时提交后立即显示自测结果。加入课堂后，由主讲开启与结束作答；结束后再公开正确答案及统计。"
+              "text": "提交后即时显示正误。课堂模式下，由主讲统一公布答案与统计结果。"
             }
           ]
         }
@@ -271,7 +263,7 @@
           "children": [
             {
               "type": "text",
-              "text": "结果是 6。循环分别累加 1、2、3；初值为 0，所以最终值为 6。"
+              "text": "答案是 6：0 + 1 + 2 + 3 = 6。"
             }
           ]
         }
@@ -301,12 +293,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-10",
+          "id": "sr-5",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "阅读模式先保存预测再看答案。放映时按步骤揭晓；保存的是自己的预测，不能代替真实课堂提交状态。"
+              "text": "先提交预测，下一步揭晓答案。"
             }
           ]
         }
@@ -317,12 +309,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-11",
+          "id": "sr-6",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "实现 square(n)，返回 n 的平方。先运行错误起始代码，再修正为 return n * n。"
+              "text": "实现 square(n)，返回 n 的平方。"
             }
           ]
         }
@@ -346,12 +338,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-13",
+          "id": "sr-7",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "点击校验会调用真实执行器。首次加载 Pyodide 需要可访问其资源；缺少运行环境时应看到未运行或错误，不应宣称通过。"
+              "text": "点击“校验”，运行代码并检查结果。"
             }
           ]
         }
@@ -362,12 +354,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-14",
+          "id": "sr-8",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "把你的问题关联到这一段：步骤决定画面状态，production 决定播放时机。"
+              "text": "选中本段文字，即可就此向主讲提问。"
             }
           ]
         }
@@ -378,12 +370,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-15",
+          "id": "sr-9",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "哪里还不清楚？加入课堂后，把问题发给主讲。"
+              "text": "哪里还不清楚？"
             }
           ]
         }
@@ -405,9 +397,9 @@
       "type": "component",
       "definitionId": "pulse-definition",
       "parameters": {
-        "question": "你能区分文稿、运行快照与讲授产物了吗？",
+        "question": "这一节你理解了吗？",
         "levels": [
-          "可以解释给别人",
+          "完全理解",
           "还需要一个例子",
           "需要帮助"
         ]
@@ -418,22 +410,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-17",
+          "id": "sr-10",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "读者笔记与作者批注有不同归属。阅读页的笔记跟随稳定内容锚点；工作台中的正文批注使用原生编辑器扩展，随文稿保存。"
-            }
-          ]
-        },
-        {
-          "id": "paragraph-18",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "在工作台选中本句添加批注，再继续输入、撤消或移动页面，检查锚点仍指向原来的内容。这个示例不会伪造已经存在的用户评论。"
+              "text": "在阅读页选中文字即可添加笔记，笔记与所选内容关联。"
             }
           ]
         }
@@ -444,22 +426,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-20",
+          "id": "sr-11",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "主讲创建课堂后，学生使用加入链接或二维码进入。学生默认跟随主讲，选择独立浏览后可自行阅读，再选择返回主讲恢复跟随。"
-            }
-          ]
-        },
-        {
-          "id": "paragraph-21",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "结束课堂后可归档，重启服务前应先完成归档。归档文件属于课堂服务，不写入示例 lecture.json。"
+              "text": "学生扫码加入课堂后默认跟随主讲翻页，也可切换为独立浏览，并随时返回主讲所在位置。"
             }
           ]
         }
@@ -475,7 +447,7 @@
           "children": [
             {
               "type": "text",
-              "text": "教师提示：先让学生解释为什么运行快照不应被当成编辑源码，再展示具体保存版本。"
+              "text": "教师提示：先请学生陈述思路，再展示答案。"
             }
           ]
         }
@@ -489,12 +461,44 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-24",
+          "id": "sr-12",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "这条公共说明会保留在学生版。构建 --audience student 应从产物中删除上面的教师提示，而不是仅用 CSS 隐藏。"
+              "text": "上述教师提示仅出现在教师版中，构建学生版时将被移除。"
+            }
+          ]
+        }
+      ]
+    },
+    "g-self-intro": {
+      "id": "g-self-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-self-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "无需开启课堂即可使用的练习与笔记。"
+            }
+          ]
+        }
+      ]
+    },
+    "g-class-intro": {
+      "id": "g-class-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-class-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "开启课堂后使用的提问、投票与跟随功能，以及教师版与学生版输出。"
             }
           ]
         }
@@ -502,21 +506,14 @@
     }
   },
   "steps": {
-    "start-step": {
-      "id": "start-step",
-      "sectionId": "start",
-      "visuals": [
-        {
-          "blockId": "text-1",
-          "visible": true
-        }
-      ],
-      "narrationIds": []
-    },
     "quiz-step": {
       "id": "quiz-step",
       "sectionId": "quiz",
       "visuals": [
+        {
+          "blockId": "text-6",
+          "visible": true
+        },
         {
           "blockId": "quiz-widget",
           "visible": true
@@ -532,10 +529,6 @@
         {
           "blockId": "multi-prompt",
           "visible": true
-        },
-        {
-          "blockId": "text-6",
-          "visible": true
         }
       ],
       "narrationIds": []
@@ -544,6 +537,10 @@
       "id": "prediction-step",
       "sectionId": "prediction",
       "visuals": [
+        {
+          "blockId": "text-9",
+          "visible": true
+        },
         {
           "blockId": "prediction-widget",
           "visible": true
@@ -560,6 +557,10 @@
       "sectionId": "prediction",
       "visuals": [
         {
+          "blockId": "text-9",
+          "visible": true
+        },
+        {
           "blockId": "prediction-widget",
           "visible": true
         },
@@ -575,15 +576,15 @@
       "sectionId": "exercise",
       "visuals": [
         {
+          "blockId": "text-12",
+          "visible": true
+        },
+        {
           "blockId": "exercise-widget",
           "visible": true
         },
         {
           "blockId": "exercise-prompt",
-          "visible": true
-        },
-        {
-          "blockId": "text-12",
           "visible": true
         }
       ],
@@ -648,6 +649,28 @@
         }
       ],
       "narrationIds": []
+    },
+    "g-self-step": {
+      "id": "g-self-step",
+      "sectionId": "g-self",
+      "visuals": [
+        {
+          "blockId": "g-self-intro",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "g-class-step": {
+      "id": "g-class-step",
+      "sectionId": "g-class",
+      "visuals": [
+        {
+          "blockId": "g-class-intro",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
     }
   },
   "narrations": {},
@@ -697,7 +720,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "答案：lecture.json 是唯一权威内容。"
+                  "value": "答案：最大的元素。"
                 }
               ]
             }
@@ -749,7 +772,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "正确：稳定步骤与画面参数、讲稿与发音标记。"
+                  "value": "正确：冒泡排序、归并排序。"
                 }
               ]
             }
@@ -878,7 +901,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "课堂提问，需要先加入真实课堂。"
+                  "value": "课堂提问，加入课堂后可用。"
                 }
               ]
             }
@@ -921,7 +944,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "理解度投票：可以解释给别人 / 还需要一个例子 / 需要帮助。"
+                  "value": "理解度投票：完全理解 / 还需要一个例子 / 需要帮助。"
                 }
               ]
             }

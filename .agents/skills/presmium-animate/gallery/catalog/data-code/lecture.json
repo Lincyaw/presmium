@@ -4,7 +4,7 @@
   "metadata": {
     "title": "数据与代码：图表、数字、代码与终端",
     "lang": "zh-CN",
-    "description": "从 HyperFrames 目录中挑出的数据与代码类动效，按 Presmium 的规则重做：图表、终端、代码对比、代码变形、代码聚焦、决策树、地图与示波器。",
+    "description": "数据与代码类动效：图表、终端、代码对比、代码变形、代码聚焦、决策树、地图与示波器。",
     "plugins": [
       "@lincyaw/addon-motion",
       "@lincyaw/addon-lecture"
@@ -12,7 +12,10 @@
     "renderers": {
       "web": {},
       "lecture": {}
-    }
+    },
+    "tags": [
+      "动画参考"
+    ]
   },
   "sectionOrder": [
     "intro",
@@ -284,7 +287,7 @@
           "children": [
             {
               "type": "text",
-              "text": "这份文稿收录从 HyperFrames 目录迁移来的数据与代码类动效。每个作品都按本技能的规则重写：只用设计令牌的颜色，亮色与暗色都可读；画面只由时间决定，任意顺序跳转得到同一帧；节拍拆成状态，每个状态是一步。"
+              "text": "这份文稿收录数据与代码类动效。每个作品都遵循同样的规则：只用设计令牌的颜色，亮色与暗色都可读；画面只由时间决定，任意顺序跳转得到同一帧；节拍拆成状态，每个状态是一步。"
             }
           ]
         },
@@ -430,7 +433,7 @@
           "children": [
             {
               "type": "text",
-              "text": "参数：code、lang、file、focus（每项 from、to 为行号，note 为不超过九个字的短注；状态数 = focus 数 + 1）。合并了 HyperFrames 的 code-highlight（单行高亮扫入、上下文变暗）。"
+              "text": "参数：code、lang、file、focus（每项 from、to 为行号，note 为不超过九个字的短注；状态数 = focus 数 + 1）。聚焦行由高亮扫入，其余行变暗。"
             }
           ]
         }
@@ -520,7 +523,7 @@
           "children": [
             {
               "type": "text",
-              "text": "参数：command、output（每行一项；以 ✓ 开头为成功色，✗ 或“错误”开头为危险色）、prompt、title、tag。合并了 terminal-simulator 与 code-snippet-apple-terminal-pro 的打字（不模仿任何产品外观）。"
+              "text": "参数：command、output（每行一项；以 ✓ 开头为成功色，✗ 或“错误”开头为危险色）、prompt、title、tag。"
             }
           ]
         }
@@ -565,7 +568,7 @@
           "children": [
             {
               "type": "text",
-              "text": "参数：kind（bars 柱、line 折线、donut 环、progress 进度条）、data、labels、emphasize、title、unit、source（默认“示意数据”，真实数据请写出处）。柱与面积从零开始。合并了 animated-bar-chart、data-chart、mk-line-graph。"
+              "text": "参数：kind（bars 柱、line 折线、donut 环、progress 进度条）、data、labels、emphasize、title、unit、source（默认“示意数据”，使用实际数据时写明出处）。柱与面积从零开始。"
             }
           ]
         }
@@ -610,7 +613,7 @@
           "children": [
             {
               "type": "text",
-              "text": "参数：tree（节点 label、到它的分支名 edge、children）、path（每层选第几个孩子，从 0 起）、orientation（vertical 自上而下，horizontal 自左向右）。D3 的 tree 布局决定位置；节点宽度按字符列数计算，不测量页面。合并了 flowchart-vertical。"
+              "text": "参数：tree（节点 label、到它的分支名 edge、children）、path（每层选第几个孩子，从 0 起）、orientation（vertical 自上而下，horizontal 自左向右）。D3 的 tree 布局决定位置；节点宽度按字符列数计算。"
             }
           ]
         }
@@ -655,7 +658,7 @@
           "children": [
             {
               "type": "text",
-              "text": "参数：tiles（[名称, 列, 行] 的列表，默认中国 34 个省级行政区）、values（名称到数值）、unit、title、source（默认“示意数据”）、top。没有数值的地区画成斜线并在图例注明“无数据”。合并了 us-map、spain-map、world-map 的分区着色与 us-map-hex。"
+              "text": "参数：tiles（[名称, 列, 行] 的列表，默认中国 34 个省级行政区）、values（名称到数值）、unit、title、source（默认“示意数据”）、top。没有数值的地区画成斜线并在图例注明“无数据”。"
             }
           ]
         }
@@ -1634,7 +1637,7 @@
           "source": {
             "type": "string",
             "title": "来源",
-            "description": "真实数据写出处；默认“示意数据”"
+            "description": "数据出处；默认“示意数据”"
           }
         }
       },

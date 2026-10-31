@@ -9,7 +9,11 @@
     ],
     "renderers": {
       "web": {}
-    }
+    },
+    "tags": [
+      "动画参考"
+    ],
+    "description": "GSAP 动画：错峰出现、逐字拆分、描线、沿路径运动、数字变化、变形、关键帧、嵌套时间轴与布局过渡。"
   },
   "sectionOrder": [
     "intro",

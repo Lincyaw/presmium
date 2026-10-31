@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "id": "presmium-guide-steps",
+  "id": "presmium-showcase-steps",
   "metadata": {
-    "title": "功能导览 02：步骤、动画与参数",
+    "title": "步骤与动画",
     "lang": "zh-CN",
-    "description": "可编辑、可运行的 Presmium 功能导览。",
+    "description": "以步骤组织画面：逐项揭示、继承上一步、动画状态与参数、D3 数据绑定、交互组件、光标与聚光提示。",
     "plugins": [
       "@lincyaw/addon-motion",
       "@lincyaw/addon-guide",
@@ -16,36 +16,27 @@
       "slides": {},
       "notebook": {},
       "lecture": {}
-    }
+    },
+    "tags": [
+      "功能合集"
+    ]
   },
   "sectionOrder": [
-    "start",
+    "g-steps",
     "reveal",
     "inherits",
+    "g-animation",
     "semantic",
     "d3",
+    "libraries",
+    "g-interaction",
     "component",
-    "guidance",
-    "libraries"
+    "guidance"
   ],
   "sections": {
-    "start": {
-      "id": "start",
-      "title": "把一页内容组织成可逆的教学过程",
-      "level": 1,
-      "children": [
-        "text-1"
-      ],
-      "stepOrder": [
-        "start-step"
-      ],
-      "layout": {
-        "type": "stack"
-      }
-    },
     "reveal": {
       "id": "reveal",
-      "title": "逐项揭示与滚动叙事",
+      "title": "逐项揭示",
       "level": 2,
       "children": [
         "reveal-list"
@@ -66,7 +57,7 @@
     },
     "inherits": {
       "id": "inherits",
-      "title": "继承状态，显式改变可见性",
+      "title": "继承上一步",
       "level": 2,
       "children": [
         "inherit-input",
@@ -82,11 +73,11 @@
     },
     "semantic": {
       "id": "semantic",
-      "title": "命名状态与参数共同决定画面",
+      "title": "动画状态与参数",
       "level": 2,
       "children": [
-        "semantic-scene",
-        "text-9"
+        "text-9",
+        "semantic-scene"
       ],
       "stepOrder": [
         "semantic-ready",
@@ -99,9 +90,10 @@
     },
     "d3": {
       "id": "d3",
-      "title": "D3 数据加入：enter、update、exit",
+      "title": "D3 数据绑定",
       "level": 2,
       "children": [
+        "d3-intro",
         "d3-scene"
       ],
       "stepOrder": [
@@ -116,11 +108,11 @@
     },
     "component": {
       "id": "component",
-      "title": "真实交互组件与公共控件",
+      "title": "交互组件",
       "level": 2,
       "children": [
-        "action-counter",
-        "text-11"
+        "text-11",
+        "action-counter"
       ],
       "stepOrder": [
         "component-step"
@@ -131,9 +123,10 @@
     },
     "guidance": {
       "id": "guidance",
-      "title": "模拟光标、聚光与提示",
+      "title": "光标与聚光提示",
       "level": 2,
       "children": [
+        "guidance-intro",
         "guide-counter",
         "guide-cursor",
         "guide-spot",
@@ -150,7 +143,7 @@
     },
     "libraries": {
       "id": "libraries",
-      "title": "选择动画实现而不改内容模型",
+      "title": "更多动画库",
       "level": 2,
       "children": [
         "text-13"
@@ -161,35 +154,51 @@
       "layout": {
         "type": "stack"
       }
+    },
+    "g-steps": {
+      "id": "g-steps",
+      "title": "步骤",
+      "level": 1,
+      "children": [
+        "g-steps-intro"
+      ],
+      "stepOrder": [
+        "g-steps-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "g-animation": {
+      "id": "g-animation",
+      "title": "动画",
+      "level": 1,
+      "children": [
+        "g-animation-intro"
+      ],
+      "stepOrder": [
+        "g-animation-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "g-interaction": {
+      "id": "g-interaction",
+      "title": "交互",
+      "level": 1,
+      "children": [
+        "g-interaction-intro"
+      ],
+      "stepOrder": [
+        "g-interaction-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
     }
   },
   "blocks": {
-    "text-1": {
-      "id": "text-1",
-      "type": "text",
-      "content": [
-        {
-          "id": "paragraph-2",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "先完整阅读，再切换到放映。尝试第 1 步 → 第 3 步 → 第 2 步，画面应直接重建，不需要重播此前动画。"
-            }
-          ]
-        },
-        {
-          "id": "paragraph-3",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "原有“冒泡排序”和“代码写成的动画”保留完整课程。这里补充显式状态、参数、内容揭示、D3 和自定义组件。"
-            }
-          ]
-        }
-      ]
-    },
     "reveal-list": {
       "id": "reveal-list",
       "type": "text",
@@ -304,22 +313,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-10",
+          "id": "ss-2",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "动画的进度由原有播放器驱动。状态名称和 value 参数绑定到稳定步骤；刷新或任意跳步都应得到相同的目标画面。"
-            }
-          ]
-        },
-        {
-          "id": "semantic-authoring-boundary",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "这里可以直接切步观察状态与 value 参数，组件自己的公开按钮也能操作。当前文档尚无通用组件参数表单或共享素材版本管理界面；修改定义、参数约束或共享实例，应由工程编辑或助手事务修改同一份 lecture.json 并检查影响范围，不要在当前文档里寻找尚未提供的参数按钮。"
+              "text": "每一步为动画指定一个状态（准备、比较、完成）及参数 value。"
             }
           ]
         }
@@ -345,12 +344,12 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-12",
+          "id": "ss-4",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "点击“加一次”应确实增加计数。组件通过公开的 host 动作接口支持讲稿触发；这和只画一个按钮不同。"
+              "text": "点击“加一次”，计数随之增加。讲稿也可以在指定位置自动触发这一动作。"
             }
           ]
         }
@@ -396,8 +395,8 @@
       "parameters": {
         "target": "#feature-action-add",
         "until": 3,
-        "title": "实际按钮",
-        "text": "聚光提示目标，仍可手动点击按钮。"
+        "title": "加一次",
+        "text": "聚光标出要点的按钮。"
       }
     },
     "guide-hint": {
@@ -408,7 +407,7 @@
         "target": "#feature-action-reset",
         "until": 3,
         "title": "重置",
-        "text": "清零后可以重新练习。"
+        "text": "清零后重新开始。"
       }
     },
     "text-13": {
@@ -416,22 +415,92 @@
       "type": "text",
       "content": [
         {
-          "id": "paragraph-14",
+          "id": "ss-6",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "本讲使用 defineScene 和 D3。原有“代码写成的动画”分别展示 GSAP、Anime.js、Motion、Three.js 与 Remotion，七种实现共享步骤、时间和静态回退契约。"
+              "text": "本合集的动画使用 D3 与 defineScene 编写。GSAP、Anime.js、Motion、Three.js 与 Remotion 的写法参见“代码写成的动画”与各动画参考。"
             }
           ]
-        },
+        }
+      ]
+    },
+    "d3-intro": {
+      "id": "d3-intro",
+      "type": "text",
+      "content": [
         {
-          "id": "paragraph-15",
+          "id": "ss-3",
           "type": "paragraph",
           "children": [
             {
               "type": "text",
-              "text": "Three.js 需要可用的 WebGL；性能与画面依赖实际设备。关闭或离开场景时必须释放动画、订阅、定时器及图形资源。"
+              "text": "数据的进入、更新与退出各对应一个步骤。"
+            }
+          ]
+        }
+      ]
+    },
+    "guidance-intro": {
+      "id": "guidance-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "ss-5",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "模拟光标依次完成移动、悬停与点击，聚光与提示标出待操作的按钮。"
+            }
+          ]
+        }
+      ]
+    },
+    "g-steps-intro": {
+      "id": "g-steps-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-steps-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一页内容按步骤逐项呈现，任意跳转时画面均可直接还原。"
+            }
+          ]
+        }
+      ]
+    },
+    "g-animation-intro": {
+      "id": "g-animation-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-animation-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "动画的状态与参数绑定到步骤。"
+            }
+          ]
+        }
+      ]
+    },
+    "g-interaction-intro": {
+      "id": "g-interaction-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-interaction-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "可操作的组件，以及引导操作的光标、聚光与提示。"
             }
           ]
         }
@@ -439,17 +508,6 @@
     }
   },
   "steps": {
-    "start-step": {
-      "id": "start-step",
-      "sectionId": "start",
-      "visuals": [
-        {
-          "blockId": "text-1",
-          "visible": true
-        }
-      ],
-      "narrationIds": []
-    },
     "reveal-one": {
       "id": "reveal-one",
       "sectionId": "reveal",
@@ -575,6 +633,10 @@
       "sectionId": "d3",
       "visuals": [
         {
+          "blockId": "d3-intro",
+          "visible": true
+        },
+        {
           "blockId": "d3-scene",
           "visible": true,
           "state": "dataviz"
@@ -586,6 +648,10 @@
       "id": "d3-datajoin",
       "sectionId": "d3",
       "visuals": [
+        {
+          "blockId": "d3-intro",
+          "visible": true
+        },
         {
           "blockId": "d3-scene",
           "visible": true,
@@ -599,6 +665,10 @@
       "sectionId": "d3",
       "visuals": [
         {
+          "blockId": "d3-intro",
+          "visible": true
+        },
+        {
           "blockId": "d3-scene",
           "visible": true,
           "state": "enter"
@@ -610,6 +680,10 @@
       "id": "d3-exit",
       "sectionId": "d3",
       "visuals": [
+        {
+          "blockId": "d3-intro",
+          "visible": true
+        },
         {
           "blockId": "d3-scene",
           "visible": true,
@@ -623,11 +697,11 @@
       "sectionId": "component",
       "visuals": [
         {
-          "blockId": "action-counter",
+          "blockId": "text-11",
           "visible": true
         },
         {
-          "blockId": "text-11",
+          "blockId": "action-counter",
           "visible": true
         }
       ],
@@ -637,6 +711,10 @@
       "id": "guidance-move",
       "sectionId": "guidance",
       "visuals": [
+        {
+          "blockId": "guidance-intro",
+          "visible": true
+        },
         {
           "blockId": "guide-counter",
           "visible": true
@@ -662,6 +740,10 @@
       "sectionId": "guidance",
       "visuals": [
         {
+          "blockId": "guidance-intro",
+          "visible": true
+        },
+        {
           "blockId": "guide-counter",
           "visible": true
         },
@@ -685,6 +767,10 @@
       "id": "guidance-click",
       "sectionId": "guidance",
       "visuals": [
+        {
+          "blockId": "guidance-intro",
+          "visible": true
+        },
         {
           "blockId": "guide-counter",
           "visible": true
@@ -711,6 +797,39 @@
       "visuals": [
         {
           "blockId": "text-13",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "g-steps-step": {
+      "id": "g-steps-step",
+      "sectionId": "g-steps",
+      "visuals": [
+        {
+          "blockId": "g-steps-intro",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "g-animation-step": {
+      "id": "g-animation-step",
+      "sectionId": "g-animation",
+      "visuals": [
+        {
+          "blockId": "g-animation-intro",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "g-interaction-step": {
+      "id": "g-interaction-step",
+      "sectionId": "g-interaction",
+      "visuals": [
+        {
+          "blockId": "g-interaction-intro",
           "visible": true
         }
       ],
@@ -770,7 +889,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "准备 20 → 比较 55 → 完成 90。每一步保留完整参数。"
+                  "value": "准备 20 → 比较 55 → 完成 90。"
                 }
               ]
             }
@@ -818,7 +937,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "dataviz → datajoin → enter → exit，以稳定 key 区分保留、加入和退出的字母。"
+                  "value": "dataviz → datajoin → enter → exit：字母依次保留、加入和退出。"
                 }
               ]
             }
@@ -862,7 +981,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "可点击的计数器，使用公共按钮与真实组件动作。"
+                  "value": "可点击的计数器。"
                 }
               ]
             }
@@ -943,7 +1062,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "提示真实计数按钮。"
+                  "value": "提示计数按钮。"
                 }
               ]
             }

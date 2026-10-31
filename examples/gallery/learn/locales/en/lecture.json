@@ -6,6 +6,7 @@
     "lang": "en",
     "description": "Break an outline into a chain of turning circles: the more circles, the closer the curve gets to the shape. Every step is computed from real Fourier coefficients, so you can step through it again on your own.",
     "tags": [
+      "Course",
       "Fourier series",
       "Complex numbers",
       "Discrete Fourier transform"
@@ -27,7 +28,7 @@
     },
     "translationOf": {
       "entry": "../../lecture.json",
-      "digest": "13cf81028a5f820215bcb1f45583664ba231b99b9cf7f5f93ff0810deec747eb"
+      "digest": "c377e92775dd38bff503defb073b959c810e27142714780b82fffd48ff90a5b6"
     }
   },
   "sectionOrder": [

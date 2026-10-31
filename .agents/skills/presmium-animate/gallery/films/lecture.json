@@ -12,7 +12,10 @@
     "renderers": {
       "web": {},
       "lecture": {}
-    }
+    },
+    "tags": [
+      "动画参考"
+    ]
   },
   "sectionOrder": [
     "intro",
@@ -1350,7 +1353,7 @@
           "children": [
             {
               "type": "text",
-              "text": "论文：Attention Is All You Need。结构取自会议快进视频：结果先行，再讲问题、核心想法、方法、证据，最后是标题卡。数据为论文真实数值，注意力权重为示意。"
+              "text": "论文：Attention Is All You Need。结构取自会议快进视频：结果先行，再讲问题、核心想法、方法、证据，最后是标题卡。数值取自论文，注意力权重为示意。"
             }
           ]
         },
