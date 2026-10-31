@@ -11,19 +11,28 @@ function baseName(file: string): string {
   return file.split(/[\\/]/).pop()!.replace(/\.[^.]+$/, '')
 }
 
+/** A document is one web page with every section, as a static site shows each source file on one page. */
 export function webPages(doc: IRDocument): WebPage[] {
+  return [{ path: 'index', title: doc.meta.title, sections: doc.sections.map(section => section.id) }]
+}
+
+/**
+ * The pages earlier sites split a document into, one per chapter: their addresses go on to the chapter's section on
+ * the document's one page, so links to them keep working.
+ */
+export function chapterRedirects(doc: IRDocument): { path: string, section: string }[] {
   const web = doc.config.renderers.web
-  if (isRecord(web) && web.layout === 'landing') return [{ path: 'index', title: doc.meta.title, sections: doc.sections.map(section => section.id) }]
+  if (isRecord(web) && web.layout === 'landing') return []
   const paths = new Set<string>()
   let file: string | undefined
-  return chapters(doc).map((chapter, i) => {
+  return chapters(doc).flatMap((chapter, i) => {
     const first = chapter.sections[0]!
     const name = i === 0 ? 'index' : urlSlug(first.source.file === file ? first.id : baseName(first.source.file)) || 'page'
     let path = name
     for (let n = 2; paths.has(path); n++) path = `${name}-${n}`
     paths.add(path)
     file = first.source.file
-    return { path, title: chapter.title, sections: chapter.sections.map(section => section.id) }
+    return i === 0 ? [] : [{ path, section: first.id }]
   })
 }
 

@@ -14,7 +14,7 @@ import { isInside, spawnInteractiveNode } from '@lincyaw/kernel/node'
 import { diffDocuments } from '@lincyaw/viewer/domain'
 import { createProxyServer } from 'http-proxy-3'
 import send from 'send'
-import { searchDocuments, sitePageLayout, translationPages, UPDATE_EVENT, webPages } from '../domain/index.ts'
+import { chapterRedirects, searchDocuments, sitePageLayout, translationPages, UPDATE_EVENT, webPages } from '../domain/index.ts'
 import type { AppConfig, DevUpdateEvent, WebPage } from '../domain/index.ts'
 import { BUNDLE_ENTRY, documentComponents, findDocumentBundle } from './document-bundle.ts'
 import type { DocumentBundle, DocumentBundleInput } from './document-bundle.ts'
@@ -643,8 +643,13 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     if (formOf(url) === 'slides' && (rest === '' || rest === 'index.html')) return documentPageResponse(res, dir, '', undefined, 'slides', url.searchParams.get('presmium-block') ?? undefined)
     if (first && others.length > 0 && translationOf(dir, first)) return documentPageResponse(res, dir, first, others.join('/'), formOf(url), url.searchParams.get('presmium-block') ?? undefined)
     if (rest === '' || rest.endsWith('.html')) {
-      const pages = webPages(published(dir, doc).doc)
-      if (pageAt(pages, rest)) return documentPageResponse(res, dir, '', rest, formOf(url), url.searchParams.get('presmium-block') ?? undefined)
+      const shown = published(dir, doc).doc
+      if (pageAt(webPages(shown), rest)) return documentPageResponse(res, dir, '', rest, formOf(url), url.searchParams.get('presmium-block') ?? undefined)
+      const chapter = chapterRedirects(shown).find(redirect => `${redirect.path}.html` === rest)
+      if (chapter) {
+        res.writeHead(302, { Location: `./#${encodeURIComponent(chapter.section)}` })
+        return void res.end()
+      }
     }
     if (rest.startsWith('media/')) return serveFile(req, res, join(options.workDir, 'media', segment(dir)), `/${rest.split('/').map(encodeURIComponent).join('/')}`, false)
     const state = stateOf(dir)

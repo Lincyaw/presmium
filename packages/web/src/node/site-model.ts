@@ -299,7 +299,11 @@ export function documentSiteConfig(input: { site: SiteSpec, base: string, dir: s
     shell,
     locales,
     links: input.workspace ? { ...links, slides: Boolean(links.slidesUrl) } : links,
-    ...input.workspace ? { home: listLink(site, root), neighbours: siteNeighbours(site, base, dir, input.docs).neighbours } : {},
+    ...input.workspace ? {
+      home: listLink(site, root),
+      neighbours: siteNeighbours(site, base, dir, input.docs).neighbours,
+      documents: site.documents.filter(other => other.dir !== '').map(other => ({ dir: other.dir, title: other.title, href: documentBase(base, other.dir), ...other.tags?.[0] ? { group: other.tags[0] } : {} })),
+    } : {},
   }
 }
 

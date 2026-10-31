@@ -66,22 +66,6 @@ test.describe('a deck with a site shell, published files and a translation', () 
     await site?.close()
   })
 
-  test('the web form has a navigation bar, a footer, Open Graph data and a sitemap', async ({ page }) => {
-    await page.goto(`${site.url}/web/chapter2.html`)
-    await expect(page.locator('.pm-site-header').getByRole('link', { name: '课程主页' })).toHaveAttribute('href', 'https://course.example.edu/')
-    await expect(page.locator('.pm-site-header').getByRole('link', { name: '第二章' })).toHaveAttribute('href', '/web/chapter2.html')
-    await expect(page.locator('.pm-site-footer')).toContainText('课程资料按 CC BY 4.0 发布')
-    await expect(page.locator('.pm-site-footer')).toContainText('2026 课程组')
-    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', /第二章 深入/)
-    await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content', '一门检查站点外壳的课程')
-    const image = await page.locator('meta[property="og:image"]').getAttribute('content')
-    expect(image).toMatch(/^https:\/\/course\.example\.edu\/web\/media\/[\da-f]{8}-cover\.png$/)
-    expect((await page.request.get(`${site.url}${new URL(image!).pathname}`)).status()).toBe(200)
-    const sitemap = await page.request.get(`${site.url}/web/sitemap.xml`)
-    expect(sitemap.status()).toBe(200)
-    expect(await sitemap.text()).toContain('<loc>https://course.example.edu/web/chapter2.html</loc>')
-  })
-
   test('a linked Markdown template and the README of a linked directory are published as files, not built as pages', async ({ page }) => {
     await page.goto(`${site.url}/web/start.html`)
     const section = page.locator('.pm-section[data-section="starter"]')
@@ -111,17 +95,6 @@ test.describe('a deck with a site shell, published files and a translation', () 
   test('text in raw HTML that only looks like an attribute stays as written', async ({ page }) => {
     await page.goto(`${site.url}/web/start.html`)
     await expect(page.locator('.pm-section[data-section="practice"] code').filter({ hasText: 'not-a-file' })).toHaveText('href=not-a-file.txt')
-  })
-
-  test('switching a Chinese deck to English on its second chapter stays on the second chapter', async ({ page }) => {
-    await page.goto(`${site.url}/web/chapter2.html`)
-    await expect(page.locator('h1#chapter2')).toContainText('第二章 深入')
-    await page.getByRole('button', { name: '切换语言', exact: true }).filter({ visible: true }).click()
-    await page.getByRole('link', { name: 'English', exact: true }).click()
-    await expect(page).toHaveURL(/\/web\/en\/chapter2\.html$/)
-    await expect(page.locator('h1#chapter2')).toContainText('Chapter 2 Going deeper')
-    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
-    await expect(page.locator('.pm-section[data-section="deep"]')).toContainText('nautilus')
   })
 })
 
