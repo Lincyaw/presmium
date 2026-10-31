@@ -23,9 +23,9 @@ export interface ThemeManifest {
   name: string
   extends: SiteThemeId
   params: Record<string, unknown>
-  /** Token name (without `--pm-`) to value, for both appearances; colors and shadows here are the light ones. */
+  /** Token name (without `--pm-`) to value; those the dark appearance overrides (colors, shadows) are the light ones. */
   tokens: Record<string, string>
-  /** Colors and shadows of the dark appearance. */
+  /** Values for the dark appearance, of the tokens it overrides (colors, shadows). */
   dark: Record<string, string>
   /** Stylesheets of web fonts (`https:` URLs). */
   fonts: string[]
@@ -39,14 +39,17 @@ export interface LoadedTheme {
   manifest: ThemeManifest
 }
 
-let tokenNames: Set<string> | undefined
-/** The design system's token names, without `--pm-`: what a theme may set. */
-function designTokens(): Set<string> {
-  tokenNames ??= new Set([...readFileSync(createRequire(import.meta.url).resolve('@lincyaw/design/tokens.css'), 'utf8').matchAll(/--pm-([a-z0-9-]+)\s*:/g)].map(match => match[1]!))
-  return tokenNames
+let designTokens: { all: Set<string>, mode: Set<string> } | undefined
+/** The design system's token names, without `--pm-`: what a theme may set, and those the dark appearance overrides. */
+function tokenNames(): { all: Set<string>, mode: Set<string> } {
+  if (designTokens) return designTokens
+  const css = readFileSync(createRequire(import.meta.url).resolve('@lincyaw/design/tokens.css'), 'utf8')
+  const names = (text: string) => [...text.matchAll(/--pm-([a-z0-9-]+)\s*:/g)].map(match => match[1]!)
+  const dark = [...css.matchAll(/:root\.dark\s*\{([^}]*)\}/g)].flatMap(match => names(match[1]!))
+  designTokens = { all: new Set(names(css)), mode: new Set(dark) }
+  return designTokens
 }
 
-const MODE_TOKEN = /^(color|shadow)-/
 const NAME = /^[a-z0-9][a-z0-9-]{0,63}$/
 // A value stays inside its declaration: no other declaration, rule or markup.
 const VALUE = /^[^;{}<>\\]+$/
@@ -90,7 +93,7 @@ export function loadTheme(ref: string, from: string, lang: string): LoadedTheme 
     if (value === undefined) return {}
     if (!isRecord(value)) return fail(key)
     for (const [name, token] of Object.entries(value)) {
-      if (!designTokens().has(name) || key === 'dark' && !MODE_TOKEN.test(name)) fail(`${key}.${name}`)
+      if (!tokenNames().all.has(name) || key === 'dark' && !tokenNames().mode.has(name)) fail(`${key}.${name}`)
       if (typeof token !== 'string' || !VALUE.test(token.trim())) fail(`${key}.${name}`)
     }
     return Object.fromEntries(Object.entries(value).map(([name, token]) => [name, (token as string).trim()]))
@@ -144,8 +147,8 @@ export function themeTokensCss(manifest: ThemeManifest): string {
   const tokens = Object.entries(manifest.tokens)
   return [
     `/* The tokens of site theme ${manifest.name}, generated from its ${THEME_FILE}. */\n`,
-    rule([`:root:has(${own})`, own], tokens.filter(([name]) => !MODE_TOKEN.test(name))),
-    rule([`:root:not(.dark):has(${own})`, `:root:not(.dark) ${own}`], tokens.filter(([name]) => MODE_TOKEN.test(name))),
+    rule([`:root:has(${own})`, own], tokens.filter(([name]) => !tokenNames().mode.has(name))),
+    rule([`:root:not(.dark):has(${own})`, `:root:not(.dark) ${own}`], tokens.filter(([name]) => tokenNames().mode.has(name))),
     rule([`:root.dark:has(${own})`, `:root.dark ${own}`], Object.entries(manifest.dark)),
   ].filter(Boolean).join('\n')
 }
