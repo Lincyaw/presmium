@@ -18,3 +18,9 @@ export function openModelSettings(): boolean {
   remembered(MODEL_SETTINGS.section)
   return true
 }
+
+export function openSpeechSettings(): boolean {
+  if (!remembered) return false
+  remembered('presmium-speech')
+  return true
+}

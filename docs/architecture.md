@@ -1844,6 +1844,9 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 
 - **本机**：`presmium serve [目录]` 一条命令启动工作区服务；目录中没有 `presmium.workspace.yaml` 而有 `lecture.json` 时，作为只有一份文档的工作区。工作区必须在 git 仓库中，否则编辑功能不可用并提示 `git init`。`--host` 让同一用户在局域网中的其他设备上使用（10.1 节）。
 - **运营者目录**：存放运营者的数据（默认的同意记录目录 `consent/`），在任何工作区与文档目录之外，不属于任何文档，`REVISIONS` 从不提交它。它是用户的状态目录 `${XDG_STATE_HOME:-~/.local/state}/presmium/operator/<工作区标识>/`（标识是工作区根目录真实路径的 sha256 的前 16 位十六进制数），`presmium dev`、`build`、`check`、`serve` 与 `presmium-speech consent` 按同一规则找到它，`--operator-dir` 或 `PRESMIUM_OPERATOR_DIR` 可以另行指定（同样不能在工作区之中）；插件经 `NodeServiceContext.operatorDir`、`ServerContext.operatorDir` 得到它，agent 对它的权限请求一律拒绝（10.4 节）。
+
+- **语音服务设置**：工作台的所有者路由 `speech-settings` 保存火山引擎语音 API Key 至运营者目录的 `speech/credentials.json`，文件权限为 `0600`，通过文件锁、修订比较与原子替换写入。共享 Node secret 解析器优先使用已保存密钥，未保存时回退启动环境；保存的 API Key 不继承环境中的 App ID。路由只返回 `SpeechSettingsAnswer` 的状态字段，不返回密钥。语音服务按配置指纹撤销旧目录请求并刷新适配器；保存不合成、不验证服务端权限。
+
 - **多人使用**：每人一个工作区，由 hub 托管模板给出（1.1）。
 - **远端环境**：`templates/env/compose/` 与 `templates/env/kubernetes/README.md`（Zero to JupyterHub 的 `values.yaml` 片段，按 CPU、GPU、MIG 划分的配置，gVisor 的 `runtimeClassName`，回收设置，以及 agent-sandbox 的模板）只给文档与清单片段，不维护 Helm chart。集群、GPU Operator、gVisor 或 Kata 的安装、入口与证书由用户负责。
 - 静态构建产物（含学生版）仍可发布到任意静态托管；课堂用单独的 `presmium-classroom-server`。

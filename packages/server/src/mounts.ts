@@ -1,5 +1,6 @@
 import { errorMessage, prefixedLogger } from '@lincyaw/kernel'
 import type { Logger, ServerContext, ServerContribution, ServiceToken } from '@lincyaw/kernel'
+import { operatorSpeechSecrets } from '@lincyaw/kernel/node'
 import type { DiagnosticStore } from './diagnostics.ts'
 import type { ServedDocument } from './server-host.ts'
 
@@ -89,7 +90,7 @@ export class Mounts {
         settings: (this.#options.settings ?? doc.settings)?.[id] ?? {},
         lang: doc.lang,
         service: <T>(token: ServiceToken<T>) => this.#options.ownService(token) ?? doc.service(token),
-        secret: name => env[name],
+        secret: operatorSpeechSecrets(operatorDir, name => env[name]),
         ...operatorDir ? { operatorDir } : {},
         ...doc.home ? { home: true } : {},
         log: prefixedLogger(log, id),

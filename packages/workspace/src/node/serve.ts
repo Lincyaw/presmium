@@ -5,10 +5,11 @@ import { createHash } from 'node:crypto'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
-import { Compiler, pluginLogger, runBlock, workspacePlugins } from '@lincyaw/compiler'
+import { Compiler, operatorDir as resolveOperatorDir, pluginLogger, runBlock, workspacePlugins } from '@lincyaw/compiler'
 import type { Compilation, CompilerOptions } from '@lincyaw/compiler'
 import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, DOCUMENT_VOICE_TASKS, errorMessage, PRODUCTION_AUDIO_AUTHORING, REVISIONS, SPEECH, VOICEOVER, VOICEOVER_EXECUTION } from '@lincyaw/kernel'
-import { irRevision } from '@lincyaw/kernel/node'
+import { irRevision, operatorSpeechSecrets } from '@lincyaw/kernel/node'
+import { speechSettingsRoute } from './speech-settings.ts'
 import type { CanonicalSource, ChangeReviewService, Finding, IRDocument, Logger, ProductionAudioAuthoring, ServiceToken, SiteSpec, SpeechService } from '@lincyaw/kernel'
 import { serverConfigKey, servedDocument, startServer } from '@lincyaw/server'
 import type { DiagnosticStore, PresmiumServer, ServedDocument, ServedPlugin, ServerHost } from '@lincyaw/server'
@@ -86,6 +87,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   const log = options.log ?? pluginLogger('presmium serve')
   const config = readWorkspaceConfig(options.dir)
   const { root } = config
+  const operatorDirectory = resolveOperatorDir(root, options.operatorDir ?? env.PRESMIUM_OPERATOR_DIR)
   const stateDir = makeStateDir(root, env)
   const docs = () => listDocuments(config)
   const compileSessions = new Map<string, CompileSession>()
@@ -163,8 +165,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     settings: config.settings,
     services: [...serverServices, ...workspaceServices],
     bundled: options.bundled,
-    ...options.operatorDir ? { operatorDir: options.operatorDir } : {},
-    secret: name => env[name],
+    operatorDir: operatorDirectory,
+    secret: operatorSpeechSecrets(operatorDirectory, name => env[name]),
   })
 
   // Coalesce only in-flight discovery. A later read reassembles actual services and problems;
@@ -329,7 +331,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       plugins: [routesPlugin!, ...loaded.plugins.flatMap(({ plugin: node }) => (node ? [{ id: node.id, plugin: node, config: {} }] : []))],
       service: <T>(token: ServiceToken<T>) => (own(token) ?? loaded.service(token)) as T | undefined,
       settings: config.settings,
-      ...options.operatorDir ? { operatorDir: options.operatorDir } : {},
+      operatorDir: operatorDirectory,
       home: true,
     }
   }
@@ -354,7 +356,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     },
     settings: config.settings,
     approvals: config.approvals,
-    ...options.operatorDir ? { operatorDir: options.operatorDir } : {},
+    operatorDir: operatorDirectory,
     serverHost,
     env,
     ...options.approvalTimeoutMs ? { approvalTimeoutMs: options.approvalTimeoutMs } : {},
@@ -384,6 +386,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   audioAuthoring = createDocumentAudioAuthoring({ root, editor, revisions: history?.revisions, services: authoringServices, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   imageAuthoring = createDocumentImageAuthoring({ root, editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   const routeOptions = {
+      speechSettings: speechSettingsRoute(operatorDirectory, name => env[name]),
       config,
       editor,
       documentEditor,

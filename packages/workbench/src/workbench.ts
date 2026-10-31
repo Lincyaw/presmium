@@ -180,6 +180,7 @@ export interface WorkbenchState {
   /** What the document can be made into, and its builds and exports (the author's and the AI's). */
   jobs?: JobsAnswer
   jobsFailure?: string
+  voiceServiceVersion?: number
   jobPreparing?: { target: string, canCancel: boolean }
 }
 
@@ -488,6 +489,12 @@ export class Workbench {
   requestRepairDiagnostics(): Promise<void> {
     this.#record('diagnostics.repair')
     return this.#diagnostics.requestRepair()
+  }
+
+  /** Settings changed without changing document content; open voice surfaces read fresh capabilities. */
+  refreshVoiceServices(): void {
+    this.stopAuditions()
+    this.#set({ voiceServiceVersion: (this.#state.voiceServiceVersion ?? 0) + 1 })
   }
 
   /** The host's way to hand a request to the conversation's agent. */

@@ -21,9 +21,13 @@ It is a Presmium plugin: its components work on the web page and in the slides. 
 
 ## Configuration
 
+In Studio, open **Settings → Voice Service**, enter the API key from the Volcengine speech console and save. Volcengine speech synthesis 2.0 is the default. The same page is linked from Video Production → Voiceover. Saved credentials apply to the next operation without restarting Studio; choose a voice and explicitly preview or generate it afterwards. **Check Configuration** checks saved local settings, not provider authentication or billing permissions.
+
+The key is stored with mode 0600 in `<operatorDir>/speech/credentials.json`, outside the workspace and document. The owner-only route uses the existing workspace authorization. Reads return configuration status without the key; clearing the saved key restores the environment fallback. Concurrent changes use a revision check under a filesystem lock. Explicit compiler secret resolvers keep precedence.
+
 The operator defines engines in environment variables: `PRESMIUM_SPEECH_<ID>_URL`, `_PROVIDER` and, optionally, `_KEY`. Documents name the engine's id only, for example `presmium: { presmium.speech: { engine: volcengine } }`.
 
-Volcengine (engine id `volcengine`) needs only `PRESMIUM_SPEECH_VOLCENGINE_KEY`, the API key from its speech console (with the old console, also `PRESMIUM_SPEECH_VOLCENGINE_APPID`); it synthesizes with speech synthesis 2.0 (`seed-tts-2.0`). Its voice list is bundled with the package. With the account's IAM access key pair, `PRESMIUM_SPEECH_VOLCENGINE_ACCESS_KEY_ID` and `PRESMIUM_SPEECH_VOLCENGINE_SECRET_ACCESS_KEY` (and `PRESMIUM_SPEECH_VOLCENGINE_PROJECT`, by default `default`), the list comes from the account through Volcengine's SDK, together with the account's cloned voices.
+Volcengine (engine id `volcengine`) needs only `PRESMIUM_SPEECH_VOLCENGINE_KEY`, the API key from its speech console; it synthesizes with speech synthesis 2.0 (`seed-tts-2.0`). Its voice list is bundled with the package. With the account's IAM access key pair, `PRESMIUM_SPEECH_VOLCENGINE_ACCESS_KEY_ID` and `PRESMIUM_SPEECH_VOLCENGINE_SECRET_ACCESS_KEY` (and `PRESMIUM_SPEECH_VOLCENGINE_PROJECT`, by default `default`), the list comes from the account through Volcengine's SDK, together with the account's cloned voices.
 
 Cloned voices stay off until the operator sets `settings.presmium.speech.cloned: true` in `presmium.workspace.yaml`. Then the workbench trains one from its voice dialog (Clone a voice…), and so does `presmium-speech clone <engine> <voice> <sample> --speaker … --scope … --statement <recording>`: both register the speaker's consent before the sample leaves the machine. The provider charges for training and for every synthesis; a pay-as-you-go Volcengine voice is charged at its first synthesis, previews included.
 

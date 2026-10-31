@@ -960,6 +960,11 @@
 }
 
 /* Production owns pane layout; controls and dock chrome live in the shared design layer. */
+.pmw-speech-settings { min-width: 0; }
+.pmw-speech-settings__content, .pmw-speech-settings__fields { display: flex; flex-direction: column; gap: var(--pm-space-3); min-width: 0; }
+.pmw-speech-settings__content { padding: var(--pm-space-3); }
+.pmw-speech-settings__content > p, .pmw-speech-settings__fields > p { margin: 0; }
+.pmw-speech-settings__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pm-space-2); }
 .pmw-production { position: relative; display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 .pmw-production__workarea { flex: 1; min-width: 0; min-height: 0; }
 .pmw-production__main, .pmw-production__body { flex: 1; min-width: 0; min-height: 0; }

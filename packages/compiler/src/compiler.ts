@@ -3,7 +3,7 @@ import { existsSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, fnv1a64, isRecord, productionAssetIds, validateDocument } from '@lincyaw/kernel'
-import { productionAssetFile } from '@lincyaw/kernel/node'
+import { operatorSpeechSecrets, productionAssetFile } from '@lincyaw/kernel/node'
 import type { AnchorResolverRegistry, CanonicalSource, CodeNode, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceCapabilities, SourceReader, TeachingDocument } from '@lincyaw/kernel'
 import { audienceDocument, emptyReferences, filterForAudience, scanOutputs, withheld } from './audience.ts'
 import type { AudienceMark, Withheld } from './audience.ts'
@@ -300,7 +300,7 @@ export class Compiler {
       config: configOf(plugin),
       settings: settings[pluginId(plugin)] ?? {},
       lang,
-      secret: this.options.secret ?? (name => process.env[name]),
+      secret: this.options.secret ?? operatorSpeechSecrets(workspace.operatorDir, name => process.env[name]),
       ...workspace.operatorDir ? { operatorDir: workspace.operatorDir } : {},
       log: pluginLogger(pluginId(plugin)),
       service: token => services.tryGet(token),
@@ -555,7 +555,7 @@ export async function workspacePlugins(root: string, options: CompilerOptions = 
       config: {},
       settings: settings[pluginId(loaded)] ?? {},
       lang: DEFAULT_LANG,
-      secret: options.secret ?? (name => process.env[name]),
+      secret: options.secret ?? operatorSpeechSecrets(operator, name => process.env[name]),
       ...operator ? { operatorDir: operator } : {},
       service: token => services.tryGet(token),
       log: pluginLogger(pluginId(loaded)),

@@ -1,6 +1,7 @@
 import type { Locale } from './messages.ts'
 
 const zh = {
+  serviceSettings: '语音服务设置',
   library: '页面与素材', pages: '页面', media: '音频素材', properties: '步骤属性', narration: '讲稿', voiceTab: '配音', captionsTab: '字幕',
   searchPages: '搜索页面', pageResults: (count: number) => `${count} 页`, pageSteps: (count: number) => `${count} 个步骤`, noPages: '没有匹配的页面',
   resizeLibrary: '调整页面列表与画面宽度', issueCount: (count: number) => `${count} 项问题`,
@@ -70,6 +71,7 @@ const zh = {
 export const PRODUCTION_MESSAGES: Record<Locale, typeof zh> = {
   'zh-CN': zh,
   en: {
+    serviceSettings: 'Voice Service Settings',
     library: 'Pages and Assets', pages: 'Pages', media: 'Audio Assets', properties: 'Step Properties', narration: 'Script', voiceTab: 'Voiceover', captionsTab: 'Captions',
     searchPages: 'Search Pages', pageResults: count => `${count} ${count === 1 ? 'page' : 'pages'}`, pageSteps: count => `${count} ${count === 1 ? 'step' : 'steps'}`, noPages: 'No matching pages',
     resizeLibrary: 'Resize page list and visuals', issueCount: count => `${count} ${count === 1 ? 'Issue' : 'Issues'}`,
