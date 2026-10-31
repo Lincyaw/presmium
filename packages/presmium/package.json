@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/presmium",
-  "version": "1.0.0-rc.10",
+  "version": "1.0.0-rc.11",
   "description": "The presmium command with the renderers and the official plugins: pnpm add -g @lincyaw/presmium",
   "license": "Apache-2.0",
   "repository": {
