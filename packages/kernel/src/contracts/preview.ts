@@ -234,12 +234,12 @@ const productionState = (value: unknown): value is ProductionPlaybackState => {
   if (value.position === undefined) return true
   const position = value.position
   return isRecord(position) && nonnegative(position.timeMs) && nonnegative(position.durationMs) && position.timeMs <= position.durationMs
-    && optional(position.stepTimeMs, nonnegative) && optional(position.sectionId, text) && optional(position.stepId, text)
+    && optional(position.stepTimeMs, nonnegative) && optional(position.sectionId, text) && optional(position.stepId, text) && optional(position.waitingFor, text)
     && typeof position.playing === 'boolean' && positive(position.rate) && typeof position.trying === 'boolean'
 }
 const productionCommand = (value: unknown): value is ProductionPlaybackCommand => isRecord(value) && productionBinding(value.binding)
   && (value.action === 'load' || value.action === 'pause' || value.action === 'play' || value.action === 'seek' && nonnegative(value.timeMs)
-    || value.action === 'step' && productionId(value.sectionId) && productionId(value.stepId) || value.action === 'rate' && positive(value.rate))
+    || value.action === 'step' && productionId(value.sectionId) && productionId(value.stepId) && optional(value.utteranceId, productionId) || value.action === 'rate' && positive(value.rate))
 const step = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 0
 const request = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0
 const strings = (value: unknown): value is string[] => Array.isArray(value) && value.length <= 10_000 && value.every(text)

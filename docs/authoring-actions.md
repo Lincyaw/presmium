@@ -156,6 +156,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 - `get_voice_authoring_capabilities` 与 `get_voice_catalog` 不等待编译。`status=configured` 只表示引擎声明可合成；目录区分 available、unsupported 与 unknown。
 - 每文稿一个配音 owner；`VOICEOVER_EXECUTION` 是实际实现，`VOICEOVER` 只是安装标记。
+- 视频制作的播放按钮复用此 owner 按当前缺失单元开始任务；生成中可以暂停取消，已完成缓存保留。该播放意图绑定源码、工程修订和明确导航版本，不由被动任务观察触发；agent 的生成仍经 `spend`。
 
 | 工具 | kind | 作用 |
 | --- | --- | --- |
@@ -230,7 +231,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 1. 保存：`verification.saved`，重读权威文稿与文件。
 2. 编译：快照的 `IRDocument.source` 与诊断。
-3. 计划：`ProductionBinding`、确认时长、精确配音缓存、真实媒体与字幕对齐来源；estimated 与 unknown 不算可播放。
+3. 计划：`ProductionBinding`、确认时长、精确配音缓存、真实媒体与字幕对齐来源；estimated 只能按稳定步骤播放并在缺失音频处缓冲，不能任意按时间定位或导出；unknown 仍不可按时间播放。
 4. 浏览器：经客户端请求取得该 source 的位置、组件错误与播放状态。
 5. 产物：任务的 source 与输入指纹、文件、媒体类型与字幕。
 

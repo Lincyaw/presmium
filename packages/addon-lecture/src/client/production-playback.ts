@@ -62,6 +62,7 @@ export class ProductionPlaybackController implements ProductionPlayback {
       timeMs: at, durationMs: player.duration, stepTimeMs: player.stepTime.getSnapshot(),
       ...page ? { sectionId: page.sectionId } : {}, ...step ? { stepId: step.stepId } : {},
       playing: player.clock.playing.getSnapshot(), rate: player.clock.rate.getSnapshot(), trying: player.trying.getSnapshot(),
+      ...player.waitingFor.getSnapshot() ? { waitingFor: player.waitingFor.getSnapshot() } : {},
     }, ...error ? { error: 'production-playback-failed' } : {} })
   }
 
@@ -75,7 +76,7 @@ export class ProductionPlaybackController implements ProductionPlayback {
     this.#driver = driver
     let queued = false
     const report = () => { if (!queued) { queued = true; queueMicrotask(() => { queued = false; this.#publish(driver) }) } }
-    const stops = [player.time.subscribe(report), player.stepTime.subscribe(report), player.cursor.subscribe(report), player.trying.subscribe(report), player.clock.playing.subscribe(report), player.clock.rate.subscribe(report), player.clock.error.subscribe(report)]
+    const stops = [player.time.subscribe(report), player.stepTime.subscribe(report), player.cursor.subscribe(report), player.trying.subscribe(report), player.waitingFor.subscribe(report), player.clock.playing.subscribe(report), player.clock.rate.subscribe(report), player.clock.error.subscribe(report)]
     this.#publish(driver)
     return () => {
       stops.forEach(stop => stop())
@@ -143,13 +144,19 @@ export class ProductionPlaybackController implements ProductionPlayback {
         else {
           if (!driver || !driver.plan.canPreview || this.state.getSnapshot()?.status !== 'ready') throw new Error('production-plan-unavailable')
           if (command.action === 'seek') {
+            if (driver.plan.timing !== 'confirmed') throw new Error('production-plan-unavailable')
             if (!Number.isFinite(command.timeMs) || command.timeMs < 0 || command.timeMs > driver.player.duration) throw new Error('production-playback-time')
             flushSync(() => driver!.player.seek(command.timeMs))
           } else if (command.action === 'step') {
             const step = driver.plan.pages.find(page => page.sectionId === command.sectionId)?.steps.find(step => step.stepId === command.stepId)
-            if (!step || step.timing !== 'confirmed') throw new Error('production-binding-stale')
+            if (!step || step.startMs === undefined) throw new Error('production-binding-stale')
+            const utterance = command.utteranceId ? driver.player.track.utterances.find(unit => unit.id === command.utteranceId && unit.section === command.sectionId && !unit.unsaid) : undefined
+            if (command.utteranceId && !utterance) throw new Error('production-binding-stale')
             let selected = false
-            flushSync(() => { selected = driver!.player.seekStep(command.sectionId, step.index) })
+            flushSync(() => {
+              if (utterance && utterance.step === step.index) { driver!.player.seek(utterance.t); selected = true }
+              else selected = driver!.player.seekStep(command.sectionId, step.index)
+            })
             if (!selected) throw new Error('production-binding-stale')
           } else if (command.action === 'rate') {
             if (!PLAYBACK_RATES.some(rate => rate === command.rate)) throw new Error('production-playback-rate')

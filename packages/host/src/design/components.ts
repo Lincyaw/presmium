@@ -24,7 +24,7 @@ export function PmIcon({ name, size: _size, strokeWidth = 1.7, ...attrs }: { nam
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant, small?: boolean, icon?: IconName, density?: ControlDensity, loading?: boolean }
 export const PmButton = forwardRef<HTMLButtonElement, ButtonProps>(function PmButton({ variant = 'default', small, density = small ? 'compact' : 'regular', loading, icon, className, children, disabled, ...rest }, ref) {
   return h('button', { ...rest, ref, type: rest.type ?? 'button', 'data-density': density, 'aria-busy': loading || undefined, disabled: disabled || loading || rest['aria-disabled'] === true || rest['aria-disabled'] === 'true', className: cls('pm-ui-button', variant !== 'default' && `pm-ui-button--${variant}`, className) },
-    h('span', { className: 'pm-ui-button__content' },
+    h('span', { className: cls('pm-ui-button__content', !icon && loading !== undefined && 'pm-ui-button__content--loading-text') },
       icon || loading !== undefined ? h('span', { className: 'pm-ui-button__icon', 'aria-hidden': true }, loading ? h(PmIcon, { name: 'loading', className: 'pm-ui-loading' }) : icon ? h(PmIcon, { name: icon }) : null) : null,
       children))
 })

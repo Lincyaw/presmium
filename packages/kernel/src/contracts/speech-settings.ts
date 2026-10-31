@@ -4,6 +4,7 @@ export interface SpeechSettingsAnswer {
   model: 'seed-tts-2.0'
   revision: string
   configured: boolean
+  appIdConfigured?: boolean
   source: 'saved' | 'environment' | 'none'
   stored: boolean
   writable: boolean
@@ -11,5 +12,5 @@ export interface SpeechSettingsAnswer {
 }
 
 export type SpeechSettingsChange =
-  | { action: 'save', revision: string, apiKey?: string }
+  | { action: 'save', revision: string, apiKey?: string, appId?: string }
   | { action: 'clear', revision: string }

@@ -331,6 +331,22 @@
   height: var(--pm-size-icon);
 }
 
+/* Balance the reserved spinner slot so a text-only action stays centered in
+   both idle and busy states, without changing its width when loading starts. */
+.pm-ui-button:has(> .pm-ui-button__content--loading-text) {
+  padding-inline: var(--pm-space-1);
+}
+
+.pm-ui-button__content--loading-text {
+  gap: var(--pm-space-1);
+}
+
+.pm-ui-button__content--loading-text::after {
+  content: '';
+  flex: none;
+  width: var(--pm-size-icon);
+}
+
 :is(.pm-ui-button, .pm-ui-icon-button)[aria-busy='true'] {
   cursor: progress;
 }

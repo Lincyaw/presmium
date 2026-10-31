@@ -132,5 +132,5 @@ export function projectProductionPlan(doc: IRDocument, plan: LecturePlan, track:
   }
   const timing: ProductionTiming = unknown.length ? 'unknown' : Number.isFinite(estimatedAt) ? 'estimated' : 'confirmed'
   const ready = timing === 'confirmed' && failures.length === 0 && duration > 0
-  return { ...timing !== 'unknown' ? { durationMs: duration } : {}, timing, pages, tracks: [{ kind: 'visual', segments: visual }, { kind: 'voice', segments: voice }, { kind: 'caption', segments: caption }], events: timing === 'unknown' ? [] : track.events, diagnostics, canPreview: ready, canExport: ready }
+  return { ...timing !== 'unknown' ? { durationMs: duration } : {}, timing, pages, tracks: [{ kind: 'visual', segments: visual }, { kind: 'voice', segments: voice }, { kind: 'caption', segments: caption }], events: timing === 'unknown' ? [] : track.events, diagnostics, canPreview: timing !== 'unknown' && duration > 0, canExport: ready }
 }

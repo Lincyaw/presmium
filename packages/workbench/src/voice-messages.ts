@@ -1,5 +1,6 @@
 import type { Locale } from './messages.ts'
 import { WorkspaceServerError } from './workspace-client.ts'
+import { speechFailureCode } from '@lincyaw/kernel'
 
 const zh = {
   voice: '音色', settings: '选择音色', generate: '生成配音', generation: '配音生成与更新',
@@ -7,6 +8,17 @@ const zh = {
   loading: '正在加载音色设置…', loadingVoices: '正在加载可用音色…', loadFailed: '无法加载音色设置，请重试。',
   unsupported: '当前工作区服务尚不支持音色设置。请更新并重新启动 Presmium。',
   noService: '未连接语音服务。',
+  speechFailures: {
+    'speech-authentication': '语音 API Key 验证失败，请在语音服务设置中更新密钥。',
+    'speech-permission': '语音服务拒绝访问，请检查是否已开通语音合成 2.0，以及密钥的服务和音色权限。',
+    'speech-quota': '语音服务额度不足，请检查账户余额或可用配额后重试。',
+    'speech-busy': '语音服务并发已满，请稍后重新播放。',
+    'speech-network': '无法连接语音服务，请检查网络后重新播放。',
+    'speech-empty-audio': '语音服务没有返回音频，请重新播放或更换音色。',
+    'speech-invalid-request': '语音服务不接受当前讲稿或音色参数，请检查音色和讲稿。',
+    'speech-provider': '语音服务暂时无法合成，请稍后重新播放。',
+    'speech-cache-failed': '配音缓存无法写入，请检查本机磁盘空间和目录权限。',
+  },
   noServiceOption: '尚未连接', savedEngineUnavailable: '已保存的服务（未连接）', generationUnavailable: '当前文稿尚未启用配音生成，讲稿与音色设置仍然保留。',
   catalogUnsupported: '此服务尚未提供音色目录。已保存的音色设置仍然保留。',
   voiceUnavailable: '所选音色不支持此文稿语言或当前服务，请重新选择。', parametersUnsupported: '当前服务不支持所选参数，请刷新音色目录后重新检查。',
@@ -52,6 +64,17 @@ const en: VoiceMessages = {
   loading: 'Loading voice settings…', loadingVoices: 'Loading available voices…', loadFailed: 'Couldn’t load voice settings. Try again.',
   unsupported: 'This workspace service does not support voice settings yet. Update and restart Presmium.',
   noService: 'No voice service is connected.',
+  speechFailures: {
+    'speech-authentication': 'The speech API key was rejected. Update it in Voice Service settings.',
+    'speech-permission': 'The speech service denied access. Check activation of speech synthesis 2.0 and the key’s service and voice permissions.',
+    'speech-quota': 'The speech service has insufficient credit or quota. Check the account and try again.',
+    'speech-busy': 'The speech service is at its concurrency limit. Try playing again shortly.',
+    'speech-network': 'Couldn’t connect to the speech service. Check the network and play again.',
+    'speech-empty-audio': 'The speech service returned no audio. Play again or choose another voice.',
+    'speech-invalid-request': 'The speech service rejected this script or voice parameters. Check the voice and script.',
+    'speech-provider': 'The speech service can’t generate voiceover right now. Try playing again shortly.',
+    'speech-cache-failed': 'Couldn’t write the voiceover cache. Check disk space and directory permissions.',
+  },
   noServiceOption: 'Not connected', savedEngineUnavailable: 'Saved service (not connected)', generationUnavailable: 'Voiceover generation is not enabled for this document. Script and voice settings are kept.',
   catalogUnsupported: 'This service does not provide a list of voices. Your saved voice settings are kept.',
   voiceUnavailable: 'The selected voice does not support the document language or service. Choose another voice.', parametersUnsupported: 'This service does not support the selected parameters. Refresh the list of voices and check again.',
@@ -95,6 +118,8 @@ export const VOICE_MESSAGES: Record<Locale, VoiceMessages> = { 'zh-CN': zh, en }
 export function voiceFailure(error: unknown, locale: Locale): string {
   const t = VOICE_MESSAGES[locale]
   const message = error instanceof Error ? error.message : ''
+  const speech = speechFailureCode(error)
+  if (speech) return (t.speechFailures as Record<string, string>)[speech] ?? t.requestFailed
   if (message === 'not-configured' || message === 'voice-not-configured') return t.noService
   if (message === 'voice-unavailable' || message === 'voice-engine-unsupported' || message === 'voice-engine-unknown') return t.voiceUnavailable
   if (message === 'voice-catalog-unavailable' || message === 'catalog-unavailable') return t.catalogUnsupported

@@ -17,6 +17,7 @@ import { ProductionTimeline } from './ProductionTimeline.tsx'
 import { ProductionMediaClips } from './ProductionMediaClips.tsx'
 import { ProductionRecording } from './ProductionRecording.tsx'
 import { ProductionTranscription } from './ProductionTranscription.tsx'
+import { useProductionVoicePlayback } from '../production-voice-playback.ts'
 
 const clockTime = (value?: number) => {
   if (value === undefined || !Number.isFinite(value)) return '--:--.---'
@@ -33,6 +34,7 @@ const PLAYBACK_KEYS: Record<string, PlaybackKey> = { ' ': 'play-pause', ArrowLef
  */
 export function ProductionPanel({ onClose, closing, active = true }: { onClose(): void, closing: boolean, active?: boolean }) {
   const workbench = useWorkbench(), t = useMessages(), locale = useWorkbenchState(state => state.locale), p = PRODUCTION_MESSAGES[locale]
+  const voicePlayback = useProductionVoicePlayback()
   const serviceVersion = useWorkbenchState(state => state.voiceServiceVersion)
   const source = useWorkbenchState(state => state.authoring), position = useWorkbenchState(state => state.position)
   const stamp = useWorkbenchState(state => state.presentationSnapshot), view = useWorkbenchState(state => state.webView)
@@ -91,6 +93,7 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
   }, [workbench, plan?.binding.planId, playbackConnected, connection, preparing, blocked, timingDraft])
   const control = async (command: ProductionPlaybackCommand) => {
     if (!owner.current.active || !playbackConnected || blocked || closing || timingDraft) return
+    if (command.action === 'pause' || command.action === 'seek' || command.action === 'step') voicePlayback.stop()
     controlRequest.current?.abort()
     const controller = new AbortController(); controlRequest.current = controller
     setSeeking(command.action === 'seek')
@@ -124,12 +127,12 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
     if (!sourceCurrent || !frameCurrent) void compile()
   }, [mediaRefresh, preparing, blocked, closing, source?.identity, source?.version, source?.fingerprint, source?.loading, source?.dirty, source?.saving, source?.composing, source?.restored, source?.error, sourceCurrent, frameCurrent])
   useEffect(() => { if (!initial.current) { initial.current = true; void compile(false) } }, [])
-  const select = (page: string, step: string) => { workbench.stopAuditions(); workbench.selectDocumentStep(page, step) }
+  const select = (page: string, step: string) => { voicePlayback.stop(); workbench.stopAuditions(); workbench.selectDocumentStep(page, step) }
   const playbackKey = useRef<(key: PlaybackKey) => void>(() => {})
   playbackKey.current = key => {
     if (blocked || closing || !document || !sectionId || !stepId) return
     if (key === 'play-pause') {
-      if (plan && canPlay && !playerBusy && !planBusy && !preparing && !seeking) void control({ binding: plan.binding, action: live?.position?.playing ? 'pause' : 'play' })
+      if (voicePlayback.busy || plan && canPlay && !playerBusy && !planBusy && !preparing && !seeking) void voicePlayback.toggle()
       return
     }
     // Steps run on across pages and stop at the first and the last.
@@ -158,6 +161,7 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
     catch (error) { if (owner.current.active) setFailure(productionFailure(error, locale)) }
     finally { if (owner.current.active) setEnabling(false) }
   }
+  const openOutputs = () => { voicePlayback.stop(); void workbench.pausePlayback(true).catch(() => {}); setOutputsOpen(true) }
   if (!source?.identity || !document || !section || !sectionId || !stepId) return <PmEmpty icon="video">{t.noSections}</PmEmpty>
   const feedback = [...new Set([
     captionStorageFailure && p.captionStorageFailed,
@@ -174,11 +178,11 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
     binding={planCurrent ? plan?.binding : undefined} stepDurationMs={(() => { const step = planCurrent ? plan?.pages.find(page => page.sectionId === sectionId)?.steps.find(step => step.stepId === stepId) : undefined; return step?.timing === 'confirmed' && step.startMs !== undefined && step.endMs !== undefined ? step.endMs - step.startMs : undefined })()}
     disabled={blocked || closing || !declared || !source.version || Boolean(source.dirty || source.saving || source.restored || source.error)} onChanged={() => setMediaRefresh(true)} />
   return <section className="pmw-production" aria-label={p.title}>
-    <PmPanelHeader title={p.title} meta={document.metadata.title}
+    <PmPanelHeader title={p.title} meta={wide ? document.metadata.title : undefined}
       leading={<PmIconButton small icon="arrow-left" label={p.back} loading={closing} onClick={onClose} />}
       actions={<>
         <PmBadge tone={sourceCurrent && frameCurrent ? 'ok' : preparing || sourceCurrent ? 'accent' : 'warn'}>{sourceCurrent && frameCurrent ? p.current : preparing || sourceCurrent ? p.preparing : p.outdated}</PmBadge>
-        {issueCount > 0 && <PmPopover open={issuesOpen} onOpenChange={setIssuesOpen} label={p.issues(issueCount)} trigger={<PmButton small icon="warning" title={summary} aria-label={p.issues(issueCount)}>{p.issueCount(issueCount)}</PmButton>}>
+        {issueCount > 0 && <PmPopover open={issuesOpen} onOpenChange={setIssuesOpen} label={p.issues(issueCount)} trigger={wide ? <PmButton small icon="warning" title={summary} aria-label={p.issues(issueCount)}>{p.issueCount(issueCount)}</PmButton> : <PmIconButton small icon="warning" label={p.issues(issueCount)} hint={summary} />}>
           <div className="pmw-production__feedback">
             {feedback.map(message => <PmNotice key={message} tone="warn">{message}</PmNotice>)}
             {captionDraftSteps?.length ? document.sectionOrder.flatMap(pageId => document.sections[pageId]?.stepOrder.map((id, index) => captionDraftSteps.includes(id) ? <PmButton key={id} small onClick={() => { select(pageId, id); setIssuesOpen(false) }}>{document.sections[pageId]!.title} · {p.stepNumber(index)}</PmButton> : null) ?? []) : null}
@@ -192,10 +196,13 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
           </div>
         </PmPopover>}
         <PmIconButton small icon="refresh" label={p.prepare} loading={preparing} disabled={blocked || closing} onClick={() => void compile()} />
-        <PmButton small variant="accent" icon="export" disabled={closing} onClick={() => setOutputsOpen(true)}>{p.outputs}</PmButton>
+        {wide ? <PmButton small variant="accent" icon="export" disabled={closing} onClick={openOutputs}>{p.outputs}</PmButton>
+          : <PmIconButton small icon="export" label={p.outputs} disabled={closing} onClick={openOutputs} />}
       </>} />
     {!declared && <PmNotice tone="accent"><span>{p.enableHint}</span><PmButton small loading={enabling} disabled={blocked || closing} onClick={() => void enable()}>{p.enable}</PmButton></PmNotice>}
     {!wide && <PmSegmented label={p.title} value={tab} options={[{ value: 'library', label: p.library }, { value: 'preview', label: p.preview }, { value: 'properties', label: p.properties }, { value: 'timeline', label: p.timeline }]} onChange={setTab} />}
+    {voicePlayback.failure && <PmNotice tone="danger">{voicePlayback.failure}{workbench.client.openSpeechSettings && <PmButton small variant="ghost" icon="sliders" onClick={() => { voicePlayback.stop(); workbench.client.openSpeechSettings?.() }}>{p.serviceSettings}</PmButton>}</PmNotice>}
+    {voicePlayback.busy && <div role="status"><PmNotice>{voicePlayback.progress ? p.generatingProgress(voicePlayback.progress.completed, voicePlayback.progress.total) : p.generatingPlayback}</PmNotice></div>}
     <PmSplitGroup orientation="vertical" disabled={!wide} className="pmw-production__workarea">
       <PmSplitPanel id="production-main" defaultSize="71%" minSize={wide ? '32%' : 0} className="pmw-production__main" background={backgroundBody}>
         <PmSplitGroup disabled={!wide} className="pmw-production__body">
@@ -219,8 +226,8 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
               <PmToolbar scroll label={p.step}>{section.stepOrder.map((id, index) => <PmToolbarButton asChild key={id}><PmButton small aria-label={p.stepNumber(index)} aria-pressed={stepId === id} disabled={blocked || closing} onClick={() => select(sectionId, id)}>{index + 1}</PmButton></PmToolbarButton>)}</PmToolbar>
               <PmToolbar label={p.timeline} className="pmw-production__transport">
                 <output aria-label={p.timelineLabels.position}>{clockTime(live?.position?.timeMs)} / {clockTime(planCurrent ? plan?.durationMs : undefined)}</output>
-                <PmToolbarButton asChild><PmIconButton small icon={live?.position?.playing ? 'pause' : 'play'} label={live?.position?.playing ? p.pause : p.play} shortcut={SHORTCUTS.playPause} aria-keyshortcuts="Space" loading={playerBusy} disabled={!canPlay || planBusy || preparing || blocked || closing || seeking} onClick={() => { if (plan) void control({ binding: plan.binding, action: live?.position?.playing ? 'pause' : 'play' }) }} /></PmToolbarButton>
-                <PmSelect label={p.rate} labelHidden value={live?.position?.rate === undefined ? '' : String(live.position.rate)} disabled={!canPlay || playerBusy || planBusy || preparing || blocked || closing || seeking} onChange={event => { if (plan) void control({ binding: plan.binding, action: 'rate', rate: Number(event.target.value) }) }}>
+                <PmToolbarButton asChild><PmIconButton small icon={voicePlayback.busy || live?.position?.playing ? 'pause' : 'play'} label={voicePlayback.busy || live?.position?.playing ? p.pause : p.play} hint={p.playOnDemand} shortcut={SHORTCUTS.playPause} aria-keyshortcuts="Space" loading={playerBusy && !voicePlayback.busy} disabled={!voicePlayback.busy && (!canPlay || planBusy || preparing || blocked || closing || seeking)} onClick={() => void voicePlayback.toggle()} /></PmToolbarButton>
+                <PmSelect label={p.rate} labelHidden value={live?.position?.rate === undefined ? '' : String(live.position.rate)} disabled={!canPlay || voicePlayback.busy || playerBusy || planBusy || preparing || blocked || closing || seeking} onChange={event => { if (plan) void control({ binding: plan.binding, action: 'rate', rate: Number(event.target.value) }) }}>
                   {live?.position?.rate === undefined && <option value="">{p.timelineLabels.unknown}</option>}{PRODUCTION_PLAYBACK_RATES.map(value => <option key={value} value={value}>{value}×</option>)}
                 </PmSelect>
                 {(planFailure || playbackFailure) && <PmToolbarButton asChild><PmIconButton small icon="refresh" label={p.planRetry} onClick={() => setPlanReload(value => value + 1)} /></PmToolbarButton>}
@@ -235,7 +242,7 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
                 <DocumentStepNarration sectionId={sectionId} stepId={stepId} expanded advanced panelId="production-step-fields" onPause={() => select(sectionId, stepId)} />
               </div></PmTabPanel>
               <PmTabPanel value="voice" keepMounted><div className="pmw-production__fields">
-                <DocumentVoiceField key={`${source.identity}:${stepId}`} stepId={stepId} disabled={blocked || closing} onGenerate={() => { workbench.stopAuditions(); setGenerateStep(stepId) }} />
+                <DocumentVoiceField key={`${source.identity}:${stepId}`} stepId={stepId} disabled={blocked || closing} onGenerate={() => { voicePlayback.stop(); workbench.stopAuditions(); setGenerateStep(stepId) }} />
                 <ProductionRecording key={source.identity} identity={source.identity} sectionId={sectionId} stepId={stepId} active={!outputsOpen && (wide || tab === 'properties') && inspectorTab === 'voice'} disabled={blocked || closing}
                   onImportStarted={() => transcriptionSelection.current}
                   onImported={(assetId, selection) => {
@@ -254,7 +261,7 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
       </PmSplitPanel>
       {wide && <PmSplitHandle label={p.resizeTimeline} />}
       <PmSplitPanel id="production-timeline" defaultSize="29%" minSize={wide ? '18%' : 0} maxSize={wide ? '65%' : '100%'} scroll className="pmw-production__timeline" hidden={!wide && tab !== 'timeline'}>
-        <ProductionTimeline plan={plan} sectionId={sectionId} stepId={stepId} active={wide || tab === 'timeline'} current={planCurrent} seekEnabled={canPlay && !playerBusy && !preparing && !planBusy}
+        <ProductionTimeline plan={plan} sectionId={sectionId} stepId={stepId} active={wide || tab === 'timeline'} current={planCurrent} seekEnabled={canPlay && plan?.timing === 'confirmed' && !voicePlayback.busy && !playerBusy && !preparing && !planBusy}
           loading={planBusy && !planCurrent} seeking={seeking} disabled={blocked || closing} onSelectStep={id => { const step = document.steps[id]; if (step) select(step.sectionId, id) }}
           onSeek={timeMs => { if (plan) void control({ binding: plan.binding, action: 'seek', timeMs }) }} />
       </PmSplitPanel>

@@ -23,7 +23,7 @@ export type ControlProps = { density?: ControlDensity, loading?: boolean }
 export const PmButton = forwardRef<HTMLButtonElement, ButtonProps & ControlProps & { variant?: ButtonVariant, small?: boolean, icon?: IconName }>(function PmButton({ variant = 'default', small, density = small ? 'compact' : 'regular', loading, icon, type = 'button', className, children, disabled, ...rest }, ref) {
   return (
     <button {...rest} ref={ref} type={type} data-density={density} aria-busy={loading || undefined} disabled={disabled || loading || rest['aria-disabled'] === true || rest['aria-disabled'] === 'true'} className={cls('pm-ui-button', variant !== 'default' && `pm-ui-button--${variant}`, className)}>
-      <span className="pm-ui-button__content">{(icon || loading !== undefined) && <span className={cls('pm-ui-button__icon', loading && 'pm-ui-loading')}>{loading ? <PmIcon name="loading" /> : icon && <PmIcon name={icon} />}</span>}{children}</span>
+      <span className={cls('pm-ui-button__content', !icon && loading !== undefined && 'pm-ui-button__content--loading-text')}>{(icon || loading !== undefined) && <span aria-hidden="true" className={cls('pm-ui-button__icon', loading && 'pm-ui-loading')}>{loading ? <PmIcon name="loading" /> : icon && <PmIcon name={icon} />}</span>}{children}</span>
     </button>
   )
 })

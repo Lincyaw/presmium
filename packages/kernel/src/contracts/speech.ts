@@ -131,3 +131,19 @@ export interface SpeechService {
 }
 
 export const SPEECH = defineService<SpeechService>('presmium.speech')
+
+/** Stable author-facing reasons; provider payloads and credential values are never UI text. */
+export function speechFailureCode(error: unknown): string | undefined {
+  const message = error instanceof Error ? error.message : typeof error === 'string' ? error : ''
+  if (/^speech-(authentication|permission|quota|busy|network|empty-audio|invalid-request|provider|cache-failed)$/.test(message)) return message
+  if (/quota exceeded.*concurrency|too many requests|answered 429|is busy: more requests/i.test(message)) return 'speech-busy'
+  if (/quota exceeded|insufficient.*(balance|credit)|payment required|balance.*insufficient/i.test(message)) return 'speech-quota'
+  if (/answered 401|45000010|unauthorized|invalid (?:(?:x-)?api.?key|token)|authentication failed/i.test(message)) return 'speech-authentication'
+  if (/EACCES|ENOSPC|EROFS|speech.*cache.*(write|failed)/i.test(message)) return 'speech-cache-failed'
+  if (/answered 403|resource.*mismatch|permission denied|access denied|service.*not.*(enabled|activated)/i.test(message)) return 'speech-permission'
+  if (/fetch failed|ECONNREFUSED|ENOTFOUND|ETIMEDOUT|ECONNRESET|UND_ERR|network error/i.test(message)) return 'speech-network'
+  if (/gave no audio|no audio data/i.test(message)) return 'speech-empty-audio'
+  if (/answered 4\d\d|45000001|4500200[01]|invalid argument/i.test(message)) return 'speech-invalid-request'
+  if (/answered 5\d\d|55000000/i.test(message)) return 'speech-provider'
+  return undefined
+}

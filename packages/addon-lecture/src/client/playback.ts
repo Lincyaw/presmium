@@ -57,7 +57,7 @@ export function useLecturePlayback() {
     const clock = await createClock(track, source, signal)
     if (load !== generation.current || signal?.aborted) { clock.dispose(); signal?.throwIfAborted(); return }
     clear()
-    const next = new LecturePlayer(track, doc, ops, clock, playback)
+    const next = new LecturePlayer(track, doc, ops, clock, playback, Boolean(plan))
     current.current = next
     releaseClock.current = stepClock?.drive({ elapsed: next.stepTime, recording: exporting }) ?? (() => {})
     const seek = () => {

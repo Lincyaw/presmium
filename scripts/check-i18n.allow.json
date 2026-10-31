@@ -1,4 +1,8 @@
 [
+  {"file": "packages/workbench/src/speech-settings-messages.ts", "key": "SPEECH_SETTINGS_MESSAGES.keyHint", "rule": "ID", "reason": "Volcengine App ID is a required provider credential paired with an access token; naming it lets the operator find the matching console field, rather than exposing a document internal ID."},
+  {"file": "packages/workbench/src/speech-settings-messages.ts", "key": "SPEECH_SETTINGS_MESSAGES.appId", "rule": "ID", "reason": "Provider configuration field must use the Volcengine console name App ID; this is not a document or component internal identifier."},
+  {"file": "packages/workbench/src/speech-settings-messages.ts", "key": "SPEECH_SETTINGS_MESSAGES.appIdHint", "rule": "ID", "reason": "Explains exactly when the provider App ID is needed and when a new API key clears the old credential pairing."},
+  {"file": "packages/workbench/src/speech-settings-messages.ts", "key": "SPEECH_SETTINGS_MESSAGES.invalid", "rule": "ID", "reason": "Credential validation must identify the provider App ID field that the operator can correct."},
   {"file": "packages/workbench/src/component-property-messages.ts", "key": "search", "rule": "Title Case", "reason": "label of a search box, a field label: sentence case (glossary 3)"},
   {"file": "packages/workbench/src/messages.ts", "key": "MESSAGES.search", "rule": "Title Case", "reason": "label of a search box, a field label: sentence case (glossary 3)"},
   {"file": "packages/workbench/src/voice-messages.ts", "key": "VOICE_MESSAGES.search", "rule": "Title Case", "reason": "label of a search box, a field label: sentence case (glossary 3)"},

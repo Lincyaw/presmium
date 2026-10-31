@@ -27,7 +27,7 @@ export function DocumentVoiceField({ stepId, disabled = false, onGenerate }: { s
       <div className="pmw-voice__actions">
         <PmButton small icon="audio" disabled={disabled || blocked} onClick={() => { workbench.pauseDocumentStep(step.sectionId, stepId); workbench.stopAuditions(); setOpen(true) }}>{p.choose}</PmButton>
         {onGenerate && <PmButton small icon="refresh" disabled={disabled || blocked} onClick={onGenerate}>{p.generate}</PmButton>}
-        {workbench.client.openSpeechSettings && <PmButton small variant="ghost" icon="sliders" onClick={() => { workbench.stopAuditions(); workbench.client.openSpeechSettings?.() }}>{p.serviceSettings}</PmButton>}
+        {workbench.client.openSpeechSettings && <PmButton small variant="ghost" icon="sliders" onClick={() => { workbench.stopAuditions(); void workbench.pausePlayback(true).catch(() => {}); workbench.client.openSpeechSettings?.() }}>{p.serviceSettings}</PmButton>}
       </div>
     </PmField>
     {open && <DocumentVoiceDialog key={`${source.identity}:${stepId}`} stepId={stepId} onClose={() => setOpen(false)} />}

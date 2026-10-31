@@ -40,7 +40,7 @@ export function ProductionRecording({ identity, sectionId, stepId, active, disab
     setFailure(undefined)
     void recording.start(async () => {
       workbench.stopAuditions()
-      await workbench.pausePlayback()
+      await workbench.pausePlayback(true)
       if (!current() || !active) throw new Error('recording-failed')
       return workbench.registerAudioCapture(() => recording.stop())
     })
