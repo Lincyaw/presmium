@@ -179,6 +179,10 @@ site:
 presmium build welcome --to web
 ```
 
+### 4.1 放映与讲授视频
+
+文稿的 `metadata.renderers` 写了 `slides` 或 `lecture` 时，工作区构建在它的网页旁一并构建：放映在 `<文稿目录>/slides/`，讲授的时间线、字幕与语音在 `<文稿目录>/lecture/`，网页与放映互相链接。首页模板可以用 iframe 嵌入 `<文稿目录>/slides/?view=present&track=script&autoplay` 直接播放讲授，`section=<节>&step=<序号>` 从某一步开始，由浏览器按观众的分辨率实时绘制。
+
 ## 5. 发布到 GitHub Pages
 
 1. 把项目推送到 GitHub 仓库。
