@@ -84,7 +84,7 @@ export const MESSAGES: Record<Locale, Messages> = {
       guideStartTitle: '写下第一篇内容',
       guideStartBody: '网站首页单独编排，课程文章保存在教学文稿中。替换示例内容，再在新的子目录中新建文稿，具体文件与命令见项目的 README。',
       guideStyleTitle: '选择网站主题',
-      guideStyleBody: '在 presmium.workspace.yaml 的 site 中设置 theme：course 适合课程，docs 适合文档，showcase 适合展示作品。params 可以调整 accent、typography 和 contentWidth。',
+      guideStyleBody: '在 presmium.workspace.yaml 的 site 中设置 theme：course 适合课程，docs 适合文档，showcase 适合展示作品。params 可以调整 accent、typography 和 contentWidth；theme 写成主题目录（如 ./theme）时，可以自定义配色、字体与样式。',
       guidePublishTitle: '发布你的网站',
       guidePublishBody: '导出网站后，静态产物在 dist/web/。将项目推送到 GitHub，并在仓库的 Pages 设置中选择 GitHub Actions，项目附带的工作流会在 main 分支更新时导出和发布。',
     },
@@ -100,7 +100,7 @@ pnpm check     # 检查教学文稿
 pnpm build     # 导出网站到 dist/web/
 \`\`\`
 
-在 \`site.theme\` 中选择 \`course\`、\`docs\` 或 \`showcase\`，在 \`site.params\` 中调整 \`accent\`、\`typography\` 与 \`contentWidth\`。
+在 \`site.theme\` 中选择 \`course\`、\`docs\` 或 \`showcase\`，在 \`site.params\` 中调整 \`accent\`、\`typography\` 与 \`contentWidth\`。需要自己的配色、字体与样式时，把 \`site.theme\` 写成主题目录（如 \`./theme\`），在其中的 \`theme.json\` 中设置设计令牌与样式表。
 
 默认首页入口是 \`site.landing: { source: './site/home.json' }\`。需要自行设计 HTML 首页时，创建 \`site/home.html\` 并改为 \`site.landing: { template: './site/home.html' }\`；教学文稿继续使用各目录中的 \`lecture.json\`。
 
@@ -224,7 +224,7 @@ Options:
       guideStartTitle: 'Write your first article',
       guideStartBody: 'Design your website home page separately from the teaching documents that hold your articles. Replace the sample content, then add documents in new subdirectories. The project’s README lists the files and commands.',
       guideStyleTitle: 'Choose Your Site Style',
-      guideStyleBody: 'Set theme under site in presmium.workspace.yaml: course for courses, docs for documentation, or showcase for your projects. Use params to adjust accent, typography, and contentWidth.',
+      guideStyleBody: 'Set theme under site in presmium.workspace.yaml: course for courses, docs for documentation, or showcase for your projects. Use params to adjust accent, typography, and contentWidth; set theme to a theme directory (such as ./theme) for your own colors, fonts, and styles.',
       guidePublishTitle: 'Share Your Site',
       guidePublishBody: 'Export your site into dist/web/. Push the project to GitHub and choose GitHub Actions in the repository’s Pages settings. The included workflow exports and publishes changes to main.',
     },
@@ -240,7 +240,7 @@ pnpm check     # checks the teaching document
 pnpm build     # exports the website into dist/web/
 \`\`\`
 
-Choose \`course\`, \`docs\`, or \`showcase\` in \`site.theme\`. Adjust \`accent\`, \`typography\`, and \`contentWidth\` in \`site.params\`.
+Choose \`course\`, \`docs\`, or \`showcase\` in \`site.theme\`. Adjust \`accent\`, \`typography\`, and \`contentWidth\` in \`site.params\`. For your own colors, fonts, and styles, set \`site.theme\` to a theme directory (such as \`./theme\`) and set design tokens and stylesheets in its \`theme.json\`.
 
 The default home page is \`site.landing: { source: './site/home.json' }\`. To design it freely in HTML, create \`site/home.html\` and use \`site.landing: { template: './site/home.html' }\`. Teaching documents continue to use \`lecture.json\` in their own directories.
 

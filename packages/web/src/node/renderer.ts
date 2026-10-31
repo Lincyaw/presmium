@@ -1,7 +1,6 @@
 import { join, resolve } from 'node:path'
 import type { IRDocument, RenderContext, RenderDevServer, Renderer, SiteDevServer, SiteDocument, SiteSpec } from '@lincyaw/kernel'
 import launchEditor from 'launch-editor'
-import { rendererConfig } from '../domain/index.ts'
 import { buildSite as buildPages } from './site-build.ts'
 import type { BuiltDocument } from './site-build.ts'
 import { documentContext, documentSourceFiles } from './site-model.ts'
@@ -23,7 +22,7 @@ function documentWorkDir(ctx: RenderContext, dir: string): string {
 /** The dev server of one document (`presmium dev`): its pages, or its slides. */
 export async function devDocument(doc: IRDocument, ctx: RenderContext, form: 'web' | 'slides'): Promise<RenderDevServer> {
   let current = doc
-  const { port } = rendererConfig(ctx)
+  const port = Number(ctx.config.port) > 0 && Number.isInteger(Number(ctx.config.port)) ? Number(ctx.config.port) : undefined
   const server = await startSiteServer({
     site: () => documentSite(current, ctx),
     form,

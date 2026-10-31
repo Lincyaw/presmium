@@ -3,10 +3,10 @@ import { basename, dirname, extname, join, resolve } from 'node:path'
 import { ABSOLUTE_URL, deckLocale, DOCUMENT_ENTRY, isRecord, safeDecodeURIComponent } from '@lincyaw/kernel'
 import type { IRDocument, RenderContext, SiteSpec } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
-import { parseLandingPage, WEB_MESSAGES } from '../domain/index.ts'
+import { parseLandingPage, siteTheme, WEB_MESSAGES } from '../domain/index.ts'
 import type { HomeDocument, SiteContent, SiteLandingPage } from '../domain/index.ts'
 import { publishedFile } from './publish.ts'
-import { documentLinkOf, documentPage, siteLanguage, siteTitle } from './site-model.ts'
+import { documentLinkOf, documentPage, shellOptions, siteLanguage, siteTitle } from './site-model.ts'
 
 export type IndependentLanding = { kind: 'page', page: SiteLandingPage, source: string } | { kind: 'template', file: string }
 
@@ -78,5 +78,14 @@ export function publishLanding(landing: Extract<IndependentLanding, { kind: 'pag
 
 /** The public content collection available to a free-form HTML template. */
 export function siteContent(site: SiteSpec, base: string, lang: string, documents: HomeDocument[]): SiteContent {
-  return { schemaVersion: 1, title: siteTitle(site, lang), base, lang, documents: documents.map(({ dir, title, href, description, lang, tags, pages }) => ({ id: dir, title, href, description, lang, tags, pages })) }
+  // A template may link the workspace theme's stylesheets and mark its root with `data-pm-site-theme-name`.
+  const { name, stylesheets } = siteTheme(shellOptions(site), lang)
+  return {
+    schemaVersion: 1,
+    title: siteTitle(site, lang),
+    base,
+    lang,
+    documents: documents.map(({ dir, title, href, description, lang, tags, pages }) => ({ id: dir, title, href, description, lang, tags, pages })),
+    ...name ? { theme: { name, stylesheets: stylesheets ?? [] } } : {},
+  }
 }
