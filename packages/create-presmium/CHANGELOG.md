@@ -1,5 +1,12 @@
 # create-presmium
 
+## 1.0.0-rc.2
+
+### Patch Changes
+
+- 9f50239: A new project's git repository starts on `main`, the branch its GitHub Pages workflow publishes from, whatever the machine's default branch is.
+- @lincyaw/kernel@1.0.0-rc.2
+
 ## 1.0.0-rc.1
 
 ### Minor Changes
