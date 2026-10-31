@@ -51,7 +51,7 @@ One scene uses one library. A section that needs a diagram and a 3D view gets tw
 
 ## Find an effect
 
-Each entry ``<library> `<name>` `` is the file `gallery/<library>/scenes/<name>.ts` in this skill's folder, and ``catalog/<deck> `<name>` `` is `gallery/catalog/<deck>/scenes/<name>.ts` (pieces adapted from the HyperFrames catalog, with an author's parameters for text, images and data); the scene's section in that deck's `lecture.json` (search its definition parameters for the scene name) shows its declared durations and parameters. Scenes import helpers from their deck's `scenes/lib/` or `scenes/kit/` and from `gallery/lengths/scenes/kit/`: copy those along with them.
+Each entry ``<library> `<name>` `` is the file `gallery/<library>/scenes/<name>.ts` in this skill's folder, and ``catalog/<deck> `<name>` `` is `gallery/catalog/<deck>/scenes/<name>.ts` (pieces adapted from the HyperFrames catalog, with an author's parameters for text, images and data); the scenario document that shows it (`gallery/<scenario>/lecture.json`, its definition path `scenes/<library or deck>/<name>.ts`) has its declared durations and parameters. Scenes import helpers from their deck's `scenes/lib/` or `scenes/kit/` and from `gallery/lengths/scenes/kit/`: copy those along with them.
 
 | Effect | Where |
 |---|---|

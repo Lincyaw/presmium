@@ -1,6 +1,6 @@
 # Presmium Gallery
 
-This workspace contains 29 main documents: two complete courses, five feature collections, two tutorials, a Fourier lesson, a product film and 18 animation references. Every lecture.json is its document’s editable authority.
+This workspace contains 25 main documents: two complete courses, five feature collections, two tutorials, a Fourier lesson, a product film and 14 animation references (ten by scenario, plus pieces by length, films, a storyboard example and the timeline). Every lecture.json is its document’s editable authority.
 
 - `learn/` is the Fourier lesson, with its English translation.
 - `promo/` is the product film; read its storyboard before editing its scenes.

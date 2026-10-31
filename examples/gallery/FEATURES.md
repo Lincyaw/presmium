@@ -128,4 +128,4 @@
 
 ## 课程与参考
 
-[冒泡排序](bubble-sort/lecture.json)、[代码写成的动画](libraries/lecture.json) 与 [傅里叶级数小课](learn/lecture.json) 是带讲解的完整课程；[动画效果参考](animation-library/) 收录六种动画库的写法与分类效果目录。
+[冒泡排序](bubble-sort/lecture.json)、[代码写成的动画](libraries/lecture.json) 与 [傅里叶级数小课](learn/lecture.json) 是带讲解的完整课程；[动画效果参考](animation-library/) 按场景收录动画：算法与代码、数据与图表、数学与机器学习、文字与字幕、强调与标注、概念与结构、产品演示、转场与镜头、路径与三维、动效技法。

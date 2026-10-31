@@ -1,0 +1,7795 @@
+{
+ "schemaVersion": 1,
+ "id": "animation-data",
+ "metadata": {
+  "title": "数据与图表",
+  "lang": "zh-CN",
+  "description": "数值与比例、统计图表、层次与网络、空间与信号：数据如何进入画面，又如何随步骤变化。",
+  "tags": [
+   "动画参考"
+  ],
+  "plugins": [
+   "@lincyaw/addon-motion",
+   "@lincyaw/addon-lecture"
+  ],
+  "renderers": {
+   "web": {},
+   "lecture": {}
+  }
+ },
+ "sectionOrder": [
+  "numbers",
+  "gsap-counter",
+  "anime-param-counter",
+  "motion-counter",
+  "remotion-counter",
+  "motion-ring",
+  "show-stat-gauge",
+  "charts",
+  "motion-bars",
+  "remotion-bar-chart",
+  "d3-axis-zoom",
+  "d3-data-join",
+  "d3-line-draw",
+  "d3-bar-race",
+  "d3-histogram",
+  "d3-stack-stream",
+  "d3-pie-arcs",
+  "d3-heatmap-scales",
+  "dc-chart-story",
+  "hierarchy",
+  "d3-tree-morph",
+  "d3-treemap-tiling",
+  "d3-pack-zoom",
+  "d3-sunburst-zoom",
+  "d3-force-path",
+  "d3-chord",
+  "spatial",
+  "d3-voronoi-lloyd",
+  "d3-contour-density",
+  "d3-quadtree-find",
+  "d3-globe",
+  "dc-tile-map",
+  "dc-oscilloscope"
+ ],
+ "sections": {
+  "numbers": {
+   "id": "numbers",
+   "title": "数字与比例",
+   "level": 1,
+   "children": [
+    "numbers--intro"
+   ],
+   "stepOrder": [
+    "numbers--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "gsap-counter": {
+   "id": "gsap-counter",
+   "title": "数字变化：textContent 与 snap",
+   "level": 2,
+   "children": [
+    "gsap-counter--counter-scene",
+    "gsap-counter--paragraph-1",
+    "gsap-counter--paragraph-2"
+   ],
+   "stepOrder": [
+    "gsap-counter--step-0",
+    "gsap-counter--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "anime-param-counter": {
+   "id": "anime-param-counter",
+   "title": "数字滚动：模型参数量",
+   "level": 2,
+   "children": [
+    "anime-param-counter--param-counter-scene",
+    "anime-param-counter--paragraph-1",
+    "anime-param-counter--paragraph-2",
+    "anime-param-counter--paragraph-3"
+   ],
+   "stepOrder": [
+    "anime-param-counter--step-0",
+    "anime-param-counter--step-1",
+    "anime-param-counter--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-counter": {
+   "id": "motion-counter",
+   "title": "数字滚动：motion value 与 steps 缓动",
+   "level": 2,
+   "children": [
+    "motion-counter--counter-scene",
+    "motion-counter--paragraph-1",
+    "motion-counter--paragraph-2"
+   ],
+   "stepOrder": [
+    "motion-counter--step-0",
+    "motion-counter--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "remotion-counter": {
+   "id": "remotion-counter",
+   "title": "数字滚动",
+   "level": 2,
+   "children": [
+    "remotion-counter--counter-scene",
+    "remotion-counter--paragraph-1",
+    "remotion-counter--paragraph-2",
+    "remotion-counter--paragraph-3"
+   ],
+   "stepOrder": [
+    "remotion-counter--step-0",
+    "remotion-counter--step-1",
+    "remotion-counter--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-ring": {
+   "id": "motion-ring",
+   "title": "进度环：圆上的 pathLength",
+   "level": 2,
+   "children": [
+    "motion-ring--ring-scene",
+    "motion-ring--paragraph-1",
+    "motion-ring--paragraph-2",
+    "motion-ring--paragraph-3"
+   ],
+   "stepOrder": [
+    "motion-ring--step-0",
+    "motion-ring--step-1",
+    "motion-ring--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "show-stat-gauge": {
+   "id": "show-stat-gauge",
+   "title": "仪表与计数",
+   "level": 2,
+   "children": [
+    "show-stat-gauge--notes",
+    "show-stat-gauge--shot"
+   ],
+   "stepOrder": [
+    "show-stat-gauge--step-0",
+    "show-stat-gauge--step-1",
+    "show-stat-gauge--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "charts": {
+   "id": "charts",
+   "title": "统计图表",
+   "level": 1,
+   "children": [
+    "charts--intro"
+   ],
+   "stepOrder": [
+    "charts--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-bars": {
+   "id": "motion-bars",
+   "title": "柱状图换数据：同一属性的多段合成一条轨道",
+   "level": 2,
+   "children": [
+    "motion-bars--bars-scene",
+    "motion-bars--paragraph-1",
+    "motion-bars--paragraph-2",
+    "motion-bars--paragraph-3"
+   ],
+   "stepOrder": [
+    "motion-bars--step-0",
+    "motion-bars--step-1",
+    "motion-bars--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "remotion-bar-chart": {
+   "id": "remotion-bar-chart",
+   "title": "柱状图：错开的弹簧",
+   "level": 2,
+   "children": [
+    "remotion-bar-chart--bar-chart-scene",
+    "remotion-bar-chart--paragraph-1",
+    "remotion-bar-chart--paragraph-2"
+   ],
+   "stepOrder": [
+    "remotion-bar-chart--step-0",
+    "remotion-bar-chart--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-axis-zoom": {
+   "id": "d3-axis-zoom",
+   "title": "比例尺与坐标轴：缩放定义域",
+   "level": 2,
+   "children": [
+    "d3-axis-zoom--axis-zoom-scene",
+    "d3-axis-zoom--paragraph-1",
+    "d3-axis-zoom--paragraph-2",
+    "d3-axis-zoom--paragraph-3"
+   ],
+   "stepOrder": [
+    "d3-axis-zoom--step-0",
+    "d3-axis-zoom--step-1",
+    "d3-axis-zoom--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-data-join": {
+   "id": "d3-data-join",
+   "title": "数据连接：enter、update、exit",
+   "level": 2,
+   "children": [
+    "d3-data-join--data-join-scene",
+    "d3-data-join--paragraph-1",
+    "d3-data-join--paragraph-2",
+    "d3-data-join--paragraph-3",
+    "d3-data-join--paragraph-4"
+   ],
+   "stepOrder": [
+    "d3-data-join--step-0",
+    "d3-data-join--step-1",
+    "d3-data-join--step-2",
+    "d3-data-join--step-3"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-line-draw": {
+   "id": "d3-line-draw",
+   "title": "折线与面积：描线和读数",
+   "level": 2,
+   "children": [
+    "d3-line-draw--line-draw-scene",
+    "d3-line-draw--paragraph-1",
+    "d3-line-draw--paragraph-2",
+    "d3-line-draw--paragraph-3"
+   ],
+   "stepOrder": [
+    "d3-line-draw--step-0",
+    "d3-line-draw--step-1",
+    "d3-line-draw--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-bar-race": {
+   "id": "d3-bar-race",
+   "title": "条形图竞赛：数值与名次一起插值",
+   "level": 2,
+   "children": [
+    "d3-bar-race--bar-race-scene",
+    "d3-bar-race--paragraph-1",
+    "d3-bar-race--paragraph-2",
+    "d3-bar-race--paragraph-3",
+    "d3-bar-race--paragraph-4",
+    "d3-bar-race--paragraph-5"
+   ],
+   "stepOrder": [
+    "d3-bar-race--step-0",
+    "d3-bar-race--step-1",
+    "d3-bar-race--step-2",
+    "d3-bar-race--step-3",
+    "d3-bar-race--step-4"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-histogram": {
+   "id": "d3-histogram",
+   "title": "直方图：分箱与核密度",
+   "level": 2,
+   "children": [
+    "d3-histogram--histogram-scene",
+    "d3-histogram--paragraph-1",
+    "d3-histogram--paragraph-2",
+    "d3-histogram--paragraph-3"
+   ],
+   "stepOrder": [
+    "d3-histogram--step-0",
+    "d3-histogram--step-1",
+    "d3-histogram--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-stack-stream": {
+   "id": "d3-stack-stream",
+   "title": "堆叠面积与河流图",
+   "level": 2,
+   "children": [
+    "d3-stack-stream--stack-stream-scene",
+    "d3-stack-stream--paragraph-1",
+    "d3-stack-stream--paragraph-2",
+    "d3-stack-stream--paragraph-3"
+   ],
+   "stepOrder": [
+    "d3-stack-stream--step-0",
+    "d3-stack-stream--step-1",
+    "d3-stack-stream--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-pie-arcs": {
+   "id": "d3-pie-arcs",
+   "title": "饼图与环图：插值角度",
+   "level": 2,
+   "children": [
+    "d3-pie-arcs--pie-arcs-scene",
+    "d3-pie-arcs--paragraph-1",
+    "d3-pie-arcs--paragraph-2",
+    "d3-pie-arcs--paragraph-3"
+   ],
+   "stepOrder": [
+    "d3-pie-arcs--step-0",
+    "d3-pie-arcs--step-1",
+    "d3-pie-arcs--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-heatmap-scales": {
+   "id": "d3-heatmap-scales",
+   "title": "颜色比例尺：顺序、发散与分级",
+   "level": 2,
+   "children": [
+    "d3-heatmap-scales--heatmap-scales-scene",
+    "d3-heatmap-scales--paragraph-1",
+    "d3-heatmap-scales--paragraph-2",
+    "d3-heatmap-scales--paragraph-3"
+   ],
+   "stepOrder": [
+    "d3-heatmap-scales--step-0",
+    "d3-heatmap-scales--step-1",
+    "d3-heatmap-scales--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "dc-chart-story": {
+   "id": "dc-chart-story",
+   "title": "小图表：按阅读顺序生长，落在一个值上",
+   "level": 2,
+   "children": [
+    "dc-chart-story--notes",
+    "dc-chart-story--shot"
+   ],
+   "stepOrder": [
+    "dc-chart-story--step-0",
+    "dc-chart-story--step-1",
+    "dc-chart-story--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "hierarchy": {
+   "id": "hierarchy",
+   "title": "层次与网络",
+   "level": 1,
+   "children": [
+    "hierarchy--intro"
+   ],
+   "stepOrder": [
+    "hierarchy--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-tree-morph": {
+   "id": "d3-tree-morph",
+   "title": "树、聚类树与径向树：布局之间插值",
+   "level": 2,
+   "children": [
+    "d3-tree-morph--tree-morph-scene",
+    "d3-tree-morph--paragraph-1",
+    "d3-tree-morph--paragraph-2",
+    "d3-tree-morph--paragraph-3"
+   ],
+   "stepOrder": [
+    "d3-tree-morph--step-0",
+    "d3-tree-morph--step-1",
+    "d3-tree-morph--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-treemap-tiling": {
+   "id": "d3-treemap-tiling",
+   "title": "矩形树图：两种切分与放大",
+   "level": 2,
+   "children": [
+    "d3-treemap-tiling--treemap-tiling-scene",
+    "d3-treemap-tiling--paragraph-1",
+    "d3-treemap-tiling--paragraph-2",
+    "d3-treemap-tiling--paragraph-3"
+   ],
+   "stepOrder": [
+    "d3-treemap-tiling--step-0",
+    "d3-treemap-tiling--step-1",
+    "d3-treemap-tiling--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-pack-zoom": {
+   "id": "d3-pack-zoom",
+   "title": "圆堆积：用 interpolateZoom 飞过去",
+   "level": 2,
+   "children": [
+    "d3-pack-zoom--pack-zoom-scene",
+    "d3-pack-zoom--paragraph-1",
+    "d3-pack-zoom--paragraph-2",
+    "d3-pack-zoom--paragraph-3"
+   ],
+   "stepOrder": [
+    "d3-pack-zoom--step-0",
+    "d3-pack-zoom--step-1",
+    "d3-pack-zoom--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-sunburst-zoom": {
+   "id": "d3-sunburst-zoom",
+   "title": "旭日图：沿角度放大",
+   "level": 2,
+   "children": [
+    "d3-sunburst-zoom--sunburst-zoom-scene",
+    "d3-sunburst-zoom--paragraph-1",
+    "d3-sunburst-zoom--paragraph-2",
+    "d3-sunburst-zoom--paragraph-3"
+   ],
+   "stepOrder": [
+    "d3-sunburst-zoom--step-0",
+    "d3-sunburst-zoom--step-1",
+    "d3-sunburst-zoom--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-force-path": {
+   "id": "d3-force-path",
+   "title": "力导向图：稳定后找最短路",
+   "level": 2,
+   "children": [
+    "d3-force-path--force-path-scene",
+    "d3-force-path--paragraph-1",
+    "d3-force-path--paragraph-2",
+    "d3-force-path--paragraph-3"
+   ],
+   "stepOrder": [
+    "d3-force-path--step-0",
+    "d3-force-path--step-1",
+    "d3-force-path--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-chord": {
+   "id": "d3-chord",
+   "title": "弦图：流量矩阵",
+   "level": 2,
+   "children": [
+    "d3-chord--chord-scene",
+    "d3-chord--paragraph-1",
+    "d3-chord--paragraph-2",
+    "d3-chord--paragraph-3"
+   ],
+   "stepOrder": [
+    "d3-chord--step-0",
+    "d3-chord--step-1",
+    "d3-chord--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "spatial": {
+   "id": "spatial",
+   "title": "空间与信号",
+   "level": 1,
+   "children": [
+    "spatial--intro"
+   ],
+   "stepOrder": [
+    "spatial--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-voronoi-lloyd": {
+   "id": "d3-voronoi-lloyd",
+   "title": "Delaunay 与 Voronoi：Lloyd 松弛",
+   "level": 2,
+   "children": [
+    "d3-voronoi-lloyd--voronoi-lloyd-scene",
+    "d3-voronoi-lloyd--paragraph-1",
+    "d3-voronoi-lloyd--paragraph-2",
+    "d3-voronoi-lloyd--paragraph-3",
+    "d3-voronoi-lloyd--paragraph-4"
+   ],
+   "stepOrder": [
+    "d3-voronoi-lloyd--step-0",
+    "d3-voronoi-lloyd--step-1",
+    "d3-voronoi-lloyd--step-2",
+    "d3-voronoi-lloyd--step-3"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-contour-density": {
+   "id": "d3-contour-density",
+   "title": "等值线：二维核密度",
+   "level": 2,
+   "children": [
+    "d3-contour-density--contour-density-scene",
+    "d3-contour-density--paragraph-1",
+    "d3-contour-density--paragraph-2",
+    "d3-contour-density--paragraph-3"
+   ],
+   "stepOrder": [
+    "d3-contour-density--step-0",
+    "d3-contour-density--step-1",
+    "d3-contour-density--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-quadtree-find": {
+   "id": "d3-quadtree-find",
+   "title": "四叉树：插入与最近邻",
+   "level": 2,
+   "children": [
+    "d3-quadtree-find--quadtree-find-scene",
+    "d3-quadtree-find--paragraph-1",
+    "d3-quadtree-find--paragraph-2"
+   ],
+   "stepOrder": [
+    "d3-quadtree-find--step-0",
+    "d3-quadtree-find--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "d3-globe": {
+   "id": "d3-globe",
+   "title": "地理投影：转动的地球与展开",
+   "level": 2,
+   "children": [
+    "d3-globe--globe-scene",
+    "d3-globe--paragraph-1",
+    "d3-globe--paragraph-2",
+    "d3-globe--paragraph-3"
+   ],
+   "stepOrder": [
+    "d3-globe--step-0",
+    "d3-globe--step-1",
+    "d3-globe--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "dc-tile-map": {
+   "id": "dc-tile-map",
+   "title": "方格地图：按数值从低到高填色",
+   "level": 2,
+   "children": [
+    "dc-tile-map--notes",
+    "dc-tile-map--shot"
+   ],
+   "stepOrder": [
+    "dc-tile-map--step-0",
+    "dc-tile-map--step-1",
+    "dc-tile-map--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "dc-oscilloscope": {
+   "id": "dc-oscilloscope",
+   "title": "示波器：扫描出波形，再调高频率",
+   "level": 2,
+   "children": [
+    "dc-oscilloscope--notes",
+    "dc-oscilloscope--shot"
+   ],
+   "stepOrder": [
+    "dc-oscilloscope--step-0",
+    "dc-oscilloscope--step-1",
+    "dc-oscilloscope--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  }
+ },
+ "blocks": {
+  "numbers--intro": {
+   "id": "numbers--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "numbers--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "数值滚动、进度环与仪表，突出一个数的大小或占比。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-counter--counter-scene": {
+   "id": "gsap-counter--counter-scene",
+   "type": "component",
+   "definitionId": "gsap-counter--counter-scene--definition",
+   "parameters": {
+    "scene": "gsap/counter",
+    "alt": "训练过程中轮数、损失与准确率三个数字一起变化。"
+   }
+  },
+  "gsap-counter--paragraph-1": {
+   "id": "gsap-counter--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-counter--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "前五轮：轮数按整数增加，损失从 2.30 快速下降，准确率升到 81%。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-counter--paragraph-2": {
+   "id": "gsap-counter--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-counter--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "再训练五轮：损失降到 0.12，准确率升到 97%，变化越来越小。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-param-counter--param-counter-scene": {
+   "id": "anime-param-counter--param-counter-scene",
+   "type": "component",
+   "definitionId": "anime-param-counter--param-counter-scene--definition",
+   "parameters": {
+    "scene": "anime/param-counter",
+    "alt": "GPT、GPT-2、GPT-3 的参数量，数字滚动，柱子按对数刻度长高。"
+   }
+  },
+  "anime-param-counter--paragraph-1": {
+   "id": "anime-param-counter--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-param-counter--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "GPT 有 1.17 亿个参数。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-param-counter--paragraph-2": {
+   "id": "anime-param-counter--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-param-counter--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "GPT-2 是 15 亿，多了一个数量级。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-param-counter--paragraph-3": {
+   "id": "anime-param-counter--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-param-counter--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "GPT-3 是 1750 亿，柱子按对数刻度才放得下。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-counter--counter-scene": {
+   "id": "motion-counter--counter-scene",
+   "type": "component",
+   "definitionId": "motion-counter--counter-scene--definition",
+   "parameters": {
+    "scene": "motion/counter",
+    "alt": "训练面板上的三个数字：轮数按整数跳，损失下降，准确率上升。"
+   }
+  },
+  "motion-counter--paragraph-1": {
+   "id": "motion-counter--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-counter--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "前十轮：轮数一格一格跳，损失很快从 2.31 降到 1.12，准确率升到六成。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-counter--paragraph-2": {
+   "id": "motion-counter--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-counter--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "再训练四十轮：损失降得越来越慢，最后停在 0.42，准确率 91.3%。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-counter--counter-scene": {
+   "id": "remotion-counter--counter-scene",
+   "type": "component",
+   "definitionId": "remotion-counter--counter-scene--definition",
+   "parameters": {
+    "scene": "remotion/counter",
+    "alt": "大号数字从零滚到 GPT-1 的参数量，再滚到 GPT-2、GPT-3，下方的对数刻度条随之变长。"
+   }
+  },
+  "remotion-counter--paragraph-1": {
+   "id": "remotion-counter--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-counter--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "GPT-1 有一亿多个参数。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-counter--paragraph-2": {
+   "id": "remotion-counter--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-counter--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "GPT-2 是十五亿，十几倍。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-counter--paragraph-3": {
+   "id": "remotion-counter--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-counter--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "GPT-3 是一千七百五十亿，又大了一百多倍，对数刻度条走到头。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-ring--ring-scene": {
+   "id": "motion-ring--ring-scene",
+   "type": "component",
+   "definitionId": "motion-ring--ring-scene--definition",
+   "parameters": {
+    "scene": "motion/ring",
+    "alt": "一个进度环与四个任务：25%、72%，到 100% 时变成绿色。"
+   }
+  },
+  "motion-ring--paragraph-1": {
+   "id": "motion-ring--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-ring--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "下载数据完成，进度 25%。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-ring--paragraph-2": {
+   "id": "motion-ring--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-ring--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "预处理和训练完成，进度 72%。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-ring--paragraph-3": {
+   "id": "motion-ring--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-ring--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "评估完成，进度环走满，变成绿色。"
+      }
+     ]
+    }
+   ]
+  },
+  "show-stat-gauge--notes": {
+   "id": "show-stat-gauge--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "show-stat-gauge--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一个数，以及它占整体多少：准确率、使用率、完成度。先画出空的刻度（读者先知道满分是多少），再用同一个进度同时驱动弧（或条）的填充和数字的计数，两者永远对得上；数据不过冲，落定时从弧的末端扩散一圈作为反应；最后出处淡入并停住。"
+      }
+     ]
+    },
+    {
+     "id": "show-stat-gauge--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "value、max、decimals、unit、label、source（出处，必填意义上的“必须写”）、shape（arc 圆弧 / bar 横条）。默认是 GPT-4 在 MMLU 上的 86.4%。"
+      }
+     ]
+    },
+    {
+     "id": "show-stat-gauge--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "相近作品：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "圆弧仪表用 shape: arc。只有一个数字、强调“变化之大”时用 fx/gsap/odometer；这里强调“占多少”。"
+      }
+     ]
+    },
+    {
+     "id": "show-stat-gauge--notes--n3",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "show-stat-gauge--notes--n3--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-stat-gauge--notes--n3--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "show-stat-gauge--notes--n3--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "show-stat-gauge--notes--n3--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-stat-gauge--notes--n3--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-stat-gauge--notes--n3--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.7 s"
+          }
+         ]
+        },
+        {
+         "id": "show-stat-gauge--notes--n3--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "标签升入，空轨道画出"
+          }
+         ]
+        },
+        {
+         "id": "show-stat-gauge--notes--n3--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先给刻度，再给数值"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-stat-gauge--notes--n3--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-stat-gauge--notes--n3--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.7–1.9 s"
+          }
+         ]
+        },
+        {
+         "id": "show-stat-gauge--notes--n3--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一个进度同时驱动填充和计数（power3.out），末位数字慢慢落定"
+          }
+         ]
+        },
+        {
+         "id": "show-stat-gauge--notes--n3--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一个时钟，两个读数；数据不过冲"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-stat-gauge--notes--n3--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-stat-gauge--notes--n3--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.65–2.1 s"
+          }
+         ]
+        },
+        {
+         "id": "show-stat-gauge--notes--n3--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "弧的末端扩散一圈"
+          }
+         ]
+        },
+        {
+         "id": "show-stat-gauge--notes--n3--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "到达的反应"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "show-stat-gauge--notes--n3--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "show-stat-gauge--notes--n3--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.3–4.2 s"
+          }
+         ]
+        },
+        {
+         "id": "show-stat-gauge--notes--n3--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "出处淡入，停住"
+          }
+         ]
+        },
+        {
+         "id": "show-stat-gauge--notes--n3--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "数字必须带出处"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "show-stat-gauge--shot": {
+   "id": "show-stat-gauge--shot",
+   "type": "component",
+   "definitionId": "show-stat-gauge--shot--definition",
+   "parameters": {
+    "alt": "圆弧仪表填充到 86.4%，标签是 MMLU 准确率 · GPT-4（5-shot），出处 OpenAI GPT-4 技术报告。"
+   }
+  },
+  "charts--intro": {
+   "id": "charts--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "charts--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "柱状、折线、面积、饼图、直方图与热力图，以及数据的进入、更新与退出。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-bars--bars-scene": {
+   "id": "motion-bars--bars-scene",
+   "type": "component",
+   "definitionId": "motion-bars--bars-scene--definition",
+   "parameters": {
+    "scene": "motion/bars",
+    "alt": "八个月的销量柱状图：柱子依次长出，换成下一年的数据，最高的一根变成强调色。"
+   }
+  },
+  "motion-bars--paragraph-1": {
+   "id": "motion-bars--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-bars--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "柱子从左到右依次长出来，顶上的数字跟着从零数到各自的值。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-bars--paragraph-2": {
+   "id": "motion-bars--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-bars--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "换成下一年的数据：每根柱子从原来的高度变到新高度，数字也跟着变。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-bars--paragraph-3": {
+   "id": "motion-bars--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-bars--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "五月最高，它换成强调色，其他柱子淡下去。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-bar-chart--bar-chart-scene": {
+   "id": "remotion-bar-chart--bar-chart-scene",
+   "type": "component",
+   "definitionId": "remotion-bar-chart--bar-chart-scene--definition",
+   "parameters": {
+    "scene": "remotion/bar-chart",
+    "alt": "五个词的 softmax 概率柱依次长出；温度从 1 降到 0.4 后，最高的柱更高，其余变矮。"
+   }
+  },
+  "remotion-bar-chart--paragraph-1": {
+   "id": "remotion-bar-chart--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-bar-chart--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "温度为 1 时的概率分布，柱子一根接一根长出来。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-bar-chart--paragraph-2": {
+   "id": "remotion-bar-chart--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-bar-chart--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "把温度降到 0.4，分布变尖：the 的概率大了，其他词都变小。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-axis-zoom--axis-zoom-scene": {
+   "id": "d3-axis-zoom--axis-zoom-scene",
+   "type": "component",
+   "definitionId": "d3-axis-zoom--axis-zoom-scene--definition",
+   "parameters": {
+    "scene": "d3/axis-zoom",
+    "alt": "九十个点画在线性比例尺上，坐标轴放大到一段区间，再用颜色与半径编码数值。"
+   }
+  },
+  "d3-axis-zoom--paragraph-1": {
+   "id": "d3-axis-zoom--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-axis-zoom--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "scaleLinear",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 把数据映射到画面，坐标轴由 "
+      },
+      {
+       "type": "text",
+       "text": "axisBottom",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "axisLeft",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 从比例尺画出，点依次出现。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-axis-zoom--paragraph-2": {
+   "id": "d3-axis-zoom--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-axis-zoom--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "缩放只是换一个定义域：两个轴的定义域由 "
+      },
+      {
+       "type": "text",
+       "text": "d3.interpolate",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 插值，刻度每一帧按新的比例尺重画。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-axis-zoom--paragraph-3": {
+   "id": "d3-axis-zoom--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-axis-zoom--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "同一个值再交给两个比例尺："
+      },
+      {
+       "type": "text",
+       "text": "scaleSequential",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 给颜色，"
+      },
+      {
+       "type": "text",
+       "text": "scaleSqrt",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 给半径。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-data-join--data-join-scene": {
+   "id": "d3-data-join--data-join-scene",
+   "type": "component",
+   "definitionId": "d3-data-join--data-join-scene--definition",
+   "parameters": {
+    "scene": "d3/data-join",
+    "alt": "字母组成的单词按键连接，保留的字母滑到新位置，新字母落下，删掉的字母掉出。"
+   }
+  },
+  "d3-data-join--paragraph-1": {
+   "id": "d3-data-join--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-data-join--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "selection.data(数据, 键)",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 把字母和元素按键对应，第一个词的字母都是 enter，从上方落下。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-data-join--paragraph-2": {
+   "id": "d3-data-join--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-data-join--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "换成新词：键相同的字母是 update，滑到新位置；新的键 enter，绿色落下；消失的键 exit，红色掉出。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-data-join--paragraph-3": {
+   "id": "d3-data-join--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-data-join--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "再换一次，同样的三种情况。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-data-join--paragraph-4": {
+   "id": "d3-data-join--paragraph-4",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-data-join--paragraph-4--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "最后一个词，只剩 e、x、i、t 四个字母。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-line-draw--line-draw-scene": {
+   "id": "d3-line-draw--line-draw-scene",
+   "type": "component",
+   "definitionId": "d3-line-draw--line-draw-scene--definition",
+   "parameters": {
+    "scene": "d3/line-draw",
+    "alt": "时间序列的折线从左到右画出，一条读数线扫过并显示日期与数值，然后折线下的面积填上颜色。"
+   }
+  },
+  "d3-line-draw--paragraph-1": {
+   "id": "d3-line-draw--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-line-draw--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "scaleTime",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 加 "
+      },
+      {
+       "type": "text",
+       "text": "d3.line",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 画出折线，"
+      },
+      {
+       "type": "text",
+       "text": "pathLength",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 设为 1 后用虚线偏移从左到右描出来。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-line-draw--paragraph-2": {
+   "id": "d3-line-draw--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-line-draw--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "读数线沿时间轴移动："
+      },
+      {
+       "type": "text",
+       "text": "x.invert",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 把位置换回日期，"
+      },
+      {
+       "type": "text",
+       "text": "d3.bisector",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 找到最近的数据点，"
+      },
+      {
+       "type": "text",
+       "text": "d3.format",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 格式化数值。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-line-draw--paragraph-3": {
+   "id": "d3-line-draw--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-line-draw--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "d3.area",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 用同一组点画出面积，淡淡地填上。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-bar-race--bar-race-scene": {
+   "id": "d3-bar-race--bar-race-scene",
+   "type": "component",
+   "definitionId": "d3-bar-race--bar-race-scene--definition",
+   "parameters": {
+    "scene": "d3/bar-race",
+    "alt": "十种编程语言的条形按年份变化，名次交换时条形上下穿过，横轴跟着最大值伸缩。"
+   }
+  },
+  "d3-bar-race--paragraph-1": {
+   "id": "d3-bar-race--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-bar-race--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第一年的条形从左向右长出，按数值排好名次。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-bar-race--paragraph-2": {
+   "id": "d3-bar-race--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-bar-race--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "到下一年：数值与名次都在两年之间插值，超过别人的条形从下方穿上去，横轴的定义域每帧跟着最大值。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-bar-race--paragraph-3": {
+   "id": "d3-bar-race--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-bar-race--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "再下一年，排在七名以外的条形淡出，挤进前七的淡入。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-bar-race--paragraph-4": {
+   "id": "d3-bar-race--paragraph-4",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-bar-race--paragraph-4--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "继续比较，左下角的年份跟着数字往前走。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-bar-race--paragraph-5": {
+   "id": "d3-bar-race--paragraph-5",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-bar-race--paragraph-5--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "最后一年，名次定下来。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-histogram--histogram-scene": {
+   "id": "d3-histogram--histogram-scene",
+   "type": "component",
+   "definitionId": "d3-histogram--histogram-scene--definition",
+   "parameters": {
+    "scene": "d3/histogram",
+    "alt": "五百个样本逐渐到来，直方图随之长高；箱宽从 2.5 变成 10，最后画出核密度曲线。"
+   }
+  },
+  "d3-histogram--paragraph-1": {
+   "id": "d3-histogram--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-histogram--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "样本一个一个到来，"
+      },
+      {
+       "type": "text",
+       "text": "d3.bin",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 每帧对前 n 个样本重新分箱，底部的短线是每个样本的位置。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-histogram--paragraph-2": {
+   "id": "d3-histogram--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-histogram--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "箱宽从 2.5 换成 10：两套分箱交叉淡入淡出，纵轴随最大计数缩放。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-histogram--paragraph-3": {
+   "id": "d3-histogram--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-histogram--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "用高斯核估计密度（"
+      },
+      {
+       "type": "text",
+       "text": "d3.mean",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 对每个位置求和），曲线描在直方图上，两个峰一目了然。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-stack-stream--stack-stream-scene": {
+   "id": "d3-stack-stream--stack-stream-scene",
+   "type": "component",
+   "definitionId": "d3-stack-stream--stack-stream-scene--definition",
+   "parameters": {
+    "scene": "d3/stack-stream",
+    "alt": "六个研究方向的堆叠面积图一层层长出，再变成上下对称的河流图，最后突出其中一层。"
+   }
+  },
+  "d3-stack-stream--paragraph-1": {
+   "id": "d3-stack-stream--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-stack-stream--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "d3.stack",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 算出每层的上下边界，各层从下面那一层的顶上依次长起来。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-stack-stream--paragraph-2": {
+   "id": "d3-stack-stream--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-stack-stream--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "换成 "
+      },
+      {
+       "type": "text",
+       "text": "stackOffsetWiggle",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 与 "
+      },
+      {
+       "type": "text",
+       "text": "stackOrderInsideOut",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 就是河流图：两种布局按键对应，每个点的上下边界逐点插值。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-stack-stream--paragraph-3": {
+   "id": "d3-stack-stream--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-stack-stream--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "突出「语音」一层，其他层变淡，标签放在它最宽的地方。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-pie-arcs--pie-arcs-scene": {
+   "id": "d3-pie-arcs--pie-arcs-scene",
+   "type": "component",
+   "definitionId": "d3-pie-arcs--pie-arcs-scene--definition",
+   "parameters": {
+    "scene": "d3/pie-arcs",
+    "alt": "算力分配的饼图扫开，变成圆角环图，然后换成两年后的数据，每段弧转到新的角度。"
+   }
+  },
+  "d3-pie-arcs--paragraph-1": {
+   "id": "d3-pie-arcs--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-pie-arcs--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "d3.pie",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 算出每段的起止角，"
+      },
+      {
+       "type": "text",
+       "text": "d3.arc",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 画出扇形，整个饼按角度从零扫开。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-pie-arcs--paragraph-2": {
+   "id": "d3-pie-arcs--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-pie-arcs--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "内半径、段间空隙与圆角一起长出来，饼图变成环图，百分比标在每段弧的中间。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-pie-arcs--paragraph-3": {
+   "id": "d3-pie-arcs--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-pie-arcs--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "数据变了：插值的是每段弧的起止角，再交给 "
+      },
+      {
+       "type": "text",
+       "text": "d3.arc",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 重画，而不是插值路径字符串。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-heatmap-scales--heatmap-scales-scene": {
+   "id": "d3-heatmap-scales--heatmap-scales-scene",
+   "type": "component",
+   "definitionId": "d3-heatmap-scales--heatmap-scales-scene--definition",
+   "parameters": {
+    "scene": "d3/heatmap-scales",
+    "alt": "一个二维矩阵的热力图沿对角线填色，再换成以零为中心的红蓝发散色，最后变成七级分级色。"
+   }
+  },
+  "d3-heatmap-scales--paragraph-1": {
+   "id": "d3-heatmap-scales--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-heatmap-scales--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "scaleSequential",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 配 "
+      },
+      {
+       "type": "text",
+       "text": "interpolateViridis",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "，格子沿对角线依次填上颜色，下方是图例与坐标轴。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-heatmap-scales--paragraph-2": {
+   "id": "d3-heatmap-scales--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-heatmap-scales--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "换成 "
+      },
+      {
+       "type": "text",
+       "text": "scaleDiverging",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 配 "
+      },
+      {
+       "type": "text",
+       "text": "interpolateRdBu",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "：零是白色，正负各一种颜色，格子在 Lab 空间里过渡。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-heatmap-scales--paragraph-3": {
+   "id": "d3-heatmap-scales--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-heatmap-scales--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "scaleQuantize",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 把连续值分成七级，图例变成七个色块。"
+      }
+     ]
+    }
+   ]
+  },
+  "dc-chart-story--notes": {
+   "id": "dc-chart-story--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "dc-chart-story--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一张小图讲一个数时用：先给出读法（标题、零基线、网格、类别名），再按阅读顺序长出数据，最后其余数据退成浅灰，被强调的那个变成强调色并弹出数值标签。"
+      }
+     ]
+    },
+    {
+     "id": "dc-chart-story--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "frame 1 s：标题，基线和网格从左往右画出，类别名依次出现；build 1.8 s：各数据错开 80 ms、各约 1 s 长出（三次缓入缓出，数据不过冲），柱顶数字同步计数；emphasis 2.2 s：其余退为浅灰，强调项变色，数值标签弹出，至少静止 1.5 s。"
+      }
+     ]
+    },
+    {
+     "id": "dc-chart-story--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：kind（bars 柱、line 折线、donut 环、progress 进度条）、data、labels、emphasize、title、unit、source（默认“示意数据”，使用实际数据时写明出处）。柱与面积从零开始。"
+      }
+     ]
+    }
+   ]
+  },
+  "dc-chart-story--shot": {
+   "id": "dc-chart-story--shot",
+   "type": "component",
+   "definitionId": "dc-chart-story--shot--definition",
+   "parameters": {
+    "scene": "dc/chart-story",
+    "alt": "柱状图：第 1 到第 4 章测验平均分 62、71、78、86（示意数据），第 4 章以强调色标出 86 分。"
+   }
+  },
+  "hierarchy--intro": {
+   "id": "hierarchy--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "hierarchy--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "树、矩形树图、圆堆积、旭日图、力导向图与弦图。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-tree-morph--tree-morph-scene": {
+   "id": "d3-tree-morph--tree-morph-scene",
+   "type": "component",
+   "definitionId": "d3-tree-morph--tree-morph-scene--definition",
+   "parameters": {
+    "scene": "d3/tree-morph",
+    "alt": "计算机学科的层次一层层长成树，叶子对齐成聚类树，再弯成以根为中心的径向树。"
+   }
+  },
+  "d3-tree-morph--paragraph-1": {
+   "id": "d3-tree-morph--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-tree-morph--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "d3.hierarchy",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 加 "
+      },
+      {
+       "type": "text",
+       "text": "d3.tree",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 算出整齐树，每一层从父节点的位置长出来，连线是 "
+      },
+      {
+       "type": "text",
+       "text": "linkHorizontal",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-tree-morph--paragraph-2": {
+   "id": "d3-tree-morph--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-tree-morph--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "换成 "
+      },
+      {
+       "type": "text",
+       "text": "d3.cluster",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "：叶子都排到最右一列，节点位置在两种布局之间插值。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-tree-morph--paragraph-3": {
+   "id": "d3-tree-morph--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-tree-morph--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "再换成极坐标下的 "
+      },
+      {
+       "type": "text",
+       "text": "d3.tree",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 与 "
+      },
+      {
+       "type": "text",
+       "text": "pointRadial",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "："
+      },
+      {
+       "type": "text",
+       "text": "linkRadial",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 与 "
+      },
+      {
+       "type": "text",
+       "text": "linkHorizontal",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 的路径都写成 M 加 C，"
+      },
+      {
+       "type": "text",
+       "text": "interpolateString",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 可以直接混合。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-treemap-tiling--treemap-tiling-scene": {
+   "id": "d3-treemap-tiling--treemap-tiling-scene",
+   "type": "component",
+   "definitionId": "d3-treemap-tiling--treemap-tiling-scene--definition",
+   "parameters": {
+    "scene": "d3/treemap-tiling",
+    "alt": "矩形树图按层长出，从近似正方形的切分换成按层横竖交替的切分，再放大到「机器学习」一组。"
+   }
+  },
+  "d3-treemap-tiling--paragraph-1": {
+   "id": "d3-treemap-tiling--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-treemap-tiling--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "d3.treemap",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 默认用 "
+      },
+      {
+       "type": "text",
+       "text": "treemapSquarify",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "，让每块尽量接近正方形；先出现大组，再出现叶子。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-treemap-tiling--paragraph-2": {
+   "id": "d3-treemap-tiling--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-treemap-tiling--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "换成 "
+      },
+      {
+       "type": "text",
+       "text": "treemapSliceDice",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "：一层横切、一层竖切，每个矩形在两种布局之间插值。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-treemap-tiling--paragraph-3": {
+   "id": "d3-treemap-tiling--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-treemap-tiling--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "放大到「机器学习」：两个线性比例尺的定义域收到这组的边界，所有矩形跟着比例尺重新放置。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-pack-zoom--pack-zoom-scene": {
+   "id": "d3-pack-zoom--pack-zoom-scene",
+   "type": "component",
+   "definitionId": "d3-pack-zoom--pack-zoom-scene--definition",
+   "parameters": {
+    "scene": "d3/pack-zoom",
+    "alt": "嵌套的圆按层出现，镜头推进「人工智能」，再拉远并推到「系统」。"
+   }
+  },
+  "d3-pack-zoom--paragraph-1": {
+   "id": "d3-pack-zoom--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-pack-zoom--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "d3.pack",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 按数值把叶子装进父圆，从外层到内层依次出现。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-pack-zoom--paragraph-2": {
+   "id": "d3-pack-zoom--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-pack-zoom--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "d3.interpolateZoom",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 在两个视野之间插值，镜头推进「人工智能」，小圆的名字随着变大显示出来。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-pack-zoom--paragraph-3": {
+   "id": "d3-pack-zoom--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-pack-zoom--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "从一个子圆到另一个：插值先拉远再推近，像飞过去一样。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-sunburst-zoom--sunburst-zoom-scene": {
+   "id": "d3-sunburst-zoom--sunburst-zoom-scene",
+   "type": "component",
+   "definitionId": "d3-sunburst-zoom--sunburst-zoom-scene--definition",
+   "parameters": {
+    "scene": "d3/sunburst-zoom",
+    "alt": "层次的环一圈圈扫开，点进「人工智能」后它占满整圈，再退回全图。"
+   }
+  },
+  "d3-sunburst-zoom--paragraph-1": {
+   "id": "d3-sunburst-zoom--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-sunburst-zoom--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "d3.partition",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 在极坐标下切分，"
+      },
+      {
+       "type": "text",
+       "text": "d3.arc",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 画出每一段，一圈一圈地扫开。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-sunburst-zoom--paragraph-2": {
+   "id": "d3-sunburst-zoom--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-sunburst-zoom--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "放大「人工智能」：角度比例尺的定义域收到它的起止角，半径比例尺往外推一圈，它的子节点占满整圈。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-sunburst-zoom--paragraph-3": {
+   "id": "d3-sunburst-zoom--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-sunburst-zoom--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "再退回去，同一组比例尺回到原来的定义域，整个过程可以倒着播。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-force-path--force-path-scene": {
+   "id": "d3-force-path--force-path-scene",
+   "type": "component",
+   "definitionId": "d3-force-path--force-path-scene--definition",
+   "parameters": {
+    "scene": "d3/force-path",
+    "alt": "三十四个节点从叶序排列出发，在力的作用下散开稳定，再沿最短路径点亮一条路线。"
+   }
+  },
+  "d3-force-path--paragraph-1": {
+   "id": "d3-force-path--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-force-path--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "节点出现在 "
+      },
+      {
+       "type": "text",
+       "text": "d3-force",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 的初始位置：一个向日葵式的叶序螺旋。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-force-path--paragraph-2": {
+   "id": "d3-force-path--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-force-path--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "力导向布局逐步稳定：模拟在构建时停下并跑满两百步，每一帧在相邻两步之间插值。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-force-path--paragraph-3": {
+   "id": "d3-force-path--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-force-path--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "广度优先搜索找出从起点到最远节点的最短路，一个红点沿路走过，经过的边与节点变红。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-chord--chord-scene": {
+   "id": "d3-chord--chord-scene",
+   "type": "component",
+   "definitionId": "d3-chord--chord-scene--definition",
+   "parameters": {
+    "scene": "d3/chord",
+    "alt": "五座城市之间的流动画成弦图：外圈的弧扫开，丝带从起点长到终点，再突出上海。"
+   }
+  },
+  "d3-chord--paragraph-1": {
+   "id": "d3-chord--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-chord--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "d3.chord",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 把矩阵变成每座城市的弧，弧长是流出总量，外圈依次扫开并标上城市名。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-chord--paragraph-2": {
+   "id": "d3-chord--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-chord--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "d3.ribbon",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 画出城市之间的丝带，每条从起点的中间张开到终点的位置。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-chord--paragraph-3": {
+   "id": "d3-chord--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-chord--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "突出上海：与它相连的丝带保留，其余淡去。"
+      }
+     ]
+    }
+   ]
+  },
+  "spatial--intro": {
+   "id": "spatial--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "spatial--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "平面划分、密度、最近邻、地图与波形。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-voronoi-lloyd--voronoi-lloyd-scene": {
+   "id": "d3-voronoi-lloyd--voronoi-lloyd-scene",
+   "type": "component",
+   "definitionId": "d3-voronoi-lloyd--voronoi-lloyd-scene--definition",
+   "parameters": {
+    "scene": "d3/voronoi-lloyd",
+    "alt": "七十个点连成 Delaunay 三角网，再画出 Voronoi 单元，最后每个点反复移到单元的重心，单元变得均匀。"
+   }
+  },
+  "d3-voronoi-lloyd--paragraph-1": {
+   "id": "d3-voronoi-lloyd--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-voronoi-lloyd--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "七十个随机点依次出现（种子固定的 "
+      },
+      {
+       "type": "text",
+       "text": "d3.randomLcg",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "）。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-voronoi-lloyd--paragraph-2": {
+   "id": "d3-voronoi-lloyd--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-voronoi-lloyd--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "d3.Delaunay.from",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 三角剖分，"
+      },
+      {
+       "type": "text",
+       "text": "delaunay.render()",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 描出三角网。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-voronoi-lloyd--paragraph-3": {
+   "id": "d3-voronoi-lloyd--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-voronoi-lloyd--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "delaunay.voronoi",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 得到 Voronoi 图，每个点的单元填上颜色，三角网淡去。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-voronoi-lloyd--paragraph-4": {
+   "id": "d3-voronoi-lloyd--paragraph-4",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-voronoi-lloyd--paragraph-4--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "Lloyd 松弛：每个点移到自己单元的 "
+      },
+      {
+       "type": "text",
+       "text": "polygonCentroid",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "，反复四十次，单元越来越接近大小相同的六边形。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-contour-density--contour-density-scene": {
+   "id": "d3-contour-density--contour-density-scene",
+   "type": "component",
+   "definitionId": "d3-contour-density--contour-density-scene--definition",
+   "parameters": {
+    "scene": "d3/contour-density",
+    "alt": "三团散点上长出密度等值线，从外圈到内圈依次着色，然后核的带宽从宽变窄，等值线随之分开。"
+   }
+  },
+  "d3-contour-density--paragraph-1": {
+   "id": "d3-contour-density--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-contour-density--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "四百二十个点来自三个高斯分布。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-contour-density--paragraph-2": {
+   "id": "d3-contour-density--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-contour-density--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "d3.contourDensity",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 估计密度并给出等值带，"
+      },
+      {
+       "type": "text",
+       "text": "geoPath",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 画出来，从外到内用 "
+      },
+      {
+       "type": "text",
+       "text": "interpolateMagma",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 依次上色。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-contour-density--paragraph-3": {
+   "id": "d3-contour-density--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-contour-density--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "带宽从 26 缩到 9：带宽大时三团连成一片，变小后各自分开，细节也多了。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-quadtree-find--quadtree-find-scene": {
+   "id": "d3-quadtree-find--quadtree-find-scene",
+   "type": "component",
+   "definitionId": "d3-quadtree-find--quadtree-find-scene--definition",
+   "parameters": {
+    "scene": "d3/quadtree-find",
+    "alt": "点逐个加入四叉树，方格不断细分；然后一个探针移动，红线连到它最近的点。"
+   }
+  },
+  "d3-quadtree-find--paragraph-1": {
+   "id": "d3-quadtree-find--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-quadtree-find--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "d3.quadtree",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 每加一个点，所在的方格满了就一分为四，"
+      },
+      {
+       "type": "text",
+       "text": "visit",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 遍历出全部方格。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-quadtree-find--paragraph-2": {
+   "id": "d3-quadtree-find--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-quadtree-find--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "quadtree.find",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 查最近邻：探针沿曲线移动，红线与虚线圆连到当前最近的点。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-globe--globe-scene": {
+   "id": "d3-globe--globe-scene",
+   "type": "component",
+   "definitionId": "d3-globe--globe-scene--definition",
+   "parameters": {
+    "scene": "d3/globe",
+    "alt": "正射投影的地球带着经纬网转动，一条大圆航线从北京画到伦敦，然后地球展开成等距圆柱投影的平面地图。"
+   }
+  },
+  "d3-globe--paragraph-1": {
+   "id": "d3-globe--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-globe--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "geoOrthographic",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 投影加 "
+      },
+      {
+       "type": "text",
+       "text": "geoGraticule10",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 的经纬网，"
+      },
+      {
+       "type": "text",
+       "text": "projection.rotate",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 让地球转起来，城市用 "
+      },
+      {
+       "type": "text",
+       "text": "geoCircle",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 标出。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-globe--paragraph-2": {
+   "id": "d3-globe--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-globe--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "d3.geoInterpolate",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 沿大圆插值，航线从北京描到伦敦，红点沿航线飞，绕到背面时隐去。"
+      }
+     ]
+    }
+   ]
+  },
+  "d3-globe--paragraph-3": {
+   "id": "d3-globe--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "d3-globe--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "geoProjectionMutator",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 混合正射与等距圆柱两个原始投影，裁剪角从 90° 开到 180°，地球展开成平面。"
+      }
+     ]
+    }
+   ]
+  },
+  "dc-tile-map--notes": {
+   "id": "dc-tile-map--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "dc-tile-map--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "比较各地区的一个数时用：每个地区一个等大的方格（小地区和大地区一样显眼，也不需要地图数据），图例上的指针从低扫到高，方格在指针经过自己的值时上色，最后只留前几名并列出数值。"
+      }
+     ]
+    },
+    {
+     "id": "dc-tile-map--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "grid 1.5 s：方格从中心向外以波的方式出现（总错开 0.6 s），随后标题与图例；fill 2.5 s：指针 1.6 s 扫过图例，方格依次上色，地图由低值地区填到高值地区，再停 0.9 s；focus 2.5 s：其余地区暗到三分之一，前三名描边，右侧排名列表依次浮现，停留至少 1.5 s。"
+      }
+     ]
+    },
+    {
+     "id": "dc-tile-map--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：tiles（[名称, 列, 行] 的列表，默认中国 34 个省级行政区）、values（名称到数值）、unit、title、source（默认“示意数据”）、top。没有数值的地区画成斜线并在图例注明“无数据”。"
+      }
+     ]
+    }
+   ]
+  },
+  "dc-tile-map--shot": {
+   "id": "dc-tile-map--shot",
+   "type": "component",
+   "definitionId": "dc-tile-map--shot--definition",
+   "parameters": {
+    "scene": "dc/tile-map",
+    "alt": "方格地图：中国 34 个省级行政区的在线课程注册人数（示意数据，万人），广东 98、江苏 86、山东 80 居前三。"
+   }
+  },
+  "dc-oscilloscope--notes": {
+   "id": "dc-oscilloscope--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "dc-oscilloscope--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "讲信号、频率、采样时用：光点按时基从左扫到右，荧光余辉留下波形并按指数衰减；随后频率升高，同一屏里的周期变多。"
+      }
+     ]
+    },
+    {
+     "id": "dc-oscilloscope--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "screen 1.2 s：刻度网格从中线向外出现，读数栏出现（横轴是时间、纵轴是电压）；trace 2.5 s：光点以每格 0.1 s 的速度扫描，余辉亮度按 exp(−age/τ) 衰减，光点慢处更亮；change 2.5 s：1.2 s 内频率从 from 升到 to，读数同步计数，后面的扫描波形变密，其余时间持续扫描。"
+      }
+     ]
+    },
+    {
+     "id": "dc-oscilloscope--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：waveform（sine、square、triangle）、from、to（Hz）、amplitude（格）、persistence（τ，毫秒）。每次扫描在信号下一次上升过零时触发，所以波形不漂；相位是频率的积分，按分段闭式计算。"
+      }
+     ]
+    }
+   ]
+  },
+  "dc-oscilloscope--shot": {
+   "id": "dc-oscilloscope--shot",
+   "type": "component",
+   "definitionId": "dc-oscilloscope--shot--definition",
+   "parameters": {
+    "scene": "dc/oscilloscope",
+    "alt": "示波器：正弦波在 10 × 8 格的屏幕上扫出，频率从 2 Hz 升到 5 Hz，波形变密。"
+   }
+  }
+ },
+ "steps": {
+  "numbers--step": {
+   "id": "numbers--step",
+   "sectionId": "numbers",
+   "visuals": [
+    {
+     "blockId": "numbers--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "gsap-counter--step-0": {
+   "id": "gsap-counter--step-0",
+   "sectionId": "gsap-counter",
+   "visuals": [
+    {
+     "blockId": "gsap-counter--counter-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "gsap-counter--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-counter--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-counter--paragraph-1--narration"
+   ]
+  },
+  "gsap-counter--step-1": {
+   "id": "gsap-counter--step-1",
+   "sectionId": "gsap-counter",
+   "visuals": [
+    {
+     "blockId": "gsap-counter--counter-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "gsap-counter--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-counter--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-counter--paragraph-2--narration"
+   ]
+  },
+  "anime-param-counter--step-0": {
+   "id": "anime-param-counter--step-0",
+   "sectionId": "anime-param-counter",
+   "visuals": [
+    {
+     "blockId": "anime-param-counter--param-counter-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "anime-param-counter--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-param-counter--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-param-counter--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-param-counter--paragraph-1--narration"
+   ]
+  },
+  "anime-param-counter--step-1": {
+   "id": "anime-param-counter--step-1",
+   "sectionId": "anime-param-counter",
+   "visuals": [
+    {
+     "blockId": "anime-param-counter--param-counter-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "anime-param-counter--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-param-counter--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-param-counter--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-param-counter--paragraph-2--narration"
+   ]
+  },
+  "anime-param-counter--step-2": {
+   "id": "anime-param-counter--step-2",
+   "sectionId": "anime-param-counter",
+   "visuals": [
+    {
+     "blockId": "anime-param-counter--param-counter-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "anime-param-counter--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-param-counter--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-param-counter--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-param-counter--paragraph-3--narration"
+   ]
+  },
+  "motion-counter--step-0": {
+   "id": "motion-counter--step-0",
+   "sectionId": "motion-counter",
+   "visuals": [
+    {
+     "blockId": "motion-counter--counter-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-counter--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-counter--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-counter--paragraph-1--narration"
+   ]
+  },
+  "motion-counter--step-1": {
+   "id": "motion-counter--step-1",
+   "sectionId": "motion-counter",
+   "visuals": [
+    {
+     "blockId": "motion-counter--counter-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-counter--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-counter--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-counter--paragraph-2--narration"
+   ]
+  },
+  "remotion-counter--step-0": {
+   "id": "remotion-counter--step-0",
+   "sectionId": "remotion-counter",
+   "visuals": [
+    {
+     "blockId": "remotion-counter--counter-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "remotion-counter--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-counter--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-counter--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-counter--paragraph-1--narration"
+   ]
+  },
+  "remotion-counter--step-1": {
+   "id": "remotion-counter--step-1",
+   "sectionId": "remotion-counter",
+   "visuals": [
+    {
+     "blockId": "remotion-counter--counter-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "remotion-counter--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-counter--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-counter--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-counter--paragraph-2--narration"
+   ]
+  },
+  "remotion-counter--step-2": {
+   "id": "remotion-counter--step-2",
+   "sectionId": "remotion-counter",
+   "visuals": [
+    {
+     "blockId": "remotion-counter--counter-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "remotion-counter--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-counter--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-counter--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-counter--paragraph-3--narration"
+   ]
+  },
+  "motion-ring--step-0": {
+   "id": "motion-ring--step-0",
+   "sectionId": "motion-ring",
+   "visuals": [
+    {
+     "blockId": "motion-ring--ring-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-ring--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-ring--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-ring--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-ring--paragraph-1--narration"
+   ]
+  },
+  "motion-ring--step-1": {
+   "id": "motion-ring--step-1",
+   "sectionId": "motion-ring",
+   "visuals": [
+    {
+     "blockId": "motion-ring--ring-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-ring--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-ring--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-ring--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-ring--paragraph-2--narration"
+   ]
+  },
+  "motion-ring--step-2": {
+   "id": "motion-ring--step-2",
+   "sectionId": "motion-ring",
+   "visuals": [
+    {
+     "blockId": "motion-ring--ring-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "motion-ring--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-ring--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-ring--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-ring--paragraph-3--narration"
+   ]
+  },
+  "show-stat-gauge--step-0": {
+   "id": "show-stat-gauge--step-0",
+   "sectionId": "show-stat-gauge",
+   "visuals": [
+    {
+     "blockId": "show-stat-gauge--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-stat-gauge--shot",
+     "visible": true,
+     "state": "setup"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-stat-gauge--step-1": {
+   "id": "show-stat-gauge--step-1",
+   "sectionId": "show-stat-gauge",
+   "visuals": [
+    {
+     "blockId": "show-stat-gauge--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-stat-gauge--shot",
+     "visible": true,
+     "state": "fill"
+    }
+   ],
+   "narrationIds": []
+  },
+  "show-stat-gauge--step-2": {
+   "id": "show-stat-gauge--step-2",
+   "sectionId": "show-stat-gauge",
+   "visuals": [
+    {
+     "blockId": "show-stat-gauge--notes",
+     "visible": false
+    },
+    {
+     "blockId": "show-stat-gauge--shot",
+     "visible": true,
+     "state": "hold"
+    }
+   ],
+   "narrationIds": []
+  },
+  "charts--step": {
+   "id": "charts--step",
+   "sectionId": "charts",
+   "visuals": [
+    {
+     "blockId": "charts--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "motion-bars--step-0": {
+   "id": "motion-bars--step-0",
+   "sectionId": "motion-bars",
+   "visuals": [
+    {
+     "blockId": "motion-bars--bars-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-bars--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-bars--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-bars--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-bars--paragraph-1--narration"
+   ]
+  },
+  "motion-bars--step-1": {
+   "id": "motion-bars--step-1",
+   "sectionId": "motion-bars",
+   "visuals": [
+    {
+     "blockId": "motion-bars--bars-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-bars--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-bars--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-bars--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-bars--paragraph-2--narration"
+   ]
+  },
+  "motion-bars--step-2": {
+   "id": "motion-bars--step-2",
+   "sectionId": "motion-bars",
+   "visuals": [
+    {
+     "blockId": "motion-bars--bars-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "motion-bars--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-bars--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-bars--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-bars--paragraph-3--narration"
+   ]
+  },
+  "remotion-bar-chart--step-0": {
+   "id": "remotion-bar-chart--step-0",
+   "sectionId": "remotion-bar-chart",
+   "visuals": [
+    {
+     "blockId": "remotion-bar-chart--bar-chart-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "remotion-bar-chart--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-bar-chart--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-bar-chart--paragraph-1--narration"
+   ]
+  },
+  "remotion-bar-chart--step-1": {
+   "id": "remotion-bar-chart--step-1",
+   "sectionId": "remotion-bar-chart",
+   "visuals": [
+    {
+     "blockId": "remotion-bar-chart--bar-chart-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "remotion-bar-chart--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-bar-chart--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-bar-chart--paragraph-2--narration"
+   ]
+  },
+  "d3-axis-zoom--step-0": {
+   "id": "d3-axis-zoom--step-0",
+   "sectionId": "d3-axis-zoom",
+   "visuals": [
+    {
+     "blockId": "d3-axis-zoom--axis-zoom-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-axis-zoom--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-axis-zoom--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-axis-zoom--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-axis-zoom--paragraph-1--narration"
+   ]
+  },
+  "d3-axis-zoom--step-1": {
+   "id": "d3-axis-zoom--step-1",
+   "sectionId": "d3-axis-zoom",
+   "visuals": [
+    {
+     "blockId": "d3-axis-zoom--axis-zoom-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-axis-zoom--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-axis-zoom--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-axis-zoom--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-axis-zoom--paragraph-2--narration"
+   ]
+  },
+  "d3-axis-zoom--step-2": {
+   "id": "d3-axis-zoom--step-2",
+   "sectionId": "d3-axis-zoom",
+   "visuals": [
+    {
+     "blockId": "d3-axis-zoom--axis-zoom-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-axis-zoom--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-axis-zoom--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-axis-zoom--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-axis-zoom--paragraph-3--narration"
+   ]
+  },
+  "d3-data-join--step-0": {
+   "id": "d3-data-join--step-0",
+   "sectionId": "d3-data-join",
+   "visuals": [
+    {
+     "blockId": "d3-data-join--data-join-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-data-join--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-data-join--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-data-join--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "d3-data-join--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-data-join--paragraph-1--narration"
+   ]
+  },
+  "d3-data-join--step-1": {
+   "id": "d3-data-join--step-1",
+   "sectionId": "d3-data-join",
+   "visuals": [
+    {
+     "blockId": "d3-data-join--data-join-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-data-join--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-data-join--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-data-join--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "d3-data-join--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-data-join--paragraph-2--narration"
+   ]
+  },
+  "d3-data-join--step-2": {
+   "id": "d3-data-join--step-2",
+   "sectionId": "d3-data-join",
+   "visuals": [
+    {
+     "blockId": "d3-data-join--data-join-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-data-join--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-data-join--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-data-join--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "d3-data-join--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-data-join--paragraph-3--narration"
+   ]
+  },
+  "d3-data-join--step-3": {
+   "id": "d3-data-join--step-3",
+   "sectionId": "d3-data-join",
+   "visuals": [
+    {
+     "blockId": "d3-data-join--data-join-scene",
+     "visible": true,
+     "state": "legacy-3"
+    },
+    {
+     "blockId": "d3-data-join--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-data-join--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-data-join--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "d3-data-join--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-data-join--paragraph-4--narration"
+   ]
+  },
+  "d3-line-draw--step-0": {
+   "id": "d3-line-draw--step-0",
+   "sectionId": "d3-line-draw",
+   "visuals": [
+    {
+     "blockId": "d3-line-draw--line-draw-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-line-draw--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-line-draw--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-line-draw--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-line-draw--paragraph-1--narration"
+   ]
+  },
+  "d3-line-draw--step-1": {
+   "id": "d3-line-draw--step-1",
+   "sectionId": "d3-line-draw",
+   "visuals": [
+    {
+     "blockId": "d3-line-draw--line-draw-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-line-draw--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-line-draw--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-line-draw--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-line-draw--paragraph-2--narration"
+   ]
+  },
+  "d3-line-draw--step-2": {
+   "id": "d3-line-draw--step-2",
+   "sectionId": "d3-line-draw",
+   "visuals": [
+    {
+     "blockId": "d3-line-draw--line-draw-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-line-draw--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-line-draw--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-line-draw--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-line-draw--paragraph-3--narration"
+   ]
+  },
+  "d3-bar-race--step-0": {
+   "id": "d3-bar-race--step-0",
+   "sectionId": "d3-bar-race",
+   "visuals": [
+    {
+     "blockId": "d3-bar-race--bar-race-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-4",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-5",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-bar-race--paragraph-1--narration"
+   ]
+  },
+  "d3-bar-race--step-1": {
+   "id": "d3-bar-race--step-1",
+   "sectionId": "d3-bar-race",
+   "visuals": [
+    {
+     "blockId": "d3-bar-race--bar-race-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-4",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-5",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-bar-race--paragraph-2--narration"
+   ]
+  },
+  "d3-bar-race--step-2": {
+   "id": "d3-bar-race--step-2",
+   "sectionId": "d3-bar-race",
+   "visuals": [
+    {
+     "blockId": "d3-bar-race--bar-race-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-4",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-5",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-bar-race--paragraph-3--narration"
+   ]
+  },
+  "d3-bar-race--step-3": {
+   "id": "d3-bar-race--step-3",
+   "sectionId": "d3-bar-race",
+   "visuals": [
+    {
+     "blockId": "d3-bar-race--bar-race-scene",
+     "visible": true,
+     "state": "legacy-3"
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-4",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-5",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-bar-race--paragraph-4--narration"
+   ]
+  },
+  "d3-bar-race--step-4": {
+   "id": "d3-bar-race--step-4",
+   "sectionId": "d3-bar-race",
+   "visuals": [
+    {
+     "blockId": "d3-bar-race--bar-race-scene",
+     "visible": true,
+     "state": "legacy-4"
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-4",
+     "visible": false
+    },
+    {
+     "blockId": "d3-bar-race--paragraph-5",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-bar-race--paragraph-5--narration"
+   ]
+  },
+  "d3-histogram--step-0": {
+   "id": "d3-histogram--step-0",
+   "sectionId": "d3-histogram",
+   "visuals": [
+    {
+     "blockId": "d3-histogram--histogram-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-histogram--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-histogram--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-histogram--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-histogram--paragraph-1--narration"
+   ]
+  },
+  "d3-histogram--step-1": {
+   "id": "d3-histogram--step-1",
+   "sectionId": "d3-histogram",
+   "visuals": [
+    {
+     "blockId": "d3-histogram--histogram-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-histogram--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-histogram--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-histogram--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-histogram--paragraph-2--narration"
+   ]
+  },
+  "d3-histogram--step-2": {
+   "id": "d3-histogram--step-2",
+   "sectionId": "d3-histogram",
+   "visuals": [
+    {
+     "blockId": "d3-histogram--histogram-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-histogram--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-histogram--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-histogram--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-histogram--paragraph-3--narration"
+   ]
+  },
+  "d3-stack-stream--step-0": {
+   "id": "d3-stack-stream--step-0",
+   "sectionId": "d3-stack-stream",
+   "visuals": [
+    {
+     "blockId": "d3-stack-stream--stack-stream-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-stack-stream--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-stack-stream--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-stack-stream--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-stack-stream--paragraph-1--narration"
+   ]
+  },
+  "d3-stack-stream--step-1": {
+   "id": "d3-stack-stream--step-1",
+   "sectionId": "d3-stack-stream",
+   "visuals": [
+    {
+     "blockId": "d3-stack-stream--stack-stream-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-stack-stream--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-stack-stream--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-stack-stream--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-stack-stream--paragraph-2--narration"
+   ]
+  },
+  "d3-stack-stream--step-2": {
+   "id": "d3-stack-stream--step-2",
+   "sectionId": "d3-stack-stream",
+   "visuals": [
+    {
+     "blockId": "d3-stack-stream--stack-stream-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-stack-stream--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-stack-stream--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-stack-stream--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-stack-stream--paragraph-3--narration"
+   ]
+  },
+  "d3-pie-arcs--step-0": {
+   "id": "d3-pie-arcs--step-0",
+   "sectionId": "d3-pie-arcs",
+   "visuals": [
+    {
+     "blockId": "d3-pie-arcs--pie-arcs-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-pie-arcs--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-pie-arcs--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-pie-arcs--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-pie-arcs--paragraph-1--narration"
+   ]
+  },
+  "d3-pie-arcs--step-1": {
+   "id": "d3-pie-arcs--step-1",
+   "sectionId": "d3-pie-arcs",
+   "visuals": [
+    {
+     "blockId": "d3-pie-arcs--pie-arcs-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-pie-arcs--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-pie-arcs--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-pie-arcs--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-pie-arcs--paragraph-2--narration"
+   ]
+  },
+  "d3-pie-arcs--step-2": {
+   "id": "d3-pie-arcs--step-2",
+   "sectionId": "d3-pie-arcs",
+   "visuals": [
+    {
+     "blockId": "d3-pie-arcs--pie-arcs-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-pie-arcs--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-pie-arcs--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-pie-arcs--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-pie-arcs--paragraph-3--narration"
+   ]
+  },
+  "d3-heatmap-scales--step-0": {
+   "id": "d3-heatmap-scales--step-0",
+   "sectionId": "d3-heatmap-scales",
+   "visuals": [
+    {
+     "blockId": "d3-heatmap-scales--heatmap-scales-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-heatmap-scales--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-heatmap-scales--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-heatmap-scales--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-heatmap-scales--paragraph-1--narration"
+   ]
+  },
+  "d3-heatmap-scales--step-1": {
+   "id": "d3-heatmap-scales--step-1",
+   "sectionId": "d3-heatmap-scales",
+   "visuals": [
+    {
+     "blockId": "d3-heatmap-scales--heatmap-scales-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-heatmap-scales--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-heatmap-scales--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-heatmap-scales--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-heatmap-scales--paragraph-2--narration"
+   ]
+  },
+  "d3-heatmap-scales--step-2": {
+   "id": "d3-heatmap-scales--step-2",
+   "sectionId": "d3-heatmap-scales",
+   "visuals": [
+    {
+     "blockId": "d3-heatmap-scales--heatmap-scales-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-heatmap-scales--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-heatmap-scales--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-heatmap-scales--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-heatmap-scales--paragraph-3--narration"
+   ]
+  },
+  "dc-chart-story--step-0": {
+   "id": "dc-chart-story--step-0",
+   "sectionId": "dc-chart-story",
+   "visuals": [
+    {
+     "blockId": "dc-chart-story--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-chart-story--shot",
+     "visible": true,
+     "state": "frame"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-chart-story--step-1": {
+   "id": "dc-chart-story--step-1",
+   "sectionId": "dc-chart-story",
+   "visuals": [
+    {
+     "blockId": "dc-chart-story--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-chart-story--shot",
+     "visible": true,
+     "state": "build"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-chart-story--step-2": {
+   "id": "dc-chart-story--step-2",
+   "sectionId": "dc-chart-story",
+   "visuals": [
+    {
+     "blockId": "dc-chart-story--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-chart-story--shot",
+     "visible": true,
+     "state": "emphasis"
+    }
+   ],
+   "narrationIds": []
+  },
+  "hierarchy--step": {
+   "id": "hierarchy--step",
+   "sectionId": "hierarchy",
+   "visuals": [
+    {
+     "blockId": "hierarchy--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "d3-tree-morph--step-0": {
+   "id": "d3-tree-morph--step-0",
+   "sectionId": "d3-tree-morph",
+   "visuals": [
+    {
+     "blockId": "d3-tree-morph--tree-morph-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-tree-morph--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-tree-morph--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-tree-morph--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-tree-morph--paragraph-1--narration"
+   ]
+  },
+  "d3-tree-morph--step-1": {
+   "id": "d3-tree-morph--step-1",
+   "sectionId": "d3-tree-morph",
+   "visuals": [
+    {
+     "blockId": "d3-tree-morph--tree-morph-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-tree-morph--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-tree-morph--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-tree-morph--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-tree-morph--paragraph-2--narration"
+   ]
+  },
+  "d3-tree-morph--step-2": {
+   "id": "d3-tree-morph--step-2",
+   "sectionId": "d3-tree-morph",
+   "visuals": [
+    {
+     "blockId": "d3-tree-morph--tree-morph-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-tree-morph--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-tree-morph--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-tree-morph--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-tree-morph--paragraph-3--narration"
+   ]
+  },
+  "d3-treemap-tiling--step-0": {
+   "id": "d3-treemap-tiling--step-0",
+   "sectionId": "d3-treemap-tiling",
+   "visuals": [
+    {
+     "blockId": "d3-treemap-tiling--treemap-tiling-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-treemap-tiling--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-treemap-tiling--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-treemap-tiling--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-treemap-tiling--paragraph-1--narration"
+   ]
+  },
+  "d3-treemap-tiling--step-1": {
+   "id": "d3-treemap-tiling--step-1",
+   "sectionId": "d3-treemap-tiling",
+   "visuals": [
+    {
+     "blockId": "d3-treemap-tiling--treemap-tiling-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-treemap-tiling--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-treemap-tiling--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-treemap-tiling--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-treemap-tiling--paragraph-2--narration"
+   ]
+  },
+  "d3-treemap-tiling--step-2": {
+   "id": "d3-treemap-tiling--step-2",
+   "sectionId": "d3-treemap-tiling",
+   "visuals": [
+    {
+     "blockId": "d3-treemap-tiling--treemap-tiling-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-treemap-tiling--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-treemap-tiling--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-treemap-tiling--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-treemap-tiling--paragraph-3--narration"
+   ]
+  },
+  "d3-pack-zoom--step-0": {
+   "id": "d3-pack-zoom--step-0",
+   "sectionId": "d3-pack-zoom",
+   "visuals": [
+    {
+     "blockId": "d3-pack-zoom--pack-zoom-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-pack-zoom--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-pack-zoom--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-pack-zoom--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-pack-zoom--paragraph-1--narration"
+   ]
+  },
+  "d3-pack-zoom--step-1": {
+   "id": "d3-pack-zoom--step-1",
+   "sectionId": "d3-pack-zoom",
+   "visuals": [
+    {
+     "blockId": "d3-pack-zoom--pack-zoom-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-pack-zoom--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-pack-zoom--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-pack-zoom--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-pack-zoom--paragraph-2--narration"
+   ]
+  },
+  "d3-pack-zoom--step-2": {
+   "id": "d3-pack-zoom--step-2",
+   "sectionId": "d3-pack-zoom",
+   "visuals": [
+    {
+     "blockId": "d3-pack-zoom--pack-zoom-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-pack-zoom--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-pack-zoom--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-pack-zoom--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-pack-zoom--paragraph-3--narration"
+   ]
+  },
+  "d3-sunburst-zoom--step-0": {
+   "id": "d3-sunburst-zoom--step-0",
+   "sectionId": "d3-sunburst-zoom",
+   "visuals": [
+    {
+     "blockId": "d3-sunburst-zoom--sunburst-zoom-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-sunburst-zoom--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-sunburst-zoom--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-sunburst-zoom--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-sunburst-zoom--paragraph-1--narration"
+   ]
+  },
+  "d3-sunburst-zoom--step-1": {
+   "id": "d3-sunburst-zoom--step-1",
+   "sectionId": "d3-sunburst-zoom",
+   "visuals": [
+    {
+     "blockId": "d3-sunburst-zoom--sunburst-zoom-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-sunburst-zoom--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-sunburst-zoom--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-sunburst-zoom--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-sunburst-zoom--paragraph-2--narration"
+   ]
+  },
+  "d3-sunburst-zoom--step-2": {
+   "id": "d3-sunburst-zoom--step-2",
+   "sectionId": "d3-sunburst-zoom",
+   "visuals": [
+    {
+     "blockId": "d3-sunburst-zoom--sunburst-zoom-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-sunburst-zoom--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-sunburst-zoom--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-sunburst-zoom--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-sunburst-zoom--paragraph-3--narration"
+   ]
+  },
+  "d3-force-path--step-0": {
+   "id": "d3-force-path--step-0",
+   "sectionId": "d3-force-path",
+   "visuals": [
+    {
+     "blockId": "d3-force-path--force-path-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-force-path--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-force-path--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-force-path--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-force-path--paragraph-1--narration"
+   ]
+  },
+  "d3-force-path--step-1": {
+   "id": "d3-force-path--step-1",
+   "sectionId": "d3-force-path",
+   "visuals": [
+    {
+     "blockId": "d3-force-path--force-path-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-force-path--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-force-path--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-force-path--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-force-path--paragraph-2--narration"
+   ]
+  },
+  "d3-force-path--step-2": {
+   "id": "d3-force-path--step-2",
+   "sectionId": "d3-force-path",
+   "visuals": [
+    {
+     "blockId": "d3-force-path--force-path-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-force-path--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-force-path--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-force-path--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-force-path--paragraph-3--narration"
+   ]
+  },
+  "d3-chord--step-0": {
+   "id": "d3-chord--step-0",
+   "sectionId": "d3-chord",
+   "visuals": [
+    {
+     "blockId": "d3-chord--chord-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-chord--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-chord--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-chord--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-chord--paragraph-1--narration"
+   ]
+  },
+  "d3-chord--step-1": {
+   "id": "d3-chord--step-1",
+   "sectionId": "d3-chord",
+   "visuals": [
+    {
+     "blockId": "d3-chord--chord-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-chord--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-chord--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-chord--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-chord--paragraph-2--narration"
+   ]
+  },
+  "d3-chord--step-2": {
+   "id": "d3-chord--step-2",
+   "sectionId": "d3-chord",
+   "visuals": [
+    {
+     "blockId": "d3-chord--chord-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-chord--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-chord--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-chord--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-chord--paragraph-3--narration"
+   ]
+  },
+  "spatial--step": {
+   "id": "spatial--step",
+   "sectionId": "spatial",
+   "visuals": [
+    {
+     "blockId": "spatial--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "d3-voronoi-lloyd--step-0": {
+   "id": "d3-voronoi-lloyd--step-0",
+   "sectionId": "d3-voronoi-lloyd",
+   "visuals": [
+    {
+     "blockId": "d3-voronoi-lloyd--voronoi-lloyd-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-voronoi-lloyd--paragraph-1--narration"
+   ]
+  },
+  "d3-voronoi-lloyd--step-1": {
+   "id": "d3-voronoi-lloyd--step-1",
+   "sectionId": "d3-voronoi-lloyd",
+   "visuals": [
+    {
+     "blockId": "d3-voronoi-lloyd--voronoi-lloyd-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-voronoi-lloyd--paragraph-2--narration"
+   ]
+  },
+  "d3-voronoi-lloyd--step-2": {
+   "id": "d3-voronoi-lloyd--step-2",
+   "sectionId": "d3-voronoi-lloyd",
+   "visuals": [
+    {
+     "blockId": "d3-voronoi-lloyd--voronoi-lloyd-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-voronoi-lloyd--paragraph-3--narration"
+   ]
+  },
+  "d3-voronoi-lloyd--step-3": {
+   "id": "d3-voronoi-lloyd--step-3",
+   "sectionId": "d3-voronoi-lloyd",
+   "visuals": [
+    {
+     "blockId": "d3-voronoi-lloyd--voronoi-lloyd-scene",
+     "visible": true,
+     "state": "legacy-3"
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "d3-voronoi-lloyd--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-voronoi-lloyd--paragraph-4--narration"
+   ]
+  },
+  "d3-contour-density--step-0": {
+   "id": "d3-contour-density--step-0",
+   "sectionId": "d3-contour-density",
+   "visuals": [
+    {
+     "blockId": "d3-contour-density--contour-density-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-contour-density--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-contour-density--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-contour-density--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-contour-density--paragraph-1--narration"
+   ]
+  },
+  "d3-contour-density--step-1": {
+   "id": "d3-contour-density--step-1",
+   "sectionId": "d3-contour-density",
+   "visuals": [
+    {
+     "blockId": "d3-contour-density--contour-density-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-contour-density--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-contour-density--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-contour-density--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-contour-density--paragraph-2--narration"
+   ]
+  },
+  "d3-contour-density--step-2": {
+   "id": "d3-contour-density--step-2",
+   "sectionId": "d3-contour-density",
+   "visuals": [
+    {
+     "blockId": "d3-contour-density--contour-density-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-contour-density--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-contour-density--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-contour-density--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-contour-density--paragraph-3--narration"
+   ]
+  },
+  "d3-quadtree-find--step-0": {
+   "id": "d3-quadtree-find--step-0",
+   "sectionId": "d3-quadtree-find",
+   "visuals": [
+    {
+     "blockId": "d3-quadtree-find--quadtree-find-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-quadtree-find--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-quadtree-find--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-quadtree-find--paragraph-1--narration"
+   ]
+  },
+  "d3-quadtree-find--step-1": {
+   "id": "d3-quadtree-find--step-1",
+   "sectionId": "d3-quadtree-find",
+   "visuals": [
+    {
+     "blockId": "d3-quadtree-find--quadtree-find-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-quadtree-find--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-quadtree-find--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-quadtree-find--paragraph-2--narration"
+   ]
+  },
+  "d3-globe--step-0": {
+   "id": "d3-globe--step-0",
+   "sectionId": "d3-globe",
+   "visuals": [
+    {
+     "blockId": "d3-globe--globe-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "d3-globe--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-globe--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-globe--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-globe--paragraph-1--narration"
+   ]
+  },
+  "d3-globe--step-1": {
+   "id": "d3-globe--step-1",
+   "sectionId": "d3-globe",
+   "visuals": [
+    {
+     "blockId": "d3-globe--globe-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "d3-globe--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-globe--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-globe--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-globe--paragraph-2--narration"
+   ]
+  },
+  "d3-globe--step-2": {
+   "id": "d3-globe--step-2",
+   "sectionId": "d3-globe",
+   "visuals": [
+    {
+     "blockId": "d3-globe--globe-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "d3-globe--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "d3-globe--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "d3-globe--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "d3-globe--paragraph-3--narration"
+   ]
+  },
+  "dc-tile-map--step-0": {
+   "id": "dc-tile-map--step-0",
+   "sectionId": "dc-tile-map",
+   "visuals": [
+    {
+     "blockId": "dc-tile-map--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-tile-map--shot",
+     "visible": true,
+     "state": "grid"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-tile-map--step-1": {
+   "id": "dc-tile-map--step-1",
+   "sectionId": "dc-tile-map",
+   "visuals": [
+    {
+     "blockId": "dc-tile-map--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-tile-map--shot",
+     "visible": true,
+     "state": "fill"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-tile-map--step-2": {
+   "id": "dc-tile-map--step-2",
+   "sectionId": "dc-tile-map",
+   "visuals": [
+    {
+     "blockId": "dc-tile-map--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-tile-map--shot",
+     "visible": true,
+     "state": "focus"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-oscilloscope--step-0": {
+   "id": "dc-oscilloscope--step-0",
+   "sectionId": "dc-oscilloscope",
+   "visuals": [
+    {
+     "blockId": "dc-oscilloscope--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-oscilloscope--shot",
+     "visible": true,
+     "state": "screen"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-oscilloscope--step-1": {
+   "id": "dc-oscilloscope--step-1",
+   "sectionId": "dc-oscilloscope",
+   "visuals": [
+    {
+     "blockId": "dc-oscilloscope--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-oscilloscope--shot",
+     "visible": true,
+     "state": "trace"
+    }
+   ],
+   "narrationIds": []
+  },
+  "dc-oscilloscope--step-2": {
+   "id": "dc-oscilloscope--step-2",
+   "sectionId": "dc-oscilloscope",
+   "visuals": [
+    {
+     "blockId": "dc-oscilloscope--notes",
+     "visible": false
+    },
+    {
+     "blockId": "dc-oscilloscope--shot",
+     "visible": true,
+     "state": "change"
+    }
+   ],
+   "narrationIds": []
+  }
+ },
+ "narrations": {
+  "gsap-counter--paragraph-1--narration": {
+   "id": "gsap-counter--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "前五轮：轮数按整数增加，损失从 2.30 快速下降，准确率升到 81%。"
+    }
+   ]
+  },
+  "gsap-counter--paragraph-2--narration": {
+   "id": "gsap-counter--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "再训练五轮：损失降到 0.12，准确率升到 97%，变化越来越小。"
+    }
+   ]
+  },
+  "anime-param-counter--paragraph-1--narration": {
+   "id": "anime-param-counter--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "GPT 有 1.17 亿个参数。"
+    }
+   ]
+  },
+  "anime-param-counter--paragraph-2--narration": {
+   "id": "anime-param-counter--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "GPT-2 是 15 亿，多了一个数量级。"
+    }
+   ]
+  },
+  "anime-param-counter--paragraph-3--narration": {
+   "id": "anime-param-counter--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "GPT-3 是 1750 亿，柱子按对数刻度才放得下。"
+    }
+   ]
+  },
+  "motion-counter--paragraph-1--narration": {
+   "id": "motion-counter--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "前十轮：轮数一格一格跳，损失很快从 2.31 降到 1.12，准确率升到六成。"
+    }
+   ]
+  },
+  "motion-counter--paragraph-2--narration": {
+   "id": "motion-counter--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "再训练四十轮：损失降得越来越慢，最后停在 0.42，准确率 91.3%。"
+    }
+   ]
+  },
+  "remotion-counter--paragraph-1--narration": {
+   "id": "remotion-counter--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "GPT-1 有一亿多个参数。"
+    }
+   ]
+  },
+  "remotion-counter--paragraph-2--narration": {
+   "id": "remotion-counter--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "GPT-2 是十五亿，十几倍。"
+    }
+   ]
+  },
+  "remotion-counter--paragraph-3--narration": {
+   "id": "remotion-counter--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "GPT-3 是一千七百五十亿，又大了一百多倍，对数刻度条走到头。"
+    }
+   ]
+  },
+  "motion-ring--paragraph-1--narration": {
+   "id": "motion-ring--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "下载数据完成，进度 25%。"
+    }
+   ]
+  },
+  "motion-ring--paragraph-2--narration": {
+   "id": "motion-ring--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "预处理和训练完成，进度 72%。"
+    }
+   ]
+  },
+  "motion-ring--paragraph-3--narration": {
+   "id": "motion-ring--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "评估完成，进度环走满，变成绿色。"
+    }
+   ]
+  },
+  "motion-bars--paragraph-1--narration": {
+   "id": "motion-bars--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "柱子从左到右依次长出来，顶上的数字跟着从零数到各自的值。"
+    }
+   ]
+  },
+  "motion-bars--paragraph-2--narration": {
+   "id": "motion-bars--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "换成下一年的数据：每根柱子从原来的高度变到新高度，数字也跟着变。"
+    }
+   ]
+  },
+  "motion-bars--paragraph-3--narration": {
+   "id": "motion-bars--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "五月最高，它换成强调色，其他柱子淡下去。"
+    }
+   ]
+  },
+  "remotion-bar-chart--paragraph-1--narration": {
+   "id": "remotion-bar-chart--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "温度为 1 时的概率分布，柱子一根接一根长出来。"
+    }
+   ]
+  },
+  "remotion-bar-chart--paragraph-2--narration": {
+   "id": "remotion-bar-chart--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "把温度降到 0.4，分布变尖：the 的概率大了，其他词都变小。"
+    }
+   ]
+  },
+  "d3-axis-zoom--paragraph-1--narration": {
+   "id": "d3-axis-zoom--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "scaleLinear 把数据映射到画面，坐标轴由 axisBottom、axisLeft 从比例尺画出，点依次出现。"
+    }
+   ]
+  },
+  "d3-axis-zoom--paragraph-2--narration": {
+   "id": "d3-axis-zoom--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "缩放只是换一个定义域：两个轴的定义域由 d3.interpolate 插值，刻度每一帧按新的比例尺重画。"
+    }
+   ]
+  },
+  "d3-axis-zoom--paragraph-3--narration": {
+   "id": "d3-axis-zoom--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "同一个值再交给两个比例尺：scaleSequential 给颜色，scaleSqrt 给半径。"
+    }
+   ]
+  },
+  "d3-data-join--paragraph-1--narration": {
+   "id": "d3-data-join--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "selection.data(数据, 键) 把字母和元素按键对应，第一个词的字母都是 enter，从上方落下。"
+    }
+   ]
+  },
+  "d3-data-join--paragraph-2--narration": {
+   "id": "d3-data-join--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "换成新词：键相同的字母是 update，滑到新位置；新的键 enter，绿色落下；消失的键 exit，红色掉出。"
+    }
+   ]
+  },
+  "d3-data-join--paragraph-3--narration": {
+   "id": "d3-data-join--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "再换一次，同样的三种情况。"
+    }
+   ]
+  },
+  "d3-data-join--paragraph-4--narration": {
+   "id": "d3-data-join--paragraph-4--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "最后一个词，只剩 e、x、i、t 四个字母。"
+    }
+   ]
+  },
+  "d3-line-draw--paragraph-1--narration": {
+   "id": "d3-line-draw--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "scaleTime 加 d3.line 画出折线，pathLength 设为 1 后用虚线偏移从左到右描出来。"
+    }
+   ]
+  },
+  "d3-line-draw--paragraph-2--narration": {
+   "id": "d3-line-draw--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "读数线沿时间轴移动：x.invert 把位置换回日期，d3.bisector 找到最近的数据点，d3.format 格式化数值。"
+    }
+   ]
+  },
+  "d3-line-draw--paragraph-3--narration": {
+   "id": "d3-line-draw--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "d3.area 用同一组点画出面积，淡淡地填上。"
+    }
+   ]
+  },
+  "d3-bar-race--paragraph-1--narration": {
+   "id": "d3-bar-race--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第一年的条形从左向右长出，按数值排好名次。"
+    }
+   ]
+  },
+  "d3-bar-race--paragraph-2--narration": {
+   "id": "d3-bar-race--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "到下一年：数值与名次都在两年之间插值，超过别人的条形从下方穿上去，横轴的定义域每帧跟着最大值。"
+    }
+   ]
+  },
+  "d3-bar-race--paragraph-3--narration": {
+   "id": "d3-bar-race--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "再下一年，排在七名以外的条形淡出，挤进前七的淡入。"
+    }
+   ]
+  },
+  "d3-bar-race--paragraph-4--narration": {
+   "id": "d3-bar-race--paragraph-4--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "继续比较，左下角的年份跟着数字往前走。"
+    }
+   ]
+  },
+  "d3-bar-race--paragraph-5--narration": {
+   "id": "d3-bar-race--paragraph-5--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "最后一年，名次定下来。"
+    }
+   ]
+  },
+  "d3-histogram--paragraph-1--narration": {
+   "id": "d3-histogram--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "样本一个一个到来，d3.bin 每帧对前 n 个样本重新分箱，底部的短线是每个样本的位置。"
+    }
+   ]
+  },
+  "d3-histogram--paragraph-2--narration": {
+   "id": "d3-histogram--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "箱宽从 2.5 换成 10：两套分箱交叉淡入淡出，纵轴随最大计数缩放。"
+    }
+   ]
+  },
+  "d3-histogram--paragraph-3--narration": {
+   "id": "d3-histogram--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "用高斯核估计密度（d3.mean 对每个位置求和），曲线描在直方图上，两个峰一目了然。"
+    }
+   ]
+  },
+  "d3-stack-stream--paragraph-1--narration": {
+   "id": "d3-stack-stream--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "d3.stack 算出每层的上下边界，各层从下面那一层的顶上依次长起来。"
+    }
+   ]
+  },
+  "d3-stack-stream--paragraph-2--narration": {
+   "id": "d3-stack-stream--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "换成 stackOffsetWiggle 与 stackOrderInsideOut 就是河流图：两种布局按键对应，每个点的上下边界逐点插值。"
+    }
+   ]
+  },
+  "d3-stack-stream--paragraph-3--narration": {
+   "id": "d3-stack-stream--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "突出「语音」一层，其他层变淡，标签放在它最宽的地方。"
+    }
+   ]
+  },
+  "d3-pie-arcs--paragraph-1--narration": {
+   "id": "d3-pie-arcs--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "d3.pie 算出每段的起止角，d3.arc 画出扇形，整个饼按角度从零扫开。"
+    }
+   ]
+  },
+  "d3-pie-arcs--paragraph-2--narration": {
+   "id": "d3-pie-arcs--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "内半径、段间空隙与圆角一起长出来，饼图变成环图，百分比标在每段弧的中间。"
+    }
+   ]
+  },
+  "d3-pie-arcs--paragraph-3--narration": {
+   "id": "d3-pie-arcs--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "数据变了：插值的是每段弧的起止角，再交给 d3.arc 重画，而不是插值路径字符串。"
+    }
+   ]
+  },
+  "d3-heatmap-scales--paragraph-1--narration": {
+   "id": "d3-heatmap-scales--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "scaleSequential 配 interpolateViridis，格子沿对角线依次填上颜色，下方是图例与坐标轴。"
+    }
+   ]
+  },
+  "d3-heatmap-scales--paragraph-2--narration": {
+   "id": "d3-heatmap-scales--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "换成 scaleDiverging 配 interpolateRdBu：零是白色，正负各一种颜色，格子在 Lab 空间里过渡。"
+    }
+   ]
+  },
+  "d3-heatmap-scales--paragraph-3--narration": {
+   "id": "d3-heatmap-scales--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "scaleQuantize 把连续值分成七级，图例变成七个色块。"
+    }
+   ]
+  },
+  "d3-tree-morph--paragraph-1--narration": {
+   "id": "d3-tree-morph--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "d3.hierarchy 加 d3.tree 算出整齐树，每一层从父节点的位置长出来，连线是 linkHorizontal。"
+    }
+   ]
+  },
+  "d3-tree-morph--paragraph-2--narration": {
+   "id": "d3-tree-morph--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "换成 d3.cluster：叶子都排到最右一列，节点位置在两种布局之间插值。"
+    }
+   ]
+  },
+  "d3-tree-morph--paragraph-3--narration": {
+   "id": "d3-tree-morph--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "再换成极坐标下的 d3.tree 与 pointRadial：linkRadial 与 linkHorizontal 的路径都写成 M 加 C，interpolateString 可以直接混合。"
+    }
+   ]
+  },
+  "d3-treemap-tiling--paragraph-1--narration": {
+   "id": "d3-treemap-tiling--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "d3.treemap 默认用 treemapSquarify，让每块尽量接近正方形；先出现大组，再出现叶子。"
+    }
+   ]
+  },
+  "d3-treemap-tiling--paragraph-2--narration": {
+   "id": "d3-treemap-tiling--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "换成 treemapSliceDice：一层横切、一层竖切，每个矩形在两种布局之间插值。"
+    }
+   ]
+  },
+  "d3-treemap-tiling--paragraph-3--narration": {
+   "id": "d3-treemap-tiling--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "放大到「机器学习」：两个线性比例尺的定义域收到这组的边界，所有矩形跟着比例尺重新放置。"
+    }
+   ]
+  },
+  "d3-pack-zoom--paragraph-1--narration": {
+   "id": "d3-pack-zoom--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "d3.pack 按数值把叶子装进父圆，从外层到内层依次出现。"
+    }
+   ]
+  },
+  "d3-pack-zoom--paragraph-2--narration": {
+   "id": "d3-pack-zoom--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "d3.interpolateZoom 在两个视野之间插值，镜头推进「人工智能」，小圆的名字随着变大显示出来。"
+    }
+   ]
+  },
+  "d3-pack-zoom--paragraph-3--narration": {
+   "id": "d3-pack-zoom--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "从一个子圆到另一个：插值先拉远再推近，像飞过去一样。"
+    }
+   ]
+  },
+  "d3-sunburst-zoom--paragraph-1--narration": {
+   "id": "d3-sunburst-zoom--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "d3.partition 在极坐标下切分，d3.arc 画出每一段，一圈一圈地扫开。"
+    }
+   ]
+  },
+  "d3-sunburst-zoom--paragraph-2--narration": {
+   "id": "d3-sunburst-zoom--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "放大「人工智能」：角度比例尺的定义域收到它的起止角，半径比例尺往外推一圈，它的子节点占满整圈。"
+    }
+   ]
+  },
+  "d3-sunburst-zoom--paragraph-3--narration": {
+   "id": "d3-sunburst-zoom--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "再退回去，同一组比例尺回到原来的定义域，整个过程可以倒着播。"
+    }
+   ]
+  },
+  "d3-force-path--paragraph-1--narration": {
+   "id": "d3-force-path--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "节点出现在 d3-force 的初始位置：一个向日葵式的叶序螺旋。"
+    }
+   ]
+  },
+  "d3-force-path--paragraph-2--narration": {
+   "id": "d3-force-path--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "力导向布局逐步稳定：模拟在构建时停下并跑满两百步，每一帧在相邻两步之间插值。"
+    }
+   ]
+  },
+  "d3-force-path--paragraph-3--narration": {
+   "id": "d3-force-path--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "广度优先搜索找出从起点到最远节点的最短路，一个红点沿路走过，经过的边与节点变红。"
+    }
+   ]
+  },
+  "d3-chord--paragraph-1--narration": {
+   "id": "d3-chord--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "d3.chord 把矩阵变成每座城市的弧，弧长是流出总量，外圈依次扫开并标上城市名。"
+    }
+   ]
+  },
+  "d3-chord--paragraph-2--narration": {
+   "id": "d3-chord--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "d3.ribbon 画出城市之间的丝带，每条从起点的中间张开到终点的位置。"
+    }
+   ]
+  },
+  "d3-chord--paragraph-3--narration": {
+   "id": "d3-chord--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "突出上海：与它相连的丝带保留，其余淡去。"
+    }
+   ]
+  },
+  "d3-voronoi-lloyd--paragraph-1--narration": {
+   "id": "d3-voronoi-lloyd--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "七十个随机点依次出现（种子固定的 d3.randomLcg）。"
+    }
+   ]
+  },
+  "d3-voronoi-lloyd--paragraph-2--narration": {
+   "id": "d3-voronoi-lloyd--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "d3.Delaunay.from 三角剖分，delaunay.render() 描出三角网。"
+    }
+   ]
+  },
+  "d3-voronoi-lloyd--paragraph-3--narration": {
+   "id": "d3-voronoi-lloyd--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "delaunay.voronoi 得到 Voronoi 图，每个点的单元填上颜色，三角网淡去。"
+    }
+   ]
+  },
+  "d3-voronoi-lloyd--paragraph-4--narration": {
+   "id": "d3-voronoi-lloyd--paragraph-4--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "Lloyd 松弛：每个点移到自己单元的 polygonCentroid，反复四十次，单元越来越接近大小相同的六边形。"
+    }
+   ]
+  },
+  "d3-contour-density--paragraph-1--narration": {
+   "id": "d3-contour-density--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "四百二十个点来自三个高斯分布。"
+    }
+   ]
+  },
+  "d3-contour-density--paragraph-2--narration": {
+   "id": "d3-contour-density--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "d3.contourDensity 估计密度并给出等值带，geoPath 画出来，从外到内用 interpolateMagma 依次上色。"
+    }
+   ]
+  },
+  "d3-contour-density--paragraph-3--narration": {
+   "id": "d3-contour-density--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "带宽从 26 缩到 9：带宽大时三团连成一片，变小后各自分开，细节也多了。"
+    }
+   ]
+  },
+  "d3-quadtree-find--paragraph-1--narration": {
+   "id": "d3-quadtree-find--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "d3.quadtree 每加一个点，所在的方格满了就一分为四，visit 遍历出全部方格。"
+    }
+   ]
+  },
+  "d3-quadtree-find--paragraph-2--narration": {
+   "id": "d3-quadtree-find--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "quadtree.find 查最近邻：探针沿曲线移动，红线与虚线圆连到当前最近的点。"
+    }
+   ]
+  },
+  "d3-globe--paragraph-1--narration": {
+   "id": "d3-globe--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "geoOrthographic 投影加 geoGraticule10 的经纬网，projection.rotate 让地球转起来，城市用 geoCircle 标出。"
+    }
+   ]
+  },
+  "d3-globe--paragraph-2--narration": {
+   "id": "d3-globe--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "d3.geoInterpolate 沿大圆插值，航线从北京描到伦敦，红点沿航线飞，绕到背面时隐去。"
+    }
+   ]
+  },
+  "d3-globe--paragraph-3--narration": {
+   "id": "d3-globe--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "geoProjectionMutator 混合正射与等距圆柱两个原始投影，裁剪角从 90° 开到 180°，地球展开成平面。"
+    }
+   ]
+  }
+ },
+ "assets": {},
+ "definitions": {
+  "gsap-counter--counter-scene--definition": {
+   "id": "gsap-counter--counter-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/gsap/counter.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "训练过程中轮数、损失与准确率三个数字一起变化。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "anime-param-counter--param-counter-scene--definition": {
+   "id": "anime-param-counter--param-counter-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/anime/param-counter.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1200,
+     1200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "GPT、GPT-2、GPT-3 的参数量，数字滚动，柱子按对数刻度长高。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-counter--counter-scene--definition": {
+   "id": "motion-counter--counter-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/counter.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1400,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "训练面板上的三个数字：轮数按整数跳，损失下降，准确率上升。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "remotion-counter--counter-scene--definition": {
+   "id": "remotion-counter--counter-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/remotion/counter.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1200,
+     1400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "大号数字从零滚到 GPT-1 的参数量，再滚到 GPT-2、GPT-3，下方的对数刻度条随之变长。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-ring--ring-scene--definition": {
+   "id": "motion-ring--ring-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/ring.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1400,
+     1200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一个进度环与四个任务：25%、72%，到 100% 时变成绿色。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "show-stat-gauge--shot--definition": {
+   "id": "show-stat-gauge--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/show/stat-gauge.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文字"
+     },
+     "value": {
+      "type": "number",
+      "title": "数值"
+     },
+     "max": {
+      "type": "number",
+      "title": "满值"
+     },
+     "decimals": {
+      "type": "number",
+      "title": "小数位"
+     },
+     "unit": {
+      "type": "string",
+      "title": "单位"
+     },
+     "label": {
+      "type": "string",
+      "title": "标签"
+     },
+     "source": {
+      "type": "string",
+      "title": "出处"
+     },
+     "shape": {
+      "type": "string",
+      "title": "形状",
+      "enum": [
+       "arc",
+       "bar"
+      ]
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "setup"
+    },
+    {
+     "id": "fill"
+    },
+    {
+     "id": "hold"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     700,
+     1500,
+     2000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "圆弧仪表填充到 86.4%，标签是 MMLU 准确率 · GPT-4（5-shot），出处 OpenAI GPT-4 技术报告。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-bars--bars-scene--definition": {
+   "id": "motion-bars--bars-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/bars.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1400,
+     1200,
+     800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "八个月的销量柱状图：柱子依次长出，换成下一年的数据，最高的一根变成强调色。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "remotion-bar-chart--bar-chart-scene--definition": {
+   "id": "remotion-bar-chart--bar-chart-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/remotion/bar-chart.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "五个词的 softmax 概率柱依次长出；温度从 1 降到 0.4 后，最高的柱更高，其余变矮。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-axis-zoom--axis-zoom-scene--definition": {
+   "id": "d3-axis-zoom--axis-zoom-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/axis-zoom.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1600,
+     1200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "九十个点画在线性比例尺上，坐标轴放大到一段区间，再用颜色与半径编码数值。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-data-join--data-join-scene--definition": {
+   "id": "d3-data-join--data-join-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/data-join.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    },
+    {
+     "id": "legacy-3",
+     "legacyIndex": 3
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1400,
+     1400,
+     1400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "字母组成的单词按键连接，保留的字母滑到新位置，新字母落下，删掉的字母掉出。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-line-draw--line-draw-scene--definition": {
+   "id": "d3-line-draw--line-draw-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/line-draw.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     1800,
+     1000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "时间序列的折线从左到右画出，一条读数线扫过并显示日期与数值，然后折线下的面积填上颜色。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-bar-race--bar-race-scene--definition": {
+   "id": "d3-bar-race--bar-race-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/bar-race.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    },
+    {
+     "id": "legacy-3",
+     "legacyIndex": 3
+    },
+    {
+     "id": "legacy-4",
+     "legacyIndex": 4
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     800,
+     1400,
+     1400,
+     1400,
+     1400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "十种编程语言的条形按年份变化，名次交换时条形上下穿过，横轴跟着最大值伸缩。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-histogram--histogram-scene--definition": {
+   "id": "d3-histogram--histogram-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/histogram.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2000,
+     1200,
+     1200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "五百个样本逐渐到来，直方图随之长高；箱宽从 2.5 变成 10，最后画出核密度曲线。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-stack-stream--stack-stream-scene--definition": {
+   "id": "d3-stack-stream--stack-stream-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/stack-stream.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1400,
+     1800,
+     1000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "六个研究方向的堆叠面积图一层层长出，再变成上下对称的河流图，最后突出其中一层。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-pie-arcs--pie-arcs-scene--definition": {
+   "id": "d3-pie-arcs--pie-arcs-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/pie-arcs.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1000,
+     1400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "算力分配的饼图扫开，变成圆角环图，然后换成两年后的数据，每段弧转到新的角度。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-heatmap-scales--heatmap-scales-scene--definition": {
+   "id": "d3-heatmap-scales--heatmap-scales-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/heatmap-scales.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1400,
+     1200,
+     1200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一个二维矩阵的热力图沿对角线填色，再换成以零为中心的红蓝发散色，最后变成七级分级色。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "dc-chart-story--shot--definition": {
+   "id": "dc-chart-story--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/dc/chart-story.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "scene": {
+      "type": "string",
+      "title": "场景文件"
+     },
+     "alt": {
+      "type": "string",
+      "title": "替代文本"
+     },
+     "kind": {
+      "type": "string",
+      "title": "图表形式",
+      "enum": [
+       "bars",
+       "line",
+       "donut",
+       "progress"
+      ]
+     },
+     "data": {
+      "type": "array",
+      "title": "数据",
+      "items": {
+       "type": "number"
+      }
+     },
+     "labels": {
+      "type": "array",
+      "title": "类别名",
+      "items": {
+       "type": "string"
+      }
+     },
+     "emphasize": {
+      "type": "number",
+      "title": "强调第几个（从 0 起）"
+     },
+     "title": {
+      "type": "string",
+      "title": "标题"
+     },
+     "unit": {
+      "type": "string",
+      "title": "单位"
+     },
+     "source": {
+      "type": "string",
+      "title": "来源",
+      "description": "数据出处；默认“示意数据”"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "frame"
+    },
+    {
+     "id": "build"
+    },
+    {
+     "id": "emphasis"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1800,
+     2200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "柱状图：第 1 到第 4 章测验平均分 62、71、78、86（示意数据），第 4 章以强调色标出 86 分。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-tree-morph--tree-morph-scene--definition": {
+   "id": "d3-tree-morph--tree-morph-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/tree-morph.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     1200,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "计算机学科的层次一层层长成树，叶子对齐成聚类树，再弯成以根为中心的径向树。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-treemap-tiling--treemap-tiling-scene--definition": {
+   "id": "d3-treemap-tiling--treemap-tiling-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/treemap-tiling.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1600,
+     1400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "矩形树图按层长出，从近似正方形的切分换成按层横竖交替的切分，再放大到「机器学习」一组。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-pack-zoom--pack-zoom-scene--definition": {
+   "id": "d3-pack-zoom--pack-zoom-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/pack-zoom.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1400,
+     1600,
+     2000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "嵌套的圆按层出现，镜头推进「人工智能」，再拉远并推到「系统」。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-sunburst-zoom--sunburst-zoom-scene--definition": {
+   "id": "d3-sunburst-zoom--sunburst-zoom-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/sunburst-zoom.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     1400,
+     1400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "层次的环一圈圈扫开，点进「人工智能」后它占满整圈，再退回全图。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-force-path--force-path-scene--definition": {
+   "id": "d3-force-path--force-path-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/force-path.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     2000,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "三十四个节点从叶序排列出发，在力的作用下散开稳定，再沿最短路径点亮一条路线。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-chord--chord-scene--definition": {
+   "id": "d3-chord--chord-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/chord.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1600,
+     1000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "五座城市之间的流动画成弦图：外圈的弧扫开，丝带从起点长到终点，再突出上海。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-voronoi-lloyd--voronoi-lloyd-scene--definition": {
+   "id": "d3-voronoi-lloyd--voronoi-lloyd-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/voronoi-lloyd.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    },
+    {
+     "id": "legacy-3",
+     "legacyIndex": 3
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1200,
+     1000,
+     2400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "七十个点连成 Delaunay 三角网，再画出 Voronoi 单元，最后每个点反复移到单元的重心，单元变得均匀。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-contour-density--contour-density-scene--definition": {
+   "id": "d3-contour-density--contour-density-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/contour-density.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1400,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "三团散点上长出密度等值线，从外圈到内圈依次着色，然后核的带宽从宽变窄，等值线随之分开。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-quadtree-find--quadtree-find-scene--definition": {
+   "id": "d3-quadtree-find--quadtree-find-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/quadtree-find.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1800,
+     2400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "点逐个加入四叉树，方格不断细分；然后一个探针移动，红线连到它最近的点。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "d3-globe--globe-scene--definition": {
+   "id": "d3-globe--globe-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/d3/globe.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1400,
+     1800,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "正射投影的地球带着经纬网转动，一条大圆航线从北京画到伦敦，然后地球展开成等距圆柱投影的平面地图。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "dc-tile-map--shot--definition": {
+   "id": "dc-tile-map--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/dc/tile-map.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "scene": {
+      "type": "string",
+      "title": "场景文件"
+     },
+     "alt": {
+      "type": "string",
+      "title": "替代文本"
+     },
+     "tiles": {
+      "type": "array",
+      "title": "方格布局",
+      "items": {
+       "type": "array"
+      }
+     },
+     "values": {
+      "type": "object",
+      "title": "各地区数值"
+     },
+     "unit": {
+      "type": "string",
+      "title": "单位"
+     },
+     "title": {
+      "type": "string",
+      "title": "标题"
+     },
+     "source": {
+      "type": "string",
+      "title": "来源"
+     },
+     "top": {
+      "type": "number",
+      "title": "列出前几名"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "grid"
+    },
+    {
+     "id": "fill"
+    },
+    {
+     "id": "focus"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1500,
+     2500,
+     2500
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "方格地图：中国 34 个省级行政区的在线课程注册人数（示意数据，万人），广东 98、江苏 86、山东 80 居前三。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "dc-oscilloscope--shot--definition": {
+   "id": "dc-oscilloscope--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/dc/oscilloscope.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "scene": {
+      "type": "string",
+      "title": "场景文件"
+     },
+     "alt": {
+      "type": "string",
+      "title": "替代文本"
+     },
+     "waveform": {
+      "type": "string",
+      "title": "波形",
+      "enum": [
+       "sine",
+       "square",
+       "triangle"
+      ]
+     },
+     "from": {
+      "type": "number",
+      "title": "起始频率（Hz）"
+     },
+     "to": {
+      "type": "number",
+      "title": "结束频率（Hz）"
+     },
+     "amplitude": {
+      "type": "number",
+      "title": "幅度（格）"
+     },
+     "persistence": {
+      "type": "number",
+      "title": "余辉时间常数（毫秒）"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "screen"
+    },
+    {
+     "id": "trace"
+    },
+    {
+     "id": "change"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     2500,
+     2500
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "示波器：正弦波在 10 × 8 格的屏幕上扫出，频率从 2 Hz 升到 5 Hz，波形变密。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  }
+ },
+ "production": {
+  "defaults": {
+   "voiceSource": {
+    "type": "none"
+   },
+   "trailingPauseMs": 0
+  },
+  "stepOverrides": {},
+  "mediaClips": []
+ }
+}

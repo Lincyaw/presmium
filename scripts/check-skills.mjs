@@ -2,7 +2,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, lstatSync, readdirSync, readFileSync, readlinkSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { join, relative } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 
 const emitWarning = process.emitWarning
 process.emitWarning = (warning, ...args) => {
@@ -105,12 +105,19 @@ try {
 } catch (error) { fail(`default document template: ${error.message}`) }
 const gallery = join(skillsDir, 'presmium-animate/gallery')
 for (const entry of readdirSync(gallery, { withFileTypes: true }).filter(entry => entry.isDirectory() && !['node_modules', '.presmium', 'dist'].includes(entry.name))) {
+  // A directory with a document is a gallery document; one without is a source of scenes that documents forward to.
   const dir = join(gallery, entry.name), file = join(dir, DOCUMENT_ENTRY)
-  if (!existsSync(join(dir, 'scenes'))) continue
-  if (!existsSync(file)) { fail(`animation gallery ${entry.name} has no ${DOCUMENT_ENTRY}`); continue }
+  if (!existsSync(file)) continue
   try {
     const validation = validateDocument(JSON.parse(readFileSync(file, 'utf8')))
-    if (!validation.document) for (const issue of validation.issues) fail(`animation gallery ${entry.name}: ${issue.path}: ${issue.message}`)
+    if (!validation.document) { for (const issue of validation.issues) fail(`animation gallery ${entry.name}: ${issue.path}: ${issue.message}`); continue }
+    for (const definition of Object.values(validation.document.definitions)) {
+      if (definition.implementation.type !== 'file') continue
+      const scene = join(dir, definition.implementation.path)
+      if (!existsSync(scene)) { fail(`animation gallery ${entry.name}: ${definition.implementation.path} does not exist`); continue }
+      const forwarded = /export \{ default \} from '([^']+)'/.exec(readFileSync(scene, 'utf8'))?.[1]
+      if (forwarded && !existsSync(join(dirname(scene), forwarded))) fail(`animation gallery ${entry.name}: ${definition.implementation.path} forwards to a missing ${forwarded}`)
+    }
   } catch (error) { fail(`animation gallery ${entry.name}: ${error.message}`) }
 }
 

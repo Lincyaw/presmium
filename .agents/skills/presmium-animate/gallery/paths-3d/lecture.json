@@ -1,0 +1,5030 @@
+{
+ "schemaVersion": 1,
+ "id": "animation-paths-3d",
+ "metadata": {
+  "title": "路径与三维",
+  "lang": "zh-CN",
+  "description": "描线与沿路径运动、三维展示、程序化纹理与对照。",
+  "tags": [
+   "动画参考"
+  ],
+  "plugins": [
+   "@lincyaw/addon-motion",
+   "@lincyaw/addon-lecture"
+  ],
+  "renderers": {
+   "web": {},
+   "lecture": {}
+  }
+ },
+ "sectionOrder": [
+  "paths",
+  "gsap-motion-path",
+  "anime-draw-curve",
+  "anime-packet-path",
+  "motion-flow",
+  "remotion-path-draw",
+  "three-route",
+  "scenes",
+  "fx-figure-ring",
+  "fx-sample-sphere",
+  "three-galaxy",
+  "three-materials",
+  "three-shadows",
+  "textures",
+  "fx-noise-to-marble",
+  "fx-paper-grain",
+  "fx-before-after"
+ ],
+ "sections": {
+  "paths": {
+   "id": "paths",
+   "title": "描线与路径",
+   "level": 1,
+   "children": [
+    "paths--intro"
+   ],
+   "stepOrder": [
+    "paths--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "gsap-motion-path": {
+   "id": "gsap-motion-path",
+   "title": "沿路径运动：MotionPath",
+   "level": 2,
+   "children": [
+    "gsap-motion-path--motion-path-scene",
+    "gsap-motion-path--paragraph-1",
+    "gsap-motion-path--paragraph-2",
+    "gsap-motion-path--paragraph-3"
+   ],
+   "stepOrder": [
+    "gsap-motion-path--step-0",
+    "gsap-motion-path--step-1",
+    "gsap-motion-path--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "anime-draw-curve": {
+   "id": "anime-draw-curve",
+   "title": "描出曲线：createDrawable",
+   "level": 2,
+   "children": [
+    "anime-draw-curve--draw-curve-scene",
+    "anime-draw-curve--paragraph-1",
+    "anime-draw-curve--paragraph-2",
+    "anime-draw-curve--paragraph-3"
+   ],
+   "stepOrder": [
+    "anime-draw-curve--step-0",
+    "anime-draw-curve--step-1",
+    "anime-draw-curve--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "anime-packet-path": {
+   "id": "anime-packet-path",
+   "title": "沿路径运动：createMotionPath",
+   "level": 2,
+   "children": [
+    "anime-packet-path--packet-path-scene",
+    "anime-packet-path--paragraph-1",
+    "anime-packet-path--paragraph-2",
+    "anime-packet-path--paragraph-3"
+   ],
+   "stepOrder": [
+    "anime-packet-path--step-0",
+    "anime-packet-path--step-1",
+    "anime-packet-path--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-flow": {
+   "id": "motion-flow",
+   "title": "信号流动：pathOffset 让脉冲沿边走",
+   "level": 2,
+   "children": [
+    "motion-flow--flow-scene",
+    "motion-flow--paragraph-1",
+    "motion-flow--paragraph-2"
+   ],
+   "stepOrder": [
+    "motion-flow--step-0",
+    "motion-flow--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "remotion-path-draw": {
+   "id": "remotion-path-draw",
+   "title": "画出路径",
+   "level": 2,
+   "children": [
+    "remotion-path-draw--path-draw-scene",
+    "remotion-path-draw--paragraph-1",
+    "remotion-path-draw--paragraph-2"
+   ],
+   "stepOrder": [
+    "remotion-path-draw--step-0",
+    "remotion-path-draw--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "three-route": {
+   "id": "three-route",
+   "title": "沿路径运动：曲线、管道与跟拍镜头",
+   "level": 2,
+   "children": [
+    "three-route--route-scene",
+    "three-route--paragraph-1",
+    "three-route--paragraph-2",
+    "three-route--paragraph-3",
+    "three-route--paragraph-4"
+   ],
+   "stepOrder": [
+    "three-route--step-0",
+    "three-route--step-1",
+    "three-route--step-2",
+    "three-route--step-3"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "scenes": {
+   "id": "scenes",
+   "title": "三维展示",
+   "level": 1,
+   "children": [
+    "scenes--intro"
+   ],
+   "stepOrder": [
+    "scenes--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "fx-figure-ring": {
+   "id": "fx-figure-ring",
+   "title": "图环：一次讲一张图",
+   "level": 2,
+   "children": [
+    "fx-figure-ring--notes",
+    "fx-figure-ring--shot"
+   ],
+   "stepOrder": [
+    "fx-figure-ring--step-0",
+    "fx-figure-ring--step-1",
+    "fx-figure-ring--step-2",
+    "fx-figure-ring--step-3",
+    "fx-figure-ring--step-4"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "fx-sample-sphere": {
+   "id": "fx-sample-sphere",
+   "title": "样本球：从许多中取出一个",
+   "level": 2,
+   "children": [
+    "fx-sample-sphere--notes",
+    "fx-sample-sphere--shot"
+   ],
+   "stepOrder": [
+    "fx-sample-sphere--step-0",
+    "fx-sample-sphere--step-1",
+    "fx-sample-sphere--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "three-galaxy": {
+   "id": "three-galaxy",
+   "title": "着色器里的粒子：Points 与 ShaderMaterial",
+   "level": 2,
+   "children": [
+    "three-galaxy--galaxy-scene",
+    "three-galaxy--paragraph-1",
+    "three-galaxy--paragraph-2",
+    "three-galaxy--paragraph-3",
+    "three-galaxy--paragraph-4"
+   ],
+   "stepOrder": [
+    "three-galaxy--step-0",
+    "three-galaxy--step-1",
+    "three-galaxy--step-2",
+    "three-galaxy--step-3"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "three-materials": {
+   "id": "three-materials",
+   "title": "材质对比：标准、物理、卡通、法线与线框",
+   "level": 2,
+   "children": [
+    "three-materials--materials-scene",
+    "three-materials--paragraph-1",
+    "three-materials--paragraph-2",
+    "three-materials--paragraph-3"
+   ],
+   "stepOrder": [
+    "three-materials--step-0",
+    "three-materials--step-1",
+    "three-materials--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "three-shadows": {
+   "id": "three-shadows",
+   "title": "光照与阴影：太阳的一天与雾",
+   "level": 2,
+   "children": [
+    "three-shadows--shadows-scene",
+    "three-shadows--paragraph-1",
+    "three-shadows--paragraph-2",
+    "three-shadows--paragraph-3",
+    "three-shadows--paragraph-4"
+   ],
+   "stepOrder": [
+    "three-shadows--step-0",
+    "three-shadows--step-1",
+    "three-shadows--step-2",
+    "three-shadows--step-3"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "textures": {
+   "id": "textures",
+   "title": "纹理与对照",
+   "level": 1,
+   "children": [
+    "textures--intro"
+   ],
+   "stepOrder": [
+    "textures--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "fx-noise-to-marble": {
+   "id": "fx-noise-to-marble",
+   "title": "从噪声到大理石：程序化纹理",
+   "level": 2,
+   "children": [
+    "fx-noise-to-marble--notes",
+    "fx-noise-to-marble--shot"
+   ],
+   "stepOrder": [
+    "fx-noise-to-marble--step-0",
+    "fx-noise-to-marble--step-1",
+    "fx-noise-to-marble--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "fx-paper-grain": {
+   "id": "fx-paper-grain",
+   "title": "纸张纹理：引文卡片",
+   "level": 2,
+   "children": [
+    "fx-paper-grain--notes",
+    "fx-paper-grain--shot"
+   ],
+   "stepOrder": [
+    "fx-paper-grain--step-0"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "fx-before-after": {
+   "id": "fx-before-after",
+   "title": "前后对照：一张图原地变成另一张",
+   "level": 2,
+   "children": [
+    "fx-before-after--notes",
+    "fx-before-after--shot"
+   ],
+   "stepOrder": [
+    "fx-before-after--step-0",
+    "fx-before-after--step-1",
+    "fx-before-after--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  }
+ },
+ "blocks": {
+  "paths--intro": {
+   "id": "paths--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "paths--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "画出曲线、沿路径移动与信号流动。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-motion-path--motion-path-scene": {
+   "id": "gsap-motion-path--motion-path-scene",
+   "type": "component",
+   "definitionId": "gsap-motion-path--motion-path-scene--definition",
+   "parameters": {
+    "scene": "gsap/motion-path",
+    "alt": "客户端与服务器之间，请求沿上方的弧线飞去，响应沿下方的弧线返回，最后一串数据包接连发出。"
+   }
+  },
+  "gsap-motion-path--paragraph-1": {
+   "id": "gsap-motion-path--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-motion-path--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "请求沿上方的弧线飞向服务器，箭头随曲线转向。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-motion-path--paragraph-2": {
+   "id": "gsap-motion-path--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-motion-path--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "响应沿下方的弧线返回客户端。"
+      }
+     ]
+    }
+   ]
+  },
+  "gsap-motion-path--paragraph-3": {
+   "id": "gsap-motion-path--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "gsap-motion-path--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一串数据包在同一条路径上接连发出。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-draw-curve--draw-curve-scene": {
+   "id": "anime-draw-curve--draw-curve-scene",
+   "type": "component",
+   "definitionId": "anime-draw-curve--draw-curve-scene--definition",
+   "parameters": {
+    "scene": "anime/draw-curve",
+    "alt": "坐标轴先画出，随后描出正弦曲线，最后一段高亮沿曲线滑过。"
+   }
+  },
+  "anime-draw-curve--paragraph-1": {
+   "id": "anime-draw-curve--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-draw-curve--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "先画两条坐标轴。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-draw-curve--paragraph-2": {
+   "id": "anime-draw-curve--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-draw-curve--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "正弦曲线从左到右一笔描出来。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-draw-curve--paragraph-3": {
+   "id": "anime-draw-curve--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-draw-curve--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一段高亮的窗口沿着曲线滑过去，起点和终点都可以单独控制。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-packet-path--packet-path-scene": {
+   "id": "anime-packet-path--packet-path-scene",
+   "type": "component",
+   "definitionId": "anime-packet-path--packet-path-scene--definition",
+   "parameters": {
+    "scene": "anime/packet-path",
+    "alt": "一个请求从客户端经过两台路由器到达服务器，响应沿原路返回。"
+   }
+  },
+  "anime-packet-path--paragraph-1": {
+   "id": "anime-packet-path--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-packet-path--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "客户端和服务器之间隔着两台路由器。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-packet-path--paragraph-2": {
+   "id": "anime-packet-path--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-packet-path--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "请求沿着路径走过去，在弯道处跟着转向。"
+      }
+     ]
+    }
+   ]
+  },
+  "anime-packet-path--paragraph-3": {
+   "id": "anime-packet-path--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "anime-packet-path--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "响应 200 沿相反的方向回到客户端。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-flow--flow-scene": {
+   "id": "motion-flow--flow-scene",
+   "type": "component",
+   "definitionId": "motion-flow--flow-scene--definition",
+   "parameters": {
+    "scene": "motion/flow",
+    "alt": "一个小神经网络：前向传播的脉冲从输入层流到输出层，梯度再从输出层流回输入层。"
+   }
+  },
+  "motion-flow--paragraph-1": {
+   "id": "motion-flow--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-flow--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "前向传播：信号一层一层从输入流到输出。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-flow--paragraph-2": {
+   "id": "motion-flow--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-flow--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "反向传播：梯度从输出流回输入，经过的节点都标成红色。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-path-draw--path-draw-scene": {
+   "id": "remotion-path-draw--path-draw-scene",
+   "type": "component",
+   "definitionId": "remotion-path-draw--path-draw-scene--definition",
+   "parameters": {
+    "scene": "remotion/path-draw",
+    "alt": "先画出坐标轴和一条曲线，再有一个点沿曲线移动，带着它的切线和斜率。"
+   }
+  },
+  "remotion-path-draw--paragraph-1": {
+   "id": "remotion-path-draw--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-path-draw--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "坐标轴先出现，曲线从左往右画出来。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-path-draw--paragraph-2": {
+   "id": "remotion-path-draw--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-path-draw--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一个点沿着曲线走，切线跟着它转，斜率的数值随之变化。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-route--route-scene": {
+   "id": "three-route--route-scene",
+   "type": "component",
+   "definitionId": "three-route--route-scene--definition",
+   "parameters": {
+    "scene": "three/route",
+    "alt": "一次请求的路径：浏览器、网关、服务、缓存与数据库依次出现，管道连起它们，数据包沿管道前进，镜头跟在后面。"
+   }
+  },
+  "three-route--paragraph-1": {
+   "id": "three-route--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-route--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "请求经过的五个节点依次出现。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-route--paragraph-2": {
+   "id": "three-route--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-route--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一条平滑的管道把它们连起来。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-route--paragraph-3": {
+   "id": "three-route--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-route--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "数据包沿管道前进，镜头跟在它后方。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-route--paragraph-4": {
+   "id": "three-route--paragraph-4",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-route--paragraph-4--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "镜头拉回全景，数据包停在数据库。"
+      }
+     ]
+    }
+   ]
+  },
+  "scenes--intro": {
+   "id": "scenes--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "scenes--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "图环、样本球、粒子、材质与光影。"
+      }
+     ]
+    }
+   ]
+  },
+  "fx-figure-ring--notes": {
+   "id": "fx-figure-ring--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "fx-figure-ring--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一圈图卡在纵深里转动，每次把一张转到正前方，下面一句话说这张图该怎么读。适合论文的几张主图、实验的几个阶段：先让观众看到“一共有几张”，再一张张讲。Three.js；卡片在画布上画（曲线、柱、点、一个数字，或以 token 着色的 SVG 图），第一帧前解码完，不等图片加载。"
+      }
+     ]
+    },
+    {
+     "id": "fx-figure-ring--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "figures",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（每张图："
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "kind",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "values",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "highlight",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "value",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "picture",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "tag",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "，再加一句 "
+      },
+      {
+       "type": "text",
+       "text": "note",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "）、"
+      },
+      {
+       "type": "text",
+       "text": "source",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（右下角的来源，默认“数据为示意”）。卡片数等于状态数：增删卡片时同步增删定义里的状态与时长。"
+      }
+     ]
+    },
+    {
+     "id": "fx-figure-ring--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "fx-figure-ring--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-figure-ring--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "fx-figure-ring--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "fx-figure-ring--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-figure-ring--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-figure-ring--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1.4 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-figure-ring--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "卡片间隔 70 毫秒升起成环，环转半圈后减速停在第一张"
+          }
+         ]
+        },
+        {
+         "id": "fx-figure-ring--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先交代“一共有几张”"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-figure-ring--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-figure-ring--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.3–1.9 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-figure-ring--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "第一张向镜头前移一步（4% 回弹），读法从下方升起"
+          }
+         ]
+        },
+        {
+         "id": "fx-figure-ring--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "因（转到）先于果（前移、文字）"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-figure-ring--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-figure-ring--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "每个后续状态 0–0.22 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-figure-ring--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "文字离开，当前卡退回"
+          }
+         ]
+        },
+        {
+         "id": "fx-figure-ring--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "退场比入场短"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-figure-ring--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-figure-ring--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.12–0.77 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-figure-ring--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "环向左转一格，下一张从右边进来"
+          }
+         ]
+        },
+        {
+         "id": "fx-figure-ring--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "右边是“下一个”，符合阅读方向"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-figure-ring--notes--n2--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-figure-ring--notes--n2--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.7–1.1 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-figure-ring--notes--n2--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "新卡前移，读法升起；随后停留"
+          }
+         ]
+        },
+        {
+         "id": "fx-figure-ring--notes--n2--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一次只动一样东西；停留时镜头有约 1% 的漂移"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "fx-figure-ring--shot": {
+   "id": "fx-figure-ring--shot",
+   "type": "component",
+   "definitionId": "fx-figure-ring--shot--definition",
+   "parameters": {
+    "alt": "五张图卡围成一圈，逐张转到正前方：训练损失、模型结构、各方法准确率、消融实验、相对提升，每张下面一句读法。"
+   }
+  },
+  "fx-sample-sphere--notes": {
+   "id": "fx-sample-sphere--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "fx-sample-sphere--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "数据集的样本贴在一个转动的球上，然后取出一个放大并标上标签：讲“数据集很大；这是其中一条，它长这样，标签是这个”。Three.js 精灵（始终朝向镜头），样本在画布上画，每个样本的倾斜、大小、偏移由种子决定。"
+      }
+     ]
+    },
+    {
+     "id": "fx-sample-sphere--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "samples",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（样本上写的字符，默认 0–9）、"
+      },
+      {
+       "type": "text",
+       "text": "count",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（样本数）、"
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "sampleId",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "label",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（"
+      },
+      {
+       "type": "text",
+       "text": "{glyph}",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 换成取出样本上的字符）。"
+      }
+     ]
+    },
+    {
+     "id": "fx-sample-sphere--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "fx-sample-sphere--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-sample-sphere--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "fx-sample-sphere--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "fx-sample-sphere--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-sample-sphere--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-sample-sphere--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.9 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-sample-sphere--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "样本从离镜头最近处开始，波浪式长出"
+          }
+         ]
+        },
+        {
+         "id": "fx-sample-sphere--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "波从有意义的起点出发"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-sample-sphere--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-sample-sphere--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1.8 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-sample-sphere--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "球转大半圈后减速；标题在上方"
+          }
+         ]
+        },
+        {
+         "id": "fx-sample-sphere--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先交代“很多”"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-sample-sphere--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-sample-sphere--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.8–2.25 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-sample-sphere--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "球向左让位并变淡"
+          }
+         ]
+        },
+        {
+         "id": "fx-sample-sphere--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先让位（因），再出来（果）"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-sample-sphere--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-sample-sphere--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.15–3.05 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-sample-sphere--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "此刻最近的那个样本飞到右侧，放大约四倍，轻微回弹落定"
+          }
+         ]
+        },
+        {
+         "id": "fx-sample-sphere--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "保持身份：飞出的就是球上那一个"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-sample-sphere--notes--n2--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-sample-sphere--notes--n2--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.2–3.6 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-sample-sphere--notes--n2--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "编号与标签在它下方升起，停留 1.4 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-sample-sphere--notes--n2--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果要停稳"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "fx-sample-sphere--shot": {
+   "id": "fx-sample-sphere--shot",
+   "type": "component",
+   "definitionId": "fx-sample-sphere--shot--definition",
+   "parameters": {
+    "alt": "七十二张手写数字样本贴在转动的球面上，离镜头最近的一张飞出放大，旁边标出样本编号和标签。"
+   }
+  },
+  "three-galaxy--galaxy-scene": {
+   "id": "three-galaxy--galaxy-scene",
+   "type": "component",
+   "definitionId": "three-galaxy--galaxy-scene--definition",
+   "parameters": {
+    "scene": "three/galaxy",
+    "alt": "六万颗星从中心散开，扭成三条旋臂，内圈转得比外圈快，最后镜头倾斜看到星系的侧面。"
+   }
+  },
+  "three-galaxy--paragraph-1": {
+   "id": "three-galaxy--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-galaxy--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "六万颗星从中心向外散开，位置全部在着色器里算出。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-galaxy--paragraph-2": {
+   "id": "three-galaxy--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-galaxy--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "旋臂出现：越远的星，转过的角度越大。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-galaxy--paragraph-3": {
+   "id": "three-galaxy--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-galaxy--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "星系转起来，内圈比外圈转得快，旋臂越缠越紧。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-galaxy--paragraph-4": {
+   "id": "three-galaxy--paragraph-4",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-galaxy--paragraph-4--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "镜头倾斜，看到星系是一个薄薄的盘。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-materials--materials-scene": {
+   "id": "three-materials--materials-scene",
+   "type": "component",
+   "definitionId": "three-materials--materials-scene--definition",
+   "parameters": {
+    "scene": "three/materials",
+    "alt": "同一个环面结用五种材质并排，一盏灯从左向右划过，最后金属材质的粗糙度逐渐增大。"
+   }
+  },
+  "three-materials--paragraph-1": {
+   "id": "three-materials--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-materials--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "五种材质并排出现：金属、清漆、卡通、法线着色和线框。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-materials--paragraph-2": {
+   "id": "three-materials--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-materials--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一盏点光源从左上方划到右侧，看高光在各种材质上怎样移动。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-materials--paragraph-3": {
+   "id": "three-materials--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-materials--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "金属的粗糙度从 0.2 增加到 0.9，倒影从清晰变成模糊。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-shadows--shadows-scene": {
+   "id": "three-shadows--shadows-scene",
+   "type": "component",
+   "definitionId": "three-shadows--shadows-scene--definition",
+   "parameters": {
+    "scene": "three/shadows",
+    "alt": "一座小城的楼房升起，太阳从东方升到头顶再落向西方，影子随之转动变长，最后雾气漫上来。"
+   }
+  },
+  "three-shadows--paragraph-1": {
+   "id": "three-shadows--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-shadows--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "楼房从地面升起。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-shadows--paragraph-2": {
+   "id": "three-shadows--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-shadows--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "太阳从东边升到头顶，影子由长变短。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-shadows--paragraph-3": {
+   "id": "three-shadows--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-shadows--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "太阳落向西边，光线变暖，影子拉长到另一侧。"
+      }
+     ]
+    }
+   ]
+  },
+  "three-shadows--paragraph-4": {
+   "id": "three-shadows--paragraph-4",
+   "type": "text",
+   "content": [
+    {
+     "id": "three-shadows--paragraph-4--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "雾漫上来，远处的楼房渐渐融入背景。"
+      }
+     ]
+    }
+   ]
+  },
+  "textures--intro": {
+   "id": "textures--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "textures--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "程序化纹理、纸张颗粒与原地对照。"
+      }
+     ]
+    }
+   ]
+  },
+  "fx-noise-to-marble--notes": {
+   "id": "fx-noise-to-marble--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "fx-noise-to-marble--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "程序化纹理是怎么搭起来的：一层平滑噪声，逐层叠加更细的噪声（分形噪声，fBm），再用噪声扭曲条纹得到大理石。纹理带下面的曲线是带中虚线上的取值，所以图和曲线讲同一件事：一层是缓坡，六层在各个尺度上都粗糙，大理石是被噪声推歪的波。一个片元着色器，曲线和纹理用同一个函数。"
+      }
+     ]
+    },
+    {
+     "id": "fx-noise-to-marble--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "basis",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（"
+      },
+      {
+       "type": "text",
+       "text": "simplex",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 或 "
+      },
+      {
+       "type": "text",
+       "text": "cellular",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "，后者是 Worley 细胞噪声）、"
+      },
+      {
+       "type": "text",
+       "text": "labels",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（三个状态的名字，"
+      },
+      {
+       "type": "text",
+       "text": "{n}",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 是层数）、"
+      },
+      {
+       "type": "text",
+       "text": "axis",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（曲线的说明）。"
+      }
+     ]
+    },
+    {
+     "id": "fx-noise-to-marble--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "fx-noise-to-marble--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-noise-to-marble--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "fx-noise-to-marble--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "fx-noise-to-marble--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-noise-to-marble--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-noise-to-marble--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.5 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-noise-to-marble--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "纹理带与曲线升起，停在一层噪声"
+          }
+         ]
+        },
+        {
+         "id": "fx-noise-to-marble--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先交代读法：虚线 ↔ 曲线"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-noise-to-marble--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-noise-to-marble--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.55–4.6 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-noise-to-marble--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "第 2 到第 6 层每隔 0.45 秒加入，各用 0.25 秒淡入；层数随之变化"
+          }
+         ]
+        },
+        {
+         "id": "fx-noise-to-marble--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "每次加一层，看得见新的细节到来"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-noise-to-marble--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-noise-to-marble--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "5.6–5.95 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-noise-to-marble--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "名字换成“大理石”"
+          }
+         ]
+        },
+        {
+         "id": "fx-noise-to-marble--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先说要做什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-noise-to-marble--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-noise-to-marble--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "5.9–7.5 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-noise-to-marble--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "条纹被噪声从直扭到全弯"
+          }
+         ]
+        },
+        {
+         "id": "fx-noise-to-marble--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一个连续的变化"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-noise-to-marble--notes--n2--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-noise-to-marble--notes--n2--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "7.5–10 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-noise-to-marble--notes--n2--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停留；噪声始终缓慢漂移"
+          }
+         ]
+        },
+        {
+         "id": "fx-noise-to-marble--notes--n2--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果停留至少 2 s，静止中有生气"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "fx-noise-to-marble--shot": {
+   "id": "fx-noise-to-marble--shot",
+   "type": "component",
+   "definitionId": "fx-noise-to-marble--shot--definition",
+   "parameters": {
+    "alt": "一条噪声纹理带和它中线上的取值曲线：先是一层平滑噪声，再逐层叠加到六层分形噪声，最后用噪声扭曲条纹得到大理石纹。"
+   }
+  },
+  "fx-paper-grain--notes": {
+   "id": "fx-paper-grain--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "fx-paper-grain--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "纸张颗粒层（"
+      },
+      {
+       "type": "text",
+       "text": "scenes/lib/grain.ts",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "）铺在一段引文下面：讲课从某人写下的话开始时（论文、书信、法条）用。纸张不用一个字就说明“这是一份文献”，引文才是内容。颗粒层是内联 SVG 的 "
+      },
+      {
+       "type": "text",
+       "text": "feTurbulence",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "，颜色全用 token，任何场景都能放进去；默认静止，"
+      },
+      {
+       "type": "text",
+       "text": "flicker",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 大于 0 时种子随时间分步变化，变成胶片颗粒，任意定位仍然准确。"
+      }
+     ]
+    },
+    {
+     "id": "fx-paper-grain--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "lines",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（引文各行，最后一行是关键句）、"
+      },
+      {
+       "type": "text",
+       "text": "mark",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（关键句里要标记的词）、"
+      },
+      {
+       "type": "text",
+       "text": "cite",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（出处）、"
+      },
+      {
+       "type": "text",
+       "text": "strength",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "mottle",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（颗粒与斑驳的不透明度）、"
+      },
+      {
+       "type": "text",
+       "text": "flicker",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（每秒变化次数，0 为静止）。"
+      }
+     ]
+    },
+    {
+     "id": "fx-paper-grain--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "fx-paper-grain--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-paper-grain--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "fx-paper-grain--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "fx-paper-grain--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-paper-grain--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-paper-grain--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.3 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-paper-grain--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "只有纸"
+          }
+         ]
+        },
+        {
+         "id": "fx-paper-grain--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先交代材质"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-paper-grain--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-paper-grain--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.3–1.35 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-paper-grain--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "两行引文先后从槽里升起"
+          }
+         ]
+        },
+        {
+         "id": "fx-paper-grain--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "用遮罩代替淡入"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-paper-grain--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-paper-grain--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.5–2.0 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-paper-grain--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "关键词下从左到右画出标记线"
+          }
+         ]
+        },
+        {
+         "id": "fx-paper-grain--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一次强调一处"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-paper-grain--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-paper-grain--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.3–2.7 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-paper-grain--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "出处升起（灰色）"
+          }
+         ]
+        },
+        {
+         "id": "fx-paper-grain--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "数据与引文都注明来源"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-paper-grain--notes--n2--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-paper-grain--notes--n2--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.7–5 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-paper-grain--notes--n2--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停留；文字整体在全程放大 1%"
+          }
+         ]
+        },
+        {
+         "id": "fx-paper-grain--notes--n2--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "静止中有生气"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "fx-paper-grain--shot": {
+   "id": "fx-paper-grain--shot",
+   "type": "component",
+   "definitionId": "fx-paper-grain--shot--definition",
+   "parameters": {
+    "alt": "纸张纹理上，图灵 1950 年论文的开头一句逐行升起，关键词下画出标记线，然后出现出处。"
+   }
+  },
+  "fx-before-after--notes": {
+   "id": "fx-before-after--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "fx-before-after--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "同一位置上，一张图换成另一张：方法前后的图表、滤镜前后的照片、改动前后的界面。画框、坐标轴、位置都不动，眼睛直接比较两者；剪切或滑动会让人重新找图。WebGL 片元着色器混合两张图，交界线是一条只在移动时出现的强调色细线。"
+      }
+     ]
+    },
+    {
+     "id": "fx-before-after--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "before",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "after",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（各一张图，字段同图环，另有 "
+      },
+      {
+       "type": "text",
+       "text": "name",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 是上方的名字）、"
+      },
+      {
+       "type": "text",
+       "text": "mode",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（"
+      },
+      {
+       "type": "text",
+       "text": "dissolve",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 噪声溶解：同一事物被清理；"
+      },
+      {
+       "type": "text",
+       "text": "portal",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 从 "
+      },
+      {
+       "type": "text",
+       "text": "origin",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 扩开的圆：变化从某处开始；"
+      },
+      {
+       "type": "text",
+       "text": "wipe",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 斜线从左到右：旧 → 新）、"
+      },
+      {
+       "type": "text",
+       "text": "origin",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（0–1 的坐标）。"
+      }
+     ]
+    },
+    {
+     "id": "fx-before-after--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "fx-before-after--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-before-after--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "fx-before-after--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "fx-before-after--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-before-after--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-before-after--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.4 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-before-after--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "第一张图升起，名字出现在上方"
+          }
+         ]
+        },
+        {
+         "id": "fx-before-after--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先交代比较的对象"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-before-after--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-before-after--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.4–1.4 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-before-after--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停留"
+          }
+         ]
+        },
+        {
+         "id": "fx-before-after--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "读懂“之前”"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-before-after--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-before-after--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.4–1.6 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-before-after--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "名字离开"
+          }
+         ]
+        },
+        {
+         "id": "fx-before-after--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "退场短于入场"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-before-after--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-before-after--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.5–2.5 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-before-after--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "第二张沿着交界线替换第一张"
+          }
+         ]
+        },
+        {
+         "id": "fx-before-after--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一次只有交界线在动"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "fx-before-after--notes--n2--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "fx-before-after--notes--n2--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.25–2.6 s"
+          }
+         ]
+        },
+        {
+         "id": "fx-before-after--notes--n2--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "新名字升起；随后停留 2.4 s（0.6% 的呼吸）"
+          }
+         ]
+        },
+        {
+         "id": "fx-before-after--notes--n2--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果停留至少 1.5 s"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "fx-before-after--shot": {
+   "id": "fx-before-after--shot",
+   "type": "component",
+   "definitionId": "fx-before-after--shot--definition",
+   "parameters": {
+    "alt": "一张带噪声的传感器读数曲线原地溶解成低通滤波后的平滑曲线，坐标轴不动。"
+   }
+  }
+ },
+ "steps": {
+  "paths--step": {
+   "id": "paths--step",
+   "sectionId": "paths",
+   "visuals": [
+    {
+     "blockId": "paths--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "gsap-motion-path--step-0": {
+   "id": "gsap-motion-path--step-0",
+   "sectionId": "gsap-motion-path",
+   "visuals": [
+    {
+     "blockId": "gsap-motion-path--motion-path-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "gsap-motion-path--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-motion-path--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-motion-path--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-motion-path--paragraph-1--narration"
+   ]
+  },
+  "gsap-motion-path--step-1": {
+   "id": "gsap-motion-path--step-1",
+   "sectionId": "gsap-motion-path",
+   "visuals": [
+    {
+     "blockId": "gsap-motion-path--motion-path-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "gsap-motion-path--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-motion-path--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-motion-path--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-motion-path--paragraph-2--narration"
+   ]
+  },
+  "gsap-motion-path--step-2": {
+   "id": "gsap-motion-path--step-2",
+   "sectionId": "gsap-motion-path",
+   "visuals": [
+    {
+     "blockId": "gsap-motion-path--motion-path-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "gsap-motion-path--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-motion-path--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "gsap-motion-path--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "gsap-motion-path--paragraph-3--narration"
+   ]
+  },
+  "anime-draw-curve--step-0": {
+   "id": "anime-draw-curve--step-0",
+   "sectionId": "anime-draw-curve",
+   "visuals": [
+    {
+     "blockId": "anime-draw-curve--draw-curve-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "anime-draw-curve--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-draw-curve--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-draw-curve--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-draw-curve--paragraph-1--narration"
+   ]
+  },
+  "anime-draw-curve--step-1": {
+   "id": "anime-draw-curve--step-1",
+   "sectionId": "anime-draw-curve",
+   "visuals": [
+    {
+     "blockId": "anime-draw-curve--draw-curve-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "anime-draw-curve--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-draw-curve--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-draw-curve--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-draw-curve--paragraph-2--narration"
+   ]
+  },
+  "anime-draw-curve--step-2": {
+   "id": "anime-draw-curve--step-2",
+   "sectionId": "anime-draw-curve",
+   "visuals": [
+    {
+     "blockId": "anime-draw-curve--draw-curve-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "anime-draw-curve--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-draw-curve--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-draw-curve--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-draw-curve--paragraph-3--narration"
+   ]
+  },
+  "anime-packet-path--step-0": {
+   "id": "anime-packet-path--step-0",
+   "sectionId": "anime-packet-path",
+   "visuals": [
+    {
+     "blockId": "anime-packet-path--packet-path-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "anime-packet-path--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-packet-path--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-packet-path--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-packet-path--paragraph-1--narration"
+   ]
+  },
+  "anime-packet-path--step-1": {
+   "id": "anime-packet-path--step-1",
+   "sectionId": "anime-packet-path",
+   "visuals": [
+    {
+     "blockId": "anime-packet-path--packet-path-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "anime-packet-path--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-packet-path--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-packet-path--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-packet-path--paragraph-2--narration"
+   ]
+  },
+  "anime-packet-path--step-2": {
+   "id": "anime-packet-path--step-2",
+   "sectionId": "anime-packet-path",
+   "visuals": [
+    {
+     "blockId": "anime-packet-path--packet-path-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "anime-packet-path--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "anime-packet-path--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "anime-packet-path--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "anime-packet-path--paragraph-3--narration"
+   ]
+  },
+  "motion-flow--step-0": {
+   "id": "motion-flow--step-0",
+   "sectionId": "motion-flow",
+   "visuals": [
+    {
+     "blockId": "motion-flow--flow-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-flow--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-flow--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-flow--paragraph-1--narration"
+   ]
+  },
+  "motion-flow--step-1": {
+   "id": "motion-flow--step-1",
+   "sectionId": "motion-flow",
+   "visuals": [
+    {
+     "blockId": "motion-flow--flow-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-flow--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-flow--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-flow--paragraph-2--narration"
+   ]
+  },
+  "remotion-path-draw--step-0": {
+   "id": "remotion-path-draw--step-0",
+   "sectionId": "remotion-path-draw",
+   "visuals": [
+    {
+     "blockId": "remotion-path-draw--path-draw-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "remotion-path-draw--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-path-draw--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-path-draw--paragraph-1--narration"
+   ]
+  },
+  "remotion-path-draw--step-1": {
+   "id": "remotion-path-draw--step-1",
+   "sectionId": "remotion-path-draw",
+   "visuals": [
+    {
+     "blockId": "remotion-path-draw--path-draw-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "remotion-path-draw--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-path-draw--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-path-draw--paragraph-2--narration"
+   ]
+  },
+  "three-route--step-0": {
+   "id": "three-route--step-0",
+   "sectionId": "three-route",
+   "visuals": [
+    {
+     "blockId": "three-route--route-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "three-route--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-route--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-route--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-route--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-route--paragraph-1--narration"
+   ]
+  },
+  "three-route--step-1": {
+   "id": "three-route--step-1",
+   "sectionId": "three-route",
+   "visuals": [
+    {
+     "blockId": "three-route--route-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "three-route--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-route--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-route--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-route--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-route--paragraph-2--narration"
+   ]
+  },
+  "three-route--step-2": {
+   "id": "three-route--step-2",
+   "sectionId": "three-route",
+   "visuals": [
+    {
+     "blockId": "three-route--route-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "three-route--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-route--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-route--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-route--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-route--paragraph-3--narration"
+   ]
+  },
+  "three-route--step-3": {
+   "id": "three-route--step-3",
+   "sectionId": "three-route",
+   "visuals": [
+    {
+     "blockId": "three-route--route-scene",
+     "visible": true,
+     "state": "legacy-3"
+    },
+    {
+     "blockId": "three-route--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-route--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-route--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-route--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-route--paragraph-4--narration"
+   ]
+  },
+  "scenes--step": {
+   "id": "scenes--step",
+   "sectionId": "scenes",
+   "visuals": [
+    {
+     "blockId": "scenes--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "fx-figure-ring--step-0": {
+   "id": "fx-figure-ring--step-0",
+   "sectionId": "fx-figure-ring",
+   "visuals": [
+    {
+     "blockId": "fx-figure-ring--notes",
+     "visible": false
+    },
+    {
+     "blockId": "fx-figure-ring--shot",
+     "visible": true,
+     "state": "enter"
+    }
+   ],
+   "narrationIds": []
+  },
+  "fx-figure-ring--step-1": {
+   "id": "fx-figure-ring--step-1",
+   "sectionId": "fx-figure-ring",
+   "visuals": [
+    {
+     "blockId": "fx-figure-ring--notes",
+     "visible": false
+    },
+    {
+     "blockId": "fx-figure-ring--shot",
+     "visible": true,
+     "state": "card-2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "fx-figure-ring--step-2": {
+   "id": "fx-figure-ring--step-2",
+   "sectionId": "fx-figure-ring",
+   "visuals": [
+    {
+     "blockId": "fx-figure-ring--notes",
+     "visible": false
+    },
+    {
+     "blockId": "fx-figure-ring--shot",
+     "visible": true,
+     "state": "card-3"
+    }
+   ],
+   "narrationIds": []
+  },
+  "fx-figure-ring--step-3": {
+   "id": "fx-figure-ring--step-3",
+   "sectionId": "fx-figure-ring",
+   "visuals": [
+    {
+     "blockId": "fx-figure-ring--notes",
+     "visible": false
+    },
+    {
+     "blockId": "fx-figure-ring--shot",
+     "visible": true,
+     "state": "card-4"
+    }
+   ],
+   "narrationIds": []
+  },
+  "fx-figure-ring--step-4": {
+   "id": "fx-figure-ring--step-4",
+   "sectionId": "fx-figure-ring",
+   "visuals": [
+    {
+     "blockId": "fx-figure-ring--notes",
+     "visible": false
+    },
+    {
+     "blockId": "fx-figure-ring--shot",
+     "visible": true,
+     "state": "card-5"
+    }
+   ],
+   "narrationIds": []
+  },
+  "fx-sample-sphere--step-0": {
+   "id": "fx-sample-sphere--step-0",
+   "sectionId": "fx-sample-sphere",
+   "visuals": [
+    {
+     "blockId": "fx-sample-sphere--notes",
+     "visible": false
+    },
+    {
+     "blockId": "fx-sample-sphere--shot",
+     "visible": true,
+     "state": "spin"
+    }
+   ],
+   "narrationIds": []
+  },
+  "fx-sample-sphere--step-1": {
+   "id": "fx-sample-sphere--step-1",
+   "sectionId": "fx-sample-sphere",
+   "visuals": [
+    {
+     "blockId": "fx-sample-sphere--notes",
+     "visible": false
+    },
+    {
+     "blockId": "fx-sample-sphere--shot",
+     "visible": true,
+     "state": "pick"
+    }
+   ],
+   "narrationIds": []
+  },
+  "fx-sample-sphere--step-2": {
+   "id": "fx-sample-sphere--step-2",
+   "sectionId": "fx-sample-sphere",
+   "visuals": [
+    {
+     "blockId": "fx-sample-sphere--notes",
+     "visible": false
+    },
+    {
+     "blockId": "fx-sample-sphere--shot",
+     "visible": true,
+     "state": "label"
+    }
+   ],
+   "narrationIds": []
+  },
+  "three-galaxy--step-0": {
+   "id": "three-galaxy--step-0",
+   "sectionId": "three-galaxy",
+   "visuals": [
+    {
+     "blockId": "three-galaxy--galaxy-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "three-galaxy--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-galaxy--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-galaxy--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-galaxy--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-galaxy--paragraph-1--narration"
+   ]
+  },
+  "three-galaxy--step-1": {
+   "id": "three-galaxy--step-1",
+   "sectionId": "three-galaxy",
+   "visuals": [
+    {
+     "blockId": "three-galaxy--galaxy-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "three-galaxy--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-galaxy--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-galaxy--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-galaxy--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-galaxy--paragraph-2--narration"
+   ]
+  },
+  "three-galaxy--step-2": {
+   "id": "three-galaxy--step-2",
+   "sectionId": "three-galaxy",
+   "visuals": [
+    {
+     "blockId": "three-galaxy--galaxy-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "three-galaxy--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-galaxy--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-galaxy--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-galaxy--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-galaxy--paragraph-3--narration"
+   ]
+  },
+  "three-galaxy--step-3": {
+   "id": "three-galaxy--step-3",
+   "sectionId": "three-galaxy",
+   "visuals": [
+    {
+     "blockId": "three-galaxy--galaxy-scene",
+     "visible": true,
+     "state": "legacy-3"
+    },
+    {
+     "blockId": "three-galaxy--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-galaxy--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-galaxy--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-galaxy--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-galaxy--paragraph-4--narration"
+   ]
+  },
+  "three-materials--step-0": {
+   "id": "three-materials--step-0",
+   "sectionId": "three-materials",
+   "visuals": [
+    {
+     "blockId": "three-materials--materials-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "three-materials--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-materials--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-materials--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-materials--paragraph-1--narration"
+   ]
+  },
+  "three-materials--step-1": {
+   "id": "three-materials--step-1",
+   "sectionId": "three-materials",
+   "visuals": [
+    {
+     "blockId": "three-materials--materials-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "three-materials--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-materials--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-materials--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-materials--paragraph-2--narration"
+   ]
+  },
+  "three-materials--step-2": {
+   "id": "three-materials--step-2",
+   "sectionId": "three-materials",
+   "visuals": [
+    {
+     "blockId": "three-materials--materials-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "three-materials--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-materials--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-materials--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-materials--paragraph-3--narration"
+   ]
+  },
+  "three-shadows--step-0": {
+   "id": "three-shadows--step-0",
+   "sectionId": "three-shadows",
+   "visuals": [
+    {
+     "blockId": "three-shadows--shadows-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "three-shadows--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-shadows--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-shadows--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-shadows--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-shadows--paragraph-1--narration"
+   ]
+  },
+  "three-shadows--step-1": {
+   "id": "three-shadows--step-1",
+   "sectionId": "three-shadows",
+   "visuals": [
+    {
+     "blockId": "three-shadows--shadows-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "three-shadows--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-shadows--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-shadows--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-shadows--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-shadows--paragraph-2--narration"
+   ]
+  },
+  "three-shadows--step-2": {
+   "id": "three-shadows--step-2",
+   "sectionId": "three-shadows",
+   "visuals": [
+    {
+     "blockId": "three-shadows--shadows-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "three-shadows--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-shadows--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-shadows--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-shadows--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-shadows--paragraph-3--narration"
+   ]
+  },
+  "three-shadows--step-3": {
+   "id": "three-shadows--step-3",
+   "sectionId": "three-shadows",
+   "visuals": [
+    {
+     "blockId": "three-shadows--shadows-scene",
+     "visible": true,
+     "state": "legacy-3"
+    },
+    {
+     "blockId": "three-shadows--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "three-shadows--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "three-shadows--paragraph-3",
+     "visible": false
+    },
+    {
+     "blockId": "three-shadows--paragraph-4",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "three-shadows--paragraph-4--narration"
+   ]
+  },
+  "textures--step": {
+   "id": "textures--step",
+   "sectionId": "textures",
+   "visuals": [
+    {
+     "blockId": "textures--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "fx-noise-to-marble--step-0": {
+   "id": "fx-noise-to-marble--step-0",
+   "sectionId": "fx-noise-to-marble",
+   "visuals": [
+    {
+     "blockId": "fx-noise-to-marble--notes",
+     "visible": false
+    },
+    {
+     "blockId": "fx-noise-to-marble--shot",
+     "visible": true,
+     "state": "noise"
+    }
+   ],
+   "narrationIds": []
+  },
+  "fx-noise-to-marble--step-1": {
+   "id": "fx-noise-to-marble--step-1",
+   "sectionId": "fx-noise-to-marble",
+   "visuals": [
+    {
+     "blockId": "fx-noise-to-marble--notes",
+     "visible": false
+    },
+    {
+     "blockId": "fx-noise-to-marble--shot",
+     "visible": true,
+     "state": "octaves"
+    }
+   ],
+   "narrationIds": []
+  },
+  "fx-noise-to-marble--step-2": {
+   "id": "fx-noise-to-marble--step-2",
+   "sectionId": "fx-noise-to-marble",
+   "visuals": [
+    {
+     "blockId": "fx-noise-to-marble--notes",
+     "visible": false
+    },
+    {
+     "blockId": "fx-noise-to-marble--shot",
+     "visible": true,
+     "state": "marble"
+    }
+   ],
+   "narrationIds": []
+  },
+  "fx-paper-grain--step-0": {
+   "id": "fx-paper-grain--step-0",
+   "sectionId": "fx-paper-grain",
+   "visuals": [
+    {
+     "blockId": "fx-paper-grain--notes",
+     "visible": false
+    },
+    {
+     "blockId": "fx-paper-grain--shot",
+     "visible": true,
+     "state": "play"
+    }
+   ],
+   "narrationIds": []
+  },
+  "fx-before-after--step-0": {
+   "id": "fx-before-after--step-0",
+   "sectionId": "fx-before-after",
+   "visuals": [
+    {
+     "blockId": "fx-before-after--notes",
+     "visible": false
+    },
+    {
+     "blockId": "fx-before-after--shot",
+     "visible": true,
+     "state": "before"
+    }
+   ],
+   "narrationIds": []
+  },
+  "fx-before-after--step-1": {
+   "id": "fx-before-after--step-1",
+   "sectionId": "fx-before-after",
+   "visuals": [
+    {
+     "blockId": "fx-before-after--notes",
+     "visible": false
+    },
+    {
+     "blockId": "fx-before-after--shot",
+     "visible": true,
+     "state": "change"
+    }
+   ],
+   "narrationIds": []
+  },
+  "fx-before-after--step-2": {
+   "id": "fx-before-after--step-2",
+   "sectionId": "fx-before-after",
+   "visuals": [
+    {
+     "blockId": "fx-before-after--notes",
+     "visible": false
+    },
+    {
+     "blockId": "fx-before-after--shot",
+     "visible": true,
+     "state": "after"
+    }
+   ],
+   "narrationIds": []
+  }
+ },
+ "narrations": {
+  "gsap-motion-path--paragraph-1--narration": {
+   "id": "gsap-motion-path--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "请求沿上方的弧线飞向服务器，箭头随曲线转向。"
+    }
+   ]
+  },
+  "gsap-motion-path--paragraph-2--narration": {
+   "id": "gsap-motion-path--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "响应沿下方的弧线返回客户端。"
+    }
+   ]
+  },
+  "gsap-motion-path--paragraph-3--narration": {
+   "id": "gsap-motion-path--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "一串数据包在同一条路径上接连发出。"
+    }
+   ]
+  },
+  "anime-draw-curve--paragraph-1--narration": {
+   "id": "anime-draw-curve--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "先画两条坐标轴。"
+    }
+   ]
+  },
+  "anime-draw-curve--paragraph-2--narration": {
+   "id": "anime-draw-curve--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "正弦曲线从左到右一笔描出来。"
+    }
+   ]
+  },
+  "anime-draw-curve--paragraph-3--narration": {
+   "id": "anime-draw-curve--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "一段高亮的窗口沿着曲线滑过去，起点和终点都可以单独控制。"
+    }
+   ]
+  },
+  "anime-packet-path--paragraph-1--narration": {
+   "id": "anime-packet-path--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "客户端和服务器之间隔着两台路由器。"
+    }
+   ]
+  },
+  "anime-packet-path--paragraph-2--narration": {
+   "id": "anime-packet-path--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "请求沿着路径走过去，在弯道处跟着转向。"
+    }
+   ]
+  },
+  "anime-packet-path--paragraph-3--narration": {
+   "id": "anime-packet-path--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "响应 200 沿相反的方向回到客户端。"
+    }
+   ]
+  },
+  "motion-flow--paragraph-1--narration": {
+   "id": "motion-flow--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "前向传播：信号一层一层从输入流到输出。"
+    }
+   ]
+  },
+  "motion-flow--paragraph-2--narration": {
+   "id": "motion-flow--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "反向传播：梯度从输出流回输入，经过的节点都标成红色。"
+    }
+   ]
+  },
+  "remotion-path-draw--paragraph-1--narration": {
+   "id": "remotion-path-draw--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "坐标轴先出现，曲线从左往右画出来。"
+    }
+   ]
+  },
+  "remotion-path-draw--paragraph-2--narration": {
+   "id": "remotion-path-draw--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "一个点沿着曲线走，切线跟着它转，斜率的数值随之变化。"
+    }
+   ]
+  },
+  "three-route--paragraph-1--narration": {
+   "id": "three-route--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "请求经过的五个节点依次出现。"
+    }
+   ]
+  },
+  "three-route--paragraph-2--narration": {
+   "id": "three-route--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "一条平滑的管道把它们连起来。"
+    }
+   ]
+  },
+  "three-route--paragraph-3--narration": {
+   "id": "three-route--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "数据包沿管道前进，镜头跟在它后方。"
+    }
+   ]
+  },
+  "three-route--paragraph-4--narration": {
+   "id": "three-route--paragraph-4--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "镜头拉回全景，数据包停在数据库。"
+    }
+   ]
+  },
+  "three-galaxy--paragraph-1--narration": {
+   "id": "three-galaxy--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "六万颗星从中心向外散开，位置全部在着色器里算出。"
+    }
+   ]
+  },
+  "three-galaxy--paragraph-2--narration": {
+   "id": "three-galaxy--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "旋臂出现：越远的星，转过的角度越大。"
+    }
+   ]
+  },
+  "three-galaxy--paragraph-3--narration": {
+   "id": "three-galaxy--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "星系转起来，内圈比外圈转得快，旋臂越缠越紧。"
+    }
+   ]
+  },
+  "three-galaxy--paragraph-4--narration": {
+   "id": "three-galaxy--paragraph-4--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "镜头倾斜，看到星系是一个薄薄的盘。"
+    }
+   ]
+  },
+  "three-materials--paragraph-1--narration": {
+   "id": "three-materials--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "五种材质并排出现：金属、清漆、卡通、法线着色和线框。"
+    }
+   ]
+  },
+  "three-materials--paragraph-2--narration": {
+   "id": "three-materials--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "一盏点光源从左上方划到右侧，看高光在各种材质上怎样移动。"
+    }
+   ]
+  },
+  "three-materials--paragraph-3--narration": {
+   "id": "three-materials--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "金属的粗糙度从 0.2 增加到 0.9，倒影从清晰变成模糊。"
+    }
+   ]
+  },
+  "three-shadows--paragraph-1--narration": {
+   "id": "three-shadows--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "楼房从地面升起。"
+    }
+   ]
+  },
+  "three-shadows--paragraph-2--narration": {
+   "id": "three-shadows--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "太阳从东边升到头顶，影子由长变短。"
+    }
+   ]
+  },
+  "three-shadows--paragraph-3--narration": {
+   "id": "three-shadows--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "太阳落向西边，光线变暖，影子拉长到另一侧。"
+    }
+   ]
+  },
+  "three-shadows--paragraph-4--narration": {
+   "id": "three-shadows--paragraph-4--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "雾漫上来，远处的楼房渐渐融入背景。"
+    }
+   ]
+  }
+ },
+ "assets": {},
+ "definitions": {
+  "gsap-motion-path--motion-path-scene--definition": {
+   "id": "gsap-motion-path--motion-path-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/gsap/motion-path.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     1600,
+     2400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "客户端与服务器之间，请求沿上方的弧线飞去，响应沿下方的弧线返回，最后一串数据包接连发出。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "anime-draw-curve--draw-curve-scene--definition": {
+   "id": "anime-draw-curve--draw-curve-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/anime/draw-curve.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1600,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "坐标轴先画出，随后描出正弦曲线，最后一段高亮沿曲线滑过。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "anime-packet-path--packet-path-scene--definition": {
+   "id": "anime-packet-path--packet-path-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/anime/packet-path.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     600,
+     1800,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一个请求从客户端经过两台路由器到达服务器，响应沿原路返回。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-flow--flow-scene--definition": {
+   "id": "motion-flow--flow-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/flow.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1800,
+     2000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一个小神经网络：前向传播的脉冲从输入层流到输出层，梯度再从输出层流回输入层。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "remotion-path-draw--path-draw-scene--definition": {
+   "id": "remotion-path-draw--path-draw-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/remotion/path-draw.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     2000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "先画出坐标轴和一条曲线，再有一个点沿曲线移动，带着它的切线和斜率。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "three-route--route-scene--definition": {
+   "id": "three-route--route-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/three/route.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    },
+    {
+     "id": "legacy-3",
+     "legacyIndex": 3
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1400,
+     2600,
+     1200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一次请求的路径：浏览器、网关、服务、缓存与数据库依次出现，管道连起它们，数据包沿管道前进，镜头跟在后面。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "fx-figure-ring--shot--definition": {
+   "id": "fx-figure-ring--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/fx/figure-ring.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文本"
+     },
+     "figures": {
+      "type": "array",
+      "title": "图卡",
+      "items": {
+       "type": "object",
+       "title": "一张图",
+       "properties": {
+        "title": {
+         "type": "string",
+         "title": "标题"
+        },
+        "kind": {
+         "type": "string",
+         "title": "类型",
+         "enum": [
+          "line",
+          "bars",
+          "scatter",
+          "number",
+          "picture"
+         ]
+        },
+        "values": {
+         "type": "array",
+         "title": "数据",
+         "items": {
+          "type": "number"
+         }
+        },
+        "max": {
+         "type": "number",
+         "title": "数值轴上限"
+        },
+        "highlight": {
+         "type": "integer",
+         "title": "强调的柱（序号）"
+        },
+        "value": {
+         "type": "string",
+         "title": "数字（number 类型）"
+        },
+        "picture": {
+         "type": "string",
+         "title": "图片：SVG 文本或网址"
+        },
+        "tag": {
+         "type": "string",
+         "title": "角标，如“示意”"
+        },
+        "note": {
+         "type": "string",
+         "title": "这张图的读法（一句）"
+        }
+       }
+      }
+     },
+     "source": {
+      "type": "string",
+      "title": "来源"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "enter"
+    },
+    {
+     "id": "card-2"
+    },
+    {
+     "id": "card-3"
+    },
+    {
+     "id": "card-4"
+    },
+    {
+     "id": "card-5"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2000,
+     1800,
+     1800,
+     1800,
+     2600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "五张图卡围成一圈，逐张转到正前方：训练损失、模型结构、各方法准确率、消融实验、相对提升，每张下面一句读法。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "fx-sample-sphere--shot--definition": {
+   "id": "fx-sample-sphere--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/fx/sample-sphere.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文本"
+     },
+     "samples": {
+      "type": "string",
+      "title": "样本字符"
+     },
+     "count": {
+      "type": "integer",
+      "title": "样本数",
+      "minimum": 12,
+      "maximum": 160
+     },
+     "title": {
+      "type": "string",
+      "title": "标题"
+     },
+     "sampleId": {
+      "type": "string",
+      "title": "样本编号"
+     },
+     "label": {
+      "type": "string",
+      "title": "标签（{glyph} 为样本字符）"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "spin"
+    },
+    {
+     "id": "pick"
+    },
+    {
+     "id": "label"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1800,
+     1400,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "七十二张手写数字样本贴在转动的球面上，离镜头最近的一张飞出放大，旁边标出样本编号和标签。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "three-galaxy--galaxy-scene--definition": {
+   "id": "three-galaxy--galaxy-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/three/galaxy.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    },
+    {
+     "id": "legacy-3",
+     "legacyIndex": 3
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1600,
+     2400,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "六万颗星从中心散开，扭成三条旋臂，内圈转得比外圈快，最后镜头倾斜看到星系的侧面。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "three-materials--materials-scene--definition": {
+   "id": "three-materials--materials-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/three/materials.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1800,
+     1400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "同一个环面结用五种材质并排，一盏灯从左向右划过，最后金属材质的粗糙度逐渐增大。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "three-shadows--shadows-scene--definition": {
+   "id": "three-shadows--shadows-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/three/shadows.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    },
+    {
+     "id": "legacy-3",
+     "legacyIndex": 3
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1400,
+     1600,
+     1600,
+     1200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一座小城的楼房升起，太阳从东方升到头顶再落向西方，影子随之转动变长，最后雾气漫上来。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "fx-noise-to-marble--shot--definition": {
+   "id": "fx-noise-to-marble--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/fx/noise-to-marble.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文本"
+     },
+     "basis": {
+      "type": "string",
+      "title": "噪声",
+      "enum": [
+       "simplex",
+       "cellular"
+      ]
+     },
+     "labels": {
+      "type": "array",
+      "title": "状态名",
+      "items": {
+       "type": "string"
+      },
+      "minItems": 3,
+      "maxItems": 3
+     },
+     "axis": {
+      "type": "string",
+      "title": "曲线说明"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "noise"
+    },
+    {
+     "id": "octaves"
+    },
+    {
+     "id": "marble"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2400,
+     3200,
+     4400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一条噪声纹理带和它中线上的取值曲线：先是一层平滑噪声，再逐层叠加到六层分形噪声，最后用噪声扭曲条纹得到大理石纹。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "fx-paper-grain--shot--definition": {
+   "id": "fx-paper-grain--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/fx/paper-grain.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文本"
+     },
+     "lines": {
+      "type": "array",
+      "title": "引文各行",
+      "items": {
+       "type": "string"
+      }
+     },
+     "mark": {
+      "type": "string",
+      "title": "标记的词"
+     },
+     "cite": {
+      "type": "string",
+      "title": "出处"
+     },
+     "strength": {
+      "type": "number",
+      "title": "颗粒强度",
+      "minimum": 0,
+      "maximum": 0.3
+     },
+     "mottle": {
+      "type": "number",
+      "title": "斑驳强度",
+      "minimum": 0,
+      "maximum": 0.2
+     },
+     "flicker": {
+      "type": "number",
+      "title": "颗粒每秒变化次数",
+      "minimum": 0,
+      "maximum": 24
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "play"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     5000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "纸张纹理上，图灵 1950 年论文的开头一句逐行升起，关键词下画出标记线，然后出现出处。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "fx-before-after--shot--definition": {
+   "id": "fx-before-after--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/fx/before-after.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "alt": {
+      "type": "string",
+      "title": "替代文本"
+     },
+     "before": {
+      "type": "object",
+      "title": "之前",
+      "properties": {
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "kind": {
+        "type": "string",
+        "title": "类型",
+        "enum": [
+         "line",
+         "bars",
+         "scatter",
+         "number",
+         "picture"
+        ]
+       },
+       "values": {
+        "type": "array",
+        "title": "数据",
+        "items": {
+         "type": "number"
+        }
+       },
+       "max": {
+        "type": "number",
+        "title": "数值轴上限"
+       },
+       "highlight": {
+        "type": "integer",
+        "title": "强调的柱（序号）"
+       },
+       "value": {
+        "type": "string",
+        "title": "数字（number 类型）"
+       },
+       "picture": {
+        "type": "string",
+        "title": "图片：SVG 文本或网址"
+       },
+       "tag": {
+        "type": "string",
+        "title": "角标，如“示意”"
+       },
+       "name": {
+        "type": "string",
+        "title": "名字"
+       }
+      }
+     },
+     "after": {
+      "type": "object",
+      "title": "之后",
+      "properties": {
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "kind": {
+        "type": "string",
+        "title": "类型",
+        "enum": [
+         "line",
+         "bars",
+         "scatter",
+         "number",
+         "picture"
+        ]
+       },
+       "values": {
+        "type": "array",
+        "title": "数据",
+        "items": {
+         "type": "number"
+        }
+       },
+       "max": {
+        "type": "number",
+        "title": "数值轴上限"
+       },
+       "highlight": {
+        "type": "integer",
+        "title": "强调的柱（序号）"
+       },
+       "value": {
+        "type": "string",
+        "title": "数字（number 类型）"
+       },
+       "picture": {
+        "type": "string",
+        "title": "图片：SVG 文本或网址"
+       },
+       "tag": {
+        "type": "string",
+        "title": "角标，如“示意”"
+       },
+       "name": {
+        "type": "string",
+        "title": "名字"
+       }
+      }
+     },
+     "mode": {
+      "type": "string",
+      "title": "交界",
+      "enum": [
+       "dissolve",
+       "portal",
+       "wipe"
+      ]
+     },
+     "origin": {
+      "type": "array",
+      "title": "圆心（0–1）",
+      "items": {
+       "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "before"
+    },
+    {
+     "id": "change"
+    },
+    {
+     "id": "after"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1400,
+     1200,
+     2400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一张带噪声的传感器读数曲线原地溶解成低通滤波后的平滑曲线，坐标轴不动。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  }
+ },
+ "production": {
+  "defaults": {
+   "voiceSource": {
+    "type": "none"
+   },
+   "trailingPauseMs": 0
+  },
+  "stepOverrides": {},
+  "mediaClips": []
+ }
+}

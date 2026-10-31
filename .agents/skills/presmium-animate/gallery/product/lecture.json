@@ -1,0 +1,8530 @@
+{
+ "schemaVersion": 1,
+ "id": "animation-product",
+ "metadata": {
+  "title": "产品演示",
+  "lang": "zh-CN",
+  "description": "把截图放进设备外框，镜头跟随指针操作，以及通知、表单、对话等界面片段。界面由设计令牌绘制，亮色与暗色通用。",
+  "tags": [
+   "动画参考"
+  ],
+  "plugins": [
+   "@lincyaw/addon-motion",
+   "@lincyaw/addon-lecture"
+  ],
+  "renderers": {
+   "web": {},
+   "lecture": {}
+  }
+ },
+ "sectionOrder": [
+  "screens",
+  "ui-device-frame",
+  "ui-device-splay",
+  "ui-screen-flow",
+  "ui-before-after",
+  "ui-cursor-zoom",
+  "operations",
+  "ui-settings-toggle",
+  "ui-signup-form",
+  "ui-context-menu",
+  "ui-drag-drop",
+  "mark-click-trail",
+  "mark-text-select",
+  "mark-agent-cursor",
+  "moments",
+  "ui-notification-stack",
+  "ui-chat-thread",
+  "ui-ai-answer",
+  "ui-onboarding-stepper",
+  "ui-modal-morph",
+  "ui-testimonial"
+ ],
+ "sections": {
+  "screens": {
+   "id": "screens",
+   "title": "设备与截图",
+   "level": 1,
+   "children": [
+    "screens--intro"
+   ],
+   "stepOrder": [
+    "screens--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "ui-device-frame": {
+   "id": "ui-device-frame",
+   "title": "设备外框：放进你的截图",
+   "level": 2,
+   "children": [
+    "ui-device-frame--notes",
+    "ui-device-frame--shot"
+   ],
+   "stepOrder": [
+    "ui-device-frame--step-0",
+    "ui-device-frame--step-1",
+    "ui-device-frame--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "ui-device-splay": {
+   "id": "ui-device-splay",
+   "title": "多设备展开",
+   "level": 2,
+   "children": [
+    "ui-device-splay--notes",
+    "ui-device-splay--shot"
+   ],
+   "stepOrder": [
+    "ui-device-splay--step-0",
+    "ui-device-splay--step-1",
+    "ui-device-splay--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "ui-screen-flow": {
+   "id": "ui-screen-flow",
+   "title": "多屏轮播：一屏一步",
+   "level": 2,
+   "children": [
+    "ui-screen-flow--notes",
+    "ui-screen-flow--shot"
+   ],
+   "stepOrder": [
+    "ui-screen-flow--step-0",
+    "ui-screen-flow--step-1",
+    "ui-screen-flow--step-2",
+    "ui-screen-flow--step-3"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "ui-before-after": {
+   "id": "ui-before-after",
+   "title": "前后对比：分割线擦过",
+   "level": 2,
+   "children": [
+    "ui-before-after--notes",
+    "ui-before-after--shot"
+   ],
+   "stepOrder": [
+    "ui-before-after--step-0",
+    "ui-before-after--step-1",
+    "ui-before-after--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "ui-cursor-zoom": {
+   "id": "ui-cursor-zoom",
+   "title": "点击推近：镜头跟着指针",
+   "level": 2,
+   "children": [
+    "ui-cursor-zoom--notes",
+    "ui-cursor-zoom--shot"
+   ],
+   "stepOrder": [
+    "ui-cursor-zoom--step-0",
+    "ui-cursor-zoom--step-1",
+    "ui-cursor-zoom--step-2",
+    "ui-cursor-zoom--step-3",
+    "ui-cursor-zoom--step-4"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "operations": {
+   "id": "operations",
+   "title": "操作",
+   "level": 1,
+   "children": [
+    "operations--intro"
+   ],
+   "stepOrder": [
+    "operations--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "ui-settings-toggle": {
+   "id": "ui-settings-toggle",
+   "title": "设置开关",
+   "level": 2,
+   "children": [
+    "ui-settings-toggle--notes",
+    "ui-settings-toggle--shot"
+   ],
+   "stepOrder": [
+    "ui-settings-toggle--step-0",
+    "ui-settings-toggle--step-1",
+    "ui-settings-toggle--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "ui-signup-form": {
+   "id": "ui-signup-form",
+   "title": "注册表单",
+   "level": 2,
+   "children": [
+    "ui-signup-form--notes",
+    "ui-signup-form--shot"
+   ],
+   "stepOrder": [
+    "ui-signup-form--step-0",
+    "ui-signup-form--step-1",
+    "ui-signup-form--step-2",
+    "ui-signup-form--step-3",
+    "ui-signup-form--step-4"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "ui-context-menu": {
+   "id": "ui-context-menu",
+   "title": "右键菜单",
+   "level": 2,
+   "children": [
+    "ui-context-menu--notes",
+    "ui-context-menu--shot"
+   ],
+   "stepOrder": [
+    "ui-context-menu--step-0",
+    "ui-context-menu--step-1",
+    "ui-context-menu--step-2",
+    "ui-context-menu--step-3"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "ui-drag-drop": {
+   "id": "ui-drag-drop",
+   "title": "拖放：把卡片移到下一列",
+   "level": 2,
+   "children": [
+    "ui-drag-drop--notes",
+    "ui-drag-drop--shot"
+   ],
+   "stepOrder": [
+    "ui-drag-drop--step-0",
+    "ui-drag-drop--step-1",
+    "ui-drag-drop--step-2",
+    "ui-drag-drop--step-3"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "mark-click-trail": {
+   "id": "mark-click-trail",
+   "title": "点击路径",
+   "level": 2,
+   "children": [
+    "mark-click-trail--notes",
+    "mark-click-trail--shot"
+   ],
+   "stepOrder": [
+    "mark-click-trail--step-0",
+    "mark-click-trail--step-1",
+    "mark-click-trail--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "mark-text-select": {
+   "id": "mark-text-select",
+   "title": "拖选文字",
+   "level": 2,
+   "children": [
+    "mark-text-select--notes",
+    "mark-text-select--shot"
+   ],
+   "stepOrder": [
+    "mark-text-select--step-0",
+    "mark-text-select--step-1"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "mark-agent-cursor": {
+   "id": "mark-agent-cursor",
+   "title": "AI 代理指针",
+   "level": 2,
+   "children": [
+    "mark-agent-cursor--notes",
+    "mark-agent-cursor--shot"
+   ],
+   "stepOrder": [
+    "mark-agent-cursor--step-0",
+    "mark-agent-cursor--step-1",
+    "mark-agent-cursor--step-2",
+    "mark-agent-cursor--step-3"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "moments": {
+   "id": "moments",
+   "title": "界面片段",
+   "level": 1,
+   "children": [
+    "moments--intro"
+   ],
+   "stepOrder": [
+    "moments--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "ui-notification-stack": {
+   "id": "ui-notification-stack",
+   "title": "通知堆叠",
+   "level": 2,
+   "children": [
+    "ui-notification-stack--notes",
+    "ui-notification-stack--shot"
+   ],
+   "stepOrder": [
+    "ui-notification-stack--step-0",
+    "ui-notification-stack--step-1",
+    "ui-notification-stack--step-2",
+    "ui-notification-stack--step-3",
+    "ui-notification-stack--step-4"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "ui-chat-thread": {
+   "id": "ui-chat-thread",
+   "title": "对话：一问一答",
+   "level": 2,
+   "children": [
+    "ui-chat-thread--notes",
+    "ui-chat-thread--shot"
+   ],
+   "stepOrder": [
+    "ui-chat-thread--step-0",
+    "ui-chat-thread--step-1",
+    "ui-chat-thread--step-2",
+    "ui-chat-thread--step-3",
+    "ui-chat-thread--step-4"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "ui-ai-answer": {
+   "id": "ui-ai-answer",
+   "title": "AI 回答：提问与流式输出",
+   "level": 2,
+   "children": [
+    "ui-ai-answer--notes",
+    "ui-ai-answer--shot"
+   ],
+   "stepOrder": [
+    "ui-ai-answer--step-0",
+    "ui-ai-answer--step-1",
+    "ui-ai-answer--step-2",
+    "ui-ai-answer--step-3"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "ui-onboarding-stepper": {
+   "id": "ui-onboarding-stepper",
+   "title": "新手引导：一步一步",
+   "level": 2,
+   "children": [
+    "ui-onboarding-stepper--notes",
+    "ui-onboarding-stepper--shot"
+   ],
+   "stepOrder": [
+    "ui-onboarding-stepper--step-0",
+    "ui-onboarding-stepper--step-1",
+    "ui-onboarding-stepper--step-2",
+    "ui-onboarding-stepper--step-3",
+    "ui-onboarding-stepper--step-4"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "ui-modal-morph": {
+   "id": "ui-modal-morph",
+   "title": "卡片展开成详情",
+   "level": 2,
+   "children": [
+    "ui-modal-morph--notes",
+    "ui-modal-morph--shot"
+   ],
+   "stepOrder": [
+    "ui-modal-morph--step-0",
+    "ui-modal-morph--step-1",
+    "ui-modal-morph--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "ui-testimonial": {
+   "id": "ui-testimonial",
+   "title": "评价引语",
+   "level": 2,
+   "children": [
+    "ui-testimonial--notes",
+    "ui-testimonial--shot"
+   ],
+   "stepOrder": [
+    "ui-testimonial--step-0",
+    "ui-testimonial--step-1"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  }
+ },
+ "blocks": {
+  "screens--intro": {
+   "id": "screens--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "screens--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "浏览器与手机外框、多设备、页面流程与前后对照。"
+      }
+     ]
+    }
+   ]
+  },
+  "ui-device-frame--notes": {
+   "id": "ui-device-frame--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "ui-device-frame--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "产品片或教程开头，亮出“它长这样”。外框有浏览器、窗口、手机、平板四种，屏幕是作者自己的截图；第二张截图从上到下揭开，用于“同一个东西的另一面”。"
+      }
+     ]
+    },
+    {
+     "id": "ui-device-frame--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "device",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（"
+      },
+      {
+       "type": "text",
+       "text": "browser",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "window",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "phone",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "tablet",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "），"
+      },
+      {
+       "type": "text",
+       "text": "image",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "image2",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（截图，留空时画通用应用），"
+      },
+      {
+       "type": "text",
+       "text": "variants",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（没有截图时两屏的样式："
+      },
+      {
+       "type": "text",
+       "text": "dashboard",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "doc",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "list",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "slides",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "chart",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "），"
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（地址栏或标题栏文字），"
+      },
+      {
+       "type": "text",
+       "text": "caption",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "caption2",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（两句说明）。"
+      }
+     ]
+    },
+    {
+     "id": "ui-device-frame--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "ui-device-frame--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-device-frame--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-frame--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-frame--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-device-frame--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-device-frame--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.6 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-frame--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "设备上浮 6% 并从 96% 放大到原尺寸，透明度先到"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-frame--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "落下来而不是淡出来"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-device-frame--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-device-frame--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.15–1.1 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-frame--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "屏幕由暗变亮，一道光扫过玻璃一次"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-frame--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一次高光让它成为“材质”，只在出现的瞬间"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-device-frame--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-device-frame--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.2–3 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-frame--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1% 的呼吸，读说明"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-frame--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停住的画面超过一秒像卡住"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-device-frame--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-device-frame--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3–3.6 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-frame--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "第二屏从上到下揭开，强调色的边沿着揭开线走，说明随之替换"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-frame--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "遮罩而不是交叉淡化：不出现两屏半透明叠在一起"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-device-frame--notes--n2--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-device-frame--notes--n2--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.6–5 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-frame--notes--n2--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停留"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-frame--notes--n2--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果至少停 1.5 s"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ui-device-frame--shot": {
+   "id": "ui-device-frame--shot",
+   "type": "component",
+   "definitionId": "ui-device-frame--shot--definition",
+   "parameters": {
+    "scene": "ui/device-frame",
+    "alt": "浏览器外框升起，屏幕亮起，显示一页讲义截图；随后从上到下换成幻灯片界面。",
+    "image": "screen-lesson.webp",
+    "title": "course.example.edu/lesson-3"
+   }
+  },
+  "ui-device-splay--notes": {
+   "id": "ui-device-splay--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "ui-device-splay--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "“在哪儿都能用”：同一个产品在电脑、平板、手机上。三台设备先作为一个整体出现，再展开；平板和手机的动作错开 60 ms，避免机械的镜像。"
+      }
+     ]
+    },
+    {
+     "id": "ui-device-splay--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "desktop",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "tablet",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "phone",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（三张截图），"
+      },
+      {
+       "type": "text",
+       "text": "desktopVariant",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "tabletVariant",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "phoneVariant",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（无截图时的样式），"
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（地址栏），"
+      },
+      {
+       "type": "text",
+       "text": "caption",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。"
+      }
+     ]
+    },
+    {
+     "id": "ui-device-splay--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "ui-device-splay--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-device-splay--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-splay--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-splay--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-device-splay--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-device-splay--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-splay--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "三台设备叠在一起升起"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-splay--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先是一个物体"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-device-splay--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-device-splay--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1–1.65 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-splay--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "平板向左、手机向右滑出并外转 3°，2% 过冲；手机晚 60 ms"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-splay--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "动作重叠而不是镜像"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-device-splay--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-device-splay--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.55 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-splay--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "说明升起"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-splay--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": []
+        }
+       ]
+      },
+      {
+       "id": "ui-device-splay--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-device-splay--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2–4.5 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-splay--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "各自以不同相位轻微浮动"
+          }
+         ]
+        },
+        {
+         "id": "ui-device-splay--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停留不僵"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ui-device-splay--shot": {
+   "id": "ui-device-splay--shot",
+   "type": "component",
+   "definitionId": "ui-device-splay--shot--definition",
+   "parameters": {
+    "scene": "ui/device-splay",
+    "alt": "电脑、平板和手机先叠在一起升起，然后平板向左、手机向右展开，下方出现“一份文稿，处处可读”。",
+    "desktop": "screen-lesson.webp"
+   }
+  },
+  "ui-screen-flow--notes": {
+   "id": "ui-screen-flow--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "ui-screen-flow--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "按顺序介绍一个应用的几屏，或一个流程的几步。整排是一个物体：每屏的大小和亮度只由它离中心的距离决定，向左是前进。"
+      }
+     ]
+    },
+    {
+     "id": "ui-screen-flow--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "screens",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（每项 "
+      },
+      {
+       "type": "text",
+       "text": "image",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 或 "
+      },
+      {
+       "type": "text",
+       "text": "variant",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "，"
+      },
+      {
+       "type": "text",
+       "text": "label",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "），"
+      },
+      {
+       "type": "text",
+       "text": "device",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（"
+      },
+      {
+       "type": "text",
+       "text": "phone",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "tablet",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "browser",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "），"
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（浏览器地址）。屏数等于定义里状态的数目。"
+      }
+     ]
+    },
+    {
+     "id": "ui-screen-flow--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "ui-screen-flow--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-screen-flow--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "ui-screen-flow--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "ui-screen-flow--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-screen-flow--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-screen-flow--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1.8 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-screen-flow--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "中间一屏升起，两侧随后，说明升起"
+          }
+         ]
+        },
+        {
+         "id": "ui-screen-flow--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先立住第一屏"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-screen-flow--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-screen-flow--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "每步 0–0.6 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-screen-flow--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "整排左移一格，两端缓动，大小亮度随距离变化"
+          }
+         ]
+        },
+        {
+         "id": "ui-screen-flow--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "同一个物体在动"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-screen-flow--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-screen-flow--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.35 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-screen-flow--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "说明替换"
+          }
+         ]
+        },
+        {
+         "id": "ui-screen-flow--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "新屏到达时才换说明"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-screen-flow--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-screen-flow--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "其余"
+          }
+         ]
+        },
+        {
+         "id": "ui-screen-flow--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停留"
+          }
+         ]
+        },
+        {
+         "id": "ui-screen-flow--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "每屏都要读得完"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ui-screen-flow--shot": {
+   "id": "ui-screen-flow--shot",
+   "type": "component",
+   "definitionId": "ui-screen-flow--shot--definition",
+   "parameters": {
+    "scene": "ui/screen-flow",
+    "alt": "四个手机屏幕排成一行，中间的最大最亮，每一步整排向左移一格，下方说明依次为选一门课、读讲义、看幻灯片、查学习进度。"
+   }
+  },
+  "ui-before-after--notes": {
+   "id": "ui-before-after--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "ui-before-after--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "改版前后、优化前后、手工与自动的对比。分割线把“之后”从“之前”上面擦出来，先完整看一眼“之后”，再停在中间并排比较：左边是之前，右边是之后。"
+      }
+     ]
+    },
+    {
+     "id": "ui-before-after--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "before",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "after",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（两张截图，同样尺寸最好），"
+      },
+      {
+       "type": "text",
+       "text": "beforeVariant",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "afterVariant",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（无截图时的样式），"
+      },
+      {
+       "type": "text",
+       "text": "beforeLabel",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "afterLabel",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "，"
+      },
+      {
+       "type": "text",
+       "text": "rest",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（分割线最后停的位置，百分比，默认 50）。"
+      }
+     ]
+    },
+    {
+     "id": "ui-before-after--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "ui-before-after--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-before-after--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "ui-before-after--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "ui-before-after--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-before-after--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-before-after--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1.2 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-before-after--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "“之前”升起，左上角标签出现"
+          }
+         ]
+        },
+        {
+         "id": "ui-before-after--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先单独看清之前"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-before-after--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-before-after--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.2–2.1 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-before-after--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "分割线从右边缘扫到左边缘，露出“之后”"
+          }
+         ]
+        },
+        {
+         "id": "ui-before-after--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "遮罩，不交叉淡化"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-before-after--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-before-after--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.1–2.3 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-before-after--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停在完整的“之后”上"
+          }
+         ]
+        },
+        {
+         "id": "ui-before-after--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "让结果被完整看到一次"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-before-after--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-before-after--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.3–2.85 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-before-after--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "分割线回到中间，两侧并排"
+          }
+         ]
+        },
+        {
+         "id": "ui-before-after--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "左是之前，右是之后，全片不变"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-before-after--notes--n2--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-before-after--notes--n2--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3–5 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-before-after--notes--n2--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "分割线在停靠处 1% 呼吸"
+          }
+         ]
+        },
+        {
+         "id": "ui-before-after--notes--n2--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停留不僵"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ui-before-after--shot": {
+   "id": "ui-before-after--shot",
+   "type": "component",
+   "definitionId": "ui-before-after--shot--definition",
+   "parameters": {
+    "scene": "ui/before-after",
+    "alt": "先显示“之前”的清单界面，一条强调色分割线从右向左擦过露出“之后”的数据面板，再回到中间，左右对比。"
+   }
+  },
+  "ui-cursor-zoom--notes": {
+   "id": "ui-cursor-zoom--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "ui-cursor-zoom--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "录屏式教程：“先点这里，再点那里”。镜头先推近到下一次点击的位置，指针随后到达并按下，按下之后下方才出现这一步的说明。截图越大、按钮越小，越需要它。"
+      }
+     ]
+    },
+    {
+     "id": "ui-cursor-zoom--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "image",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（截图，留空时画通用数据面板），"
+      },
+      {
+       "type": "text",
+       "text": "variant",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（无截图时的样式），"
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（地址栏），"
+      },
+      {
+       "type": "text",
+       "text": "zoom",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（推近倍数，默认 1.8），"
+      },
+      {
+       "type": "text",
+       "text": "clicks",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（点击列表，每项 "
+      },
+      {
+       "type": "text",
+       "text": "x",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "y",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 为屏幕内的百分比，"
+      },
+      {
+       "type": "text",
+       "text": "label",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 为说明）。点击数等于定义里 "
+      },
+      {
+       "type": "text",
+       "text": "click-*",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 状态的数目，加减点击时同步增删状态。"
+      }
+     ]
+    },
+    {
+     "id": "ui-cursor-zoom--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "ui-cursor-zoom--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-cursor-zoom--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "ui-cursor-zoom--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "ui-cursor-zoom--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-cursor-zoom--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-cursor-zoom--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1.2 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-cursor-zoom--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "整屏出现，指针从右下进入"
+          }
+         ]
+        },
+        {
+         "id": "ui-cursor-zoom--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先看全貌，再看局部"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-cursor-zoom--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-cursor-zoom--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "每次点击 0–0.6 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-cursor-zoom--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "镜头推近并平移到下一个点击位置，两端缓动；指针随后 0.1 s 出发"
+          }
+         ]
+        },
+        {
+         "id": "ui-cursor-zoom--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "眼睛先被带到位置，手再跟上"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-cursor-zoom--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-cursor-zoom--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.75 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-cursor-zoom--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "按下：指针下沉，波纹从指尖扩散"
+          }
+         ]
+        },
+        {
+         "id": "ui-cursor-zoom--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "原因"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-cursor-zoom--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-cursor-zoom--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.9 s 起"
+          }
+         ]
+        },
+        {
+         "id": "ui-cursor-zoom--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "说明替换上一条，其余时间停留阅读"
+          }
+         ]
+        },
+        {
+         "id": "ui-cursor-zoom--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果在原因之后出现"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-cursor-zoom--notes--n2--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-cursor-zoom--notes--n2--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "最后 1.5 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-cursor-zoom--notes--n2--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "镜头退回整屏，指针让开，最后一条说明保留"
+          }
+         ]
+        },
+        {
+         "id": "ui-cursor-zoom--notes--n2--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "回到全貌收尾"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ui-cursor-zoom--shot": {
+   "id": "ui-cursor-zoom--shot",
+   "type": "component",
+   "definitionId": "ui-cursor-zoom--shot--definition",
+   "parameters": {
+    "scene": "ui/cursor-zoom",
+    "alt": "浏览器里的数据面板，镜头三次推近到指针要点的位置，每次点击后下方出现这一步的说明。"
+   }
+  },
+  "operations--intro": {
+   "id": "operations--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "operations--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "开关、表单、右键菜单、拖放、点击路径、拖选与 AI 代理指针。"
+      }
+     ]
+    }
+   ]
+  },
+  "ui-settings-toggle--notes": {
+   "id": "ui-settings-toggle--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "ui-settings-toggle--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "演示“一个开关就够了”的功能。开关先向要去的方向压扁一下，滑过去略微过冲再回位，落定时轨道才变成强调色；确认出现在按下之后。"
+      }
+     ]
+    },
+    {
+     "id": "ui-settings-toggle--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "rows",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（设置项，每项 "
+      },
+      {
+       "type": "text",
+       "text": "label",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "hint",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "on",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "），"
+      },
+      {
+       "type": "text",
+       "text": "target",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（要打开第几项，从 0 数），"
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "，"
+      },
+      {
+       "type": "text",
+       "text": "result",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（确认文字）。"
+      }
+     ]
+    },
+    {
+     "id": "ui-settings-toggle--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "ui-settings-toggle--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-settings-toggle--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "ui-settings-toggle--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "ui-settings-toggle--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-settings-toggle--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-settings-toggle--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-settings-toggle--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "卡片升起，各行相隔 40 ms 跟上，指针在状态结束时到达开关"
+          }
+         ]
+        },
+        {
+         "id": "ui-settings-toggle--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "界面列表的错开要短"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-settings-toggle--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-settings-toggle--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1–1.12 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-settings-toggle--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "指针按下，滑块向右压扁"
+          }
+         ]
+        },
+        {
+         "id": "ui-settings-toggle--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "预备动作"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-settings-toggle--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-settings-toggle--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.12–1.6 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-settings-toggle--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "滑块滑过去，过冲 4% 后回位，落定时轨道变色"
+          }
+         ]
+        },
+        {
+         "id": "ui-settings-toggle--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "颜色最后到"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-settings-toggle--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-settings-toggle--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2–3.8 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-settings-toggle--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "确认条升起，指针让开，停留"
+          }
+         ]
+        },
+        {
+         "id": "ui-settings-toggle--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果在原因之后"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ui-settings-toggle--shot": {
+   "id": "ui-settings-toggle--shot",
+   "type": "component",
+   "definitionId": "ui-settings-toggle--shot--definition",
+   "parameters": {
+    "scene": "ui/settings-toggle",
+    "alt": "设置卡片中，指针打开“自动保存”开关，下方出现“已开启自动保存”。"
+   }
+  },
+  "ui-signup-form--notes": {
+   "id": "ui-signup-form--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "ui-signup-form--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "“上手只要三十秒”：填表、提交、成功。输入框先获得焦点再开始输入，光标只在等待时闪烁；提交后按钮里转圈，成功时颜色从按钮中心铺开、对勾画出。"
+      }
+     ]
+    },
+    {
+     "id": "ui-signup-form--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "subtitle",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "provider",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（第三方登录按钮文字，通用说法）、"
+      },
+      {
+       "type": "text",
+       "text": "email",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "passwordLength",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "button",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "result",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（欢迎语）。地址很长时打字会加快，不会拖过它的状态。"
+      }
+     ]
+    },
+    {
+     "id": "ui-signup-form--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "ui-signup-form--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-signup-form--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "ui-signup-form--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "ui-signup-form--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-signup-form--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-signup-form--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.9 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-signup-form--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "卡片升起，各部分相隔 50 ms"
+          }
+         ]
+        },
+        {
+         "id": "ui-signup-form--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先给出全貌"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-signup-form--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-signup-form--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.9–2.4 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-signup-form--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "邮箱框获得焦点，每秒 14 个字符输入"
+          }
+         ]
+        },
+        {
+         "id": "ui-signup-form--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "焦点在前，输入在后"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-signup-form--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-signup-form--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.4–3.4 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-signup-form--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "焦点移到密码框，输入圆点"
+          }
+         ]
+        },
+        {
+         "id": "ui-signup-form--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一次只有一个地方在动"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-signup-form--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-signup-form--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.4–4.4 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-signup-form--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "指针移到按钮并按下，文字退场，转圈"
+          }
+         ]
+        },
+        {
+         "id": "ui-signup-form--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "原因"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-signup-form--notes--n2--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-signup-form--notes--n2--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "4.4–6.2 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-signup-form--notes--n2--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "成功色从中心铺满按钮，对勾画出，欢迎语升起；停留"
+          }
+         ]
+        },
+        {
+         "id": "ui-signup-form--notes--n2--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果停够"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ui-signup-form--shot": {
+   "id": "ui-signup-form--shot",
+   "type": "component",
+   "definitionId": "ui-signup-form--shot--definition",
+   "parameters": {
+    "scene": "ui/signup-form",
+    "alt": "注册卡片：输入邮箱和密码，指针点“注册”，按钮转圈后变成成功的对勾，下方出现欢迎语。"
+   }
+  },
+  "ui-context-menu--notes": {
+   "id": "ui-context-menu--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "ui-context-menu--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "演示“功能藏在哪儿”：右键、找到、点下去、看到结果。菜单从指尖长出来；指针往下走时，高亮在它进入每一项的那一刻跳过去（由移动的缓动反算，任意跳转都准确）。"
+      }
+     ]
+    },
+    {
+     "id": "ui-context-menu--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "files",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（每项 "
+      },
+      {
+       "type": "text",
+       "text": "name",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "meta",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "），"
+      },
+      {
+       "type": "text",
+       "text": "file",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（右键第几个），"
+      },
+      {
+       "type": "text",
+       "text": "items",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（菜单项），"
+      },
+      {
+       "type": "text",
+       "text": "choose",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（选第几项），"
+      },
+      {
+       "type": "text",
+       "text": "status",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（文件旁的状态），"
+      },
+      {
+       "type": "text",
+       "text": "result",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（确认文字），"
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（窗口标题）。"
+      }
+     ]
+    },
+    {
+     "id": "ui-context-menu--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "ui-context-menu--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-context-menu--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "ui-context-menu--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "ui-context-menu--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-context-menu--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-context-menu--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-context-menu--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "窗口升起，指针到达文件"
+          }
+         ]
+        },
+        {
+         "id": "ui-context-menu--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先看清在哪儿"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-context-menu--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-context-menu--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1–1.4 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-context-menu--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "右键，行被选中，菜单从指尖展开，2% 过冲"
+          }
+         ]
+        },
+        {
+         "id": "ui-context-menu--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "原因与它直接引出的东西"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-context-menu--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-context-menu--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.45–2.2 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-context-menu--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "指针向下移，高亮逐项跟随"
+          }
+         ]
+        },
+        {
+         "id": "ui-context-menu--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "眼睛跟着高亮"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-context-menu--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-context-menu--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.2–2.9 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-context-menu--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "点中，菜单比出现时更快地离开"
+          }
+         ]
+        },
+        {
+         "id": "ui-context-menu--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "退场比入场短"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-context-menu--notes--n2--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-context-menu--notes--n2--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.9–4.7 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-context-menu--notes--n2--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "文件旁出现状态，确认升起，指针让开；停留"
+          }
+         ]
+        },
+        {
+         "id": "ui-context-menu--notes--n2--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果停够"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ui-context-menu--shot": {
+   "id": "ui-context-menu--shot",
+   "type": "component",
+   "definitionId": "ui-context-menu--shot--definition",
+   "parameters": {
+    "scene": "ui/context-menu",
+    "alt": "文件窗口里，指针右键“第 3 讲 · 过拟合”，菜单从指尖展开，高亮随指针移到“导出为视频”，点击后文件旁出现“导出中”，下方出现“已加入导出队列”。"
+   }
+  },
+  "ui-drag-drop--notes": {
+   "id": "ui-drag-drop--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "ui-drag-drop--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "演示状态的流转：待办到完成、草稿到发布。抓起时卡片放大、倾斜、阴影变深，三者由同一个“高度”驱动；拖动时卡片与指针同步，倾斜跟着速度；落下时有一次轻微压扁，之后计数才变。"
+      }
+     ]
+    },
+    {
+     "id": "ui-drag-drop--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "columns",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（最多 3 列，每项 "
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "cards",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "），"
+      },
+      {
+       "type": "text",
+       "text": "from",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "index",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（拖哪一列的第几张），"
+      },
+      {
+       "type": "text",
+       "text": "to",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（拖到哪一列，放在最上面）。"
+      }
+     ]
+    },
+    {
+     "id": "ui-drag-drop--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "ui-drag-drop--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-drag-drop--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "ui-drag-drop--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "ui-drag-drop--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-drag-drop--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-drag-drop--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-drag-drop--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "各列升起，指针到达卡片"
+          }
+         ]
+        },
+        {
+         "id": "ui-drag-drop--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先看清布局"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-drag-drop--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-drag-drop--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1–1.6 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-drag-drop--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "按下，卡片抬起：放大 4%、倾斜 2°、阴影加深"
+          }
+         ]
+        },
+        {
+         "id": "ui-drag-drop--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一个高度值驱动三种变化"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-drag-drop--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-drag-drop--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.6–2.5 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-drag-drop--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "卡片与指针一起移动，前倾后回正；目标列在到达前让出位置，原列空位合上"
+          }
+         ]
+        },
+        {
+         "id": "ui-drag-drop--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "倾斜跟速度走；邻居被推开是反应"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-drag-drop--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-drag-drop--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.5–4.3 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-drag-drop--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "落下压扁 2% 后回弹，两列计数改变，目标计数弹一下，指针让开"
+          }
+         ]
+        },
+        {
+         "id": "ui-drag-drop--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果在动作之后"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ui-drag-drop--shot": {
+   "id": "ui-drag-drop--shot",
+   "type": "component",
+   "definitionId": "ui-drag-drop--shot--definition",
+   "parameters": {
+    "scene": "ui/drag-drop",
+    "alt": "三列任务板，指针抓起“第 3 讲 · 过拟合”，从“录制中”拖到“已发布”，目标列让出位置，计数变化。"
+   }
+  },
+  "mark-click-trail--notes": {
+   "id": "mark-click-trail--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "mark-click-trail--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "讲软件操作步骤（“先点这里，再点这里”）时用：指针一步点一个目标，移动时留下等距的虚点轨迹，点击处留下编号，被点的控件在按下的同一帧响应。"
+      },
+      {
+       "type": "text",
+       "text": "pointer: touch",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 换成手机上的触点：不滑动，接触时出现、抬起时消失。"
+      }
+     ]
+    },
+    {
+     "id": "mark-click-trail--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "targets",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 每项点击点 "
+      },
+      {
+       "type": "text",
+       "text": "x",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "y",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（舞台 %）；"
+      },
+      {
+       "type": "text",
+       "text": "pointer",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（arrow 或 touch）；"
+      },
+      {
+       "type": "text",
+       "text": "size",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 指针大小（默认 1.6，视频里看得清；2.5 是放大的“看这里”指针）；给了 "
+      },
+      {
+       "type": "text",
+       "text": "backdrop",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 或 "
+      },
+      {
+       "type": "text",
+       "text": "svg",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 时换成自己的底图，此时只显示点击。"
+      }
+     ]
+    }
+   ]
+  },
+  "mark-click-trail--shot": {
+   "id": "mark-click-trail--shot",
+   "type": "component",
+   "definitionId": "mark-click-trail--shot--definition",
+   "parameters": {
+    "scene": "mark/click-trail",
+    "alt": "导出设置面板上，指针依次打开“自动生成字幕”开关、选中“视频”、点击“开始导出”，身后留下虚点轨迹，每次点击留下编号。"
+   }
+  },
+  "mark-text-select--notes": {
+   "id": "mark-text-select--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "mark-text-select--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "演示编辑器里的一个操作：箭头进入文字时变成 I 形光标，按下后逐字拖出选区，松开后格式工具栏升起，指针变回箭头点“B”，选中的字同一帧变粗。字的位置在绘制时量出，换字体也对得上。"
+      }
+     ]
+    },
+    {
+     "id": "mark-text-select--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 文档标题；"
+      },
+      {
+       "type": "text",
+       "text": "text",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 段落；"
+      },
+      {
+       "type": "text",
+       "text": "phrase",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 要选的词（须在段落中）。两步："
+      },
+      {
+       "type": "text",
+       "text": "select",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "format",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。"
+      }
+     ]
+    }
+   ]
+  },
+  "mark-text-select--shot": {
+   "id": "mark-text-select--shot",
+   "type": "component",
+   "definitionId": "mark-text-select--shot--definition",
+   "parameters": {
+    "scene": "mark/text-select",
+    "alt": "讲义文档上，指针变成文本光标，拖选“直接看到其他所有位置”，上方出现格式工具栏，指针点“B”，这几个字变粗。"
+   }
+  },
+  "mark-agent-cursor--notes": {
+   "id": "mark-agent-cursor--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "mark-agent-cursor--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "展示 AI 助手替作者做了什么：指针带着强调色名牌，名牌先打出意图，指针再移过去点击，界面随之响应；最后一步名牌变成成功色，写出收尾的一句。先说后做，因果分明。"
+      }
+     ]
+    },
+    {
+     "id": "mark-agent-cursor--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "name",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 名牌；"
+      },
+      {
+       "type": "text",
+       "text": "targets",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 每项点击点 "
+      },
+      {
+       "type": "text",
+       "text": "x",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "y",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（舞台 %）和要说的 "
+      },
+      {
+       "type": "text",
+       "text": "say",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "；"
+      },
+      {
+       "type": "text",
+       "text": "done",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 收尾句。步骤为每个目标一步再加 "
+      },
+      {
+       "type": "text",
+       "text": "done",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。内置编辑器的三个按钮会响应；给了 "
+      },
+      {
+       "type": "text",
+       "text": "backdrop",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 或 "
+      },
+      {
+       "type": "text",
+       "text": "svg",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 时只显示指针。"
+      }
+     ]
+    }
+   ]
+  },
+  "mark-agent-cursor--shot": {
+   "id": "mark-agent-cursor--shot",
+   "type": "component",
+   "definitionId": "mark-agent-cursor--shot--definition",
+   "parameters": {
+    "scene": "mark/agent-cursor",
+    "alt": "带“助教”名牌的指针先打出要做的事，再依次点击“插入公式”“生成练习题”“朗读预览”，右侧页面出现公式、三道练习题和语音波形，最后名牌变绿显示“这一页准备好了”。"
+   }
+  },
+  "moments--intro": {
+   "id": "moments--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "moments--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "通知、对话、AI 回答、引导步骤、卡片展开与用户评价。"
+      }
+     ]
+    }
+   ]
+  },
+  "ui-notification-stack--notes": {
+   "id": "ui-notification-stack--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "ui-notification-stack--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "“事情一件接一件找上门”，或者“完成时会通知你”。新通知落在最上面，把旧的推下去；最后把要讲的那一条拉到前面，其余退后。"
+      }
+     ]
+    },
+    {
+     "id": "ui-notification-stack--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "items",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（通知列表，每项 "
+      },
+      {
+       "type": "text",
+       "text": "app",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "body",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "time",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "；图标是应用名的第一个字），"
+      },
+      {
+       "type": "text",
+       "text": "focus",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（最后突出第几条，从 0 数，默认最后一条）。通知数等于定义里 "
+      },
+      {
+       "type": "text",
+       "text": "n*",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 状态的数目。"
+      }
+     ]
+    },
+    {
+     "id": "ui-notification-stack--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "ui-notification-stack--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-notification-stack--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "ui-notification-stack--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "ui-notification-stack--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-notification-stack--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-notification-stack--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "每条 0–0.45 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-notification-stack--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "通知从槽位上方落下，透明度先到，2% 过冲后停稳"
+          }
+         ]
+        },
+        {
+         "id": "ui-notification-stack--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "界面零件只用很小的过冲"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-notification-stack--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-notification-stack--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.04 s 起"
+          }
+         ]
+        },
+        {
+         "id": "ui-notification-stack--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "已有的通知被推下一格，越深越小越淡"
+          }
+         ]
+        },
+        {
+         "id": "ui-notification-stack--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "撞击要有反应；深度由一个值驱动"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-notification-stack--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-notification-stack--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "最后 0–0.5 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-notification-stack--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "选中的一条放大 3% 并描上强调色边，其余退后"
+          }
+         ]
+        },
+        {
+         "id": "ui-notification-stack--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "最后只留一个焦点"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-notification-stack--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-notification-stack--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "之后"
+          }
+         ]
+        },
+        {
+         "id": "ui-notification-stack--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停留，1% 的呼吸"
+          }
+         ]
+        },
+        {
+         "id": "ui-notification-stack--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果停够"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ui-notification-stack--shot": {
+   "id": "ui-notification-stack--shot",
+   "type": "component",
+   "definitionId": "ui-notification-stack--shot--definition",
+   "parameters": {
+    "scene": "ui/notification-stack",
+    "alt": "四条通知依次从上方落下，旧的被推下去并略微缩小，最后“讲授视频已导出”一条被突出。"
+   }
+  },
+  "ui-chat-thread--notes": {
+   "id": "ui-chat-thread--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "ui-chat-thread--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "用一段对话讲一个问题的来龙去脉，或者演示“有人问、产品答”。对方的消息先出现“正在输入”的三个点，气泡再长成回复；自己的消息直接发出。较旧的消息从上方滚出。"
+      }
+     ]
+    },
+    {
+     "id": "ui-chat-thread--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "name",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（对方名字），"
+      },
+      {
+       "type": "text",
+       "text": "messages",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（每项 "
+      },
+      {
+       "type": "text",
+       "text": "from",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 为 "
+      },
+      {
+       "type": "text",
+       "text": "me",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 或 "
+      },
+      {
+       "type": "text",
+       "text": "them",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "，"
+      },
+      {
+       "type": "text",
+       "text": "text",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "）。每条消息一个状态，按每个字约 0.25 s 给状态时长，消息数等于定义里 "
+      },
+      {
+       "type": "text",
+       "text": "m*",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 状态的数目。"
+      }
+     ]
+    },
+    {
+     "id": "ui-chat-thread--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "ui-chat-thread--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-chat-thread--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "ui-chat-thread--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "ui-chat-thread--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-chat-thread--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-chat-thread--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "对方 0–0.15 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-chat-thread--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "“正在输入”气泡从左下角弹出，三个点起伏"
+          }
+         ]
+        },
+        {
+         "id": "ui-chat-thread--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先让人知道有话要来"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-chat-thread--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-chat-thread--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "约 0.6 s 后"
+          }
+         ]
+        },
+        {
+         "id": "ui-chat-thread--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "行高展开推起旧消息，三个点淡出，同一处的气泡长成回复"
+          }
+         ]
+        },
+        {
+         "id": "ui-chat-thread--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "同一个气泡变成回复，保持身份"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-chat-thread--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-chat-thread--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "自己 0–0.3 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-chat-thread--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "行展开，强调色气泡从右下角升起"
+          }
+         ]
+        },
+        {
+         "id": "ui-chat-thread--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "发送是即时的"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-chat-thread--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-chat-thread--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "其余"
+          }
+         ]
+        },
+        {
+         "id": "ui-chat-thread--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停留阅读"
+          }
+         ]
+        },
+        {
+         "id": "ui-chat-thread--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "每条至少能读两遍"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ui-chat-thread--shot": {
+   "id": "ui-chat-thread--shot",
+   "type": "component",
+   "definitionId": "ui-chat-thread--shot--definition",
+   "parameters": {
+    "scene": "ui/chat-thread",
+    "alt": "手机上的对话：学生问梯度下降为什么震荡，老师回答学习率太大，学生调小后收敛了。"
+   }
+  },
+  "ui-ai-answer--notes": {
+   "id": "ui-ai-answer--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "ui-ai-answer--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "讲“问 AI 一个问题”或演示产品里的问答功能。问题从输入框升成气泡（同一段文字在移动），答案按模型输出的节奏一小段一小段出现，每段先灰后变成正文颜色。标志是中性的四角星。"
+      }
+     ]
+    },
+    {
+     "id": "ui-ai-answer--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "name",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（助手名），"
+      },
+      {
+       "type": "text",
+       "text": "prompt",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（问题），"
+      },
+      {
+       "type": "text",
+       "text": "answer",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（第一句），"
+      },
+      {
+       "type": "text",
+       "text": "points",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（要点列表）。流式输出会被放进 "
+      },
+      {
+       "type": "text",
+       "text": "answer",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 状态的时长里；分段与停顿由固定种子决定，每次构建相同。"
+      }
+     ]
+    },
+    {
+     "id": "ui-ai-answer--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "ui-ai-answer--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-ai-answer--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "ui-ai-answer--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "ui-ai-answer--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-ai-answer--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-ai-answer--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–2.2 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-ai-answer--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "输入框获得焦点，每秒 14 字输入问题；状态结束前 0.35 s 按下发送"
+          }
+         ]
+        },
+        {
+         "id": "ui-ai-answer--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先有问题"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-ai-answer--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-ai-answer--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.2–2.65 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-ai-answer--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "问题从输入框升到上方气泡"
+          }
+         ]
+        },
+        {
+         "id": "ui-ai-answer--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "同一段文字移动，保持身份"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-ai-answer--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-ai-answer--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.65–3.1 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-ai-answer--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "助手标志出现，三个点依次闪动"
+          }
+         ]
+        },
+        {
+         "id": "ui-ai-answer--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "等待也要被看见"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-ai-answer--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-ai-answer--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.1–6.3 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-ai-answer--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "答案按 1–4 字一段、长短不一的节奏流出，每段 0.25 s 由灰变黑"
+          }
+         ]
+        },
+        {
+         "id": "ui-ai-answer--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "流式输出的质感来自不均匀"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-ai-answer--notes--n2--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-ai-answer--notes--n2--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "6.3–8.3 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-ai-answer--notes--n2--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "操作按钮淡入，停留"
+          }
+         ]
+        },
+        {
+         "id": "ui-ai-answer--notes--n2--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果停够"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ui-ai-answer--shot": {
+   "id": "ui-ai-answer--shot",
+   "type": "component",
+   "definitionId": "ui-ai-answer--shot--definition",
+   "parameters": {
+    "scene": "ui/ai-answer",
+    "alt": "通用助手面板：输入“用一句话解释什么是过拟合？”，问题升到上方，三个点闪动后答案一小段一小段地流出来，先灰后黑。"
+   }
+  },
+  "ui-onboarding-stepper--notes": {
+   "id": "ui-onboarding-stepper--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "ui-onboarding-stepper--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "讲一个流程有几步、现在走到哪一步：上手引导、实验步骤、课程路线。每按一次“下一步”，轨道才画到下一个节点、卡片才翻页；向右是前进。"
+      }
+     ]
+    },
+    {
+     "id": "ui-onboarding-stepper--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "steps",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（每项 "
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "body",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "），"
+      },
+      {
+       "type": "text",
+       "text": "button",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（按钮文字），"
+      },
+      {
+       "type": "text",
+       "text": "finish",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（完成语），"
+      },
+      {
+       "type": "text",
+       "text": "start",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（完成后按钮文字）。步数等于定义里 "
+      },
+      {
+       "type": "text",
+       "text": "step-*",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 状态的数目。"
+      }
+     ]
+    },
+    {
+     "id": "ui-onboarding-stepper--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "ui-onboarding-stepper--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-onboarding-stepper--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1.6 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "轨道与卡片升起，第一个节点亮起，指针在状态结束时到达按钮"
+          }
+         ]
+        },
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先给出全貌与起点"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-onboarding-stepper--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "每步 0–0.12 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "按下“下一步”"
+          }
+         ]
+        },
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "原因"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-onboarding-stepper--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.15–0.6 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "轨道画到下一节点，离开的节点打勾；卡片内容向左退出、从右进入"
+          }
+         ]
+        },
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "前进的方向始终向右"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-onboarding-stepper--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.6 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "到达的节点弹一下"
+          }
+         ]
+        },
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "只给新到的一处强调"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-onboarding-stepper--notes--n2--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "最后 1.8 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "轨道走完，卡片显示完成语，按钮换成“开始使用”，停留"
+          }
+         ]
+        },
+        {
+         "id": "ui-onboarding-stepper--notes--n2--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果停够"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ui-onboarding-stepper--shot": {
+   "id": "ui-onboarding-stepper--shot",
+   "type": "component",
+   "definitionId": "ui-onboarding-stepper--shot--definition",
+   "parameters": {
+    "scene": "ui/onboarding-stepper",
+    "alt": "左侧四个节点的进度轨，右侧卡片依次显示新建讲义、写内容、加动画、导出，每按一次“下一步”轨道走到下一个节点，最后显示“准备好了！”。"
+   }
+  },
+  "ui-modal-morph--notes": {
+   "id": "ui-modal-morph--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "ui-modal-morph--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "从列表进入详情：被点的卡片自己长成面板，而不是换成另一个面板，观众知道“这就是刚才那张”。卡片是尺寸容器，图片和标题随它一起放大。"
+      }
+     ]
+    },
+    {
+     "id": "ui-modal-morph--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "cards",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（最多 3 张，每项 "
+      },
+      {
+       "type": "text",
+       "text": "title",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "image",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 或 "
+      },
+      {
+       "type": "text",
+       "text": "variant",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "），"
+      },
+      {
+       "type": "text",
+       "text": "open",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（点第几张，从 0 数），"
+      },
+      {
+       "type": "text",
+       "text": "detail",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（详情一行），"
+      },
+      {
+       "type": "text",
+       "text": "button",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。"
+      }
+     ]
+    },
+    {
+     "id": "ui-modal-morph--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "ui-modal-morph--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-modal-morph--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "ui-modal-morph--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "ui-modal-morph--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-modal-morph--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-modal-morph--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1.2 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-modal-morph--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "卡片相隔 70 ms 升起，指针到达要点的卡片"
+          }
+         ]
+        },
+        {
+         "id": "ui-modal-morph--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先看清有哪些"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-modal-morph--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-modal-morph--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.2–1.32 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-modal-morph--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "按下"
+          }
+         ]
+        },
+        {
+         "id": "ui-modal-morph--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "原因"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-modal-morph--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-modal-morph--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.32–1.92 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-modal-morph--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "卡片移动并放大成面板，两端缓动；其余卡片退后变淡，指针让开"
+          }
+         ]
+        },
+        {
+         "id": "ui-modal-morph--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "共享元素：同一个东西变大"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-modal-morph--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-modal-morph--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.1–3.9 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-modal-morph--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "面板落定后才出现详情一行和按钮，停留"
+          }
+         ]
+        },
+        {
+         "id": "ui-modal-morph--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "原因在前，结果在后"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ui-modal-morph--shot": {
+   "id": "ui-modal-morph--shot",
+   "type": "component",
+   "definitionId": "ui-modal-morph--shot--definition",
+   "parameters": {
+    "scene": "ui/modal-morph",
+    "alt": "三张讲义卡片，指针点中间一张，它放大成详情面板，其余变淡，面板里出现“12 页 · 4 个动画 · 18 分钟讲授视频”和“打开讲义”按钮。"
+   }
+  },
+  "ui-testimonial--notes": {
+   "id": "ui-testimonial--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "ui-testimonial--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "产品片的证据段，或课程反馈。引语按阅读速度逐行从遮罩后升起，每行停稳后不再移动；然后才是谁说的。默认文字是示例，右下角标明“示例评价”；换成实际评价时把 "
+      },
+      {
+       "type": "text",
+       "text": "tag",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 设为空字符串。"
+      }
+     ]
+    },
+    {
+     "id": "ui-testimonial--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数："
+      },
+      {
+       "type": "text",
+       "text": "lines",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（引语，每行一项），"
+      },
+      {
+       "type": "text",
+       "text": "name",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "role",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "avatar",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（头像图片，留空显示姓氏），"
+      },
+      {
+       "type": "text",
+       "text": "tag",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。"
+      },
+      {
+       "type": "text",
+       "text": "quote",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 状态时长按每秒不超过 9 个字给。"
+      }
+     ]
+    },
+    {
+     "id": "ui-testimonial--notes--n2",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "ui-testimonial--notes--n2--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-testimonial--notes--n2--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "ui-testimonial--notes--n2--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "ui-testimonial--notes--n2--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-testimonial--notes--n2--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-testimonial--notes--n2--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.4 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-testimonial--notes--n2--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "大引号落定"
+          }
+         ]
+        },
+        {
+         "id": "ui-testimonial--notes--n2--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先告诉观众这是一句引语"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-testimonial--notes--n2--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-testimonial--notes--n2--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.35–3.2 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-testimonial--notes--n2--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "各行依次从各自的槽里升起，时间按字数分配"
+          }
+         ]
+        },
+        {
+         "id": "ui-testimonial--notes--n2--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一次只出现一行"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-testimonial--notes--n2--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-testimonial--notes--n2--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.2–3.7 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-testimonial--notes--n2--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "强调色短线画出，头像弹出，姓名身份随后滑入"
+          }
+         ]
+        },
+        {
+         "id": "ui-testimonial--notes--n2--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "再说是谁说的"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "ui-testimonial--notes--n2--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "ui-testimonial--notes--n2--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.7–5.7 s"
+          }
+         ]
+        },
+        {
+         "id": "ui-testimonial--notes--n2--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "引语 1% 漂移，停留"
+          }
+         ]
+        },
+        {
+         "id": "ui-testimonial--notes--n2--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停留不僵"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ui-testimonial--shot": {
+   "id": "ui-testimonial--shot",
+   "type": "component",
+   "definitionId": "ui-testimonial--shot--definition",
+   "parameters": {
+    "scene": "ui/testimonial",
+    "alt": "大引号下三行引语逐行升起：“以前备一节课要三天：讲义、幻灯片、视频各做一遍。现在改一处，三样一起更新。”随后出现王老师的头像、姓名和身份，右下角标着“示例评价”。"
+   }
+  }
+ },
+ "steps": {
+  "screens--step": {
+   "id": "screens--step",
+   "sectionId": "screens",
+   "visuals": [
+    {
+     "blockId": "screens--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-device-frame--step-0": {
+   "id": "ui-device-frame--step-0",
+   "sectionId": "ui-device-frame",
+   "visuals": [
+    {
+     "blockId": "ui-device-frame--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-device-frame--shot",
+     "visible": true,
+     "state": "rise"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-device-frame--step-1": {
+   "id": "ui-device-frame--step-1",
+   "sectionId": "ui-device-frame",
+   "visuals": [
+    {
+     "blockId": "ui-device-frame--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-device-frame--shot",
+     "visible": true,
+     "state": "look"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-device-frame--step-2": {
+   "id": "ui-device-frame--step-2",
+   "sectionId": "ui-device-frame",
+   "visuals": [
+    {
+     "blockId": "ui-device-frame--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-device-frame--shot",
+     "visible": true,
+     "state": "swap"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-device-splay--step-0": {
+   "id": "ui-device-splay--step-0",
+   "sectionId": "ui-device-splay",
+   "visuals": [
+    {
+     "blockId": "ui-device-splay--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-device-splay--shot",
+     "visible": true,
+     "state": "stack"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-device-splay--step-1": {
+   "id": "ui-device-splay--step-1",
+   "sectionId": "ui-device-splay",
+   "visuals": [
+    {
+     "blockId": "ui-device-splay--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-device-splay--shot",
+     "visible": true,
+     "state": "splay"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-device-splay--step-2": {
+   "id": "ui-device-splay--step-2",
+   "sectionId": "ui-device-splay",
+   "visuals": [
+    {
+     "blockId": "ui-device-splay--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-device-splay--shot",
+     "visible": true,
+     "state": "hold"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-screen-flow--step-0": {
+   "id": "ui-screen-flow--step-0",
+   "sectionId": "ui-screen-flow",
+   "visuals": [
+    {
+     "blockId": "ui-screen-flow--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-screen-flow--shot",
+     "visible": true,
+     "state": "s1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-screen-flow--step-1": {
+   "id": "ui-screen-flow--step-1",
+   "sectionId": "ui-screen-flow",
+   "visuals": [
+    {
+     "blockId": "ui-screen-flow--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-screen-flow--shot",
+     "visible": true,
+     "state": "s2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-screen-flow--step-2": {
+   "id": "ui-screen-flow--step-2",
+   "sectionId": "ui-screen-flow",
+   "visuals": [
+    {
+     "blockId": "ui-screen-flow--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-screen-flow--shot",
+     "visible": true,
+     "state": "s3"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-screen-flow--step-3": {
+   "id": "ui-screen-flow--step-3",
+   "sectionId": "ui-screen-flow",
+   "visuals": [
+    {
+     "blockId": "ui-screen-flow--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-screen-flow--shot",
+     "visible": true,
+     "state": "s4"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-before-after--step-0": {
+   "id": "ui-before-after--step-0",
+   "sectionId": "ui-before-after",
+   "visuals": [
+    {
+     "blockId": "ui-before-after--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-before-after--shot",
+     "visible": true,
+     "state": "before"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-before-after--step-1": {
+   "id": "ui-before-after--step-1",
+   "sectionId": "ui-before-after",
+   "visuals": [
+    {
+     "blockId": "ui-before-after--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-before-after--shot",
+     "visible": true,
+     "state": "wipe"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-before-after--step-2": {
+   "id": "ui-before-after--step-2",
+   "sectionId": "ui-before-after",
+   "visuals": [
+    {
+     "blockId": "ui-before-after--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-before-after--shot",
+     "visible": true,
+     "state": "hold"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-cursor-zoom--step-0": {
+   "id": "ui-cursor-zoom--step-0",
+   "sectionId": "ui-cursor-zoom",
+   "visuals": [
+    {
+     "blockId": "ui-cursor-zoom--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-cursor-zoom--shot",
+     "visible": true,
+     "state": "overview"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-cursor-zoom--step-1": {
+   "id": "ui-cursor-zoom--step-1",
+   "sectionId": "ui-cursor-zoom",
+   "visuals": [
+    {
+     "blockId": "ui-cursor-zoom--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-cursor-zoom--shot",
+     "visible": true,
+     "state": "click-1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-cursor-zoom--step-2": {
+   "id": "ui-cursor-zoom--step-2",
+   "sectionId": "ui-cursor-zoom",
+   "visuals": [
+    {
+     "blockId": "ui-cursor-zoom--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-cursor-zoom--shot",
+     "visible": true,
+     "state": "click-2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-cursor-zoom--step-3": {
+   "id": "ui-cursor-zoom--step-3",
+   "sectionId": "ui-cursor-zoom",
+   "visuals": [
+    {
+     "blockId": "ui-cursor-zoom--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-cursor-zoom--shot",
+     "visible": true,
+     "state": "click-3"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-cursor-zoom--step-4": {
+   "id": "ui-cursor-zoom--step-4",
+   "sectionId": "ui-cursor-zoom",
+   "visuals": [
+    {
+     "blockId": "ui-cursor-zoom--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-cursor-zoom--shot",
+     "visible": true,
+     "state": "out"
+    }
+   ],
+   "narrationIds": []
+  },
+  "operations--step": {
+   "id": "operations--step",
+   "sectionId": "operations",
+   "visuals": [
+    {
+     "blockId": "operations--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-settings-toggle--step-0": {
+   "id": "ui-settings-toggle--step-0",
+   "sectionId": "ui-settings-toggle",
+   "visuals": [
+    {
+     "blockId": "ui-settings-toggle--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-settings-toggle--shot",
+     "visible": true,
+     "state": "rows"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-settings-toggle--step-1": {
+   "id": "ui-settings-toggle--step-1",
+   "sectionId": "ui-settings-toggle",
+   "visuals": [
+    {
+     "blockId": "ui-settings-toggle--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-settings-toggle--shot",
+     "visible": true,
+     "state": "press"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-settings-toggle--step-2": {
+   "id": "ui-settings-toggle--step-2",
+   "sectionId": "ui-settings-toggle",
+   "visuals": [
+    {
+     "blockId": "ui-settings-toggle--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-settings-toggle--shot",
+     "visible": true,
+     "state": "done"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-signup-form--step-0": {
+   "id": "ui-signup-form--step-0",
+   "sectionId": "ui-signup-form",
+   "visuals": [
+    {
+     "blockId": "ui-signup-form--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-signup-form--shot",
+     "visible": true,
+     "state": "form"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-signup-form--step-1": {
+   "id": "ui-signup-form--step-1",
+   "sectionId": "ui-signup-form",
+   "visuals": [
+    {
+     "blockId": "ui-signup-form--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-signup-form--shot",
+     "visible": true,
+     "state": "email"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-signup-form--step-2": {
+   "id": "ui-signup-form--step-2",
+   "sectionId": "ui-signup-form",
+   "visuals": [
+    {
+     "blockId": "ui-signup-form--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-signup-form--shot",
+     "visible": true,
+     "state": "password"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-signup-form--step-3": {
+   "id": "ui-signup-form--step-3",
+   "sectionId": "ui-signup-form",
+   "visuals": [
+    {
+     "blockId": "ui-signup-form--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-signup-form--shot",
+     "visible": true,
+     "state": "submit"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-signup-form--step-4": {
+   "id": "ui-signup-form--step-4",
+   "sectionId": "ui-signup-form",
+   "visuals": [
+    {
+     "blockId": "ui-signup-form--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-signup-form--shot",
+     "visible": true,
+     "state": "done"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-context-menu--step-0": {
+   "id": "ui-context-menu--step-0",
+   "sectionId": "ui-context-menu",
+   "visuals": [
+    {
+     "blockId": "ui-context-menu--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-context-menu--shot",
+     "visible": true,
+     "state": "files"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-context-menu--step-1": {
+   "id": "ui-context-menu--step-1",
+   "sectionId": "ui-context-menu",
+   "visuals": [
+    {
+     "blockId": "ui-context-menu--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-context-menu--shot",
+     "visible": true,
+     "state": "menu"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-context-menu--step-2": {
+   "id": "ui-context-menu--step-2",
+   "sectionId": "ui-context-menu",
+   "visuals": [
+    {
+     "blockId": "ui-context-menu--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-context-menu--shot",
+     "visible": true,
+     "state": "choose"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-context-menu--step-3": {
+   "id": "ui-context-menu--step-3",
+   "sectionId": "ui-context-menu",
+   "visuals": [
+    {
+     "blockId": "ui-context-menu--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-context-menu--shot",
+     "visible": true,
+     "state": "done"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-drag-drop--step-0": {
+   "id": "ui-drag-drop--step-0",
+   "sectionId": "ui-drag-drop",
+   "visuals": [
+    {
+     "blockId": "ui-drag-drop--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-drag-drop--shot",
+     "visible": true,
+     "state": "board"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-drag-drop--step-1": {
+   "id": "ui-drag-drop--step-1",
+   "sectionId": "ui-drag-drop",
+   "visuals": [
+    {
+     "blockId": "ui-drag-drop--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-drag-drop--shot",
+     "visible": true,
+     "state": "grab"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-drag-drop--step-2": {
+   "id": "ui-drag-drop--step-2",
+   "sectionId": "ui-drag-drop",
+   "visuals": [
+    {
+     "blockId": "ui-drag-drop--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-drag-drop--shot",
+     "visible": true,
+     "state": "carry"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-drag-drop--step-3": {
+   "id": "ui-drag-drop--step-3",
+   "sectionId": "ui-drag-drop",
+   "visuals": [
+    {
+     "blockId": "ui-drag-drop--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-drag-drop--shot",
+     "visible": true,
+     "state": "drop"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-click-trail--step-0": {
+   "id": "mark-click-trail--step-0",
+   "sectionId": "mark-click-trail",
+   "visuals": [
+    {
+     "blockId": "mark-click-trail--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-click-trail--shot",
+     "visible": true,
+     "state": "click-1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-click-trail--step-1": {
+   "id": "mark-click-trail--step-1",
+   "sectionId": "mark-click-trail",
+   "visuals": [
+    {
+     "blockId": "mark-click-trail--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-click-trail--shot",
+     "visible": true,
+     "state": "click-2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-click-trail--step-2": {
+   "id": "mark-click-trail--step-2",
+   "sectionId": "mark-click-trail",
+   "visuals": [
+    {
+     "blockId": "mark-click-trail--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-click-trail--shot",
+     "visible": true,
+     "state": "click-3"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-text-select--step-0": {
+   "id": "mark-text-select--step-0",
+   "sectionId": "mark-text-select",
+   "visuals": [
+    {
+     "blockId": "mark-text-select--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-text-select--shot",
+     "visible": true,
+     "state": "select"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-text-select--step-1": {
+   "id": "mark-text-select--step-1",
+   "sectionId": "mark-text-select",
+   "visuals": [
+    {
+     "blockId": "mark-text-select--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-text-select--shot",
+     "visible": true,
+     "state": "format"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-agent-cursor--step-0": {
+   "id": "mark-agent-cursor--step-0",
+   "sectionId": "mark-agent-cursor",
+   "visuals": [
+    {
+     "blockId": "mark-agent-cursor--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-agent-cursor--shot",
+     "visible": true,
+     "state": "step-1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-agent-cursor--step-1": {
+   "id": "mark-agent-cursor--step-1",
+   "sectionId": "mark-agent-cursor",
+   "visuals": [
+    {
+     "blockId": "mark-agent-cursor--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-agent-cursor--shot",
+     "visible": true,
+     "state": "step-2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-agent-cursor--step-2": {
+   "id": "mark-agent-cursor--step-2",
+   "sectionId": "mark-agent-cursor",
+   "visuals": [
+    {
+     "blockId": "mark-agent-cursor--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-agent-cursor--shot",
+     "visible": true,
+     "state": "step-3"
+    }
+   ],
+   "narrationIds": []
+  },
+  "mark-agent-cursor--step-3": {
+   "id": "mark-agent-cursor--step-3",
+   "sectionId": "mark-agent-cursor",
+   "visuals": [
+    {
+     "blockId": "mark-agent-cursor--notes",
+     "visible": false
+    },
+    {
+     "blockId": "mark-agent-cursor--shot",
+     "visible": true,
+     "state": "done"
+    }
+   ],
+   "narrationIds": []
+  },
+  "moments--step": {
+   "id": "moments--step",
+   "sectionId": "moments",
+   "visuals": [
+    {
+     "blockId": "moments--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-notification-stack--step-0": {
+   "id": "ui-notification-stack--step-0",
+   "sectionId": "ui-notification-stack",
+   "visuals": [
+    {
+     "blockId": "ui-notification-stack--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-notification-stack--shot",
+     "visible": true,
+     "state": "n1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-notification-stack--step-1": {
+   "id": "ui-notification-stack--step-1",
+   "sectionId": "ui-notification-stack",
+   "visuals": [
+    {
+     "blockId": "ui-notification-stack--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-notification-stack--shot",
+     "visible": true,
+     "state": "n2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-notification-stack--step-2": {
+   "id": "ui-notification-stack--step-2",
+   "sectionId": "ui-notification-stack",
+   "visuals": [
+    {
+     "blockId": "ui-notification-stack--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-notification-stack--shot",
+     "visible": true,
+     "state": "n3"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-notification-stack--step-3": {
+   "id": "ui-notification-stack--step-3",
+   "sectionId": "ui-notification-stack",
+   "visuals": [
+    {
+     "blockId": "ui-notification-stack--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-notification-stack--shot",
+     "visible": true,
+     "state": "n4"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-notification-stack--step-4": {
+   "id": "ui-notification-stack--step-4",
+   "sectionId": "ui-notification-stack",
+   "visuals": [
+    {
+     "blockId": "ui-notification-stack--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-notification-stack--shot",
+     "visible": true,
+     "state": "focus"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-chat-thread--step-0": {
+   "id": "ui-chat-thread--step-0",
+   "sectionId": "ui-chat-thread",
+   "visuals": [
+    {
+     "blockId": "ui-chat-thread--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-chat-thread--shot",
+     "visible": true,
+     "state": "m1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-chat-thread--step-1": {
+   "id": "ui-chat-thread--step-1",
+   "sectionId": "ui-chat-thread",
+   "visuals": [
+    {
+     "blockId": "ui-chat-thread--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-chat-thread--shot",
+     "visible": true,
+     "state": "m2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-chat-thread--step-2": {
+   "id": "ui-chat-thread--step-2",
+   "sectionId": "ui-chat-thread",
+   "visuals": [
+    {
+     "blockId": "ui-chat-thread--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-chat-thread--shot",
+     "visible": true,
+     "state": "m3"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-chat-thread--step-3": {
+   "id": "ui-chat-thread--step-3",
+   "sectionId": "ui-chat-thread",
+   "visuals": [
+    {
+     "blockId": "ui-chat-thread--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-chat-thread--shot",
+     "visible": true,
+     "state": "m4"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-chat-thread--step-4": {
+   "id": "ui-chat-thread--step-4",
+   "sectionId": "ui-chat-thread",
+   "visuals": [
+    {
+     "blockId": "ui-chat-thread--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-chat-thread--shot",
+     "visible": true,
+     "state": "m5"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-ai-answer--step-0": {
+   "id": "ui-ai-answer--step-0",
+   "sectionId": "ui-ai-answer",
+   "visuals": [
+    {
+     "blockId": "ui-ai-answer--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-ai-answer--shot",
+     "visible": true,
+     "state": "ask"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-ai-answer--step-1": {
+   "id": "ui-ai-answer--step-1",
+   "sectionId": "ui-ai-answer",
+   "visuals": [
+    {
+     "blockId": "ui-ai-answer--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-ai-answer--shot",
+     "visible": true,
+     "state": "think"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-ai-answer--step-2": {
+   "id": "ui-ai-answer--step-2",
+   "sectionId": "ui-ai-answer",
+   "visuals": [
+    {
+     "blockId": "ui-ai-answer--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-ai-answer--shot",
+     "visible": true,
+     "state": "answer"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-ai-answer--step-3": {
+   "id": "ui-ai-answer--step-3",
+   "sectionId": "ui-ai-answer",
+   "visuals": [
+    {
+     "blockId": "ui-ai-answer--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-ai-answer--shot",
+     "visible": true,
+     "state": "hold"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-onboarding-stepper--step-0": {
+   "id": "ui-onboarding-stepper--step-0",
+   "sectionId": "ui-onboarding-stepper",
+   "visuals": [
+    {
+     "blockId": "ui-onboarding-stepper--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-onboarding-stepper--shot",
+     "visible": true,
+     "state": "step-1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-onboarding-stepper--step-1": {
+   "id": "ui-onboarding-stepper--step-1",
+   "sectionId": "ui-onboarding-stepper",
+   "visuals": [
+    {
+     "blockId": "ui-onboarding-stepper--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-onboarding-stepper--shot",
+     "visible": true,
+     "state": "step-2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-onboarding-stepper--step-2": {
+   "id": "ui-onboarding-stepper--step-2",
+   "sectionId": "ui-onboarding-stepper",
+   "visuals": [
+    {
+     "blockId": "ui-onboarding-stepper--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-onboarding-stepper--shot",
+     "visible": true,
+     "state": "step-3"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-onboarding-stepper--step-3": {
+   "id": "ui-onboarding-stepper--step-3",
+   "sectionId": "ui-onboarding-stepper",
+   "visuals": [
+    {
+     "blockId": "ui-onboarding-stepper--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-onboarding-stepper--shot",
+     "visible": true,
+     "state": "step-4"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-onboarding-stepper--step-4": {
+   "id": "ui-onboarding-stepper--step-4",
+   "sectionId": "ui-onboarding-stepper",
+   "visuals": [
+    {
+     "blockId": "ui-onboarding-stepper--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-onboarding-stepper--shot",
+     "visible": true,
+     "state": "done"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-modal-morph--step-0": {
+   "id": "ui-modal-morph--step-0",
+   "sectionId": "ui-modal-morph",
+   "visuals": [
+    {
+     "blockId": "ui-modal-morph--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-modal-morph--shot",
+     "visible": true,
+     "state": "grid"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-modal-morph--step-1": {
+   "id": "ui-modal-morph--step-1",
+   "sectionId": "ui-modal-morph",
+   "visuals": [
+    {
+     "blockId": "ui-modal-morph--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-modal-morph--shot",
+     "visible": true,
+     "state": "open"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-modal-morph--step-2": {
+   "id": "ui-modal-morph--step-2",
+   "sectionId": "ui-modal-morph",
+   "visuals": [
+    {
+     "blockId": "ui-modal-morph--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-modal-morph--shot",
+     "visible": true,
+     "state": "detail"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-testimonial--step-0": {
+   "id": "ui-testimonial--step-0",
+   "sectionId": "ui-testimonial",
+   "visuals": [
+    {
+     "blockId": "ui-testimonial--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-testimonial--shot",
+     "visible": true,
+     "state": "quote"
+    }
+   ],
+   "narrationIds": []
+  },
+  "ui-testimonial--step-1": {
+   "id": "ui-testimonial--step-1",
+   "sectionId": "ui-testimonial",
+   "visuals": [
+    {
+     "blockId": "ui-testimonial--notes",
+     "visible": false
+    },
+    {
+     "blockId": "ui-testimonial--shot",
+     "visible": true,
+     "state": "author"
+    }
+   ],
+   "narrationIds": []
+  }
+ },
+ "narrations": {},
+ "assets": {},
+ "definitions": {
+  "ui-device-frame--shot--definition": {
+   "id": "ui-device-frame--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ui/device-frame.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "device": {
+      "title": "外框",
+      "type": "string",
+      "default": "browser"
+     },
+     "image": {
+      "title": "截图",
+      "type": "string"
+     },
+     "image2": {
+      "title": "第二张截图",
+      "type": "string"
+     },
+     "title": {
+      "title": "地址栏文字",
+      "type": "string"
+     },
+     "caption": {
+      "title": "第一句说明",
+      "type": "string"
+     },
+     "caption2": {
+      "title": "第二句说明",
+      "type": "string"
+     },
+     "variants": {
+      "title": "无截图时的样式",
+      "type": "array"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "rise"
+    },
+    {
+     "id": "look"
+    },
+    {
+     "id": "swap"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1800,
+     2000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "浏览器外框升起，屏幕亮起，显示一页讲义截图；随后从上到下换成幻灯片界面。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "ui-device-splay--shot--definition": {
+   "id": "ui-device-splay--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ui/device-splay.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "desktop": {
+      "title": "电脑截图",
+      "type": "string"
+     },
+     "tablet": {
+      "title": "平板截图",
+      "type": "string"
+     },
+     "phone": {
+      "title": "手机截图",
+      "type": "string"
+     },
+     "desktopVariant": {
+      "title": "无截图时电脑的样式",
+      "type": "string",
+      "default": "doc"
+     },
+     "tabletVariant": {
+      "title": "无截图时平板的样式",
+      "type": "string",
+      "default": "slides"
+     },
+     "phoneVariant": {
+      "title": "无截图时手机的样式",
+      "type": "string",
+      "default": "list"
+     },
+     "title": {
+      "title": "地址栏",
+      "type": "string"
+     },
+     "caption": {
+      "title": "说明",
+      "type": "string"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "stack"
+    },
+    {
+     "id": "splay"
+    },
+    {
+     "id": "hold"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1000,
+     2500
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "电脑、平板和手机先叠在一起升起，然后平板向左、手机向右展开，下方出现“一份文稿，处处可读”。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "ui-screen-flow--shot--definition": {
+   "id": "ui-screen-flow--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ui/screen-flow.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "screens": {
+      "title": "屏幕（image、variant、label）",
+      "type": "array"
+     },
+     "device": {
+      "title": "外框",
+      "type": "string",
+      "default": "phone"
+     },
+     "title": {
+      "title": "浏览器地址",
+      "type": "string"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "s1"
+    },
+    {
+     "id": "s2"
+    },
+    {
+     "id": "s3"
+    },
+    {
+     "id": "s4"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1800,
+     1800,
+     1800,
+     2200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "四个手机屏幕排成一行，中间的最大最亮，每一步整排向左移一格，下方说明依次为选一门课、读讲义、看幻灯片、查学习进度。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "ui-before-after--shot--definition": {
+   "id": "ui-before-after--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ui/before-after.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "before": {
+      "title": "之前的截图",
+      "type": "string"
+     },
+     "after": {
+      "title": "之后的截图",
+      "type": "string"
+     },
+     "beforeVariant": {
+      "title": "无截图时之前的样式",
+      "type": "string",
+      "default": "list"
+     },
+     "afterVariant": {
+      "title": "无截图时之后的样式",
+      "type": "string",
+      "default": "dashboard"
+     },
+     "beforeLabel": {
+      "title": "之前的标签",
+      "type": "string"
+     },
+     "afterLabel": {
+      "title": "之后的标签",
+      "type": "string"
+     },
+     "rest": {
+      "title": "分割线停靠位置（%）",
+      "type": "number",
+      "default": 50
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "before"
+    },
+    {
+     "id": "wipe"
+    },
+    {
+     "id": "hold"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1800,
+     2000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "先显示“之前”的清单界面，一条强调色分割线从右向左擦过露出“之后”的数据面板，再回到中间，左右对比。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "ui-cursor-zoom--shot--definition": {
+   "id": "ui-cursor-zoom--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ui/cursor-zoom.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "image": {
+      "title": "截图",
+      "type": "string"
+     },
+     "variant": {
+      "title": "无截图时的样式",
+      "type": "string",
+      "default": "dashboard"
+     },
+     "title": {
+      "title": "地址栏文字",
+      "type": "string"
+     },
+     "zoom": {
+      "title": "推近倍数",
+      "type": "number",
+      "default": 1.8
+     },
+     "clicks": {
+      "title": "点击列表（x、y 为百分比，label 为说明）",
+      "type": "array"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "overview"
+    },
+    {
+     "id": "click-1"
+    },
+    {
+     "id": "click-2"
+    },
+    {
+     "id": "click-3"
+    },
+    {
+     "id": "out"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1800,
+     1800,
+     1800,
+     1500
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "浏览器里的数据面板，镜头三次推近到指针要点的位置，每次点击后下方出现这一步的说明。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "ui-settings-toggle--shot--definition": {
+   "id": "ui-settings-toggle--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ui/settings-toggle.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "rows": {
+      "title": "设置项",
+      "type": "array"
+     },
+     "target": {
+      "title": "打开第几项",
+      "type": "number",
+      "default": 0
+     },
+     "title": {
+      "title": "卡片标题",
+      "type": "string"
+     },
+     "result": {
+      "title": "确认文字",
+      "type": "string"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "rows"
+    },
+    {
+     "id": "press"
+    },
+    {
+     "id": "done"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1000,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "设置卡片中，指针打开“自动保存”开关，下方出现“已开启自动保存”。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "ui-signup-form--shot--definition": {
+   "id": "ui-signup-form--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ui/signup-form.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "title": {
+      "title": "标题",
+      "type": "string"
+     },
+     "subtitle": {
+      "title": "副标题",
+      "type": "string"
+     },
+     "provider": {
+      "title": "第三方登录按钮",
+      "type": "string"
+     },
+     "email": {
+      "title": "邮箱",
+      "type": "string"
+     },
+     "passwordLength": {
+      "title": "密码位数",
+      "type": "number",
+      "default": 10
+     },
+     "button": {
+      "title": "按钮文字",
+      "type": "string"
+     },
+     "result": {
+      "title": "欢迎语",
+      "type": "string"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "form"
+    },
+    {
+     "id": "email"
+    },
+    {
+     "id": "password"
+    },
+    {
+     "id": "submit"
+    },
+    {
+     "id": "done"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     900,
+     1500,
+     1000,
+     1000,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "注册卡片：输入邮箱和密码，指针点“注册”，按钮转圈后变成成功的对勾，下方出现欢迎语。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "ui-context-menu--shot--definition": {
+   "id": "ui-context-menu--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ui/context-menu.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "files": {
+      "title": "文件（name、meta）",
+      "type": "array"
+     },
+     "file": {
+      "title": "右键第几个",
+      "type": "number",
+      "default": 2
+     },
+     "items": {
+      "title": "菜单项",
+      "type": "array"
+     },
+     "choose": {
+      "title": "选第几项",
+      "type": "number",
+      "default": 3
+     },
+     "status": {
+      "title": "状态",
+      "type": "string"
+     },
+     "result": {
+      "title": "确认文字",
+      "type": "string"
+     },
+     "title": {
+      "title": "窗口标题",
+      "type": "string"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "files"
+    },
+    {
+     "id": "menu"
+    },
+    {
+     "id": "choose"
+    },
+    {
+     "id": "done"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1200,
+     700,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "文件窗口里，指针右键“第 3 讲 · 过拟合”，菜单从指尖展开，高亮随指针移到“导出为视频”，点击后文件旁出现“导出中”，下方出现“已加入导出队列”。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "ui-drag-drop--shot--definition": {
+   "id": "ui-drag-drop--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ui/drag-drop.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "columns": {
+      "title": "列（title、cards）",
+      "type": "array"
+     },
+     "from": {
+      "title": "从第几列",
+      "type": "number",
+      "default": 1
+     },
+     "index": {
+      "title": "第几张",
+      "type": "number",
+      "default": 0
+     },
+     "to": {
+      "title": "到第几列",
+      "type": "number",
+      "default": 2
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "board"
+    },
+    {
+     "id": "grab"
+    },
+    {
+     "id": "carry"
+    },
+    {
+     "id": "drop"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     600,
+     900,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "三列任务板，指针抓起“第 3 讲 · 过拟合”，从“录制中”拖到“已发布”，目标列让出位置，计数变化。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "mark-click-trail--shot--definition": {
+   "id": "mark-click-trail--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/mark/click-trail.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "targets": {
+      "title": "点击点（每步一个）",
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "x": {
+         "title": "点击点 x（舞台 %）",
+         "type": "number"
+        },
+        "y": {
+         "title": "点击点 y（舞台 %）",
+         "type": "number"
+        }
+       }
+      }
+     },
+     "pointer": {
+      "title": "指针",
+      "type": "string",
+      "enum": [
+       "arrow",
+       "touch"
+      ]
+     },
+     "size": {
+      "title": "指针大小",
+      "type": "number"
+     },
+     "backdrop": {
+      "title": "底图",
+      "type": "string",
+      "enum": [
+       "formula",
+       "code",
+       "figure",
+       "none"
+      ]
+     },
+     "code": {
+      "title": "代码（底图为 code 时，每行一条）",
+      "type": "string"
+     },
+     "svg": {
+      "title": "自己的底图（16:9 的 SVG 文本，盖过 backdrop）",
+      "type": "string"
+     },
+     "guides": {
+      "title": "显示 10% 网格，用来读出目标的百分比",
+      "type": "boolean"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "click-1"
+    },
+    {
+     "id": "click-2"
+    },
+    {
+     "id": "click-3"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     1500,
+     3000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "导出设置面板上，指针依次打开“自动生成字幕”开关、选中“视频”、点击“开始导出”，身后留下虚点轨迹，每次点击留下编号。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "mark-text-select--shot--definition": {
+   "id": "mark-text-select--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/mark/text-select.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "title": {
+      "title": "文档标题",
+      "type": "string"
+     },
+     "text": {
+      "title": "段落",
+      "type": "string"
+     },
+     "phrase": {
+      "title": "要选中的词",
+      "type": "string"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "select"
+    },
+    {
+     "id": "format"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2300,
+     2600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "讲义文档上，指针变成文本光标，拖选“直接看到其他所有位置”，上方出现格式工具栏，指针点“B”，这几个字变粗。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "mark-agent-cursor--shot--definition": {
+   "id": "mark-agent-cursor--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/mark/agent-cursor.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "title": "名牌",
+      "type": "string"
+     },
+     "targets": {
+      "title": "动作（每步一个）",
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "x": {
+         "title": "点击点 x（舞台 %）",
+         "type": "number"
+        },
+        "y": {
+         "title": "点击点 y（舞台 %）",
+         "type": "number"
+        },
+        "say": {
+         "title": "名牌上打出的话",
+         "type": "string"
+        }
+       }
+      }
+     },
+     "done": {
+      "title": "收尾句",
+      "type": "string"
+     },
+     "backdrop": {
+      "title": "底图",
+      "type": "string",
+      "enum": [
+       "formula",
+       "code",
+       "figure",
+       "none"
+      ]
+     },
+     "code": {
+      "title": "代码（底图为 code 时，每行一条）",
+      "type": "string"
+     },
+     "svg": {
+      "title": "自己的底图（16:9 的 SVG 文本，盖过 backdrop）",
+      "type": "string"
+     },
+     "guides": {
+      "title": "显示 10% 网格，用来读出目标的百分比",
+      "type": "boolean"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "step-1"
+    },
+    {
+     "id": "step-2"
+    },
+    {
+     "id": "step-3"
+    },
+    {
+     "id": "done"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2700,
+     2300,
+     2300,
+     2600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "带“助教”名牌的指针先打出要做的事，再依次点击“插入公式”“生成练习题”“朗读预览”，右侧页面出现公式、三道练习题和语音波形，最后名牌变绿显示“这一页准备好了”。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "ui-notification-stack--shot--definition": {
+   "id": "ui-notification-stack--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ui/notification-stack.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "items": {
+      "title": "通知列表",
+      "type": "array"
+     },
+     "focus": {
+      "title": "突出第几条",
+      "type": "number"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "n1"
+    },
+    {
+     "id": "n2"
+    },
+    {
+     "id": "n3"
+    },
+    {
+     "id": "n4"
+    },
+    {
+     "id": "focus"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     900,
+     900,
+     900,
+     900,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "四条通知依次从上方落下，旧的被推下去并略微缩小，最后“讲授视频已导出”一条被突出。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "ui-chat-thread--shot--definition": {
+   "id": "ui-chat-thread--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ui/chat-thread.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "title": "对方名字",
+      "type": "string"
+     },
+     "messages": {
+      "title": "消息列表（from: me/them，text）",
+      "type": "array"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "m1"
+    },
+    {
+     "id": "m2"
+    },
+    {
+     "id": "m3"
+    },
+    {
+     "id": "m4"
+    },
+    {
+     "id": "m5"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2000,
+     1900,
+     1600,
+     1800,
+     2200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "手机上的对话：学生问梯度下降为什么震荡，老师回答学习率太大，学生调小后收敛了。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "ui-ai-answer--shot--definition": {
+   "id": "ui-ai-answer--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ui/ai-answer.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "title": "助手名",
+      "type": "string"
+     },
+     "prompt": {
+      "title": "问题",
+      "type": "string"
+     },
+     "answer": {
+      "title": "回答第一句",
+      "type": "string"
+     },
+     "points": {
+      "title": "要点",
+      "type": "array"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "ask"
+    },
+    {
+     "id": "think"
+    },
+    {
+     "id": "answer"
+    },
+    {
+     "id": "hold"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2200,
+     900,
+     3200,
+     2000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "通用助手面板：输入“用一句话解释什么是过拟合？”，问题升到上方，三个点闪动后答案一小段一小段地流出来，先灰后黑。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "ui-onboarding-stepper--shot--definition": {
+   "id": "ui-onboarding-stepper--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ui/onboarding-stepper.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "steps": {
+      "title": "步骤（title、body）",
+      "type": "array"
+     },
+     "button": {
+      "title": "按钮文字",
+      "type": "string"
+     },
+     "finish": {
+      "title": "完成语",
+      "type": "string"
+     },
+     "start": {
+      "title": "完成后按钮文字",
+      "type": "string"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "step-1"
+    },
+    {
+     "id": "step-2"
+    },
+    {
+     "id": "step-3"
+    },
+    {
+     "id": "step-4"
+    },
+    {
+     "id": "done"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1600,
+     1600,
+     1600,
+     1600,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "左侧四个节点的进度轨，右侧卡片依次显示新建讲义、写内容、加动画、导出，每按一次“下一步”轨道走到下一个节点，最后显示“准备好了！”。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "ui-modal-morph--shot--definition": {
+   "id": "ui-modal-morph--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ui/modal-morph.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "cards": {
+      "title": "卡片（title、image、variant）",
+      "type": "array"
+     },
+     "open": {
+      "title": "点第几张",
+      "type": "number",
+      "default": 1
+     },
+     "detail": {
+      "title": "详情",
+      "type": "string"
+     },
+     "button": {
+      "title": "按钮文字",
+      "type": "string"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "grid"
+    },
+    {
+     "id": "open"
+    },
+    {
+     "id": "detail"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     900,
+     1800
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "三张讲义卡片，指针点中间一张，它放大成详情面板，其余变淡，面板里出现“12 页 · 4 个动画 · 18 分钟讲授视频”和“打开讲义”按钮。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "ui-testimonial--shot--definition": {
+   "id": "ui-testimonial--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ui/testimonial.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "lines": {
+      "title": "引语（每行一项）",
+      "type": "array"
+     },
+     "name": {
+      "title": "姓名",
+      "type": "string"
+     },
+     "role": {
+      "title": "身份",
+      "type": "string"
+     },
+     "avatar": {
+      "title": "头像图片",
+      "type": "string"
+     },
+     "tag": {
+      "title": "角标（空字符串则不显示）",
+      "type": "string"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "quote"
+    },
+    {
+     "id": "author"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     3200,
+     2500
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "大引号下三行引语逐行升起：“以前备一节课要三天：讲义、幻灯片、视频各做一遍。现在改一处，三样一起更新。”随后出现王老师的头像、姓名和身份，右下角标着“示例评价”。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  }
+ },
+ "production": {
+  "defaults": {
+   "voiceSource": {
+    "type": "none"
+   },
+   "trailingPauseMs": 0
+  },
+  "stepOverrides": {},
+  "mediaClips": []
+ }
+}

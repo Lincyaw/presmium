@@ -1,0 +1,8147 @@
+{
+ "schemaVersion": 1,
+ "id": "animation-transitions",
+ "metadata": {
+  "title": "转场与镜头",
+  "lang": "zh-CN",
+  "description": "画面之间的转场、有理由的剪辑、镜头运动，以及一段由承接动作串起的短片。",
+  "tags": [
+   "动画参考"
+  ],
+  "plugins": [
+   "@lincyaw/addon-motion",
+   "@lincyaw/addon-lecture"
+  ],
+  "renderers": {
+   "web": {},
+   "lecture": {}
+  }
+ },
+ "sectionOrder": [
+  "wipes",
+  "cam-iris",
+  "cam-slide-wipe",
+  "cam-fade-through",
+  "cam-grid-wipe",
+  "cam-flip",
+  "remotion-series-transition",
+  "remotion-wipe",
+  "motion-wipe",
+  "cuts",
+  "cam-whip-pan",
+  "cam-velocity-cut",
+  "cam-match-cut",
+  "camera",
+  "cam-push-in",
+  "cam-pull-back",
+  "cam-dolly-zoom",
+  "cam-rack-focus",
+  "cam-zoom-through",
+  "cam-pan-stations",
+  "cam-split-compare",
+  "carry",
+  "carry-film"
+ ],
+ "sections": {
+  "wipes": {
+   "id": "wipes",
+   "title": "转场",
+   "level": 1,
+   "children": [
+    "wipes--intro"
+   ],
+   "stepOrder": [
+    "wipes--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "cam-iris": {
+   "id": "cam-iris",
+   "title": "光圈转场",
+   "level": 2,
+   "children": [
+    "cam-iris--notes",
+    "cam-iris--shot"
+   ],
+   "stepOrder": [
+    "cam-iris--step-0",
+    "cam-iris--step-1",
+    "cam-iris--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "cam-slide-wipe": {
+   "id": "cam-slide-wipe",
+   "title": "划变、滑入与推移",
+   "level": 2,
+   "children": [
+    "cam-slide-wipe--notes",
+    "cam-slide-wipe--shot"
+   ],
+   "stepOrder": [
+    "cam-slide-wipe--step-0",
+    "cam-slide-wipe--step-1",
+    "cam-slide-wipe--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "cam-fade-through": {
+   "id": "cam-fade-through",
+   "title": "经色场淡变",
+   "level": 2,
+   "children": [
+    "cam-fade-through--notes",
+    "cam-fade-through--shot"
+   ],
+   "stepOrder": [
+    "cam-fade-through--step-0",
+    "cam-fade-through--step-1",
+    "cam-fade-through--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "cam-grid-wipe": {
+   "id": "cam-grid-wipe",
+   "title": "方格划变",
+   "level": 2,
+   "children": [
+    "cam-grid-wipe--notes",
+    "cam-grid-wipe--shot"
+   ],
+   "stepOrder": [
+    "cam-grid-wipe--step-0",
+    "cam-grid-wipe--step-1",
+    "cam-grid-wipe--step-2",
+    "cam-grid-wipe--step-3"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "cam-flip": {
+   "id": "cam-flip",
+   "title": "翻卡",
+   "level": 2,
+   "children": [
+    "cam-flip--notes",
+    "cam-flip--shot"
+   ],
+   "stepOrder": [
+    "cam-flip--step-0",
+    "cam-flip--step-1",
+    "cam-flip--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "remotion-series-transition": {
+   "id": "remotion-series-transition",
+   "title": "面板切换：Series 与重叠",
+   "level": 2,
+   "children": [
+    "remotion-series-transition--series-transition-scene",
+    "remotion-series-transition--paragraph-1",
+    "remotion-series-transition--paragraph-2",
+    "remotion-series-transition--paragraph-3"
+   ],
+   "stepOrder": [
+    "remotion-series-transition--step-0",
+    "remotion-series-transition--step-1",
+    "remotion-series-transition--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "remotion-wipe": {
+   "id": "remotion-wipe",
+   "title": "擦除转场",
+   "level": 2,
+   "children": [
+    "remotion-wipe--wipe-scene",
+    "remotion-wipe--paragraph-1",
+    "remotion-wipe--paragraph-2"
+   ],
+   "stepOrder": [
+    "remotion-wipe--step-0",
+    "remotion-wipe--step-1"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "motion-wipe": {
+   "id": "motion-wipe",
+   "title": "擦除对比：clip-path",
+   "level": 2,
+   "children": [
+    "motion-wipe--wipe-scene",
+    "motion-wipe--paragraph-1",
+    "motion-wipe--paragraph-2",
+    "motion-wipe--paragraph-3"
+   ],
+   "stepOrder": [
+    "motion-wipe--step-0",
+    "motion-wipe--step-1",
+    "motion-wipe--step-2"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "cuts": {
+   "id": "cuts",
+   "title": "剪辑",
+   "level": 1,
+   "children": [
+    "cuts--intro"
+   ],
+   "stepOrder": [
+    "cuts--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "cam-whip-pan": {
+   "id": "cam-whip-pan",
+   "title": "甩镜头",
+   "level": 2,
+   "children": [
+    "cam-whip-pan--notes",
+    "cam-whip-pan--shot"
+   ],
+   "stepOrder": [
+    "cam-whip-pan--step-0",
+    "cam-whip-pan--step-1",
+    "cam-whip-pan--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "cam-velocity-cut": {
+   "id": "cam-velocity-cut",
+   "title": "速度匹配剪辑",
+   "level": 2,
+   "children": [
+    "cam-velocity-cut--notes",
+    "cam-velocity-cut--shot"
+   ],
+   "stepOrder": [
+    "cam-velocity-cut--step-0",
+    "cam-velocity-cut--step-1",
+    "cam-velocity-cut--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "cam-match-cut": {
+   "id": "cam-match-cut",
+   "title": "匹配剪辑",
+   "level": 2,
+   "children": [
+    "cam-match-cut--notes",
+    "cam-match-cut--shot"
+   ],
+   "stepOrder": [
+    "cam-match-cut--step-0",
+    "cam-match-cut--step-1",
+    "cam-match-cut--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "camera": {
+   "id": "camera",
+   "title": "镜头运动",
+   "level": 1,
+   "children": [
+    "camera--intro"
+   ],
+   "stepOrder": [
+    "camera--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "cam-push-in": {
+   "id": "cam-push-in",
+   "title": "推镜",
+   "level": 2,
+   "children": [
+    "cam-push-in--notes",
+    "cam-push-in--shot"
+   ],
+   "stepOrder": [
+    "cam-push-in--step-0",
+    "cam-push-in--step-1"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "cam-pull-back": {
+   "id": "cam-pull-back",
+   "title": "拉镜揭示",
+   "level": 2,
+   "children": [
+    "cam-pull-back--notes",
+    "cam-pull-back--shot"
+   ],
+   "stepOrder": [
+    "cam-pull-back--step-0",
+    "cam-pull-back--step-1",
+    "cam-pull-back--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "cam-dolly-zoom": {
+   "id": "cam-dolly-zoom",
+   "title": "滑动变焦",
+   "level": 2,
+   "children": [
+    "cam-dolly-zoom--notes",
+    "cam-dolly-zoom--shot"
+   ],
+   "stepOrder": [
+    "cam-dolly-zoom--step-0",
+    "cam-dolly-zoom--step-1",
+    "cam-dolly-zoom--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "cam-rack-focus": {
+   "id": "cam-rack-focus",
+   "title": "移焦",
+   "level": 2,
+   "children": [
+    "cam-rack-focus--notes",
+    "cam-rack-focus--shot"
+   ],
+   "stepOrder": [
+    "cam-rack-focus--step-0",
+    "cam-rack-focus--step-1",
+    "cam-rack-focus--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "cam-zoom-through": {
+   "id": "cam-zoom-through",
+   "title": "穿越变焦",
+   "level": 2,
+   "children": [
+    "cam-zoom-through--notes",
+    "cam-zoom-through--shot"
+   ],
+   "stepOrder": [
+    "cam-zoom-through--step-0",
+    "cam-zoom-through--step-1",
+    "cam-zoom-through--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "cam-pan-stations": {
+   "id": "cam-pan-stations",
+   "title": "摇镜过站",
+   "level": 2,
+   "children": [
+    "cam-pan-stations--notes",
+    "cam-pan-stations--shot"
+   ],
+   "stepOrder": [
+    "cam-pan-stations--step-0",
+    "cam-pan-stations--step-1",
+    "cam-pan-stations--step-2",
+    "cam-pan-stations--step-3",
+    "cam-pan-stations--step-4"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "cam-split-compare": {
+   "id": "cam-split-compare",
+   "title": "分屏对比",
+   "level": 2,
+   "children": [
+    "cam-split-compare--notes",
+    "cam-split-compare--shot"
+   ],
+   "stepOrder": [
+    "cam-split-compare--step-0",
+    "cam-split-compare--step-1",
+    "cam-split-compare--step-2",
+    "cam-split-compare--step-3",
+    "cam-split-compare--step-4"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "carry": {
+   "id": "carry",
+   "title": "承接短片",
+   "level": 1,
+   "children": [
+    "carry--intro"
+   ],
+   "stepOrder": [
+    "carry--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "carry-film": {
+   "id": "carry-film",
+   "title": "一个点",
+   "level": 2,
+   "children": [
+    "carry-film--notes",
+    "carry-film--shot"
+   ],
+   "stepOrder": [
+    "carry-film--step-0",
+    "carry-film--step-1",
+    "carry-film--step-2",
+    "carry-film--step-3",
+    "carry-film--step-4",
+    "carry-film--step-5"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  }
+ },
+ "blocks": {
+  "wipes--intro": {
+   "id": "wipes--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "wipes--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "擦除、滑动、淡化、网格与翻转。"
+      }
+     ]
+    }
+   ]
+  },
+  "cam-iris--notes": {
+   "id": "cam-iris--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "cam-iris--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一个圆从画面 A 的某一点打开，露出画面 B。圆心放在引出 B 的那个东西上（按钮、关键词、图上的点），转场就有了原因。用于“换一种看法”“进入细节”。参数："
+      },
+      {
+       "type": "text",
+       "text": "a",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "b",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "，圆心 "
+      },
+      {
+       "type": "text",
+       "text": "x",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "y",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（百分比），"
+      },
+      {
+       "type": "text",
+       "text": "register",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（"
+      },
+      {
+       "type": "text",
+       "text": "color",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 时旧画面变灰变暗，"
+      },
+      {
+       "type": "text",
+       "text": "plain",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 不处理）。"
+      }
+     ]
+    },
+    {
+     "id": "cam-iris--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "cam-iris--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-iris--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-iris--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "cam-iris--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-iris--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-iris--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.9 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-iris--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面 A 静止"
+          }
+         ]
+        },
+        {
+         "id": "cam-iris--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先读懂现在"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-iris--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-iris--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.9–2.0 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-iris--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "圆以 power2.inOut 从 0 开到最远角的距离，强调色边沿与裁切共用一个半径，开头 0.18 s 淡入、结尾 0.24 s 淡出；A 同时变灰变暗，B 的内容从 106% 落到 100%"
+          }
+         ]
+        },
+        {
+         "id": "cam-iris--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一次干脆的打开；边沿和裁切永不分离；新内容先停稳，圆再到边"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-iris--notes--n1--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-iris--notes--n1--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.0–3.6 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-iris--notes--n1--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面 B 停留，1% 缓慢放大"
+          }
+         ]
+        },
+        {
+         "id": "cam-iris--notes--n1--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停留要活着，不是定格"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "cam-iris--shot": {
+   "id": "cam-iris--shot",
+   "type": "component",
+   "definitionId": "cam-iris--shot--definition",
+   "parameters": {
+    "scene": "cam/iris",
+    "alt": "“逐词翻译”的画面上，一个圆从中心打开，露出“注意力”的画面；旧画面随之变灰变暗。"
+   }
+  },
+  "cam-slide-wipe--notes": {
+   "id": "cam-slide-wipe--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "cam-slide-wipe--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "画面 B 沿一个方向替换画面 A，三种方式："
+      },
+      {
+       "type": "text",
+       "text": "wipe",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 划变（一条边划过，B 露出，A 退后虚化），"
+      },
+      {
+       "type": "text",
+       "text": "slide",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 滑入（B 带着阴影盖过 A，A 以较小幅度后退变暗），"
+      },
+      {
+       "type": "text",
+       "text": "push",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 推移（A、B 在一条带上一起移动一个画面，速度模糊）。用于步骤之间、“下一个”。"
+      },
+      {
+       "type": "text",
+       "text": "direction",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 为 "
+      },
+      {
+       "type": "text",
+       "text": "left",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 表示 B 从右边进来、向左运动（阅读方向，表示前进），"
+      },
+      {
+       "type": "text",
+       "text": "right",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 表示回退。参数："
+      },
+      {
+       "type": "text",
+       "text": "a",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "b",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "mode",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "direction",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。"
+      }
+     ]
+    },
+    {
+     "id": "cam-slide-wipe--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "cam-slide-wipe--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-slide-wipe--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-slide-wipe--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "cam-slide-wipe--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-slide-wipe--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-slide-wipe--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.8 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-slide-wipe--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面 A 静止"
+          }
+         ]
+        },
+        {
+         "id": "cam-slide-wipe--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先读懂现在"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-slide-wipe--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-slide-wipe--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.8–1.7 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-slide-wipe--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "wipe",
+           "marks": [
+            {
+             "type": "code"
+            }
+           ]
+          },
+          {
+           "type": "text",
+           "text": "：0.9 s power3.inOut，强调色接缝跟着裁切边；B 的内容最后 3.1 cqw 滑入并从 104% 落定，A 同向漂移 3.6 cqw、缩到 96%、失焦 0.26 cqw。"
+          },
+          {
+           "type": "text",
+           "text": "slide",
+           "marks": [
+            {
+             "type": "code"
+            }
+           ]
+          },
+          {
+           "type": "text",
+           "text": "：0.74 s，A 只退 28%，B 的文字在 0.46 s 后升起 2.2 cqh。"
+          },
+          {
+           "type": "text",
+           "text": "push",
+           "marks": [
+            {
+             "type": "code"
+            }
+           ]
+          },
+          {
+           "type": "text",
+           "text": "：0.5 s，模糊随速度，中间一帧最大 0.6 cqw"
+          }
+         ]
+        },
+        {
+         "id": "cam-slide-wipe--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "用遮罩代替淡入淡出；远的层动得少，形成纵深；文字在落定后才出现，读的时候不动"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-slide-wipe--notes--n1--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-slide-wipe--notes--n1--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.7–3.3 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-slide-wipe--notes--n1--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面 B 停留"
+          }
+         ]
+        },
+        {
+         "id": "cam-slide-wipe--notes--n1--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "新内容停稳"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "cam-slide-wipe--shot": {
+   "id": "cam-slide-wipe--shot",
+   "type": "component",
+   "definitionId": "cam-slide-wipe--shot--definition",
+   "parameters": {
+    "scene": "cam/slide-wipe",
+    "alt": "“读入一句话”的画面被一条边从右向左划过，露出“切成词元”的画面。"
+   }
+  },
+  "cam-fade-through--notes": {
+   "id": "cam-fade-through--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "cam-fade-through--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "A 淡出，画面经过一片色场，B 从中淡入：两个不相关的东西之间安静的转场。色场可以是页面色（"
+      },
+      {
+       "type": "text",
+       "text": "paper",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "，亮色页面上的“淡到白”）、"
+      },
+      {
+       "type": "text",
+       "text": "ink",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（“淡到黑”，暗色页面上是白）或强调色闪白（"
+      },
+      {
+       "type": "text",
+       "text": "accent",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "）。用于讲次的段落之间；表达“这个变成那个”时改用匹配剪辑。参数："
+      },
+      {
+       "type": "text",
+       "text": "a",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "b",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "wash",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "strength",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "shape",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。"
+      }
+     ]
+    },
+    {
+     "id": "cam-fade-through--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "cam-fade-through--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-fade-through--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-fade-through--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "cam-fade-through--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-fade-through--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-fade-through--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.8 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-fade-through--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面 A"
+          }
+         ]
+        },
+        {
+         "id": "cam-fade-through--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先读懂现在"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-fade-through--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-fade-through--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.8–1.7 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-fade-through--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "A 以 power2.inOut 0.45 s 淡出；色场 0.35 s 升到峰值再 0.45 s 落下；B 从 0.35 s 起以 power2.out 0.55 s 淡入，内容从 102% 落定"
+          }
+         ]
+        },
+        {
+         "id": "cam-fade-through--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "两个画面不会同时完整出现；眼睛在色场散开时遇到 B"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-fade-through--notes--n1--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-fade-through--notes--n1--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.7–3.3 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-fade-through--notes--n1--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面 B 停留"
+          }
+         ]
+        },
+        {
+         "id": "cam-fade-through--notes--n1--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "新内容停稳"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "cam-fade-through--shot": {
+   "id": "cam-fade-through--shot",
+   "type": "component",
+   "definitionId": "cam-fade-through--shot--definition",
+   "parameters": {
+    "scene": "cam/fade-through",
+    "alt": "“为什么要分词”的画面淡出到一片纸色，再从中淡入“怎样分词”的画面。"
+   }
+  },
+  "cam-grid-wipe--notes": {
+   "id": "cam-grid-wipe--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "cam-grid-wipe--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "16 × 9 的方格按波浪铺满画面 A，再按相反的波浪退去，露出画面 B。波从有意义的地方出发（中心、阅读顺序的起点），也可以是带种子的随机顺序。用于章节分隔、重新开始；两个相关状态之间更适合用移动。参数："
+      },
+      {
+       "type": "text",
+       "text": "a",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "b",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "from",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "seed",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。"
+      }
+     ]
+    },
+    {
+     "id": "cam-grid-wipe--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "cam-grid-wipe--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-grid-wipe--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-grid-wipe--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "cam-grid-wipe--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-grid-wipe--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-grid-wipe--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.8 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-grid-wipe--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面 A"
+          }
+         ]
+        },
+        {
+         "id": "cam-grid-wipe--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先读懂现在"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-grid-wipe--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-grid-wipe--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.8–2.0 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-grid-wipe--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "每格 0.6 s power2.inOut 从无长满，起始时间按到起点的距离分布在 0.6 s 内"
+          }
+         ]
+        },
+        {
+         "id": "cam-grid-wipe--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "波从一个地方出发"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-grid-wipe--notes--n1--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-grid-wipe--notes--n1--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.0–3.2 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-grid-wipe--notes--n1--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "完全盖住时 A 换成 B；方格按相反的波退去，远处先走"
+          }
+         ]
+        },
+        {
+         "id": "cam-grid-wipe--notes--n1--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "新画面朝旧画面合拢的地方打开"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-grid-wipe--notes--n1--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-grid-wipe--notes--n1--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.2–4.8 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-grid-wipe--notes--n1--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面 B 停留"
+          }
+         ]
+        },
+        {
+         "id": "cam-grid-wipe--notes--n1--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "新内容停稳"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "cam-grid-wipe--shot": {
+   "id": "cam-grid-wipe--shot",
+   "type": "component",
+   "definitionId": "cam-grid-wipe--shot--definition",
+   "parameters": {
+    "scene": "cam/grid-wipe",
+    "alt": "强调色的方格从中心一波波铺满“线性回归”的画面，再从边缘向中心退去，露出“逻辑回归”的画面。"
+   }
+  },
+  "cam-flip--notes": {
+   "id": "cam-flip--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "cam-flip--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一张卡片翻到背面，正面是画面 A，背面是画面 B，像抽认卡从问题翻到答案。两面属于同一个物体，适合问题和答案、术语和定义、论断和证据。参数："
+      },
+      {
+       "type": "text",
+       "text": "a",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "b",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。"
+      }
+     ]
+    },
+    {
+     "id": "cam-flip--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "cam-flip--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-flip--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-flip--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "cam-flip--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-flip--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-flip--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1.2 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-flip--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "正面"
+          }
+         ]
+        },
+        {
+         "id": "cam-flip--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先读问题"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-flip--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-flip--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.2–1.35 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-flip--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "反方向转 8°（power2.out）"
+          }
+         ]
+        },
+        {
+         "id": "cam-flip--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "预备动作"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-flip--notes--n1--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-flip--notes--n1--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.35–1.95 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-flip--notes--n1--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "以 power2.inOut 翻到 183°（原作 0.6 s）；半圈时抬起到 106%，影子随高度变大变淡"
+          }
+         ]
+        },
+        {
+         "id": "cam-flip--notes--n1--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一个高度值同时驱动大小和影子"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-flip--notes--n1--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-flip--notes--n1--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.95–2.2 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-flip--notes--n1--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "回落 3° 停稳（power2.out）"
+          }
+         ]
+        },
+        {
+         "id": "cam-flip--notes--n1--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "卡片落下的那一下"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-flip--notes--n1--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-flip--notes--n1--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.2–3.8 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-flip--notes--n1--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "背面停留"
+          }
+         ]
+        },
+        {
+         "id": "cam-flip--notes--n1--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "读答案"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "cam-flip--shot": {
+   "id": "cam-flip--shot",
+   "type": "component",
+   "definitionId": "cam-flip--shot--definition",
+   "parameters": {
+    "scene": "cam/flip",
+    "alt": "一张写着“为什么除以 √d？”的卡片先向反方向微转，再翻过来，背面是“防止点积过大”。"
+   }
+  },
+  "remotion-series-transition--series-transition-scene": {
+   "id": "remotion-series-transition--series-transition-scene",
+   "type": "component",
+   "definitionId": "remotion-series-transition--series-transition-scene--definition",
+   "parameters": {
+    "scene": "remotion/series-transition",
+    "alt": "三张面板“前向传播”“计算损失”“反向传播”依次从右侧滑入，前一张向左滑出。"
+   }
+  },
+  "remotion-series-transition--paragraph-1": {
+   "id": "remotion-series-transition--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-series-transition--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第一张面板从右侧滑入：前向传播得到预测值。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-series-transition--paragraph-2": {
+   "id": "remotion-series-transition--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-series-transition--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第二张面板推开第一张：计算损失。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-series-transition--paragraph-3": {
+   "id": "remotion-series-transition--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-series-transition--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第三张面板进来：反向传播，更新参数。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-wipe--wipe-scene": {
+   "id": "remotion-wipe--wipe-scene",
+   "type": "component",
+   "definitionId": "remotion-wipe--wipe-scene--definition",
+   "parameters": {
+    "scene": "remotion/wipe",
+    "alt": "“排序前”的柱子被一道竖线从左向右擦成“排序后”的柱子。"
+   }
+  },
+  "remotion-wipe--paragraph-1": {
+   "id": "remotion-wipe--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-wipe--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "先看排序前的数组。"
+      }
+     ]
+    }
+   ]
+  },
+  "remotion-wipe--paragraph-2": {
+   "id": "remotion-wipe--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "remotion-wipe--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一条亮线从左往右扫过，扫过的地方换成排序后的样子。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-wipe--wipe-scene": {
+   "id": "motion-wipe--wipe-scene",
+   "type": "component",
+   "definitionId": "motion-wipe--wipe-scene--definition",
+   "parameters": {
+    "scene": "motion/wipe",
+    "alt": "一张带噪声的图像被分割线从左向右擦成去噪后的图像，最后圆形展开说明文字。"
+   }
+  },
+  "motion-wipe--paragraph-1": {
+   "id": "motion-wipe--paragraph-1",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-wipe--paragraph-1--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "分割线从左边扫到中间：左边是去噪后的，右边是原来带噪声的。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-wipe--paragraph-2": {
+   "id": "motion-wipe--paragraph-2",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-wipe--paragraph-2--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "扫到最右边，整张都去噪了。"
+      }
+     ]
+    }
+   ]
+  },
+  "motion-wipe--paragraph-3": {
+   "id": "motion-wipe--paragraph-3",
+   "type": "text",
+   "content": [
+    {
+     "id": "motion-wipe--paragraph-3--text-0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "说明文字从中心圆形展开。"
+      }
+     ]
+    }
+   ]
+  },
+  "cuts--intro": {
+   "id": "cuts--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "cuts--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "甩镜、速度剪辑与形状匹配剪辑。"
+      }
+     ]
+    }
+   ]
+  },
+  "cam-whip-pan--notes": {
+   "id": "cam-whip-pan--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "cam-whip-pan--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "镜头从画面 A 快速甩到画面 B：两块画面在一条带上，一次 power3.inOut 移动一个画面宽，接缝两侧速度天然一致；只沿运动方向模糊，最快的一帧（正中）模糊最大，切换藏在这里。用于快节奏换功能、换场，一片最多两三次。与 Remotion 版 "
+      },
+      {
+       "type": "text",
+       "text": "fx/remotion/whip-pan",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（只接图标、固定方向）同一手法，这一版接画面参数和方向。参数："
+      },
+      {
+       "type": "text",
+       "text": "a",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "b",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "direction",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。"
+      }
+     ]
+    },
+    {
+     "id": "cam-whip-pan--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "cam-whip-pan--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-whip-pan--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-whip-pan--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "cam-whip-pan--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-whip-pan--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-whip-pan--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.6 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-whip-pan--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面 A 静止"
+          }
+         ]
+        },
+        {
+         "id": "cam-whip-pan--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先看清当前"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-whip-pan--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-whip-pan--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.6–1.15 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-whip-pan--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.55 s power3.inOut 移动一个画面宽；模糊以 power3.in 升到上限 0.83 cqw（1920 宽画面的 16 px），在正中一帧达到峰值，再以镜像的 power3.out 回到 0；强调色细线跟着接缝，0.1 s 淡入，最后 0.15 s 淡出"
+          }
+         ]
+        },
+        {
+         "id": "cam-whip-pan--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "真实的甩镜只沿一个方向糊；模糊跟速度走，静止时清晰；接缝像画框边缘一闪而过"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-whip-pan--notes--n1--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-whip-pan--notes--n1--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.15–2.75 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-whip-pan--notes--n1--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面 B 停稳、清晰"
+          }
+         ]
+        },
+        {
+         "id": "cam-whip-pan--notes--n1--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "新画面落定"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "cam-whip-pan--shot": {
+   "id": "cam-whip-pan--shot",
+   "type": "component",
+   "definitionId": "cam-whip-pan--shot--definition",
+   "parameters": {
+    "scene": "cam/whip-pan",
+    "alt": "“在讲义里写”的画面向左甩出，在横向模糊中接上“导出成视频”的画面。"
+   }
+  },
+  "cam-velocity-cut--notes": {
+   "id": "cam-velocity-cut--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "cam-velocity-cut--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "卡片 A 沿一条直线加速飞走，在速度最快的一刻硬切，卡片 B 从同一条线的另一侧以同样的速度进来、减速停下，眼睛读成一个连续的动作。用于两个不是同一物体的东西之间（输入和输出、这一步和下一步），没有形状可匹配时。剪辑段的长度就是这一状态的时长。参数："
+      },
+      {
+       "type": "text",
+       "text": "a",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "b",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "direction",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "split",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（切点，默认 0.33，约 1:2）。"
+      }
+     ]
+    },
+    {
+     "id": "cam-velocity-cut--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "cam-velocity-cut--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-velocity-cut--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-velocity-cut--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "cam-velocity-cut--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-velocity-cut--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-velocity-cut--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.7 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-velocity-cut--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "卡片 A 静止"
+          }
+         ]
+        },
+        {
+         "id": "cam-velocity-cut--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先看清主体"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-velocity-cut--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-velocity-cut--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.7–1.03 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-velocity-cut--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "A 以 power4.in 加速移动 34 cqw；模糊（只沿运动方向）和透明度随速度变化"
+          }
+         ]
+        },
+        {
+         "id": "cam-velocity-cut--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "加速出场"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-velocity-cut--notes--n1--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-velocity-cut--notes--n1--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.03 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-velocity-cut--notes--n1--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一帧内换成 B：两侧模糊都是 0.63 cqw、透明度都是 72%"
+          }
+         ]
+        },
+        {
+         "id": "cam-velocity-cut--notes--n1--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "切在最快处；power4.in 结束时和 power4.out 开始时都是平均速度的 4 倍，B 的距离按时间比放大（约 69 cqw），速度两侧相同"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-velocity-cut--notes--n1--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-velocity-cut--notes--n1--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.03–1.7 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-velocity-cut--notes--n1--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "B 以镜像的 power4.out 减速到位，模糊归零"
+          }
+         ]
+        },
+        {
+         "id": "cam-velocity-cut--notes--n1--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "减速入场"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-velocity-cut--notes--n1--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-velocity-cut--notes--n1--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.7–3.3 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-velocity-cut--notes--n1--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "卡片 B 停留"
+          }
+         ]
+        },
+        {
+         "id": "cam-velocity-cut--notes--n1--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "结果停稳"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "cam-velocity-cut--shot": {
+   "id": "cam-velocity-cut--shot",
+   "type": "component",
+   "definitionId": "cam-velocity-cut--shot--definition",
+   "parameters": {
+    "scene": "cam/velocity-cut",
+    "alt": "“一张猫的照片”的卡片加速飞向左边，在最快的一刻切成“猫 · 0.97”的卡片，从右边减速飞入停下。"
+   }
+  },
+  "cam-match-cut--notes": {
+   "id": "cam-match-cut--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "cam-match-cut--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "场景 A 里的圆加速放大，一帧硬切到场景 B：一个不同的圆，大小和位置完全相同，形状带着眼睛跨过两个场景。用于“这个变成了那个”：输入和输出、问题和回答、符号和它代表的东西。参数："
+      },
+      {
+       "type": "text",
+       "text": "a",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "b",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（图标和图片不用）。"
+      }
+     ]
+    },
+    {
+     "id": "cam-match-cut--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "cam-match-cut--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-match-cut--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-match-cut--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "cam-match-cut--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-match-cut--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-match-cut--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.45 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-match-cut--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "A 的圆从 54% 以 power3.out 长到 64%"
+          }
+         ]
+        },
+        {
+         "id": "cam-match-cut--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "主体先亮相"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-match-cut--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-match-cut--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.45–1.4 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-match-cut--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "以 power4.in 加速长到 100%，状态结束时最快"
+          }
+         ]
+        },
+        {
+         "id": "cam-match-cut--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "把速度带进剪辑点"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-match-cut--notes--n1--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-match-cut--notes--n1--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.4 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-match-cut--notes--n1--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一帧硬切，没有叠化：B 的圆在完全相同的几何位置"
+          }
+         ]
+        },
+        {
+         "id": "cam-match-cut--notes--n1--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "形状匹配，眼睛不需要重新找"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-match-cut--notes--n1--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-match-cut--notes--n1--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.4–2.05 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-match-cut--notes--n1--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "B 的圆以同样速度离开剪辑点，power4.out 减速到 74%；切后 0.1 s，小标签和说明升起 2.4 cqh 淡入（相隔 0.08 s）"
+          }
+         ]
+        },
+        {
+         "id": "cam-match-cut--notes--n1--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "镜像缓动读成一个动作；圆慢下来再出文字"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-match-cut--notes--n1--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-match-cut--notes--n1--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.3–3.9 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-match-cut--notes--n1--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "圆上浮 0.8 cqh 再回来"
+          }
+         ]
+        },
+        {
+         "id": "cam-match-cut--notes--n1--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停留要活着"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "cam-match-cut--shot": {
+   "id": "cam-match-cut--shot",
+   "type": "component",
+   "definitionId": "cam-match-cut--shot--definition",
+   "parameters": {
+    "scene": "cam/match-cut",
+    "alt": "“提问”的圆加速放大，硬切成同样大小、同样位置的“一只猫”的圆，随后缩小停住，下方升起“置信度 97%”。"
+   }
+  },
+  "camera--intro": {
+   "id": "camera--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "camera--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "推近、拉远、滑动变焦、焦点转移、穿越、平移与分屏。"
+      }
+     ]
+    }
+   ]
+  },
+  "cam-push-in--notes": {
+   "id": "cam-push-in--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "cam-push-in--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一次缓慢的推镜，让一个静止的画面在被朗读时有分量。用于标题卡、定义、引文等讲解停留较久的画面。推的总距离固定，停留越长推得越慢，文字的移动永远比阅读慢。参数："
+      },
+      {
+       "type": "text",
+       "text": "a",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "intensity",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（最终放大 1.08、1.12 或 1.18 倍）。"
+      }
+     ]
+    },
+    {
+     "id": "cam-push-in--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "cam-push-in--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-push-in--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-push-in--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "cam-push-in--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-push-in--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-push-in--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.8 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-push-in--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "镜头以 sine.inOut 起步，完成总推进的 24%；页面色的暗角同时收拢"
+          }
+         ]
+        },
+        {
+         "id": "cam-push-in--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "起步没有顿挫；暗角把视线留在中心"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-push-in--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-push-in--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.8–4.0 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-push-in--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "线性缓推到最终倍数"
+          }
+         ]
+        },
+        {
+         "id": "cam-push-in--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停留要活着；不设退场，由下一状态或下一节切走"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "cam-push-in--shot": {
+   "id": "cam-push-in--shot",
+   "type": "component",
+   "definitionId": "cam-push-in--shot--definition",
+   "parameters": {
+    "scene": "cam/push-in",
+    "alt": "“梯度指向上升最快的方向”这句定义在画面中心，镜头缓慢推近，四周渐暗。"
+   }
+  },
+  "cam-pull-back--notes": {
+   "id": "cam-pull-back--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "cam-pull-back--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "镜头先只给一个数字，再一次拉远，露出让它换一种读法的上下文。用于需要“看到背景后重新理解”的数字：训练成绩旁边的测试成绩、增长率旁边的基数。数字始终是同一个元素，镜头以它为中心缩放。示例数值要标注“示例数据”或写出来源。参数："
+      },
+      {
+       "type": "text",
+       "text": "detail",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "label",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "headline",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "cards",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "note",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。"
+      }
+     ]
+    },
+    {
+     "id": "cam-pull-back--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "cam-pull-back--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-pull-back--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-pull-back--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "cam-pull-back--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-pull-back--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-pull-back--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1.0 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-pull-back--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.2 倍特写，只看得清这个数字"
+          }
+         ]
+        },
+        {
+         "id": "cam-pull-back--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先让人记住这个结论"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-pull-back--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-pull-back--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.0–2.2 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-pull-back--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "一次 power4.out 拉远到 1.055 倍，下沉 0.7 cqh：大部分行程一下完成，然后长长地刹车"
+          }
+         ]
+        },
+        {
+         "id": "cam-pull-back--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "镜头经过时上下文依次入画"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-pull-back--notes--n1--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-pull-back--notes--n1--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.2–2.85 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-pull-back--notes--n1--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "sine.inOut 漂到 1 倍；卡片的接触阴影从 72% 长到全尺寸并淡入"
+          }
+         ]
+        },
+        {
+         "id": "cam-pull-back--notes--n1--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "卡片落在地面上，镜头停稳"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-pull-back--notes--n1--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-pull-back--notes--n1--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.85–4.85 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-pull-back--notes--n1--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "阴影呼吸（透明度 0.78 → 0.68 → 0.78）"
+          }
+         ]
+        },
+        {
+         "id": "cam-pull-back--notes--n1--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停留要活着"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "cam-pull-back--shot": {
+   "id": "cam-pull-back--shot",
+   "type": "component",
+   "definitionId": "cam-pull-back--shot--definition",
+   "parameters": {
+    "scene": "cam/pull-back",
+    "alt": "镜头先紧贴“97.3% 准确率”，然后拉远，露出标题“这是训练集上的成绩”和下方的测试集准确率 61.8%、差距 35.5 个点。"
+   }
+  },
+  "cam-dolly-zoom--notes": {
+   "id": "cam-dolly-zoom--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "cam-dolly-zoom--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "希区柯克变焦：镜头后退的同时镜头拉近，主体大小不变，背后的世界涌上来（"
+      },
+      {
+       "type": "text",
+       "text": "direction: in",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 时远去）。效果是一个约束：主体大小等于焦距除以距离，所以焦距每一帧由距离求出（f = d），深度 z 处的层按 d/(d+z) 缩放，全部在 2D 中计算。用于“东西没变，参照系变了”：同一个词放进更长的上下文、同一个结果对着更大的语料。参数："
+      },
+      {
+       "type": "text",
+       "text": "a",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "layers",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "direction",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "strength",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（默认 2）。"
+      }
+     ]
+    },
+    {
+     "id": "cam-dolly-zoom--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "cam-dolly-zoom--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-dolly-zoom--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-dolly-zoom--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "cam-dolly-zoom--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-dolly-zoom--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-dolly-zoom--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.6 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-dolly-zoom--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "主体和五层带标签的框"
+          }
+         ]
+        },
+        {
+         "id": "cam-dolly-zoom--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先交代主体和环境"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-dolly-zoom--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-dolly-zoom--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.6–4.6 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-dolly-zoom--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "4 s power2.inOut，距离从 1400 到 2800；近层几乎不变，远层变化最大；四角的导轨汇向消失点"
+          }
+         ]
+        },
+        {
+         "id": "cam-dolly-zoom--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "焦距由距离解出而不是并列做关键帧，主体才真正不动"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-dolly-zoom--notes--n1--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-dolly-zoom--notes--n1--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "4.6–6.0 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-dolly-zoom--notes--n1--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "主体不变，环境重排"
+          }
+         ]
+        },
+        {
+         "id": "cam-dolly-zoom--notes--n1--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停在结果上"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "cam-dolly-zoom--shot": {
+   "id": "cam-dolly-zoom--shot",
+   "type": "component",
+   "definitionId": "cam-dolly-zoom--shot--definition",
+   "parameters": {
+    "scene": "cam/dolly-zoom",
+    "alt": "“苹果”这张卡片大小不变，背后标着“这句话”“这一段”直到“全部语料”的层层框向前涌来。"
+   }
+  },
+  "cam-rack-focus--notes": {
+   "id": "cam-rack-focus--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "cam-rack-focus--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "两张卡片在不同深度，焦点从近处的一张移到远处的一张，不切镜头就转移注意力。一个焦平面值 φ 驱动每张卡片的模糊、缩放、亮度和强调色边框，四者一起变化，读成同一个镜头。用于先看损失曲线再看验证曲线、先看结论再看它的前提。参数："
+      },
+      {
+       "type": "text",
+       "text": "a",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "b",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。"
+      }
+     ]
+    },
+    {
+     "id": "cam-rack-focus--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "cam-rack-focus--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-rack-focus--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-rack-focus--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "cam-rack-focus--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-rack-focus--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-rack-focus--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1.0 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-rack-focus--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.32 s 淡入；A 清晰，B 模糊（0.48 cqw）变暗在后面"
+          }
+         ]
+        },
+        {
+         "id": "cam-rack-focus--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先看近处"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-rack-focus--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-rack-focus--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.0–1.7 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-rack-focus--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "φ 以 sine.inOut 从 0 到 1；卡片随之错开 1 cqw"
+          }
+         ]
+        },
+        {
+         "id": "cam-rack-focus--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "模糊、大小、亮度一起变；近的移动得多，形成视差"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-rack-focus--notes--n1--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-rack-focus--notes--n1--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.7–3.3 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-rack-focus--notes--n1--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "B 清晰停留，两张卡片缓慢上下分开"
+          }
+         ]
+        },
+        {
+         "id": "cam-rack-focus--notes--n1--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "纵深在停留时仍然可读"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "cam-rack-focus--shot": {
+   "id": "cam-rack-focus--shot",
+   "type": "component",
+   "definitionId": "cam-rack-focus--shot--definition",
+   "parameters": {
+    "scene": "cam/rack-focus",
+    "alt": "近处的“损失一路下降”卡片清晰，远处的“第 8 轮后回升”模糊；焦点移过去后，远处的卡片清晰，近处的变模糊。"
+   }
+  },
+  "cam-zoom-through--notes": {
+   "id": "cam-zoom-through--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "cam-zoom-through--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "镜头从总览飞进其中一张卡片，直到它就是整个画面，也就是画面 B。被推近的卡片从一开始就装着缩小的 B，同一个元素长到全尺寸，不需要替换。用于从目录进入某一讲、从系统图进入一个模块；"
+      },
+      {
+       "type": "text",
+       "text": "direction: out",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 倒放，从 B 拉出，看它在整体中的位置。参数："
+      },
+      {
+       "type": "text",
+       "text": "cards",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "focus",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "b",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "direction",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。"
+      }
+     ]
+    },
+    {
+     "id": "cam-zoom-through--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "cam-zoom-through--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-zoom-through--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-zoom-through--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "cam-zoom-through--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-zoom-through--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-zoom-through--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1.2 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-zoom-through--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "最多九张卡片的总览，目标卡片是强调色"
+          }
+         ]
+        },
+        {
+         "id": "cam-zoom-through--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先交代全貌和去向"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-zoom-through--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-zoom-through--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.2–3.6 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-zoom-through--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.4 s power2.inOut；缩放按缓动进度指数变化（S^e，S = 100/28），像匀速穿入；目标卡片同时滑到中心；其他卡片向外推开最多 47 cqw（1920 宽画面的 900 px）、淡出，并随速度轻微模糊"
+          }
+         ]
+        },
+        {
+         "id": "cam-zoom-through--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "指数缩放才有恒定的纵深速度；其他卡片比镜头飞得快，读成更近的层；同一个元素变大，保持身份"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-zoom-through--notes--n1--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-zoom-through--notes--n1--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.6–5.2 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-zoom-through--notes--n1--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面 B 以 1:1 充满画面，清晰"
+          }
+         ]
+        },
+        {
+         "id": "cam-zoom-through--notes--n1--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "落定在新内容上"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "cam-zoom-through--shot": {
+   "id": "cam-zoom-through--shot",
+   "type": "component",
+   "definitionId": "cam-zoom-through--shot--definition",
+   "parameters": {
+    "scene": "cam/zoom-through",
+    "alt": "九张课程卡片中，“注意力”这张被镜头推近，其他卡片向外飞散淡出，最后它充满画面，成为“第 5 讲 · 注意力”。"
+   }
+  },
+  "cam-pan-stations--notes": {
+   "id": "cam-pan-stations--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "cam-pan-stations--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "镜头沿一排站点横移，每站停一下。每个站点是一个状态，停留时长就是状态时长，可以按讲解调整；站数改变时同步增减定义里的状态。邻站始终在画面边缘可见，整排读成一个连续的地方。用于流水线、步骤序列、功能巡览。参数："
+      },
+      {
+       "type": "text",
+       "text": "stations",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（每项写法同画面参数）。"
+      }
+     ]
+    },
+    {
+     "id": "cam-pan-stations--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "cam-pan-stations--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-pan-stations--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-pan-stations--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "cam-pan-stations--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-pan-stations--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-pan-stations--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.45 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-pan-stations--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "整排以 power2.out 淡入，停在第 1 站"
+          }
+         ]
+        },
+        {
+         "id": "cam-pan-stations--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "交代起点"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-pan-stations--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-pan-stations--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "每站开头 0.25 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-pan-stations--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "以 sine.inOut 移动一个站距（50 cqw），整排随速度横向模糊（中间最大 0.5 cqw），轨道进度线同步增长"
+          }
+         ]
+        },
+        {
+         "id": "cam-pan-stations--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "模糊跟速度；进度线和镜头共用一个时钟"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-pan-stations--notes--n1--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-pan-stations--notes--n1--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "每站其余时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-pan-stations--notes--n1--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "完全静止；落定后高亮（强调色边框和编号）才移到新站"
+          }
+         ]
+        },
+        {
+         "id": "cam-pan-stations--notes--n1--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先有镜头到达，再有高亮"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "cam-pan-stations--shot": {
+   "id": "cam-pan-stations--shot",
+   "type": "component",
+   "definitionId": "cam-pan-stations--shot--definition",
+   "parameters": {
+    "scene": "cam/pan-stations",
+    "alt": "镜头沿一条轨道横移，依次停在“数据清洗”“分词”“预训练”“指令微调”“评测”五站。"
+   }
+  },
+  "cam-split-compare--notes": {
+   "id": "cam-split-compare--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "cam-split-compare--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "同一幅画面的“之前”和“之后”，一条硬边把“之后”扫过“之前”，中途停下让两半并排对比，再扫完。默认画面是同一组带噪声的采样：之前是原始折线，之后是滤波后的曲线；给 "
+      },
+      {
+       "type": "text",
+       "text": "a.image",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "b.image",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（同样大小）可以对比两张图。用于降噪、修复、渲染、重画的图等同一事物的前后对比。参数："
+      },
+      {
+       "type": "text",
+       "text": "a",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "b",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "split",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "edge",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "seed",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "note",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "。"
+      }
+     ]
+    },
+    {
+     "id": "cam-split-compare--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "cam-split-compare--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-split-compare--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "cam-split-compare--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "cam-split-compare--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "为什么"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-split-compare--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-split-compare--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–0.7 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-split-compare--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面从 105% 落定（0.62 s），“之前”标签 0.36 s 时升起"
+          }
+         ]
+        },
+        {
+         "id": "cam-split-compare--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "先看清原样"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-split-compare--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-split-compare--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0.7–2.3 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-split-compare--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.6 s cubic-bezier(.62,0,.14,1)，起步慢、落地慢；硬边扫到 62%，分界线 0.2 s 淡入，“之后”标签 0.46 s 后升起"
+          }
+         ]
+        },
+        {
+         "id": "cam-split-compare--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "边走边看两半"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-split-compare--notes--n1--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-split-compare--notes--n1--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "2.3–3.8 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-split-compare--notes--n1--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "硬边停住（原作 0.8 s，这里 1.5 s）"
+          }
+         ]
+        },
+        {
+         "id": "cam-split-compare--notes--n1--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "对比需要时间"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-split-compare--notes--n1--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-split-compare--notes--n1--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.8–5.0 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-split-compare--notes--n1--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.2 s cubic-bezier(.4,0,.05,1) 扫完；“之前”标签淡出，分界线最后 0.3 s 淡出，画面在 1.5 s 内推近到 103%"
+          }
+         ]
+        },
+        {
+         "id": "cam-split-compare--notes--n1--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "推近让结果落地而不是停住"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "cam-split-compare--notes--n1--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "cam-split-compare--notes--n1--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "5.0–6.5 s"
+          }
+         ]
+        },
+        {
+         "id": "cam-split-compare--notes--n1--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "“之后”停留"
+          }
+         ]
+        },
+        {
+         "id": "cam-split-compare--notes--n1--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "停在结果上"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "cam-split-compare--shot": {
+   "id": "cam-split-compare--shot",
+   "type": "component",
+   "definitionId": "cam-split-compare--shot--definition",
+   "parameters": {
+    "scene": "cam/split-compare",
+    "alt": "同一组数据的两种画法：一条竖边从左向右扫过，把带噪声的折线换成平滑曲线，停在 62% 处对比，然后扫完全部。"
+   }
+  },
+  "carry--intro": {
+   "id": "carry--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "carry--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一段 15 秒的短片：每个边界都有元素延续到下一个画面。"
+      }
+     ]
+    }
+   ]
+  },
+  "carry-film--notes": {
+   "id": "carry-film--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "carry-film--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "一个点依次变成 Presmium 做出的每一样东西：文稿、步骤、幻灯片、视频的一帧，最后是片名。整片是一个 defineScene 场景，每拍一个状态；每个边界都用一种不同的承接动作（morphRect、ribbon、iris、镜头拉远加 hop、seal），镜头有跟随、甩、静止时零漂移、落地震动，背后是一层远处的点阵。动作来自 gallery/lengths/scenes/kit/fx/moves.ts 与 camera.ts。"
+      }
+     ]
+    },
+    {
+     "id": "carry-film--notes--n1",
+     "type": "table",
+     "headerRows": 1,
+     "children": [
+      {
+       "id": "carry-film--notes--n1--r0",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "carry-film--notes--n1--r0c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "时间"
+          }
+         ]
+        },
+        {
+         "id": "carry-film--notes--n1--r0c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "画面"
+          }
+         ]
+        },
+        {
+         "id": "carry-film--notes--n1--r0c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "带入下一拍"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "carry-film--notes--n1--r1",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "carry-film--notes--n1--r1c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "0–1.2 s"
+          }
+         ]
+        },
+        {
+         "id": "carry-film--notes--n1--r1c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "强调色的点从上方落到正中，落地压扁、回弹，镜头随之一震；0.85 s 起静止"
+          }
+         ]
+        },
+        {
+         "id": "carry-film--notes--n1--r1c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "点本身：morphRect 把这个圆角矩形展开成文稿页"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "carry-film--notes--n1--r2",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "carry-film--notes--n1--r2c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "1.2–3.4 s"
+          }
+         ]
+        },
+        {
+         "id": "carry-film--notes--n1--r2c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "点展开成 lecture.json 的一页，镜头跟着从 2.4 倍拉到 1 倍；三个块的线条依次从块后升起；2.5 s 起静止"
+          }
+         ]
+        },
+        {
+         "id": "carry-film--notes--n1--r2c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "这一页：它成为弹性轨道的第一格"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "carry-film--notes--n1--r3",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "carry-film--notes--n1--r3c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "3.4–4.9 s"
+          }
+         ]
+        },
+        {
+         "id": "carry-film--notes--n1--r3c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "连击三下（3.55、3.95、4.35 s）：先点亮步骤 1，再两次把轨道换到步骤 2、3，页面回弹、文字滞后；每一下镜头同向推近一级（1 → 1.42 倍）并轻震"
+          }
+         ]
+        },
+        {
+         "id": "carry-film--notes--n1--r3c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "步骤 3 的圆点：光圈从它打开"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "carry-film--notes--n1--r4",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "carry-film--notes--n1--r4c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "4.9–7.1 s"
+          }
+         ]
+        },
+        {
+         "id": "carry-film--notes--n1--r4c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "光圈从圆点打开到盖满画面，露出幻灯片“注意力”，内容弹入；6.1 s 起静止"
+          }
+         ]
+        },
+        {
+         "id": "carry-film--notes--n1--r4c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "整个画面：镜头拉远，幻灯片成了播放器里的一帧"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "carry-film--notes--n1--r5",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "carry-film--notes--n1--r5c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "7.1–9.6 s"
+          }
+         ]
+        },
+        {
+         "id": "carry-film--notes--n1--r5c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "镜头拉远到播放器（log 空间变焦），关键节点沿弧线跳到时间轴上成为播放头，落地压扁、轨道震动，进度条随后填上；8.9 s 起静止"
+          }
+         ]
+        },
+        {
+         "id": "carry-film--notes--n1--r5c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "播放键：它长成转动的封印"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": "carry-film--notes--n1--r6",
+       "type": "tableRow",
+       "children": [
+        {
+         "id": "carry-film--notes--n1--r6c0",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "9.6–15 s"
+          }
+         ]
+        },
+        {
+         "id": "carry-film--notes--n1--r6c1",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "镜头甩到播放键，播放键长成一面转半圈的强调色圆盘铺满画面；标志弹入，Presmium 逐字落下压扁，口号升起；11.7 s 起静止 3.3 s"
+          }
+         ]
+        },
+        {
+         "id": "carry-film--notes--n1--r6c2",
+         "type": "tableCell",
+         "children": [
+          {
+           "type": "text",
+           "text": "片尾（裸切也可以，这里用封印承接）"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "carry-film--shot": {
+   "id": "carry-film--shot",
+   "type": "component",
+   "definitionId": "carry-film--shot--definition",
+   "parameters": {
+    "scene": "carry/one-dot",
+    "alt": "一个强调色的点落下，展开成文稿的一页；三下连击依次点亮三个步骤；光圈从步骤 3 的圆点打开出幻灯片；镜头拉远，幻灯片是视频的一帧，节点跳上时间轴成为播放头；播放键长成转动的圆盘，片名 Presmium 落下。"
+   }
+  }
+ },
+ "steps": {
+  "wipes--step": {
+   "id": "wipes--step",
+   "sectionId": "wipes",
+   "visuals": [
+    {
+     "blockId": "wipes--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-iris--step-0": {
+   "id": "cam-iris--step-0",
+   "sectionId": "cam-iris",
+   "visuals": [
+    {
+     "blockId": "cam-iris--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-iris--shot",
+     "visible": true,
+     "state": "a"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-iris--step-1": {
+   "id": "cam-iris--step-1",
+   "sectionId": "cam-iris",
+   "visuals": [
+    {
+     "blockId": "cam-iris--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-iris--shot",
+     "visible": true,
+     "state": "open"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-iris--step-2": {
+   "id": "cam-iris--step-2",
+   "sectionId": "cam-iris",
+   "visuals": [
+    {
+     "blockId": "cam-iris--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-iris--shot",
+     "visible": true,
+     "state": "b"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-slide-wipe--step-0": {
+   "id": "cam-slide-wipe--step-0",
+   "sectionId": "cam-slide-wipe",
+   "visuals": [
+    {
+     "blockId": "cam-slide-wipe--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-slide-wipe--shot",
+     "visible": true,
+     "state": "a"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-slide-wipe--step-1": {
+   "id": "cam-slide-wipe--step-1",
+   "sectionId": "cam-slide-wipe",
+   "visuals": [
+    {
+     "blockId": "cam-slide-wipe--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-slide-wipe--shot",
+     "visible": true,
+     "state": "move"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-slide-wipe--step-2": {
+   "id": "cam-slide-wipe--step-2",
+   "sectionId": "cam-slide-wipe",
+   "visuals": [
+    {
+     "blockId": "cam-slide-wipe--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-slide-wipe--shot",
+     "visible": true,
+     "state": "b"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-fade-through--step-0": {
+   "id": "cam-fade-through--step-0",
+   "sectionId": "cam-fade-through",
+   "visuals": [
+    {
+     "blockId": "cam-fade-through--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-fade-through--shot",
+     "visible": true,
+     "state": "a"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-fade-through--step-1": {
+   "id": "cam-fade-through--step-1",
+   "sectionId": "cam-fade-through",
+   "visuals": [
+    {
+     "blockId": "cam-fade-through--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-fade-through--shot",
+     "visible": true,
+     "state": "fade"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-fade-through--step-2": {
+   "id": "cam-fade-through--step-2",
+   "sectionId": "cam-fade-through",
+   "visuals": [
+    {
+     "blockId": "cam-fade-through--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-fade-through--shot",
+     "visible": true,
+     "state": "b"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-grid-wipe--step-0": {
+   "id": "cam-grid-wipe--step-0",
+   "sectionId": "cam-grid-wipe",
+   "visuals": [
+    {
+     "blockId": "cam-grid-wipe--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-grid-wipe--shot",
+     "visible": true,
+     "state": "a"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-grid-wipe--step-1": {
+   "id": "cam-grid-wipe--step-1",
+   "sectionId": "cam-grid-wipe",
+   "visuals": [
+    {
+     "blockId": "cam-grid-wipe--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-grid-wipe--shot",
+     "visible": true,
+     "state": "cover"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-grid-wipe--step-2": {
+   "id": "cam-grid-wipe--step-2",
+   "sectionId": "cam-grid-wipe",
+   "visuals": [
+    {
+     "blockId": "cam-grid-wipe--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-grid-wipe--shot",
+     "visible": true,
+     "state": "reveal"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-grid-wipe--step-3": {
+   "id": "cam-grid-wipe--step-3",
+   "sectionId": "cam-grid-wipe",
+   "visuals": [
+    {
+     "blockId": "cam-grid-wipe--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-grid-wipe--shot",
+     "visible": true,
+     "state": "b"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-flip--step-0": {
+   "id": "cam-flip--step-0",
+   "sectionId": "cam-flip",
+   "visuals": [
+    {
+     "blockId": "cam-flip--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-flip--shot",
+     "visible": true,
+     "state": "front"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-flip--step-1": {
+   "id": "cam-flip--step-1",
+   "sectionId": "cam-flip",
+   "visuals": [
+    {
+     "blockId": "cam-flip--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-flip--shot",
+     "visible": true,
+     "state": "flip"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-flip--step-2": {
+   "id": "cam-flip--step-2",
+   "sectionId": "cam-flip",
+   "visuals": [
+    {
+     "blockId": "cam-flip--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-flip--shot",
+     "visible": true,
+     "state": "back"
+    }
+   ],
+   "narrationIds": []
+  },
+  "remotion-series-transition--step-0": {
+   "id": "remotion-series-transition--step-0",
+   "sectionId": "remotion-series-transition",
+   "visuals": [
+    {
+     "blockId": "remotion-series-transition--series-transition-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "remotion-series-transition--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-series-transition--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-series-transition--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-series-transition--paragraph-1--narration"
+   ]
+  },
+  "remotion-series-transition--step-1": {
+   "id": "remotion-series-transition--step-1",
+   "sectionId": "remotion-series-transition",
+   "visuals": [
+    {
+     "blockId": "remotion-series-transition--series-transition-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "remotion-series-transition--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-series-transition--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-series-transition--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-series-transition--paragraph-2--narration"
+   ]
+  },
+  "remotion-series-transition--step-2": {
+   "id": "remotion-series-transition--step-2",
+   "sectionId": "remotion-series-transition",
+   "visuals": [
+    {
+     "blockId": "remotion-series-transition--series-transition-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "remotion-series-transition--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-series-transition--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-series-transition--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-series-transition--paragraph-3--narration"
+   ]
+  },
+  "remotion-wipe--step-0": {
+   "id": "remotion-wipe--step-0",
+   "sectionId": "remotion-wipe",
+   "visuals": [
+    {
+     "blockId": "remotion-wipe--wipe-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "remotion-wipe--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-wipe--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-wipe--paragraph-1--narration"
+   ]
+  },
+  "remotion-wipe--step-1": {
+   "id": "remotion-wipe--step-1",
+   "sectionId": "remotion-wipe",
+   "visuals": [
+    {
+     "blockId": "remotion-wipe--wipe-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "remotion-wipe--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "remotion-wipe--paragraph-2",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "remotion-wipe--paragraph-2--narration"
+   ]
+  },
+  "motion-wipe--step-0": {
+   "id": "motion-wipe--step-0",
+   "sectionId": "motion-wipe",
+   "visuals": [
+    {
+     "blockId": "motion-wipe--wipe-scene",
+     "visible": true,
+     "state": "legacy-0"
+    },
+    {
+     "blockId": "motion-wipe--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-wipe--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-wipe--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-wipe--paragraph-1--narration"
+   ]
+  },
+  "motion-wipe--step-1": {
+   "id": "motion-wipe--step-1",
+   "sectionId": "motion-wipe",
+   "visuals": [
+    {
+     "blockId": "motion-wipe--wipe-scene",
+     "visible": true,
+     "state": "legacy-1"
+    },
+    {
+     "blockId": "motion-wipe--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-wipe--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-wipe--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-wipe--paragraph-2--narration"
+   ]
+  },
+  "motion-wipe--step-2": {
+   "id": "motion-wipe--step-2",
+   "sectionId": "motion-wipe",
+   "visuals": [
+    {
+     "blockId": "motion-wipe--wipe-scene",
+     "visible": true,
+     "state": "legacy-2"
+    },
+    {
+     "blockId": "motion-wipe--paragraph-1",
+     "visible": false
+    },
+    {
+     "blockId": "motion-wipe--paragraph-2",
+     "visible": false
+    },
+    {
+     "blockId": "motion-wipe--paragraph-3",
+     "visible": false
+    }
+   ],
+   "narrationIds": [
+    "motion-wipe--paragraph-3--narration"
+   ]
+  },
+  "cuts--step": {
+   "id": "cuts--step",
+   "sectionId": "cuts",
+   "visuals": [
+    {
+     "blockId": "cuts--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-whip-pan--step-0": {
+   "id": "cam-whip-pan--step-0",
+   "sectionId": "cam-whip-pan",
+   "visuals": [
+    {
+     "blockId": "cam-whip-pan--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-whip-pan--shot",
+     "visible": true,
+     "state": "a"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-whip-pan--step-1": {
+   "id": "cam-whip-pan--step-1",
+   "sectionId": "cam-whip-pan",
+   "visuals": [
+    {
+     "blockId": "cam-whip-pan--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-whip-pan--shot",
+     "visible": true,
+     "state": "whip"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-whip-pan--step-2": {
+   "id": "cam-whip-pan--step-2",
+   "sectionId": "cam-whip-pan",
+   "visuals": [
+    {
+     "blockId": "cam-whip-pan--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-whip-pan--shot",
+     "visible": true,
+     "state": "b"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-velocity-cut--step-0": {
+   "id": "cam-velocity-cut--step-0",
+   "sectionId": "cam-velocity-cut",
+   "visuals": [
+    {
+     "blockId": "cam-velocity-cut--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-velocity-cut--shot",
+     "visible": true,
+     "state": "a"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-velocity-cut--step-1": {
+   "id": "cam-velocity-cut--step-1",
+   "sectionId": "cam-velocity-cut",
+   "visuals": [
+    {
+     "blockId": "cam-velocity-cut--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-velocity-cut--shot",
+     "visible": true,
+     "state": "cut"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-velocity-cut--step-2": {
+   "id": "cam-velocity-cut--step-2",
+   "sectionId": "cam-velocity-cut",
+   "visuals": [
+    {
+     "blockId": "cam-velocity-cut--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-velocity-cut--shot",
+     "visible": true,
+     "state": "b"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-match-cut--step-0": {
+   "id": "cam-match-cut--step-0",
+   "sectionId": "cam-match-cut",
+   "visuals": [
+    {
+     "blockId": "cam-match-cut--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-match-cut--shot",
+     "visible": true,
+     "state": "push"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-match-cut--step-1": {
+   "id": "cam-match-cut--step-1",
+   "sectionId": "cam-match-cut",
+   "visuals": [
+    {
+     "blockId": "cam-match-cut--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-match-cut--shot",
+     "visible": true,
+     "state": "land"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-match-cut--step-2": {
+   "id": "cam-match-cut--step-2",
+   "sectionId": "cam-match-cut",
+   "visuals": [
+    {
+     "blockId": "cam-match-cut--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-match-cut--shot",
+     "visible": true,
+     "state": "hold"
+    }
+   ],
+   "narrationIds": []
+  },
+  "camera--step": {
+   "id": "camera--step",
+   "sectionId": "camera",
+   "visuals": [
+    {
+     "blockId": "camera--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-push-in--step-0": {
+   "id": "cam-push-in--step-0",
+   "sectionId": "cam-push-in",
+   "visuals": [
+    {
+     "blockId": "cam-push-in--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-push-in--shot",
+     "visible": true,
+     "state": "push"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-push-in--step-1": {
+   "id": "cam-push-in--step-1",
+   "sectionId": "cam-push-in",
+   "visuals": [
+    {
+     "blockId": "cam-push-in--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-push-in--shot",
+     "visible": true,
+     "state": "hold"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-pull-back--step-0": {
+   "id": "cam-pull-back--step-0",
+   "sectionId": "cam-pull-back",
+   "visuals": [
+    {
+     "blockId": "cam-pull-back--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-pull-back--shot",
+     "visible": true,
+     "state": "tight"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-pull-back--step-1": {
+   "id": "cam-pull-back--step-1",
+   "sectionId": "cam-pull-back",
+   "visuals": [
+    {
+     "blockId": "cam-pull-back--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-pull-back--shot",
+     "visible": true,
+     "state": "pull"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-pull-back--step-2": {
+   "id": "cam-pull-back--step-2",
+   "sectionId": "cam-pull-back",
+   "visuals": [
+    {
+     "blockId": "cam-pull-back--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-pull-back--shot",
+     "visible": true,
+     "state": "hold"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-dolly-zoom--step-0": {
+   "id": "cam-dolly-zoom--step-0",
+   "sectionId": "cam-dolly-zoom",
+   "visuals": [
+    {
+     "blockId": "cam-dolly-zoom--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-dolly-zoom--shot",
+     "visible": true,
+     "state": "a"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-dolly-zoom--step-1": {
+   "id": "cam-dolly-zoom--step-1",
+   "sectionId": "cam-dolly-zoom",
+   "visuals": [
+    {
+     "blockId": "cam-dolly-zoom--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-dolly-zoom--shot",
+     "visible": true,
+     "state": "dolly"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-dolly-zoom--step-2": {
+   "id": "cam-dolly-zoom--step-2",
+   "sectionId": "cam-dolly-zoom",
+   "visuals": [
+    {
+     "blockId": "cam-dolly-zoom--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-dolly-zoom--shot",
+     "visible": true,
+     "state": "b"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-rack-focus--step-0": {
+   "id": "cam-rack-focus--step-0",
+   "sectionId": "cam-rack-focus",
+   "visuals": [
+    {
+     "blockId": "cam-rack-focus--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-rack-focus--shot",
+     "visible": true,
+     "state": "near"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-rack-focus--step-1": {
+   "id": "cam-rack-focus--step-1",
+   "sectionId": "cam-rack-focus",
+   "visuals": [
+    {
+     "blockId": "cam-rack-focus--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-rack-focus--shot",
+     "visible": true,
+     "state": "rack"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-rack-focus--step-2": {
+   "id": "cam-rack-focus--step-2",
+   "sectionId": "cam-rack-focus",
+   "visuals": [
+    {
+     "blockId": "cam-rack-focus--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-rack-focus--shot",
+     "visible": true,
+     "state": "far"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-zoom-through--step-0": {
+   "id": "cam-zoom-through--step-0",
+   "sectionId": "cam-zoom-through",
+   "visuals": [
+    {
+     "blockId": "cam-zoom-through--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-zoom-through--shot",
+     "visible": true,
+     "state": "grid"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-zoom-through--step-1": {
+   "id": "cam-zoom-through--step-1",
+   "sectionId": "cam-zoom-through",
+   "visuals": [
+    {
+     "blockId": "cam-zoom-through--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-zoom-through--shot",
+     "visible": true,
+     "state": "zoom"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-zoom-through--step-2": {
+   "id": "cam-zoom-through--step-2",
+   "sectionId": "cam-zoom-through",
+   "visuals": [
+    {
+     "blockId": "cam-zoom-through--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-zoom-through--shot",
+     "visible": true,
+     "state": "b"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-pan-stations--step-0": {
+   "id": "cam-pan-stations--step-0",
+   "sectionId": "cam-pan-stations",
+   "visuals": [
+    {
+     "blockId": "cam-pan-stations--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-pan-stations--shot",
+     "visible": true,
+     "state": "station-1"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-pan-stations--step-1": {
+   "id": "cam-pan-stations--step-1",
+   "sectionId": "cam-pan-stations",
+   "visuals": [
+    {
+     "blockId": "cam-pan-stations--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-pan-stations--shot",
+     "visible": true,
+     "state": "station-2"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-pan-stations--step-2": {
+   "id": "cam-pan-stations--step-2",
+   "sectionId": "cam-pan-stations",
+   "visuals": [
+    {
+     "blockId": "cam-pan-stations--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-pan-stations--shot",
+     "visible": true,
+     "state": "station-3"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-pan-stations--step-3": {
+   "id": "cam-pan-stations--step-3",
+   "sectionId": "cam-pan-stations",
+   "visuals": [
+    {
+     "blockId": "cam-pan-stations--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-pan-stations--shot",
+     "visible": true,
+     "state": "station-4"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-pan-stations--step-4": {
+   "id": "cam-pan-stations--step-4",
+   "sectionId": "cam-pan-stations",
+   "visuals": [
+    {
+     "blockId": "cam-pan-stations--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-pan-stations--shot",
+     "visible": true,
+     "state": "station-5"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-split-compare--step-0": {
+   "id": "cam-split-compare--step-0",
+   "sectionId": "cam-split-compare",
+   "visuals": [
+    {
+     "blockId": "cam-split-compare--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-split-compare--shot",
+     "visible": true,
+     "state": "before"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-split-compare--step-1": {
+   "id": "cam-split-compare--step-1",
+   "sectionId": "cam-split-compare",
+   "visuals": [
+    {
+     "blockId": "cam-split-compare--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-split-compare--shot",
+     "visible": true,
+     "state": "sweep"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-split-compare--step-2": {
+   "id": "cam-split-compare--step-2",
+   "sectionId": "cam-split-compare",
+   "visuals": [
+    {
+     "blockId": "cam-split-compare--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-split-compare--shot",
+     "visible": true,
+     "state": "compare"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-split-compare--step-3": {
+   "id": "cam-split-compare--step-3",
+   "sectionId": "cam-split-compare",
+   "visuals": [
+    {
+     "blockId": "cam-split-compare--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-split-compare--shot",
+     "visible": true,
+     "state": "commit"
+    }
+   ],
+   "narrationIds": []
+  },
+  "cam-split-compare--step-4": {
+   "id": "cam-split-compare--step-4",
+   "sectionId": "cam-split-compare",
+   "visuals": [
+    {
+     "blockId": "cam-split-compare--notes",
+     "visible": false
+    },
+    {
+     "blockId": "cam-split-compare--shot",
+     "visible": true,
+     "state": "after"
+    }
+   ],
+   "narrationIds": []
+  },
+  "carry--step": {
+   "id": "carry--step",
+   "sectionId": "carry",
+   "visuals": [
+    {
+     "blockId": "carry--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "carry-film--step-0": {
+   "id": "carry-film--step-0",
+   "sectionId": "carry-film",
+   "visuals": [
+    {
+     "blockId": "carry-film--notes",
+     "visible": false
+    },
+    {
+     "blockId": "carry-film--shot",
+     "visible": true,
+     "state": "dot"
+    }
+   ],
+   "narrationIds": []
+  },
+  "carry-film--step-1": {
+   "id": "carry-film--step-1",
+   "sectionId": "carry-film",
+   "visuals": [
+    {
+     "blockId": "carry-film--notes",
+     "visible": false
+    },
+    {
+     "blockId": "carry-film--shot",
+     "visible": true,
+     "state": "doc"
+    }
+   ],
+   "narrationIds": []
+  },
+  "carry-film--step-2": {
+   "id": "carry-film--step-2",
+   "sectionId": "carry-film",
+   "visuals": [
+    {
+     "blockId": "carry-film--notes",
+     "visible": false
+    },
+    {
+     "blockId": "carry-film--shot",
+     "visible": true,
+     "state": "steps"
+    }
+   ],
+   "narrationIds": []
+  },
+  "carry-film--step-3": {
+   "id": "carry-film--step-3",
+   "sectionId": "carry-film",
+   "visuals": [
+    {
+     "blockId": "carry-film--notes",
+     "visible": false
+    },
+    {
+     "blockId": "carry-film--shot",
+     "visible": true,
+     "state": "slide"
+    }
+   ],
+   "narrationIds": []
+  },
+  "carry-film--step-4": {
+   "id": "carry-film--step-4",
+   "sectionId": "carry-film",
+   "visuals": [
+    {
+     "blockId": "carry-film--notes",
+     "visible": false
+    },
+    {
+     "blockId": "carry-film--shot",
+     "visible": true,
+     "state": "video"
+    }
+   ],
+   "narrationIds": []
+  },
+  "carry-film--step-5": {
+   "id": "carry-film--step-5",
+   "sectionId": "carry-film",
+   "visuals": [
+    {
+     "blockId": "carry-film--notes",
+     "visible": false
+    },
+    {
+     "blockId": "carry-film--shot",
+     "visible": true,
+     "state": "title"
+    }
+   ],
+   "narrationIds": []
+  }
+ },
+ "narrations": {
+  "remotion-series-transition--paragraph-1--narration": {
+   "id": "remotion-series-transition--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第一张面板从右侧滑入：前向传播得到预测值。"
+    }
+   ]
+  },
+  "remotion-series-transition--paragraph-2--narration": {
+   "id": "remotion-series-transition--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第二张面板推开第一张：计算损失。"
+    }
+   ]
+  },
+  "remotion-series-transition--paragraph-3--narration": {
+   "id": "remotion-series-transition--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "第三张面板进来：反向传播，更新参数。"
+    }
+   ]
+  },
+  "remotion-wipe--paragraph-1--narration": {
+   "id": "remotion-wipe--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "先看排序前的数组。"
+    }
+   ]
+  },
+  "remotion-wipe--paragraph-2--narration": {
+   "id": "remotion-wipe--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "一条亮线从左往右扫过，扫过的地方换成排序后的样子。"
+    }
+   ]
+  },
+  "motion-wipe--paragraph-1--narration": {
+   "id": "motion-wipe--paragraph-1--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "分割线从左边扫到中间：左边是去噪后的，右边是原来带噪声的。"
+    }
+   ]
+  },
+  "motion-wipe--paragraph-2--narration": {
+   "id": "motion-wipe--paragraph-2--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "扫到最右边，整张都去噪了。"
+    }
+   ]
+  },
+  "motion-wipe--paragraph-3--narration": {
+   "id": "motion-wipe--paragraph-3--narration",
+   "content": [
+    {
+     "type": "text",
+     "text": "说明文字从中心圆形展开。"
+    }
+   ]
+  }
+ },
+ "assets": {},
+ "definitions": {
+  "cam-iris--shot--definition": {
+   "id": "cam-iris--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/cam/iris.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "object",
+      "title": "画面 A",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "b": {
+      "type": "object",
+      "title": "画面 B",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "x": {
+      "type": "number",
+      "title": "圆心横向位置（%）",
+      "minimum": 0,
+      "maximum": 100
+     },
+     "y": {
+      "type": "number",
+      "title": "圆心纵向位置（%）",
+      "minimum": 0,
+      "maximum": 100
+     },
+     "register": {
+      "type": "string",
+      "title": "旧画面处理",
+      "enum": [
+       "color",
+       "plain"
+      ]
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "a",
+     "title": "画面 A"
+    },
+    {
+     "id": "open",
+     "title": "光圈打开"
+    },
+    {
+     "id": "b",
+     "title": "画面 B"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     900,
+     1100,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "“逐词翻译”的画面上，一个圆从中心打开，露出“注意力”的画面；旧画面随之变灰变暗。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "cam-slide-wipe--shot--definition": {
+   "id": "cam-slide-wipe--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/cam/slide-wipe.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "object",
+      "title": "画面 A",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "b": {
+      "type": "object",
+      "title": "画面 B",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "mode": {
+      "type": "string",
+      "title": "方式",
+      "enum": [
+       "wipe",
+       "slide",
+       "push"
+      ]
+     },
+     "direction": {
+      "type": "string",
+      "title": "方向（B 朝哪边运动）",
+      "enum": [
+       "left",
+       "right",
+       "up",
+       "down"
+      ]
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "a",
+     "title": "画面 A"
+    },
+    {
+     "id": "move",
+     "title": "转场"
+    },
+    {
+     "id": "b",
+     "title": "画面 B"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     800,
+     900,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "“读入一句话”的画面被一条边从右向左划过，露出“切成词元”的画面。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "cam-fade-through--shot--definition": {
+   "id": "cam-fade-through--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/cam/fade-through.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "object",
+      "title": "画面 A",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "b": {
+      "type": "object",
+      "title": "画面 B",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "wash": {
+      "type": "string",
+      "title": "色场",
+      "enum": [
+       "paper",
+       "ink",
+       "accent"
+      ]
+     },
+     "strength": {
+      "type": "number",
+      "title": "色场强度（0.1–1）",
+      "minimum": 0.1,
+      "maximum": 1
+     },
+     "shape": {
+      "type": "string",
+      "title": "形状",
+      "enum": [
+       "flat",
+       "bloom"
+      ]
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "a",
+     "title": "画面 A"
+    },
+    {
+     "id": "fade",
+     "title": "淡变"
+    },
+    {
+     "id": "b",
+     "title": "画面 B"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     800,
+     900,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "“为什么要分词”的画面淡出到一片纸色，再从中淡入“怎样分词”的画面。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "cam-grid-wipe--shot--definition": {
+   "id": "cam-grid-wipe--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/cam/grid-wipe.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "object",
+      "title": "画面 A",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "b": {
+      "type": "object",
+      "title": "画面 B",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "from": {
+      "type": "string",
+      "title": "波的起点",
+      "enum": [
+       "center",
+       "top-left",
+       "bottom-right",
+       "random"
+      ]
+     },
+     "seed": {
+      "type": "number",
+      "title": "随机顺序的种子"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "a",
+     "title": "画面 A"
+    },
+    {
+     "id": "cover",
+     "title": "铺满"
+    },
+    {
+     "id": "reveal",
+     "title": "揭开"
+    },
+    {
+     "id": "b",
+     "title": "画面 B"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     800,
+     1200,
+     1200,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "强调色的方格从中心一波波铺满“线性回归”的画面，再从边缘向中心退去，露出“逻辑回归”的画面。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "cam-flip--shot--definition": {
+   "id": "cam-flip--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/cam/flip.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "object",
+      "title": "正面",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "b": {
+      "type": "object",
+      "title": "背面",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "front",
+     "title": "正面"
+    },
+    {
+     "id": "flip",
+     "title": "翻转"
+    },
+    {
+     "id": "back",
+     "title": "背面"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1000,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一张写着“为什么除以 √d？”的卡片先向反方向微转，再翻过来，背面是“防止点积过大”。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "remotion-series-transition--series-transition-scene--definition": {
+   "id": "remotion-series-transition--series-transition-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/remotion/series-transition.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1000,
+     1000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "三张面板“前向传播”“计算损失”“反向传播”依次从右侧滑入，前一张向左滑出。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "remotion-wipe--wipe-scene--definition": {
+   "id": "remotion-wipe--wipe-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/remotion/wipe.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     600,
+     1200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "“排序前”的柱子被一道竖线从左向右擦成“排序后”的柱子。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "motion-wipe--wipe-scene--definition": {
+   "id": "motion-wipe--wipe-scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/motion/wipe.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "legacy-0",
+     "legacyIndex": 0
+    },
+    {
+     "id": "legacy-1",
+     "legacyIndex": 1
+    },
+    {
+     "id": "legacy-2",
+     "legacyIndex": 2
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     1100,
+     1000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一张带噪声的图像被分割线从左向右擦成去噪后的图像，最后圆形展开说明文字。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "cam-whip-pan--shot--definition": {
+   "id": "cam-whip-pan--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/cam/whip-pan.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "object",
+      "title": "画面 A",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "b": {
+      "type": "object",
+      "title": "画面 B",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "direction": {
+      "type": "string",
+      "title": "方向",
+      "enum": [
+       "left",
+       "right",
+       "up",
+       "down"
+      ]
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "a",
+     "title": "画面 A"
+    },
+    {
+     "id": "whip",
+     "title": "甩镜"
+    },
+    {
+     "id": "b",
+     "title": "画面 B"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     600,
+     550,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "“在讲义里写”的画面向左甩出，在横向模糊中接上“导出成视频”的画面。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "cam-velocity-cut--shot--definition": {
+   "id": "cam-velocity-cut--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/cam/velocity-cut.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "object",
+      "title": "卡片 A",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "b": {
+      "type": "object",
+      "title": "卡片 B",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "direction": {
+      "type": "string",
+      "title": "方向",
+      "enum": [
+       "left",
+       "right",
+       "up",
+       "down"
+      ]
+     },
+     "split": {
+      "type": "number",
+      "title": "切点在剪辑中的位置（0–1）",
+      "minimum": 0.1,
+      "maximum": 0.9
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "a",
+     "title": "卡片 A"
+    },
+    {
+     "id": "cut",
+     "title": "剪辑"
+    },
+    {
+     "id": "b",
+     "title": "卡片 B"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     700,
+     1000,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "“一张猫的照片”的卡片加速飞向左边，在最快的一刻切成“猫 · 0.97”的卡片，从右边减速飞入停下。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "cam-match-cut--shot--definition": {
+   "id": "cam-match-cut--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/cam/match-cut.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "object",
+      "title": "场景 A（标题在圆里，说明在下方）",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "b": {
+      "type": "object",
+      "title": "场景 B（标题在圆里，小标签和说明在下方）",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "push",
+     "title": "推近"
+    },
+    {
+     "id": "land",
+     "title": "落定"
+    },
+    {
+     "id": "hold",
+     "title": "停留"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1400,
+     900,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "“提问”的圆加速放大，硬切成同样大小、同样位置的“一只猫”的圆，随后缩小停住，下方升起“置信度 97%”。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "cam-push-in--shot--definition": {
+   "id": "cam-push-in--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/cam/push-in.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "object",
+      "title": "画面",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "intensity": {
+      "type": "string",
+      "title": "推近程度",
+      "enum": [
+       "subtle",
+       "standard",
+       "bold"
+      ]
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "push",
+     "title": "起推"
+    },
+    {
+     "id": "hold",
+     "title": "缓推"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     800,
+     3200
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "“梯度指向上升最快的方向”这句定义在画面中心，镜头缓慢推近，四周渐暗。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "cam-pull-back--shot--definition": {
+   "id": "cam-pull-back--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/cam/pull-back.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "detail": {
+      "type": "string",
+      "title": "特写的数字"
+     },
+     "label": {
+      "type": "string",
+      "title": "数字的名称"
+     },
+     "headline": {
+      "type": "string",
+      "title": "标题"
+     },
+     "cards": {
+      "type": "array",
+      "title": "下方卡片（最多 3 张）",
+      "items": {
+       "type": "object",
+       "properties": {
+        "label": {
+         "type": "string",
+         "title": "名称"
+        },
+        "value": {
+         "type": "string",
+         "title": "数值"
+        }
+       }
+      }
+     },
+     "note": {
+      "type": "string",
+      "title": "来源或“示例数据”"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "tight",
+     "title": "特写"
+    },
+    {
+     "id": "pull",
+     "title": "拉远"
+    },
+    {
+     "id": "hold",
+     "title": "全景"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     1850,
+     2000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "镜头先紧贴“97.3% 准确率”，然后拉远，露出标题“这是训练集上的成绩”和下方的测试集准确率 61.8%、差距 35.5 个点。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "cam-dolly-zoom--shot--definition": {
+   "id": "cam-dolly-zoom--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/cam/dolly-zoom.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "object",
+      "title": "主体",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "layers": {
+      "type": "array",
+      "title": "背景层的名字，由近到远（最多 5 个）",
+      "items": {
+       "type": "string"
+      }
+     },
+     "direction": {
+      "type": "string",
+      "title": "方向",
+      "enum": [
+       "out",
+       "in"
+      ]
+     },
+     "strength": {
+      "type": "number",
+      "title": "强度（终止距离 / 起始距离）",
+      "minimum": 1.1,
+      "maximum": 4
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "a",
+     "title": "起始"
+    },
+    {
+     "id": "dolly",
+     "title": "变焦"
+    },
+    {
+     "id": "b",
+     "title": "结束"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     600,
+     4000,
+     1400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "“苹果”这张卡片大小不变，背后标着“这句话”“这一段”直到“全部语料”的层层框向前涌来。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "cam-rack-focus--shot--definition": {
+   "id": "cam-rack-focus--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/cam/rack-focus.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "object",
+      "title": "近处的卡片",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "b": {
+      "type": "object",
+      "title": "远处的卡片",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "near",
+     "title": "焦点在近处"
+    },
+    {
+     "id": "rack",
+     "title": "移焦"
+    },
+    {
+     "id": "far",
+     "title": "焦点在远处"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1000,
+     700,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "近处的“损失一路下降”卡片清晰，远处的“第 8 轮后回升”模糊；焦点移过去后，远处的卡片清晰，近处的变模糊。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "cam-zoom-through--shot--definition": {
+   "id": "cam-zoom-through--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/cam/zoom-through.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "cards": {
+      "type": "array",
+      "title": "卡片（最多 9 张，三列）",
+      "items": {
+       "type": "string"
+      }
+     },
+     "focus": {
+      "type": "integer",
+      "title": "镜头推向的卡片序号（从 0 起）",
+      "minimum": 0,
+      "maximum": 8
+     },
+     "b": {
+      "type": "object",
+      "title": "被推近的卡片，即画面 B",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "direction": {
+      "type": "string",
+      "title": "方向",
+      "enum": [
+       "in",
+       "out"
+      ]
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "grid",
+     "title": "总览"
+    },
+    {
+     "id": "zoom",
+     "title": "推进"
+    },
+    {
+     "id": "b",
+     "title": "画面 B"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     2400,
+     1600
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "九张课程卡片中，“注意力”这张被镜头推近，其他卡片向外飞散淡出，最后它充满画面，成为“第 5 讲 · 注意力”。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "cam-pan-stations--shot--definition": {
+   "id": "cam-pan-stations--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/cam/pan-stations.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "stations": {
+      "type": "array",
+      "title": "各站（每站一个状态）",
+      "items": {
+       "type": "object",
+       "title": "一站",
+       "properties": {
+        "kicker": {
+         "type": "string",
+         "title": "小标签"
+        },
+        "title": {
+         "type": "string",
+         "title": "标题"
+        },
+        "line": {
+         "type": "string",
+         "title": "一句说明"
+        },
+        "icon": {
+         "type": "string",
+         "title": "图标",
+         "enum": [
+          "web",
+          "slides",
+          "notebook",
+          "video",
+          "pencil"
+         ]
+        },
+        "image": {
+         "type": "string",
+         "title": "图片地址（建议内联 SVG 或 data URI）"
+        }
+       }
+      }
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "station-1",
+     "title": "第 1 站"
+    },
+    {
+     "id": "station-2",
+     "title": "第 2 站"
+    },
+    {
+     "id": "station-3",
+     "title": "第 3 站"
+    },
+    {
+     "id": "station-4",
+     "title": "第 4 站"
+    },
+    {
+     "id": "station-5",
+     "title": "第 5 站"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1400,
+     1400,
+     1400,
+     1400,
+     1400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "镜头沿一条轨道横移，依次停在“数据清洗”“分词”“预训练”“指令微调”“评测”五站。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "cam-split-compare--shot--definition": {
+   "id": "cam-split-compare--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/cam/split-compare.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "object",
+      "title": "之前（标题作标签；可给 image）",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "b": {
+      "type": "object",
+      "title": "之后（标题作标签；可给 image）",
+      "properties": {
+       "kicker": {
+        "type": "string",
+        "title": "小标签"
+       },
+       "title": {
+        "type": "string",
+        "title": "标题"
+       },
+       "line": {
+        "type": "string",
+        "title": "一句说明"
+       },
+       "icon": {
+        "type": "string",
+        "title": "图标",
+        "enum": [
+         "web",
+         "slides",
+         "notebook",
+         "video",
+         "pencil"
+        ]
+       },
+       "image": {
+        "type": "string",
+        "title": "图片地址（建议内联 SVG 或 data URI）"
+       }
+      }
+     },
+     "split": {
+      "type": "number",
+      "title": "停下对比的位置（%）",
+      "minimum": 25,
+      "maximum": 85
+     },
+     "edge": {
+      "type": "string",
+      "title": "分界线",
+      "enum": [
+       "hairline",
+       "bold",
+       "hidden"
+      ]
+     },
+     "seed": {
+      "type": "number",
+      "title": "默认图表的噪声种子"
+     },
+     "note": {
+      "type": "string",
+      "title": "来源或“示例数据”"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "before",
+     "title": "之前"
+    },
+    {
+     "id": "sweep",
+     "title": "扫入"
+    },
+    {
+     "id": "compare",
+     "title": "对比"
+    },
+    {
+     "id": "commit",
+     "title": "扫完"
+    },
+    {
+     "id": "after",
+     "title": "之后"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     700,
+     1600,
+     1500,
+     1200,
+     1500
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "同一组数据的两种画法：一条竖边从左向右扫过，把带噪声的折线换成平滑曲线，停在 62% 处对比，然后扫完全部。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "carry-film--shot--definition": {
+   "id": "carry-film--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/carry/one-dot.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {}
+   },
+   "states": [
+    {
+     "id": "dot",
+     "title": "点落下"
+    },
+    {
+     "id": "doc",
+     "title": "点展开成文稿"
+    },
+    {
+     "id": "steps",
+     "title": "三下：步骤"
+    },
+    {
+     "id": "slide",
+     "title": "光圈打开幻灯片"
+    },
+    {
+     "id": "video",
+     "title": "拉远：视频的一帧"
+    },
+    {
+     "id": "title",
+     "title": "封印成片尾"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     1200,
+     2200,
+     1500,
+     2200,
+     2500,
+     5400
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一个强调色的点落下，展开成文稿的一页；三下连击依次点亮三个步骤；光圈从步骤 3 的圆点打开出幻灯片；镜头拉远，幻灯片是视频的一帧，节点跳上时间轴成为播放头；播放键长成转动的圆盘，片名 Presmium 落下。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  }
+ },
+ "production": {
+  "defaults": {
+   "voiceSource": {
+    "type": "none"
+   },
+   "trailingPauseMs": 0
+  },
+  "stepOverrides": {},
+  "mediaClips": []
+ }
+}

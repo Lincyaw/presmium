@@ -2,7 +2,6 @@ title: Presmium
 documents:
   - "*/lecture.json"
   - "animation-library/*/lecture.json"
-  - "animation-library/catalog/*/lecture.json"
 site:
   lang: zh-CN
   theme: showcase
