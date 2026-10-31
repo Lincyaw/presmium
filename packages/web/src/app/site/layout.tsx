@@ -28,20 +28,35 @@ export function NavLinks({ items, vertical = false, onNavigate }: { items: NavIt
   })}</ul>
 }
 function LanguageMenu({ locales, lang, hrefIn }: { locales: SiteLocale[], lang: string, hrefIn(locale: SiteLocale): string }) { const t = useMessages(WEB_MESSAGES), [open, setOpen] = useState(false); return <PmPopover open={open} label={t.language} name="pm-site-languages" onOpenChange={setOpen} trigger={<PmIconButton icon="language" label={t.language} />}><ul className="pm-site-languages">{locales.map(locale => <li key={locale.lang}><a className="pm-site-languages__link" href={hrefIn(locale)} lang={locale.lang} aria-current={locale.lang === lang ? 'true' : undefined}>{locale.label}</a></li>)}</ul></PmPopover> }
-function Sidebar({ router, course = false }: { router: PageRouter, course?: boolean }) {
-  const viewer = useViewer(), t = useMessages(WEB_MESSAGES), pages = useStore(router.pages), shown = useStore(router.shown), doc = useStore(viewer.doc)
+/**
+ * The site's documents, grouped by their first tag, with this document's chapters under it; a document on its own
+ * shows its chapters. A document has one page, so a chapter is a place on it.
+ */
+function Sidebar({ config, router, course = false }: { config: AppConfig, router: PageRouter, course?: boolean }) {
+  const viewer = useViewer(), t = useMessages(WEB_MESSAGES), doc = useStore(viewer.doc), pages = useStore(router.pages), position = useStore(viewer.position)
+  const top = doc.sections.filter(section => isChapterTitle(doc, section))
+  const own = router.href(pages[0] ?? { path: 'index', title: '', sections: [] })
+  const chapters = <ol className="pm-site-sidebar__sections">{(top.length > 1 ? top : doc.sections).map(section => <li key={section.id}><a className="pm-site-sidebar__section" href={router.sectionHref(section.id)} aria-current={position.section === section.id ? 'location' : undefined}>{section.title}</a></li>)}</ol>
+  const groups = new Map<string, { dir: string, title: string, href: string }[]>()
+  for (const item of config.site.documents ?? [{ dir: config.document, title: doc.meta.title, href: own }]) groups.set(item.group ?? '', [...groups.get(item.group ?? '') ?? [], item])
+  let number = 0
   return <nav className="pm-site-sidebar" aria-label={course ? t.courseContents : t.sidebarNav}>
-    {course && <div className="pm-site-sidebar__intro"><p className="pm-ui-heading">{t.courseContents}</p><p className="pm-site-sidebar__title">{doc.meta.title}</p></div>}
-    <ol className="pm-site-sidebar__chapters">{pages.map((page, index) => {
-      const current = page.path === shown?.path, sections = page.sections.slice(1).flatMap(id => viewer.section(id) ?? [])
-      return <li key={page.path} className={`pm-site-sidebar__chapter${current ? ' pm-current' : ''}`}>
-        <a className="pm-site-sidebar__link" href={router.href(page)} aria-current={current ? 'page' : undefined}>{course && <span className="pm-site-sidebar__number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>}<span>{page.title}</span></a>
-        {sections.length > 0 && <ol className="pm-site-sidebar__sections">{sections.map(section => <li key={section.id}><a className="pm-site-sidebar__section" href={router.sectionHref(section.id)}>{section.title}</a></li>)}</ol>}
-      </li>
-    })}</ol>
+    {course && <div className="pm-site-sidebar__intro"><p className="pm-ui-heading">{t.courseContents}</p><p className="pm-site-sidebar__title">{config.site.brandTitle ?? doc.meta.title}</p></div>}
+    {[...groups].map(([group, items]) => <div key={group} className="pm-site-sidebar__group">
+      {group && <p className="pm-site-sidebar__heading">{group}</p>}
+      <ol className="pm-site-sidebar__chapters">{items.map((item) => {
+        const current = item.dir === config.document
+        number++
+        return <li key={item.dir} className={`pm-site-sidebar__chapter${current ? ' pm-current' : ''}`}>
+          <a className="pm-site-sidebar__link" href={current ? own : item.href} aria-current={current ? 'page' : undefined}>{course && <span className="pm-site-sidebar__number" aria-hidden="true">{String(number).padStart(2, '0')}</span>}<span>{item.title}</span></a>
+          {current && chapters}
+        </li>
+      })}</ol>
+    </div>)}
   </nav>
 }
-function Outline({ router, compact = false }: { router: PageRouter, compact?: boolean }) { const viewer = useViewer(), doc = useStore(viewer.doc), position = useStore(viewer.position), shown = useStore(router.shown), t = useMessages(WEB_MESSAGES); const sections = (shown?.sections ?? []).flatMap(id => viewer.section(id) ?? []).filter(section => !isChapterTitle(doc, section)); const title = compact ? 'pm-site-outline-title-compact' : 'pm-site-outline-title'; return sections.length ? <nav className="pm-site-outline" aria-labelledby={title}><p id={title} className={`pm-site-outline__title${compact ? ' pm-ui-sr-only' : ''}`}>{t.outline}</p><ol className="pm-site-outline__items">{sections.map(section => <li key={section.id}><a className="pm-site-outline__link" href={`#${encodeURIComponent(section.id)}`} aria-current={position.section === section.id ? 'location' : undefined}>{section.title}</a></li>)}</ol></nav> : null }
+/** Every section of the page; in a document of chapters, the sections within one are indented under it. */
+function Outline({ router, compact = false }: { router: PageRouter, compact?: boolean }) { const viewer = useViewer(), doc = useStore(viewer.doc), position = useStore(viewer.position), shown = useStore(router.shown), t = useMessages(WEB_MESSAGES); const sections = (shown?.sections ?? []).flatMap(id => viewer.section(id) ?? []); const nested = sections.some(section => isChapterTitle(doc, section)) && sections.some(section => !isChapterTitle(doc, section)); const title = compact ? 'pm-site-outline-title-compact' : 'pm-site-outline-title'; return sections.length > 1 ? <nav className="pm-site-outline" aria-labelledby={title}><p id={title} className={`pm-site-outline__title${compact ? ' pm-ui-sr-only' : ''}`}>{t.outline}</p><ol className="pm-site-outline__items">{sections.map(section => <li key={section.id}><a className={`pm-site-outline__link${nested && !isChapterTitle(doc, section) ? ' pm-site-outline__link--nested' : ''}`} href={`#${encodeURIComponent(section.id)}`} aria-current={position.section === section.id ? 'location' : undefined}>{section.title}</a></li>)}</ol></nav> : null }
 function Pager({ config, router }: { config: AppConfig, router: PageRouter }) { const t = useMessages(WEB_MESSAGES), pages = useStore(router.pages), shown = useStore(router.shown), index = pages.findIndex(page => page.path === shown?.path); const neighbour = (step: number) => { const page = pages[index + step]; return page ? { text: page.title, link: router.href(page) } : step < 0 ? config.site.neighbours?.prev : config.site.neighbours?.next }; const prev = neighbour(-1), next = neighbour(1); return prev || next ? <nav className="pm-site-pager" aria-label={t.pager}>{[[prev, t.prevChapter, 'prev'], [next, t.nextChapter, 'next']].map(([other, label, rel]) => { const link = other as { text: string, link: string } | undefined; return link ? <a key={String(rel)} className={`pm-site-pager__link pm-site-pager__link--${rel}`} href={link.link} rel={String(rel)}><span className="pm-site-pager__label">{String(label)}</span><span className="pm-site-pager__title">{link.text}</span></a> : <span key={String(rel)} /> })}</nav> : null }
 export function SiteFooter({ config }: { config: AppConfig }) { const { message, copyright } = config.site.shell.footer ?? {}; return message || copyright ? <footer className="pm-site-footer">{message && <p className="pm-site-footer__message" dangerouslySetInnerHTML={{ __html: message }} />}{copyright && <p className="pm-site-footer__copyright" dangerouslySetInnerHTML={{ __html: copyright }} />}</footer> : null }
 export function SiteHeader({ config, titleHref, hrefIn, document: isDocument, onMenu, onSearch }: { config: AppConfig, titleHref: string, hrefIn(locale: SiteLocale): string, document?: boolean, onMenu?(): void, onSearch?(): void }) {
@@ -51,28 +66,27 @@ export function SiteHeader({ config, titleHref, hrefIn, document: isDocument, on
 export function DocumentSite({ config, router }: { config: AppConfig, router: PageRouter }) {
   const viewer = useViewer(), t = useMessages(WEB_MESSAGES), doc = useStore(viewer.doc), page = useStore(router.page), shown = useStore(router.shown), pages = useStore(router.pages), view = useStore(viewer.view)
   const [drawer, setDrawer] = useState<'site' | 'chapters'>(), [outline, setOutline] = useState(false), [searching, setSearching] = useState(false)
-  const theme = config.site.shell.theme?.id ?? 'docs', layout = config.landing ? 'landing' : sitePageLayout(isRecord(doc.config.renderers.web) ? doc.config.renderers.web : {}, config.lang), landing = layout === 'landing', course = theme === 'course', showcase = theme === 'showcase' && !landing
+  const theme = config.site.shell.theme?.id ?? 'docs', layout = config.landing ? 'landing' : sitePageLayout(isRecord(doc.config.renderers.web) ? doc.config.renderers.web : {}, config.lang), landing = layout === 'landing', course = theme === 'course'
   useEffect(() => { setDrawer(undefined); setOutline(false) }, [page])
   useEffect(() => { const key = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && config.search) { event.preventDefault(); setSearching(true) } }; window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key) }, [config.search])
   const hrefIn = (locale: SiteLocale) => { const own = locale.base.replace(/\/$/, ''); return shown && shown.path !== 'index' && (!locale.layout || locale.layout === layout) ? `${own}/${shown.path}.html` : `${own}/` }
   return <div className="pm-site" {...siteThemeAttributes(config)} data-pm-site-layout={layout}>
     <a className="pm-site__skip" href="#pm-site-main">{t.skipToContent}</a>
     <SiteHeader config={config} titleHref={config.site.home ?? router.href(pages[0] ?? { path: 'index', title: '', sections: [] })} hrefIn={hrefIn} document onMenu={() => setDrawer('site')} onSearch={() => setSearching(true)} />
-    {!landing && !showcase && <div className="pm-site-localnav"><button type="button" className="pm-site-localnav__button" onClick={() => setDrawer('chapters')}><PmIcon name="navigation" />{course ? t.courseContents : t.menu}</button>{layout !== 'wide' && (shown?.sections.length ?? 0) > 1 && <PmPopover open={outline} label={t.outline} placement="below-end" name="pm-site-outline-menu" onOpenChange={setOutline} trigger={<button type="button" className="pm-site-localnav__button">{t.outline}<PmIcon name="chevron-down" /></button>}><Outline router={router} compact /></PmPopover>}</div>}
-    {showcase && <nav className="pm-site-chapterbar" aria-label={t.menu}>{pages.map(item => <a key={item.path} className={`pm-ui-button pm-ui-button--${item.path === shown?.path ? 'accent' : 'ghost'}`} href={router.href(item)} aria-current={item.path === shown?.path ? 'page' : undefined}>{item.title}</a>)}</nav>}
+    {!landing && <div className="pm-site-localnav"><button type="button" className="pm-site-localnav__button" onClick={() => setDrawer('chapters')}><PmIcon name="navigation" />{course ? t.courseContents : t.menu}</button>{layout !== 'wide' && (shown?.sections.length ?? 0) > 1 && <PmPopover open={outline} label={t.outline} placement="below-end" name="pm-site-outline-menu" onOpenChange={setOutline} trigger={<button type="button" className="pm-site-localnav__button">{t.outline}<PmIcon name="chevron-down" /></button>}><Outline router={router} compact /></PmPopover>}</div>}
     <div className="pm-site__body">
-      {!landing && !showcase && <aside className="pm-site__sidebar"><Sidebar router={router} course={course} /></aside>}
+      {!landing && <aside className="pm-site__sidebar"><Sidebar config={config} router={router} course={course} /></aside>}
       <main id="pm-site-main" className="pm-site__main" tabIndex={-1}>
         <article className="pm-site__article"><PageViewOutlet key={shown?.path} sections={shown?.sections ?? []} /></article>
         {!landing && <Pager config={config} router={router} />}<SiteFooter config={config} />
       </main>
-      {!landing && !showcase && layout !== 'wide' && <aside className="pm-site__aside"><Outline router={router} /></aside>}
+      {!landing && layout !== 'wide' && <aside className="pm-site__aside"><Outline router={router} /></aside>}
     </div>
     <div className="pm-document pm-overlay-views"><OverlayViewOutlet /></div>
     {view === 'presenter' && <PmPresenterPanels to=".pm-presenter__side" docked />}
     {config.search && <SearchDialog open={searching} index={config.search} onOpenChange={setSearching} />}
     <PmDrawer open={drawer !== undefined} label={drawer === 'site' ? t.mobileNav : course ? t.courseContents : t.menu} closeLabel={t.close} name="pm-site-menu" onOpenChange={open => { if (!open) setDrawer(undefined) }}>
-      {drawer === 'site' ? <>{(config.site.nav ?? config.site.shell.nav)?.length ? <NavLinks items={config.site.nav ?? config.site.shell.nav!} vertical /> : null}{config.site.home && <a className="pm-site-link" href={config.site.home}><PmIcon name="arrow-left" />{t.documents}</a>}<div className="pm-site-menu__tools"><ViewMenu place="screen" /><PmToolbar className="pm-toolbar--screen" /></div></> : <Sidebar router={router} course={course} />}
+      {drawer === 'site' ? <>{(config.site.nav ?? config.site.shell.nav)?.length ? <NavLinks items={config.site.nav ?? config.site.shell.nav!} vertical /> : null}{config.site.home && <a className="pm-site-link" href={config.site.home}><PmIcon name="arrow-left" />{t.documents}</a>}<div className="pm-site-menu__tools"><ViewMenu place="screen" /><PmToolbar className="pm-toolbar--screen" /></div></> : <Sidebar config={config} router={router} course={course} />}
     </PmDrawer>
   </div>
 }

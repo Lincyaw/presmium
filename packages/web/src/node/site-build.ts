@@ -6,7 +6,7 @@ import { ABSOLUTE_URL, errorMessage, isRecord } from '@lincyaw/kernel'
 import type { IRDocument, NodeVitePlugin, RenderContext, SiteSpec } from '@lincyaw/kernel'
 import { FONT_LICENSE, fontLicense } from '@lincyaw/kernel/node'
 import { SitemapStream, streamToPromise } from 'sitemap'
-import { offlineEnabled, pageLink, SERVICE_WORKER, searchDocuments, sitePageLayout, translationPages, webPages } from '../domain/index.ts'
+import { chapterRedirects, offlineEnabled, pageLink, SERVICE_WORKER, searchDocuments, sitePageLayout, translationPages, webPages } from '../domain/index.ts'
 import type { AppConfig, SiteConfig, SiteShell, WebPage } from '../domain/index.ts'
 import { BUNDLE_ENTRY, buildDocumentBundle, documentComponents } from './document-bundle.ts'
 import type { DocumentBundle } from './document-bundle.ts'
@@ -181,8 +181,15 @@ async function buildDocumentPages(site: SiteSpec, ctx: RenderContext, built: Bui
         await renderPage(built, join(ctx.outDir, locale.prefix, 'index.html'), landing, title, metaTags(shell, image, title), locale.doc, components)
       }
     }
+    for (const { path, section } of chapterRedirects(published)) writeFileSync(join(out, locale.prefix, `${path}.html`), chapterRedirect(section))
   }
   if (offline) writeServiceWorker(out, base, { dir: built.appDir, url: built.appUrl })
+}
+
+/** The page a chapter used to have: it goes on to the chapter's section on the document's page. */
+function chapterRedirect(section: string): string {
+  const target = `./#${encodeURIComponent(section)}`
+  return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=${target}"><link rel="canonical" href="${target}"><meta name="robots" content="noindex"></head><body><a href="${target}">${target}</a></body></html>\n`
 }
 
 /** A page that shows no document (the home page, a missing page), below the site's path. */

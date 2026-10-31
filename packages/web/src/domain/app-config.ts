@@ -33,6 +33,8 @@ export interface SiteConfig {
   home?: string
   /** The document's languages, its own first; one when it has no translation. */
   locales: SiteLocale[]
+  /** The workspace's documents in its order, for the sidebar; a document's first tag is its group there. */
+  documents?: { dir: string, title: string, href: string, group?: string }[]
   /** The documents before and after this one in the workspace: the pager goes on to them. */
   neighbours?: { prev?: Neighbour, next?: Neighbour }
   links: CrossFormLinks

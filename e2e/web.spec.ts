@@ -106,102 +106,11 @@ test.describe('the reading fixture deck', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 })
   let deck: WebDeck
 
-  const CHAPTERS = [
-    { path: '/web/', title: '网页阅读测试文稿', sections: ['cover'] },
-    { path: '/web/basics.html', title: '阅读页面', sections: ['reading', 'scrolly'] },
-    { path: '/web/advanced.html', title: '第二章 进阶', sections: ['advanced', 'stepper', 'steps', 'panel', 'live-code'] },
-    { path: '/web/wide-content.html', title: '第三章 宽内容', sections: ['wide-content', 'highlight', 'wide'] },
-  ]
-
   test.beforeAll(async () => {
     test.setTimeout(300_000)
     deck = await webDeck('web,slides')
   })
   test.afterAll(() => deck?.close())
-
-  test('a page per chapter shows its sections with their content and narration, without links from section to section', async ({ page }) => {
-    for (const chapter of CHAPTERS) {
-      await page.goto(`${deck.url}${chapter.path}`)
-      const sections = page.locator('.pm-section')
-      await expect(sections).toHaveCount(chapter.sections.length)
-      expect(await sections.evaluateAll(els => els.map(el => (el as HTMLElement).dataset.section))).toEqual(chapter.sections)
-      for (const id of chapter.sections) {
-        const ir = deck.doc.sections.find(s => s.id === id)!
-        const shown = page.locator(`.pm-section[data-section="${id}"]`)
-        expect(words((await shownText(shown.locator('.pm-section__title')))[0]!), `heading of ${id}`).toBe(words(ir.title))
-        const narration = ir.blocks.filter(b => b.role === 'narration').map(blockText).join('')
-        expect(words((await shownText(shown.locator('.pm-block--narration'))).join('')), `narration of ${id}`).toBe(words(narration))
-        const visual = words((await shownText(shown.locator('.pm-block--visual'))).join(''))
-        for (const block of ir.blocks.filter(b => b.role === 'visual')) expect(visual, `block ${id}#${block.id}`).toContain(words(blockText(block)))
-      }
-      await expect(page.locator('.pm-section-nav, .pm-section a[rel="next"], .pm-section a[rel="prev"]')).toHaveCount(0)
-    }
-
-    await page.goto(deck.web('advanced.html'))
-    await expect(page.locator('h1#advanced')).toContainText('第二章 进阶')
-    await expect(page.locator('.pm-section[data-section="advanced"]')).toContainText('章首的讲解')
-    await page.goto(deck.web('basics.html'))
-    await expect(page.locator('h1')).toHaveCount(0)
-    await expect(page.locator('h2#reading')).toBeVisible()
-
-    const reading = page.locator('.pm-section[data-section="reading"]')
-    await expect(reading).toContainText('网页中才有的补充说明')
-    await expect(reading).not.toContainText('幻灯片中才有的提示')
-  })
-
-  test('the end of a page links the chapters before and after it', async ({ page }) => {
-    const prev = page.getByRole('link', { name: /^上一章/ })
-    const next = page.getByRole('link', { name: /^下一章/ })
-    await page.goto(deck.web())
-    await expect(prev).toHaveCount(0)
-    await expect(next).toContainText('阅读页面')
-
-    await page.goto(deck.web('advanced.html'))
-    await expect(prev).toContainText('阅读页面')
-    await expect(prev).toHaveAttribute('href', '/web/basics.html')
-    await expect(next).toContainText('第三章 宽内容')
-    const [footer, last] = await Promise.all([next.boundingBox(), page.locator('.pm-section').last().boundingBox()])
-    expect(footer!.y).toBeGreaterThan(last!.y + last!.height)
-    await next.click()
-    await expect(page).toHaveURL(/\/web\/wide-content\.html$/)
-    await expect(page.locator('h1#wide-content')).toBeInViewport()
-    await expect(next).toHaveCount(0)
-  })
-
-  test('the sidebar lists the chapters, each with its sections; a section opens its page at its anchor', async ({ page }) => {
-    await page.goto(deck.web('basics.html'))
-    const sidebar = page.getByRole('navigation', { name: '侧边栏导航', exact: true })
-    const chapters = sidebar.locator('.pm-site-sidebar__chapter')
-    await expect(chapters).toHaveCount(CHAPTERS.length)
-    for (const [i, chapter] of CHAPTERS.entries()) {
-      const item = chapters.nth(i)
-      await expect(item.locator('.pm-site-sidebar__link')).toHaveText(chapter.title)
-      await expect(item.locator('.pm-site-sidebar__link')).toHaveAttribute('href', chapter.path)
-      const titles = chapter.sections.slice(1).map(id => deck.doc.sections.find(s => s.id === id)!.title)
-      await expect(item.locator('.pm-site-sidebar__section')).toHaveText(titles)
-    }
-    await expect(chapters.first().locator('.pm-site-sidebar__link')).toHaveCSS('font-weight', '600')
-    await expect(chapters.nth(1).locator('.pm-site-sidebar__section').first()).not.toHaveCSS('font-weight', '600')
-
-    await sidebar.getByRole('link', { name: '步骤作用域' }).click()
-    await expect(page).toHaveURL(/\/web\/advanced\.html#steps$/)
-    await expect(page.locator('h2#steps')).toBeInViewport()
-    await sidebar.getByRole('link', { name: '第三章 宽内容' }).click()
-    await expect(page).toHaveURL(/\/web\/wide-content\.html$/)
-    await expect(page.locator('h1#wide-content')).toBeInViewport()
-  })
-
-  test('the page outline lists the sections of the chapter, also after moving to another page', async ({ page }) => {
-    const outline = page.locator('.pm-site__aside .pm-site-outline__link')
-    await page.goto(deck.web('advanced.html'))
-    await expect(outline).toHaveText(['步进组件', '步骤作用域', '执行面板与图表', '现场运行'])
-
-    await page.getByRole('navigation', { name: '侧边栏导航', exact: true }).getByRole('link', { name: '阅读页面' }).click()
-    await expect(page).toHaveURL(/\/web\/basics\.html$/)
-    await expect(outline).toHaveText(['阅读页面', '滚动叙事'])
-    await outline.nth(1).click()
-    await expect(page.locator('h2#scrolly')).toBeInViewport()
-  })
 
   test('document content stays in source order without presentation boards and keeps its formatting', async ({ page }) => {
     await page.goto(deck.web('basics.html'))
@@ -316,14 +225,6 @@ test.describe('the reading fixture deck', () => {
     await expect(page.getByRole('link', { name: '一个写坏的锚点' })).toBeVisible()
     await context.setOffline(false)
     expect(errors).toEqual([])
-  })
-
-  test('no page scrolls sideways on a 375 px wide phone', async ({ page, browser }) => {
-    const paths = await webPages(page, deck.web())
-    expect(paths).toHaveLength(CHAPTERS.length)
-    const context = await phone(browser)
-    await expectNoSidewaysScroll(await context.newPage(), deck.url, paths)
-    await context.close()
   })
 
   test('pages reflow at 200 % and 400 % zoom and follow the reader\'s font size', async ({ page, browser }) => {
