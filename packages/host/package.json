@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/host",
-  "version": "1.0.0-rc.13",
+  "version": "1.0.0-rc.14",
   "description": "Presmium's host interface for plugin components in every form: step state, services, interface text, and the design system (tokens, components, fonts)",
   "license": "Apache-2.0",
   "repository": {

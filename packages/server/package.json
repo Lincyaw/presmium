@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/server",
-  "version": "1.0.0-rc.13",
+  "version": "1.0.0-rc.14",
   "description": "The server of presmium dev and presmium serve: plugin routes and proxies, approvals, the control channel and MCP",
   "license": "Apache-2.0",
   "repository": {
