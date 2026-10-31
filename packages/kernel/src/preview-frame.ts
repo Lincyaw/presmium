@@ -126,9 +126,12 @@ export function previewAppearance(): 'dark' | 'light' | undefined {
   return given === 'dark' || given === 'light' ? given : undefined
 }
 
-/** The Content-Security-Policy that lets only the workbench's origins embed a preview page. */
+/**
+ * The Content-Security-Policy that lets only the site itself and the workbench's origins embed a page: a home page
+ * that plays a document's presentation in a frame works in `presmium serve` as it does in the built site.
+ */
 export function previewFrameAncestors(origins: readonly string[]): string {
-  return `frame-ancestors ${origins.length > 0 ? origins.join(' ') : "'none'"}`
+  return ['frame-ancestors', "'self'", ...origins].join(' ')
 }
 
 /** Whether the page is embedded by a workbench as its preview (the frame may still be refused when no origin is allowed). */
