@@ -1,5 +1,4 @@
 import { isRecord } from '@lincyaw/kernel'
-import { DEFAULT_LANG } from '@lincyaw/kernel/contracts'
 import { siteTheme } from './themes.ts'
 import type { SiteTheme } from './themes.ts'
 
@@ -60,14 +59,6 @@ export function siteShell(config: Record<string, unknown>, lang?: string): SiteS
   return shell
 }
 
-export interface WebRendererConfig {
-  base: string
-  port?: number
-  lang: string
-  server?: string
-  shell: SiteShell
-}
-
 function url(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim().replace(/\/+$/, '') : undefined
 }
@@ -93,15 +84,4 @@ const PUBLISH_ID = 'presmium.publish'
 export function offlineEnabled(presmium: unknown): boolean {
   const publish = isRecord(presmium) ? presmium[PUBLISH_ID] : undefined
   return !(isRecord(publish) && publish.offline === false)
-}
-
-export function rendererConfig(ctx: { config: Record<string, unknown>, base: string, lang?: string, server?: { url: string } }): WebRendererConfig {
-  const port = Number(ctx.config.port)
-  return {
-    base: ctx.base,
-    port: Number.isInteger(port) && port > 0 ? port : undefined,
-    lang: ctx.lang || DEFAULT_LANG,
-    ...ctx.server ? { server: ctx.server.url } : {},
-    shell: siteShell(ctx.config, ctx.lang),
-  }
 }

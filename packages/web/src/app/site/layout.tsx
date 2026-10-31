@@ -16,6 +16,7 @@ export function siteThemeAttributes(config: AppConfig) {
     'data-pm-site-accent': theme?.params.accent,
     'data-pm-site-typography': theme?.params.typography,
     'data-pm-site-width': theme?.params.contentWidth,
+    'data-pm-site-theme-name': theme?.name,
   }
 }
 export function ViewMenu({ place = 'bar' }: { place?: 'bar' | 'screen' }) { const viewer = useViewer(), t = useMessages(WEB_MESSAGES), view = useStore(viewer.view); return <select className={`pm-view-menu pm-ui-select pm-view-menu--${place}`} aria-label={t.viewMenu} value={view} onChange={event => viewer.setView(event.target.value)}>{listViews().filter(v => !v.hidden || v.id === view).map(v => <option key={v.id} value={v.id}>{v.label}</option>)}</select> }

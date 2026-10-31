@@ -63,6 +63,38 @@ site:
 - 文稿列表页的介绍取自工作区 `title` 与 `site.head.description`。
 - 修改后重启 `pnpm serve`，或重新 `pnpm build`。
 
+### 2.1 工作区主题
+
+`site.theme` 也可以写主题目录（`./theme`，相对工作区；单独构建的文稿相对 `lecture.json`）或已安装的主题包名。主题包的 `package.json` 用 `presmium.theme` 指向含 `theme.json` 的目录，没有时取包的根目录。
+
+```json
+{
+  "schemaVersion": 1,
+  "name": "pixel",
+  "extends": "docs",
+  "params": { "typography": "sans" },
+  "tokens": { "font-sans": "'IBM Plex Sans', system-ui, sans-serif", "color-bg": "#f6f6f1", "color-accent": "#2546b8", "radius-control": "0" },
+  "dark": { "color-bg": "#121216", "color-accent": "#8ea6ff" },
+  "fonts": ["https://fonts.googleapis.com/css2?family=Silkscreen&display=swap"],
+  "styles": ["./pixel.css"]
+}
+```
+
+| 字段 | 含义 |
+|---|---|
+| `name` | 必填，小写字母、数字与 `-`；页面带 `data-pm-site-theme-name="<name>"`，文件发布在 `_theme/<name>/` |
+| `extends` | 使用哪个内置主题的布局与默认参数，默认 `docs` |
+| `params` | 上表的参数，作为默认值；`site.params` 中显式写的优先 |
+| `tokens` | 设计令牌（`packages/design/src/tokens.css` 中的名字去掉 `--pm-`）；颜色与阴影是亮色的值，其余两种外观共用 |
+| `dark` | 暗色的颜色与阴影；没写的沿用内置暗色 |
+| `fonts` | 字体样式表的 `https:` 地址 |
+| `styles` | 主题目录内的 CSS 文件，可用相对 `url()` 引用目录中的字体与图片 |
+
+- 构建把主题目录（不含 `node_modules` 与点开头的文件）复制到 `_theme/<name>/`，并由 `tokens` 与 `dark` 生成 `presmium-tokens.css`；每个页面在查看器样式之后依次链接 `fonts`、生成的令牌与 `styles`。
+- 令牌名不存在、`dark` 中写了颜色与阴影以外的令牌、值中有 `;`、`{`、`}`、`<`、`>`，或样式表不在主题目录内时，构建与预览报错，并指出主题文件与字段。
+- `styles` 用 `[data-pm-site-theme-name='<name>']` 限定规则，内置主题与工作台不受影响。
+- HTML 模板首页在网站数据中得到 `theme: { name, stylesheets }`，自行链接这些样式表并在根元素上写同一属性，即可与文稿页共用一套外观。
+
 ## 3. 首页
 
 `site.landing` 有三种写法，只能选一种；`site.home`（把根页重定向到某份文稿）不能与 `landing` 同时配置。没有 `landing` 时根页按主题显示文稿列表；有首页时完整列表在 `documents.html`。
@@ -112,7 +144,7 @@ site:
 
 ```js
 const site = JSON.parse(document.getElementById('presmium-site-data').textContent)
-// site: { schemaVersion, title, base, lang, documents: [{ id, title, href, description?, lang?, tags?, pages? }] }
+// site: { schemaVersion, title, base, lang, documents: [{ id, title, href, description?, lang?, tags?, pages? }], theme?: { name, stylesheets } }
 for (const doc of site.documents) list.append(Object.assign(document.createElement('a'), { href: doc.href, textContent: doc.title }))
 ```
 
@@ -160,4 +192,4 @@ presmium build welcome --to web
 
 `examples/gallery` 是统一示例工作区，HTML 产品首页展示傅里叶小课与宣传片；`tools/build.mjs` 合并网页、放映和讲授产物。在该目录运行 `pnpm build` 或 `pnpm dev`；站点说明见 `PRODUCT-SITE.md`。
 
-Office 文件可以作为链接发布和下载，不导入为可编辑文稿，也没有在线预览。主题不提供主题市场、自定义 React 外壳或工作台中的主题选择面板。
+Office 文件可以作为链接发布和下载，不导入为可编辑文稿，也没有在线预览。工作区主题只改变外观（令牌与样式），不替换网站外壳的 React 组件；工作台中没有主题选择面板。

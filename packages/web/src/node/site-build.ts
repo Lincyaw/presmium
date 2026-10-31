@@ -15,6 +15,7 @@ import { publishedDocument, publishedFile } from './publish.ts'
 import { APP_DIR, CODE_DIR, contentKey, copyApp, copyPublic, copyRuntimeAssets, runtimeAssets, searchIndex } from './site-files.ts'
 import { documentBase, documentPage, documentSiteConfig, homeDocument, homeDocuments, isSingle, landingConfig, landingDocument, languageLabel, LIST_PAGE, siteLanguage, siteLanguages, siteNeighbours, siteShellBelow, siteTitle, sitemapPages, translationOf } from './site-model.ts'
 import { publishedSite } from './site-assets.ts'
+import { themedSite } from './site-theme.ts'
 import { loadLanding, publishLanding, siteContent } from './landing.ts'
 import { buildLandingTemplate, writeLandingTemplate } from './landing-template.ts'
 import { pageHtml, redirectHtml } from './site-page.ts'
@@ -242,6 +243,7 @@ async function buildMissing(site: SiteSpec, ctx: RenderContext, built: Built, ti
 export async function buildSite(site: SiteSpec, ctx: RenderContext, documents: readonly BuiltDocument[]): Promise<void> {
   const workspace = !isSingle(site)
   // Invalid presentation settings fail before replacing an existing build.
+  site = themedSite(site, ctx)
   siteShellBelow(site, ctx.base)
   landingDocument(site)
   loadLanding(site, ctx)
@@ -287,7 +289,7 @@ export async function buildSlidesSite(doc: IRDocument, ctx: RenderContext, nodeP
   const { code } = await documentFiles(ctx, built, entry)
   writeFileSync(join(ctx.outDir, 'ir.json'), JSON.stringify(published))
   const lang = doc.meta.lang ?? ctx.lang ?? 'zh-CN'
-  const site: SiteSpec = { title: doc.meta.title, documents: [{ dir: '', title: doc.meta.title, doc }], config: ctx.config }
+  const site = publishedSite(themedSite({ title: doc.meta.title, documents: [{ dir: '', title: doc.meta.title, doc }], config: ctx.config }, ctx), ctx)
   const config: AppConfig = {
     kind: 'document',
     document: '',

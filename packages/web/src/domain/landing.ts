@@ -15,7 +15,7 @@ export type SiteLandingSection =
 export interface SiteLandingPage { schemaVersion: 1, title: string, description?: string, hero?: SiteHero, sections: SiteLandingSection[] }
 
 export interface SiteContentDocument { id: string, title: string, href: string, description?: string, lang?: string, tags?: string[], pages?: number }
-export interface SiteContent { schemaVersion: 1, title: string, base: string, lang: string, documents: SiteContentDocument[] }
+export interface SiteContent { schemaVersion: 1, title: string, base: string, lang: string, documents: SiteContentDocument[], theme?: { name: string, stylesheets: string[] } }
 export const SITE_CONTENT_ELEMENT = 'presmium-site-data'
 
 /** One validator for inline definitions and JSON files, used before replacing an existing build. */

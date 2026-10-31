@@ -16,7 +16,7 @@ import type { DocumentPage } from './publish.ts'
 
 export const LIST_PAGE = 'documents'
 const LINK_LANGUAGE = new WeakMap<DocumentLink, string>()
-const SHELL_KEYS = ['nav', 'footer', 'head', 'sitemap', 'theme', 'params']
+const SHELL_KEYS = ['nav', 'footer', 'head', 'sitemap', 'theme', 'params', 'themePackage']
 
 /** A document's source files: those of its sections and of all their blocks. */
 export function documentSourceFiles(doc: IRDocument): Set<string> {

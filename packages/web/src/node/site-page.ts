@@ -47,6 +47,8 @@ export function pageHtml(input: PageHtmlInput): string {
     `<script>${APPEARANCE}</script>`,
     `<script type="importmap">${json({ imports })}</script>`,
     ...entry.css.map(file => `<link rel="stylesheet" href="${escapeHtml(`${appUrl}${file}`)}">`),
+    // A workspace theme's fonts, tokens and styles come after the app's, so that they override them.
+    ...(config.site?.shell.theme?.stylesheets ?? []).map(url => `<link rel="stylesheet" href="${escapeHtml(url)}">`),
     ...entry.preload.map(file => `<link rel="modulepreload" href="${escapeHtml(`${appUrl}${file}`)}">`),
     `<script type="application/json" id="${APP_CONFIG_ELEMENT}">${json(config)}</script>`,
     `<script type="module" src="${escapeHtml(`${appUrl}${entry.script}`)}"></script>`,

@@ -22,6 +22,7 @@ import { irRevisionOfJson, PublicationCache, publishedDocument } from './publish
 import { findRuntimeAsset, REVISION_HEADER, runtimeAssets, searchIndex } from './site-files.ts'
 import { documentBase, documentPage, documentSiteConfig, homeDocument, homeDocuments, isSingle, landingConfig, landingDocument, languageLabel, LIST_PAGE, siteLanguage, siteLanguages, siteNeighbours, siteShellBelow } from './site-model.ts'
 import { publishedSite } from './site-assets.ts'
+import { themedSite } from './site-theme.ts'
 import { loadLanding, publishLanding, siteContent } from './landing.ts'
 import { buildLandingTemplate, writeLandingTemplate } from './landing-template.ts'
 import { pageHtml } from './site-page.ts'
@@ -190,9 +191,11 @@ function pageAt(pages: readonly WebPage[], rest: string): WebPage | undefined {
 export async function startSiteServer(options: SiteServerOptions): Promise<SiteServer> {
   const { ctx } = options
   const base = ctx.base
-  siteShellBelow(options.site(), base)
-  landingDocument(options.site())
-  loadLanding(options.site(), ctx)
+  // The site as its pages see it: a workspace theme resolved into the built-in theme it extends.
+  const siteOf = () => themedSite(options.site(), ctx)
+  siteShellBelow(siteOf(), base)
+  landingDocument(siteOf())
+  loadLanding(siteOf(), ctx)
   const templateOutputs = new Set<string>()
   const templateBuilds = new Map<string, Promise<string>>()
   const states = new Map<string, DocumentState>()
@@ -212,8 +215,8 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   const framed = ctx.preview ? previewFrameAncestors(ctx.preview.origins) : undefined
   const latest = new Map<string, IRDocument>()
 
-  const documents = () => options.site().documents.map(entry => entry.dir)
-  const shellSite = () => publishedSite(options.site(), ctx, join(options.workDir, 'site-assets'), `${base}${PREFIX}site-assets/`)
+  const documents = () => siteOf().documents.map(entry => entry.dir)
+  const shellSite = () => publishedSite(siteOf(), ctx, join(options.workDir, 'site-assets'), `${base}${PREFIX}site-assets/`)
   const stateOf = (dir: string): DocumentState => {
     let state = states.get(dir)
     if (!state) states.set(dir, state = { caches: new Map(), listeners: new Set(), published: new Map() })
@@ -424,7 +427,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     if (known?.source === doc) return known
     const own = options.context(dir, doc)
     const docBase = documentBase(base, dir)
-    const linked = isSingle(options.site()) ? undefined : documentPage(options.site(), base, docs())
+    const linked = isSingle(siteOf()) ? undefined : documentPage(siteOf(), base, docs())
     let cache = state.caches.get(form)
     if (!cache) state.caches.set(form, cache = new PublicationCache())
     const shown = publishedDocument(lang || unfiltered ? doc : viewOf(doc, form), own, join(options.workDir, 'media', segment(dir)), docBase, linked, lang ? undefined : cache)
@@ -543,7 +546,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     if (rest !== undefined && !page) return plainPage(res, 'missing')
     const state = stateOf(dir)
     let config = documentConfig(dir, doc, lang, form === 'slides' ? undefined : page, state.bundle, rest === undefined, block === undefined ? form : 'web')
-    if (landing) config = landingConfig(config, shown, options.site(), base, lang)
+    if (landing) config = landingConfig(config, shown, siteOf(), base, lang)
     if (block !== undefined) {
       config.block = block
       config.ir += `&presmium-block=${encodeURIComponent(block)}`
@@ -581,7 +584,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     const answer = published(dir, shown, lang)
     const root = `${documentBase(base, dir)}${lang ? `${lang}/` : ''}`
     const pages = lang ? translationPages(answer.doc, webPages(published(dir, doc).doc)) : webPages(answer.doc)
-    const site = options.site()
+    const site = siteOf()
     answer.search ??= searchIndex([...searchDocuments(answer.doc, root, pages), ...isSingle(site) ? [] : siteNeighbours(site, base, dir, docs()).search])
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })
     res.end(answer.search)
@@ -666,7 +669,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
 
   /** The workspace's own pages: its home page (the list, when its home page is a document), in its languages. */
   const siteRoute = async (res: ServerResponse, rest: string) => {
-    const site = options.site()
+    const site = siteOf()
     const target = homeDocument(site)
     const landing = landingDocument(site)
     const [first, ...others] = rest.split('/')

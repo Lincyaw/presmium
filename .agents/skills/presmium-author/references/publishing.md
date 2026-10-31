@@ -46,6 +46,23 @@ In the workspace configuration, `site.theme` selects `course`, `docs` or `showca
 | `contentWidth` | `comfortable`, `wide` |
 | `logo`, `logoAlt` | The logo location and alternative text |
 
+For a look of its own, `site.theme` names a theme directory (`./theme`) or an installed theme package instead of a built-in id. The directory holds `theme.json`:
+
+```json
+{
+  "schemaVersion": 1,
+  "name": "pixel",
+  "extends": "docs",
+  "params": { "typography": "sans" },
+  "tokens": { "font-sans": "'IBM Plex Sans', system-ui, sans-serif", "color-bg": "#f6f6f1", "color-accent": "#2546b8", "radius-control": "0" },
+  "dark": { "color-bg": "#121216", "color-accent": "#8ea6ff" },
+  "fonts": ["https://fonts.googleapis.com/css2?family=Silkscreen&display=swap"],
+  "styles": ["./pixel.css"]
+}
+```
+
+`extends` picks the built-in layouts (default `docs`); `params` are defaults under the site's own `site.params`. `tokens` set design tokens by their name without `--pm-` (the build rejects unknown names); colors and shadows there are the light appearance's, and `dark` sets the dark ones, falling back to the built-in dark values. `fonts` are `https:` stylesheet URLs; `styles` are CSS files in the theme directory, which may use relative `url()`s to the directory's fonts and images. Every page carries `data-pm-site-theme-name="<name>"`, so a stylesheet scopes its rules with `[data-pm-site-theme-name='pixel']`. An HTML template homepage receives the stylesheets in the site data (`site.theme.stylesheets`) to link them itself. A theme package sets `presmium.theme` in its `package.json` to the directory with `theme.json`, or keeps `theme.json` at its root.
+
 Keep each teaching document's page layout in `metadata.renderers.web.layout`: `article` (default), `landing` (all sections combined into one full-width HTML page without sidebars or page navigation), or `wide` (wider content without the right outline). Each translation uses its own layout, defaulting to `article` when omitted; it does not inherit the original's layout. A standalone document can select `theme` and `params` in its own `metadata.renderers.web`; do not use document themes to override the shared shell of a workspace site. A string `site.landing` adds a full-document root page without changing the original document's pagination; a document's own `layout: landing` changes that pagination. Independent site page content stays separate. Templates do not alter authored block/step identities, narration or production settings.
 
 After changing website settings in `presmium.workspace.yaml`, restart `pnpm serve` for preview or run `pnpm build` again for the output. Existing serve sessions do not reload the workspace's website configuration.
