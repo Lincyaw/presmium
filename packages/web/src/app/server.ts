@@ -1,5 +1,6 @@
 import type { IRDocument } from '@lincyaw/kernel'
 import { createStore } from '@lincyaw/host'
+import { loadDocumentParts } from '@lincyaw/viewer'
 import { renderToString } from 'react-dom/server'
 import type { AppConfig } from '../domain/index.ts'
 import { createPageApp } from './page-app.ts'
@@ -20,6 +21,7 @@ export interface RenderInput {
 }
 
 export async function render({ config, doc, components }: RenderInput): Promise<string> {
+  if (doc) await loadDocumentParts(doc)
   const { app } = createPageApp({
     config,
     doc,

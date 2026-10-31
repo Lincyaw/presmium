@@ -22,6 +22,7 @@ Object.entries(DOCUMENT_LAYOUT_COMPONENTS).forEach(([name, component]) => regist
 export function ViewerProvider({ viewer, children }: { viewer: Viewer, children?: ReactNode }) { return createElement(VIEWER.Provider, { value: viewer }, children) }
 
 export { BlockView, BlockPreview, PmComponentFallback } from './block.ts'
+export { loadDocumentParts } from './deferred.ts'
 export { syncViewerWithOperations } from './operations.ts'
 export { findView, findComponent, listViews, registerComponent, registryRevision } from './registry.ts'
 export type { NodeRenderer, ViewDefinition, ViewerAction, ViewerLayer } from './registry.ts'

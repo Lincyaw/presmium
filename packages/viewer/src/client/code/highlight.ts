@@ -1,5 +1,6 @@
 import { languageId } from '@lincyaw/kernel'
 import type { HighlighterCore } from 'shiki/core'
+import type { toHtml } from 'hast-util-to-html'
 
 type Loader = () => Promise<unknown>
 
@@ -43,17 +44,22 @@ const ALIASES: Record<string, string> = {
 
 export const SHIKI_THEMES = { light: 'github-light', dark: 'github-dark' } as const
 
-let highlighter: Promise<HighlighterCore> | undefined
+/** Shiki, with what writes its trees as HTML. */
+interface Loaded { highlighter: HighlighterCore, toHtml: typeof toHtml }
+
+let highlighter: Promise<Loaded> | undefined
 const loading = new Map<string, Promise<void>>()
 
-function load(): Promise<HighlighterCore> {
+function load(): Promise<Loaded> {
   if (import.meta.env.SSR) return new Promise(() => {})
-  highlighter ??= Promise.all([import('shiki/core'), import('shiki/engine/javascript')]).then(([core, engine]) =>
-    core.createHighlighterCore({
+  highlighter ??= Promise.all([import('shiki/core'), import('shiki/engine/javascript'), import('hast-util-to-html')]).then(async ([core, engine, html]) => ({
+    highlighter: await core.createHighlighterCore({
       themes: [import('shiki/themes/github-light.mjs'), import('shiki/themes/github-dark.mjs')],
       langs: [],
       engine: engine.createJavaScriptRegexEngine({ forgiving: true }),
-    }))
+    }),
+    toHtml: html.toHtml,
+  }))
   return highlighter
 }
 
@@ -63,11 +69,11 @@ function grammarOf(lang: string): string | undefined {
   return name in GRAMMARS ? name : undefined
 }
 
-export async function highlighterFor(lang: string): Promise<{ highlighter: HighlighterCore, lang: string } | undefined> {
+export async function highlighterFor(lang: string): Promise<Loaded & { lang: string } | undefined> {
   const name = grammarOf(lang)
   if (!name) return undefined
-  const core = await load()
-  if (!loading.has(name)) loading.set(name, core.loadLanguage(GRAMMARS[name]!() as never))
+  const loaded = await load()
+  if (!loading.has(name)) loading.set(name, loaded.highlighter.loadLanguage(GRAMMARS[name]!() as never))
   await loading.get(name)
-  return { highlighter: core, lang: name }
+  return { ...loaded, lang: name }
 }
