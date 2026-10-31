@@ -104,24 +104,39 @@ interface BuildManifestChunk {
   imports?: string[]
 }
 
-/** The app's entry as Vite's build manifest gives it: its file, its styles and the chunks it imports at once. */
-export function appEntry(app: ViewerApp): AppEntry {
-  const chunks = JSON.parse(readFileSync(join(app.dir, BUILD_MANIFEST), 'utf8')) as Record<string, BuildManifestChunk>
-  const main = Object.entries(chunks).find(([source, chunk]) => chunk.isEntry && source.endsWith('main.ts'))?.[1]
-  if (!main) throw new Error(`the viewer app at ${app.dir} has no entry in its build manifest`)
-  const preload = new Set<string>()
-  const css = new Set(main.css ?? [])
-  const walk = (keys: readonly string[] = []) => {
-    for (const key of keys) {
+const buildManifest = (app: ViewerApp) => JSON.parse(readFileSync(join(app.dir, BUILD_MANIFEST), 'utf8')) as Record<string, BuildManifestChunk>
+
+/** The chunks `keys` name in the build manifest and those they import at once, with their styles. */
+function staticImports(chunks: Record<string, BuildManifestChunk>, keys: readonly string[] = []): { files: Set<string>, css: Set<string> } {
+  const files = new Set<string>()
+  const css = new Set<string>()
+  const walk = (next: readonly string[] = []) => {
+    for (const key of next) {
       const chunk = chunks[key]
-      if (!chunk || preload.has(chunk.file)) continue
-      preload.add(chunk.file)
+      if (!chunk || files.has(chunk.file)) continue
+      files.add(chunk.file)
       for (const file of chunk.css ?? []) css.add(file)
       walk(chunk.imports)
     }
   }
-  walk(main.imports)
-  return { script: main.file, css: [...css], preload: [...preload] }
+  walk(keys)
+  return { files, css }
+}
+
+/** The app's entry as Vite's build manifest gives it: its file, its styles and the chunks it imports at once. */
+export function appEntry(app: ViewerApp): AppEntry {
+  const chunks = buildManifest(app)
+  const main = Object.entries(chunks).find(([source, chunk]) => chunk.isEntry && source.endsWith('main.ts'))?.[1]
+  if (!main) throw new Error(`the viewer app at ${app.dir} has no entry in its build manifest`)
+  const { files, css } = staticImports(chunks, main.imports)
+  return { script: main.file, css: [...new Set([...main.css ?? [], ...css])], preload: [...files] }
+}
+
+/** The chunks a lazily loaded `file` of the app imports at once, itself included: what a page that will load it can preload. */
+export function appChunkImports(app: ViewerApp, file: string): string[] {
+  const chunks = buildManifest(app)
+  const key = Object.entries(chunks).find(([, chunk]) => chunk.file === file)?.[0]
+  return key ? [...staticImports(chunks, [key]).files] : [file]
 }
 
 /** Where viewer apps are kept: the user's cache, shared by every workspace and session. */
@@ -425,6 +440,10 @@ export async function buildViewerApp(cacheDir: string, plugins: readonly AppPlug
           entryFileNames: chunk => (chunk.name.startsWith('shared/') ? '[name].js' : 'assets/[name]-[hash].js'),
           chunkFileNames: 'assets/[name]-[hash].js',
           assetFileNames: 'assets/[name]-[hash][extname]',
+          // What every page runs first, the app and the modules it imports statically, is one file: split by the
+          // entries of the import map that also reach them, it was dozens of small files, each a request before the
+          // page can start. What the page loads later (plugins, views, optional parts) stays in chunks of its own.
+          codeSplitting: { groups: [{ name: 'app', test: (id: string) => id === APP_MAIN }] },
         },
       },
     },

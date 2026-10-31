@@ -1,9 +1,6 @@
 import { parseFragment } from 'parse5'
 import type { DefaultTreeAdapterMap } from 'parse5'
-
-export function escapeHtml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}
+import { escapeHtml } from './escape-html.ts'
 
 export interface HtmlAttribute {
   name: string

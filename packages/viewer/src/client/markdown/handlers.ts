@@ -1,9 +1,9 @@
 import { isButton, roleMark, safeDecodeURIComponent, urlSlug } from '@lincyaw/kernel'
 import type { MdastNode } from '@lincyaw/kernel'
 import type { Element, ElementContent, Nodes, Root } from 'hast'
-import { raw } from 'hast-util-raw'
 import type { Handler, Handlers, State } from 'mdast-util-to-hast'
 import { defaultHandlers, toHast } from 'mdast-util-to-hast'
+import { rawHtmlParser } from '../deferred.ts'
 import { viewerMessages } from '../viewer-messages.ts'
 import { footnoteId } from '../viewer-state.ts'
 import type { Viewer } from '../viewer-state.ts'
@@ -145,9 +145,35 @@ function textOf(node: ElementContent | Root): string {
   return 'children' in node ? node.children.map(c => textOf(c as ElementContent)).join('') : ''
 }
 
+function hasRaw(node: Nodes): boolean {
+  return node.type === 'raw' || ('children' in node && node.children.some(child => hasRaw(child as Nodes)))
+}
+
+/** Joins the neighbouring texts of a tree, as parsing it as HTML does (`hast-util-raw`), so that it renders as one text. */
+function joinTexts(node: Nodes): void {
+  if (!('children' in node)) return
+  const children: Nodes[] = []
+  for (const child of node.children as Nodes[]) {
+    const last = children.at(-1)
+    if (child.type === 'text' && last?.type === 'text') last.value += child.value
+    else children.push(child)
+    joinTexts(child)
+  }
+  node.children = children as never
+}
+
+/** The trees made while the HTML parser was loading, without their HTML; they are made again once it is there. */
+const partial = new WeakSet<Root>()
+export const isPartialTree = (tree: Root): boolean => partial.has(tree)
+
 export function markdownToHast(mdast: MdastNode, prefix: string, links: MarkdownLinks = {}): Root {
   const html = toHast(mdast as never, { allowDangerousHtml: true, handlers: handlers(links), unknownHandler: unknown as never }) as Nodes
-  const tree = raw(html, { passThrough: VIEWER_NODES }) as Root
+  // HTML written in the Markdown is parsed with the rest (`hast-util-raw`); without any, the tree needs no HTML parser.
+  const written = hasRaw(html)
+  const raw = written ? rawHtmlParser() : undefined
+  if (!raw) joinTexts(html)
+  const tree = (raw ? raw(html, { passThrough: VIEWER_NODES }) : html) as Root
+  if (written && !raw) partial.add(tree)
   let item = 0
   for (const child of tree.children) {
     if (child.type !== 'element') continue
