@@ -1,6 +1,13 @@
-# Presmium example: teaching with code
+# Presmium Gallery
 
-Two lectures in Chinese, written for this repository, that show what Presmium does with animations in code.
+This workspace contains 31 main documents: two complete courses, nine feature guides, a Fourier lesson, a product film and 18 animation references. Every lecture.json is its document’s editable authority.
+
+- `learn/` is the Fourier lesson, with its English translation.
+- `promo/` is the product film; read its storyboard before editing its scenes.
+- `guide-*/` are the nine feature guides indexed in FEATURES.md and features.json.
+- `animation-library/` comes from the presmium-animate skill gallery. In the source checkout it is a symlink; the editable workspace copy contains regular files. Keep shared scene imports intact.
+
+The two original complete courses are:
 
 - `bubble-sort/` (冒泡排序): one pass of bubble sort, from the code to an animation, a counter the narration clicks and a guided cursor, ending in a narrated lecture.
 - `libraries/` (代码写成的动画): one section for each animation library a scene can be written with: GSAP, Anime.js, Motion, Three.js and Remotion, then the narration's clicks and the lecture video.

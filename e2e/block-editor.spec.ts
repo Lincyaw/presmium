@@ -10,7 +10,7 @@ let studio: Studio
 test.use({ locale: 'zh-CN', actionTimeout: 20_000 })
 test.describe.configure({ timeout: 180_000 })
 test.beforeAll(async () => {
-  if (!existsSync(join(FIXTURE, 'node_modules'))) symlinkSync(fileURLToPath(new URL('../examples/animations/node_modules', import.meta.url)), join(FIXTURE, 'node_modules'), 'junction')
+  if (!existsSync(join(FIXTURE, 'node_modules'))) symlinkSync(fileURLToPath(new URL('../examples/gallery/node_modules', import.meta.url)), join(FIXTURE, 'node_modules'), 'junction')
   studio = await startStudio({ port: 5795, prefix: 'block-editor', fixture: FIXTURE, isolateClient: true, onServiceOutput: text => appendFileSync('/private/tmp/block-editor-service.log', text) })
 })
 test.afterAll(async () => studio?.close())

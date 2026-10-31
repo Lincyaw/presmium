@@ -122,7 +122,7 @@ presmium/
 │   ├── workspace/           工作区：presmium.workspace.yaml 与 .gitignore 的模板
 │   └── plugin/              插件项目的模板（create-presmium 用）
 ├── examples/
-│   └── animations/          公开示例工作区：两讲完整中文课程与九份按主题组织的功能导览
+│   └── gallery/             统一示例工作区：课程、功能导览、小课、宣传片；animation-library 软链接到技能效果集
 ├── site/                    文档站：一个 Presmium 工作区，用 Presmium 自己构建（中英双语，接口参考由 TypeDoc 生成）
 ├── e2e/                     Playwright 测试，每个上下文一个 spec；测试文稿在 e2e/fixtures/<组>/
 ├── scripts/                 结构检查：check-layering.mjs、check-skills.mjs、check-plugins.mjs、check-packages.mjs（发布的包）、check-tokens.mjs（令牌）、check-types.mjs（类型）；consumer.ts（消费者安装）
@@ -1637,9 +1637,9 @@ PDF、图片与 PowerPoint 的导出中，插件组件显示 IR 的 `fallback`�
 
 ## 6. 示例文稿约定
 
-公开示例工作区位于 `examples/animations/`，包含两讲完整中文课程和九份功能导览。导览按动手编辑练习、正文、步骤动画、代码执行、课堂互动、讲稿制作、发布协作、可选执行环境和联网资源组织；[功能索引](../examples/animations/FEATURES.md) 对照当前官方插件、公开组件与实际章节，区分可直接体验、操作指引、按条件启用与当前门槛。两讲完整课程保留如下内容。`bubble-sort/`（冒泡排序）从代码讲到一趟冒泡的 GSAP 动画，讲解点击文稿自己的计数组件、光标指向按钮，再合成为带字幕的讲授；`libraries/`（代码写成的动画）用 GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节场景（4.4 节的步骤时间），最后是讲到哪里点哪里与讲授视频。每讲的 `scenes/` 是场景源码，`components/` 是讲义的组件，`.presmium/speech/` 与 `speech.lock.json` 是讲解的合成缓存（音色 `edge`），随讲义提交：没有语音引擎的环境（CI、新的检出）照样能检查、构建与播放讲授，改过的句子才需要引擎。
+公开示例工作区位于 `examples/gallery/`，包含两讲完整中文课程、九份功能导览、傅里叶小课、产品宣传片与 18 份技能动画参考，共 31 份主文稿。动画参考通过 `animation-library` 相对软链接复用 `.agents/skills/presmium-animate/gallery` 的唯一源码。导览按动手编辑练习、正文、步骤动画、代码执行、课堂互动、讲稿制作、发布协作、可选执行环境和联网资源组织；[功能索引](../examples/gallery/FEATURES.md) 对照当前官方插件、公开组件与实际章节，区分可直接体验、操作指引、按条件启用与当前门槛。两讲完整课程保留如下内容。`bubble-sort/`（冒泡排序）从代码讲到一趟冒泡的 GSAP 动画，讲解点击文稿自己的计数组件、光标指向按钮，再合成为带字幕的讲授；`libraries/`（代码写成的动画）用 GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一节场景（4.4 节的步骤时间），最后是讲到哪里点哪里与讲授视频。每讲的 `scenes/` 是场景源码，`components/` 是讲义的组件，`.presmium/speech/` 与 `speech.lock.json` 是讲解的合成缓存（音色 `edge`），随讲义提交：没有语音引擎的环境（CI、新的检出）照样能检查、构建与播放讲授，改过的句子才需要引擎。
 
-`pnpm studio` 首次用示例的 `try.mjs` 复制到独立的 `.presmium/example-workspace`（自己的 git 仓库，带合成缓存与给 AI 的 `AGENTS.md`），之后复用用户可编辑的副本。`pnpm demo:check` 与 `pnpm demo:ir` 仍只处理原有两讲；`pnpm demo:build` 构建整个工作区网页，并把原有两讲的幻灯片、notebook 与讲授放进 `<讲义>/slides/`、`<讲义>/notebook/`、`<讲义>/lecture/`，站点在 `examples/animations/dist/web/`。讲授视图先找页面下的 `lecture/`，再找网页形态旁边的 `../lecture/`（单讲构建的位置），所以同一站点中几讲的讲授互不冲突。
+`pnpm studio` 首次用示例的 `try.mjs` 复制到独立的 `.presmium/gallery-workspace`（自己的 git 仓库，带合成缓存与给 AI 的 `AGENTS.md`），复制时解引用技能效果集的软链接，写入真实文件以满足工作台的源文件路径校验，之后复用用户可编辑的副本；旧 `.presmium/example-workspace` 保留。`pnpm demo:check` 与 `pnpm demo:ir` 仍只处理原有两讲；`pnpm demo:build` 构建整个工作区网页，并把原有两讲的幻灯片、notebook 与讲授放进 `<讲义>/slides/`、`<讲义>/notebook/`、`<讲义>/lecture/`，小课和宣传片另生成并合并放映与讲授；站点在 `examples/gallery/dist/web/`。讲授视图先找页面下的 `lecture/`，再找网页形态旁边的 `../lecture/`（单讲构建的位置），所以同一站点中几讲的讲授互不冲突。
 
 功能回归使用 `e2e/fixtures/<组>/` 的私有文稿。`e2e/fixtures/regression/` 中的 BPE 文稿仅用于私有回归，代码引用的历史版本行为由专用代码用例验证。冒烟和功能测试从该目录解析依赖；示例的用例检查站点中的两讲、各自的幻灯片与讲授，以及 `pnpm studio` 的副本。`lang` 决定两种形态的界面语言（5.7 节）。
 

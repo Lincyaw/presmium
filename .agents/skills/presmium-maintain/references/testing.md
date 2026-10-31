@@ -51,7 +51,7 @@ lifecycle use `buildFixture` from the same file and call `close()`. Options:
 A component shared by the web page and the slides is driven through its key actions in both. Step features
 verify at least that going forward and back and jumping straight give the same state. Static fallbacks are
 verified on a real notebook, PDF or browser print. A new plugin's verification document goes here, never into
-`examples/animations/`.
+`examples/gallery/`.
 
 Contrast is checked with `lowContrast` from `e2e/fixtures/contrast.ts` (used by `e2e/plugin-ui.spec.ts` for
 plugin components and slides, and by the workbench and publish specs).

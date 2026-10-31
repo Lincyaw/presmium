@@ -22,7 +22,7 @@ const { values, positionals } = parseArgs({
 })
 
 if (values.help) {
-  console.log('Usage: node scripts/bench-workbench-preview.mjs [output.json] [--rounds 3] [--example]\n\nOpens two fixture lectures for the first time, then alternates between them for\nthree warm returns by default. --example uses the two lectures of the example\n(examples/animations), with their animations. --output is an alternative to the positional path.\nUses one isolated Studio and Chromium; does not build the full demo or run tests.\nJSON goes to stdout when no output path is supplied. Progress goes to stderr.')
+  console.log('Usage: node scripts/bench-workbench-preview.mjs [output.json] [--rounds 3] [--example]\n\nOpens two fixture lectures for the first time, then alternates between them for\nthree warm returns by default. --example uses the two lectures of the example\n(examples/gallery), with their animations. --output is an alternative to the positional path.\nUses one isolated Studio and Chromium; does not build the full demo or run tests.\nJSON goes to stdout when no output path is supplied. Progress goes to stderr.')
   process.exit(0)
 }
 
@@ -99,7 +99,7 @@ try {
   const bootStarted = performance.now()
   if (values.example) {
     fixture = mkdtempSync(join(tmpdir(), 'presmium-bench-example-'))
-    execFileSync(process.execPath, [join(root, 'examples/animations/try.mjs'), fixture], { stdio: 'ignore' })
+    execFileSync(process.execPath, [join(root, 'examples/gallery/try.mjs'), fixture], { stdio: 'ignore' })
   }
   studio = await startStudio({ port: await freePort(), prefix: 'bench-preview', isolateClient: true, ...fixture ? { fixture } : {} })
   result.boot.studioReadyMs = performance.now() - bootStarted

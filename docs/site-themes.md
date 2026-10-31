@@ -315,13 +315,13 @@ presmium build welcome --to web
 
 ## 完整示例：产品首页与教学宣传片
 
-[产品站点示例](../examples/presmium-site/README.md) 使用独立 HTML 首页，收集宣传片与线性回归小课两份文稿。小课生成阅读版与放映版；60 秒宣传片用同一组真实训练计算，连续展示教学痛点、公式与代码如何连接预测线，以及学习率改变后的效果。成片、中文旁白、字幕和源码下载一起放回首页。
+[产品站点示例](../examples/gallery/PRODUCT-SITE.md) 是统一 Gallery 的一部分：独立 HTML 首页收集傅里叶级数小课与产品宣传片，工作区同时展示课程、功能导览和动画效果参考。小课和宣传片各生成阅读、放映与讲授产物；成片、字幕和完整 Gallery 源码下载随首页发布。
 
 首页提供中文／英文、亮／暗外观和移动布局。设计素材、文稿、分镜、场景、共享数学模型与构建脚本均在示例目录内。
 
 ```sh
-pnpm --filter presmium-product-site build
-pnpm --filter presmium-product-site dev
+pnpm --filter presmium-gallery build
+pnpm --filter presmium-gallery dev
 ```
 
 在实时预览中，配置了幻灯片渲染端的文稿也可使用 `<文稿路径>/slides/` 打开放映，再返回同一文稿的阅读页。静态站点仍需在自己的构建中生成并合并放映产物，示例的 `tools/build.mjs` 展示了这一过程。

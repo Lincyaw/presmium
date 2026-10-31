@@ -1,19 +1,19 @@
 # Presmium 产品首页与 60 秒宣传片
 
-独立 HTML 首页、傅里叶级数小课与产品宣传片组成一个可静态发布的示例。首页保留渐变背景、内容卡片、能力介绍与影片区；教学内容在 `learn/lecture.json`，宣传片在 `promo/lecture.json`，首页在 `site/home.html`。
+独立 HTML 首页、傅里叶级数小课与产品宣传片组成一个可静态发布的示例。首页保留渐变背景、内容卡片、能力介绍与影片区；教学内容在 `learn/lecture.json`，宣传片在 `promo/lecture.json`，首页在 `site/home.html`。这两份文稿现与课程、功能导览和动画效果参考共用 Gallery 工作区，完整目录见 [Gallery](README.md)。
 
 ## 运行
 
 在已安装依赖的仓库根目录运行：
 
 ```sh
-pnpm --filter presmium-product-site build
-pnpm --filter presmium-product-site dev
+pnpm --filter presmium-gallery build
+pnpm --filter presmium-gallery dev
 ```
 
-打开服务打印的网址。静态产物在 `dist/web/`；两份文稿各有阅读版（`learn/`、`promo/`）、放映版（`learn/slides/`、`promo/slides/`）与讲授时间线和媒体（`lecture/`）。当前 `site.base` 为 `/repo/`，适合 GitHub 项目 Pages 同名路径；根域名改成 `/` 后重新构建。
+打开服务打印的网址。静态产物在 `dist/web/`；两份文稿各有阅读版（`learn/`、`promo/`）、放映版（`learn/slides/`、`promo/slides/`）与讲授时间线和媒体（`lecture/`）。默认部署在根路径；GitHub Pages 构建时写入实际 `site.base`。
 
-源码包使用本仓库的开发依赖，解压回 `examples/presmium-site/` 后运行。新建自己的独立站点可以使用：
+源码包使用本仓库的开发依赖，解压回 `examples/gallery/` 后运行。新建自己的独立站点可以使用：
 
 ```sh
 pnpm add -g @lincyaw/presmium
@@ -45,16 +45,16 @@ presmium new my-site --type site
 音乐是 Kevin MacLeod 的 “Newer Wave”（incompetech.com，CC BY 4.0，须署名；署名写在影片文稿的阅读视图与 `promo/audio/score.json`）。按键声来自 Kenney 的 Interface Sounds（CC0），只用到的三个文件在 `promo/audio/sfx/`，并附许可说明。`pnpm score`（`promo/tools/score.mjs`）首次下载原曲到 `promo/audio/source/`，截取与节拍网格对应的 61 秒，在工作台的点击、翻页笔的每一下与手机上的轻触处叠加按键声，用 FFmpeg 混音并调到约 −16 LUFS、真峰值不超过 −1.5 dBTP，写出 `promo/audio/score.wav`、清单 `score.json` 与文稿引用的 `score.ogg`（Opus 160 kbit/s），并同步更新 `lecture.json` 中配乐的指纹、每个步骤一段的配乐片段、步骤停留时间与场景各状态的时长。原曲与 WAV 不入库。
 
 ```sh
-pnpm --filter presmium-product-site check
-pnpm --filter presmium-product-site score
-pnpm --filter presmium-product-site lesson-film
-pnpm --filter presmium-product-site film
-pnpm --filter presmium-product-site build
+pnpm --filter presmium-gallery check:site
+pnpm --filter presmium-gallery score
+pnpm --filter presmium-gallery lesson-film
+pnpm --filter presmium-gallery film
+pnpm --filter presmium-gallery build
 ```
 
 导出的宣传片为 1920×1080、30 fps；配套教学视频为 1280×720、24 fps。封面 `public/presmium-60s-poster.jpg` 取自导出影片的课堂镜头（照片为主，存为 JPEG），更改影片后需同步更新。配乐生成需支持直接运行 TypeScript 的 Node.js（`score.mjs` 引用 `timeline.ts`）与带 libopus 的 FFmpeg。
 
-`pnpm --filter presmium-product-site source` 重建可下载源码包，包含首页、两份文稿、分镜、真实界面素材、场景、共享模型、配乐生成源码及已有成片。依赖与缓存不进入该包。
+`pnpm --filter presmium-gallery source` 重建可下载源码包，包含首页、两份文稿、分镜、真实界面素材、场景、共享模型、配乐生成源码及已有成片。源码包也包含其余 Gallery 文稿和已物化的动画效果参考；依赖与缓存不进入该包。
 
 ## 发布
 

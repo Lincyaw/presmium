@@ -36,9 +36,9 @@ def _prepare():
         email = (os.environ.get('PRESMIUM_USER_EMAIL') or 'author@presmium.invalid').replace('\n', '').strip()[:200]
         with open(identity, 'w') as file:
             file.write(f'[user]\n\tname = {name}\n\temail = {email}\n[init]\n\tdefaultBranch = main\n')
-    # A new space starts as the example workspace, as a first local `pnpm studio` does.
+    # A new space starts with the complete gallery, as a first local `pnpm studio` does.
     if not os.path.isdir(SPACE) or not os.listdir(SPACE):
-        subprocess.run(['node', f'{PRESMIUM}/examples/animations/try.mjs', SPACE], check=True)
+        subprocess.run(['node', f'{PRESMIUM}/examples/gallery/try.mjs', SPACE], check=True)
     for state in glob.glob(f'{STATE}/*.json'):
         os.remove(state)
 

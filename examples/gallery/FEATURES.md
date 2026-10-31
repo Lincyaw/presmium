@@ -1,6 +1,6 @@
 # 功能与示例章节
 
-运行 `pnpm studio` 后，在工作台文稿列表打开所需导览，再按页面名定位；阅读站点则从“功能导览”菜单进入。文稿链接指向唯一的 `lecture.json`，便于查看或复用实际内容。已有工作台副本不会被自动覆盖；查看仓库中的最新示例可使用 `pnpm studio examples/animations`。
+运行 `pnpm studio` 后，在工作台文稿列表打开所需导览，再按页面名定位；阅读站点则从“功能导览”菜单进入。文稿链接指向唯一的 `lecture.json`，便于查看或复用实际内容。默认工作台使用 `.presmium/gallery-workspace` 的独立副本；需要最新副本时运行 `node examples/gallery/try.mjs <新目录>`，再用 `pnpm studio <新目录>` 打开。
 
 [机器可读索引](features.json) 同时登记插件、公开组件和动画实现的覆盖关系。外部服务、硬件、凭据和浏览器权限需要单独准备；“按条件启用”不表示已经配置。
 

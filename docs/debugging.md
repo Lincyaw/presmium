@@ -29,7 +29,7 @@ agent 已连接到当前工作区时，读取 `presmium://diagnostics?document=<
 在仓库根目录运行：
 
 ```sh
-pnpm debug:studio .presmium/example-workspace --document libraries
+pnpm debug:studio .presmium/gallery-workspace --document libraries
 ```
 
 入口会复制指定工作区，在独立的状态目录、服务端口与 Chromium 中依次打开文档、放映，再返回文档。原来的工作区和服务保留。未指定工作区时使用公开示例的新副本；指定工作区但未指定 `--document` 时打开第一份文稿。
@@ -37,7 +37,7 @@ pnpm debug:studio .presmium/example-workspace --document libraries
 缩小复现范围：
 
 ```sh
-pnpm debug:studio .presmium/example-workspace --document libraries --views document,present,document --timeout 30000
+pnpm debug:studio .presmium/gallery-workspace --document libraries --views document,present,document --timeout 30000
 ```
 
 `--views` 指定 `document,present` 的切换顺序，可重复；旧参数 `slides`、`video` 均按 `present` 处理。`--timeout` 是每次切换等待的毫秒数，默认 45000。`--headed` 显示隔离的 Chromium 窗口。`--output <新目录>` 指定证据目录，已存在的目录不会覆盖。使用 `pnpm debug:studio --help` 查看参数。

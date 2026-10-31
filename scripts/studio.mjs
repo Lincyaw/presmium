@@ -1,4 +1,4 @@
-// Repository shortcut: prepare the example workspace once, then reuse its editable files.
+// Repository shortcut: materialize the gallery, including linked skill examples, once for editing.
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { parseArgs } from 'node:util'
@@ -18,11 +18,11 @@ try {
   // Let the workbench CLI report invalid arguments using its normal usage message.
 }
 
-if (parsed?.values.help) console.log('pnpm studio [dir]: repository shortcut (default: .presmium/example-workspace, a copy of examples/animations)\n')
+if (parsed?.values.help) console.log('pnpm studio [dir]: repository shortcut (default: .presmium/gallery-workspace, an editable copy of examples/gallery)\n')
 if (parsed?.positionals.length === 0 && !parsed.values.help) {
-  const dir = '.presmium/example-workspace'
+  const dir = '.presmium/gallery-workspace'
   if (!existsSync(dir)) {
-    execFileSync(process.execPath, ['examples/animations/try.mjs', dir], { stdio: ['ignore', 'ignore', 'inherit'] })
+    execFileSync(process.execPath, ['examples/gallery/try.mjs', dir], { stdio: ['ignore', 'ignore', 'inherit'] })
   }
   process.argv.splice(2, 0, dir)
 }

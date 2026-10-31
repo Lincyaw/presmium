@@ -1,6 +1,6 @@
 import { Compiler, build } from '@lincyaw/compiler'
 import { execFileSync } from 'node:child_process'
-import { cpSync, readFileSync } from 'node:fs'
+import { cpSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { parse } from 'yaml'
 
@@ -8,6 +8,11 @@ const root = fileURLToPath(new URL('../', import.meta.url))
 const config = parse(readFileSync(new URL('../presmium.workspace.yaml', import.meta.url), 'utf8'))
 const base = '/' + (config.site?.base ?? '/').replace(/^\/+|\/+$/g, '')
 const prefix = base === '/' ? '/' : base + '/'
+const courses = ['bubble-sort', 'libraries']
+rmSync(`${root}/dist`, { recursive: true, force: true })
+for (const course of courses) {
+  execFileSync(process.execPath, [fileURLToPath(new URL('./build-lecture.mjs', import.meta.url)), course, `${prefix}${course}/slides/`], { cwd: root, stdio: 'inherit' })
+}
 // The lesson and the film each get a presentation with its lecture next to their page: the homepage plays the film
 // live from `promo/slides/`, drawn by the browser at the viewer's resolution instead of a compressed video.
 async function forms(name) {
@@ -27,4 +32,7 @@ execFileSync('presmium', ['build', '.'], { cwd: root, stdio: 'inherit' })
 for (const { name, outDir } of built) {
   cpSync(`${outDir}/slides`, `${root}/dist/web/${name}/slides`, { recursive: true })
   cpSync(`${outDir}/lecture`, `${root}/dist/web/${name}/lecture`, { recursive: true })
+}
+for (const course of courses) for (const form of ['slides', 'notebook', 'lecture']) {
+  if (existsSync(`${root}/${course}/dist/${form}`)) cpSync(`${root}/${course}/dist/${form}`, `${root}/dist/web/${course}/${form}`, { recursive: true })
 }

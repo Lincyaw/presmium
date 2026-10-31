@@ -2,7 +2,7 @@
 
 在工作台编辑教学文稿，以 lecture.json 保存唯一内容，编译为网页、幻灯片、Jupyter notebook 与讲授快照。
 
-示例：[用代码讲课](examples/animations/README.md)，保留冒泡排序、代码动画两讲完整中文课程与匹配的讲授缓存，并新增 8 份[功能导览](examples/animations/FEATURES.md)：正文、步骤、代码、课堂、讲稿、发布及可选执行环境。`pnpm demo:check` 检查原有两讲；`pnpm demo:build` 构建整个工作区网页，并为原有两讲补充幻灯片、notebook 与讲授。
+示例统一在 [Gallery](examples/gallery/README.md)：两讲完整课程、九份[功能导览](examples/gallery/FEATURES.md)、傅里叶小课、产品宣传片与 18 份动画效果参考。运行 `pnpm studio` 即可在独立的可编辑副本中浏览全部 31 份主文稿。`pnpm demo:check` 仍只检查原有两讲；`pnpm demo:build` 构建整个 Gallery 站点。
 
 ## 安装
 
@@ -54,7 +54,7 @@ pnpm add -g ./packages/presmium
 pnpm studio
 ```
 
-首次自动在 `.presmium/example-workspace` 准备示例的独立副本，后续复用其中的文档。打开终端打印的完整网址（默认端口 4320），即可编辑、保存与预览，不配模型也能使用。用 `pnpm studio <目录>` 打开自己的讲义或工作区，`Ctrl+C` 停止。参与开发见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+首次自动在 `.presmium/gallery-workspace` 准备全部 Gallery 示例的独立副本，后续复用其中的文档。打开终端打印的完整网址（默认端口 4320），即可编辑、保存与预览，不配模型也能使用。用 `pnpm studio <目录>` 打开自己的讲义或工作区，`Ctrl+C` 停止。参与开发见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 云端部署
 
