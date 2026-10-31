@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/workspace",
-  "version": "1.0.0-rc.5",
+  "version": "1.0.0-rc.6",
   "description": "Presmium's workspace service (presmium serve): documents, their history, reviews and the workspace site",
   "license": "Apache-2.0",
   "repository": {

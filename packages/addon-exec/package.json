@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/addon-exec",
-  "version": "1.0.0-rc.5",
+  "version": "1.0.0-rc.6",
   "description": "Presmium plugin: run panels for code, step-by-step execution and recorded outputs; Python in the browser with Pyodide",
   "license": "Apache-2.0",
   "repository": {

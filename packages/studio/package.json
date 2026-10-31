@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/studio",
-  "version": "0.2.0-rc.4",
+  "version": "0.2.0-rc.5",
   "description": "presmium studio: Presmium's workbench on DeepSeek Harness in one command, with the workspace service of a directory (experimental)",
   "license": "Apache-2.0",
   "repository": {

@@ -1,5 +1,14 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.6
+
+### Patch Changes
+
+- 8defdc2: The presentations of a workspace site share one viewer app at the site's `_app/<key>/` instead of a copy per document, so a reader downloads it once for every presentation of the site (about 0.5 MB each before).
+- @lincyaw/compiler@1.0.0-rc.6
+  - @lincyaw/kernel@1.0.0-rc.6
+  - @lincyaw/server@1.0.0-rc.6
+
 ## 1.0.0-rc.5
 
 ### Patch Changes
