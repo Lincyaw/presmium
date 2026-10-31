@@ -23,6 +23,8 @@ export interface PageHtmlInput {
   meta?: MetaTag[]
   /** The page rendered on the server, which the app hydrates. */
   body?: string
+  /** More modules the page will import, fetched with the app instead of one after another (a document's scene code). */
+  preload?: string[]
 }
 
 /** The reader's appearance before the first paint: as the workbench asks, as the reader chose, else as the system is. */
@@ -69,6 +71,10 @@ export function pageHtml(input: PageHtmlInput): string {
     // A workspace theme's fonts, tokens and styles come after the app's, so that they override them.
     ...(config.site?.shell.theme?.stylesheets ?? []).map(url => `<link rel="stylesheet" href="${escapeHtml(url)}">`),
     ...entry.preload.map(file => `<link rel="modulepreload" href="${escapeHtml(`${appUrl}${file}`)}">`),
+    // The document itself, fetched with the app instead of after it has started.
+    ...config.ir ? [`<link rel="preload" as="fetch" crossorigin href="${escapeHtml(config.ir)}">`] : [],
+    // The document's own code: its bundle and, when given, the chunks its scenes load, in parallel with the app.
+    ...[...config.bundle ? [config.bundle] : [], ...input.preload ?? []].map(url => `<link rel="modulepreload" href="${escapeHtml(url)}">`),
     `<script type="application/json" id="${APP_CONFIG_ELEMENT}">${json(config)}</script>`,
     `<script type="module" src="${escapeHtml(`${appUrl}${entry.script}`)}"></script>`,
   ]
