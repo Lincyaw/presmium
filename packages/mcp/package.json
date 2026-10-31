@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/mcp",
-  "version": "1.0.0-rc.7",
+  "version": "1.0.0-rc.8",
   "description": "Presmium's agent environment: a document's tools and resources over MCP, and presmium-mcp over stdio",
   "license": "Apache-2.0",
   "repository": {

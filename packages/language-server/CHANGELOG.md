@@ -1,5 +1,17 @@
 # @lincyaw/language-server
 
+## 1.0.0-rc.8
+
+### Patch Changes
+
+- Updated dependencies [6b33a28]
+  - @lincyaw/web@1.0.0-rc.8
+  - @lincyaw/cli@1.0.0-rc.8
+  - @lincyaw/compiler@1.0.0-rc.8
+  - @lincyaw/host@1.0.0-rc.8
+  - @lincyaw/kernel@1.0.0-rc.8
+  - @lincyaw/viewer@1.0.0-rc.8
+
 ## 1.0.0-rc.7
 
 ### Patch Changes
