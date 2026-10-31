@@ -21,7 +21,7 @@ import { loadLanding, publishLanding, siteContent } from './landing.ts'
 import { buildLandingTemplate, writeLandingTemplate } from './landing-template.ts'
 import { pageHtml, redirectHtml } from './site-page.ts'
 import type { MetaTag } from './site-page.ts'
-import { appEntry, appPlugin, buildViewerApp, buildViewerServer, viewerAppCache } from './viewer-app.ts'
+import { appChunkImports, appEntry, appPlugin, buildViewerApp, buildViewerServer, viewerAppCache } from './viewer-app.ts'
 import type { AppPlugin, ViewerApp } from './viewer-app.ts'
 
 /**
@@ -297,13 +297,14 @@ function scenePreloads(codeDir: string, codeUrl: string, built: Built): string[]
   const { shared } = built.app.manifest
   for (const [specifier, file] of Object.entries(shared)) if (text.includes(`"${specifier}"`) || text.includes(`'${specifier}'`)) urls.push(`${built.appUrl}${file}`)
   const assets = existsSync(join(built.appDir, 'assets')) ? readdirSync(join(built.appDir, 'assets')) : []
-  // The viewer the app opens for the slides, loaded by the app only once it runs.
-  for (const file of assets.filter(name => name.startsWith('viewer-') && name.endsWith('.js'))) urls.push(`${built.appUrl}assets/${file}`)
+  // The viewer the app opens for the slides, loaded by the app only once it runs, with the chunks each imports.
+  const lazy = assets.filter(name => name.startsWith('viewer-') && name.endsWith('.js'))
   for (const [engine, library] of Object.entries(SCENE_LIBRARIES)) {
     if (!text.includes(engine)) continue
     const file = assets.find(name => name.startsWith(`${library}-`) && name.endsWith('.js'))
-    if (file) urls.push(`${built.appUrl}assets/${file}`)
+    if (file) lazy.push(file)
   }
+  for (const file of new Set(lazy.flatMap(name => appChunkImports(built.app, `assets/${name}`)))) urls.push(`${built.appUrl}${file}`)
   return urls
 }
 
