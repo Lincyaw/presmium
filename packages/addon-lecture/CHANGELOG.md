@@ -1,5 +1,11 @@
 # @lincyaw/addon-lecture
 
+## 1.0.0-rc.13
+
+### Patch Changes
+
+- ee12c38: A lecture plays its audio with one element per file instead of one per clip: clips that continue one another, such as a score cut at every step, run on without the pause, seek and click that each step change caused, and a file gets another element only for clips of it that overlap.
+
 ## 1.0.0-rc.12
 
 No changes in this release.
