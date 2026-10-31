@@ -125,6 +125,9 @@ Presentation playback shares one horizontal row with viewer navigation, includin
 
 The document caption sidebar exposes only captions and narration start. Voice choice, inheritance, pronunciation, hold and trailing pause belong to video production; its `DocumentVoiceField` and `DocumentVoiceDialog` keep the shared canonical Production settings. Selecting a voice never starts synthesis. The verified document/video boundary is `docs/benchmarks/document-caption-scope-2026-10-27.md`.
 
+Video production uses the public `PmSplitGroup`/`PmSplitPanel`/`PmSplitHandle` adapters for visual/script widths and workspace/timeline heights. Keep voice selection above the long step editor, retain just the top step strip (`PmTimeline.showSteps=false` in production), and constrain issue details to the existing popover. Preserve mounted but invisible/inert previews across narrow-screen tabs. The dependency places Panel HTML attributes on its outer sizing element and class/style on its content: public adapter markers own hiding and background retention, never business descendant overrides. Resize handles retain arrow/Home/End keys even after pointer focus; production shortcuts must not navigate steps while resizing. Layout choices never write canonical Production timing. Formal controls and Figma bindings are in `docs/design-system.md`.
+
+
 ## Undo, redo and versions
 
 Every save is a commit. Undo and redo go through the workspace service's routes `history/undo` and

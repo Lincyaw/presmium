@@ -139,6 +139,7 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 | Range | workbench `PmRange`、`pm-ui-range`，使用原生 range | 提供受控数值、读屏值、焦点、禁用和三种密度；方向键／Home／End 提交意图，拖动先显示本地预览，释放时单次提交，Esc／取消／失焦／卸载丢弃手势草稿 |
 | MediaClipEditor | workbench `MediaClipEditor`、`pm-ui-media-clip-editor` | 组合公开素材选择、成对时间输入、短偏移、音量与静音；导入和采用分开，非法输入保留。调用方提供真实音频检查、已确认步骤范围和版本化提交，不绘制虚构波形 |
 | Timeline | workbench `PmTimeline`、`pm-ui-timeline` | 接收真实画面／配音／字幕三轨与稳定步骤身份；支持尺面点击、精确秒输入、Range、横滚、视图缩放与适配；未知／估算时长不开放任意时间定位，仍可选择步骤；只有真实样本才绘制波形 |
+| Split panes | workbench `PmSplitGroup`、`PmSplitPanel`、`PmSplitHandle` | 封装 react-resizable-panels 的公开 Group／Panel／Separator；支持两轴调整、键盘与双击恢复默认；公共层适配隐藏与保留挂载的后台窗格 |
 | SortableList | workbench `PmSortableList`、`pm-ui-sortable-list` | dnd kit 负责指针、触屏、键盘和取消；按稳定 ID 提交一次相对位置移动。排序禁用与页面选择分开，保存前的视觉顺序不成为第二份文稿；身份、页面集合和重置变化中止过期手势 |
 | BlockPreview | workbench `DocumentBlockPreview`、`pm-ui-block-preview` | iframe 与可读 fallback 共用持久 viewport；离屏释放 iframe 保留最近真实测量高度，未测量时使用既有预览高度令牌。终态失败暂停并移除旧 iframe，以短状态、可读 fallback 和原刷新入口紧凑显示；重试采用新预览。fallback 原生滚动、显示键盘焦点，Tab 可离开；挂载 iframe 不替换 viewport 或主动转移焦点。内联 HTTP 失败由本控件承接，完整请求诊断仍记录与上报；网络和显式放映失败保留全局反馈 |
 | Checkbox／Radio／Switch | 现有 `pm-ui-checkbox` 仅提供部分基础着色，其余公共能力待补齐 | 在使用前规定选择、焦点、禁用、数值和错误状态，不在业务页各自实现 |
@@ -148,6 +149,8 @@ compact 讲稿使用本轮新增的 `--pm-narration-editor-compact-height: 5rem`
 `PmSearchList` 放在公共 Dialog、Drawer 或页面内，不另套下拉层。搜索框的向下键进入当前或首个可用结果，方向键、Home、End 与 Space 由 Radix Radio Group 管理；没有可用结果时焦点留在搜索框。`label`、`keywords` 用于检索，`description` 只展示非交互说明，试听等操作放在列表外。错误只渲染一个关联提示，额外说明通过 `aria-describedby` 关联；关闭时由外层公共容器归还焦点。Figma 的 [SearchList 组件集](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=77-554) 与[状态矩阵](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=77-1704) 对应 `packages/workbench/src/components.tsx` 的 `PmSearchList`、公共 CSS 与 `--pm-search-list-max-height`；24 个变体覆盖三种密度及默认、悬停、按下、焦点、禁用、加载、错误和空状态。
 
 `PmTimeline` 的[正式组件集](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=136-3258)与[明暗状态矩阵](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=137-2178)覆盖三种密度及就绪、焦点、估算、未知、加载和禁用共 18 个变体；复用公开 Range、Input、Button、IconButton 与既有 Lucide 图标，不新增时间线私有按钮。尺、位置滑杆和三轨共享时间轴起点。片段太短时仍有独立完整热区的步骤按钮，触屏无需依赖拖动；长时间线在轨道区内横滚。缩放只改变视图，不写入 Production。`onSeek` 只提交时间意图，由调用方先暂停并确认来源后更新受控位置；`seekDisabled` 仅禁时间定位，稳定步骤选择保持可用。估算与未知不能冒充确认时码，缺少真实 samples 不画装饰波形。实际公共消费者范围见[时间线验证](benchmarks/public-timeline-2026-10-26.md)，不能由组件存在推断整个制作流程已经验收。
+
+视频制作复用公共分栏：[SplitHandle 组件集](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=308-7391)覆盖两个方向的默认、悬停、焦点和拖动状态，[明暗实例](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=308-7392)绑定现有颜色令牌与 `--pm-split-handle-size`。分隔条调整画面／讲稿的宽度、工作区／时间线的高度，不写入文稿。依赖把 Panel 的 HTML 属性放在外层尺寸节点、className/style 放在内容节点；公共适配用显式标记处理隐藏和后台保留，业务页面不依赖其内部节点结构。`PmTimeline.showSteps` 默认 true；已有步骤导航的制作页传 false，Figma 对应 `Show step choices` 布尔属性，三轨片段选择和触屏字幕选择器保留。
 
 音色选择的[正式组合与状态](https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=126-385)复用上述公共控件，不新增一套音色专用下拉。SearchList 的 Figma 变体内部按可用宽度伸缩，与公共实现的满宽、换行和滚动行为一致；默认宽度仍为 340px。组合包括桌面与 390px 触屏的浅／深色，以及目录未配置、不提供目录、空结果、读取失败、加载、确认覆盖、确认调用、取消中与源版本变化等状态。它们是正式设计目标，不能据此宣称独立视频制作入口或配音流程已经完成验收。
 

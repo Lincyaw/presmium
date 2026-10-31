@@ -1,6 +1,7 @@
 import type { Locale } from './messages.ts'
 
 const zh = {
+  resizeProperties: '调整画面与讲稿宽度', resizeTimeline: '调整画面与时间线高度',
   title: '视频制作', back: '返回文稿', preview: '画面', script: '讲稿与配音', outputs: '导出',
   step: '当前步骤', page: '页面', prepare: '准备画面', preparing: '正在准备画面…',
   current: '当前保存版本', outdated: '需要更新', unavailable: '画面尚未准备',
@@ -66,6 +67,7 @@ const zh = {
 export const PRODUCTION_MESSAGES: Record<Locale, typeof zh> = {
   'zh-CN': zh,
   en: {
+    resizeProperties: 'Resize visuals and script', resizeTimeline: 'Resize visuals and timeline',
     title: 'Video Production', back: 'Back to Document', preview: 'Visuals', script: 'Script and Voiceover', outputs: 'Export',
     step: 'Current step', page: 'Page', prepare: 'Prepare Visuals', preparing: 'Preparing visuals…',
     current: 'Current saved version', outdated: 'Update needed', unavailable: 'Visuals are not prepared',

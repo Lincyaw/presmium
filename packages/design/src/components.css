@@ -1916,6 +1916,16 @@
 }
 .pm-ui-range:focus-visible { outline: var(--pm-space-px) solid var(--pm-color-accent); outline-offset: calc(var(--pm-space-px) * -1); }
 .pm-ui-range:disabled { cursor: default; opacity: var(--pm-opacity-disabled); }
+.pm-ui-split-group, .pm-ui-split-panel { position: relative; display: flex; min-width: 0; min-height: 0; overflow: hidden; }
+.pm-ui-split-panel { flex-direction: column; }
+/* Panel's public outer sizing element has inline display:flex; honor hidden there. */
+.pm-ui-split-group > [data-pm-split-panel][hidden] { display: none !important; }
+.pm-ui-split-group > [data-pm-background] { position: absolute; inset: 0; visibility: hidden; }
+.pm-ui-split-handle { position: relative; width: var(--pm-split-handle-size); outline: none; }
+.pm-ui-split-handle::after { position: absolute; inset-block: 0; left: 50%; width: var(--pm-size-hairline); background: var(--pm-color-line); content: ''; }
+.pm-ui-split-group[data-pm-orientation='vertical'] > .pm-ui-split-handle { width: auto; height: var(--pm-split-handle-size); }
+.pm-ui-split-group[data-pm-orientation='vertical'] > .pm-ui-split-handle::after { inset-inline: 0; top: 50%; left: 0; width: auto; height: var(--pm-size-hairline); }
+.pm-ui-split-handle:hover::after, .pm-ui-split-handle:focus-visible::after, .pm-ui-split-handle[data-separator='active']::after { background: var(--pm-color-accent); box-shadow: 0 0 0 var(--pm-size-hairline) var(--pm-color-accent-line); }
 .pm-ui-timeline { display: flex; flex-direction: column; gap: var(--pm-space-2); min-width: 0; padding: var(--pm-space-3); border: var(--pm-size-hairline) solid var(--pm-color-line); border-radius: var(--pm-radius-control); background: var(--pm-color-surface); color: var(--pm-color-ink); font-family: var(--pm-font-sans); font-size: var(--pm-ui-control-font, var(--pm-text-sm)); line-height: var(--pm-leading-ui); }
 .pm-ui-timeline__tools { display: flex; flex-wrap: wrap; align-items: end; gap: var(--pm-space-2); }
 .pm-ui-timeline__zoom { display: flex; align-items: center; gap: var(--pm-space-2); }
