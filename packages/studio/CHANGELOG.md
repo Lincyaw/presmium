@@ -1,5 +1,12 @@
 # @lincyaw/studio
 
+## 0.2.0-rc.5
+
+### Patch Changes
+
+- @lincyaw/dsh@0.2.0-rc.5
+  - @lincyaw/presmium@1.0.0-rc.6
+
 ## 0.2.0-rc.4
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @lincyaw/server
 
+## 1.0.0-rc.6
+
+### Patch Changes
+
+- @lincyaw/compiler@1.0.0-rc.6
+  - @lincyaw/kernel@1.0.0-rc.6
+  - @lincyaw/mcp@1.0.0-rc.6
+
 ## 1.0.0-rc.5
 
 ### Patch Changes
