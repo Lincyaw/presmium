@@ -2,10 +2,8 @@ import { createContext, createElement as h, forwardRef, useContext, useEffect, u
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as Popover from '@radix-ui/react-popover'
-import * as Dropdown from '@radix-ui/react-dropdown-menu'
 import * as Tabs from '@radix-ui/react-tabs'
 import * as Tooltip from '@radix-ui/react-tooltip'
-import * as RadioGroup from '@radix-ui/react-radio-group'
 import { useLocale } from '../locale.ts'
 import { HOST_MESSAGES } from '../messages.ts'
 import { ICONS } from '@lincyaw/design'
@@ -17,7 +15,7 @@ export type Tone = 'neutral' | 'accent' | 'ok' | 'warn' | 'danger' | 'outline'
 export type PopoverPlacement = 'below-end' | 'below-start' | 'above-end' | 'above-start' | 'above' | 'below'
 export interface Choice { value: string, label: string, icon?: IconName, disabled?: boolean }
 export interface MenuItem { id: string, label: string, icon?: IconName, danger?: boolean, disabled?: boolean, shortcut?: string, checked?: boolean, separator?: boolean }
-const cls = (...values: (string | false | undefined)[]) => values.filter(Boolean).join(' ')
+export const cls = (...values: (string | false | undefined)[]) => values.filter(Boolean).join(' ')
 export function PmIcon({ name, size: _size, strokeWidth = 1.7, ...attrs }: { name: IconName, size?: number | string, strokeWidth?: number } & HTMLAttributes<SVGElement>) {
   return h('svg', { ...attrs, className: cls('pm-ui-icon', attrs.className), viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, focusable: false }, ICONS[name]?.map(([tag, attributes], key) => h(tag, { ...attributes, key })))
 }
@@ -102,18 +100,8 @@ function DialogSurface({ open, label, closeLabel, name, children, actions, trigg
 }
 export function PmDialog(props: OverlayProps) { return h(DialogSurface, props) }
 export function PmDrawer(props: OverlayProps) { return h(DialogSurface, { ...props, drawer: true }) }
-const placement = (value: PopoverPlacement) => ({ side: value.startsWith('above') ? 'top' as const : 'bottom' as const, align: value.endsWith('start') ? 'start' as const : 'end' as const })
+export const placement = (value: PopoverPlacement) => ({ side: value.startsWith('above') ? 'top' as const : 'bottom' as const, align: value.endsWith('start') ? 'start' as const : 'end' as const })
 export function PmPopover({ open, label, name, children, trigger, placement: place = 'below-end', onOpenChange }: OverlayProps & { placement?: PopoverPlacement }) { return h(Popover.Root, { open, onOpenChange }, trigger ? h(Popover.Trigger, { asChild: true }, trigger) : null, h(Popover.Portal, {}, h(Popover.Content, { ...placement(place), className: cls('pm-ui-popover pm-ui-floating pm-ui', name), 'aria-label': label, onEscapeKeyDown: event => event.stopPropagation() }, children))) }
-export function PmMenu({ label, items, icon = 'more', placement: place = 'below-end', onSelect }: { label: string, items: MenuItem[], icon?: IconName, placement?: PopoverPlacement, onSelect?(id: string): void }) {
-  return h(Dropdown.Root, {},
-    h(Dropdown.Trigger, { asChild: true }, h(PmIconButton, { icon, label, small: true })),
-    h(Dropdown.Portal, {}, h(Dropdown.Content, { ...placement(place), className: 'pm-ui-menu pm-ui-floating pm-ui', ...{ 'data-density': 'compact' }, 'aria-label': label, onEscapeKeyDown: event => event.stopPropagation() },
-      items.map(item => h(Dropdown.Group, { key: item.id }, item.separator ? h(Dropdown.Separator, { className: 'pm-ui-menu__separator' }) : null,
-        item.checked === undefined ? h(Dropdown.Item, { disabled: item.disabled, textValue: item.label, className: cls('pm-ui-menu__item', item.danger && 'pm-ui-menu__item--danger'), onSelect: () => onSelect?.(item.id) },
-          item.icon ? h(PmIcon, { name: item.icon }) : null, item.label, item.shortcut ? h('kbd', { className: 'pm-ui-shortcut' }, item.shortcut) : null)
-        : h(Dropdown.CheckboxItem, { checked: item.checked, disabled: item.disabled, textValue: item.label, className: cls('pm-ui-menu__item', item.danger && 'pm-ui-menu__item--danger'), onSelect: () => onSelect?.(item.id) },
-          h(Dropdown.ItemIndicator, {}, h(PmIcon, { name: 'check' })), item.label))))))
-}
 export function PmTabs({ value, modelValue, tabs, label, children, onValueChange, iconOnly, density = 'compact' }: { value?: string, modelValue?: string, tabs: Choice[], label: string, children?: ReactNode, iconOnly?: boolean, density?: ControlDensity, onValueChange?(value: string): void }) {
   return h(Tabs.Root, { value: value ?? modelValue, onValueChange, activationMode: 'manual', className: 'pm-ui-tabs-root', ...{ 'data-density': density } },
     h(Tabs.List, { className: 'pm-ui-tabs', 'aria-label': label }, tabs.map(tab => {
@@ -122,10 +110,6 @@ export function PmTabs({ value, modelValue, tabs, label, children, onValueChange
     })), children)
 }
 export function PmTabPanel({ value, children, forceMount, hidden }: { value: string, children?: ReactNode, forceMount?: true, hidden?: boolean }) { return h(Tabs.Content, { value, forceMount, hidden, className: 'pm-ui-tab-panel' }, children) }
-export function PmSegmented({ value, modelValue, choices, items, label, onValueChange, density = 'compact', disabled }: { value?: string, modelValue?: string, choices?: Choice[], items?: Choice[], label: string, density?: ControlDensity, disabled?: boolean, onValueChange?(value: string): void }) {
-  return h(RadioGroup.Root, { className: 'pm-ui-segmented', 'aria-label': label, value: value ?? modelValue, onValueChange, orientation: 'horizontal', ...{ 'data-density': density }, disabled },
-    (choices ?? items ?? []).map(item => h(RadioGroup.Item, { key: item.value, value: item.value, className: 'pm-ui-segmented__option', disabled: item.disabled }, item.icon ? h(PmIcon, { name: item.icon }) : null, item.label)))
-}
 export function PmNotice({ tone = 'neutral', children, className, ...rest }: HTMLAttributes<HTMLDivElement> & { tone?: Tone }) { return h('div', { ...rest, className: cls('pm-ui-notice', tone !== 'neutral' && `pm-ui-notice--${tone}`, className), role: tone === 'danger' ? 'alert' : 'status' }, children) }
 export function PmEmpty({ title, icon, action, children }: { title?: string, icon?: IconName, action?: ReactNode, children?: ReactNode }) { return h('div', { className: 'pm-ui-empty' }, icon ? h(PmIcon, { name: icon }) : null, title ? h('p', { className: 'pm-ui-empty__title' }, title) : null, children, action) }
 /** Loading in the shape of the content: `document` headings and paragraphs, `list` rows, `preview` a slide-shaped area. */
