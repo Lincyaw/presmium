@@ -1,5 +1,5 @@
 import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { isAbsolute, join, resolve } from 'node:path'
 import { build, Compiler } from '@lincyaw/compiler'
 import type { Compilation, RunStats } from '@lincyaw/compiler'
 import { errorMessage, isRecord } from '@lincyaw/kernel'
@@ -23,7 +23,7 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
   const forms: { dir: string, compilation: Compilation, to: string[] }[] = []
   for (const document of found) {
     const compilation = await new Compiler(join(config.root, document.entry), { bundled: options.bundled, settings: config.settings }).compile({ pruneCache: true })
-    const to = presentations(compilation, `${base}${urlPath(document.dir)}/`)
+    const to = presentations(compilation, `${base}${urlPath(document.dir)}/`, siteLook(config.site, config.root))
     if (to.length > 0) forms.push({ dir: document.dir, compilation, to })
     const translated = await siteTranslations(compilation)
     findings.push(...compilation.doc.diagnostics, ...translated.findings)
@@ -57,6 +57,12 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
 
 const PRESENTATIONS = ['slides', 'lecture']
 
+/** The site's theme and its parameters, for its presentations to look like its pages; a theme directory made absolute. */
+function siteLook(site: Record<string, unknown>, root: string): Record<string, unknown> {
+  const theme = typeof site.theme === 'string' && (site.theme.startsWith('.') || isAbsolute(site.theme)) ? resolve(root, site.theme) : site.theme
+  return { ...theme !== undefined ? { theme } : {}, ...isRecord(site.params) ? { params: site.params } : {} }
+}
+
 const urlPath = (dir: string) => dir.split('/').map(encodeURIComponent).join('/')
 
 /**
@@ -76,11 +82,11 @@ function shareSlidesApp(slides: string, slidesBase: string, outDir: string, base
  * The presentation forms a document asks for (`metadata.renderers.slides` or `lecture`), set to be served below its
  * pages at `prefix`: the slides at `slides/`, and the web pages and the slides linked to each other.
  */
-function presentations(compilation: Compilation, prefix: string): string[] {
+function presentations(compilation: Compilation, prefix: string, look: Record<string, unknown>): string[] {
   const { renderers } = compilation.doc.config
   const to = PRESENTATIONS.filter(form => renderers[form] !== undefined)
   if (to.length === 0) return to
-  if (to.includes('slides')) renderers.slides = { ...isRecord(renderers.slides) ? renderers.slides : {}, base: `${prefix}slides/` }
+  if (to.includes('slides')) renderers.slides = { ...look, ...isRecord(renderers.slides) ? renderers.slides : {}, base: `${prefix}slides/` }
   const settings = compilation.doc.config.presmium ??= {}
   const web = isRecord(settings['presmium.web']) ? settings['presmium.web'] : {}
   settings['presmium.web'] = { ...web, webUrl: prefix, ...to.includes('slides') ? { slidesUrl: `${prefix}slides/` } : {} }
