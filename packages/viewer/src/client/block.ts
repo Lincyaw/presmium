@@ -6,6 +6,7 @@ import type { ComponentNode, IRBlock, IRSection } from '@lincyaw/kernel'
 import { FINAL_STEP } from '../domain/index.ts'
 import { CODE_OWNED, CodeBlockView } from './code/code-block.ts'
 import { contentMarks } from './content-marks.ts'
+import { loadedParts } from './deferred.ts'
 import { markdownToHast } from './markdown/handlers.ts'
 import { PmMermaid } from './markdown/mermaid.ts'
 import { hastToVNodes, MarkdownView } from './markdown/render.ts'
@@ -18,7 +19,7 @@ import { SECTION_CONTEXT } from './section-context.ts'
 export interface BlockProps { block: IRBlock, section: IRSection, step: number, expanded?: boolean, localPreview?: boolean }
 const COMPONENT_NODE = createContext<{ node: ComponentNode, section: string } | undefined>(undefined)
 function fallbackOf(node: ComponentNode, section: string) { return node.fallback ? hastToVNodes(markdownToHast(node.fallback, section).children, {}) : [] }
-export function PmComponentFallback() { const current = useContext(COMPONENT_NODE); return current ? h('div', { className: 'pm-component-fallback' }, fallbackOf(current.node, current.section)) : null }
+export function PmComponentFallback() { const current = useContext(COMPONENT_NODE); useStore(loadedParts); return current ? h('div', { className: 'pm-component-fallback' }, fallbackOf(current.node, current.section)) : null }
 function ComponentView(props: BlockProps) {
   const node = props.block.node as ComponentNode
   const printed = useStaticRender()
@@ -44,6 +45,8 @@ function content(props: BlockProps): ReactNode {
 function BlockViewContent(props: BlockProps) {
   const viewer = useContext(VIEWER); const el = useRef<HTMLDivElement>(null)
   useStore(registryRevision)
+  // A part of the viewer the block needed and did not have yet (`deferred.ts`) has arrived.
+  useStore(loadedParts)
   useEffect(() => el.current ? trackClicks(el.current, props.expanded ? FINAL_STEP : props.step) : undefined, [props.step, props.expanded, props.block])
   const { block } = props
   const visible = props.expanded || blockVisible(block, props.step)

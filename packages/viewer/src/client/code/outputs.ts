@@ -1,14 +1,11 @@
 import { currentLocale } from '@lincyaw/host'
-import { htmlAsText, isProseRun } from '@lincyaw/kernel'
-import type { MdastNode, RunOutput, RunResult } from '@lincyaw/kernel'
-import { AnsiUp } from 'ansi_up'
-import { fromMarkdown } from 'mdast-util-from-markdown'
-import { gfmFromMarkdown } from 'mdast-util-gfm'
-import { gfm } from 'micromark-extension-gfm'
+import { escapeHtml, isProseRun } from '@lincyaw/kernel'
+import type { RunOutput, RunResult } from '@lincyaw/kernel'
 import type { ReactElement, ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { h } from '../element.ts'
 import { outputNotes } from '../../domain/index.ts'
+import { codeOutputParsers } from '../deferred.ts'
 import { markdownToHast } from '../markdown/handlers.ts'
 import { PmMath } from '../markdown/math.ts'
 import { hastToVNodes } from '../markdown/render.ts'
@@ -20,13 +17,14 @@ function text(value: unknown): string {
   return Array.isArray(value) ? value.join('') : typeof value === 'string' ? value : JSON.stringify(value, null, 2)
 }
 
+// Until the parsers are loaded (`deferred.ts`), terminal text shows without its colours and Markdown as written.
 function ansi(value: string): string {
-  return new AnsiUp().ansi_to_html(value)
+  return codeOutputParsers()?.ansi(value) ?? escapeHtml(value)
 }
 
 function markdownOutput(markdown: string, prefix: string): ReactNode[] {
-  const mdast = htmlAsText(fromMarkdown(markdown, { extensions: [gfm()], mdastExtensions: [gfmFromMarkdown()] }) as unknown as MdastNode)
-  return hastToVNodes(markdownToHast(mdast, prefix).children, {})
+  const parsers = codeOutputParsers()
+  return parsers ? hastToVNodes(markdownToHast(parsers.markdown(markdown), prefix).children, {}) : [h('pre', { key: 0, className: 'pm-output__text' }, markdown)]
 }
 
 let purify: Promise<(html: string) => string> | undefined
