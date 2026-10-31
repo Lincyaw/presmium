@@ -1,5 +1,9 @@
 # @lincyaw/design
 
+## 1.0.0-rc.2
+
+No changes in this release.
+
 ## 1.0.0-rc.1
 
 ### Minor Changes
