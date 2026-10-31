@@ -31,6 +31,7 @@ function coversScope(job: VoiceScope, selected: VoiceScope): boolean {
 export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose(): void }) {
   const workbench = useWorkbench(), locale = useWorkbenchState(state => state.locale), t = VOICE_MESSAGES[locale]
   const source = useWorkbenchState(state => state.authoring)
+  const serviceVersion = useWorkbenchState(state => state.voiceServiceVersion)
   const jobs = useWorkbenchState(state => state.voiceoverJobs) ?? NO_JOBS
   const jobsFailure = useWorkbenchState(state => state.voiceoverJobsFailure)
   const readOnly = useWorkbenchState(state => Boolean(state.authoring?.loading || state.authoring?.composing) || isAgentChanging(state))
@@ -79,7 +80,7 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
       } finally { if (generation.current === version && !signal.aborted && !closing.current) setLoading(false) }
     })()
     return () => controller.abort()
-  }, [workbench, stepId, attempt, source?.identity])
+  }, [workbench, stepId, attempt, source?.identity, serviceVersion])
 
   useEffect(() => workbench.subscribe(() => {
     const value = checkedRef.current

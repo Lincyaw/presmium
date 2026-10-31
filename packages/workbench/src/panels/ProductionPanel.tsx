@@ -33,6 +33,7 @@ const PLAYBACK_KEYS: Record<string, PlaybackKey> = { ' ': 'play-pause', ArrowLef
  */
 export function ProductionPanel({ onClose, closing, active = true }: { onClose(): void, closing: boolean, active?: boolean }) {
   const workbench = useWorkbench(), t = useMessages(), locale = useWorkbenchState(state => state.locale), p = PRODUCTION_MESSAGES[locale]
+  const serviceVersion = useWorkbenchState(state => state.voiceServiceVersion)
   const source = useWorkbenchState(state => state.authoring), position = useWorkbenchState(state => state.position)
   const stamp = useWorkbenchState(state => state.presentationSnapshot), view = useWorkbenchState(state => state.webView)
   const preparing = useWorkbenchState(state => Boolean(state.isPreparingPresentation))
@@ -79,7 +80,7 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
       if (!controller.signal.aborted) setPlanFailure(error instanceof Error && error.message.startsWith('production-') ? productionFailure(error, locale) : p.planFailed)
     }).finally(() => { if (!controller.signal.aborted) setPlanBusy(false) })
     return () => controller.abort()
-  }, [workbench, source?.identity, source?.version, source?.fingerprint, source?.projectRevision, source?.loading, source?.dirty, source?.saving, source?.composing, source?.restored, source?.error, blocked, declared, planReload, previewReload])
+  }, [workbench, source?.identity, source?.version, source?.fingerprint, source?.projectRevision, source?.loading, source?.dirty, source?.saving, source?.composing, source?.restored, source?.error, blocked, declared, planReload, previewReload, serviceVersion])
   useEffect(() => {
     const controller = new AbortController()
     // Reading an unchanged cache plan must not cancel an in-flight load of the same immutable binding.

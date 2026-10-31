@@ -24,6 +24,7 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
   const workbench = useWorkbench(), actor = useWorkbenchState(state => state.authoring), locale = useWorkbenchState(state => state.locale)
   const blocked = useWorkbenchState(state => Boolean(state.authoring?.loading || state.authoring?.composing) || isAgentChanging(state))
   const t = VOICE_MESSAGES[locale], p = PRODUCTION_MESSAGES[locale], c = VOICE_CLONE_MESSAGES[locale]
+  const serviceVersion = useWorkbenchState(state => state.voiceServiceVersion)
   const identity = useRef(actor!.identity!).current, directory = useRef(actor!.directory).current
   const [restored] = useState(() => readVoiceDraft(workbench.client, identity, stepId))
   const [draft, setDraft] = useState<VoiceDraft>(() => restored ?? { version: actor!.version!, scope: { kind: 'step', stepId }, source: resolveDocumentStepVoice(actor!.content!, stepId).value ?? null, replaceOverrides: false })
@@ -42,7 +43,7 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
       if (!controller.signal.aborted) setCatalog(value)
     }, error => { if (!controller.signal.aborted) setCatalogFailure(voiceFailure(error, locale)) }).finally(() => { if (!controller.signal.aborted) setCatalogBusy(false) })
     return () => controller.abort()
-  }, [workbench, directory, engineFilter, reload, actor?.reset, locale])
+  }, [workbench, directory, engineFilter, reload, actor?.reset, locale, serviceVersion])
   const document = actor?.content, validTarget = actor?.identity === identity && Boolean(document?.steps[stepId])
   const engineId = engineFilter ?? catalog?.engine
   const engines = catalog?.engines.filter(engine => engine.tts) ?? []

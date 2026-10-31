@@ -40,21 +40,26 @@ interface CatalogLoad {
 
 export function speechCore(options: CoreOptions): SpeechCore {
   let defined: ReturnType<typeof operatorEngines> | undefined
+  let definitionKey: string | undefined
   const engines = () => {
-    if (!defined) {
-      defined = operatorEngines(options.names(), options.secret)
+    const next = operatorEngines(options.names(), options.secret)
+    const key = createHash('sha256').update(JSON.stringify(next)).digest('hex')
+    if (key !== definitionKey) {
+      definitionKey = key; defined = next
+      for (const list of lists.values()) list.controller.abort()
+      lists.clear(); known.clear(); unlisted.clear(); adapters = new WeakMap()
       for (const warning of defined.warnings) options.log.warn(warning)
     }
-    return defined
+    return defined!
   }
   const profileOf = (engine: EngineDefinition, use: EngineUse) => createHash('sha256').update(JSON.stringify([
     'presmium.speech-profile/1', engine.id, engine.kind, engine.url, engine.provider, use,
     use === 'synthesize' ? engine.model : engine.transcribeModel,
   ])).digest('hex')
-  const adapters = new Map<string, EngineAdapter>()
+  let adapters = new WeakMap<EngineDefinition, EngineAdapter>()
   const adapter = (engine: EngineDefinition) => {
-    let found = adapters.get(engine.id)
-    if (!found) adapters.set(engine.id, found = engineAdapter(engine, options.log))
+    let found = adapters.get(engine)
+    if (!found) adapters.set(engine, found = engineAdapter(engine, options.log))
     return found
   }
   const lists = new Map<string, CatalogLoad>()
@@ -69,7 +74,7 @@ export function speechCore(options: CoreOptions): SpeechCore {
         try {
           const catalog = await own.voiceCatalog(undefined, requestSignal)
           requestSignal.throwIfAborted()
-          known.set(engine.id, catalog.voices)
+          if (lists.get(engine.id) === created) known.set(engine.id, catalog.voices)
           return catalog
         } catch (error) {
           if (lists.get(engine.id) === created) lists.delete(engine.id)
@@ -212,7 +217,7 @@ export function speechCore(options: CoreOptions): SpeechCore {
             ? []
             : await allVoices(defined, signal).catch(() => {
               signal?.throwIfAborted()
-              unlisted.add(defined.id)
+              if (engines().engines.includes(defined)) unlisted.add(defined.id)
               return []
             }))
           if (!voices.some(own => own.id === voice && own.cloned === true)) return

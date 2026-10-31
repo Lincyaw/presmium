@@ -30,5 +30,7 @@ export { assistantMascotAction, useAssistantMascot } from './assistant-mascot.ts
 export type { AssistantActivity } from './assistant-mascot.ts'
 export { mascotEnabled, setMascotEnabled, useMascotEnabled } from './mascot-preference.ts'
 export { PreviewPanel } from './panels/PreviewPanel.tsx'
+export { SpeechSettingsPanel } from './panels/SpeechSettingsPanel.tsx'
+export { SPEECH_SETTINGS_MESSAGES } from './speech-settings-messages.ts'
 export { connectAuthoringClient } from './authoring-client.ts'
 export { SHORTCUTS } from './shortcuts.ts'

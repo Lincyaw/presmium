@@ -258,3 +258,7 @@ dsh is pinned to one exact version; an upgrade is its own change and must pass t
 (section 12; Vitest cases named `[gate]`, Playwright cases tagged `@gate`). The gate is a set of test cases; under the owner's rule (SKILL.md, Verify)
 confirm with the owner before running it. The client-side contracts that
 only a README describes are guarded by gate group 3 (`docs/architecture.md` 9.1).
+
+## Voice service settings
+
+Settings → Voice Service is a public settings.section contribution. Reuse SpeechSettingsPanel and the workspace speech-settings owner route, including its launcher-token gate; never register credentials in document settings or model tools. The kernel Node OperatorSpeechSettings helper owns atomic 0600 writes under operatorDir/speech/credentials.json, a filesystem lock, revision conflicts and write-only status DTOs. Compiler and server secret resolvers read the saved API key dynamically, while an explicitly provided compiler resolver stays authoritative. Keep effective-engine discovery and every credential-bound adapter/catalog cache coherent across changes; stale catalog promises must not repopulate fresh caches. The API-key-only form offers local configuration checking; real authentication and paid generation continue through explicit voice preview/generation flows.

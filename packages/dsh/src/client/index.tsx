@@ -2,6 +2,8 @@ import { connectAuthoringClient, localeOf, Workbench, workspaceClient } from '@l
 import type { Locale } from '@lincyaw/workbench'
 import { workspaceSubscriptions } from './workspace-events.ts'
 import { registerAuthorSettings } from './author-settings.ts'
+import { registerSpeechSettings } from './speech-settings.tsx'
+import { openSpeechSettings } from './settings-opener.ts'
 import { registerBrand } from './brand.tsx'
 import { registerMascot } from './mascot.tsx'
 import { CLIENT_ID, isBootEntryLoaded, ROOT_CHILDREN, UI_LAYOUT, UI_SIDEBAR } from './contract.ts'
@@ -52,6 +54,7 @@ export function apply(ctx: DshClientContext): void {
     return inner.workspaces.list.subscribe(update)
   }, 'presmium: workspace list'))
   const workbench = new Workbench({ client: workspaceClient('api/presmium/', workspaceSubscriptions(ctx)), locale: workbenchLocale(ctx.locale.getLocale().active) })
+  workbench.client.openSpeechSettings = openSpeechSettings
   ctx.effect(() => connectAuthoringClient(workbench), 'presmium: authoring client control')
   ctx.effect(() => runtimeDiagnostics(workbench).start(), 'presmium: runtime diagnostics')
   let showEditor = (layout: DshClientContext['layout']) => layout.selectPanel(FALLBACK_PANEL)
@@ -147,6 +150,7 @@ export function apply(ctx: DshClientContext): void {
   registerBrand(ctx, workbench)
   registerMascot(ctx, workbench)
   registerAuthorSettings(ctx)
+  registerSpeechSettings(ctx, workbench)
   ctx.inject(['layout'], inner => inner.effect(() => connectLaunchTarget(workbench,
     () => nativeLayout ? () => {} : restoreRootReturnPoint(workbench, reload.point),
     () => showEditor(inner.layout)), 'presmium: launch target and root return point'))

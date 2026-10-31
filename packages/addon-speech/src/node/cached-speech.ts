@@ -150,7 +150,7 @@ export class CachedSpeech implements SpeechBackend {
 export type DeckSpeechContext = Pick<NodeServiceContext, 'deckDir' | 'workspaceRoot' | 'config' | 'settings' | 'operatorDir' | 'log' | 'secret' | 'service'>
 
 export function createDeckSpeech(ctx: DeckSpeechContext): { core: SpeechCore, speech: CachedSpeech } {
-  const core = speechCore({ names: () => Object.keys(process.env), secret: name => ctx.secret(name), settings: ctx.settings, operatorDir: ctx.operatorDir, log: ctx.log })
+  const core = speechCore({ names: () => [...new Set([...Object.keys(process.env), ...ctx.secret('PRESMIUM_SPEECH_VOLCENGINE_KEY') ? ['PRESMIUM_SPEECH_VOLCENGINE_KEY'] : []])], secret: name => ctx.secret(name), settings: ctx.settings, operatorDir: ctx.operatorDir, log: ctx.log })
   const cache = new SynthesisCache(ctx.deckDir, ctx.workspaceRoot, () => ctx.service?.(DOCUMENT_FILES))
   return { core, speech: new CachedSpeech(core, cache, deckSpeechConfig(ctx.config).config) }
 }

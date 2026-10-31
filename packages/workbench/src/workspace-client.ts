@@ -1,5 +1,6 @@
 import type { ProjectOperation, ProjectPlan, ProjectPlanRequest, ProjectApply, ProjectApplied } from '@lincyaw/kernel'
 import type { PreviewEventSubscription } from '@lincyaw/kernel'
+import type { SpeechSettingsAnswer, SpeechSettingsChange } from '@lincyaw/kernel'
 import type { AuthoringDiagnostics } from '@lincyaw/kernel'
 import type { CompileJob, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, ErrorAnswer, FocusAnswer, FocusReport, IrAnswer, IrEvent, JobSource, JobsAnswer, OperationAnswer, PreviewAnswer, PreviewDiagnostics, PreviewRenderer, RevertResult, ReviewEnd, ReviewSnapshot, ReviewUpdate, RevisionsAnswer, SavedAnswer, SourceAnswer, SourceTransactionAnswer, SourceTransactionChange, StartJobRequest, UncommittedFile, WorkbenchAnswer } from '@lincyaw/kernel'
 import type { ApprovalRequest } from '@lincyaw/kernel'
@@ -63,6 +64,9 @@ export interface WorkspaceCapabilities {
 }
 
 export interface WorkspaceClient {
+  readSpeechSettings?(signal?: AbortSignal): Promise<SpeechSettingsAnswer>
+  changeSpeechSettings?(change: SpeechSettingsChange, signal?: AbortSignal): Promise<SpeechSettingsAnswer>
+  openSpeechSettings?(): boolean
   capabilities?: Readonly<WorkspaceCapabilities>
   subscribePreviewEvents?: PreviewEventSubscription
   openAuthoringClient?: AuthoringClientSubscription
@@ -385,6 +389,8 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     subscribeDocument: (document, changed, failed) => subscribe(url('document/events', document), 'document', changed, failed),
     readPageDeletion: (document, section) => call(url('pages/delete', document, { section })),
     deletePage: (document, request) => post(url('pages/delete', document), request),
+    readSpeechSettings: signal => call(url('speech-settings'), { signal }),
+    changeSpeechSettings: (change, signal) => post(url('speech-settings'), change, signal),
     readVoiceCatalog: (document, engine, lang, signal) => call(url('voice-catalog', document, { ...engine ? { engine } : {}, ...lang ? { lang } : {} }), { signal }),
     cloneVoice: (document, request, signal) => {
       const body = new FormData()

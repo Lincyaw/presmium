@@ -61,6 +61,7 @@ export interface WorkspaceRoutesOptions {
   historyRoutes?: Record<string, Route>
   authoringClientRoutes?: Record<string, Route>
   projectRoutes?: Record<string, Route>
+  speechSettings?: Route
 }
 
 function toRendererIds(body: unknown): string[] | undefined {
@@ -106,6 +107,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
   const transcriptions = options.transcriptions ?? ownedTranscriptions!
   const ownedAudio = options.audioAuthoringRoutes ? undefined : createDocumentAudioAuthoring({ root: config.root, editor, revisions, audio: options.audio, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   const routes: Record<string, Route> = {
+    ...options.speechSettings ? { 'speech-settings': options.speechSettings } : {},
     ...documentEditorRoutes({ root: config.root, editor, documentEditor: options.documentEditor, workbench }),
     ...(options.audioAuthoringRoutes ?? ownedAudio!.routes),
     ...(options.imageAuthoringRoutes ?? createDocumentImageAuthoring({ root: config.root, editor, revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' }).routes),
