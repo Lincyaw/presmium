@@ -27,7 +27,6 @@ async function forms(name) {
 const built = [await forms('learn'), await forms('promo')]
 const errors = built.flatMap(form => form.findings).filter(finding => finding.severity === 'error')
 if (errors.length) throw new Error(errors.map(finding => finding.message).join('\n'))
-execFileSync(process.execPath, ['tools/package-source.mjs'], { cwd: root, stdio: 'inherit' })
 execFileSync('presmium', ['build', '.'], { cwd: root, stdio: 'inherit' })
 for (const { name, outDir } of built) {
   cpSync(`${outDir}/slides`, `${root}/dist/web/${name}/slides`, { recursive: true })

@@ -13,7 +13,7 @@ pnpm --filter presmium-gallery dev
 
 打开服务打印的网址。静态产物在 `dist/web/`；两份文稿各有阅读版（`learn/`、`promo/`）、放映版（`learn/slides/`、`promo/slides/`）与讲授时间线和媒体（`lecture/`）。默认部署在根路径；GitHub Pages 构建时写入实际 `site.base`。
 
-源码包使用本仓库的开发依赖，解压回 `examples/gallery/` 后运行。新建自己的独立站点可以使用：
+新建自己的独立站点可以使用：
 
 ```sh
 pnpm add -g @lincyaw/presmium
@@ -54,8 +54,6 @@ pnpm --filter presmium-gallery build
 
 导出的宣传片为 1920×1080、30 fps；配套教学视频为 1280×720、24 fps。封面 `public/presmium-60s-poster.jpg` 取自导出影片的课堂镜头（照片为主，存为 JPEG），更改影片后需同步更新。配乐生成需支持直接运行 TypeScript 的 Node.js（`score.mjs` 引用 `timeline.ts`）与带 libopus 的 FFmpeg。
 
-`pnpm --filter presmium-gallery source` 重建可下载源码包，包含首页、两份文稿、分镜、真实界面素材、场景、共享模型、配乐生成源码及已有成片。源码包也包含其余 Gallery 文稿和已物化的动画效果参考；依赖与缓存不进入该包。
-
 ## 发布
 
-将 `dist/web/` 发布到静态托管。GitHub Pages 可采用仓库已有工作流，或使用 `presmium new my-site --type site` 生成的工作流，确保 `site.base` 与实际地址一致。视频、封面、课程与源码包随网站发布。
+将 `dist/web/` 发布到静态托管。GitHub Pages 可采用仓库已有工作流，或使用 `presmium new my-site --type site` 生成的工作流，确保 `site.base` 与实际地址一致。视频、封面与课程随网站发布。
