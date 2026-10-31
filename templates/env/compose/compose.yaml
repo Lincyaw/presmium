@@ -9,7 +9,7 @@
 #   PRESMIUM_ENV_<NAME>_URL=http://127.0.0.1:8888/  PRESMIUM_ENV_<NAME>_TOKEN=$JUPYTER_TOKEN
 #
 # Overlays: compose.gpu.yaml (NVIDIA GPUs), compose.gvisor.yaml (the gVisor runtime). They are not
-# combined: gVisor with GPUs (nvproxy) was not verified (docs/design-v0.7.md section 11).
+# combined: gVisor with GPUs (nvproxy) was not verified.
 name: presmium-env
 
 services:

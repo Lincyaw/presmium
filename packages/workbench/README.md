@@ -60,7 +60,7 @@ The workbench hands requests to the conversation through `workbench.onAgentReque
 
 ## Documentation
 
-- [Design of the workbench on DeepSeek Harness](https://github.com/Lincyaw/presmium/blob/main/docs/design-dsh.md) (section 7)
+- [Design of the workbench on DeepSeek Harness](https://github.com/Lincyaw/presmium/blob/main/docs/studio.md) (section 7)
 
 ## License
 

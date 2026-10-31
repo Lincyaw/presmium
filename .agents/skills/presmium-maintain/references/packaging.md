@@ -1,111 +1,76 @@
 # Packages, official plugins, directives and releases
 
-The plugin contract itself (layout, `PresmiumNodePlugin`, directives, components, browser side, renderer
-extensions) is in `presmium-develop/references/plugin.md`; its layer table is the one
-`scripts/check-layering.mjs` enforces in the repository (`docs/architecture.md` section 3). This file adds
-what an official package in this monorepo needs. Versioning and the list of packages are
-`.changeset/README.md`; the package conventions for plugins are `docs/architecture.md` 4.2 and section 5,
-`docs/ir.md` sections 5 and 6.
+The plugin contract is `presmium-develop/references/plugin.md`; package conventions are
+`docs/architecture.md` 4.2 and section 5, and `docs/ir.md` sections 5 and 6. The package list and versioning
+are `.changeset/README.md`.
 
 ## Read an existing plugin first
 
-- `packages/addon-guide`: directive to component, overlay.
-- `packages/addon-content`: directives, compile pass, notebook extension, `vite.config.ts`.
-- `packages/addon-exec`: executors, notebook extension, runtime files, browser services.
-- `packages/addon-classroom`: compile pass, notebook extension, depending on services.
+`packages/addon-guide` (directive to component, overlay), `packages/addon-content` (directives, pass,
+notebook extension), `packages/addon-exec` (executors, browser services), `packages/addon-classroom`
+(pass depending on services).
 
 ## An official package
 
-Copy `packages/addon-guide/package.json` and adapt it. Official plugins are named `@lincyaw/addon-<name>`.
+Copy `packages/addon-guide/package.json`; name it `@lincyaw/addon-<name>`.
 
-- **Metadata.** `license: "Apache-2.0"` and a copy of the root `LICENSE` in the package; `description`,
-  `repository` (with `directory`), `homepage`, `bugs`, `keywords`, `publishConfig: { access: public }`;
-  `engines.node` equal to the root's. `files` lists only what is published (never `test/`) and includes
-  every file that `exports` and `bin` point to.
-- **Version.** Public packages form one fixed version group (`.changeset/config.json` `fixed`) and share
-  one version, currently in the `rc` prerelease (`.changeset/pre.json`; the version in any public
-  `package.json`). `@lincyaw/dsh`, `@lincyaw/workbench` and `@lincyaw/studio`
-  are outside the group: 0.x and experimental (`docs/design-dsh.md` section 12).
-- **Workspace ranges.** Dependencies on other monorepo packages are written `workspace:`. A plugin's
-  dependencies on `@lincyaw/kernel`, `host`, `viewer` and `compiler` are peer dependencies written
-  `workspace:^` (published as `^<version>`), plus same-name dev dependencies `workspace:*` (published as the
-  exact version) so the workspace links them for the package's tests.
-- **The table.** Add a row to the package table of `.changeset/README.md` (published to npm or not, and
-  what it is). `scripts/check-packages.mjs` checks license, version, `engines.node`, metadata, `files`, and
-  the peer dependencies of plugins against that table.
-- **Plugin declaration.** The Node entry declares `version` (from `package.json`) and `kernel` (the contract
-  range, `KERNEL_VERSION` is separate from the package version); `scripts/check-plugins.mjs` checks every
-  official plugin declares both and is compatible.
-- **Install.** After adding a package or dependency run `pnpm install` at the root and commit
-  `pnpm-lock.yaml`.
-- **The example.** `examples/gallery/` contains the complete public gallery: two courses, nine feature
-  guides, the Fourier lesson, product film and linked skill animation references. Add an authorable scenario to the relevant guide and its `features.json` index when a public
-  capability changes; declare real service, hardware and credential prerequisites. Regression and
-  deliberate failure documents stay in `e2e/fixtures/<group>/` ([testing](testing.md)). To use a plugin
-  in the public workspace, declare it in `examples/gallery/package.json` and in the document's
-  `metadata.plugins`.
-- **Tests.** Under the owner's current rule (SKILL.md, Verify) a new package gets no tests; verify it by a
-  real build of its fixture document. When the owner asks for tests, the existing shape is: a spec
-  `e2e/<group>.spec.ts` for the fixture, and `packages/<pkg>/test/*.test.ts` that writes a document into a
-  temporary directory with `plugins` set to the package's absolute path and runs the real CLI (model:
-  `packages/addon-exec/test/compile.test.ts`).
+- **Metadata.** `license: "Apache-2.0"` with a copy of `LICENSE`, `description`, `repository` with
+  `directory`, `homepage`, `bugs`, `keywords`, `publishConfig: { access: public }`, `engines.node` equal to
+  the root. `files` lists everything `exports` and `bin` point to, never `test/`.
+- **Version.** Public packages share one fixed version (`.changeset/config.json`, prerelease in
+  `.changeset/pre.json`). `@lincyaw/dsh`, `@lincyaw/workbench` and `@lincyaw/studio` are outside it.
+- **Dependencies.** Monorepo dependencies use `workspace:`. `@lincyaw/kernel`, `host`, `viewer` and
+  `compiler` are peer dependencies `workspace:^` plus dev dependencies `workspace:*`. Run `pnpm install` and
+  commit `pnpm-lock.yaml`.
+- **Declaration.** The Node entry declares `version` and `kernel` (the contract range, `KERNEL_VERSION`).
+- **The table.** Add a row to `.changeset/README.md`; `scripts/check-packages.mjs` checks it.
+- **The example.** A public capability gets a scenario in the matching guide of `examples/gallery/` and
+  its `features.json`, with real prerequisites; declare the plugin in `examples/gallery/package.json`
+  and the document's `metadata.plugins`. Regression documents go in `e2e/fixtures/<group>/`.
+- **Verification.** No new tests; build its fixture document for real.
 
-## A new document capability
-
-Define its typed entities and Schema in the kernel, validate references and parameter/state capability, and document the author workflow in `.agents/skills/presmium-author/references/document.md`. Add a real JSON example for the relevant plugin/renderer and mirror the public contract in the site documentation. New content capabilities do not introduce another source syntax or a Markdown authoring fallback.
+A new document capability is typed with its Schema in the kernel, validated, documented in
+`.agents/skills/presmium-author/references/document.md` and mirrored in the site docs. It adds no new source
+syntax or Markdown fallback.
 
 ## Skills
 
-Skills are in `.agents/skills`; `.claude/skills` is a symbolic link to it and `AGENTS.md` a link to
-`CLAUDE.md`. Shipped skills are copied at pack time into `@lincyaw/skills`: author, animate, present and develop,
-including their text reference files and gallery scene sources. Studio registers these same resources;
-MCP exposes `list_skills`, `read_skill` and `presmium://skills` without needing a document. The client
-decides when to read them. VS Code Install Project Skills and `pnpm exec presmium skills install . --json`
-install missing project entries and preserve existing ones. New projects get those listed in
-`packages/create-presmium/src/templates.ts`. Shipped skills must be self-contained (no references to
-`docs/`, `packages/`, `scripts/` or `e2e/`); `presmium-maintain` is listed in neither. When instructions,
-commands or the development flow change, update the skills in the same change. `scripts/check-skills.mjs`
-checks skill metadata, links between `references/` files, the sole JSON document contract, and that every
-`presmium <command> --<option>` written in a skill exists in the CLI.
+Skills live in `.agents/skills`; `.claude/skills` links to it and `AGENTS.md` to `CLAUDE.md`. The author,
+animate, present and develop skills are packed into `@lincyaw/skills`, registered by Studio and exposed by
+MCP (`list_skills`, `read_skill`, `presmium://skills`); `presmium skills install <dir>` installs missing
+ones. New projects get those listed in `packages/create-presmium/src/templates.ts`. Shipped skills are
+self-contained (no `docs/`, `packages/`, `scripts/` or `e2e/` references); `presmium-maintain` is not
+shipped. Update skills in the same change as the commands they describe. `scripts/check-skills.mjs` checks
+metadata, `references/` links, the document contract and that every `presmium <command> --<option>` exists.
 
 ## Structure checks
 
-`pnpm test` runs, before Vitest, the light checks; run the one your change touches alone:
-
 | Script | Checks |
 |---|---|
-| `node scripts/check-layering.mjs` | Package layers, no `vitepress` or `@slidev/*`, no plugin-to-plugin imports |
-| `node scripts/check-skills.mjs` | Skills (above) |
-| `node scripts/check-plugins.mjs` | `version` and `kernel` of every official plugin |
+| `node scripts/check-layering.mjs` | Layers, no `vitepress` or `@slidev/*`, no plugin-to-plugin imports |
+| `node scripts/check-skills.mjs` | Skills |
+| `node scripts/check-plugins.mjs` | `version` and `kernel` of official plugins |
 | `node scripts/check-packages.mjs` | Publishing metadata against `.changeset/README.md` |
 | `node scripts/check-tokens.mjs` | No raw colors, px or durations in workbench and studio-frame CSS |
-| `node scripts/check-types.mjs` | Type check of `tsconfig.json` and `packages/workbench/tsconfig.json` (errors inside dependency sources are not reported) |
+| `node scripts/check-i18n.mjs --strict` | Catalogs against `docs/glossary.md` |
+| `node scripts/check-types.mjs` | Type check of `tsconfig.json` and `packages/workbench/tsconfig.json` |
 
 ## Changesets and releases
 
-A change to a public package adds a changeset (`pnpm changeset`: pick packages and bump, one sentence for
-users); tests, docs and examples need none. `pnpm release:check` packs every public package as it would be
-published without uploading. Shared loading or packaging changes are verified by a consumer install: `pnpm consumer [<directory>]`
-packs the packages and installs `presmium` outside the monorepo (`--studio` also installs the studio, about
-865 MB); when the owner asks for tests, `packages/cli/test/consumer.test.ts` and `e2e/consumer.spec.ts` do
-the same. Publishing itself is the maintainers' steps in
-`.changeset/README.md`; do not publish unless asked.
+A public package change adds a changeset (`pnpm changeset`, one sentence for users); tests, docs and
+examples need none. `pnpm release:check` packs without uploading. `pnpm consumer [<directory>]` installs
+`presmium` outside the monorepo (`--studio` adds the studio, about 865 MB). Publishing follows
+`.changeset/README.md`; never publish unless asked.
 
 ## The VS Code extension
 
-`pnpm --filter presmium-vscode package:vsix` builds the VSIX for the current OS and processor. It builds
-Studio's shared client and the four shared skills, then deploys the extension's production dependency root (language
-server and complete Studio) from the lockfile. The explicit file list excludes existing VSIX archives; a
-symlink into the development tree is not a packaged dependency. The schema is generated from the public
-kernel `DOCUMENT_JSON_SCHEMA`. Native JSON editing, diagnostics, live preview and presentation remain the
-daily entrance; Open Visual Editor starts or reuses the same Web Studio in VS Code's Integrated Browser.
-The first opening checks the listed document directory, source identity and initial section; an already
-open document keeps its current editing or runtime view. Keep local request guards unchanged.
+`pnpm --filter presmium-vscode package:vsix` builds the VSIX for the current platform, including the
+language server, the complete Studio and the shared skills; the schema comes from `DOCUMENT_JSON_SCHEMA`.
+Open Visual Editor starts or reuses the same Web Studio in VS Code's Integrated Browser. Keep the local
+request guards unchanged.
 
-Verify the unpacked language server with real LSP initialize/open/save, diagnostics, entity navigation and
-preview requests, then accept native preview/presentation, the visual editor and shared exports in a real
-VS Code window outside the repository. Check the visual editor in light/dark and desktop/narrow layouts,
-then stop the owned services and confirm their ports close. If a window cannot be controlled, report that
-boundary separately from service and archive checks. `.github/workflows/vscode.yml` packages and type-checks
-six platforms; it does not perform real-window acceptance. It attaches the files to a GitHub Release when
-one is published. Commands, requirements and installation details live in `packages/vscode/README.md`.
+Verify the unpacked language server with real LSP initialize, open, save, diagnostics, navigation and preview
+requests, then preview, presentation, the visual editor (light/dark, desktop/narrow) and exports in a real
+VS Code window outside the repository; stop the services and confirm their ports close. Report a window you
+could not control separately. `.github/workflows/vscode.yml` packages six platforms but does no window
+acceptance. Details are in `packages/vscode/README.md`.

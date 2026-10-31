@@ -23,7 +23,7 @@ Startup prints the log path to stderr and streams workspace-service logs there w
 
 ## Documentation
 
-- [Design of the workbench on DeepSeek Harness](https://github.com/Lincyaw/presmium/blob/main/docs/design-dsh.md)
+- [Design of the workbench on DeepSeek Harness](https://github.com/Lincyaw/presmium/blob/main/docs/studio.md)
 
 ## License
 

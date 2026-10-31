@@ -1,4 +1,4 @@
-# The full-access mode a user may pick for a session (docs/design-dsh.md 6.3): no sandbox, no asking. The
+# The full-access mode a user may pick for a session (docs/studio.md 6.3): no sandbox, no asking. The
 # policy tests pass it after Presmium's patches, as the page's permission preset would set it.
 - id: sandbox-policy
   config:

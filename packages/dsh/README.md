@@ -20,7 +20,7 @@ Presmium provides one navigation shell and composes Harness's session browser an
 
 Studio keeps the teaching workflow simple: describe a change, inspect its preview, select the relevant content and review the agent's edit. Full code editing can use the VS Code extension. Each agent step receives current document, focus and bounded browser feedback. `presmium__get_diagnostics` reads the same bounded diagnostic snapshot as the workbench without compiling; `presmium__check_document` explicitly runs compilation and plugin checks; `presmium__get_outputs` reads compiled recordings, and `presmium__get_runtime` reads reported browser failures, live code results and session resets. These reports are observations, not verification of newly edited source; rerun affected code after a change. No author window means no browser feedback is available.
 
-- [Design of the workbench on DeepSeek Harness](https://github.com/Lincyaw/presmium/blob/main/docs/design-dsh.md)
+- [Design of the workbench on DeepSeek Harness](https://github.com/Lincyaw/presmium/blob/main/docs/studio.md)
 
 ## License
 
