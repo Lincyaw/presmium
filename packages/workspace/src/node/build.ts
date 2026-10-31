@@ -1,4 +1,4 @@
-import { cpSync, existsSync, rmSync } from 'node:fs'
+import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { build, Compiler } from '@lincyaw/compiler'
 import type { Compilation, RunStats } from '@lincyaw/compiler'
@@ -23,7 +23,7 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
   const forms: { dir: string, compilation: Compilation, to: string[] }[] = []
   for (const document of found) {
     const compilation = await new Compiler(join(config.root, document.entry), { bundled: options.bundled, settings: config.settings }).compile({ pruneCache: true })
-    const to = presentations(compilation, `${base}${document.dir.split('/').map(encodeURIComponent).join('/')}/`)
+    const to = presentations(compilation, `${base}${urlPath(document.dir)}/`)
     if (to.length > 0) forms.push({ dir: document.dir, compilation, to })
     const translated = await siteTranslations(compilation)
     findings.push(...compilation.doc.diagnostics, ...translated.findings)
@@ -47,6 +47,7 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
       const report = await build(compilation, { outDir: work, to })
       findings.push(...report.findings)
       for (const form of to) if (existsSync(join(work, form))) cpSync(join(work, form), join(outDir, dir, form), { recursive: true })
+      if (to.includes('slides')) shareSlidesApp(join(outDir, dir, 'slides'), `${base}${urlPath(dir)}/slides/`, outDir, base)
     } catch (error) {
       findings.push({ checkId: 'presmium.render', severity: 'error', message: `document ${dir}: its ${to.join(' and ')} failed: ${errorMessage(error)}` })
     }
@@ -55,6 +56,21 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
 }
 
 const PRESENTATIONS = ['slides', 'lecture']
+
+const urlPath = (dir: string) => dir.split('/').map(encodeURIComponent).join('/')
+
+/**
+ * Every document's slides run the same viewer app: it moves to the site's `_app/<key>/`, beside the web pages' own,
+ * so a reader downloads it once for all the presentations of the site, and the slides' page points there.
+ */
+function shareSlidesApp(slides: string, slidesBase: string, outDir: string, base: string): void {
+  const app = join(slides, '_app')
+  if (!existsSync(app)) return
+  for (const key of readdirSync(app)) if (!existsSync(join(outDir, '_app', key))) cpSync(join(app, key), join(outDir, '_app', key), { recursive: true })
+  rmSync(app, { recursive: true, force: true })
+  const page = join(slides, 'index.html')
+  writeFileSync(page, readFileSync(page, 'utf8').replaceAll(`${slidesBase}_app/`, `${base}_app/`))
+}
 
 /**
  * The presentation forms a document asks for (`metadata.renderers.slides` or `lecture`), set to be served below its
