@@ -36,7 +36,7 @@ docker compose --env-file .env -f compose.yaml up -d
 docker compose --env-file .env -f compose.yaml ps
 ```
 
-`studio-image` 包含完整工具链与 Chromium，约 5 GB，所有用户共用。`migrate` 与 `storage-init` 正常退出（Exited (0)）后控制台启动；JupyterHub 在 Keycloak 就绪后启动。
+`studio-image` 包含完整工具链与 Chromium，约 5 GB，所有用户共用。镜像构建时预打包全部官方插件的通用查看器，通过 `PRESMIUM_VIEWER_SEED` 提供只读缓存；用户首次预览会将指纹匹配的产物复制到自己的缓存，文稿代码仍按实际工程构建。自定义插件或源码变化不能命中旧产物，继续走正常构建。Studio 的 Caddy 入口对查看器与文稿代码包、工作台插件包及静态资源启用 zstd/gzip，流式接口不参与压缩。`migrate` 与 `storage-init` 正常退出（Exited (0)）后控制台启动；JupyterHub 在 Keycloak 就绪后启动。
 
 ### SSH 下的本机验证
 

@@ -10,6 +10,12 @@ and `--preview-port`, and jupyter-server-proxy serves `studio/` (prefix stripped
 `cloud/` (the control service) below `/user/<name>/`. A missing feature in the cloud is a bug in the image, the Hub
 configuration (`deploy/cloud/hub/`) or those flags, not a reason for a second implementation.
 
+For first-preview latency, separate compilation, viewer building, document bundling and browser loading. The Studio
+image prebuilds the common viewer for official addons; `PRESMIUM_VIEWER_SEED` points at that read-only image cache.
+Only a matching core and plugin fingerprint may be copied into the user's normal cache. Custom plugins still build
+normally. Keep zstd/gzip enabled for static assets on the Hub entrance, leave streaming routes out of compression,
+and verify the Studio's shared event WebSocket and runtime connections remain live.
+
 The console (`presmium-cloud serve`) is a JupyterHub service: its token creates users, starts and stops servers,
 and reaches `/user/<name>/cloud/` for documents, share snapshots, copies and the MCP relay. Hub user names are the
 OIDC `sub`, so the console and the Hub name the same user. Documents live only in each user's volume (a git

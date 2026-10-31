@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
 import { dirname, extname, join, relative, sep } from 'node:path'
@@ -245,16 +245,34 @@ const keyOf = (core: string, plugins: readonly AppPlugin[]) =>
 
 /** The newest app under `cacheDir` built with every one of `plugins` as they are now, if there is one. */
 export function findViewerApp(cacheDir: string, core: string, plugins: readonly AppPlugin[]): ViewerApp | undefined {
-  if (!existsSync(cacheDir)) return undefined
+  const seed = process.env.PRESMIUM_VIEWER_SEED
+  const roots = [...new Set([cacheDir, ...seed ? [seed] : []])]
   let found: ViewerApp | undefined
-  for (const entry of readdirSync(cacheDir)) {
-    const file = join(cacheDir, entry, APP_MANIFEST)
+  for (const root of roots) for (const entry of existsSync(root) ? readdirSync(root) : []) {
+    const file = join(root, entry, APP_MANIFEST)
     if (entry.startsWith('.') || !existsSync(file)) continue
     try {
       const manifest = JSON.parse(readFileSync(file, 'utf8')) as ViewerAppManifest
       if (manifest.core !== core || !plugins.every(p => manifest.plugins[p.name] === p.fingerprint)) continue
-      if (!found || manifest.builtAt > found.manifest.builtAt) found = { dir: join(cacheDir, entry), manifest }
+      if (!found || manifest.builtAt > found.manifest.builtAt) found = { dir: join(root, entry), manifest }
     } catch {}
+  }
+  // Images can ship a read-only build. Materialize it in this user's ordinary
+  // cache so every existing asset route and later source rebuild keeps working.
+  // A seed with changed core or plugin sources was rejected above.
+  if (found && dirname(found.dir) !== cacheDir) {
+    const target = join(cacheDir, found.manifest.key)
+    if (!/^[a-f0-9]{16}$/.test(found.manifest.key)) return undefined
+    if (!existsSync(join(target, APP_MANIFEST))) {
+      mkdirSync(cacheDir, { recursive: true })
+      const temporary = join(cacheDir, `.build-seed-${found.manifest.key}-${process.pid}-${Date.now()}`)
+      try {
+        cpSync(found.dir, temporary, { recursive: true })
+        try { renameSync(temporary, target) }
+        catch (error) { if (!existsSync(join(target, APP_MANIFEST))) throw error }
+      } finally { rmSync(temporary, { recursive: true, force: true }) }
+    }
+    found = { dir: target, manifest: found.manifest }
   }
   // Marked as used, so that the cleaning of another session keeps it.
   if (found) {

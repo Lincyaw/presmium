@@ -18,7 +18,8 @@ COPY e2e/fixtures/regression ./e2e/fixtures/regression
 RUN pnpm install --frozen-lockfile \
  && pnpm --filter @lincyaw/render-slides exec playwright install --with-deps chromium \
  && node packages/dsh/build/client.mjs \
- && pnpm --filter @lincyaw/skills run skills
+ && pnpm --filter @lincyaw/skills run skills \
+ && node packages/web/build/prebuild-viewer.mjs /opt/presmium/viewer-seed packages/addon-*
 # JupyterHub's single-user server around Studio (deploy/cloud/hub): Hub authenticates every request.
 RUN python3 -m venv /opt/hub \
  && /opt/hub/bin/pip install --no-cache-dir jupyterhub==5.5.4 jupyter-server-proxy==4.6.0 ipykernel==6.30.1 \
@@ -26,7 +27,7 @@ RUN python3 -m venv /opt/hub \
  && mkdir -p /work && chown 1000:1000 /work
 COPY deploy/cloud/studio/jupyter_server_config.py /etc/jupyter/jupyter_server_config.py
 COPY deploy/cloud/studio/presmium_hub.py deploy/cloud/studio/control.mjs deploy/cloud/studio/share-build.mjs ./deploy/cloud/studio/
-ENV PATH=/opt/hub/bin:$PATH PYTHONPATH=/opt/presmium/deploy/cloud/studio HOME=/work/home XDG_STATE_HOME=/work/state XDG_CACHE_HOME=/work/cache XDG_CONFIG_HOME=/work/config
+ENV PATH=/opt/hub/bin:$PATH PYTHONPATH=/opt/presmium/deploy/cloud/studio HOME=/work/home XDG_STATE_HOME=/work/state XDG_CACHE_HOME=/work/cache XDG_CONFIG_HOME=/work/config PRESMIUM_VIEWER_SEED=/opt/presmium/viewer-seed
 USER 1000:1000
 WORKDIR /work
 EXPOSE 8888

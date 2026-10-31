@@ -17,6 +17,7 @@ requirements:
   docs:
   - path: docs/rfc-cloud.md
   - path: docs/benchmarks/cloud-hub-2026-10-29.md
+  - path: docs/benchmarks/inline-preview-2026-10-30/README.md
   notes: 回环部署中经 JupyterHub 打开 Studio、文稿与预览；AI 助手入口与模型设置存在，未用真实模型密钥对话。
 - id: REQ-002
   title: 注册登录

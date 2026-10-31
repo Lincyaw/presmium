@@ -31,12 +31,14 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   const stepId = section?.stepOrder[position && position.section === sectionId ? position.step : 0] ?? section?.stepOrder[0]
   const [narrationOpen, setNarrationOpen] = useState(() => Boolean(workbench.pendingDocumentField(blockId, source?.identity)
     || source?.identity && stepId && (workbench.documentTimingDraft(stepId, 'minimumHoldMs', source.identity, source.reset) || workbench.documentTimingDraft(stepId, 'trailingPauseMs', source.identity, source.reset)))), narrationPanel = useId()
-  const root = useRef<HTMLElement>(null), frame = useRef<HTMLIFrameElement | null>(null)
+  const root = useRef<HTMLElement>(null), viewport = useRef<HTMLDivElement>(null), frame = useRef<HTMLIFrameElement | null>(null)
   const mountFrame = useCallback((element: HTMLIFrameElement | null) => {
     frame.current = element
     element?.toggleAttribute('inert', true)
   }, [])
   const [visible, setVisible] = useState(false), [attempt, setAttempt] = useState(0), [height, setHeight] = useState<number>()
+  const [exposed, setExposed] = useState(false)
+  const [pageVisible, setPageVisible] = useState(() => document.visibilityState !== 'hidden')
   const [state, setState] = useState<PreviewState>({ status: 'idle' })
   const [properties, setProperties] = useState<{ identity: string, stepId?: string }>()
   const currentState = useRef(state)
@@ -57,6 +59,22 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
     playback.current?.dispose()
     playback.current = undefined
     setState({ status: 'failed', failure })
+  }, [])
+  useEffect(() => {
+    const changed = () => setPageVisible(document.visibilityState !== 'hidden')
+    document.addEventListener('visibilitychange', changed)
+    changed()
+    return () => document.removeEventListener('visibilitychange', changed)
+  }, [])
+  useEffect(() => {
+    const element = viewport.current
+    if (!element) return
+    if (typeof IntersectionObserver === 'undefined') { setExposed(true); return }
+    // Offscreen frames can fetch ahead, but browsers suspend their animation
+    // frames. Their paint/clock handshake must not time out before they are seen.
+    const observer = new IntersectionObserver(entries => setExposed(entries.some(entry => entry.isIntersecting)))
+    observer.observe(element)
+    return () => observer.disconnect()
   }, [])
   const [loadedVersion, setLoadedVersion] = useState<string>()
   const [loadedProject, setLoadedProject] = useState(0), [loadedAttempt, setLoadedAttempt] = useState(0)
@@ -186,9 +204,14 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
       }
     }
     window.addEventListener('message', listener)
-    const timeout = setTimeout(() => { if (generation === runtimeGeneration.current && currentState.current.status === 'loading') fail('display') }, 30_000)
-    return () => { clearTimeout(timeout); window.removeEventListener('message', listener) }
+    return () => { window.removeEventListener('message', listener) }
   }, [src, origin, enabled, state.snapshot?.revision, blockId, directory, loadedVersion, loadedProject, workbench, fail])
+  useEffect(() => {
+    if (!src || !enabled || !exposed || !pageVisible || state.status !== 'loading') return
+    const generation = runtimeGeneration.current
+    const timeout = setTimeout(() => { if (generation === runtimeGeneration.current && currentState.current.status === 'loading') fail('display') }, 30_000)
+    return () => clearTimeout(timeout)
+  }, [src, enabled, exposed, pageVisible, state.status, fail])
   const old = source?.dirty || source?.saving || source?.error || source?.restored || loadedVersion !== source?.version || loadedProject !== (source?.projectRevision ?? 0)
   return <section ref={root} className="pm-ui-block-preview" data-block-preview={blockId} data-status={state.status} contentEditable={false}>
     <header className="pm-ui-block-preview__header"><span className="pm-ui-block-preview__label" role={state.status === 'failed' ? 'status' : undefined}><PmIcon name="slides" />{state.status === 'failed' ? t.previewFailure : old && state.snapshot ? t.previewPrevious : state.status === 'preparing' ? p.preparing : state.status === 'loading' ? t.previewLoading : t.previewSnapshot}</span>
@@ -203,7 +226,7 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
         <PmIconButton small icon="refresh" label={state.status === 'failed' ? t.previewRetry : t.previewRefresh} hint={state.status === 'loading' ? t.previewLoading : state.status === 'preparing' ? p.preparing : state.status === 'failed' ? t.previewRetry : t.previewRefresh}
           loading={state.status === 'loading' || state.status === 'preparing'} onClick={() => { pause(); if (!source?.fingerprint) void workbench.retryDocument(); setAttempt(value => value + 1) }} disabled={!enabled && state.status !== 'failed'} />
       </span></header>
-    <div className="pm-ui-block-preview__viewport" role="region" aria-label={t.previewTitle} tabIndex={enabled && src ? -1 : 0}
+    <div ref={viewport} className="pm-ui-block-preview__viewport" role="region" aria-label={t.previewTitle} tabIndex={enabled && src ? -1 : 0}
       style={height === undefined ? undefined : { '--pm-block-content-height': `${height}px` } as CSSProperties}
       onKeyDownCapture={event => { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) event.stopPropagation() }}>
       {enabled && src ? <iframe key={src} ref={mountFrame} className="pm-ui-block-preview__frame" src={src} title={t.previewTitle} sandbox="allow-scripts allow-same-origin" onFocus={() => { editingStep.current = undefined }} /> : fallback}
