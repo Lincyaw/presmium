@@ -17,7 +17,7 @@
 | `packages/design/src/assets/` | 品牌标志 `brandMarkup()`、小猫精灵图 `mountMascot`，来源登记在 `manifest.json` |
 | `packages/design/src/design.css` | 字体、令牌与控件样式的装配入口 |
 | `packages/workbench/src/components.tsx` | 工作台的公共 React 控件 |
-| `packages/host/src/design/components.ts` | 产物与插件使用的公共 React 控件 |
+| `packages/host/src/design/components.ts`（菜单在 `menu.ts`、分段控件在 `segmented.ts`，页面不用时不加载） | 产物与插件使用的公共 React 控件 |
 | 业务 CSS（`packages/workbench/src`、`packages/dsh/src/client` 等） | 只负责网格、分栏、对齐、滚动、响应式与区域间距 |
 
 `@lincyaw/design` 与框架无关。React 封装分别留在 workbench 与 host：workbench 不引用 host，插件不引用 workbench。两边共用令牌、图标名、`pm-ui-*` 类和交互规则。

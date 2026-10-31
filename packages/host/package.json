@@ -16,6 +16,9 @@
     "design-system"
   ],
   "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
   "engines": {
     "node": ">=22.19"
   },

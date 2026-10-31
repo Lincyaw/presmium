@@ -2,7 +2,7 @@ import type { IRDocument, MdastNode } from '@lincyaw/kernel'
 import type { Root } from 'hast'
 import type { Viewer } from '../viewer-state.ts'
 import { footnoteSections } from '../../domain/index.ts'
-import { markdownToHast } from './handlers.ts'
+import { isPartialTree, markdownToHast } from './handlers.ts'
 import type { MarkdownLinks } from './handlers.ts'
 
 interface CachedTree {
@@ -58,7 +58,7 @@ export function cachedTree(viewer: Viewer, doc: IRDocument, node: MdastNode, pre
   const tree = markdownToHast(node, prefix, links)
   // Only immutable HAST survives component unmounts; no VNodes or mounted resources are retained.
   const bytes = JSON.stringify(tree).length * 2 // UTF-16 JSON size is a soft heap estimate.
-  if (bytes > TREE_BYTES) return tree
+  if (bytes > TREE_BYTES || isPartialTree(tree)) return tree
   const entry: CachedTree = { node, key, tree, bytes }
   const variants = cache.nodes.get(node) ?? new Map<string, CachedTree>()
   variants.set(key, entry)

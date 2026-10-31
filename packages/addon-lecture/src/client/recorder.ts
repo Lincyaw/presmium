@@ -4,7 +4,6 @@ import { createStore } from '@lincyaw/host'
 import { irHash, LECTURE_ID, referencedBlocks, sectionHashes } from '../domain/index.ts'
 import type { MediaSegment, Recording, VideoSegment } from '../domain/index.ts'
 import type { Capture, Chunk } from './media.ts'
-import { captureAudio, captureVideo } from './media.ts'
 import { readAnswer } from './source.ts'
 
 const UPLOAD_MS = 5000
@@ -125,6 +124,8 @@ export class LectureRecorder {
       const track = source === 'audio' ? stream.getAudioTracks()[0] : stream.getVideoTracks()[0]
       if (!track) continue
       const segment = { source, section, start, pending: [] as Chunk[] } as Omit<Segment, 'capture' | 'src'> as Segment
+      // The encoders load with the first recording, not with every presentation.
+      const { captureAudio, captureVideo } = await import('./media.ts')
       const capture = await (source === 'audio' ? captureAudio : captureVideo)(track, chunk => segment.pending.push(chunk))
       if (!capture) {
         if (source === 'audio') throw new Error('no audio encoder')

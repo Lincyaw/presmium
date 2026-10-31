@@ -15,6 +15,7 @@
     "ir"
   ],
   "type": "module",
+  "sideEffects": false,
   "engines": {
     "node": ">=22.19"
   },

@@ -1,7 +1,7 @@
 import { currentLocale, OPERATIONS, pluginsOf, presmiumService, registerPresmiumPlugin, startHost, createStore, observe, runtimeRevision } from '@lincyaw/host'
 import { previewAppearance, reportStaleModule } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
-import { findView, syncViewerWithOperations } from '@lincyaw/viewer'
+import { findView, loadDocumentParts, syncViewerWithOperations } from '@lincyaw/viewer'
 import type { LiveUpdate } from '@lincyaw/viewer/domain'
 import { packages } from 'virtual:presmium-app/registry'
 import { APP_CONFIG_ELEMENT, parsePositionQuery, parsePrintQuery, UPDATE_EVENT, WEB_MESSAGES, withPositionQuery } from '../domain/index.ts'
@@ -96,6 +96,8 @@ async function bootDocument(): Promise<void> {
   let { revision, etag } = first
   setDocumentModules(bundle.documentModules ?? {})
   const doc = first.doc
+  // What of the viewer this document needs beyond the app's first part, as the server rendered it with.
+  await loadDocumentParts(doc)
   document.documentElement.lang = config.lang
   if (config.page === undefined) document.title = doc.meta.title
 
