@@ -1,5 +1,11 @@
 # @lincyaw/design
 
+## 1.0.0-rc.7
+
+### Patch Changes
+
+- a2a177c: When the browser refuses to autoplay a lecture's sound (the reader has not yet acted on the page, as in an embedded frame), the lecture waits at its start with a large Play button instead of reporting that it could not be loaded.
+
 ## 1.0.0-rc.6
 
 No changes in this release.

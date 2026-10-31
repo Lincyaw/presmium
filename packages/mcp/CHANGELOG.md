@@ -1,5 +1,13 @@
 # @lincyaw/mcp
 
+## 1.0.0-rc.7
+
+### Patch Changes
+
+- @lincyaw/compiler@1.0.0-rc.7
+  - @lincyaw/kernel@1.0.0-rc.7
+  - @lincyaw/skills@1.0.0-rc.7
+
 ## 1.0.0-rc.6
 
 ### Patch Changes
