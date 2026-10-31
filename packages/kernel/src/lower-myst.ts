@@ -1,4 +1,6 @@
-import { escapeHtml as escape, mapHtmlUrls } from './html.ts'
+import { escapeHtml as escape } from './escape-html.ts'
+import { mapHtmlUrls } from './html.ts'
+import { isButton, roleMark } from './myst-marks.ts'
 import type { MdastNode } from './ir.ts'
 
 export type LinkedType = 'image' | 'link' | 'definition'
@@ -198,11 +200,6 @@ function cardsAs(options: LowerOptions): 'element' | 'headings' {
   return options.cards ?? (options.iframes === 'element' ? 'element' : 'headings')
 }
 
-/** Whether a MyST node has the class `button`, which renders a link or span as a button. */
-export function isButton(node: MdastNode): boolean {
-  return typeof node.class === 'string' && node.class.split(/\s+/).includes('button')
-}
-
 function layout(node: MdastNode, ctx: Lowering): MdastNode[] {
   const all = (nodes: MdastNode[] = []) => nodes.flatMap(child => lower(child, ctx))
   const element = cardsAs(ctx.options) === 'element'
@@ -246,12 +243,6 @@ function layout(node: MdastNode, ctx: Lowering): MdastNode[] {
     }
   }
   return all(items)
-}
-
-export function roleMark(node: MdastNode): string {
-  const options = typeof node.options === 'object' && node.options !== null ? node.options as Record<string, unknown> : {}
-  const value = typeof options.value === 'string' ? options.value.trim() : ''
-  return `〔${String(node.name ?? '')}${value ? ` ${value}` : ''}〕`
 }
 
 function footnoteNumber(node: MdastNode): string {
