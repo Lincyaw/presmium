@@ -4,7 +4,7 @@ import type { TeachingDocument } from '@lincyaw/kernel'
 import { spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
-import type { Messages } from './messages.ts'
+import type { Locale, Messages } from './messages.ts'
 import { projectPath, templateDir, templateFiles } from './templates.ts'
 
 export type ProjectKind = 'lecture' | 'workspace' | 'plugin' | 'site'
@@ -34,6 +34,9 @@ export interface ProjectOptions {
   git: boolean
   theme?: SiteTheme
   t: Messages
+  /** The messages the project's own files are written in, and their language; the command's messages when absent. */
+  content?: Messages
+  lang?: Locale
 }
 
 export class CreateError extends Error {
@@ -64,6 +67,7 @@ export function assertEmpty(dir: string, t: Messages): void {
 
 export function createProject(options: ProjectOptions): void {
   const { kind, dir, title, name, t } = options
+  const c = options.content ?? t
   assertEmpty(dir, t)
   if (!isValidPackageName(name)) throw new CreateError(t.badName(name))
   mkdirSync(dir, { recursive: true })
@@ -73,6 +77,7 @@ export function createProject(options: ProjectOptions): void {
       const value = JSON.parse(text) as TeachingDocument
       value.id = randomUUID()
       value.metadata.title = documentTitle
+      if (options.lang) value.metadata.lang = options.lang
       for (const section of Object.values(value.sections)) if (section.title === '{{title}}') section.title = documentTitle
       return `${JSON.stringify(value, null, 2)}\n`
     })
@@ -83,7 +88,7 @@ export function createProject(options: ProjectOptions): void {
     writePackage(dir, { name, private: true, type: 'module', scripts: { dev: 'presmium dev', check: 'presmium check', build: 'presmium build' }, devDependencies: { '@lincyaw/presmium': `^${VERSION}` } })
   } else if (kind === 'workspace') {
     copyTemplate('workspace', dir, (path, text) => path === 'presmium.workspace.yaml' ? text.replace(/^title: .*$/m, () => `title: ${JSON.stringify(title)}`) : text)
-    document(join(dir, FIRST_DOCUMENT), t.firstDocument)
+    document(join(dir, FIRST_DOCUMENT), c.firstDocument)
     writePackage(dir, { name, private: true, type: 'module', scripts: { serve: 'presmium serve', check: `presmium check ${FIRST_DOCUMENT}`, build: 'presmium build' }, devDependencies: { '@lincyaw/presmium': `^${VERSION}` } })
   } else if (kind === 'site') {
     copyTemplate('workspace', dir, unchanged, path => path === '.gitignore' || path === 'pnpm-workspace.yaml')
@@ -91,7 +96,7 @@ export function createProject(options: ProjectOptions): void {
     const params = theme === 'showcase'
       ? { accent: 'violet', typography: 'sans', contentWidth: 'wide' }
       : { accent: 'teal', typography: 'reading', contentWidth: 'comfortable' }
-    const strings: Record<string, string> = { ...t.site, title, theme, ...params }
+    const strings: Record<string, string> = { ...c.site, title, theme, ...params }
     copyTemplate('site', dir, (path, text) => {
       if (path.endsWith('.json')) {
         const value = JSON.parse(text, (_key, value: unknown) => typeof value === 'string' ? value.replace(/\{\{(\w+)\}\}/g, (token, key: string) => strings[key] ?? token) : value) as Record<string, unknown>
@@ -106,8 +111,8 @@ export function createProject(options: ProjectOptions): void {
     copyTemplate('plugin', dir, (path, text) => text.replaceAll('{{name}}', () => name).replaceAll('{{id}}', () => pluginIdFor(name)).replaceAll('{{version}}', () => VERSION))
   }
   if (kind !== 'plugin') {
-    writeFileSync(join(dir, 'README.md'), t.readme(kind, title))
-    writeFileSync(join(dir, 'AGENTS.md'), t.agentsFile(kind, title))
+    writeFileSync(join(dir, 'README.md'), c.readme(kind, title))
+    writeFileSync(join(dir, 'AGENTS.md'), c.agentsFile(kind, title))
   }
   agentFiles(dir, SKILLS[kind])
   if (options.git) gitInit(dir)

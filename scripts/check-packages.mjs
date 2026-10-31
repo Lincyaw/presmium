@@ -82,6 +82,13 @@ if (versions.size > 1) problems.push(`the public packages have several versions 
 const names = new Set(workspaces.map(dir => read(`${dir}/package.json`).name))
 for (const name of rows.keys()) if (!names.has(name)) problems.push(`.changeset/README.md: ${name} is no workspace package`)
 
+// New projects install the same packages: their install scripts need the repository's decisions, or pnpm refuses to install.
+const builds = text => /^allowBuilds:\n(?: .*\n)+/m.exec(text)?.[0]
+const rootBuilds = builds(readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8'))
+for (const template of ['templates/workspace/pnpm-workspace.yaml', 'templates/plugin/pnpm-workspace.yaml']) {
+  if (builds(readFileSync(join(root, template), 'utf8')) !== rootBuilds) problems.push(`${template}: allowBuilds differs from pnpm-workspace.yaml`)
+}
+
 if (problems.length) {
   console.error(`package problems:\n${problems.join('\n')}`)
   process.exit(1)

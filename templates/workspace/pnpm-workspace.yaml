@@ -1,4 +1,10 @@
 allowBuilds:
-  esbuild: true
-  playwright-chromium: true
   '@ast-grep/lang-python': false
+  '@deepseek-ai/dsh-subprocess-local': false
+  '@google/genai': false
+  '@vscode/vsce-sign': false
+  esbuild: true
+  koffi: false
+  node-pty: false
+  playwright-chromium: true
+  protobufjs: false

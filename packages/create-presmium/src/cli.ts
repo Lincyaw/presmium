@@ -43,7 +43,9 @@ export async function main(argv: string[]): Promise<number> {
     const name = args.values.name ?? (asking && project === 'plugin' ? await questions.ask(t.nameQuestion, packageNameFor(dir)) : packageNameFor(dir))
     if (!isValidPackageName(name)) throw new CreateError(t.badName(name))
     questions.close()
-    createProject({ kind: project, dir, title, name, git: args.values.git, theme: theme as SiteTheme, t })
+    // The project's content is written in the title's language: a Chinese title gets Chinese pages whatever the system says.
+    const lang = /\p{Script=Han}/u.test(title) ? 'zh-CN' : systemLocale()
+    createProject({ kind: project, dir, title, name, git: args.values.git, theme: theme as SiteTheme, t, content: MESSAGES[lang], lang })
     const steps = [...folder === '.' ? [] : [`cd ${/[\s'"]/.test(folder) ? JSON.stringify(folder) : folder}`], ...project === 'plugin' ? ['pnpm install', 'pnpm test', 'pnpm dev'] : project === 'site' ? ['pnpm install', 'pnpm serve'] : [`presmium ${project === 'lecture' ? 'dev' : 'serve'}`]]
     process.stdout.write(`${t.created(project, folder)}\n\n${t.next}\n${steps.map(step => `  ${step}\n`).join('')}\n${t.agents}\n`)
     return 0
