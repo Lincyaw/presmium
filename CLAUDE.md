@@ -4,14 +4,16 @@
 
 ## 必读
 
-- 可编辑文稿 IR：`docs/rfc-document-ir.md`、`packages/kernel/src/contracts/document.ts`；运行快照：`docs/ir.md`
+- 可编辑文稿 IR 与运行快照：`docs/ir.md`、`packages/kernel/src/contracts/document.ts`
 - 领域模型（DDD）：`docs/domain-model.md`
 - 架构、契约、测试策略：`docs/architecture.md`
-- 工作台（基于 DeepSeek Harness）的设计：`docs/design-dsh.md`
-- 工作台 UI/UX 决策与验收：`docs/rfc-workbench-uiux.md`（覆盖旧界面方案，区分目标与已实现行为）
-- 正式控件、样式与素材实施规范：`docs/design-system.md`（线框不作为视觉验收；明确公共组件与待迁移项）
+- 工作台（基于 DeepSeek Harness）的设计与 UI/UX：`docs/studio.md`
+- Web 与 MCP 共用的作者动作（修改、录音转写、配音、历史、诊断）：`docs/authoring-actions.md`
+- 控件、样式与素材规范：`docs/design-system.md`
 - 界面术语与文案（zh-CN 与 en 的名称、命令、状态词、不用的词与写法）：`docs/glossary.md`
+- 云端与部署：`docs/cloud.md`；网站主题与发布：`docs/site-themes.md`；预览调试：`docs/debugging.md`
 - 契约源码：`packages/kernel/src/contracts/` 与汇总导出它们的 `packages/kernel/src/contracts.ts`、`packages/kernel/src/ir.ts`、`packages/host/src/contracts.ts`
+- `docs/` 只放规范：描述系统现在是什么，不写过程记录、验证报告、基准结果与实施计划
 
 ## 约定
 
@@ -29,12 +31,12 @@
 
 ## 命令
 
-- `pnpm studio [目录]`：启动浏览器编辑工作台，首次自动在 `.presmium/gallery-workspace` 准备 `examples/gallery` 全部示例的独立副本（自己的 git 仓库，带合成缓存与给 AI 的 `AGENTS.md`；软链接的技能效果集复制成真实文件，旧 `.presmium/example-workspace` 保留），后续复用；可指定讲义或工作区，支持 `--port`、`--host`、`--help`。打开终端打印的完整网址，`Ctrl+C` 停止；编辑和预览不需要模型。设置 `PRESMIUM_TELEMETRY_URL`（运营者的 OTLP/HTTP 日志地址）后，作者在工作台的操作与每个会话的 AI 轨迹持续上传并可互相关联（`docs/design-dsh.md` 6.7 节）；不设置时不采集。
+- `pnpm studio [目录]`：启动浏览器编辑工作台，首次自动在 `.presmium/gallery-workspace` 准备 `examples/gallery` 全部示例的独立副本（自己的 git 仓库，带合成缓存与给 AI 的 `AGENTS.md`；技能效果集链接复制成真实文件，旧 `.presmium/example-workspace` 保留），后续复用；可指定讲义或工作区，支持 `--port`、`--host`、`--help`。打开终端打印的完整网址，`Ctrl+C` 停止；编辑和预览不需要模型。设置 `PRESMIUM_TELEMETRY_URL`（运营者的 OTLP/HTTP 日志地址）后，作者在工作台的操作与每个会话的 AI 轨迹持续上传并可互相关联（`docs/studio.md` 6.7 节）；不设置时不采集。
 
 - `pnpm test`：分层检查 + 技能检查（`scripts/check-skills.mjs`，技能在 `.agents/skills`）+ 插件声明检查（`scripts/check-plugins.mjs`）+ 包的发布检查（`scripts/check-packages.mjs`，按 `.changeset/README.md` 的表）+ 令牌检查（`scripts/check-tokens.mjs`，工作台与 studio 外框的 CSS 不写原始颜色、px 与时长）+ 界面文本检查（`scripts/check-i18n.mjs --strict`）+ 类型检查（`scripts/check-types.mjs`，`tsconfig.json` 与 `packages/workbench/tsconfig.json`，不报依赖包源码内部的错误）+ 集成测试（Vitest，`packages/<pkg>/test/`，含消费者安装测试 `packages/cli/test/consumer.test.ts`；在 Chromium 中打印幻灯片的用例（`presmium-export`、`presmium-diff`）是 `export` 项目，在其他用例之后运行，单独运行用 `pnpm exec vitest run --project export`）
-- `pnpm demo:build`、`pnpm demo:check`、`pnpm demo:ir`：公开示例工作区在 `examples/gallery`，包括两讲完整课程、九份功能导览、傅里叶小课、产品宣传片与 18 份技能动画参考（索引见 `examples/gallery/FEATURES.md`）。`check`、`ir` 仍只针对原有两讲；`build` 构建整个工作区网页，再为原有两讲补充幻灯片、notebook 与讲授，并为小课和宣传片补充放映与讲授。站点在 `examples/gallery/dist/web/`，完整课程的其它形态汇入 `<讲义>/slides/`、`<讲义>/notebook/`、`<讲义>/lecture/`。原有讲解语音来自随讲义提交的合成缓存；改过的句子需要配置真实引擎并明确重新生成。
+- `pnpm demo:build`、`pnpm demo:check`、`pnpm demo:ir`：公开示例工作区在 `examples/gallery`，包括两讲完整课程、九份功能导览、傅里叶小课、产品宣传片与 18 份动画参考（索引见 `examples/gallery/FEATURES.md`）。`check`、`ir` 仍只针对原有两讲；`build` 构建整个工作区网页，再为原有两讲补充幻灯片、notebook 与讲授，并为小课与宣传片补充放映和讲授。站点在 `examples/gallery/dist/web/`，完整课程的其它形态汇入 `<讲义>/slides/`、`<讲义>/notebook/`、`<讲义>/lecture/`。原有讲解语音来自随讲义提交的合成缓存；改过的句子需要配置真实引擎并明确重新生成。
 - `pnpm e2e`：构建私有回归文稿后运行 Playwright。功能专用文稿放在 `e2e/fixtures/<组>/`；旧 BPE 文稿只保留在 `e2e/fixtures/regression/` 用于回归验证。Chromium 运行全部用例，冒烟另在 `PRESMIUM_E2E_BROWSERS`（默认 `firefox,webkit`）中已安装且能启动的浏览器运行。并行测试用 `PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT` 指定端口。性能用例最后运行，单独运行时加 `--no-deps`。
 - `pnpm verify`：全部
 - `pnpm changeset`（记录一次改动）、`pnpm release:check`（`pnpm -r publish --dry-run`，不实际发布）、`pnpm consumer [<目录>] [--studio]`（打包后在单仓之外用 pnpm 安装 `presmium`，得到一个消费者项目；`--studio` 另装 `presmium studio`，约 865 MB）
 - 从源码使用命令：`pnpm add -g ./packages/presmium` 之后的全局 `presmium` 就是这份源码（`presmium new`、`check`、`dev`、`build`、`serve`）。面向使用者的命令只写 pnpm 与 `presmium`，不写 npm、npx 与单仓中的路径
-- 工作台（实验性，`docs/design-dsh.md`）：`presmium-studio [目录]`（`pnpm add -g ./packages/studio`）启动 DeepSeek Harness 加 Presmium 的 bundle 与工作区服务，只打印一个网址；项目里装了 `@lincyaw/studio` 时 `presmium studio` 相同
+- 工作台（实验性，`docs/studio.md`）：`presmium-studio [目录]`（`pnpm add -g ./packages/studio`）启动 DeepSeek Harness 加 Presmium 的 bundle 与工作区服务，只打印一个网址；项目里装了 `@lincyaw/studio` 时 `presmium studio` 相同

@@ -69,7 +69,7 @@ docker compose --env-file .env -f compose.yaml --profile build-studio build stud
 docker compose --env-file .env -f compose.yaml up -d
 ```
 
-没有域名时可以加 `-f compose.loopback.yaml` 只在本机 `127.0.0.1:18787` 上试用。资源上限、管理、备份与升级见[云端部署说明](docs/cloud-deployment.md)。
+没有域名时可以加 `-f compose.loopback.yaml` 只在本机 `127.0.0.1:18787` 上试用。资源上限、管理、备份与升级见[云端部署说明](docs/cloud.md)。
 
 ## 许可证
 

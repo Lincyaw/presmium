@@ -1,4 +1,4 @@
-# The Python runner of Presmium (docs/architecture.md 9.2), published by the kernel as
+# The Python runner of Presmium (docs/architecture.md 4.6), published by the kernel as
 # `@lincyaw/kernel/runner.py` and shared by the plugins that run Python: the execution plugin
 # loads it into Pyodide in the browser and runs it with the local python3 at compile time, the
 # local environment plugin runs it in the container. The kernel itself never reads it.
@@ -7,7 +7,7 @@
 # request's stdin to the program and its files in the working directory. Its result is JSON: the
 # text streams `stdout` and `stderr`, the exit code, and the rich outputs in nbformat form
 # (`outputs`: the streams in order, what `display()` shows, matplotlib figures, the value of a
-# last expression as Jupyter shows it, the error), docs/ir.md 6.1.
+# last expression as Jupyter shows it, the error), docs/ir.md 5.6.
 #
 # Without a session every run gets fresh globals, and what it changes in the interpreter is undone
 # afterwards (_PmIsolation), so one run in the browser's long-lived interpreter cannot affect the
@@ -330,7 +330,7 @@ def _pm_prepare(code, args_json, stdin, files_json, scope):
 
 def _pm_split(code, flags=0):
     """
-    The code as Jupyter runs it (docs/ir.md 6.1): its statements, and apart the last one when it is
+    The code as Jupyter runs it (docs/ir.md 5.6): its statements, and apart the last one when it is
     an expression, whose value is the run's `execute_result` (`_pm_result`); `(program, None)`
     without one, or when a `;` ends the code, which hides the value as in Jupyter.
     """

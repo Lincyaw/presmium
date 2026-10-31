@@ -15,9 +15,7 @@ requirements:
   - path: deploy/cloud/studio/presmium_hub.py
   - path: packages/cloud/src/node/hub.ts
   docs:
-  - path: docs/rfc-cloud.md
-  - path: docs/benchmarks/cloud-hub-2026-10-29.md
-  - path: docs/benchmarks/inline-preview-2026-10-30/README.md
+  - path: docs/cloud.md
   notes: 回环部署中经 JupyterHub 打开 Studio、文稿与预览；AI 助手入口与模型设置存在，未用真实模型密钥对话。
 - id: REQ-002
   title: 注册登录
@@ -63,7 +61,7 @@ requirements:
   code:
   - path: deploy/cloud/compose.yaml
   docs:
-  - path: docs/cloud-deployment.md
+  - path: docs/cloud.md
   notes: 回环部署真实运行；公网 HTTPS、用户卷容量配额与 Kubernetes 未验证。
 - id: REQ-007
   title: 文稿声明并按需启动运行环境
@@ -77,6 +75,5 @@ requirements:
   - path: packages/addon-exec-jupyter/src/client/jupyter-client.ts
   - path: deploy/cloud/hub/jupyterhub_config.py
   docs:
-  - path: docs/cloud-deployment.md
-  - path: docs/benchmarks/cloud-hub-environments-2026-10-30.md
+  - path: docs/cloud.md
   notes: team 回环部署首次启动、并发复用、独立资源卷、真实内核运行、跨用户拒绝与空闲回收通过；查看和编译不启动环境。

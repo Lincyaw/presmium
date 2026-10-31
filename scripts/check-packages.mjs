@@ -42,7 +42,7 @@ for (const dir of workspaces) {
   if (row && row !== 'npm') problems.push(`${at}: published, but the table says "${row}"`)
   if (!pkg.name.startsWith('@lincyaw/') && !UNSCOPED.has(pkg.name)) problems.push(`${at}: a public package is named @lincyaw/*`)
   if (ZERO_X_PACKAGES.has(pkg.name)) {
-    if (!/^0\./.test(pkg.version)) problems.push(`${at}: a package of the workbench is 0.x (docs/design-dsh.md 3.3), not ${pkg.version}`)
+    if (!/^0\./.test(pkg.version)) problems.push(`${at}: a package of the workbench is 0.x (docs/studio.md 3.3), not ${pkg.version}`)
   } else {
     versions.add(pkg.version)
   }

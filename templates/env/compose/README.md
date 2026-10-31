@@ -68,7 +68,7 @@ docker compose -f compose.yaml -f compose.gpu.yaml up -d --wait      # 需要 NV
 docker compose -f compose.yaml -f compose.gvisor.yaml up -d --wait   # 需要在 Docker 中登记 runsc
 ```
 
-两者不组合：gVisor 的 GPU 支持（nvproxy）在这份模板上没有验证（`docs/design-v0.7.md` 第 11 节），模板只提供验证过的配置。要在共用的 GPU 上隔离学习者，见 Kubernetes 文档中的 MIG 与 gVisor。
+两者不组合：gVisor 的 GPU 支持（nvproxy）在这份模板上没有验证，模板只提供验证过的配置。要在共用的 GPU 上隔离学习者，见 Kubernetes 文档中的 MIG 与 gVisor。
 
 ## 开发容器
 

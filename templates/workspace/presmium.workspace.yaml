@@ -1,4 +1,4 @@
-# A workspace (docs/ir.md section 10): this file at the root of a git repository whose documents are its
+# A workspace (docs/ir.md section 7): this file at the root of a git repository whose documents are its
 # subdirectories, each with a lecture.json. `presmium new --type workspace` makes one. Then `presmium serve`
 # there, or `presmium build`.
 title: 课程名称

@@ -10,9 +10,9 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 |---|---|---|
 | `@lincyaw/cloud` | 否 | 托管产品的控制台：账号、共享与创建副本、MCP 接入；每个用户的完整 Presmium Studio 由 JupyterHub 运行（实验性） |
 | `@lincyaw/kernel` | npm | 共享内核：IR 与插件契约、服务注册、锚点、检查 |
-| `@lincyaw/host` | npm | 插件组件的宿主接口与设计系统的 Vue 组件 |
-| `@lincyaw/design` | npm | 设计系统：令牌、`pm-ui-*` 的类、字体与图标，产物与工作台共用，没有框架（`docs/design-dsh.md` 3.1 节） |
-| `@lincyaw/compiler` | npm | MyST 到 IR、插件加载、编译时执行、检查与渲染端调度 |
+| `@lincyaw/host` | npm | 插件组件的宿主接口与设计系统的 React 组件 |
+| `@lincyaw/design` | npm | 设计系统：令牌、`pm-ui-*` 的类、字体与图标，产物与工作台共用，没有框架（`docs/studio.md` 3.1 节） |
+| `@lincyaw/compiler` | npm | 由 `lecture.json` 派生运行快照、插件加载、编译时执行、检查与渲染端调度 |
 | `@lincyaw/cli` | npm | `presmium` 命令；`./testing` 供插件的集成测试运行 CLI |
 | `@lincyaw/viewer` | npm | IR 运行时 |
 | `@lincyaw/web` | npm | 网页渲染端 |
@@ -40,7 +40,7 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@lincyaw/addon-assistant` | npm | 插件：AI 助手与读者问答 |
 | `@lincyaw/addon-lecture` | npm | 插件：讲授轨与导出视频 |
 | `@lincyaw/addon-speech` | npm | 插件：语音服务 |
-| `@lincyaw/dsh` | npm | DeepSeek Harness 的 bundle：工作台的宿主部分（工具、确认策略、文稿上下文、技能、路由）与客户端部分（根布局、面板、主题与品牌）；0.x、实验性，版本号不随统一版本（`docs/design-dsh.md` 12 节）；技能由 `@lincyaw/skills` 从 `.agents/skills` 统一打包，客户端部分在打包时预编译（`build/client.mjs`，`docs/design-dsh.md` 7.8 节） |
+| `@lincyaw/dsh` | npm | DeepSeek Harness 的 bundle：工作台的宿主部分（工具、确认策略、文稿上下文、技能、路由）与客户端部分（根布局、面板、主题与品牌）；0.x、实验性，版本号不随统一版本（`docs/studio.md` 12 节）；技能由 `@lincyaw/skills` 从 `.agents/skills` 统一打包，客户端部分在打包时预编译（`build/client.mjs`，`docs/studio.md` 7.8 节） |
 | `@lincyaw/studio` | npm | `presmium studio`：组装 Presmium 的 profile，启动并监管 DeepSeek Harness（精确版本的依赖）与工作区服务，只打印一个网址；命令 `presmium-studio`（`pnpm add -g @lincyaw/studio`），依赖 `presmium`，项目里装了它时 `presmium studio` 转交给它；0.x、实验性，版本号不随统一版本 |
 | `@lincyaw/workbench` | npm | 工作台的 React 面板与工作区服务的客户端（首页、文件树、源码编辑器、问题、预览）；0.x、实验性，版本号不随统一版本，由 `@lincyaw/dsh` 的客户端部分打包使用 |
 | `@lincyaw/presmium` | npm | `pnpm add -g @lincyaw/presmium`：`presmium` 命令连同三个渲染端与全部官方插件；文稿与工作区中找不到的插件从它的依赖中找，项目里装有 `@lincyaw/presmium` 时全局命令转交给项目里的那一份；`presmium new` 运行 `create-presmium` |

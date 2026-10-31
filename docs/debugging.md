@@ -1,75 +1,67 @@
 # 调试预览加载与卡顿
 
-排查时同时保留浏览器与服务的证据。后端已返回地址不代表预览完成握手，完成握手也不代表视频播放器或幻灯片内容已经可用。
+同时保留浏览器与服务两侧的证据。后端返回地址不等于预览完成握手，完成握手也不等于内容或播放器可用。
 
-## 先看当前服务
+## 1. 看当前服务
 
-`pnpm studio` 在终端实时显示工作区服务日志，启动时打印持久日志路径。默认文件是 `~/.local/state/presmium/studio/presmium-studio-<散列>.log`（每个安装一个，散列区分检出与版本，以启动时打印的路径为准）；设置了 `XDG_STATE_HOME` 时跟随该目录。按文稿、预览请求编号或导出任务 ID 查看阶段与耗时。日志文件含 dsh 的启动网址，不要原样复制到报告。
+- 日志：`pnpm studio` 在终端实时显示工作区服务日志，并打印持久日志路径，默认 `~/.local/state/presmium/studio/presmium-studio-<散列>.log`（跟随 `XDG_STATE_HOME`）。按文稿、预览请求编号（`[preview N]`）或导出任务（`[job]`）查看阶段与耗时。日志含启动网址，不要原样贴进报告。
+- 诊断：已连接工作区的 AI 助手读取 `presmium://diagnostics?document=<文稿目录>`；`get_runtime` 取预览窗口的实际反馈，`get_outputs` 看构建结果，`check_document` 显式执行检查。`get_diagnostics` 只分片读取已有快照。没有窗口反馈只说明尚未观察到浏览器，空快照不证明健康。
 
-agent 已连接到当前工作区时，读取 `presmium://diagnostics?document=<文稿目录>` 获取当前诊断，调用 `get_runtime` 获取实际预览窗口反馈，调用 `get_outputs` 查看构建结果。没有窗口反馈只说明尚未观察到浏览器；不能推断页面健康。`get_diagnostics` 分片读取同一诊断快照，不触发编译或检查；显式执行检查用 `check_document`。空快照不证明当前源或浏览器健康。
+## 2. 打开时要求 dsh 认证
 
-## 打开时要求 dsh 认证
+页面显示 `dsh web authentication required; reopen the URL printed by dsh web.` 时先看主页面的 HTTP 状态：401 是浏览器没有当前地址的登录凭据，403 是 Host 或 Origin 检查拒绝。
 
-看到 `dsh web authentication required; reopen the URL printed by dsh web.` 时，先看主页面的 HTTP 状态。401 表示浏览器没有当前地址可用的登录凭据；Host 或 Origin 检查拒绝请求时返回 403，不能把两者都当作跨域问题。
+- 从正在运行的 `pnpm studio` 终端重新打开完整启动网址，主机名与端口与原先一致；`localhost:4320` 与 `127.0.0.1:4320` 的登录各自独立。
+- 启动网址中的令牌只属于本次进程，重启后旧链接不能登录。已建立的 cookie 由状态目录中的持久凭据签名，默认 30 天有效，同一状态目录与地址重启后仍有效。
+- 记录状态码与是否进入工作台，不输出令牌或 cookie。协议见 [dsh 认证说明](../vendor/docs/dsh/packages/client/connection/README.md#browser-authentication-and-request-trust)。
 
-从正在运行的 `pnpm studio` 终端重新打开完整启动网址，使用原先相同的主机名与端口。`localhost:4320` 和 `127.0.0.1:4320` 的登录状态各自独立。启动网址中的令牌属于本次进程，服务重启后旧启动链接不能重新登录；成功登录后地址栏会移除令牌。
+## 3. 多标签页请求不返回
 
-已建立的 cookie 由 dsh 状态目录中的持久凭据签名，默认有效 30 天。沿用同一状态目录与地址时，重启不应被直接解释为所有 cookie 失效。排查时分别验证当前完整入口、旧入口与已登录浏览器里的普通地址，只记录状态与是否进入工作台，不输出令牌或 cookie。协议依据见本地 [dsh 认证说明](../vendor/docs/dsh/packages/client/connection/README.md#browser-authentication-and-request-trust)。
+记录每个标签页的活动 SSE、HTTP 协议、请求发送与响应头时刻，并用带同一 cookie 的独立 Node 请求对照。不要从 DevTools 的请求创建事件推断请求已到达服务，也不用重发、短超时或关闭其他页面当作修复。
 
-## 多标签页请求不返回
+正常 Studio 用共享的事件 WebSocket 推送数据，并关闭 shell 的 `client-hmr`。自有 profile 重新启用 HMR 时，`/plugins/events` 会恢复为每页一条 SSE，且根客户端热替换可能丢失未保存的批注草稿；客户端代码重建或外壳插件启停后应重新加载页面。见 [Studio](studio.md)。
 
-先核对是否只是浏览器尚未取得连接：记录每个标签页的活动 SSE、HTTP 协议、请求发送与响应头时刻，并用同 cookie 的独立 Node 请求作对照。不要从 DevTools 的 request 创建事件推断请求已经到达服务，也不要用重发、短超时或关闭其它页作为产品修复。
+共享检出中日志出现读取 `packages/dsh/build/dist/client.json` 或 `client.js` 的 `EACCES` 时，先查生成产物的权限。确认页面实际加载了新构建，才算修复生效。
 
-正常 Studio 由共享事件 WebSocket 推送文稿及运行数据，并关闭 shell `client-hmr` 流。六标签页的实际因果记录见[传输验证](benchmarks/studio-multitab-transport-2026-10-27.md)。若自有 profile 重新启用 HMR，`/plugins/events` 会恢复每页一条 SSE；普通编辑无需该设置。客户端代码重建或外壳插件启停后，正常配置需重新加载页面；正式 profile 覆盖方法见[接入设计](design-dsh.md#23-请求的路径)。
-
-## 用隔离副本复现
-
-共享源码检出中若工作台日志出现读取 `packages/dsh/build/dist/client.json` 或 `client.js` 的 `EACCES`，应先检查生成产物的权限。源码启动会重建不可读或损坏的构建清单，客户端及清单固定为可读权限，不受启动终端的私有 umask 影响。确认实际页面加载的新构建和目标 DOM 后才能判定修复生效；源码已修改或预览后端就绪不足以证明原工作台标签页已更新。
-
-在仓库根目录运行：
+## 4. 用隔离副本复现
 
 ```sh
 pnpm debug:studio .presmium/gallery-workspace --document libraries
-```
-
-入口会复制指定工作区，在独立的状态目录、服务端口与 Chromium 中依次打开文档、放映，再返回文档。原来的工作区和服务保留。未指定工作区时使用公开示例的新副本；指定工作区但未指定 `--document` 时打开第一份文稿。
-
-缩小复现范围：
-
-```sh
 pnpm debug:studio .presmium/gallery-workspace --document libraries --views document,present,document --timeout 30000
+pnpm debug:studio --help
 ```
 
-`--views` 指定 `document,present` 的切换顺序，可重复；旧参数 `slides`、`video` 均按 `present` 处理。`--timeout` 是每次切换等待的毫秒数，默认 45000。`--headed` 显示隔离的 Chromium 窗口。`--output <新目录>` 指定证据目录，已存在的目录不会覆盖。使用 `pnpm debug:studio --help` 查看参数。
+入口复制工作区，在独立的状态目录、端口与 Chromium 中按序打开视图，原工作区与服务不受影响。不给工作区时用 `examples/gallery` 的新副本；给了工作区但没有 `--document` 时打开第一份文稿。
 
-浏览器观察器在第一次导航前安装，采集主页面与 iframe 的未捕获异常、未处理 Promise、控制台 warning/error、HTTP 4xx/5xx、网络失败、超过一秒的请求、主线程超过 50 ms 的长任务，以及预览 ready/activity/report 消息。后端日志从服务启动起采集。切换按点击、握手、内容三个阶段等待：文档须出现章节，放映须出现自有查看器的 `.pm-slide`。配置了讲授时，入口还会正常点击播放并验证时间推进、暂停，摘要记录 `playbackAdvancedMs`；DOM 存在或可见不代表没有被其他图层遮住。带未合成句子的静音预览可就绪，但摘要会标出提示。
-
-## 读取证据
-
-默认输出到 `.presmium/debug/<时间>/`：
-
-| 文件 | 用途 |
+| 参数 | 含义 |
 |---|---|
-| `summary.json` | 文稿、首次打开耗时、每次切换的阶段与耗时、错误计数、最多 20 条问题、是否完成整个序列 |
-| `events.jsonl` | 按 UTC 时间和切换步骤排列的前后端事件；包括当前诊断与导出任务快照 |
-| `<步骤>.png`、`failure.png` | 切换或启动失败的截图；渲染进程无响应时记录截图失败 |
-| `final.png` | 序列结束时的页面 |
+| `--views` | `document`、`present` 的切换顺序，默认 `document,present,document` |
+| `--timeout` | 每次切换的等待毫秒数，1000 到 300000，默认 45000 |
+| `--headed` | 显示 Chromium 窗口 |
+| `--output <新目录>` | 证据目录，默认 `.presmium/debug/<时间>/`，已存在则拒绝 |
 
-超时先记录待完成请求，再尝试读取预览 iframe 地址、隐藏状态与截图，避免浏览器卡死时丢掉网络证据。长连接不列为挂起请求，切换导致的 `ERR_ABORTED` 另记为取消。事件最多 2000 条，摘要的 `dropped` 表示超过上限被省略的数量。请求不采集 headers、cookie 或正文；记录会移除非白名单查询参数，并过滤已知启动令牌。截图包含实际文稿，证据仅保存在本机，交付前核对内容。
+观察器在首次导航前安装，采集主页面与 iframe 的未捕获异常、未处理 Promise、控制台 warning 与 error、HTTP 4xx/5xx、网络失败、超过 1 秒的请求、超过 50 ms 的长任务与预览的 ready、activity、report 消息，以及服务启动起的后端日志。每次切换按点击、握手、内容三阶段等待：文档须出现章节，放映须出现 `.pm-slide`。配置了讲授时还会点击播放并验证时间推进（`playbackAdvancedMs`）。
 
-序列执行完时 `complete` 为 true；仍需检查各步骤的 `state` 和 `browserFailures`。任一步骤失败或捕获到浏览器异常、HTTP/网络错误、console.error 时进程以非零状态退出，终端列出前五条问题。后端日志的错误可能不影响预览就绪，例如未配置语音引擎时仍能播放带字幕的静音预览，因此也要读 `backend.log` 与诊断快照。
+## 5. 读取证据
+
+| 文件 | 内容 |
+|---|---|
+| `summary.json` | 首次打开耗时，每次切换的阶段与耗时，错误计数，至多 20 条问题，`complete` |
+| `events.jsonl` | 按时间与步骤排列的前后端事件，含诊断与导出任务快照；至多 2000 条，超出数记在 `dropped` |
+| `backend.log` | 后端日志 |
+| `<步骤>.png`、`failure.png`、`final.png` | 失败与结束时的截图 |
+
+超时会先记录待完成请求，再读取 iframe 地址与截图。长连接不算挂起，切换导致的 `ERR_ABORTED` 记为取消。不采集 headers、cookie 与正文，查询参数与启动令牌被移除；截图含真实文稿，交付前核对。任一步骤失败或捕获到浏览器错误时进程以非零状态退出。`complete` 为 true 后仍要看各步骤的 `state`、`browserFailures` 与 `backend.log`。
 
 定位顺序：
 
-1. 同一步骤的 `[preview N]`、`[viewer]` 或 `[job]` 是否已完成；未完成则检查后端最后阶段。
-2. 后端已完成而没有 `preview.message` 的 ready，查看失败资源、慢请求和超时现场的待完成请求。
-3. 握手完成而内容未出现，查看组件异常、控制台报错、长任务及播放器状态。
-4. 没有异常仍然慢，按冷启动、首次加载与返回已加载视图区分，并在同一负载下比较修改前后；不能用一次 HTTP 响应很快证明交互流畅。
+1. 同一步骤的 `[preview N]`、`[viewer]`、`[job]` 是否完成；未完成则看后端最后阶段。
+2. 后端完成但没有 ready 消息：看失败资源、慢请求与超时时的待完成请求。
+3. 握手完成但内容未出现：看组件异常、控制台错误、长任务与播放器状态。
+4. 没有异常仍然慢：区分冷启动、首次加载与返回已加载视图，在同一负载下比较修改前后。
 
-该入口使用干净浏览器与新服务状态。只在原标签页发生的问题还要检查那个标签页的控制台和网络，尤其是扩展、缓存、会话与跨源行为；隔离运行成功不证明原会话已经恢复。调试进程退出时关闭自己的浏览器和服务，证据目录保留。
+## 6. 注意
 
-根布局客户端代码重建后，已确认过原标签页出现根槽位未注册异常且未恢复、重新打开页面正常的生命周期问题，见[隔离记录](benchmarks/workbench-root-reload-2026-10-27.md)。交付新客户端时应明确验证重新加载后的真实界面；不能只看构建成功或样式已经替换，也不能据此宣称旧标签页的代码热替换正常。
-
-正常 Studio 固定关闭 `client-hmr`，真实客户端重建不会替换编辑中的根客户端。自有 profile 重新启用后，已真实观察到尚未持久化的批注会话稿在根热替换的自动整页恢复中丢失，离开确认也没有出现，见[诊断记录](benchmarks/comment-draft-root-hmr-2026-10-28.md)。诊断时必须记录实际 `rebuilt` 消息、不同代码产物、新代码执行与导航；仅写入 armed checkpoint 不能证明热更新发生。已 strict 提交的恢复稿与未确认稿分开判断，不用旧正文恢复结果代替新批注持久化结果。
-
-升级后要用作者正在使用的工作区副本复现，不能只测试新复制的示例。旧讲义头部与场景代码可能仍引用 `@lincyaw/slidev-addon-*`：编译器转换头部的插件名，文稿打包器将代码导入转换为已加载插件的 `@lincyaw/addon-*` 公开导出，复用查看器的同一运行时。不要通过删除作者的副本、重写其源码或将未解析的模块盲目外置来绕过错误。
+- 隔离运行成功不证明原标签页已恢复。只在原标签页出现的问题，检查那个标签页的控制台、网络、扩展、缓存与会话。
+- 交付新客户端时，验证重新加载后的真实界面，不只看构建成功。
+- 升级后用作者正在用的工作区副本复现。旧文稿可能仍引用 `@lincyaw/slidev-addon-*`，编译器与文稿打包器会转换为 `@lincyaw/addon-*`；不要删除作者的副本、改写其源码或把未解析的模块外置来绕过错误。
