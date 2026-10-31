@@ -1,5 +1,11 @@
 # @lincyaw/kernel
 
+## 1.0.0-rc.5
+
+### Patch Changes
+
+- e1fcfaf: Pages of `presmium serve` may be framed by the site itself, so a home page that plays a document's presentation in a frame works in the preview as it does in the built site.
+
 ## 1.0.0-rc.4
 
 No changes in this release.

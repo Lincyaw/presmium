@@ -1,5 +1,12 @@
 # @lincyaw/classroom-server
 
+## 1.0.0-rc.5
+
+### Patch Changes
+
+- Updated dependencies [e1fcfaf]
+  - @lincyaw/kernel@1.0.0-rc.5
+
 ## 1.0.0-rc.4
 
 ### Patch Changes
