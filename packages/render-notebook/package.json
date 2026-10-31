@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/render-notebook",
-  "version": "1.0.0-rc.12",
+  "version": "1.0.0-rc.13",
   "description": "Presmium's notebook renderer: writes the IR as a Jupyter notebook (nbformat 4)",
   "license": "Apache-2.0",
   "repository": {
