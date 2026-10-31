@@ -80,7 +80,7 @@
 ### 4.3 坐标与安全
 
 - `step` 是页面自己的步号，带 `trail`，工作台用 `trailStep`、`stepTrail` 换算为完整文稿的步号；控制通道用同一换算。
-- 产物页面与工作台不同源，页面脚本（含第三方插件）拿不到 dsh cookie，也读不到工作台 DOM。预览页面带 `frame-ancestors <允许的来源>`；双向核对 origin、source 与 nonce。
+- 产物页面与工作台不同源，页面脚本（含第三方插件）拿不到 dsh cookie，也读不到工作台 DOM。预览页面带 `frame-ancestors 'self' <允许的来源>`；双向核对 origin、source 与 nonce。
 
 ## 5. 工作区服务的接口
 

@@ -468,7 +468,7 @@ presmium serve: 浏览器 → 服务端 ─┬ /__presmium/<插件 ID>/…、/__
 ### 13.2 进程与契约
 
 - 启动器监管 dsh 与工作区服务（各自进程组与看门狗）；bundle 的宿主部分在 `packages/dsh/src/node/`，客户端适配在 `src/client/`；`DSH_HOME` 在 `$XDG_STATE_HOME/presmium/studio`。
-- 工作区服务以 `serve --preview-origin` 在回环上运行，经 `PRESMIUM_SERVICE_TOKEN` 认证；预览页 `frame-ancestors` 只允许该源。
+- 工作区服务以 `serve --preview-origin` 在回环上运行，经 `PRESMIUM_SERVICE_TOKEN` 认证；预览页 `frame-ancestors` 只允许该源与站点自身（首页可以嵌入文稿的放映）。
 - 预览协议 `kernel/src/contracts/preview.ts`：`postMessage` 驱动 iframe，修订号是 IR 的哈希，步号带 `trail`。
 - 模型来自 `PRESMIUM_MODEL_URL`、`_KEY`、`_PROVIDER`。
 
