@@ -1,5 +1,12 @@
 # @lincyaw/web
 
+## 1.0.0-rc.10
+
+### Patch Changes
+
+- d9acee9: A page fetches what it will need in parallel with the app instead of one file after the other: its document (`ir.json`) and code bundle on every page, and on a presentation also its scene chunks, the shared modules they import, the animation library of their engine and the viewer chunk.
+- @lincyaw/design@1.0.0-rc.10
+
 ## 1.0.0-rc.9
 
 ### Patch Changes

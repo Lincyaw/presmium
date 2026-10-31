@@ -1,5 +1,9 @@
 # @lincyaw/addon-speech
 
+## 1.0.0-rc.10
+
+No changes in this release.
+
 ## 1.0.0-rc.9
 
 No changes in this release.
