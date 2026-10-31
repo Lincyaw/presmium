@@ -7,7 +7,7 @@ import type { SpeechSettingsAnswer, SpeechSettingsChange } from '../contracts/sp
 const KEY = 'PRESMIUM_SPEECH_VOLCENGINE_KEY', APPID = 'PRESMIUM_SPEECH_VOLCENGINE_APPID'
 const MAX_BYTES = 16384
 const lockfile = createRequire(import.meta.url)('proper-lockfile') as { lock(file: string, options: { realpath: boolean, retries: number }): Promise<() => Promise<void>> }
-interface Stored { version: 1, revision: string, key?: string }
+interface Stored { version: 1, revision: string, key?: string, appId?: string }
 const empty = (): Stored => ({ version: 1, revision: 'none' })
 
 export class SpeechSettingsError extends Error {
@@ -31,7 +31,7 @@ export class OperatorSpeechSettings {
       const stat = fstatSync(fd)
       if (!stat.isFile() || stat.size > MAX_BYTES) throw new SpeechSettingsError('speech-settings-unavailable')
       const value = JSON.parse(readFileSync(fd, 'utf8')) as Stored
-      if (value?.version !== 1 || typeof value.revision !== 'string' || value.key !== undefined && typeof value.key !== 'string') throw new SpeechSettingsError('speech-settings-unavailable')
+      if (value?.version !== 1 || typeof value.revision !== 'string' || value.key !== undefined && typeof value.key !== 'string' || value.appId !== undefined && (typeof value.appId !== 'string' || !/^\d{1,32}$/.test(value.appId))) throw new SpeechSettingsError('speech-settings-unavailable')
       return value
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return empty()
@@ -42,12 +42,12 @@ export class OperatorSpeechSettings {
     if (name !== KEY && name !== APPID) return this.#fallback(name)
     const saved = this.#read()
     // API-key authentication must not inherit a different environment credential's App ID.
-    if (name === APPID && saved.key) return undefined
+    if (name === APPID && saved.key) return saved.appId
     return (name === KEY ? saved.key : undefined) ?? this.#fallback(name)
   }
   read(): SpeechSettingsAnswer {
     const value = this.#read(), key = value.key ?? this.#fallback(KEY)?.trim()
-    return { provider: 'volcengine', model: 'seed-tts-2.0', revision: value.revision, configured: Boolean(key), source: value.key ? 'saved' : key ? 'environment' : 'none', stored: Boolean(value.key), writable: Boolean(this.#file), verification: 'configuration-only' }
+    return { provider: 'volcengine', model: 'seed-tts-2.0', revision: value.revision, configured: Boolean(key), appIdConfigured: Boolean(value.key ? value.appId : this.#fallback(APPID)), source: value.key ? 'saved' : key ? 'environment' : 'none', stored: Boolean(value.key), writable: Boolean(this.#file), verification: 'configuration-only' }
   }
   async change(change: SpeechSettingsChange): Promise<SpeechSettingsAnswer> {
     if (!this.#file) throw new SpeechSettingsError('speech-settings-unavailable')
@@ -67,7 +67,9 @@ export class OperatorSpeechSettings {
       if (change.action === 'save') {
         const key = change.apiKey?.trim() || previous.key || this.#fallback(KEY)?.trim()
         if (!key || !/^[\x21-\x7e]{8,8192}$/.test(key)) throw new SpeechSettingsError('speech-settings-invalid')
-        next = { ...next, key }
+        const appId = change.appId?.trim() ?? (change.apiKey?.trim() ? undefined : previous.key ? previous.appId : this.#fallback(APPID)?.trim())
+        if (appId && !/^\d{1,32}$/.test(appId)) throw new SpeechSettingsError('speech-settings-invalid')
+        next = { ...next, key, ...appId ? { appId } : {} }
       }
       temporary = `${this.#file}.${randomUUID()}.tmp`
       writeFileSync(temporary, `${JSON.stringify(next)}\n`, { mode: 0o600, flag: 'wx' })

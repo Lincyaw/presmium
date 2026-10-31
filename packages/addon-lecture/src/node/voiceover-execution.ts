@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { setImmediate } from 'node:timers/promises'
-import { deckLocale, errorMessage, isRecord, resolvedVoice, speechEngineId, speechVoice, voiceTarget } from '@lincyaw/kernel'
+import { deckLocale, errorMessage, isRecord, resolvedVoice, speechEngineId, speechFailureCode, speechVoice, voiceTarget } from '@lincyaw/kernel'
 import { irRevision, VoiceoverOperationError } from '@lincyaw/kernel/node'
 import type { CanonicalSource, IRDocument, NodeServiceContext, SpeechService, SpeechVoice, Synthesis, SynthesisRequest, VoiceoverExecution, VoiceoverProgress, VoiceoverRunResult, VoiceoverSnapshot, VoiceoverStatusQuery, VoicePreviewQuery, VoicePreviewQuote, VoiceScope, VoiceTarget } from '@lincyaw/kernel'
 import { plannedUtterances } from '../domain/index.ts'
@@ -189,7 +189,7 @@ export function voiceoverExecution(ctx: NodeServiceContext): VoiceoverExecution 
                   signal.throwIfAborted(); await assertCurrent(now); signal.throwIfAborted(); completed++
                 } catch (error) {
                   if (signal.aborted || stale(error) || !same(now)) throw error
-                  failed++; failure = errorMessage(error)
+                  failed++; failure = speechFailureCode(error) ?? errorMessage(error)
                 }
                 progress({ completed, failed, ...failure ? { error: failure } : {} })
                 if (performance.now() - yielded >= 8) { await setImmediate(); yielded = performance.now() }

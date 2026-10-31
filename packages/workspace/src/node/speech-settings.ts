@@ -10,8 +10,8 @@ export function speechSettingsRoute(directory: string, fallback: (name: string) 
       if (request.method === 'GET') return jsonResponse(settings.read(), 200, { 'cache-control': 'no-store' })
       if (request.method !== 'POST') return problemResponse(405, 'GET or POST')
       const body: unknown = await request.json().catch(() => undefined)
-      if (!isRecord(body) || typeof body.revision !== 'string' || !['save', 'clear'].includes(String(body.action)) || Object.keys(body).some(key => !['action', 'revision', 'apiKey'].includes(key))
-        || body.action === 'save' && body.apiKey !== undefined && typeof body.apiKey !== 'string') return problemResponse(400, 'speech-settings-invalid')
+      if (!isRecord(body) || typeof body.revision !== 'string' || !['save', 'clear'].includes(String(body.action)) || Object.keys(body).some(key => !['action', 'revision', 'apiKey', 'appId'].includes(key))
+        || body.action === 'save' && (body.apiKey !== undefined && typeof body.apiKey !== 'string' || body.appId !== undefined && typeof body.appId !== 'string')) return problemResponse(400, 'speech-settings-invalid')
       return jsonResponse(await settings.change(body as unknown as SpeechSettingsChange), 200, { 'cache-control': 'no-store' })
     } catch (error) {
       const code = error instanceof SpeechSettingsError ? error.code : 'speech-settings-unavailable'

@@ -10,6 +10,7 @@ export class LecturePlayer {
   /** The time since the lecture reached its current step (ms); undefined while the viewer tries the page out. */
   readonly stepTime = createStore<number | undefined>(0)
   readonly trying = createStore(false)
+  readonly waitingFor = createStore<string | undefined>(undefined)
   readonly cursor = createStore<{ sectionId: string, step: number } | undefined>(undefined)
   /** Event-identity selection can expose an empty interval while paused; time seeking and playback cannot. */
   readonly positionMode = createStore<'time' | 'step'>('time')
@@ -29,11 +30,13 @@ export class LecturePlayer {
   private readonly playback?: PlaybackLease
   private disposed = false
   private generation = 0
+  private readonly bufferMissing: boolean
 
-  constructor(track: LectureTrack, doc: IRDocument, operations: Operations, clock: TrackClock, playback?: PlaybackControl) {
+  constructor(track: LectureTrack, doc: IRDocument, operations: Operations, clock: TrackClock, playback?: PlaybackControl, bufferMissing = false) {
     this.track = track
     this.clock = clock
     this.operations = operations
+    this.bufferMissing = bufferMissing
     const drift = eventDrift(track, doc)
     const kept = timedEvents(track).filter(event => drift[event.index]?.grade !== 'lost')
     this.dropped = track.events.length - kept.length
@@ -83,6 +86,7 @@ export class LecturePlayer {
       if (this.disposed || generation !== this.generation) return false
       this.positionMode.set('time')
       this.clock.error.set(undefined)
+      if (this.bufferAt(this.clock.now(), this.clock.now())) return true
       this.clock.play()
       this.loop(generation)
       return this.clock.playing.getSnapshot()
@@ -93,6 +97,7 @@ export class LecturePlayer {
   }
 
   pause(): void {
+    this.waitingFor.set(undefined)
     this.generation++
     this.playback?.cancel()
     cancelAnimationFrame(this.frame)
@@ -176,10 +181,22 @@ export class LecturePlayer {
     cancelAnimationFrame(this.frame)
     const step = () => {
       if (generation !== this.generation || !this.clock.playing.getSnapshot()) { this.frame = 0; return }
+      const before = this.time.getSnapshot(), now = this.clock.now()
+      if (this.bufferAt(before, now)) { this.frame = 0; return }
       this.clock.tick()
       this.advanceTo(this.clock.now())
       this.frame = generation === this.generation && this.clock.playing.getSnapshot() ? requestAnimationFrame(step) : 0
     }
     this.frame = requestAnimationFrame(step)
+  }
+
+  /** Never let an estimated missing interval run silently in the author playback. */
+  private bufferAt(from: number, to: number): boolean {
+    if (!this.bufferMissing) return false
+    const missing = this.track.utterances.find(unit => unit.unsaid && unit.t + unit.d > from && unit.t <= to)
+    if (!missing) return false
+    const at = Math.max(from, missing.t)
+    this.pause(); this.clock.seek(at); this.advanceTo(at); this.waitingFor.set(missing.id)
+    return true
   }
 }

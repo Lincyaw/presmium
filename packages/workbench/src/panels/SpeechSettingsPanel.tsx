@@ -8,7 +8,7 @@ import { WorkspaceServerError } from '../workspace-client.ts'
 /** Write-only credentials: values stay in this mounted form until an acknowledged save or close. */
 export function SpeechSettingsPanel() {
   const workbench = useWorkbench(), locale = useWorkbenchState(state => state.locale), t = SPEECH_SETTINGS_MESSAGES[locale]
-  const [settings, setSettings] = useState<SpeechSettingsAnswer>(), [key, setKey] = useState('')
+  const [settings, setSettings] = useState<SpeechSettingsAnswer>(), [key, setKey] = useState(''), [appId, setAppId] = useState('')
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [failure, setFailure] = useState<string>(), [status, setStatus] = useState<string>(), [confirm, setConfirm] = useState(false)
   const owner = useRef(true), request = useRef<AbortController>(), dirty = useRef(false)
   const load = async (checked = false) => {
@@ -29,9 +29,9 @@ export function SpeechSettingsPanel() {
     request.current?.abort(); const controller = new AbortController(); request.current = controller
     setBusy(true); setFailure(undefined); setStatus(undefined)
     try {
-      const value = await workbench.client.changeSpeechSettings(clear ? { action: 'clear', revision: settings.revision } : { action: 'save', revision: settings.revision, ...key.trim() ? { apiKey: key.trim() } : {} }, controller.signal)
+      const value = await workbench.client.changeSpeechSettings(clear ? { action: 'clear', revision: settings.revision } : { action: 'save', revision: settings.revision, ...key.trim() ? { apiKey: key.trim() } : {}, ...appId.trim() ? { appId: appId.trim() } : {} }, controller.signal)
       if (!owner.current || controller.signal.aborted) return
-      setSettings(value); setKey(''); dirty.current = false; setConfirm(false)
+      setSettings(value); setKey(''); setAppId(''); dirty.current = false; setConfirm(false)
       setStatus(clear ? t.cleared : t.saved); workbench.refreshVoiceServices()
     } catch (error) {
       if (owner.current && !controller.signal.aborted) {
@@ -51,7 +51,8 @@ export function SpeechSettingsPanel() {
       <PmCard><div className="pmw-speech-settings__fields">
         <PmField label={t.service}><span>{t.provider} · {t.model}</span><PmBadge tone={settings?.configured ? 'accent' : 'neutral'}>{settings?.configured ? t.configured : t.unconfigured}</PmBadge></PmField>
         {settings && <p>{t.source[settings.source]}</p>}
-        <PmInput type="password" label={t.key} hint={t.keyHint} placeholder={settings?.configured ? t.keySaved : t.keyPlaceholder} value={key} disabled={disabled} autoComplete="new-password" spellCheck={false} maxLength={8192} onChange={event => { dirty.current = Boolean(event.target.value.trim()); setKey(event.target.value); setStatus(undefined) }} />
+        <PmInput type="password" label={t.key} hint={t.keyHint} placeholder={settings?.configured ? t.keySaved : t.keyPlaceholder} value={key} disabled={disabled} autoComplete="new-password" spellCheck={false} maxLength={8192} onChange={event => { dirty.current = Boolean(event.target.value.trim() || appId.trim()); setKey(event.target.value); setStatus(undefined) }} />
+        <PmInput label={t.appId} hint={t.appIdHint} placeholder={settings?.appIdConfigured ? t.keySaved : t.appIdPlaceholder} value={appId} disabled={disabled} autoComplete="off" inputMode="numeric" spellCheck={false} maxLength={32} onChange={event => { dirty.current = Boolean(event.target.value.trim() || key.trim()); setAppId(event.target.value); setStatus(undefined) }} />
         <div className="pmw-speech-settings__actions"><PmButton variant="accent" loading={busy} disabled={disabled || !key.trim() && !settings?.configured} onClick={() => void save()}>{t.save}</PmButton><PmButton disabled={busy || loading || dirty.current} onClick={() => void load(true)}>{t.check}</PmButton></div>
       </div></PmCard>
       <PmNotice>{t.verification}</PmNotice>

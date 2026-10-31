@@ -183,7 +183,7 @@ export const AUTHORING_CLIENT_ACTION_RESULT_SCHEMA: Schema = { oneOf: [
 ] }
 const source = DOCUMENT_PAGE_DUPLICATION_SCHEMA.properties.source as unknown as Schema
 const binding = object({ source, irRevision: entity, planId: entity })
-const position = object({ timeMs: number, stepTimeMs: number, sectionId: entity, stepId: entity, durationMs: number, playing: bool, rate: { type: 'number', exclusiveMinimum: 0, maximum: 16 }, trying: bool }, ['timeMs', 'durationMs', 'playing', 'rate', 'trying'])
+const position = object({ timeMs: number, stepTimeMs: number, sectionId: entity, stepId: entity, durationMs: number, playing: bool, rate: { type: 'number', exclusiveMinimum: 0, maximum: 16 }, trying: bool, waitingFor: entity }, ['timeMs', 'durationMs', 'playing', 'rate', 'trying'])
 const playback = object({ binding, status: { enum: ['loading', 'ready', 'estimated', 'unavailable', 'failed'] }, position, error: { type: 'string', maxLength: 300 } }, ['binding', 'status'])
 export const AUTHORING_CLIENT_SNAPSHOT_SCHEMA: Schema = object({
   revision: integer, source, view: { enum: ['document', 'present'] }, editing: object({ dirty: bool, saving: bool, composing: bool, conflicted: bool, locked: bool, loading: bool }),

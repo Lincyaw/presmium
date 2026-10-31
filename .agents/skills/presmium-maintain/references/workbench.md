@@ -185,3 +185,11 @@ Reuse SpeechSettingsPanel and the workspace speech-settings owner route with its
 Store the API key only in the operator directory (0600 file, lock and revision comparison); return status
 only. Saving refreshes catalogues and plans without restarting; checking local configuration never
 authenticates or synthesizes. Preview and generation retain explicit provider confirmation.
+
+Production Play is one cancellable on-demand voice intent. The existing LecturePlayer buffers at an
+unsaid utterance before its estimated interval; the UI starts the shared source-bound voiceover job,
+reuses exact cache entries, loads the new plan/track in the mounted frame, and resumes at that cached
+utterance identity. Do not replace the iframe per clip or add a second media clock. Explicit navigation,
+other audio starts and source/project changes retire pending intent; rate changes preserve it.
+Estimated plans never admit arbitrary time seeks or export. Provider errors map through speechFailureCode
+to localized reasons; never display upstream payloads or credentials.

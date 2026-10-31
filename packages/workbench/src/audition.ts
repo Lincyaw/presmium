@@ -1,4 +1,5 @@
 import type { Workbench } from './workbench.ts'
+import { speechFailureCode } from '@lincyaw/kernel'
 
 export interface AuditionState { status: 'idle' | 'loading' | 'playing' | 'failed', error?: string }
 export interface AuditionSource { audio: Blob | string }
@@ -49,7 +50,7 @@ export class Audition {
     const current = () => !this.#disposed && this.#version === version && !request.signal.aborted
     this.#set({ status: 'loading' })
     try {
-      await this.#workbench.pausePlayback()
+      await this.#workbench.pausePlayback(true)
       if (!current()) return
       const source = await produce(request.signal)
       if (!current()) return
@@ -69,7 +70,7 @@ export class Audition {
     } catch (error) {
       if (!current()) return
       this.#release()
-      this.#set({ status: 'failed', error: error instanceof Error && error.message.startsWith('preview-playback-') ? error.message : 'audition-request' })
+      this.#set({ status: 'failed', error: speechFailureCode(error) ?? (error instanceof Error && error.message.startsWith('preview-playback-') ? error.message : 'audition-request') })
     }
   }
 

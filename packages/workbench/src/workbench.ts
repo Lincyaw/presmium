@@ -145,6 +145,8 @@ export interface WorkbenchState {
   position?: PreviewPosition
   /** Changes on every position intent, including A → B → A, without changing the source. */
   documentPositionToken: string
+  /** Explicit author navigation, distinct from the player's passive cursor and frame reload reports. */
+  productionNavigationVersion: number
   documentPositionIntent: 'seek' | 'pause'
   /** An explicit source navigation request; scrolling updates position without issuing another request. */
   documentNavigation?: { section: string, block?: string, request: string }
@@ -347,6 +349,7 @@ export class Workbench {
       previewReload: 0,
       previewConnection: 0,
       documentPositionToken: this.#nextDocumentPosition(),
+      productionNavigationVersion: 0,
       documentPositionIntent: 'seek',
       isDiagnosticsUnavailable: false,
       canRepairDiagnostics: false,
@@ -1014,7 +1017,9 @@ export class Workbench {
     if (!current()) return false
     this.#production.reset()
     this.#set({ productionPlan: plan, voiceoverCacheRefresh: { source: job.source, revision: job.revision, sequence: (this.#state.voiceoverCacheRefresh?.sequence ?? 0) + 1 } })
-    return this.refreshVoicePlayback(job.source, job.revision)
+    // The mounted production loader fetches this new binding in the existing frame.
+    // Replacing the iframe for every clip would interrupt progressive playback and its connection.
+    return true
   }
 
   #showWebView(sinks: Iterable<PreviewSink> = this.#previewSinks): void {
@@ -1084,7 +1089,7 @@ export class Workbench {
         ...clean && !state.isHistoryBusy && !state.isHistoryPreparing && source.member?.id && this.#componentPropertyDrafts.readable(source.identity, source.member.id) ? ['component-drafts.restore' as const, 'component-drafts.discard' as const] : [],
         ...this.#canPreparePresentation() ? ['preview.prepare' as const] : [],
         ...clean && (state.webView === 'document' || ready) ? ['position.step' as const] : [],
-        ...ready ? ['playback.play' as const, 'playback.seek' as const, 'playback.rate' as const] : []], unsubmittedContent: 'not-inspected' }
+        ...ready ? ['playback.play' as const, 'playback.rate' as const, ...plan?.timing === 'confirmed' ? ['playback.seek' as const] : []] : []], unsubmittedContent: 'not-inspected' }
   }
 
   /** Reuses the same source actor, mutual-audio gate and frame acknowledgements as the human controls. */
@@ -1159,7 +1164,7 @@ export class Workbench {
       if (!source || source.dirty || source.saving || source.composing || source.error || source.restored) throw new Error('client-source-not-saved')
       return
     }
-    if (action.type === 'playback.pause') { await this.pausePlayback(); owned(); return }
+    if (action.type === 'playback.pause') { this.#interruptProductionNavigation(); await this.pausePlayback(); owned(); return }
     if (action.type === 'position.step') {
       const content = this.#state.authoring?.content, section = content?.sections[action.sectionId]
       if (!section?.stepOrder.includes(action.stepId) || content?.steps[action.stepId]?.sectionId !== action.sectionId) throw new Error('client-step-not-found')
@@ -1175,7 +1180,7 @@ export class Workbench {
     }
     const plan = this.#state.productionPlan
     if (!plan || !sameProductionBinding(plan.binding, action.binding)) throw new Error('client-playback-binding-changed')
-    if (action.type === 'playback.seek' && (plan.durationMs === undefined || action.timeMs > plan.durationMs)) throw new Error('client-seek-out-of-range')
+    if (action.type === 'playback.seek' && (plan.timing !== 'confirmed' || plan.durationMs === undefined || action.timeMs > plan.durationMs)) throw new Error('client-seek-out-of-range')
     if (action.type === 'playback.rate' && !(PRODUCTION_PLAYBACK_RATES as readonly number[]).includes(action.rate)) throw new Error('client-rate-unavailable')
     const control: ProductionPlaybackCommand = action.type === 'playback.play' ? { action: 'play', binding: action.binding }
       : action.type === 'playback.seek' ? { action: 'seek', binding: action.binding, timeMs: action.timeMs } : { action: 'rate', binding: action.binding, rate: action.rate }
@@ -1199,8 +1204,14 @@ export class Workbench {
     return plan
   }
 
+  #interruptProductionNavigation(): void {
+    this.#set({ productionNavigationVersion: this.#state.productionNavigationVersion + 1 })
+  }
+
   /** The child confirms seeks and playback; the parent never estimates a playhead using a timer. */
   async controlProduction(control: ProductionPlaybackCommand, signal?: AbortSignal): Promise<ProductionPlaybackState> {
+    if (control.action === 'pause' || control.action === 'seek' || control.action === 'step' && !control.utteranceId) this.#interruptProductionNavigation()
+    if (control.action === 'seek' && this.#state.productionPlan?.timing !== 'confirmed') throw new Error('production-plan-unavailable')
     const scope = this.#documentScope
     this.#set({ productionFailure: undefined })
     try {
@@ -1221,6 +1232,7 @@ export class Workbench {
   }
 
   closeProduction(): void {
+    this.#interruptProductionNavigation()
     this.#production.reset()
     this.#set({ productionPlan: undefined, productionFailure: undefined })
   }
@@ -1292,14 +1304,14 @@ export class Workbench {
   clearPageEditFailure(): void { this.#set({ pageEditFailure: undefined }) }
 
   /** The preview acknowledges that all registered lecture playback has paused before audition audio starts. */
-  pausePlayback(): Promise<void> { return this.#playback.pause() }
+  pausePlayback(interactive = false): Promise<void> { if (interactive) this.#interruptProductionNavigation(); return this.#playback.pause() }
 
   /** The owner must invalidate pending audio responses as well as stop its current audio element. */
   registerAudition(stop: () => void): () => void { return this.#playback.registerAudition(stop) }
-  registerAudioCapture(stop: () => void): () => void { return this.#playback.registerAudioCapture(stop) }
+  registerAudioCapture(stop: () => void): () => void { this.#interruptProductionNavigation(); return this.#playback.registerAudioCapture(stop) }
 
   /** Inline runtimes join the same exclusive playback group as author auditions. */
-  startDocumentPlayback(stop: () => Promise<void>): Promise<() => void> { return this.#playback.startDocumentPlayback(stop) }
+  startDocumentPlayback(stop: () => Promise<void>): Promise<() => void> { this.#interruptProductionNavigation(); return this.#playback.startDocumentPlayback(stop) }
 
   stopAuditions(): void { this.#playback.stopAuditions() }
 
@@ -2008,18 +2020,20 @@ export class Workbench {
 
   /** An author freezes this target even when its step has not changed. */
   pauseDocumentStep(sectionId: string, stepId: string): void {
+    this.#interruptProductionNavigation()
     this.#documentStep(sectionId, stepId, true)
   }
 
   /** A canonical step remains selectable while its next runtime snapshot is still compiling. */
   selectDocumentStep(sectionId: string, stepId: string): Promise<ProductionPlaybackState | undefined> | void {
+    this.#interruptProductionNavigation()
     const source = this.#state.authoring, section = source?.content?.sections[sectionId]
     const step = section?.stepOrder.indexOf(stepId) ?? -1
     if (!section || step < 0) return
     this.#pendingGo = undefined
     if (this.#state.webView === 'document') { this.pauseDocumentStep(sectionId, stepId); return }
     const plan = this.#state.productionPlan, range = plan?.pages.find(page => page.sectionId === sectionId)?.steps.find(step => step.stepId === stepId)
-    if (plan?.canPreview && this.#productionReady() && range?.timing === 'confirmed' && range.startMs !== undefined) {
+    if (plan?.canPreview && this.#productionReady() && range?.startMs !== undefined) {
       this.stopAuditions()
       if (this.#production.selecting(sectionId, stepId)) return
       this.#selectedSteps.set(`${this.#state.document}\0${sectionId}`, step)
@@ -2046,6 +2060,7 @@ export class Workbench {
 
   /** Complete-IR position; trail maps the same step into a filtered preview without reusing its ordinal. */
   goToStep(section: string, step: number): void {
+    this.#interruptProductionNavigation()
     const target = this.#state.ir?.doc.sections.find(item => item.id === section)
     if (!target || !Number.isInteger(step) || step < 0 || step > target.steps) return
     const trail = stepTrail(stepKeys(target), step)

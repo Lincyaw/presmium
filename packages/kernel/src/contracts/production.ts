@@ -20,6 +20,8 @@ export interface ProductionPlaybackPosition {
   playing: boolean
   rate: number
   trying: boolean
+  /** Exact missing utterance that paused this playback intent before its estimated interval. */
+  waitingFor?: string
 }
 export interface ProductionPlaybackState {
   binding: ProductionBinding
@@ -31,7 +33,7 @@ export type ProductionPlaybackCommand =
   | { binding: ProductionBinding, action: 'load' | 'pause' | 'play' }
   | { binding: ProductionBinding, action: 'seek', timeMs: number }
   /** Selects an event boundary even when several stable steps share the same time. */
-  | { binding: ProductionBinding, action: 'step', sectionId: string, stepId: string }
+  | { binding: ProductionBinding, action: 'step', sectionId: string, stepId: string, utteranceId?: string }
   | { binding: ProductionBinding, action: 'rate', rate: number }
 export interface ProductionPlanQuery { source: CanonicalSource, irRevision: string }
 /** clipId is a plan resource ID: either an exact speech key or an inspected asset mediaId. */
@@ -101,7 +103,7 @@ export interface ProductionPlan {
   tracks: ProductionTrack[]
   events: TrackEvent[]
   diagnostics: ProductionDiagnostic[]
-  /** Requires a confirmed complete plan. Estimated placeholders remain inspectable, not playback-ready. */
+  /** Preview may buffer at missing speech; export still requires a confirmed complete plan. */
   canPreview: boolean
   canExport: boolean
 }
