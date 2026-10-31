@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/addon-guide",
-  "version": "1.0.0-rc.6",
+  "version": "1.0.0-rc.7",
   "description": "Presmium plugin: guidance cues: a simulated cursor, spotlights and hints",
   "license": "Apache-2.0",
   "repository": {

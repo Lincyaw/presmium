@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/workbench",
-  "version": "0.2.0-rc.5",
+  "version": "0.2.0-rc.6",
   "description": "Presmium's workbench panels in React (the documents, a document edited on its rendered page with comments and version history) with the workspace service's client and the preview protocol's workbench side; @lincyaw/dsh places them in presmium studio (experimental)",
   "license": "Apache-2.0",
   "repository": {

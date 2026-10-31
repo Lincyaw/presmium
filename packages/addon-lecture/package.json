@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/addon-lecture",
-  "version": "1.0.0-rc.6",
+  "version": "1.0.0-rc.7",
   "description": "Presmium plugin: lecture tracks: recording, playback, scripted lectures with speech, and video export (presmium-lecture)",
   "license": "Apache-2.0",
   "repository": {
