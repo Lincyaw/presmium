@@ -8,7 +8,7 @@ type Locale = 'zh-CN' | 'en'
 const messages = {
   'zh-CN': {
     title: '再复杂的东西，也能讲明白', description: '写一份文稿，现场讲、做成网站、导出视频都能用。Presmium 是开源的演示工具。',
-    nav: ['功能', '影片', '示例', '下载源码'], mainNav: '主导航', menu: '打开菜单', closeMenu: '关闭菜单', ready: '可以开讲了', start: '开始使用',
+    nav: ['功能', '影片', '示例', 'GitHub'], mainNav: '主导航', menu: '打开菜单', closeMenu: '关闭菜单', ready: '可以开讲了', start: '开始使用',
     eyebrow: '给每个需要把事情讲清楚的人', hero: '写一份文稿，\n讲台、网页、视频都能用。',
     lead: '课程、论文报告、技术分享、产品发布……公式、代码、数据和动画写在同一份文稿里，想改哪儿，圈出来跟 AI 说一句。\n现场一步一步讲，会后做成网站，也能导出视频。',
     watch: '看 60 秒影片', source: '打开示例文稿', sourceLabel: '一份文稿，三种用法',
@@ -36,7 +36,7 @@ const messages = {
     collectionLead: '首页想怎么设计都行，文稿一份一份往里加。自带课程、文档、展示三种主题，做好的网站可以直接放到 GitHub Pages 这类静态托管上。',
     cards: [
       ['示例文稿', '同一个例子，自己走一遍', '自己按步骤看圆一个个加上去，曲线怎样越来越像音符，也可以直接切到放映。', '打开示例', 'document'],
-      ['独立首页', '首页想怎么做就怎么做', '这个页面是单独用 HTML、CSS 和 TypeScript 写的，和文稿一起由 Presmium 构建。', '下载这个网站的源码', 'website'],
+      ['独立首页', '首页想怎么做就怎么做', '这个页面是单独用 HTML、CSS 和 TypeScript 写的，和文稿一起由 Presmium 构建。', '在 GitHub 查看首页源码', 'website'],
       ['静态发布', '放到自己的网址上', '整个网站连同文稿、视频、字幕和素材一起构建，放到自己的地址上就能打开。', '开始建站', 'export'],
     ],
     faqTitle: '开始之前，你可能想知道',
@@ -51,7 +51,7 @@ const messages = {
   },
   en: {
     title: 'Make complex things clear', description: 'Write one document and present it live, publish it as a website, or export it as a video. Presmium is an open-source presentation tool.',
-    nav: ['Features', 'Watch the film', 'Examples', 'Download source'], mainNav: 'Main navigation', menu: 'Open menu', closeMenu: 'Close menu', ready: 'Ready to present', start: 'Get started',
+    nav: ['Features', 'Watch the film', 'Examples', 'GitHub'], mainNav: 'Main navigation', menu: 'Open menu', closeMenu: 'Close menu', ready: 'Ready to present', start: 'Get started',
     eyebrow: 'For anyone with something to explain', hero: 'Write it once.\nPresent it anywhere.',
     lead: 'Lectures, paper talks, tech talks, product launches. Equations, code, data and animation live in one document; to change something, mark it and tell the AI.\nPresent it step by step, then share it as a website or a video.',
     watch: 'Watch the 60-second film', source: 'Open the example', sourceLabel: 'One document, three ways to use it',
@@ -79,7 +79,7 @@ const messages = {
     collectionLead: 'Design the homepage however you like and keep adding documents. Choose a course, docs or showcase theme, and put the result on GitHub Pages or any static host.',
     cards: [
       ['Example document', 'Walk through the same example', 'Step through as circles are added and the curve closes in on a musical note, or switch straight to the slides.', 'Open the example', 'document'],
-      ['Custom homepage', 'Make the homepage your own', 'This page is plain HTML, CSS and TypeScript, built together with the documents by Presmium.', 'Download this site\'s source', 'website'],
+      ['Custom homepage', 'Make the homepage your own', 'This page is plain HTML, CSS and TypeScript, built together with the documents by Presmium.', 'View the homepage source on GitHub', 'website'],
       ['Static publishing', 'Put it at your own address', 'The whole site is built with its documents, videos, captions and assets, ready to serve from your own address.', 'Create a site', 'export'],
     ],
     faqTitle: 'A few things before you begin',
@@ -103,7 +103,8 @@ function remembered(): Locale | undefined {
   try { return asLocale(localStorage.getItem(LOCALE_KEY)) } catch { return undefined }
 }
 let locale: Locale = asLocale(new URL(location.href).searchParams.get('lang')) ?? remembered() ?? asLocale(navigator.languages?.[0] ?? navigator.language) ?? 'en'
-const sourceUrl = `${base}presmium-source.tar.gz`
+const repoUrl = 'https://github.com/Lincyaw/presmium'
+const sourceUrl = `${repoUrl}/tree/main/examples/gallery/site`
 const docUrl = site.documents?.find(doc => doc.id === 'learn')?.href || `${base}learn/`
 type SiteDocument = NonNullable<typeof site.documents>[number]
 // A document's first tag that names a category files it in the example library; the rest are its topics.
@@ -158,7 +159,7 @@ function render() {
     <a class="skip pm-ui-link" href="#main">${t.skip}</a>
     <div class="ambient" aria-hidden="true"><img class="ambient-blue" src="${new URL('./assets/ambient-blue.svg', import.meta.url)}" alt=""><img class="ambient-teal" src="${new URL('./assets/ambient-teal.svg', import.meta.url)}" alt=""><img class="ambient-violet" src="${new URL('./assets/ambient-violet.svg', import.meta.url)}" alt=""></div>
     <header class="topbar"><a class="wordmark" href="${base}">${icon('slides')}<span>Presmium</span></a>
-      <nav id="site-nav" aria-label="${t.mainNav}"><a href="#features">${t.nav[0]}</a><a href="#film">${t.nav[1]}</a><a href="#/examples"${view.gallery ? ' aria-current="page"' : ''}>${t.nav[2]}</a><a href="${sourceUrl}">${t.nav[3]}</a></nav>
+      <nav id="site-nav" aria-label="${t.mainNav}"><a href="#features">${t.nav[0]}</a><a href="#film">${t.nav[1]}</a><a href="#/examples"${view.gallery ? ' aria-current="page"' : ''}>${t.nav[2]}</a><a href="${repoUrl}" target="_blank" rel="noopener">${t.nav[3]}</a></nav>
       <div class="nav-actions"><button class="pm-ui-icon-button pm-ui-icon-button--ghost" id="appearance" aria-label="${t.appearance}">${icon('contrast')}</button><button class="pm-ui-button pm-ui-button--ghost" id="language">${t.language}</button>${button('#start',t.start,true)}<button class="pm-ui-icon-button pm-ui-icon-button--ghost menu-button" id="menu" aria-label="${t.menu}" aria-expanded="false" aria-controls="site-nav">${icon('menu')}</button></div>
     </header>
     <main id="main">${view.gallery ? gallery(view.category) : home()}</main><footer class="wrap"><a class="wordmark" href="${base}">${icon('slides')}<span>Presmium</span></a><p>${t.footer}</p><a class="pm-ui-link" href="https://github.com/Lincyaw/presmium">GitHub ${icon('external')}</a></footer>`
