@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/addon-speech",
-  "version": "1.0.0-rc.8",
+  "version": "1.0.0-rc.9",
   "description": "Presmium plugin: speech services: the speech routes, engine adapters, the synthesis cache, and presmium-speech",
   "license": "Apache-2.0",
   "repository": {

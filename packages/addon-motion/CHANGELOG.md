@@ -1,5 +1,11 @@
 # @lincyaw/addon-motion
 
+## 1.0.0-rc.9
+
+### Patch Changes
+
+- fcaaa81: A page cached from before a new deployment, whose app version the deployment removed, loads again once from the network instead of staying on "Loading the animation…" with its scripts and scenes failing to load.
+
 ## 1.0.0-rc.8
 
 No changes in this release.
