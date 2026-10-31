@@ -93,7 +93,7 @@ site:
 - 构建把主题目录（不含 `node_modules` 与点开头的文件）复制到 `_theme/<name>/`，并由 `tokens` 与 `dark` 生成 `presmium-tokens.css`；每个页面在查看器样式之后依次链接 `fonts`、生成的令牌与 `styles`。
 - 令牌名不存在、`dark` 中写了颜色与阴影以外的令牌、值中有 `;`、`{`、`}`、`<`、`>`，或样式表不在主题目录内时，构建与预览报错，并指出主题文件与字段。
 - `styles` 用 `[data-pm-site-theme-name='<name>']` 限定规则，内置主题与工作台不受影响。
-- HTML 模板首页在网站数据中得到 `theme: { name, stylesheets }`，自行链接这些样式表并在根元素上写同一属性，即可与文稿页共用一套外观。
+- HTML 模板首页的 `<head>` 开头由构建链接这些样式表，模板自己的样式在其后；模板在根元素或 `<body>` 上写同一属性，即可与文稿页共用一套外观。网站数据中的 `theme: { name, stylesheets }` 给出同样的信息。
 
 ## 3. 首页
 
@@ -144,11 +144,11 @@ site:
 
 ```js
 const site = JSON.parse(document.getElementById('presmium-site-data').textContent)
-// site: { schemaVersion, title, base, lang, documents: [{ id, title, href, description?, lang?, tags?, pages? }], theme?: { name, stylesheets } }
+// site: { schemaVersion, title, base, lang, documents: [{ id, title, href, slides?, description?, lang?, tags?, pages? }], theme?: { name, stylesheets } }
 for (const doc of site.documents) list.append(Object.assign(document.createElement('a'), { href: doc.href, textContent: doc.title }))
 ```
 
-用 `href` 可保留部署基础路径。数据不含运行快照、诊断与配置。`pnpm serve` 中刷新首页会重建模板，没有热更新。
+用 `href` 可保留部署基础路径；文稿有放映时 `slides` 是它的地址。数据不含运行快照、诊断与配置。模板 import 的 PNG 与 JPEG 按 4.2 节编码为 WebP。`pnpm serve` 中刷新首页会重建模板，没有热更新。
 
 ### 3.3 文稿作为首页
 
@@ -181,13 +181,26 @@ presmium build welcome --to web
 
 ### 4.1 放映与讲授视频
 
-文稿的 `metadata.renderers` 写了 `slides` 或 `lecture` 时，工作区构建在它的网页旁一并构建：放映在 `<文稿目录>/slides/`，讲授的时间线、字幕与语音在 `<文稿目录>/lecture/`，网页与放映互相链接。首页模板可以用 iframe 嵌入 `<文稿目录>/slides/?view=present&track=script&autoplay` 直接播放讲授，`section=<节>&step=<序号>` 从某一步开始，由浏览器按观众的分辨率实时绘制。
+文稿的 `metadata.renderers` 写了 `slides` 或 `lecture` 时，工作区构建在它的网页旁一并构建：放映在 `<文稿目录>/slides/`，讲授的时间线、字幕与语音在 `<文稿目录>/lecture/`，网页与放映互相链接。首页模板可以用 iframe 嵌入 `<slides>?view=present&track=<讲授>&autoplay` 直接播放讲授，`section=<节>&step=<序号>` 从某一步开始，由浏览器按观众的分辨率实时绘制。浏览器不允许自动播放时，放映停在开头，中央显示一个大的播放按钮，读者点一下即开始。
+
+放映在 iframe 中时向上层页面发送消息 `{ type: 'presmium:state', drawn, section, step, lecture }`：`drawn` 表示当前一步的场景已绘制，`lecture` 是讲授的状态（`loading`、`waiting` 等待读者点播放、`playing`、`paused`、`failed`）。模板可直接用 `@lincyaw/presmium/site` 的两个函数：
+
+```ts
+import { prefetchPresentation, whenPresentationReady } from '@lincyaw/presmium/site'
+
+void prefetchPresentation(doc.slides)   // 预取放映页面要预加载的文件，读者开启省流量时不取
+const stop = whenPresentationReady(frame, () => cover.remove(), { lecture: true })   // 场景已绘制、讲授已就绪时调用一次
+```
+
+放映与它的网页使用同一个工作区主题。
 
 ### 4.2 构建时的体积优化
 
 - 网站的页面与它的放映共用一份查看器（`_app/<键>/`），读者在一个站点里只下载一次。
-- 文稿发布的位图（`media/` 下的图片与场景代码引用的图片）大于 48 KB 时重新编码为 WebP，宽度不超过 2400 像素：PNG 用近无损，照片用有损；节省不足五分之一的保持原样。页面、数据与脚本中的引用随之改为新文件名，原文件仍留在旁边。`public/` 中的文件按原样发布。
-- 页面在加载查看器的同时预取文稿数据与代码；放映还预取场景代码、它们引用的共享模块与动画库。
+- 文稿发布的位图（`media/` 下的图片、场景代码与首页模板 import 的图片）大于 48 KB 时在发布时编码为 WebP，以 `.webp` 文件名写入，宽度不超过 2400 像素：PNG 用近无损，照片用有损。编码结果按图片内容缓存在 `.presmium/images/`，再次构建不重新编码。`public/` 中的文件与页面头部用于链接预览的图片按原样发布。场景代码用 `import` 引用图片（`import figure from './x.png'` 或 `x.png?url`）；`new URL(…, import.meta.url)` 引用的图片按原样发布。
+- 页面在加载查看器的同时预加载文稿数据与代码；放映还按构建清单预加载场景代码、它们引用的共享模块，以及放映插件的浏览器与查看器模块。
+- 页面头部有一段脚本：部署更新后，浏览器缓存的旧页面加载不到旧版本的模块时，页面在线时重新加载一次（30 秒内至多一次）。
+- `presmium serve` 给讲授的语音与配乐发 `Cache-Control: private, no-cache` 与按内容的 `ETag`：浏览器保留文件，每次确认未变时得到 304，支持按 Range 分段读取。
 
 ## 5. 发布到 GitHub Pages
 

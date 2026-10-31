@@ -1,6 +1,6 @@
-import { PmCaption, PmDrawer, PmIcon, PmIconButton, PmMenu, PmTabs, PRODUCTION_PLAYBACK, TIMED_CAPTIONS, useMessages, useServer, useService, useStore } from '@lincyaw/host'
+import { PmCaption, PmDrawer, PmIconButton, PmMenu, PmTabs, PRODUCTION_PLAYBACK, TIMED_CAPTIONS, useMessages, useServer, useService, useStore } from '@lincyaw/host'
 import type { MenuItem } from '@lincyaw/host'
-import { isPreviewEmbedded } from '@lincyaw/kernel'
+import { isPreviewEmbedded, notifyEmbedder } from '@lincyaw/kernel'
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
@@ -63,6 +63,11 @@ export default function PlayerPanel(_props: { view?: string }) {
   const time = useStore(player?.time, 0),
     clockPlaying = useStore(player?.clock.playing, false),
     rate = useStore(player?.clock.rate, 1)
+  // The page that embeds this one learns the lecture's state: it keeps its cover while loading, offers Play when waiting.
+  useEffect(() => {
+    if (!id) return
+    notifyEmbedder({ lecture: failure || status === 'missing' ? 'failed' : blocked ? 'waiting' : !player ? 'loading' : clockPlaying ? 'playing' : 'paused' })
+  }, [id, failure, status, blocked, player, clockPlaying])
   const groupedCaptions = useMemo(() => new Map(player?.track.utterances.map(utterance => [utterance.id, captionGroups(utterance)])), [player?.track])
   const cursor = useStore(player?.cursor), positionMode = useStore(player?.positionMode, 'time')
   const [compact, setCompact] = useState(() => matchMedia('(max-width: 479px)').matches)
@@ -175,7 +180,7 @@ export default function PlayerPanel(_props: { view?: string }) {
     else if (option === 'close') play(undefined)
   }
   return <>
-    {blocked && <div className="pm-lecture-start"><button type="button" className="pm-lecture-start__button" aria-label={t.player.play} onClick={() => void player.play()}><PmIcon name="play" /></button></div>}
+    {blocked && <div className="pm-lecture-start"><PmIconButton variant="overlay" icon="play" label={t.player.play} onClick={() => void player.play()} /></div>}
     {(captions || current?.unsaid) && (current || manual) && caption && <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang}
       data-stale={current && stale.has(current.id) ? 'true' : undefined} hint={current && stale.has(current.id) ? t.player.stale : undefined} />}
     {panel && <PmDrawer open label={panel === 'transcript' ? t.player.transcript : t.player.chapters} onClose={() => setPanel(undefined)}>

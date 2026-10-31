@@ -10,7 +10,7 @@ import { synthesizeLecture } from './synthesize.ts'
 import type { SynthesizedClip } from './synthesize.ts'
 import type { ServedDeck } from './routes/served-deck.ts'
 import { RouteRefusal } from './routes/served-deck.ts'
-import { assertProductionAssetFile, inspectProductionAsset, readProductionAssetFile } from './production-assets.ts'
+import { assertProductionAssetFile, inspectProductionAsset } from './production-assets.ts'
 import type { ProductionAssetFile } from './production-assets.ts'
 
 interface ClipFile { audio?: ProductionAudio, asset?: ProductionAssetFile, path: string, stamp: string }
@@ -85,18 +85,22 @@ export async function productionAsset(served: ServedDeck, query: ProductionAsset
   return { source: now.source, irRevision: now.revision, asset: inspected.asset }
 }
 
-export async function productionMedia(served: ServedDeck, query: ProductionMediaQuery, signal?: AbortSignal): Promise<string | { bytes: Uint8Array<ArrayBuffer>, mediaType: string }> {
+/**
+ * The file a clip plays, in the deck. A production asset was read and hashed when the snapshot was made; it is the same
+ * file while its stamp is, and its hash tags it, so a reader who has it is answered without reading it again.
+ */
+export async function productionMedia(served: ServedDeck, query: ProductionMediaQuery, signal?: AbortSignal): Promise<{ path: string, etag?: string, mediaType?: string }> {
   const snapshot = await productionSnapshot(served, query, signal), file = snapshot.clips.get(query.clipId)
   if (!file) throw new RouteRefusal(404, 'production-clip-unknown')
   if (file.asset) {
-    const bytes = await readProductionAssetFile(file.asset, served.deckDir, signal)
+    assertProductionAssetFile(file.asset, served.deckDir)
     await current(served, query); signal?.throwIfAborted()
-    return { bytes: new Uint8Array(bytes), mediaType: file.asset.asset.mediaType }
+    return { path: file.asset.path, etag: `"${file.asset.asset.sha256}"`, mediaType: file.asset.asset.mediaType }
   }
   const hit = await served.speech().cached?.(query.clipId, signal)
   if (!hit || typeof hit.audio !== 'string' || hit.audio !== file.path || Math.round(hit.duration * 1000) !== file.audio!.durationMs) throw new RouteRefusal(409, 'production-media-changed')
   if (await fileStamp(file.path) !== file.stamp) throw new RouteRefusal(409, 'production-media-changed')
   await current(served, query)
   signal?.throwIfAborted()
-  return file.path
+  return { path: file.path }
 }

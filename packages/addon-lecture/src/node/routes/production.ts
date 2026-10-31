@@ -1,25 +1,11 @@
-import { createHash } from 'node:crypto'
 import { errorMessage, jsonResponse } from '@lincyaw/kernel'
 import type { ProductionMediaQuery, ProductionPlanQuery, Route } from '@lincyaw/kernel'
 import { productionAsset, productionMedia, productionSnapshot } from '../production.ts'
 import { ProductionAssetRefusal } from '../production-assets.ts'
 import { canonicalSource, VoiceSourceRefusal } from '../voice-source.ts'
-import { MEDIA_CACHE, notModified, serveFile } from './serve-file.ts'
+import { serveFile } from './serve-file.ts'
 import { RouteRefusal } from './served-deck.ts'
 import type { ServedDeck } from './served-deck.ts'
-
-function audioBytes(bytes: Uint8Array<ArrayBuffer>, mediaType: string, request: Request): Response {
-  const etag = `"${createHash('sha256').update(bytes).digest('base64url').slice(0, 22)}"`
-  const size = bytes.byteLength, headers = { 'Content-Type': mediaType, 'Cache-Control': MEDIA_CACHE, 'Accept-Ranges': 'bytes', ETag: etag }
-  const unchanged = notModified(request, etag, headers)
-  if (unchanged) return unchanged
-  const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get('range') ?? '')
-  if (!range || !range[1] && !range[2]) return new Response(request.method === 'HEAD' ? null : bytes, { headers: { ...headers, 'Content-Length': String(size) } })
-  const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]))
-  const end = range[1] && range[2] ? Math.min(size - 1, Number(range[2])) : size - 1
-  if (start >= size || start > end) return new Response(null, { status: 416, headers: { ...headers, 'Content-Range': `bytes */${size}` } })
-  return new Response(request.method === 'HEAD' ? null : bytes.subarray(start, end + 1), { status: 206, headers: { ...headers, 'Content-Length': String(end - start + 1), 'Content-Range': `bytes ${start}-${end}/${size}` } })
-}
 
 function query(request: Request, media = false): ProductionPlanQuery | ProductionMediaQuery {
   const params = new URL(request.url).searchParams
@@ -48,8 +34,8 @@ export function productionRoutes(served: ServedDeck): Record<string, Route> {
       return jsonResponse(await productionAsset(served, { ...query(request), assetId }, request.signal))
     }),
     'production-media': read(async request => {
-      const media = await productionMedia(served, query(request, true) as ProductionMediaQuery, request.signal)
-      return typeof media === 'string' ? serveFile(served.deckDir, media, request) : audioBytes(media.bytes, media.mediaType, request)
+      const { path, ...known } = await productionMedia(served, query(request, true) as ProductionMediaQuery, request.signal)
+      return serveFile(served.deckDir, path, request, known)
     }),
   }
 }

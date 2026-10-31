@@ -77,6 +77,8 @@ export interface ClockMedia {
 }
 
 const DRIFT_MS = 250
+// How far a paused element may be from where it resumes: under a frame, not worth a seek.
+const RESUME_MS = 20
 
 /** A part of an audio file on the timeline: from `start` for `duration`, playing the file from `sourceStartMs`. */
 interface Clip { start: number, duration: number, sourceStartMs: number, volume: number, muted: boolean }
@@ -172,8 +174,9 @@ export class MediaClock extends SilentClock {
       el.muted = clip.muted
       // Where the file should be now; the element is moved only when it is elsewhere (a jump, or a clip that does not
       // continue the last one), never at the boundary between clips that continue each other.
+      // A playing element is left alone within DRIFT_MS; a paused one resumes exactly where its clip is.
       const offset = (clip.sourceStartMs + t - clip.start) / 1000
-      if (Math.abs(el.currentTime - offset) * 1000 > DRIFT_MS) el.currentTime = offset
+      if (Math.abs(el.currentTime - offset) * 1000 > (el.paused ? RESUME_MS : DRIFT_MS)) el.currentTime = offset
       el.playbackRate = this.rate.getSnapshot()
       if (el.paused) void el.play().then(() => {
         if (!this.playing.getSnapshot() || !MediaClock.clipAt(clips, super.now())) el.pause()

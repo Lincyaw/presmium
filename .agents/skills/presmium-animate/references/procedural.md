@@ -81,6 +81,7 @@ The Fourier fit, the de Casteljau scene and the universal-approximation storyboa
 - **Strokes and writing**: Make Me a Hanzi (9,000+ characters with stroke outlines and medians for stroke-order animation; Arphic Public License graphics, LGPL data; <https://github.com/skishore/makemeahanzi>), KanjiVG (CC BY-SA 3.0), Quick, Draw! (CC BY 4.0; strokes keep their timing, so a drawing replays at its author's speed), Hershey single-stroke fonts.
 - **Logos**: theSVG first, then the organisation's GitHub avatar, then the site's favicon; never redraw a logo. Use a brand's mark only for that exact brand.
 - **Sound and music**: see `lengths.md`, "Sound and music".
+- **Images in a scene** are imported, `import figure from '../figures/x.png'` (or `x.png?url`), not built with `new URL(…, import.meta.url)`: an imported PNG or JPEG of 48 KB or more is published as WebP, no wider than 2400 px.
 - **Where each asset came from** goes in the reading view's notes: the source and what was changed, so the next author can replace it.
 - **Motion data**: the CMU Graphics Lab motion capture database ("free for all uses", not for resale), for a stick figure or to check an IK gait.
 - **Already in the kit**: seeded `mulberry32` and `hash`, `noise1`/`noise2`, `spring01`, `wobble`, `shake`, `smoothPath`, `samplePath`, `trail`, and the Fourier series with `bezierPath`.

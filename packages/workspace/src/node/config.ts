@@ -125,6 +125,7 @@ export function readDocumentSummary(config: WorkspaceConfig, { dir, entry }: Doc
     ...typeof headmatter.description === 'string' && headmatter.description.trim() ? { description: headmatter.description.trim() } : {},
     ...typeof headmatter.lang === 'string' && headmatter.lang.trim() ? { lang: headmatter.lang.trim() } : {},
     ...tags.length > 0 ? { tags } : {},
+    ...isRecord(headmatter.renderers) && headmatter.renderers.slides !== undefined ? { slides: true } : {},
   }
 }
 

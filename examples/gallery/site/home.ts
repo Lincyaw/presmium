@@ -1,5 +1,7 @@
 import '@lincyaw/design/design.css'
 import { iconMarkup } from '@lincyaw/design'
+import { prefetchPresentation, whenPresentationReady } from '@lincyaw/presmium/site'
+import type { SiteContent } from '@lincyaw/presmium/site'
 import './style.css'
 import { pathData, shapeSeries, trace } from '../learn/scenes/epicycles.ts'
 import type { Point } from '../learn/scenes/epicycles.ts'
@@ -94,7 +96,7 @@ const messages = {
   },
 } as const
 
-const site = JSON.parse(document.getElementById('presmium-site-data')?.textContent || '{}') as { base?: string, documents?: { id: string, href: string, title: string, description?: string, tags?: string[], pages?: number }[] }
+const site = JSON.parse(document.getElementById('presmium-site-data')?.textContent || '{}') as Partial<SiteContent>
 const base = site.base || new URL('./',document.baseURI).pathname
 // The page speaks the visitor's language: `?lang=` first, then the choice made on this page before, then the browser's.
 const LOCALE_KEY = 'presmium-site-locale'
@@ -118,7 +120,9 @@ const categoryOf = (doc: SiteDocument) => CATEGORIES.find(([, tag]) => doc.tags?
 const inCategory = (category: Category) => documents.filter(doc => categoryOf(doc) === category)
 const GALLERY = /^#\/examples(?:\/([a-z]+))?$/
 const route = () => { const match = GALLERY.exec(location.hash); return match ? { gallery: true, category: CATEGORIES.find(([id]) => id === match[1])?.[0] } : { gallery: false, category: undefined } }
-const promoUrl = site.documents?.find(doc => doc.id === 'promo')?.href || `${base}promo/`
+const promo = site.documents?.find(doc => doc.id === 'promo')
+const slidesUrl = promo?.slides ?? `${promo?.href ?? `${base}promo/`}slides/`
+const promoUrl = promo?.href || `${base}promo/`
 const command = 'presmium new my-site --type site'
 // The film is played from its source: the film document's presentation with its lecture, drawn live by the browser
 // at the viewer's resolution. Each chapter starts at a step of a section: the film from the studio on is one section
@@ -134,36 +138,22 @@ function playFilm(section: string, step = 0) {
     live.allow = 'autoplay; fullscreen'
     frame.append(live)
   }
-  live.src = `${promoUrl}slides/?view=present&track=script&section=${section}&step=${step}&autoplay`
+  live.src = `${slidesUrl}?view=present&track=script&section=${section}&step=${step}&autoplay`
   live.focus()
-  coverUntilDrawn(frame, live)
+  coverUntilReady(frame, live)
 }
-// The poster stays over the film until its scene is drawn, so the reader never sees the player loading.
-function coverUntilDrawn(frame: HTMLElement, live: HTMLIFrameElement) {
+// The poster stays over the film until its scene is drawn and its lecture has settled, so the reader never sees the
+// player loading.
+let stopWatching: (() => void) | undefined
+function coverUntilReady(frame: HTMLElement, live: HTMLIFrameElement) {
   const poster = frame.querySelector<HTMLElement>('.film-poster')
   if (!poster) return
   poster.dataset.cover = 'loading'
-  const started = Date.now()
-  const check = () => {
-    if (!live.isConnected) return
-    const film = live.contentDocument
-    const drawn = film?.querySelector('.pm-present .pm-scene[data-status="ready"]')
-    if (drawn || Date.now() - started > 15000) poster.remove()
-    else setTimeout(check, 120)
-  }
-  check()
+  stopWatching?.()
+  stopWatching = whenPresentationReady(live, () => poster.remove(), { lecture: true })
 }
-// The film loads ahead in idle time, in an invisible frame that fills the cache and is then removed.
-function warmFilm() {
-  if ((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData) return
-  const warm = Object.assign(document.createElement('iframe'), { src: `${promoUrl}slides/?view=present&section=${CHAPTERS[0][0]}&step=0`, tabIndex: -1, className: 'film-warm' })
-  warm.setAttribute('aria-hidden', 'true')
-  const started = Date.now()
-  const done = () => warm.contentDocument?.querySelector('.pm-scene[data-status="ready"]') || Date.now() - started > 20000 ? warm.remove() : setTimeout(done, 300)
-  warm.addEventListener('load', done, { once: true })
-  document.body.append(warm)
-}
-addEventListener('load', () => ('requestIdleCallback' in window ? requestIdleCallback(warmFilm, { timeout: 3000 }) : setTimeout(warmFilm, 1500)), { once: true })
+// The film's files load ahead in idle time.
+addEventListener('load', () => ('requestIdleCallback' in window ? requestIdleCallback(() => void prefetchPresentation(slidesUrl), { timeout: 3000 }) : setTimeout(() => void prefetchPresentation(slidesUrl), 1500)), { once: true })
 const icon = (name: Parameters<typeof iconMarkup>[0]) => iconMarkup(name)
 // The example lesson in miniature: the note's outline and the curves its 2, 8 and 64 largest circles draw, computed
 // from the lesson's own Fourier series.

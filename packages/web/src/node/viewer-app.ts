@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
-import { dirname, extname, join, relative, sep } from 'node:path'
+import { dirname, extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { isRecord } from '@lincyaw/kernel'
 import { findInstalledPackage, FONT_LICENSE, fontLicense } from '@lincyaw/kernel/node'
@@ -132,11 +132,16 @@ export function appEntry(app: ViewerApp): AppEntry {
   return { script: main.file, css: [...new Set([...main.css ?? [], ...css])], preload: [...files] }
 }
 
-/** The chunks a lazily loaded `file` of the app imports at once, itself included: what a page that will load it can preload. */
-export function appChunkImports(app: ViewerApp, file: string): string[] {
+/**
+ * The chunks that the app's modules import at once, the modules included, for a page that will load them to preload:
+ * `files` are built files (an import map's entries), `sources` the modules' source files (a plugin's viewer module).
+ * The app was built in a directory beside the one it is kept in, so its manifest's paths resolve from there too.
+ */
+export function appModuleImports(app: ViewerApp, { files = [], sources = [] }: { files?: readonly string[], sources?: readonly string[] }): string[] {
   const chunks = buildManifest(app)
-  const key = Object.entries(chunks).find(([, chunk]) => chunk.file === file)?.[0]
-  return key ? [...staticImports(chunks, [key]).files] : [file]
+  const wanted = new Set([...files, ...sources.map(source => resolve(source))])
+  const keys = Object.entries(chunks).filter(([key, chunk]) => wanted.has(chunk.file) || wanted.has(resolve(app.dir, key))).map(([key]) => key)
+  return [...staticImports(chunks, keys).files]
 }
 
 /** Where viewer apps are kept: the user's cache, shared by every workspace and session. */

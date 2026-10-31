@@ -8,7 +8,7 @@ import type { Duplex } from 'node:stream'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { stripVTControlCharacters } from 'node:util'
-import { errorMessage, irBlocks, isRecord, localRequestRefusal, previewFrameAncestors, PreviewPreparing, safeDecodeURIComponent, viewFor } from '@lincyaw/kernel'
+import { errorMessage, irBlocks, isRecord, localRequestRefusal, siteFrameAncestors, PreviewPreparing, safeDecodeURIComponent, SLIDES_DIR, viewFor } from '@lincyaw/kernel'
 import type { IRDocument, NodeVitePlugin, RenderContext, RuntimeAssets, SiteSpec } from '@lincyaw/kernel'
 import { isInside, spawnInteractiveNode } from '@lincyaw/kernel/node'
 import { diffDocuments } from '@lincyaw/viewer/domain'
@@ -212,7 +212,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   let closed = false
   const log = options.log ?? ((message: string) => console.warn(`[presmium] ${message}`))
   // The workspace service's pages: only the workbench's origins may frame them, and none when it names none.
-  const framed = ctx.preview ? previewFrameAncestors(ctx.preview.origins) : undefined
+  const framed = ctx.preview ? siteFrameAncestors(ctx.preview.origins) : undefined
   const latest = new Map<string, IRDocument>()
 
   const documents = () => siteOf().documents.map(entry => entry.dir)
@@ -430,7 +430,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     const linked = isSingle(siteOf()) ? undefined : documentPage(siteOf(), base, docs())
     let cache = state.caches.get(form)
     if (!cache) state.caches.set(form, cache = new PublicationCache())
-    const shown = publishedDocument(lang || unfiltered ? doc : viewOf(doc, form), own, join(options.workDir, 'media', segment(dir)), docBase, linked, lang ? undefined : cache)
+    const shown = publishedDocument(lang || unfiltered ? doc : viewOf(doc, form), own, join(options.workDir, 'media', segment(dir)), docBase, { documentPage: linked, cache: lang ? undefined : cache })
     const json = JSON.stringify(shown)
     const next = { source: doc, doc: shown, json, revision: irRevisionOfJson(json) }
     state.published.set(key, next)
@@ -641,7 +641,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     if (doc.config.renderers.slides !== undefined) {
       const lang = first && others.length > 0 && translationOf(dir, first) ? first : ''
       const path = lang ? others.join('/') : rest
-      if (path === 'slides' || path === 'slides/' || path === 'slides/index.html') return documentPageResponse(res, dir, lang, '', 'slides', url.searchParams.get('presmium-block') ?? undefined)
+      if (path === SLIDES_DIR || path === `${SLIDES_DIR}/` || path === `${SLIDES_DIR}/index.html`) return documentPageResponse(res, dir, lang, '', 'slides', url.searchParams.get('presmium-block') ?? undefined)
     }
     if (formOf(url) === 'slides' && (rest === '' || rest === 'index.html')) return documentPageResponse(res, dir, '', undefined, 'slides', url.searchParams.get('presmium-block') ?? undefined)
     if (first && others.length > 0 && translationOf(dir, first)) return documentPageResponse(res, dir, first, others.join('/'), formOf(url), url.searchParams.get('presmium-block') ?? undefined)

@@ -101,10 +101,10 @@ export function previewAppearance(): 'dark' | 'light' | undefined {
 }
 
 /**
- * The Content-Security-Policy that lets only the site itself and the workbench's origins embed a page: a home page
- * that plays a document's presentation in a frame works in `presmium serve` as it does in the built site.
+ * The Content-Security-Policy of a served page: the site itself may embed it (a home page that plays a document's
+ * presentation in a frame works in `presmium serve` as in the built site), and so may the workbench's origins.
  */
-export function previewFrameAncestors(origins: readonly string[]): string {
+export function siteFrameAncestors(origins: readonly string[]): string {
   return ['frame-ancestors', "'self'", ...origins].join(' ')
 }
 
@@ -117,15 +117,4 @@ export function isPreviewActive(): boolean {
   if (typeof window === 'undefined' || window.parent === window) return true
   const nonce = previewNonce()
   return !nonce || window.name !== previewWindowName(nonce, false)
-}
-
-const STALE_MODULE = /dynamically imported module|Importing a module script failed|error loading dynamically imported module/i
-
-/**
- * A module that failed to load because a new deployment removed the version this (cached) page names: the page asks to
- * load again (`vite:preloadError`, which the page's head answers with one reload). Other failures are left alone.
- */
-export function reportStaleModule(error: unknown): void {
-  if (typeof window === 'undefined' || !STALE_MODULE.test(String(error instanceof Error ? error.message : error))) return
-  window.dispatchEvent(new Event('vite:preloadError', { cancelable: true }))
 }

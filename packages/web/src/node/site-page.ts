@@ -1,4 +1,5 @@
 import escapeHtml from 'escape-html'
+import { STALE_MODULE_EVENT, STALE_MODULE_PATTERN } from '@lincyaw/kernel'
 import { APP_CONFIG_ELEMENT } from '../domain/index.ts'
 import type { AppConfig } from '../domain/index.ts'
 import type { AppEntry } from './viewer-app.ts'
@@ -37,19 +38,29 @@ const APPEARANCE = `(() => {
 
 /**
  * A page cached before a new deployment names an app version the deployment removed: its scripts and the modules they
- * import then fail. The page loads once more, from the network, and gets the current version; at most once in 30 s.
+ * import then fail. The page loads once more, from the network, and gets the current version: at most once in 30 s,
+ * not while offline (a lost connection fails the same way) and not without session storage to remember it.
+ * Failures come as Vite's preload event, a rejected dynamic import, a module script that cannot load, or the event
+ * Presmium's own loaders dispatch (`reportStaleModule`).
  */
-const STALE = `(() => {
+const STALE_RELOAD = `(() => {
   const key = 'presmium-stale-reload'
+  // Reloads at most once in 30 s, only while online, and only where it can remember that it did: without storage a
+  // module that keeps failing would reload the page forever. Returns whether it reloads.
   const reload = () => {
-    let last = 0
-    try { last = Number(sessionStorage.getItem(key)) || 0 } catch {}
-    if (Date.now() - last < 30000) return
-    try { sessionStorage.setItem(key, String(Date.now())) } catch {}
+    if (navigator.onLine === false) return false
+    try {
+      if (Date.now() - (Number(sessionStorage.getItem(key)) || 0) < 30000) return false
+      sessionStorage.setItem(key, String(Date.now()))
+    } catch { return false }
     location.reload()
+    return true
   }
-  addEventListener('vite:preloadError', (event) => { event.preventDefault(); reload() })
-  addEventListener('unhandledrejection', (event) => { if (/dynamically imported module|Importing a module script failed|error loading dynamically imported module/i.test(String(event.reason && event.reason.message || event.reason))) reload() })
+  const stale = new RegExp(${JSON.stringify(STALE_MODULE_PATTERN.source)}, ${JSON.stringify(STALE_MODULE_PATTERN.flags)})
+  addEventListener(${JSON.stringify(STALE_MODULE_EVENT)}, reload)
+  // Vite rethrows the failure unless the event is cancelled: cancel it only when the page is about to reload.
+  addEventListener('vite:preloadError', (event) => { if (reload()) event.preventDefault() })
+  addEventListener('unhandledrejection', (event) => { if (stale.test(String(event.reason && event.reason.message || event.reason))) reload() })
   addEventListener('error', (event) => { const el = event.target; if (el && el.tagName === 'SCRIPT' && el.type === 'module') reload() }, true)
 })()`
 
@@ -65,16 +76,16 @@ export function pageHtml(input: PageHtmlInput): string {
     `<title>${escapeHtml(input.title)}</title>`,
     ...(input.meta ?? []).map(tag => `<meta ${attributes(tag)}>`),
     `<script>${APPEARANCE}</script>`,
-    `<script>${STALE}</script>`,
+    `<script>${STALE_RELOAD}</script>`,
     `<script type="importmap">${json({ imports })}</script>`,
     ...entry.css.map(file => `<link rel="stylesheet" href="${escapeHtml(`${appUrl}${file}`)}">`),
     // A workspace theme's fonts, tokens and styles come after the app's, so that they override them.
     ...(config.site?.shell.theme?.stylesheets ?? []).map(url => `<link rel="stylesheet" href="${escapeHtml(url)}">`),
-    ...entry.preload.map(file => `<link rel="modulepreload" href="${escapeHtml(`${appUrl}${file}`)}">`),
+    // The app's modules, the document's own code (its bundle) and, when given, what its scenes load, all in parallel;
+    // each once, though the scenes' modules import the app's.
+    ...[...new Set([...entry.preload.map(file => `${appUrl}${file}`), ...config.bundle ? [config.bundle] : [], ...input.preload ?? []])].map(url => `<link rel="modulepreload" href="${escapeHtml(url)}">`),
     // The document itself, fetched with the app instead of after it has started.
     ...config.ir ? [`<link rel="preload" as="fetch" crossorigin href="${escapeHtml(config.ir)}">`] : [],
-    // The document's own code: its bundle and, when given, the chunks its scenes load, in parallel with the app.
-    ...[...config.bundle ? [config.bundle] : [], ...input.preload ?? []].map(url => `<link rel="modulepreload" href="${escapeHtml(url)}">`),
     `<script type="application/json" id="${APP_CONFIG_ELEMENT}">${json(config)}</script>`,
     `<script type="module" src="${escapeHtml(`${appUrl}${entry.script}`)}"></script>`,
   ]

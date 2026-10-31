@@ -11,7 +11,7 @@ import { APP_MANIFEST } from './viewer-app.ts'
 import type { ViewerApp } from './viewer-app.ts'
 
 /** Where a built site keeps the viewer app (`_app/<key>/`, below the site's path) and a document its own code. */
-export const APP_DIR = '_app'
+export { APP_DIR } from '@lincyaw/kernel'
 export const CODE_DIR = '_code'
 // What of a cached app a site needs: not its server-side render, nor the build's own records.
 const NOT_PUBLISHED = new Set(['server', '.vite', APP_MANIFEST])

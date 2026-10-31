@@ -1,5 +1,5 @@
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { basename, dirname, join, resolve } from 'node:path'
+import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 import { Readable } from 'node:stream'
 import { pathToFileURL } from 'node:url'
 import { ABSOLUTE_URL, errorMessage, isRecord } from '@lincyaw/kernel'
@@ -14,14 +14,15 @@ import { writeServiceWorker } from './offline.ts'
 import { publishedDocument, publishedFile } from './publish.ts'
 import { APP_DIR, CODE_DIR, contentKey, copyApp, copyPublic, copyRuntimeAssets, runtimeAssets, searchIndex } from './site-files.ts'
 import { documentBase, documentPage, documentSiteConfig, homeDocument, homeDocuments, isSingle, landingConfig, landingDocument, languageLabel, LIST_PAGE, siteLanguage, siteLanguages, siteNeighbours, siteShellBelow, siteTitle, sitemapPages, translationOf } from './site-model.ts'
-import { optimizeImages } from './optimize.ts'
+import { imageCache, ImageEncoder } from './images.ts'
+import type { EncodedImages } from './images.ts'
 import { publishedSite } from './site-assets.ts'
 import { themedSite } from './site-theme.ts'
 import { loadLanding, publishLanding, siteContent } from './landing.ts'
 import { buildLandingTemplate, writeLandingTemplate } from './landing-template.ts'
 import { pageHtml, redirectHtml } from './site-page.ts'
 import type { MetaTag } from './site-page.ts'
-import { appChunkImports, appEntry, appPlugin, buildViewerApp, buildViewerServer, viewerAppCache } from './viewer-app.ts'
+import { appEntry, appModuleImports, appPlugin, buildViewerApp, buildViewerServer, viewerAppCache } from './viewer-app.ts'
 import type { AppPlugin, ViewerApp } from './viewer-app.ts'
 
 /**
@@ -101,7 +102,9 @@ async function prepareApp(ctx: RenderContext, documents: readonly BuiltDocument[
   const server = await import(pathToFileURL(await buildViewerServer(app, [...plugins.values()])).href) as ServerRender
   ctx.log?.(`the viewer app is ready in ${((Date.now() - started) / 1000).toFixed(1)} s`)
   const key = copyApp(app, join(ctx.outDir, APP_DIR))
-  return { app, appDir: join(ctx.outDir, APP_DIR, key), appUrl: `${ctx.base}${APP_DIR}/${key}/`, server, plugins }
+  // A presentation built as part of a site names the app where the site keeps it (`appBase`); the site moves it there.
+  const appBase = typeof ctx.config.appBase === 'string' ? ctx.config.appBase : ctx.base
+  return { app, appDir: join(ctx.outDir, APP_DIR, key), appUrl: `${appBase}${APP_DIR}/${key}/`, server, plugins }
 }
 
 async function renderPage(built: Built, file: string, config: AppConfig, title: string, meta: MetaTag[], doc: IRDocument | undefined, components: string[]): Promise<void> {
@@ -111,7 +114,7 @@ async function renderPage(built: Built, file: string, config: AppConfig, title: 
 }
 
 /** A document's files beside its pages: its own code, its plugins' run-time files, its `public/`, the fonts' license. */
-async function documentFiles(ctx: RenderContext, built: Built, entry: BuiltDocument): Promise<{ code?: string, components: string[] }> {
+async function documentFiles(ctx: RenderContext, built: Built, entry: BuiltDocument): Promise<{ code?: string, components: string[], loads?: DocumentBundle['loads'] }> {
   const { dir, ctx: own } = entry
   const out = own.outDir
   // The document's own code, built to import the app's modules by name.
@@ -131,19 +134,19 @@ async function documentFiles(ctx: RenderContext, built: Built, entry: BuiltDocum
   mkdirSync(dirname(join(out, FONT_LICENSE)), { recursive: true })
   writeFileSync(join(out, FONT_LICENSE), fontLicense(import.meta.url))
   const components = [...new Set([...own.plugins.flatMap(name => Object.keys(built.plugins.get(name)?.components ?? {})), ...bundle?.components ?? []])]
-  return { ...code ? { code } : {}, components }
+  return { ...code ? { code, loads: bundle.loads } : {}, components }
 }
 
-async function buildDocumentPages(site: SiteSpec, ctx: RenderContext, built: Built, entry: BuiltDocument, docs: ReadonlyMap<string, IRDocument>, workspace: boolean): Promise<void> {
+async function buildDocumentPages(site: SiteSpec, ctx: RenderContext, built: Built, entry: BuiltDocument, docs: ReadonlyMap<string, IRDocument>, workspace: boolean, images: ImageEncoder): Promise<void> {
   const { dir, doc, ctx: own } = entry
   const out = own.outDir
   const base = documentBase(ctx.base, dir)
   mkdirSync(out, { recursive: true })
   const linked = workspace ? documentPage(site, ctx.base, docs) : undefined
-  const published = publishedDocument(doc, own, out, base, linked)
+  const published = publishedDocument(doc, own, out, base, { documentPage: linked, images })
   const pages = webPages(published)
   const translations = entry.translations.map(({ lang, doc: translated }) => {
-    const shown = publishedDocument(translated, own, out, base, linked)
+    const shown = publishedDocument(translated, own, out, base, { documentPage: linked, images })
     return { lang, doc: shown, pages: translationPages(shown, pages) }
   })
   const lang = doc.meta.lang ?? own.lang ?? 'zh-CN'
@@ -185,7 +188,10 @@ async function buildDocumentPages(site: SiteSpec, ctx: RenderContext, built: Bui
     }
     for (const { path, section } of chapterRedirects(published)) writeFileSync(join(out, locale.prefix, `${path}.html`), chapterRedirect(section))
   }
-  if (offline) writeServiceWorker(out, base, { dir: built.appDir, url: built.appUrl })
+  if (!offline) return
+  // The service worker lists the document's files, its images among them.
+  await images.done()
+  writeServiceWorker(out, base, { dir: built.appDir, url: built.appUrl })
 }
 
 /** The page a chapter used to have: it goes on to the chapter's section on the document's page. */
@@ -254,13 +260,14 @@ export async function buildSite(site: SiteSpec, ctx: RenderContext, documents: r
   if (workspace) copyPublic(ctx.workspaceRoot, ctx.outDir)
   site = publishedSite(site, ctx)
   const built = await prepareApp(ctx, documents)
+  const images = new ImageEncoder(imageCache(ctx.workspaceRoot))
   // Also allow publishing from a branch without Jekyll filtering the viewer's _app and _code directories.
   writeFileSync(join(ctx.outDir, '.nojekyll'), '')
   const docs = new Map(documents.map(entry => [entry.dir, entry.doc] as const))
   if (workspace && ctx.config.home !== false) await buildHome(site, ctx, built, docs)
   for (const entry of documents) {
     try {
-      await buildDocumentPages(site, ctx, built, entry, docs, workspace)
+      await buildDocumentPages(site, ctx, built, entry, docs, workspace, images)
     } catch (error) {
       throw new Error(workspace ? `document ${entry.dir || '.'}: ${errorMessage(error)}` : errorMessage(error))
     }
@@ -275,37 +282,24 @@ export async function buildSite(site: SiteSpec, ctx: RenderContext, documents: r
     ])
     await writeSitemap(join(ctx.outDir, 'sitemap.xml'), sitemap.hostname, ctx.base, pages)
   }
-  await reportOptimized(ctx, await optimizeImages(ctx.outDir))
+  reportEncoded(ctx, await images.done())
 }
 
-async function reportOptimized(ctx: RenderContext, { images, saved }: { images: number, saved: number }): Promise<void> {
+function reportEncoded(ctx: RenderContext, { images, saved }: EncodedImages): void {
   if (images > 0) ctx.log?.(`${images} images encoded as WebP, ${Math.round(saved / 1024)} KB smaller`)
 }
 
-/** The animation libraries a scene engine loads when its first scene is made, by the start of their file names. */
-const SCENE_LIBRARIES: Record<string, string> = { gsapScene: 'gsap', animeScene: 'anime', motionScene: 'motion', threeScene: 'three.module', d3Scene: 'd3', remotionScene: 'remotion' }
-
 /**
- * What a presentation will load to draw its first scene, all known at build time: the document's chunks, the shared
- * modules they import (`@lincyaw/addon-motion/scene`) and the animation library their engine loads. Preloaded with the
- * app, they arrive together instead of each after the one that names it.
+ * What a presentation will load to draw its first scenes, all known at build time: the document's chunks; the app's
+ * shared modules they import (`@lincyaw/addon-motion/scene`) and the browser and viewer modules of the presentation's
+ * plugins, with what those import at once. Preloaded with the app, they arrive together instead of each after the one
+ * that names it.
  */
-function scenePreloads(codeDir: string, codeUrl: string, built: Built): string[] {
-  const files = [join(codeDir, BUNDLE_ENTRY), ...existsSync(join(codeDir, 'chunks')) ? readdirSync(join(codeDir, 'chunks')).filter(file => file.endsWith('.js')).map(file => join(codeDir, 'chunks', file)) : []]
-  const text = files.filter(file => existsSync(file)).map(file => readFileSync(file, 'utf8')).join('\n')
-  const urls = files.slice(1).map(file => `${codeUrl}chunks/${basename(file)}`)
+function presentationPreloads(codeUrl: string, loads: DocumentBundle['loads'], built: Built, plugins: readonly string[]): string[] {
   const { shared } = built.app.manifest
-  for (const [specifier, file] of Object.entries(shared)) if (text.includes(`"${specifier}"`) || text.includes(`'${specifier}'`)) urls.push(`${built.appUrl}${file}`)
-  const assets = existsSync(join(built.appDir, 'assets')) ? readdirSync(join(built.appDir, 'assets')) : []
-  // The viewer the app opens for the slides, loaded by the app only once it runs, with the chunks each imports.
-  const lazy = assets.filter(name => name.startsWith('viewer-') && name.endsWith('.js'))
-  for (const [engine, library] of Object.entries(SCENE_LIBRARIES)) {
-    if (!text.includes(engine)) continue
-    const file = assets.find(name => name.startsWith(`${library}-`) && name.endsWith('.js'))
-    if (file) lazy.push(file)
-  }
-  for (const file of new Set(lazy.flatMap(name => appChunkImports(built.app, `assets/${name}`)))) urls.push(`${built.appUrl}${file}`)
-  return urls
+  const files = loads.shared.flatMap(specifier => shared[specifier] ?? [])
+  const sources = plugins.flatMap(name => [...built.plugins.get(name)?.plugins ?? [], ...built.plugins.get(name)?.viewers ?? []])
+  return [...loads.files.map(file => `${codeUrl}${file}`), ...appModuleImports(built.app, { files, sources }).map(file => `${built.appUrl}${file}`)]
 }
 
 /**
@@ -317,8 +311,9 @@ export async function buildSlidesSite(doc: IRDocument, ctx: RenderContext, nodeP
   const entry: BuiltDocument = { dir: '', doc, ctx, nodePlugins, translations: [] }
   const built = await prepareApp(ctx, [entry])
   mkdirSync(ctx.outDir, { recursive: true })
-  const published = publishedDocument(doc, ctx, ctx.outDir, ctx.base)
-  const { code } = await documentFiles(ctx, built, entry)
+  const images = new ImageEncoder(imageCache(ctx.workspaceRoot))
+  const published = publishedDocument(doc, ctx, ctx.outDir, ctx.base, { images })
+  const { code, loads } = await documentFiles(ctx, built, entry)
   writeFileSync(join(ctx.outDir, 'ir.json'), JSON.stringify(published))
   const lang = doc.meta.lang ?? ctx.lang ?? 'zh-CN'
   const site = publishedSite(themedSite({ title: doc.meta.title, documents: [{ dir: '', title: doc.meta.title, doc }], config: ctx.config }, ctx), ctx)
@@ -334,7 +329,7 @@ export async function buildSlidesSite(doc: IRDocument, ctx: RenderContext, nodeP
     plugins: ctx.plugins,
     origins: [],
   }
-  const preload = code ? scenePreloads(join(ctx.outDir, CODE_DIR, code), `${ctx.base}${CODE_DIR}/${code}/`, built) : []
+  const preload = code && loads ? presentationPreloads(`${ctx.base}${CODE_DIR}/${code}/`, loads, built, ctx.plugins) : []
   writeFileSync(join(ctx.outDir, 'index.html'), pageHtml({ entry: appEntry(built.app), appUrl: built.appUrl, shared: built.app.manifest.shared, config, title: doc.meta.title, preload }))
-  await reportOptimized(ctx, await optimizeImages(ctx.outDir))
+  reportEncoded(ctx, await images.done())
 }

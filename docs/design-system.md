@@ -63,7 +63,7 @@
 | 控件 | 入口 | 要点 |
 |---|---|---|
 | Button | `PmButton`（workbench、host），`pm-ui-button` | 变体 `default`、`primary`、`accent`、`ghost`、`danger`；`density`、`loading` 带 `aria-busy` 与重复提交拦截 |
-| IconButton | `PmIconButton`（workbench、host） | 必有 `label`；`hint`、`shortcut` 经 Tooltip 显示 |
+| IconButton | `PmIconButton`（workbench、host） | 必有 `label`；`hint`、`shortcut` 经 Tooltip 显示；host 的 `variant="overlay"` 是盖在媒体上的大圆形控件（如浏览器拦下自动播放时的播放），尺寸 `--pm-size-overlay-control`、`--pm-size-overlay-icon` |
 | Tooltip | `PmTooltip`（Radix） | 悬停延迟后显示，键盘聚焦立即显示；不接收指针，不承载唯一信息 |
 | Toolbar | `PmToolbar`、`PmToolbarButton`（workbench），`pm-ui-toolbar` | 方向键在组内移动 |
 | Field、Input、Textarea、Select | workbench `PmField`、`PmInput`、`PmTextarea`、`PmSelect`；host 用 `PmField` 加 `pm-ui-input` 等类 | 标签、说明、错误、单位同属一个 Field；`PmInput` 有前图标、后缀、`width="number"`／`"time"`；`PmTextarea` 有 `autoGrow` |

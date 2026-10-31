@@ -11,6 +11,8 @@ import type { IconName } from '@lincyaw/design'
 import type { ToolbarPlacement } from '../contracts.ts'
 export type ButtonVariant = 'default' | 'primary' | 'accent' | 'ghost' | 'danger'
 export type ControlDensity = 'compact' | 'regular' | 'touch'
+/** `overlay`: one large round control laid over media, such as the Play that starts a lecture the browser would not autoplay. */
+export type IconButtonVariant = 'default' | 'overlay'
 export type Tone = 'neutral' | 'accent' | 'ok' | 'warn' | 'danger' | 'outline'
 export type PopoverPlacement = 'below-end' | 'below-start' | 'above-end' | 'above-start' | 'above' | 'below'
 export interface Choice { value: string, label: string, icon?: IconName, disabled?: boolean }
@@ -31,8 +33,8 @@ export function PmTooltip({ label, shortcut, children }: { label: string, shortc
     h(Tooltip.Root, {}, h(Tooltip.Trigger, { asChild: true }, children), h(Tooltip.Portal, {},
       h(Tooltip.Content, { className: 'pm-ui-tooltip pm-ui', side: 'top', sideOffset: 6, collisionPadding: 8 }, label, shortcut ? h('kbd', { className: 'pm-ui-shortcut' }, shortcut) : null))) })
 }
-export const PmIconButton = forwardRef<HTMLButtonElement, ButtonProps & { icon: IconName, label: string, hint?: string, shortcut?: string }>(function PmIconButton({ icon, label, hint, shortcut, small, density = small ? 'compact' : 'regular', loading, className, disabled, ...rest }, ref) {
-  const button = h('button', { ...rest, ref, type: 'button', 'data-density': density, 'aria-label': label, 'aria-busy': loading || undefined, disabled: disabled || loading || rest['aria-disabled'] === true || rest['aria-disabled'] === 'true', className: cls('pm-ui-icon-button', className) }, h(PmIcon, { name: loading ? 'loading' : icon, className: loading ? 'pm-ui-loading' : undefined }))
+export const PmIconButton = forwardRef<HTMLButtonElement, Omit<ButtonProps, 'variant'> & { variant?: IconButtonVariant, icon: IconName, label: string, hint?: string, shortcut?: string }>(function PmIconButton({ variant = 'default', icon, label, hint, shortcut, small, density = small ? 'compact' : 'regular', loading, className, disabled, ...rest }, ref) {
+  const button = h('button', { ...rest, ref, type: 'button', 'data-density': density, 'aria-label': label, 'aria-busy': loading || undefined, disabled: disabled || loading || rest['aria-disabled'] === true || rest['aria-disabled'] === 'true', className: cls('pm-ui-icon-button', variant !== 'default' && `pm-ui-icon-button--${variant}`, className) }, h(PmIcon, { name: loading ? 'loading' : icon, className: loading ? 'pm-ui-loading' : undefined }))
   return h(PmTooltip, { label: hint ?? label, shortcut, children: button })
 })
 export function PmBadge({ tone = 'neutral', pill, children, className, ...rest }: HTMLAttributes<HTMLSpanElement> & { tone?: Tone, pill?: boolean }) { return h('span', { ...rest, className: cls('pm-ui-badge', tone !== 'neutral' && `pm-ui-badge--${tone}`, pill && 'pm-ui-badge--pill', className) }, children) }

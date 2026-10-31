@@ -129,25 +129,6 @@ html.pm-lecture-exporting .pm-slide-fit__canvas {
   pointer-events: none;
 }
 
-.pm-lecture-start__button {
-  display: grid;
-  place-items: center;
-  width: var(--pm-size-start);
-  height: var(--pm-size-start);
-  border: 0;
-  border-radius: var(--pm-radius-pill);
-  background: color-mix(in srgb, var(--pm-color-ink) 78%, transparent);
-  color: var(--pm-color-bg);
-  box-shadow: var(--pm-shadow-float);
-  cursor: pointer;
+.pm-lecture-start > * {
   pointer-events: auto;
-}
-
-.pm-lecture-start__button:hover {
-  background: var(--pm-color-ink);
-}
-
-.pm-lecture-start__button .pm-ui-icon {
-  width: var(--pm-size-start-icon);
-  height: var(--pm-size-start-icon);
 }
