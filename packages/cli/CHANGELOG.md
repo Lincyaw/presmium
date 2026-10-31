@@ -1,5 +1,16 @@
 # @lincyaw/cli
 
+## 1.0.0-rc.3
+
+### Patch Changes
+
+- Updated dependencies [bea12b0]
+  - @lincyaw/workspace@1.0.0-rc.3
+  - @lincyaw/compiler@1.0.0-rc.3
+  - @lincyaw/kernel@1.0.0-rc.3
+  - @lincyaw/server@1.0.0-rc.3
+  - @lincyaw/skills@1.0.0-rc.3
+
 ## 1.0.0-rc.2
 
 ### Patch Changes

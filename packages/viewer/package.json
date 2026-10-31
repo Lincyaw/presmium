@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/viewer",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.3",
   "description": "Presmium's IR runtime: renders the IR in the browser, with runtime views and live updates",
   "license": "Apache-2.0",
   "repository": {

@@ -1,5 +1,17 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.3
+
+### Minor Changes
+
+- bea12b0: A workspace build also builds the presentation and the narrated lecture of every document whose `metadata.renderers` lists `slides` or `lecture`, at `<dir>/slides/` and `<dir>/lecture/` beside its pages, with the pages and the slides linked to each other.
+
+### Patch Changes
+
+- @lincyaw/compiler@1.0.0-rc.3
+  - @lincyaw/kernel@1.0.0-rc.3
+  - @lincyaw/server@1.0.0-rc.3
+
 ## 1.0.0-rc.2
 
 ### Patch Changes
