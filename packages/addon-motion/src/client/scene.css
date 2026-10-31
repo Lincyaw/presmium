@@ -41,6 +41,14 @@
   font-size: var(--pm-text-sm);
   text-align: center;
 }
+/* "Loading" shows only when loading takes long: a quick load goes from nothing to the scene. */
+.pm-scene[data-status='loading'] .pm-scene__notice {
+  opacity: 0;
+  animation: pm-scene-notice var(--pm-duration-fast) linear var(--pm-delay-notice) forwards;
+}
+@keyframes pm-scene-notice {
+  to { opacity: 1; }
+}
 .pm-scene__controls {
   display: flex;
   align-items: center;

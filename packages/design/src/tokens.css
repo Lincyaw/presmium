@@ -147,6 +147,8 @@
   --pm-duration-pulse: 1200ms;
   /* A step's reveal on a page or slide. */
   --pm-duration-slow: 300ms;
+  /* How long a loading notice waits before it shows: most loads finish first, and no text flashes. */
+  --pm-delay-notice: 1200ms;
   /* The kitten walking from one place to the next. */
   --pm-duration-walk: 700ms;
   --pm-ease: cubic-bezier(0.2, 0, 0, 1);

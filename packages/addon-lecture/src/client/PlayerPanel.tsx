@@ -47,7 +47,8 @@ export default function PlayerPanel(_props: { view?: string }) {
   const timedCaptions = useService(TIMED_CAPTIONS)
   const production = useService(PRODUCTION_PLAYBACK)
   const controlled = useStore(production instanceof ProductionPlaybackController ? production.engaged : undefined, false)
-  useEffect(() => player && status === 'ready' ? timedCaptions?.claim() : undefined, [player, status, timedCaptions])
+  // The lecture times the captions from the moment it is asked for: while it loads, the slides show none of their own.
+  useEffect(() => id && !failure && status !== 'missing' ? timedCaptions?.claim() : undefined, [id, failure, status, timedCaptions])
   useEffect(() => {
     if (!player || status !== 'ready' || failure || controlled || exporting) return
     keyboardPlayer.set(player)
