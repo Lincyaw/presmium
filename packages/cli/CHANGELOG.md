@@ -1,5 +1,15 @@
 # @lincyaw/cli
 
+## 1.0.0-rc.4
+
+### Patch Changes
+
+- @lincyaw/compiler@1.0.0-rc.4
+  - @lincyaw/kernel@1.0.0-rc.4
+  - @lincyaw/server@1.0.0-rc.4
+  - @lincyaw/skills@1.0.0-rc.4
+  - @lincyaw/workspace@1.0.0-rc.4
+
 ## 1.0.0-rc.3
 
 ### Patch Changes

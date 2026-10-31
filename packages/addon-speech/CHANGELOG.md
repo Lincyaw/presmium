@@ -1,5 +1,11 @@
 # @lincyaw/addon-speech
 
+## 1.0.0-rc.4
+
+### Patch Changes
+
+- Released again: 1.0.0-rc.3 of `@lincyaw/addon-speech` did not reach the registry, so `@lincyaw/presmium` 1.0.0-rc.3 cannot be installed. No change in behavior.
+
 ## 1.0.0-rc.3
 
 No changes in this release.
