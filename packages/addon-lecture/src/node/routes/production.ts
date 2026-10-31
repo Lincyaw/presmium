@@ -1,14 +1,18 @@
+import { createHash } from 'node:crypto'
 import { errorMessage, jsonResponse } from '@lincyaw/kernel'
 import type { ProductionMediaQuery, ProductionPlanQuery, Route } from '@lincyaw/kernel'
 import { productionAsset, productionMedia, productionSnapshot } from '../production.ts'
 import { ProductionAssetRefusal } from '../production-assets.ts'
 import { canonicalSource, VoiceSourceRefusal } from '../voice-source.ts'
-import { serveFile } from './serve-file.ts'
+import { MEDIA_CACHE, notModified, serveFile } from './serve-file.ts'
 import { RouteRefusal } from './served-deck.ts'
 import type { ServedDeck } from './served-deck.ts'
 
 function audioBytes(bytes: Uint8Array<ArrayBuffer>, mediaType: string, request: Request): Response {
-  const size = bytes.byteLength, headers = { 'Content-Type': mediaType, 'Cache-Control': 'no-store', 'Accept-Ranges': 'bytes' }
+  const etag = `"${createHash('sha256').update(bytes).digest('base64url').slice(0, 22)}"`
+  const size = bytes.byteLength, headers = { 'Content-Type': mediaType, 'Cache-Control': MEDIA_CACHE, 'Accept-Ranges': 'bytes', ETag: etag }
+  const unchanged = notModified(request, etag, headers)
+  if (unchanged) return unchanged
   const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get('range') ?? '')
   if (!range || !range[1] && !range[2]) return new Response(request.method === 'HEAD' ? null : bytes, { headers: { ...headers, 'Content-Length': String(size) } })
   const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]))

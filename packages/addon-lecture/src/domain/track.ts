@@ -289,6 +289,9 @@ export function trackDuration(track: LectureTrack): number {
 export interface AudioSegment {
   clipId?: string
   src: string
+  /** The file a clip is cut from, when known: clips of one file share one download. */
+  sha256?: string
+  assetId?: string
   start: number
   duration: number
   sourceStartMs?: number
@@ -298,5 +301,5 @@ export interface AudioSegment {
 
 export function audioSegments(track: LectureTrack): AudioSegment[] {
   const said = track.utterances.filter(u => u.clip).map(u => ({ src: `${CLIPS_DIR}/${u.clip}`, start: u.t, duration: u.d, ...u.clipId ? { clipId: u.clipId } : {} }))
-  return [...said, ...(track.audio ?? []).map(a => ({ src: a.src, start: a.start * 1000, duration: a.duration * 1000, ...a.clipId ? { clipId: a.clipId } : {}, ...a.sourceStartMs !== undefined ? { sourceStartMs: a.sourceStartMs } : {}, ...a.volume !== undefined ? { volume: a.volume } : {}, ...a.muted !== undefined ? { muted: a.muted } : {} }))]
+  return [...said, ...(track.audio ?? []).map(a => ({ src: a.src, start: a.start * 1000, duration: a.duration * 1000, ...a.clipId ? { clipId: a.clipId } : {}, ...a.sha256 ? { sha256: a.sha256 } : {}, ...a.assetId ? { assetId: a.assetId } : {}, ...a.sourceStartMs !== undefined ? { sourceStartMs: a.sourceStartMs } : {}, ...a.volume !== undefined ? { volume: a.volume } : {}, ...a.muted !== undefined ? { muted: a.muted } : {} }))]
 }
