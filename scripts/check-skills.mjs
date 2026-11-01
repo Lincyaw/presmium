@@ -94,7 +94,7 @@ else {
     if (!guide.includes(contract)) fail(`${relative(root, reference)} must describe ${contract}`)
   }
 }
-for (const name of ['presmium-author', 'presmium-animate', 'presmium-present', 'presmium-develop']) {
+for (const name of ['presmium-author', 'presmium-animate', 'presmium-develop']) {
   const content = readFileSync(join(skillsDir, name, 'SKILL.md'), 'utf8')
   if (!content.includes(DOCUMENT_ENTRY)) fail(`${name} must use the sole ${DOCUMENT_ENTRY} entry`)
 }

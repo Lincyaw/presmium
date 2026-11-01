@@ -22,7 +22,7 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@lincyaw/mcp` | npm | agent 环境（MCP）与 `presmium-mcp` |
 | `@lincyaw/workspace` | npm | 工作区服务 `presmium serve` |
 | `@lincyaw/language-server` | npm | 语言服务 |
-| `@lincyaw/skills` | npm | 官方作者、动画、讲授与插件开发技能及参考资源；MCP、Studio 与 VS Code 共用，支持保留已有内容的工程技能安装 |
+| `@lincyaw/skills` | npm | 官方作者（含写作、放映与讲授）、动画与插件开发技能及参考资源；MCP、Studio 与 VS Code 共用，支持保留已有内容的工程技能安装 |
 | `@lincyaw/classroom-server` | npm | 课堂同步服务 |
 | `@lincyaw/addon-stage` | npm | 插件：讲台 |
 | `@lincyaw/addon-code` | npm | 插件：代码引用 |

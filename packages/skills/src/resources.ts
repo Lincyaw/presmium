@@ -3,7 +3,7 @@ import { closeSync, constants, fstatSync, lstatSync, openSync, readdirSync, read
 import { isAbsolute, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-export const SKILL_NAMES = ['presmium-author', 'presmium-animate', 'presmium-present', 'presmium-develop'] as const
+export const SKILL_NAMES = ['presmium-author', 'presmium-animate', 'presmium-develop'] as const
 export type SkillName = typeof SKILL_NAMES[number]
 export type SkillErrorCode = 'skill-not-found' | 'skill-path-invalid' | 'skill-file-unavailable' | 'skill-page-invalid' | 'skill-project-invalid' | 'skill-install-unsafe' | 'skill-install-cancelled' | 'skill-unavailable'
 

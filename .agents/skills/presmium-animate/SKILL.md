@@ -39,7 +39,7 @@ Register an explicit component definition in `definitions` with a file implement
 
 ## 7. Voice, verify and deliver
 
-Narration is structured in `narrations`; steps name narration IDs. Cue targets use stable block IDs. Timing and voice inheritance belong in `production`, never a second timing object on a step or scene. The voice comes from the workspace's speech engine (Volcengine built in, or an OpenAI-compatible service); see `presmium-present/references/lecture.md` for synthesis, playback and export.
+Narration is structured in `narrations`; steps name narration IDs. Cue targets use stable block IDs. Timing and voice inheritance belong in `production`, never a second timing object on a step or scene. The voice comes from the workspace's speech engine (Volcengine built in, or an OpenAI-compatible service); see `presmium-author/references/lecture.md` for synthesis, playback and export, and `presmium-author/references/writing.md` for how narration is written.
 
 Validate the edited document, then build only the relevant form. Open the actual result, jump forward and backward in arbitrary order, and inspect the static fallback if it matters. Do not claim an animation works merely because JSON validation or compilation succeeded.
 

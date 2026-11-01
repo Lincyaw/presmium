@@ -22,7 +22,7 @@ The extension uses a real Integrated Browser tab, so Studio authentication, WebS
 
 ## Skills for agents
 
-The VSIX includes `presmium-author`, `presmium-animate`, `presmium-present` and `presmium-develop`, with reference files and animation scene sources. Browser Studio registers these same files through `@lincyaw/skills`. Use **Install Project Skills** for an agent that discovers project skills from disk; this leaves the agent’s global configuration alone. With Presmium installed in a project, the equivalent command is `pnpm exec presmium skills install . --json`.
+The VSIX includes `presmium-author`, `presmium-animate` and `presmium-develop`, with reference files and animation scene sources. Browser Studio registers these same files through `@lincyaw/skills`. Use **Install Project Skills** for an agent that discovers project skills from disk; this leaves the agent’s global configuration alone. With Presmium installed in a project, the equivalent command is `pnpm exec presmium skills install . --json`.
 
 An external MCP agent can call `list_skills` and `read_skill`, or read `presmium://skills` and its listed file resources. Follow `nextOffset` for long files and read the references needed for the task. Skills are available when the MCP server starts in an existing empty directory. Connecting exposes the catalog and server instructions; the client decides when to load a skill. MCP does not automatically install skills into every agent.
 

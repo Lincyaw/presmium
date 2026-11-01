@@ -29,7 +29,7 @@
     "jiti": "^2.7.0"
   },
   "presmium": {
-    "skills": ["presmium-author", "presmium-animate", "presmium-present", "presmium-develop"],
+    "skills": ["presmium-author", "presmium-animate", "presmium-develop"],
     "generated": ["skills"]
   }
 }

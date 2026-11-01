@@ -38,9 +38,9 @@ Do not run a class from `presmium dev` or `presmium serve`. Their built-in class
    presmium build --to web --out dist-full
    ```
 
-   `--audience student` leaves out content marked for teachers only (for example a block with `audience: ["teacher"]`; the markers are explained in `presmium-author/references/publishing.md`, "Content for students"). The two versions keep students at the same section as the presenter by the sections' ids, so keep stable section IDs when you edit between builds.
+   `--audience student` leaves out content marked for teachers only (for example a block with `audience: ["teacher"]`; the markers are explained in [Publishing](publishing.md), "Content for students"). The two versions keep students at the same section as the presenter by the sections' ids, so keep stable section IDs when you edit between builds.
 
-5. **Serve them** as static sites on the class network (commands in [delivery.md](delivery.md), "Give readers a web address"): `dist-student/web` for students, `dist-full/web` for the teacher.
+5. **Serve them** as static sites on the class network (commands in [Publishing](publishing.md), "Give readers a web address"): `dist-student/web` for students, `dist-full/web` for the teacher.
 
 **Network and safety.** The classroom server has no TLS and no login: anyone with the join link can join, so run it on the class's own network. A site served over HTTPS needs a `wss://` server address the browsers can reach. Only the browser window that created a classroom can end or archive it, open and close its quizzes, or move its students; everyone else writes only their own answers, questions, votes and submissions.
 

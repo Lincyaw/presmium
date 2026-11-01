@@ -163,9 +163,8 @@ ${kind === 'lecture'
 
 技能（\`.agents/skills\`，英文，自包含）：
 
-- \`presmium-author\`：编写与修改讲义：文稿实体、页面、内容块、步骤与讲稿、检查与导出。
+- \`presmium-author\`：编写、放映与制作讲义：网页与幻灯片两种版本的写法、页面、内容块、步骤与讲稿、配音与讲授视频、课堂、检查、导出与发布。
 - \`presmium-animate\`：动画：按教学场景选择做法、用代码写的动画场景（附每个动画库的效果合集）、让动画与配音对齐。
-- \`presmium-present\`：放映、演示者视图、课堂与讲授。
 
 修改后运行 \`${kind === 'lecture' ? 'presmium check' : 'presmium check <文稿目录>'}\` 并修复它报告的问题；\`presmium build\` 导出${kind === 'lecture' ? '网页、幻灯片与 Notebook' : '工作区的网站'}。
 `,
@@ -307,9 +306,8 @@ ${kind === 'lecture'
 
 Skills (\`.agents/skills\`, self-contained):
 
-- \`presmium-author\`: writing and changing documents: document entities, pages, content blocks, steps and scripts, checks, and exports.
+- \`presmium-author\`: writing, presenting, and producing documents: how to write the reading and slide versions, pages, content blocks, steps and scripts, voiceover and lecture videos, the classroom, checks, exports, and publishing.
 - \`presmium-animate\`: animation: the way to show each teaching moment, scenes written in code (with a gallery of effects for each animation library), and putting them on the voiceover.
-- \`presmium-present\`: presenting, the Presenter View, the classroom, and lectures.
 
 After a change, run \`${kind === 'lecture' ? 'presmium check' : 'presmium check <document directory>'}\` and fix what it reports; \`presmium build\` exports ${kind === 'lecture' ? 'the web page, the slides, and the Notebook' : 'the workspace’s website'}.
 `,

@@ -17,7 +17,6 @@ const uploads = (model: FakeModel) => {
   return ['dsh_session_log', 'dsh_plugin_packages'].filter(field => bodies.includes(field))
 }
 
-const catalog = (body: Record<string, any>) => [...JSON.stringify(body.messages).matchAll(/\\n- `([\w-]+)`: /g)].map(match => match[1])
 
 describe('[gate] privacy and persona of Presmium\'s DeepSeek Harness', () => {
   let home: TestHome
@@ -46,7 +45,6 @@ describe('[gate] privacy and persona of Presmium\'s DeepSeek Harness', () => {
     const run = home.headless(dir, '你好。', { model: scripted, env: service.env })
     expect(await run.exited, run.output()).toBe(0)
     expect(uploads(scripted)).toEqual([])
-    expect(catalog(turns(scripted)[0]!).sort()).toEqual(['presmium-author', 'presmium-present'])
     expect(JSON.stringify(scripted.received.map(r => r.body))).not.toContain('private-notes-96b')
     expect(home.homeEntries()).toEqual(['.agents'])
   }, 180_000)

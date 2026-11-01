@@ -1,5 +1,7 @@
 # Narration, speech and lecture production
 
+How to write the narration (a spoken script for the presentation, not the reading text read aloud) is in [Writing](writing.md), section 6. This file covers turning it into voiceover, captions and video.
+
 `lecture.json` is the only content authority. Narrations contain typed text, pronunciation and cue nodes; steps name narration IDs. Read the installed kernel contract for exact fields. Captions, spoken text and alignments derive from the same narration structure. A transcript becomes authored text only through an explicit adopt action. Read a Whisper transcript before adopting it: `.en` models translate non-English speech into English; it invents "Thank you." over silence, so drop words that start inside a final silence (`silencedetect=noise=-35dB:d=0.6`); more than 20% `♪` or `�` tokens means it failed; Chinese can come back as one "word" per sentence, sometimes in Traditional characters for Simplified speech, so split it into phrases and spread the time by character count.
 
 ## Open the saved version in the studio

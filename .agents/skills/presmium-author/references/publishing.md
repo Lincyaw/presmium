@@ -1,6 +1,8 @@
-# Publishing documents
+# Publishing, export and offline
 
-Teaching-document source is `lecture.json`; its outputs are derived snapshots and renderer files. A workspace configuration normally lists `documents: ['*/lecture.json']`. An independent site homepage is configured separately under `site.landing`; it is not a teaching-document entry. Ordinary README Markdown is not a document entry.
+`lecture.json` is the only editable source; every output is derived from it. A workspace configuration normally lists `documents: ['*/lecture.json']`; an independent site homepage is configured separately under `site.landing` and is not a teaching document. Ordinary README Markdown is not a document entry. Never publish credentials or operator settings in document JSON.
+
+Pick the build from what the teacher hands out, and build only the relevant document and form during routine work. Run document commands in the document folder. Before building, read `metadata.renderers`: it lists the forms (`web`, `slides`, `notebook`, `lecture`) with their options, among them `base`, the URL path a form's site is served at (such as `/course/week1/`). When `base` is already set, keep it and the hosting the teacher already uses. Plugin document settings belong in `metadata.presmium`.
 
 ```sh
 presmium check lesson --json
@@ -10,13 +12,112 @@ presmium serve .
 presmium build .
 ```
 
-Build a single relevant document/form during routine work. A workspace build publishes the workspace website; `presmium serve` is the editing service, with the security and network access described by its help.
+`presmium build` writes into `dist/` (or the folder given with `--out`): one subfolder per form, such as `dist/web/`. A workspace build publishes the workspace website. `presmium serve` is the editing service, with the security and network access described by its help. Building is not deploying: copy the output to whatever host the teacher chooses.
 
-Renderer settings belong in `metadata.renderers`, plugin document settings in `metadata.presmium`. Content scopes (`only`, `audience`) stay on their blocks; a student build must remove excluded content from outputs, not merely hide it in a page. Use `--audience student` only when the document declares that audience.
+## Give readers a web address
 
-Translations reference JSON entries in `metadata.translations`; `translationOf` binds an original entry and digest. Preserve IDs and bindings when updating a translation, and report stale material rather than pretending it matches.
+```sh
+presmium build --to web
+```
 
-Use `presmium-present` for classroom delivery, offline distribution and narrated/video output. Never publish credentials or operator settings in document JSON.
+When only the web form is built and `base` is not set, `dist/web/` is a site for the root path `/`. To serve it on this computer when the project has no static server yet:
+
+```sh
+pnpm add -D sirv-cli
+pnpm exec sirv dist/web --port 8080
+```
+
+Open the address the terminal prints; the document's first page appears. Chapter pages have their own HTML files; a document with `metadata.renderers.web.layout: landing` combines all sections into one HTML page. A host needs no single-page-app fallback rule. Restart sirv after every rebuild: the file names change and a running sirv does not see the new ones.
+
+## Content for students
+
+Content scopes stay on their blocks: `audience` limits a block (or a section) to the named audiences, such as `audience: ["teacher"]` for answers and teaching notes, and `only` limits it to forms. A student build must remove excluded content from its outputs, not merely hide it on a page. Use `--audience student` only when the document declares that audience, and build it into its own folder so nothing from a full build is mixed in:
+
+```sh
+presmium build --to web --audience student --out dist-student
+```
+
+Every file written is then scanned for sentences of the left-out content; a hit is reported as `presmium.audience` and means teacher content leaked into the student version through some output: trace and fix it in the source. Then open the student site and look for teacher narration, answers and media.
+
+## Translations
+
+Translations reference JSON entries in `metadata.translations`; `translationOf` binds an original entry and digest. Preserve IDs and bindings when updating a translation, and report stale material rather than pretending it matches. A translation is written by the same rules as its original ([Writing](writing.md)): in the target language's own order and idiom, not word for word.
+
+## Hand out the web page and the slides together
+
+Built together, with `base` set on neither, the web page is at `/web/` and the slides at `/slides/` of one site. Serve the whole `dist/` folder:
+
+```sh
+presmium build --to web,slides
+pnpm exec sirv dist --port 8080
+```
+
+Open `<address>/web/` and `<address>/slides/`. The slides are one page (`index.html`); the slide and step are in the address's query (`?slide=<number>&step=<step>`), so a host needs no fallback rule here either.
+
+When only the slides are built and `base` is not set, serve `dist/slides` instead (`pnpm exec sirv dist/slides --port 8080`). When the site already lives under a sub-path, serve the output at that path.
+
+Each section heading on the web page links to the same place in the slides. When the two are deployed at different addresses, write the slides' real address in the document metadata, then check that a heading link lands on the right slide and step:
+
+```json
+{ "presmium.web": { "slidesUrl": "https://example.com/slides/" } }
+```
+
+## Export a PDF, images or PowerPoint
+
+Export prints the slides in Chromium. Set it up once in the project:
+
+```sh
+pnpm add -D @lincyaw/addon-publish playwright-chromium
+pnpm exec playwright install chromium
+```
+
+and list `'@lincyaw/addon-publish'` in the document metadata's `plugins`. Then, in the document folder:
+
+```sh
+pnpm exec presmium-export --format pdf --output lecture.pdf
+```
+
+| Option | Does |
+|---|---|
+| `--format pdf` (default), `png`, `pptx` | PDF; PNG images, one per slide, into the `--output` folder; PowerPoint, each slide a picture, the narration as speaker notes, no links |
+| `--output <file or folder>` | Where to write |
+| `--with-clicks` | One page (or image) per step instead of per slide |
+| `--range 1,3-5` | Only these slides |
+| `--dark` | The dark theme |
+| `--timeout <ms>` | How long a page may take to be ready (default 120000) |
+| `--json` | Print the result as JSON |
+
+`presmium-export` builds its own copy of the slides before printing, so the site's `base` does not affect it. A PDF export checks that every link the slides show is still a link in the PDF, and exits with code 1 when one was lost. Exit code 2 means a page was missing or the export timed out: read the error, then retry or raise `--timeout`. A file from a failed run is not a finished export.
+
+In the studio, **Export** in the command bar makes the same PDFs, images and PowerPoint (and lecture videos) without the publish plugin listed; the files can be opened, played and downloaded there.
+
+Afterwards, open the file and check the page count, missing pages, long code running off the page and the key links. Code that readers can run in the browser is printed with its recorded output.
+
+## Give students a runnable notebook
+
+```sh
+presmium build --to notebook
+```
+
+This writes `dist/notebook/<name>.ipynb`, named after the entry file (`lecture.ipynb` for `lecture.json`), with images and other files in `media/` beside it; hand out the whole `dist/notebook/` folder. The kernel is `python3` unless the `metadata.renderers.notebook` says otherwise. Interactive components that a notebook cannot hold become a static form; the build report lists them. To link them to the online version, set the web address:
+
+```json
+{ "notebook": { "kernel": "python3", "webUrl": "https://example.com/course/" } }
+```
+
+Open the notebook in Jupyter and check that images show and code cells run.
+
+## Prepare an offline class
+
+A built web site keeps each document's pages and search in a separate browser cache after that document is opened. The code runtimes (what runs code in the browser) are larger and fetched only the first time code runs. So, while still online:
+
+1. Open every document you will teach from at its exact deployed address, in the browser you will teach with, and wait until each page has loaded.
+2. Run each piece of code the class uses once, or, with the publish plugin listed, click **Save for offline use** in the toolbar, which fetches the runtimes in advance. The publish plugin also copies remote images into the document at build time, so they show offline.
+3. Disconnect the network and rehearse in the same browser at the same address: moving through slides, search, media, running code.
+
+Remote Jupyter, the classroom server and AI models still need the network. When the class must be fully offline, prepare recorded outputs or a runtime that works locally.
+
+`metadata.presmium["presmium.publish"].offline = false` in the document metadata turns the offline cache off; check whether it is set. Rehearse again after the site's address changes or after a rebuild: "it was opened before" does not prove this build's files are all cached.
 
 ## Themed websites and homepage content
 

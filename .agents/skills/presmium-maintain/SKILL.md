@@ -6,8 +6,8 @@ description: "Work on the Presmium repository itself: evaluate its architecture,
 # Maintaining the Presmium repository
 
 This skill is for the Presmium monorepo and is not shipped. The plugin contract is in
-`presmium-develop/references/plugin.md`; documents are `presmium-author`, animations `presmium-animate`,
-presenting `presmium-present`.
+`presmium-develop/references/plugin.md`; documents, their writing, presenting and producing are
+`presmium-author`, animations `presmium-animate`.
 
 Terms: a **document** is a folder with `lecture.json`; a **workspace** is a folder with
 `presmium.workspace.yaml` holding several documents; a **form** is what a document is built into (`web`,
