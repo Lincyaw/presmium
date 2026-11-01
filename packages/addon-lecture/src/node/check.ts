@@ -1,6 +1,6 @@
 import { deckLocale, errorMessage, SPEECH } from '@lincyaw/kernel'
 import type { Check, CheckContext, Finding, IRDocument, Severity } from '@lincyaw/kernel'
-import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, LECTURE_MESSAGES, plannedUtterances, unchanged } from '../domain/index.ts'
+import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, LECTURE_MESSAGES, missingVoiceover, plannedUtterances, unchanged } from '../domain/index.ts'
 import type { EventDrift } from '../domain/index.ts'
 import { lectureView } from './latest-ir.ts'
 import { deckPlan } from './plan.ts'
@@ -53,6 +53,11 @@ export function trackFindings(deckDir: string, id: string, doc: IRDocument): Fin
   return findings
 }
 
+/** How the author knows a page: its title, or its id when it has none. */
+function pageTitle(doc: IRDocument, section: string): string {
+  return doc.sections.find(s => s.id === section)?.title || section
+}
+
 async function planFindings(ctx: CheckContext): Promise<Finding[]> {
   const view = lectureView(ctx.ir)
   const deck = deckPlan(view)
@@ -67,6 +72,7 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
     findings.push({ checkId: LECTURE_ID, severity: 'error', message: t.missingSpeech, source })
     return findings
   }
+  const missing: { section: string, reason: string, source: { file: string, line?: number } }[] = []
   for (const u of plannedUtterances(deck.plan)) {
     if (u.sourceKind === 'none' || u.sourceKind === 'recording') continue
     try {
@@ -74,15 +80,17 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
       if (prepared) { const failure = prepared.failures.find(failure => failure.id === u.id); if (failure) throw new Error(failure.reason) }
       else await synthesizeClip(speech, u, { voice: u.voice ?? deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, cacheOnly: true })
     } catch (error) {
-      const text = u.text.length > 40 ? `${u.text.slice(0, 40)}…` : u.text
-      findings.push({
-        checkId: LECTURE_ID,
-        severity: 'error',
-        message: t.cacheMissing(text, u.section, t.reasons[errorMessage(error)] ?? t.reasonGeneric),
-        source: u.source ? { file: u.source.file, line: u.source.line } : source,
-        hint: t.generateHint,
-      })
+      missing.push({ section: pageTitle(ctx.ir, u.section), reason: errorMessage(error), source: u.source ? { file: u.source.file, line: u.source.line } : source })
     }
+  }
+  for (const group of missingVoiceover(missing)) {
+    findings.push({
+      checkId: LECTURE_ID,
+      severity: 'error',
+      message: t.cacheMissing(group.count, group.pages, t.reasons[group.reason] ?? t.reasonGeneric),
+      source: group.source ?? source,
+      hint: t.generateHint,
+    })
   }
   return findings
 }

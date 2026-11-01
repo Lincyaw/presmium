@@ -265,18 +265,22 @@
   color: var(--pm-color-danger);
 }
 
-.pmw-problems__details summary {
-  color: var(--pm-color-muted);
-  font-size: var(--pm-text-xs);
-  cursor: pointer;
+.pmw-problems__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-space-3);
+  margin: 0;
+  padding-left: var(--pm-space-4);
+  overflow-wrap: anywhere;
 }
 
-.pmw-problems__details ul {
-  margin: var(--pm-space-1) 0 0;
-  padding-left: var(--pm-space-4);
-  font-family: var(--pm-font-mono);
-  font-size: var(--pm-text-xs);
-  overflow-wrap: anywhere;
+.pmw-problems__list p {
+  margin: 0;
+}
+
+.pmw-problems__hint {
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-sm);
 }
 
 .pmw-document__body {

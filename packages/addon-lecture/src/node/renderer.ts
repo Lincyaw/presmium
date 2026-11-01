@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import { workspaceSettings } from '@lincyaw/compiler'
 import { deckLocale, errorMessage, SPEECH } from '@lincyaw/kernel'
 import type { IRDocument, RenderContext, Renderer, SpeechService } from '@lincyaw/kernel'
-import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, dropChangedSections, eventsVtt, formatTrack, LECTURE_ID, LECTURE_RENDERER, LECTURE_MESSAGES, plannedUtterances, SCRIPT_TRACK, trackDuration, trimToDeck, utteranceLine } from '../domain/index.ts'
+import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, dropChangedSections, eventsVtt, formatTrack, LECTURE_ID, LECTURE_RENDERER, LECTURE_MESSAGES, missingVoiceover, plannedUtterances, SCRIPT_TRACK, trackDuration, trimToDeck, utteranceLine } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 import { cachedClip } from './clips.ts'
 import { latestDoc } from './latest-ir.ts'
@@ -88,8 +88,9 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
   for (const issue of synthesized.mediaDiagnostics ?? []) ctx.report({ checkId: LECTURE_ID, severity: issue.severity, message: issue.message, source })
   if (synthesized.mediaDiagnostics?.length) throw new Error(synthesized.mediaDiagnostics[0]!.message)
   for (const issue of synthesized.captionDiagnostics ?? []) ctx.report({ checkId: LECTURE_ID, severity: issue.severity, message: issue.message, source })
-  for (const failure of synthesized.failures) {
-    ctx.report({ checkId: LECTURE_ID, severity: 'error', message: t.cacheMissing(failure.text.slice(0, 40), failure.section, failure.reason), source: failure.source ?? source, hint: t.generateHint })
+  const titles = new Map(doc.sections.map(s => [s.id, s.title || s.id]))
+  for (const group of missingVoiceover(synthesized.failures.map(failure => ({ ...failure, section: titles.get(failure.section) ?? failure.section })))) {
+    ctx.report({ checkId: LECTURE_ID, severity: 'error', message: t.cacheMissing(group.count, group.pages, t.reasons[group.reason] ?? t.reasonGeneric), source: group.source ?? source, hint: t.generateHint })
   }
   for (const cut of synthesized.cuts) {
     ctx.report({ checkId: LECTURE_ID, severity: 'warning', message: `lecture ${SCRIPT_TRACK}: {cue}\`next\` moves on ${Math.round(cut.left)} ms before the animation of step ${cut.step} of section ${cut.section} has played`, source: cut.source ?? source, hint: 'say the cue later, or shorten the animation (:durations:)' })

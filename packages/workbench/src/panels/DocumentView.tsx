@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode, RefObject } from 'react'
-import { PmButton, PmIconButton, PmMascot, PmMenu, PmNotice, PmSkeleton, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
+import { PmButton, PmDialog, PmIconButton, PmMascot, PmMenu, PmNotice, PmSkeleton, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { failureReason, timeAgo } from '../messages.ts'
 import { SHORTCUTS } from '../shortcuts.ts'
@@ -431,7 +431,7 @@ function DocumentNotices() {
   )
 }
 
-/** Content that did not display, said plainly, with the AI to fix it and the details for whoever wants them. */
+/** The document's problems in one line above the page, with the AI to fix them; the list itself opens in a dialog. */
 function ProblemsNotice() {
   const t = useMessages()
   const workbench = useWorkbench()
@@ -440,23 +440,25 @@ function ProblemsNotice() {
   const canRepair = useWorkbenchState(state => state.canRepairDiagnostics)
   const repairing = useWorkbenchState(state => state.isRepairingDiagnostics)
   const repairFailure = useWorkbenchState(state => state.diagnosticsRepairFailure)
+  const [open, setOpen] = useState(false)
   if (workbench.client.capabilities?.diagnostics === 'none') return null
   const problems = (snapshot?.diagnostics ?? []).filter(diagnostic => diagnostic.severity === 'error' && !diagnostic.checkId.startsWith('presmium.workbench.'))
   if (unavailable) return <PmNotice tone="warn"><span>{t.diagnosticsUnavailable}</span><PmButton small onClick={() => workbench.retryDiagnostics()}>{t.retry}</PmButton></PmNotice>
   if (problems.length === 0) return repairFailure ? <PmNotice tone="danger">{t.fixFailed(failureReason(t, repairFailure))}</PmNotice> : null
+  const repair = canRepair && <PmButton small variant="accent" icon="sparkle" disabled={repairing} onClick={() => void workbench.requestRepairDiagnostics()}>{repairing ? t.fixing : t.fixWithAi}</PmButton>
   return (
     <PmNotice tone="warn">
       <div className="pmw-problems">
         <div className="pmw-problems__summary">
           <span>{t.problems(problems.length)}</span>
-          {canRepair && <PmButton small variant="accent" icon="sparkle" disabled={repairing} onClick={() => void workbench.requestRepairDiagnostics()}>{repairing ? t.fixing : t.fixWithAi}</PmButton>}
+          <PmButton small variant="ghost" onClick={() => setOpen(true)}>{t.details}</PmButton>
+          {repair}
         </div>
         {repairFailure && <p className="pmw-problems__failure">{t.fixFailed(failureReason(t, repairFailure))}</p>}
-        <details className="pmw-problems__details">
-          <summary>{t.details}</summary>
-          <ul>{problems.map(problem => <li key={problem.id}>{problem.message}</li>)}</ul>
-        </details>
       </div>
+      <PmDialog open={open} label={t.problemsTitle} closeLabel={t.close} actions={repair || undefined} onClose={() => setOpen(false)}>
+        <ul className="pmw-problems__list">{problems.map(problem => <li key={problem.id}><p>{problem.message}</p>{problem.hint && <p className="pmw-problems__hint">{problem.hint}</p>}</li>)}</ul>
+      </PmDialog>
     </PmNotice>
   )
 }

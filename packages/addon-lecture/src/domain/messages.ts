@@ -4,7 +4,8 @@ export interface LectureMessages {
   view: string
   production: {
     missingSpeech: string
-    cacheMissing(text: string, section: string, reason: string): string
+    /** Sentences without a usable voiceover, counted once per reason with the pages they are on. */
+    cacheMissing(count: number, pages: readonly string[], reason: string): string
     generateHint: string
     incompleteCache: string
     noVoice: string
@@ -116,12 +117,30 @@ export const LECTURE_TOOL_ERRORS: Record<Locale, Record<string, string>> = {
   },
 }
 
+/** The pages named in one message: the first three, then a word that more follow. */
+function pageList(pages: readonly string[], separator: string, more: string): string {
+  const shown = pages.slice(0, 3).join(separator)
+  return pages.length > 3 ? `${shown}${separator === '、' ? '' : ' '}${more}` : shown
+}
+
+/** Sentences without a usable voiceover, one entry per reason: how many, the pages they are on and where the first one is. */
+export function missingVoiceover<S>(missing: readonly { section: string, reason: string, source?: S }[]): { reason: string, count: number, pages: string[], source?: S }[] {
+  const groups = new Map<string, { reason: string, count: number, pages: string[], source?: S }>()
+  for (const item of missing) {
+    let group = groups.get(item.reason)
+    if (!group) groups.set(item.reason, group = { reason: item.reason, count: 0, pages: [], ...item.source ? { source: item.source } : {} })
+    group.count++
+    if (!group.pages.includes(item.section)) group.pages.push(item.section)
+  }
+  return [...groups.values()]
+}
+
 export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
   'zh-CN': {
     view: '讲授',
     production: {
       missingSpeech: '读取已生成的配音需要语音服务。请在文稿的 metadata.plugins 中启用语音服务插件 addon-speech。',
-      cacheMissing: (text, section, reason) => `页面 ${section} 的讲稿“${text}”没有与当前文字和音色一致的配音。${reason}`,
+      cacheMissing: (count, pages, reason) => `${count} 句讲稿没有与当前文字和音色一致的配音（页面 ${pageList(pages, '、', '等')}）。${reason}`,
       generateHint: '请先为当前讲稿和音色生成配音，再重新导出。检查和导出不会自动生成缺失的配音。',
       incompleteCache: '当前讲稿与音色的配音不完整。请先生成配音，再导出。',
       noVoice: '视频制作设置未指定音色，文稿没有生成的配音。',
@@ -223,7 +242,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
     view: 'Lecture',
     production: {
       missingSpeech: 'Reading the generated voiceover needs the voice service. Enable the voice service plugin addon-speech in the document’s metadata.plugins.',
-      cacheMissing: (text, section, reason) => `The script “${text}” on page ${section} has no voiceover that matches its current text and voice. ${reason}`,
+      cacheMissing: (count, pages, reason) => `${count} sentence${count === 1 ? '' : 's'} of the script ${count === 1 ? 'has' : 'have'} no voiceover that matches the current text and voice (page${pages.length === 1 ? '' : 's'} ${pageList(pages, ', ', 'and more')}). ${reason}`,
       generateHint: 'Generate the voiceover for the current script and voice first, then export again. Checking and exporting never generate missing voiceover.',
       incompleteCache: 'The voiceover for the current script and voice is incomplete. Generate the voiceover before exporting.',
       noVoice: 'The video production settings name no voice, so the document has no generated voiceover.',
