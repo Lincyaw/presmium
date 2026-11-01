@@ -1,0 +1,193 @@
+{
+  "key": "4621f26debc4f629ee6751d9a5e4d308",
+  "audio": "4621f26debc4f629ee6751d9a5e4d308.ogg",
+  "mime": "audio/ogg",
+  "duration": 12.1,
+  "words": [
+    {
+      "text": "生成",
+      "start": 0.1,
+      "end": 0.5875
+    },
+    {
+      "text": "时",
+      "start": 0.5875,
+      "end": 0.925
+    },
+    {
+      "text": "把",
+      "start": 1.1125,
+      "end": 1.2625
+    },
+    {
+      "text": "时间",
+      "start": 1.275,
+      "end": 1.6625
+    },
+    {
+      "text": "切成几段",
+      "start": 1.6875,
+      "end": 2.5125
+    },
+    {
+      "text": "每",
+      "start": 2.8125,
+      "end": 3
+    },
+    {
+      "text": "段",
+      "start": 3,
+      "end": 3.2
+    },
+    {
+      "text": "沿着",
+      "start": 3.225,
+      "end": 3.4625
+    },
+    {
+      "text": "速度",
+      "start": 3.475,
+      "end": 3.7875
+    },
+    {
+      "text": "走",
+      "start": 3.8125,
+      "end": 4.0125
+    },
+    {
+      "text": "一",
+      "start": 4.0125,
+      "end": 4.15
+    },
+    {
+      "text": "步",
+      "start": 4.15,
+      "end": 4.4
+    },
+    {
+      "text": "可路",
+      "start": 4.9625,
+      "end": 5.3125
+    },
+    {
+      "text": "是",
+      "start": 5.325,
+      "end": 5.4625
+    },
+    {
+      "text": "弯",
+      "start": 5.4625,
+      "end": 5.7375
+    },
+    {
+      "text": "的",
+      "start": 5.7375,
+      "end": 5.925
+    },
+    {
+      "text": "每",
+      "start": 6.25,
+      "end": 6.4375
+    },
+    {
+      "text": "一",
+      "start": 6.4375,
+      "end": 6.575
+    },
+    {
+      "text": "步",
+      "start": 6.575,
+      "end": 6.8625
+    },
+    {
+      "text": "都",
+      "start": 6.9625,
+      "end": 7.1125
+    },
+    {
+      "text": "会",
+      "start": 7.1125,
+      "end": 7.25
+    },
+    {
+      "text": "偏",
+      "start": 7.25,
+      "end": 7.4375
+    },
+    {
+      "text": "出去",
+      "start": 7.45,
+      "end": 7.7375
+    },
+    {
+      "text": "一点",
+      "start": 7.75,
+      "end": 8.15
+    },
+    {
+      "text": "四步",
+      "start": 8.725,
+      "end": 9.125
+    },
+    {
+      "text": "偏",
+      "start": 9.125,
+      "end": 9.3125
+    },
+    {
+      "text": "得",
+      "start": 9.3125,
+      "end": 9.4
+    },
+    {
+      "text": "明显",
+      "start": 9.4125,
+      "end": 9.95
+    },
+    {
+      "text": "三十二",
+      "start": 10.2375,
+      "end": 10.7375
+    },
+    {
+      "text": "步",
+      "start": 10.7375,
+      "end": 10.8875
+    },
+    {
+      "text": "才",
+      "start": 10.9125,
+      "end": 11.0875
+    },
+    {
+      "text": "贴住",
+      "start": 11.0875,
+      "end": 11.575
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "生成时，把时间切成几段，每段沿着速度走一步。可路是弯的，每一步都会偏出去一点。四步偏得明显，三十二步才贴住。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "4621f26debc4f629ee6751d9a5e4d308",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "875d30b02e893c3fb15213d321f227a64db93b0b4f09ea5e8f413bbe149fdaca",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "102a03e1913039ddbe7291fa0ad81607",
+  "request": {
+    "spoken": "生成时，把时间切成几段，每段沿着速度走一步。可路是弯的，每一步都会偏出去一点。四步偏得明显，三十二步才贴住。",
+    "rate": 1,
+    "style": ""
+  }
+}

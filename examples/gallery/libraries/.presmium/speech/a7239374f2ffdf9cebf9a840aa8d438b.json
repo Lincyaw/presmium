@@ -1,0 +1,93 @@
+{
+  "key": "a7239374f2ffdf9cebf9a840aa8d438b",
+  "audio": "a7239374f2ffdf9cebf9a840aa8d438b.ogg",
+  "mime": "audio/ogg",
+  "duration": 4.9,
+  "words": [
+    {
+      "text": "这次",
+      "start": 0.1,
+      "end": 0.4375
+    },
+    {
+      "text": "权重",
+      "start": 0.4625,
+      "end": 0.85
+    },
+    {
+      "text": "最大",
+      "start": 0.8625,
+      "end": 1.275
+    },
+    {
+      "text": "的",
+      "start": 1.275,
+      "end": 1.4625
+    },
+    {
+      "text": "是",
+      "start": 1.6875,
+      "end": 1.85
+    },
+    {
+      "text": "mat",
+      "start": 1.85,
+      "end": 2.1625
+    },
+    {
+      "text": "自己",
+      "start": 2.175,
+      "end": 2.625
+    },
+    {
+      "text": "所以",
+      "start": 2.9125,
+      "end": 3.4
+    },
+    {
+      "text": "它",
+      "start": 3.5125,
+      "end": 3.675
+    },
+    {
+      "text": "亮",
+      "start": 3.675,
+      "end": 3.875
+    },
+    {
+      "text": "了",
+      "start": 3.875,
+      "end": 3.95
+    },
+    {
+      "text": "起来",
+      "start": 3.9625,
+      "end": 4.35
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "这次权重最大的，是 mat 自己，所以它亮了起来。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "a7239374f2ffdf9cebf9a840aa8d438b",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "6c195b566d533ad12c452e9718d0be76dd0d53c6271954e67f77e2f1f9ba5ab5",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "27c877efd70340b76b461487a49fee66",
+  "request": {
+    "spoken": "这次权重最大的，是 mat 自己，所以它亮了起来。",
+    "rate": 1,
+    "style": ""
+  }
+}

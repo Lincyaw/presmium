@@ -1,0 +1,123 @@
+{
+  "key": "52e6d76b3cfbabaf08f3ee8f20bd0971",
+  "audio": "52e6d76b3cfbabaf08f3ee8f20bd0971.ogg",
+  "mime": "audio/ogg",
+  "duration": 7.3,
+  "words": [
+    {
+      "text": "编译器",
+      "start": 0.1,
+      "end": 0.7
+    },
+    {
+      "text": "把",
+      "start": 0.725,
+      "end": 0.8625
+    },
+    {
+      "text": "它",
+      "start": 0.8625,
+      "end": 0.9875
+    },
+    {
+      "text": "变成",
+      "start": 1,
+      "end": 1.3375
+    },
+    {
+      "text": "中间",
+      "start": 1.3625,
+      "end": 1.7125
+    },
+    {
+      "text": "表示",
+      "start": 1.725,
+      "end": 2.2625
+    },
+    {
+      "text": "也",
+      "start": 2.5125,
+      "end": 2.6625
+    },
+    {
+      "text": "就",
+      "start": 2.6625,
+      "end": 2.8375
+    },
+    {
+      "text": "是",
+      "start": 2.8375,
+      "end": 3.1375
+    },
+    {
+      "text": "IR",
+      "start": 3.2375,
+      "end": 3.75
+    },
+    {
+      "text": "IR",
+      "start": 4.325,
+      "end": 4.825
+    },
+    {
+      "text": "只",
+      "start": 4.8375,
+      "end": 5.05
+    },
+    {
+      "text": "记",
+      "start": 5.05,
+      "end": 5.225
+    },
+    {
+      "text": "语义",
+      "start": 5.25,
+      "end": 5.575
+    },
+    {
+      "text": "和",
+      "start": 5.5875,
+      "end": 5.7125
+    },
+    {
+      "text": "算好",
+      "start": 5.725,
+      "end": 6.125
+    },
+    {
+      "text": "的",
+      "start": 6.125,
+      "end": 6.2125
+    },
+    {
+      "text": "结果",
+      "start": 6.225,
+      "end": 6.75
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "编译器把它变成中间表示，也就是 IR。IR 只记语义和算好的结果。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "52e6d76b3cfbabaf08f3ee8f20bd0971",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "600c6668caddbec123244157e2b6ae2de4db47634f9888614a7aaff6f66a8e5e",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "00947cdc830ead8fc8498acf8df1b504",
+  "request": {
+    "spoken": "编译器把它变成中间表示，也就是 IR。IR 只记语义和算好的结果。",
+    "rate": 1,
+    "style": ""
+  }
+}

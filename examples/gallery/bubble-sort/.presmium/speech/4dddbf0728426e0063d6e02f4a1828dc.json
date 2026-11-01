@@ -1,0 +1,88 @@
+{
+  "key": "4dddbf0728426e0063d6e02f4a1828dc",
+  "audio": "4dddbf0728426e0063d6e02f4a1828dc.ogg",
+  "mime": "audio/ogg",
+  "duration": 4.92,
+  "words": [
+    {
+      "text": "第一",
+      "start": 0.1,
+      "end": 0.45
+    },
+    {
+      "text": "次",
+      "start": 0.45,
+      "end": 0.7625
+    },
+    {
+      "text": "比较",
+      "start": 0.975,
+      "end": 1.3125
+    },
+    {
+      "text": "5",
+      "start": 1.3375,
+      "end": 1.475
+    },
+    {
+      "text": "和",
+      "start": 1.4875,
+      "end": 1.675
+    },
+    {
+      "text": "2",
+      "start": 1.675,
+      "end": 1.9375
+    },
+    {
+      "text": "计数",
+      "start": 2.5,
+      "end": 2.8375
+    },
+    {
+      "text": "器记",
+      "start": 2.85,
+      "end": 3.1875
+    },
+    {
+      "text": "下",
+      "start": 3.1875,
+      "end": 3.4875
+    },
+    {
+      "text": "一次",
+      "start": 3.5875,
+      "end": 3.9125
+    },
+    {
+      "text": "比较",
+      "start": 3.925,
+      "end": 4.3875
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "第一次，比较 5 和 2。计数器记下一次比较。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "4dddbf0728426e0063d6e02f4a1828dc",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "2a85b67fdfe2e78e0158becbf19a6f4d73c9c061d7a6053d06c529fee97d2c1a",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "15fe0c77e5d8f1674c5b04124700e113",
+  "request": {
+    "spoken": "第一次，比较 5 和 2。计数器记下一次比较。",
+    "rate": 1,
+    "style": ""
+  }
+}

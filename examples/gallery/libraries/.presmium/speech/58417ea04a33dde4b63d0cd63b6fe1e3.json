@@ -1,0 +1,63 @@
+{
+  "key": "58417ea04a33dde4b63d0cd63b6fe1e3",
+  "audio": "58417ea04a33dde4b63d0cd63b6fe1e3.ogg",
+  "mime": "audio/ogg",
+  "duration": 2.46,
+  "words": [
+    {
+      "text": "再点",
+      "start": 0.1,
+      "end": 0.4875
+    },
+    {
+      "text": "一次",
+      "start": 0.5,
+      "end": 0.9625
+    },
+    {
+      "text": "又",
+      "start": 1.2,
+      "end": 1.4
+    },
+    {
+      "text": "多",
+      "start": 1.4,
+      "end": 1.575
+    },
+    {
+      "text": "了",
+      "start": 1.575,
+      "end": 1.675
+    },
+    {
+      "text": "low",
+      "start": 1.675,
+      "end": 1.925
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "再点一次，又多了 low。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "58417ea04a33dde4b63d0cd63b6fe1e3",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "1135c594e8407544e68aa580662d2ad239f46bc08137f3d8a086dc70ddac5875",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "0c9e51a595f070cbf76293a8023c310e",
+  "request": {
+    "spoken": "再点一次，又多了 low。",
+    "rate": 1,
+    "style": ""
+  }
+}

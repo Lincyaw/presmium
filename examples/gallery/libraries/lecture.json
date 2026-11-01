@@ -36,7 +36,8 @@
       "title": "代码写成的动画",
       "level": 1,
       "children": [
-        "intro--paragraph-1"
+        "intro--paragraph-1",
+        "intro--keywords"
       ],
       "stepOrder": [
         "intro--step-0"
@@ -150,7 +151,8 @@
         "click--paragraph-1",
         "click--pm-cursor-1",
         "click--paragraph-2",
-        "click--paragraph-3"
+        "click--paragraph-3",
+        "click--keywords"
       ],
       "stepOrder": [
         "click--step-0",
@@ -167,7 +169,8 @@
       "level": 2,
       "children": [
         "video--code-1",
-        "video--paragraph-1"
+        "video--paragraph-1",
+        "video--keywords"
       ],
       "stepOrder": [
         "video--step-0"
@@ -188,10 +191,13 @@
           "children": [
             {
               "type": "text",
-              "text": "这份文稿演示用代码写的动画：GSAP、Anime.js、Motion、Three.js 与 Remotion 都跟着讲授的步骤和时间走，讲解、字幕、光标和点击编进同一条时间线，再一帧一帧导出成视频。"
+              "text": "教学动画可以写成代码，并跟着讲授一步一步走。这份文稿用 GSAP、Anime.js、Motion、Three.js 与 Remotion 各写一段动画，每段都按页面的步骤播放；讲稿、字幕、光标和点击排在同一条时间线上，最后逐帧导出成讲授视频。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "gsap--bpe": {
@@ -213,10 +219,13 @@
           "children": [
             {
               "type": "text",
-              "text": "字节对编码从单个字符开始：low、lower、lowest 三个词先拆成字母。"
+              "text": "GSAP 用一条时间线编排补间动画。这一页把时间线按步骤切成四段，每一步播放其中一段。例子是字节对编码（BPE）：low、lower、lowest 三个词先拆成单个字母。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "gsap--paragraph-2": {
@@ -229,31 +238,13 @@
           "children": [
             {
               "type": "text",
-              "text": "统计相邻的字节对，"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "value": "pause 300ms"
-                  },
-                  "children": []
-                }
-              },
-              "fallback": ""
-            },
-            {
-              "type": "text",
-              "text": " 出现最多的是 l 和 o，三个词里都有。"
+              "text": "接着统计相邻的字母对。l 和 o 在三个词里都出现，次数最多。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "gsap--paragraph-3": {
@@ -266,32 +257,13 @@
           "children": [
             {
               "type": "text",
-              "text": "把它们合并成一个新符号 lo，"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "to": "bpe",
-                    "value": "spot"
-                  },
-                  "children": []
-                }
-              },
-              "fallback": ""
-            },
-            {
-              "type": "text",
-              "text": " 词表里多了一项。"
+              "text": "于是把 l 和 o 合并成新符号 lo，词表多了一项。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "gsap--paragraph-4": {
@@ -304,37 +276,13 @@
           "children": [
             {
               "type": "text",
-              "text": "再数一遍，lo 和 w 最多，合并成 low。"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "say",
-                  "options": {
-                    "alias": "B P E",
-                    "value": "BPE"
-                  },
-                  "children": [
-                    {
-                      "type": "text",
-                      "value": "BPE"
-                    }
-                  ]
-                }
-              },
-              "fallback": "BPE"
-            },
-            {
-              "type": "text",
-              "text": " 就这样一轮一轮地长出词表。"
+              "text": "再统计一遍，lo 和 w 最多，合并成 low。BPE 就这样一轮一轮地扩充词表。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "anime--pipeline": {
@@ -343,7 +291,7 @@
       "definitionId": "anime--pipeline--definition",
       "parameters": {
         "scene": "pipeline",
-        "alt": "MyST 源码编译为 IR，再由渲染端生成网页、幻灯片、notebook 与视频。"
+        "alt": "源文件 lecture.json 编译为 IR，再由渲染端生成网页、幻灯片、notebook 与视频。"
       }
     },
     "anime--paragraph-1": {
@@ -356,10 +304,13 @@
           "children": [
             {
               "type": "text",
-              "text": "讲义的源码是 MyST，一份文件。"
+              "text": "Anime.js 给页面元素和 SVG 图形加动画。这一页用它画文稿的编译管线，四步依次点亮管线的四个部分。第一步是源文件：一份讲义只有一份源文件。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "anime--paragraph-2": {
@@ -372,10 +323,13 @@
           "children": [
             {
               "type": "text",
-              "text": "编译器把它变成中间表示 IR，只记语义和算好的结果。"
+              "text": "编译器把源文件变成中间表示 IR。IR 只记录语义和已经算好的结果。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "anime--paragraph-3": {
@@ -388,10 +342,13 @@
           "children": [
             {
               "type": "text",
-              "text": "渲染端各取所需：网页、幻灯片、notebook，还有视频。"
+              "text": "各个渲染端从 IR 取各自需要的内容，生成网页、幻灯片、notebook 和视频。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "anime--paragraph-4": {
@@ -404,10 +361,13 @@
           "children": [
             {
               "type": "text",
-              "text": "视频也从同一份讲义来，讲解就是它的脚本。"
+              "text": "视频同样来自这份源文件，讲稿就是视频的脚本。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "motion--attention": {
@@ -429,10 +389,13 @@
           "children": [
             {
               "type": "text",
-              "text": "查询词 cat 看向句子里的每个词，它自己的权重最大。查询换成 mat，同一组柱子换上新的权重。"
+              "text": "Motion 让数值和样式平滑地过渡。这一页的柱高是句子 The cat sat on the mat 中各词的注意力权重（示意）。查询词为 cat 时，cat 对自己的权重最大，为 0.46；查询换成 mat 后，同一组柱子过渡到新的高度。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "motion--paragraph-3": {
@@ -445,31 +408,13 @@
           "children": [
             {
               "type": "text",
-              "text": "权重最大的是 mat 自己，"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "value": "mark 注意力"
-                  },
-                  "children": []
-                }
-              },
-              "fallback": ""
-            },
-            {
-              "type": "text",
-              "text": " 它亮了起来。"
+              "text": "查询词为 mat 时，权重最大的仍是它自己，为 0.50，这根柱子在第三步亮起。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "three--embedding": {
@@ -491,31 +436,13 @@
           "children": [
             {
               "type": "text",
-              "text": "词向量一开始散在空间里。 训练之后，意思相近的词聚成了三团。镜头推近其中一团，"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "value": "pause 400ms"
-                  },
-                  "children": []
-                }
-              },
-              "fallback": ""
-            },
-            {
-              "type": "text",
-              "text": " 它们指向差不多的方向。"
+              "text": "Three.js 在浏览器中绘制三维场景。这一页的点是示意的词向量：训练前散布在空间中，训练后意思相近的词聚成三团。镜头推近其中一团，可以看到这些向量指向大致相同的方向。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "remotion--title": {
@@ -537,10 +464,13 @@
           "children": [
             {
               "type": "text",
-              "text": "这一页是 Remotion 写的片头，标题弹了进来。"
+              "text": "Remotion 用 React 组件描述视频的每一帧。这一页的片头中，标题先弹入画面，"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "remotion--paragraph-2": {
@@ -553,10 +483,13 @@
           "children": [
             {
               "type": "text",
-              "text": "副标题一个字一个字地打出来。"
+              "text": "副标题随后逐字出现，"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "remotion--paragraph-3": {
@@ -569,10 +502,13 @@
           "children": [
             {
               "type": "text",
-              "text": "画面由帧号决定，所以导出视频时每一帧都确定。"
+              "text": "最后升起一枚写着“每一帧都由时间决定”的徽章。画面只取决于帧号，所以导出视频时每一帧都能准确重现。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "click--counter": {
@@ -591,10 +527,13 @@
           "children": [
             {
               "type": "text",
-              "text": "这是文稿自己写的组件，“合并一次”是它的具名动作。"
+              "text": "文稿可以带自己编写的组件。下面的计数器是这份文稿的组件，“合并一次”是它的具名动作，讲稿中的提示按这个名字调用它。读者也可以自己点按钮。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "click--pm-cursor-1": {
@@ -626,10 +565,13 @@
           "children": [
             {
               "type": "text",
-              "text": "光标移到按钮上。"
+              "text": "讲授时，光标先移到“合并一次”按钮上。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "click--paragraph-3": {
@@ -642,75 +584,13 @@
           "children": [
             {
               "type": "text",
-              "text": "讲到这里 "
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "to": "counter",
-                    "value": "click merge"
-                  },
-                  "children": []
-                }
-              },
-              "fallback": ""
-            },
-            {
-              "type": "text",
-              "text": " 点一次，词表多了 lo；"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "value": "pause 500ms"
-                  },
-                  "children": []
-                }
-              },
-              "fallback": ""
-            },
-            {
-              "type": "text",
-              "text": " 再点 "
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "to": "counter",
-                    "value": "click merge"
-                  },
-                  "children": []
-                }
-              },
-              "fallback": ""
-            },
-            {
-              "type": "text",
-              "text": " 一次，又多了 low。"
+              "text": "讲稿念到第一个提示时，光标点击一次，词表多了 lo；停顿片刻后再点一次，又多了 low。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "video--code-1": {
@@ -729,10 +609,83 @@
           "children": [
             {
               "type": "text",
-              "text": "讲解经语音合成成为讲授轨，字幕、章节和每个提示都在时间线上。导出时一帧一帧推进时间，动画、光标与点击都按讲授的时刻画出来。"
+              "text": "讲稿经语音合成成为讲授音轨，字幕、章节和每个提示都排在同一条时间线上。导出时逐帧推进这条时间线，五个库写的动画、光标与点击都按讲授中的时刻画出，所以视频与现场讲授一致。上面两条命令先构建网页与讲授形态，再导出烧录中文字幕的视频。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "intro--keywords": {
+      "id": "intro--keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--keywords--libraries",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "GSAP · Anime.js · Motion · Three.js · Remotion"
+            }
+          ]
+        },
+        {
+          "id": "intro--keywords--timeline",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "跟着步骤播放，逐帧导出成视频"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "click--keywords": {
+      "id": "click--keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "click--keywords--cue",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲稿中的提示 → 点击组件"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "video--keywords": {
+      "id": "video--keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "video--keywords--track",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲稿 → 语音、字幕、提示 → 逐帧导出"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
       ]
     }
   },
@@ -743,7 +696,11 @@
       "visuals": [
         {
           "blockId": "intro--paragraph-1",
-          "visible": false
+          "visible": true
+        },
+        {
+          "blockId": "intro--keywords",
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -761,19 +718,19 @@
         },
         {
           "blockId": "gsap--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "gsap--paragraph-2",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "gsap--paragraph-3",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "gsap--paragraph-4",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -791,19 +748,19 @@
         },
         {
           "blockId": "gsap--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "gsap--paragraph-2",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "gsap--paragraph-3",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "gsap--paragraph-4",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -821,19 +778,19 @@
         },
         {
           "blockId": "gsap--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "gsap--paragraph-2",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "gsap--paragraph-3",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "gsap--paragraph-4",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -851,19 +808,19 @@
         },
         {
           "blockId": "gsap--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "gsap--paragraph-2",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "gsap--paragraph-3",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "gsap--paragraph-4",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -881,19 +838,19 @@
         },
         {
           "blockId": "anime--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "anime--paragraph-2",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "anime--paragraph-3",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "anime--paragraph-4",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -911,19 +868,19 @@
         },
         {
           "blockId": "anime--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "anime--paragraph-2",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "anime--paragraph-3",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "anime--paragraph-4",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -941,19 +898,19 @@
         },
         {
           "blockId": "anime--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "anime--paragraph-2",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "anime--paragraph-3",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "anime--paragraph-4",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -971,19 +928,19 @@
         },
         {
           "blockId": "anime--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "anime--paragraph-2",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "anime--paragraph-3",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "anime--paragraph-4",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -1001,11 +958,11 @@
         },
         {
           "blockId": "motion--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "motion--paragraph-3",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -1023,11 +980,11 @@
         },
         {
           "blockId": "motion--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "motion--paragraph-3",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -1045,11 +1002,11 @@
         },
         {
           "blockId": "motion--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "motion--paragraph-3",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -1067,7 +1024,7 @@
         },
         {
           "blockId": "three--paragraph-1",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -1085,7 +1042,7 @@
         },
         {
           "blockId": "three--paragraph-1",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -1103,7 +1060,7 @@
         },
         {
           "blockId": "three--paragraph-1",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -1121,15 +1078,15 @@
         },
         {
           "blockId": "remotion--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "remotion--paragraph-2",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "remotion--paragraph-3",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -1147,15 +1104,15 @@
         },
         {
           "blockId": "remotion--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "remotion--paragraph-2",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "remotion--paragraph-3",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -1173,15 +1130,15 @@
         },
         {
           "blockId": "remotion--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "remotion--paragraph-2",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "remotion--paragraph-3",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -1199,7 +1156,7 @@
         },
         {
           "blockId": "click--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "click--pm-cursor-1",
@@ -1208,11 +1165,15 @@
         },
         {
           "blockId": "click--paragraph-2",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "click--paragraph-3",
-          "visible": false
+          "visible": true
+        },
+        {
+          "blockId": "click--keywords",
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -1230,7 +1191,7 @@
         },
         {
           "blockId": "click--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "click--pm-cursor-1",
@@ -1239,11 +1200,15 @@
         },
         {
           "blockId": "click--paragraph-2",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "click--paragraph-3",
-          "visible": false
+          "visible": true
+        },
+        {
+          "blockId": "click--keywords",
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -1261,7 +1226,7 @@
         },
         {
           "blockId": "click--paragraph-1",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "click--pm-cursor-1",
@@ -1270,11 +1235,15 @@
         },
         {
           "blockId": "click--paragraph-2",
-          "visible": false
+          "visible": true
         },
         {
           "blockId": "click--paragraph-3",
-          "visible": false
+          "visible": true
+        },
+        {
+          "blockId": "click--keywords",
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -1291,7 +1260,11 @@
         },
         {
           "blockId": "video--paragraph-1",
-          "visible": false
+          "visible": true
+        },
+        {
+          "blockId": "video--keywords",
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -1305,7 +1278,7 @@
       "content": [
         {
           "type": "text",
-          "text": "这份文稿演示用代码写的动画：GSAP、Anime.js、Motion、Three.js 与 Remotion 都跟着讲授的步骤和时间走，讲解、字幕、光标和点击编进同一条时间线，再一帧一帧导出成视频。"
+          "text": "这份文稿里的动画都是代码写的，用了五个库，都跟着讲授的步骤走。最后，整份讲授一帧一帧导出成视频。"
         }
       ]
     },
@@ -1314,7 +1287,7 @@
       "content": [
         {
           "type": "text",
-          "text": "字节对编码从单个字符开始：low、lower、lowest 三个词先拆成字母。"
+          "text": "先看 GSAP。例子是字节对编码。三个词 low、lower、lowest，先拆成一个一个字母。"
         }
       ]
     },
@@ -1323,7 +1296,7 @@
       "content": [
         {
           "type": "text",
-          "text": "统计相邻的字节对，"
+          "text": "然后数一数，哪两个相邻的字母一起出现得最多。"
         },
         {
           "id": "cue-gsap-1",
@@ -1332,7 +1305,7 @@
         },
         {
           "type": "text",
-          "text": " 出现最多的是 l 和 o，三个词里都有。"
+          "text": " 是 l 和 o，三个词里都有。"
         }
       ]
     },
@@ -1353,7 +1326,7 @@
         },
         {
           "type": "text",
-          "text": " 词表里多了一项。"
+          "text": " 词表就多了一项。"
         }
       ]
     },
@@ -1362,7 +1335,7 @@
       "content": [
         {
           "type": "text",
-          "text": "再数一遍，lo 和 w 最多，合并成 low。"
+          "text": "再数一遍，这次 lo 和 w 最多，合并成 low。"
         },
         {
           "type": "pronunciation",
@@ -1371,7 +1344,7 @@
         },
         {
           "type": "text",
-          "text": " 就这样一轮一轮地长出词表。"
+          "text": " 就这样一轮一轮地扩充词表。"
         }
       ]
     },
@@ -1380,7 +1353,7 @@
       "content": [
         {
           "type": "text",
-          "text": "讲义的源码是 MyST，一份文件。"
+          "text": "这一页用 Anime.js 画编译管线。最左边是源文件，一份讲义只有这一份。"
         }
       ]
     },
@@ -1389,7 +1362,7 @@
       "content": [
         {
           "type": "text",
-          "text": "编译器把它变成中间表示 IR，只记语义和算好的结果。"
+          "text": "编译器把它变成中间表示，也就是 IR。IR 只记语义和算好的结果。"
         }
       ]
     },
@@ -1398,7 +1371,7 @@
       "content": [
         {
           "type": "text",
-          "text": "渲染端各取所需：网页、幻灯片、notebook，还有视频。"
+          "text": "渲染端从 IR 里各取所需，生成网页、幻灯片、notebook，还有视频。"
         }
       ]
     },
@@ -1407,7 +1380,7 @@
       "content": [
         {
           "type": "text",
-          "text": "视频也从同一份讲义来，讲解就是它的脚本。"
+          "text": "视频也出自同一份源文件。你现在听到的讲稿，就是它的脚本。"
         }
       ]
     },
@@ -1416,7 +1389,7 @@
       "content": [
         {
           "type": "text",
-          "text": "查询词 cat 看向句子里的每个词，它自己的权重最大。"
+          "text": "这一页用 Motion。柱子的高度是注意力权重。查询词是 cat 的时候，它给自己的权重最大。"
         }
       ]
     },
@@ -1425,7 +1398,7 @@
       "content": [
         {
           "type": "text",
-          "text": "查询换成 mat，同一组柱子换上新的权重。"
+          "text": "查询换成 mat。还是这六根柱子，平滑地变到新的高度。"
         }
       ]
     },
@@ -1434,7 +1407,7 @@
       "content": [
         {
           "type": "text",
-          "text": "权重最大的是 mat 自己，"
+          "text": "这次权重最大的，是 mat 自己，"
         },
         {
           "id": "cue-motion-1",
@@ -1446,7 +1419,7 @@
         },
         {
           "type": "text",
-          "text": " 它亮了起来。"
+          "text": " 所以它亮了起来。"
         }
       ]
     },
@@ -1455,7 +1428,7 @@
       "content": [
         {
           "type": "text",
-          "text": "词向量一开始散在空间里。"
+          "text": "这一页用 Three.js 画三维空间。每个点是一个词向量，一开始散在各处。"
         }
       ]
     },
@@ -1464,7 +1437,7 @@
       "content": [
         {
           "type": "text",
-          "text": "训练之后，意思相近的词聚成了三团。"
+          "text": "训练之后，意思相近的词靠到了一起，聚成三团。"
         }
       ]
     },
@@ -1482,7 +1455,7 @@
         },
         {
           "type": "text",
-          "text": " 它们指向差不多的方向。"
+          "text": " 这些向量指向差不多的方向。"
         }
       ]
     },
@@ -1491,7 +1464,7 @@
       "content": [
         {
           "type": "text",
-          "text": "这一页是 Remotion 写的片头，标题弹了进来。"
+          "text": "这个片头是 Remotion 写的，用的是 React 组件。先是标题弹进来。"
         }
       ]
     },
@@ -1500,7 +1473,7 @@
       "content": [
         {
           "type": "text",
-          "text": "副标题一个字一个字地打出来。"
+          "text": "接着副标题一个字一个字地打出来。"
         }
       ]
     },
@@ -1509,7 +1482,7 @@
       "content": [
         {
           "type": "text",
-          "text": "画面由帧号决定，所以导出视频时每一帧都确定。"
+          "text": "每一帧的画面只由帧号决定。所以导出视频的时候，每一帧都能准确重现。"
         }
       ]
     },
@@ -1518,7 +1491,7 @@
       "content": [
         {
           "type": "text",
-          "text": "这是文稿自己写的组件，“合并一次”是它的具名动作。"
+          "text": "这个计数器是文稿自己写的组件。它有一个具名动作，叫“合并一次”，讲稿可以按名字调用它。"
         }
       ]
     },
@@ -1527,7 +1500,7 @@
       "content": [
         {
           "type": "text",
-          "text": "光标移到按钮上。"
+          "text": "讲授的时候，光标会先移到这个按钮上，等讲稿念到提示。"
         }
       ]
     },
@@ -1536,7 +1509,7 @@
       "content": [
         {
           "type": "text",
-          "text": "讲到这里 "
+          "text": "讲到这里，"
         },
         {
           "id": "cue-click-1",
@@ -1584,7 +1557,7 @@
       "content": [
         {
           "type": "text",
-          "text": "讲解经语音合成成为讲授轨，字幕、章节和每个提示都在时间线上。导出时一帧一帧推进时间，动画、光标与点击都按讲授的时刻画出来。"
+          "text": "讲稿合成语音后，字幕和提示都排在同一条时间线上。导出时一帧一帧推进，动画、光标和点击都落在讲到它的那一刻。"
         }
       ]
     }
@@ -1692,7 +1665,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "MyST 源码编译为 IR，再由渲染端生成网页、幻灯片、notebook 与视频。"
+                  "value": "源文件 lecture.json 编译为 IR，再由渲染端生成网页、幻灯片、notebook 与视频。"
                 }
               ]
             }

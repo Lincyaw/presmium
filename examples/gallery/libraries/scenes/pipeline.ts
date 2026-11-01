@@ -1,6 +1,6 @@
 import { animeScene } from '@lincyaw/addon-motion/scene'
 
-// The compile pipeline drawn with Anime.js: the MyST source, the IR, then the media it renders to.
+// The compile pipeline drawn with Anime.js: the source file (lecture.json), the IR, then the media it renders to.
 // The boxes are placed by an outer group, so the animated transform of the inner one only moves them a little.
 const OUTPUTS = ['网页', '幻灯片', 'notebook', '视频']
 
@@ -20,7 +20,7 @@ export default animeScene(({ root, anime, at, color }) => {
     <svg viewBox="0 0 800 450" width="100%" height="100%" style="font-family: var(--pm-font-sans)">
       ${link('ir', 'M 190 225 C 240 225, 250 225, 300 225')}
       ${OUTPUTS.map((_, i) => link(`out-${i}`, `M 460 225 C 520 225, 520 ${75 + i * 100}, 580 ${75 + i * 100}`)).join('')}
-      ${box('source', 30, 197, 160, 'MyST 源码')}
+      ${box('source', 30, 197, 160, 'lecture.json')}
       ${box('ir', 300, 197, 160, 'IR')}
       ${OUTPUTS.map((label, i) => box(`out-${i}`, 580, 47 + i * 100, 170, label)).join('')}
     </svg>`

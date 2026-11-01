@@ -1,0 +1,158 @@
+{
+  "key": "47ab63fda851d37d646e618393efd662",
+  "audio": "47ab63fda851d37d646e618393efd662.ogg",
+  "mime": "audio/ogg",
+  "duration": 9.04,
+  "words": [
+    {
+      "text": "网络",
+      "start": 0.1,
+      "end": 0.4875
+    },
+    {
+      "text": "不学",
+      "start": 0.5125,
+      "end": 0.8
+    },
+    {
+      "text": "整条",
+      "start": 0.8125,
+      "end": 1.2625
+    },
+    {
+      "text": "路",
+      "start": 1.2625,
+      "end": 1.5125
+    },
+    {
+      "text": "只",
+      "start": 1.8,
+      "end": 1.9875
+    },
+    {
+      "text": "学",
+      "start": 1.9875,
+      "end": 2.1625
+    },
+    {
+      "text": "每",
+      "start": 2.1875,
+      "end": 2.3625
+    },
+    {
+      "text": "个",
+      "start": 2.3625,
+      "end": 2.45
+    },
+    {
+      "text": "位置",
+      "start": 2.4625,
+      "end": 3
+    },
+    {
+      "text": "每个",
+      "start": 3.225,
+      "end": 3.4875
+    },
+    {
+      "text": "时刻",
+      "start": 3.5,
+      "end": 4.025
+    },
+    {
+      "text": "该",
+      "start": 4.1125,
+      "end": 4.275
+    },
+    {
+      "text": "往",
+      "start": 4.275,
+      "end": 4.425
+    },
+    {
+      "text": "哪",
+      "start": 4.4375,
+      "end": 4.6625
+    },
+    {
+      "text": "走",
+      "start": 4.6625,
+      "end": 4.9625
+    },
+    {
+      "text": "也",
+      "start": 5.1875,
+      "end": 5.3375
+    },
+    {
+      "text": "就",
+      "start": 5.3375,
+      "end": 5.4625
+    },
+    {
+      "text": "是",
+      "start": 5.4625,
+      "end": 5.575
+    },
+    {
+      "text": "速度",
+      "start": 5.5875,
+      "end": 6.075
+    },
+    {
+      "text": "速度",
+      "start": 6.6375,
+      "end": 7.2
+    },
+    {
+      "text": "就",
+      "start": 7.225,
+      "end": 7.375
+    },
+    {
+      "text": "是",
+      "start": 7.375,
+      "end": 7.5
+    },
+    {
+      "text": "路径",
+      "start": 7.5125,
+      "end": 7.8625
+    },
+    {
+      "text": "的",
+      "start": 7.8625,
+      "end": 7.95
+    },
+    {
+      "text": "切线",
+      "start": 7.9625,
+      "end": 8.5
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "网络不学整条路，只学每个位置、每个时刻该往哪走，也就是速度。速度就是路径的切线。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "47ab63fda851d37d646e618393efd662",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "486f009ce0ab7f28e394777727315b0890464a302dafbd99f885a8486a9a9e2d",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "99f11811f659e713a3feb0cf85648fb6",
+  "request": {
+    "spoken": "网络不学整条路，只学每个位置、每个时刻该往哪走，也就是速度。速度就是路径的切线。",
+    "rate": 1,
+    "style": ""
+  }
+}

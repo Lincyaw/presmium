@@ -1,0 +1,228 @@
+{
+  "key": "0d2299709f19c326421d93ede7b44cde",
+  "audio": "0d2299709f19c326421d93ede7b44cde.ogg",
+  "mime": "audio/ogg",
+  "duration": 14.42,
+  "words": [
+    {
+      "text": "训练",
+      "start": 0.1,
+      "end": 0.5375
+    },
+    {
+      "text": "三万",
+      "start": 0.5625,
+      "end": 0.925
+    },
+    {
+      "text": "轮",
+      "start": 0.925,
+      "end": 1.1125
+    },
+    {
+      "text": "后",
+      "start": 1.1125,
+      "end": 1.4
+    },
+    {
+      "text": "撒",
+      "start": 1.7,
+      "end": 1.9
+    },
+    {
+      "text": "下",
+      "start": 1.9,
+      "end": 2.075
+    },
+    {
+      "text": "两千",
+      "start": 2.1,
+      "end": 2.525
+    },
+    {
+      "text": "个",
+      "start": 2.525,
+      "end": 2.6
+    },
+    {
+      "text": "噪声",
+      "start": 2.625,
+      "end": 2.975
+    },
+    {
+      "text": "粒子",
+      "start": 2.9875,
+      "end": 3.475
+    },
+    {
+      "text": "沿学",
+      "start": 3.75,
+      "end": 4.125
+    },
+    {
+      "text": "到",
+      "start": 4.125,
+      "end": 4.2875
+    },
+    {
+      "text": "的",
+      "start": 4.2875,
+      "end": 4.375
+    },
+    {
+      "text": "速度",
+      "start": 4.3875,
+      "end": 4.725
+    },
+    {
+      "text": "走",
+      "start": 4.7375,
+      "end": 5.025
+    },
+    {
+      "text": "填满",
+      "start": 5.2375,
+      "end": 5.6375
+    },
+    {
+      "text": "了",
+      "start": 5.6375,
+      "end": 5.7375
+    },
+    {
+      "text": "整个",
+      "start": 5.7625,
+      "end": 6.1
+    },
+    {
+      "text": "标志",
+      "start": 6.1125,
+      "end": 6.625
+    },
+    {
+      "text": "按",
+      "start": 7.2,
+      "end": 7.375
+    },
+    {
+      "text": "位置",
+      "start": 7.3875,
+      "end": 7.75
+    },
+    {
+      "text": "给",
+      "start": 7.775,
+      "end": 7.9125
+    },
+    {
+      "text": "噪声",
+      "start": 7.925,
+      "end": 8.275
+    },
+    {
+      "text": "染色",
+      "start": 8.2875,
+      "end": 8.7875
+    },
+    {
+      "text": "到",
+      "start": 9.075,
+      "end": 9.225
+    },
+    {
+      "text": "了",
+      "start": 9.225,
+      "end": 9.3
+    },
+    {
+      "text": "标志",
+      "start": 9.3125,
+      "end": 9.7375
+    },
+    {
+      "text": "里",
+      "start": 9.7375,
+      "end": 10.0125
+    },
+    {
+      "text": "颜色",
+      "start": 10.1125,
+      "end": 10.4875
+    },
+    {
+      "text": "还",
+      "start": 10.5125,
+      "end": 10.65
+    },
+    {
+      "text": "连",
+      "start": 10.65,
+      "end": 10.8125
+    },
+    {
+      "text": "成",
+      "start": 10.8125,
+      "end": 10.9625
+    },
+    {
+      "text": "一片",
+      "start": 10.975,
+      "end": 11.4375
+    },
+    {
+      "text": "所以",
+      "start": 11.8125,
+      "end": 12.325
+    },
+    {
+      "text": "这个",
+      "start": 12.425,
+      "end": 12.6875
+    },
+    {
+      "text": "映射",
+      "start": 12.7,
+      "end": 13.075
+    },
+    {
+      "text": "是",
+      "start": 13.1,
+      "end": 13.2125
+    },
+    {
+      "text": "连续",
+      "start": 13.225,
+      "end": 13.7125
+    },
+    {
+      "text": "的",
+      "start": 13.7125,
+      "end": 13.9
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "训练三万轮后，撒下两千个噪声粒子，沿学到的速度走，填满了整个标志。按位置给噪声染色，到了标志里颜色还连成一片，所以这个映射是连续的。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "0d2299709f19c326421d93ede7b44cde",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "7e9ed203675bc09ca435aa9b0bb072ba322fbe861cc8194cb79490a8daf1066f",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "502c6b681666652e90ebb62e97bdbae4",
+  "request": {
+    "spoken": "训练三万轮后，撒下两千个噪声粒子，沿学到的速度走，填满了整个标志。按位置给噪声染色，到了标志里颜色还连成一片，所以这个映射是连续的。",
+    "rate": 1,
+    "style": ""
+  }
+}

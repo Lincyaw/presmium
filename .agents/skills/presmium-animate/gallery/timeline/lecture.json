@@ -223,7 +223,7 @@
           "children": [
             {
               "type": "text",
-              "text": "每一节用同一个场景：一排圆点，每一步亮起一个，所以看画面就知道走到了第几步。在放映视图中逐步前进，演讲者窗口显示每一步对应的讲解；给文稿加上 "
+              "text": "讲解和动画按步骤对齐：每一步开始时，这一步的讲解和动画同时开始，这一步持续到两者中较晚结束的一个。下面每一节用同一个场景演示一种对齐方式：一排圆点，每一步亮起一个，看亮到第几个点就知道走到了第几步。在放映视图中逐步前进时，演讲者窗口显示每一步的讲解；给文稿加上 "
             },
             {
               "type": "text",
@@ -236,7 +236,7 @@
             },
             {
               "type": "text",
-              "text": " 渲染端与语音后构建，"
+              "text": " 渲染端并生成配音后构建，"
             },
             {
               "type": "text",
@@ -274,7 +274,7 @@
           "children": [
             {
               "type": "text",
-              "text": "第一步，第一个点亮起。讲解的第一个字一出来，这一步的动画就开始演。"
+              "text": "最常用的写法是每一步挂一段讲解。第一步的讲解一开口，第一个点的动画就开始播放。"
             }
           ]
         }
@@ -290,7 +290,7 @@
           "children": [
             {
               "type": "text",
-              "text": "第二步，第二个点。块后面的第二段讲解属于第二步。"
+              "text": "第二步挂第二段讲解，第二个点随它亮起。"
             }
           ]
         }
@@ -306,7 +306,7 @@
           "children": [
             {
               "type": "text",
-              "text": "第三步，第三个点。讲解比动画长，动画演完就停在那里等着。"
+              "text": "第三步的讲解比动画长：第三个点亮完后停住，等讲解说完再进入下一步。"
             }
           ]
         }
@@ -331,7 +331,7 @@
           "children": [
             {
               "type": "text",
-              "text": "第一个点。"
+              "text": "步骤多于讲解时，没有讲解的步骤照常播放。前两步各有一段讲解，各亮起一个点。"
             }
           ]
         }
@@ -347,7 +347,7 @@
           "children": [
             {
               "type": "text",
-              "text": "第二个点。下一步没有讲解，只停到动画演完。"
+              "text": "第三步没有讲解：第三个点亮起，动画播完就进入下一步。"
             }
           ]
         }
@@ -372,7 +372,20 @@
           "children": [
             {
               "type": "text",
-              "text": "第一个点。"
+              "text": "一步可以挂多段讲解，按步骤的 "
+            },
+            {
+              "type": "text",
+              "text": "narrationIds",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 顺序依次说完。第一步挂一段讲解，亮起第一个点。"
             }
           ]
         }
@@ -388,7 +401,7 @@
           "children": [
             {
               "type": "text",
-              "text": "第二个点。"
+              "text": "第二步挂两段讲解，第二个点在第一段开始时亮起。"
             }
           ]
         }
@@ -404,7 +417,7 @@
           "children": [
             {
               "type": "text",
-              "text": "这一段已经超出了步数，也算在最后一步，画面不再变化。"
+              "text": "第二段讲解期间画面不再变化，适合放不需要新画面的补充说明。"
             }
           ]
         }
@@ -429,7 +442,7 @@
           "children": [
             {
               "type": "text",
-              "text": "很短的一句。"
+              "text": "动画比讲解长时，这一步持续到动画播完。这里每个点用 3 秒亮起，每步的讲解只有一句短话。"
             }
           ]
         }
@@ -445,7 +458,7 @@
           "children": [
             {
               "type": "text",
-              "text": "又一句。"
+              "text": "第二步也是讲解先说完，画面继续播放，直到第二个点完全亮起。"
             }
           ]
         }
@@ -470,49 +483,20 @@
           "children": [
             {
               "type": "text",
-              "text": "先看第一个点，"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "value": "next"
-                  },
-                  "children": []
-                }
-              },
-              "fallback": ""
+              "text": "一段讲解之内也可以推进步骤：讲解中放一个 "
             },
             {
               "type": "text",
-              "text": " 说到这里第二个亮起，"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "value": "next"
-                  },
-                  "children": []
+              "text": "next",
+              "marks": [
+                {
+                  "type": "code"
                 }
-              },
-              "fallback": ""
+              ]
             },
             {
               "type": "text",
-              "text": " 说到这里第三个也亮了。"
+              "text": " 提示标记，语音读到标记处就进入下一步。这里一句讲解带两个标记，三个点在这一句话里依次亮起，后两步本身没有讲解。"
             }
           ]
         }
@@ -537,28 +521,16 @@
           "children": [
             {
               "type": "text",
-              "text": "马上 "
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "value": "next"
-                  },
-                  "children": []
+              "text": "next",
+              "marks": [
+                {
+                  "type": "code"
                 }
-              },
-              "fallback": ""
+              ]
             },
             {
               "type": "text",
-              "text": " 推进，构建会在这一段给出警告。"
+              "text": " 提示标记放得太早，上一步的动画没播完就被打断。这里每个点要 2.5 秒才亮完，讲解一开头就推进，构建会对这一段给出警告。"
             }
           ]
         }
@@ -583,7 +555,7 @@
           "children": [
             {
               "type": "text",
-              "text": "前一个场景的第一步。"
+              "text": "一节里放两个场景时，后一个场景在前两步不可见，等前一个演完才出现。第一步，前一个场景亮起第一个点。"
             }
           ]
         }
@@ -599,7 +571,7 @@
           "children": [
             {
               "type": "text",
-              "text": "前一个场景的第二步。"
+              "text": "第二步，前一个场景亮起第二个点。"
             }
           ]
         }
@@ -624,7 +596,7 @@
           "children": [
             {
               "type": "text",
-              "text": "后一个场景的第一步。"
+              "text": "第三步，后一个场景出现并亮起第一个点，前一个场景停在最后的状态。"
             }
           ]
         }
@@ -640,7 +612,7 @@
           "children": [
             {
               "type": "text",
-              "text": "后一个场景的第二步。"
+              "text": "第四步，后一个场景亮起第二个点。"
             }
           ]
         }
@@ -665,28 +637,29 @@
           "children": [
             {
               "type": "text",
-              "text": "说完这半句，"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "value": "pause 1s"
-                  },
-                  "children": []
+              "text": "pause",
+              "marks": [
+                {
+                  "type": "code"
                 }
-              },
-              "fallback": ""
+              ]
             },
             {
               "type": "text",
-              "text": " 停一秒再说下半句。"
+              "text": " 提示标记让语音在句中停顿，时长写在 "
+            },
+            {
+              "type": "text",
+              "text": "production.cueTimings",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "，这里是 1 秒。第一步的讲解说完半句，停一秒再说下半句。"
             }
           ]
         }
@@ -702,29 +675,16 @@
           "children": [
             {
               "type": "text",
-              "text": "第二步，"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "to": "pause-scene",
-                    "value": "spot"
-                  },
-                  "children": []
+              "text": "spot",
+              "marks": [
+                {
+                  "type": "code"
                 }
-              },
-              "fallback": ""
+              ]
             },
             {
               "type": "text",
-              "text": " 聚光落在这个场景上。"
+              "text": " 提示标记给目标加聚光：第二步的讲解读到标记处，聚光落在场景上。"
             }
           ]
         }
@@ -755,7 +715,20 @@
           "children": [
             {
               "type": "text",
-              "text": "代码和场景放在同一节：场景占五步，讲解逐段对应，提示标记指向代码。先看这五个数。"
+              "text": "代码和场景可以在同一节里一起推进：场景占五步，每步一段讲解，"
+            },
+            {
+              "type": "text",
+              "text": "spot",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 提示标记高亮当前的代码行。第一步展示待排序的五个数 5、2、4、1、3。"
             }
           ]
         }
@@ -771,30 +744,7 @@
           "children": [
             {
               "type": "text",
-              "text": "第一次比较 5 和 2，"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "to": "sort-code",
-                    "lines": "3",
-                    "value": "spot"
-                  },
-                  "children": []
-                }
-              },
-              "fallback": ""
-            },
-            {
-              "type": "text",
-              "text": " 这一行做比较。"
+              "text": "第二步比较 5 和 2，聚光落在做比较的第 3 行。"
             }
           ]
         }
@@ -810,30 +760,7 @@
           "children": [
             {
               "type": "text",
-              "text": "5 比 2 大，"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "to": "sort-code",
-                    "lines": "4",
-                    "value": "spot"
-                  },
-                  "children": []
-                }
-              },
-              "fallback": ""
-            },
-            {
-              "type": "text",
-              "text": " 这一行交换它们。"
+              "text": "第三步，5 比 2 大，聚光移到做交换的第 4 行，两个数交换位置。"
             }
           ]
         }
@@ -849,7 +776,7 @@
           "children": [
             {
               "type": "text",
-              "text": "再比较 5 和 4，又是前面大，再交换。"
+              "text": "第四步比较 5 和 4，前面的数仍然更大，再交换一次。"
             }
           ]
         }
@@ -865,28 +792,20 @@
           "children": [
             {
               "type": "text",
-              "text": "5 继续往后，越过 1 和 3，"
-            },
-            {
-              "type": "extension",
-              "kind": "presmium.mdast",
-              "schemaVersion": 1,
-              "data": {
-                "node": {
-                  "type": "presmiumRole",
-                  "plugin": "presmium.lecture",
-                  "name": "cue",
-                  "options": {
-                    "value": "pause 300ms"
-                  },
-                  "children": []
-                }
-              },
-              "fallback": ""
+              "text": "第五步，5 越过 1 和 3 停在末尾，这一趟冒泡结束；结尾前的 "
             },
             {
               "type": "text",
-              "text": " 停在最后，这一趟结束。"
+              "text": "pause",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 标记让讲解停顿 0.3 秒。"
             }
           ]
         }
@@ -1611,7 +1530,7 @@
       "content": [
         {
           "type": "text",
-          "text": "每一节用同一个场景：一排圆点，每一步亮起一个，所以看画面就知道走到了第几步。在放映视图中逐步前进，演讲者窗口显示每一步对应的讲解；给文稿加上 lecture 渲染端与语音后构建，dist/lecture/script/track.json 列出每一步开始的时刻。"
+          "text": "每一节都用同一个场景：一排圆点，每一步亮起一个。看亮到第几个点，就知道走到了第几步。"
         }
       ]
     },
@@ -1620,7 +1539,7 @@
       "content": [
         {
           "type": "text",
-          "text": "第一步，第一个点亮起。讲解的第一个字一出来，这一步的动画就开始演。"
+          "text": "第一步，第一个点亮起。讲解一开口，这一步的动画就开始播放。"
         }
       ]
     },
@@ -1629,7 +1548,7 @@
       "content": [
         {
           "type": "text",
-          "text": "第二步，第二个点。块后面的第二段讲解属于第二步。"
+          "text": "第二步，第二段讲解开始，第二个点跟着亮起。"
         }
       ]
     },
@@ -1638,7 +1557,7 @@
       "content": [
         {
           "type": "text",
-          "text": "第三步，第三个点。讲解比动画长，动画演完就停在那里等着。"
+          "text": "第三步，第三个点亮起。这段讲解比动画长，动画播完就停住，等讲解说完。"
         }
       ]
     },
@@ -1647,7 +1566,7 @@
       "content": [
         {
           "type": "text",
-          "text": "第一个点。"
+          "text": "第一步，第一个点亮起。"
         }
       ]
     },
@@ -1656,7 +1575,7 @@
       "content": [
         {
           "type": "text",
-          "text": "第二个点。下一步没有讲解，只停到动画演完。"
+          "text": "第二步，第二个点亮起。下一步没有讲解，动画播完就继续。"
         }
       ]
     },
@@ -1665,7 +1584,7 @@
       "content": [
         {
           "type": "text",
-          "text": "第一个点。"
+          "text": "第一步，第一个点亮起。"
         }
       ]
     },
@@ -1674,7 +1593,7 @@
       "content": [
         {
           "type": "text",
-          "text": "第二个点。"
+          "text": "第二步，第二个点亮起。"
         }
       ]
     },
@@ -1683,7 +1602,7 @@
       "content": [
         {
           "type": "text",
-          "text": "这一段已经超出了步数，也算在最后一步，画面不再变化。"
+          "text": "这一段也属于第二步，画面不再变化。"
         }
       ]
     },
@@ -1710,7 +1629,7 @@
       "content": [
         {
           "type": "text",
-          "text": "先看第一个点，"
+          "text": "先看第一个点。"
         },
         {
           "id": "cue-cue-next-1",
@@ -1719,7 +1638,7 @@
         },
         {
           "type": "text",
-          "text": " 说到这里第二个亮起，"
+          "text": "说到这里，第二个点亮起。"
         },
         {
           "id": "cue-cue-next-3",
@@ -1728,7 +1647,7 @@
         },
         {
           "type": "text",
-          "text": " 说到这里第三个也亮了。"
+          "text": "说到这里，第三个也亮了。"
         }
       ]
     },
@@ -1737,7 +1656,7 @@
       "content": [
         {
           "type": "text",
-          "text": "马上 "
+          "text": "马上"
         },
         {
           "id": "cue-early-1",
@@ -1746,7 +1665,7 @@
         },
         {
           "type": "text",
-          "text": " 推进，构建会在这一段给出警告。"
+          "text": "推进，构建会对这一段给出警告。"
         }
       ]
     },
@@ -1800,7 +1719,7 @@
         },
         {
           "type": "text",
-          "text": " 停一秒再说下半句。"
+          "text": "停一秒，再说下半句。"
         }
       ]
     },
@@ -1830,7 +1749,7 @@
       "content": [
         {
           "type": "text",
-          "text": "代码和场景放在同一节：场景占五步，讲解逐段对应，提示标记指向代码。先看这五个数。"
+          "text": "代码和场景放在同一节，场景占五步，每步一段讲解。先看这五个数。"
         }
       ]
     },

@@ -1,0 +1,193 @@
+{
+  "key": "c7a93010f72689851496a44eaa350aed",
+  "audio": "c7a93010f72689851496a44eaa350aed.ogg",
+  "mime": "audio/ogg",
+  "duration": 10.4,
+  "words": [
+    {
+      "text": "这",
+      "start": 0.1,
+      "end": 0.3
+    },
+    {
+      "text": "份",
+      "start": 0.3,
+      "end": 0.4625
+    },
+    {
+      "text": "文稿",
+      "start": 0.475,
+      "end": 0.85
+    },
+    {
+      "text": "里",
+      "start": 0.85,
+      "end": 0.9625
+    },
+    {
+      "text": "的",
+      "start": 0.9625,
+      "end": 1.05
+    },
+    {
+      "text": "动画",
+      "start": 1.0625,
+      "end": 1.5875
+    },
+    {
+      "text": "都",
+      "start": 1.6875,
+      "end": 1.85
+    },
+    {
+      "text": "是",
+      "start": 1.85,
+      "end": 1.9625
+    },
+    {
+      "text": "代码",
+      "start": 1.975,
+      "end": 2.3125
+    },
+    {
+      "text": "写",
+      "start": 2.325,
+      "end": 2.5875
+    },
+    {
+      "text": "的",
+      "start": 2.5875,
+      "end": 2.7875
+    },
+    {
+      "text": "用",
+      "start": 3.125,
+      "end": 3.2875
+    },
+    {
+      "text": "了",
+      "start": 3.2875,
+      "end": 3.3875
+    },
+    {
+      "text": "五",
+      "start": 3.4,
+      "end": 3.55
+    },
+    {
+      "text": "个",
+      "start": 3.55,
+      "end": 3.6625
+    },
+    {
+      "text": "库",
+      "start": 3.6625,
+      "end": 3.975
+    },
+    {
+      "text": "都",
+      "start": 4.1625,
+      "end": 4.3375
+    },
+    {
+      "text": "跟着",
+      "start": 4.3375,
+      "end": 4.5875
+    },
+    {
+      "text": "讲授",
+      "start": 4.6125,
+      "end": 4.975
+    },
+    {
+      "text": "的",
+      "start": 4.975,
+      "end": 5.0625
+    },
+    {
+      "text": "步骤",
+      "start": 5.075,
+      "end": 5.4375
+    },
+    {
+      "text": "走",
+      "start": 5.4375,
+      "end": 5.725
+    },
+    {
+      "text": "最后",
+      "start": 6.2875,
+      "end": 6.8
+    },
+    {
+      "text": "整份",
+      "start": 7.075,
+      "end": 7.45
+    },
+    {
+      "text": "讲授",
+      "start": 7.4625,
+      "end": 7.875
+    },
+    {
+      "text": "一",
+      "start": 7.9,
+      "end": 8.0375
+    },
+    {
+      "text": "帧",
+      "start": 8.0375,
+      "end": 8.2125
+    },
+    {
+      "text": "一",
+      "start": 8.225,
+      "end": 8.3875
+    },
+    {
+      "text": "帧",
+      "start": 8.3875,
+      "end": 8.675
+    },
+    {
+      "text": "导",
+      "start": 8.7625,
+      "end": 8.9625
+    },
+    {
+      "text": "出成",
+      "start": 8.9625,
+      "end": 9.2875
+    },
+    {
+      "text": "视频",
+      "start": 9.3,
+      "end": 9.85
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "这份文稿里的动画都是代码写的，用了五个库，都跟着讲授的步骤走。最后，整份讲授一帧一帧导出成视频。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "c7a93010f72689851496a44eaa350aed",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "498a5263ad570d25e5903cb9ad02759f4fb676a909b66d02a569616b15524407",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "56d5b78d505e5dbb669fa976df0383b1",
+  "request": {
+    "spoken": "这份文稿里的动画都是代码写的，用了五个库，都跟着讲授的步骤走。最后，整份讲授一帧一帧导出成视频。",
+    "rate": 1,
+    "style": ""
+  }
+}

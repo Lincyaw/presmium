@@ -1,0 +1,138 @@
+{
+  "key": "baf343a94b8edb9533d4061e623e137a",
+  "audio": "baf343a94b8edb9533d4061e623e137a.ogg",
+  "mime": "audio/ogg",
+  "duration": 7.4,
+  "words": [
+    {
+      "text": "每",
+      "start": 0.1,
+      "end": 0.3
+    },
+    {
+      "text": "一",
+      "start": 0.3,
+      "end": 0.4125
+    },
+    {
+      "text": "帧",
+      "start": 0.4125,
+      "end": 0.5875
+    },
+    {
+      "text": "的",
+      "start": 0.5875,
+      "end": 0.6875
+    },
+    {
+      "text": "画面",
+      "start": 0.7,
+      "end": 1.2125
+    },
+    {
+      "text": "只",
+      "start": 1.3125,
+      "end": 1.45
+    },
+    {
+      "text": "由",
+      "start": 1.45,
+      "end": 1.5875
+    },
+    {
+      "text": "帧号",
+      "start": 1.6125,
+      "end": 2.0125
+    },
+    {
+      "text": "决定",
+      "start": 2.025,
+      "end": 2.45
+    },
+    {
+      "text": "所以",
+      "start": 3.025,
+      "end": 3.5875
+    },
+    {
+      "text": "导出",
+      "start": 3.6875,
+      "end": 4
+    },
+    {
+      "text": "视频",
+      "start": 4.0125,
+      "end": 4.3875
+    },
+    {
+      "text": "的",
+      "start": 4.3875,
+      "end": 4.475
+    },
+    {
+      "text": "时候",
+      "start": 4.4875,
+      "end": 4.9625
+    },
+    {
+      "text": "每",
+      "start": 5.2,
+      "end": 5.375
+    },
+    {
+      "text": "一",
+      "start": 5.375,
+      "end": 5.5
+    },
+    {
+      "text": "帧",
+      "start": 5.5,
+      "end": 5.675
+    },
+    {
+      "text": "都",
+      "start": 5.7,
+      "end": 5.825
+    },
+    {
+      "text": "能",
+      "start": 5.825,
+      "end": 5.9625
+    },
+    {
+      "text": "准确",
+      "start": 5.9875,
+      "end": 6.325
+    },
+    {
+      "text": "重现",
+      "start": 6.3375,
+      "end": 6.8625
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "每一帧的画面只由帧号决定。所以导出视频的时候，每一帧都能准确重现。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "baf343a94b8edb9533d4061e623e137a",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "d4292c84ff3a92509512943836402b294ebe6ef6b433c2002247b70cc5ca5850",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "da87222066791212b24dd3c9b02a0138",
+  "request": {
+    "spoken": "每一帧的画面只由帧号决定。所以导出视频的时候，每一帧都能准确重现。",
+    "rate": 1,
+    "style": ""
+  }
+}

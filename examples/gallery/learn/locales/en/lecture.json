@@ -28,7 +28,7 @@
     },
     "translationOf": {
       "entry": "../../lecture.json",
-      "digest": "c377e92775dd38bff503defb073b959c810e27142714780b82fffd48ff90a5b6"
+      "digest": "fc9e385c823bae000a5b45855a55dde54c46ab9b7232f99279f50e69d48709e1"
     }
   },
   "sectionOrder": [
@@ -43,7 +43,10 @@
       "title": "How can turning circles draw a musical note?",
       "level": 1,
       "children": [
-        "question-body"
+        "question-body",
+        "question-keywords",
+        "question-equation",
+        "question-terms"
       ],
       "stepOrder": [
         "question-step"
@@ -54,7 +57,7 @@
     },
     "circles": {
       "id": "circles",
-      "title": "One circle, then another",
+      "title": "One circle draws no corner; two can",
       "level": 2,
       "children": [
         "circles-body",
@@ -101,9 +104,10 @@
     },
     "try": {
       "id": "try",
-      "title": "Another shape: a star",
+      "title": "A star: two circles already give five corners",
       "level": 2,
       "children": [
+        "try-keywords",
         "try-body",
         "try-scene",
         "code-body",
@@ -137,25 +141,13 @@
           "children": [
             {
               "type": "text",
-              "text": "A circle is the smoothest shape there is, without a single corner. Yet chain a few turning circles end to end, and a pen on the last one can draw a musical note with sharp corners. This lesson answers: how many circles, how large, and how fast?"
-            }
-          ]
-        },
-        {
-          "id": "series-equation",
-          "type": "math",
-          "value": "z(t)=c_0+\\sum_{n\\ne 0} c_n e^{\\,int},\\qquad 0\\le t<2\\pi"
-        },
-        {
-          "id": "question-reading",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "Read each point of the plane as a complex number z = x + iy. Each term cₙeⁱⁿᵗ is a circle: its radius is |cₙ|, it turns n times while the pen goes round once, and the sign of n sets the direction."
+              "text": "A circle has no corners, yet chain a few turning circles end to end and a pen on the last one draws a musical note with sharp corners. The outline's Fourier coefficients give each circle its radius, speed and starting angle. As circles are added from the largest down, the pen's curve comes ever closer to the outline, leaving only ripples at the corners that never vanish completely."
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "circles-body": {
@@ -168,7 +160,7 @@
           "children": [
             {
               "type": "text",
-              "text": "One circle can only draw a circle. Put a smaller circle on its rim, turning twice the other way, and the pen's curve is bent into three corners."
+              "text": "One circle can only draw a circle. Put a circle of radius 0.36 on its rim, turning twice the other way while the large one turns once, and the pen's curve gains three rounded corners. The curve is:"
             }
           ]
         },
@@ -198,7 +190,7 @@
           "children": [
             {
               "type": "text",
-              "text": "First take 1024 evenly spaced points along the outline of the note, then compute each circle's radius and starting angle with the discrete Fourier transform. The figure keeps only the N largest circles, chained by size. The dashed line is the target outline; on the right is the error: the root mean square distance between each point and the pen, relative to the size of the outline."
+              "text": "The discrete Fourier transform gives each circle's radius and starting angle. Take M = 1024 evenly spaced points zₖ along the outline of the note, then compute each coefficient cₙ with the formula below. The figure keeps only the N largest circles, chained from the largest down. The dashed line is the target outline; the error on the right is the root mean square distance between each point and the pen, relative to the size of the outline."
             }
           ]
         },
@@ -213,7 +205,7 @@
           "children": [
             {
               "type": "text",
-              "text": "Watch the corners: with few circles the curve overshoots each corner and swings back, leaving small ripples. With more circles the ripples hug the corner more closely, but they never vanish completely."
+              "text": "The error falls quickly with the number of circles: about 64% with 1 circle, about 8% with 8, about 1% with 32 and under 0.5% with 64. Corners are the hardest part: with few circles the curve overshoots each corner and swings back, leaving ripples. With more circles the ripples hug the corner more closely, but they never vanish completely."
             }
           ]
         }
@@ -249,7 +241,7 @@
           "children": [
             {
               "type": "text",
-              "text": "Predict first: a star has ten sharp corners and ten straight edges. How many circles does it take to draw one?"
+              "text": "A star has ten sharp corners and ten straight edges. With only two circles the curve already has five corners; four circles sharpen the points and straighten the edges; at sixteen the edges are straight and only the corners are slightly round; at sixty-four it is almost indistinguishable from the star. Two circles give five corners because of symmetry: a star looks the same after a fifth of a turn, so only circles whose n leaves a remainder of 1 when divided by 5 are non-zero."
             }
           ]
         }
@@ -282,7 +274,7 @@
           "children": [
             {
               "type": "text",
-              "text": "This is the function the lesson uses to compute the coefficients. Give it other points and it draws another outline."
+              "text": "This is the function series that computes the lesson's coefficients: it takes a loop of evenly spaced points on an outline and returns the first circle's centre c₀ and the other circles, largest radius first. Give it other points and it draws another outline."
             }
           ]
         }
@@ -313,7 +305,7 @@
           "children": [
             {
               "type": "text",
-              "text": "A star looks the same after a fifth of a turn, so only circles whose n leaves a remainder of 1 when divided by 5 are non-zero, and two circles already give five corners. Change the shape in epicycles.ts, predict how many circles it needs, then check."
+              "text": "Any closed outline can be broken into a chain of turning circles this way: the Fourier coefficients give each circle its size, speed and starting angle, and the more circles, the closer the curve comes to the outline, while the ripples at the corners only get shorter. Change the shape in epicycles.ts, predict from its symmetry how many circles it needs, then check."
             }
           ]
         },
@@ -337,6 +329,86 @@
       "only": [
         "web"
       ]
+    },
+    "question-equation": {
+      "id": "question-equation",
+      "type": "text",
+      "content": [
+        {
+          "id": "series-equation",
+          "type": "math",
+          "value": "z(t)=c_0+\\sum_{n\\ne 0} c_n e^{\\,int},\\qquad 0\\le t<2\\pi"
+        }
+      ]
+    },
+    "question-terms": {
+      "id": "question-terms",
+      "type": "text",
+      "content": [
+        {
+          "id": "question-reading",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The formula reads each point of the plane as a complex number z = x + iy. Each term cₙeⁱⁿᵗ is a circle: its radius is |cₙ|, it turns n times while the pen goes round once, and the sign of n sets the direction; c₀ is the centre of the first circle."
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "question-keywords": {
+      "id": "question-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "question-keywords--draw",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Turning circles → a note with corners"
+            }
+          ]
+        },
+        {
+          "id": "question-keywords--coefficients",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Radius, speed, starting angle: Fourier coefficients"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "try-keywords": {
+      "id": "try-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "try-keywords--claim",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "More circles, a closer shape; ripples stay at the corners"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
     }
   },
   "steps": {
@@ -347,6 +419,18 @@
       "visuals": [
         {
           "blockId": "question-body",
+          "visible": true
+        },
+        {
+          "blockId": "question-keywords",
+          "visible": true
+        },
+        {
+          "blockId": "question-equation",
+          "visible": true
+        },
+        {
+          "blockId": "question-terms",
           "visible": true
         }
       ],
@@ -531,6 +615,10 @@
       "title": "Star, 2 circles",
       "visuals": [
         {
+          "blockId": "try-keywords",
+          "visible": true
+        },
+        {
           "blockId": "try-body",
           "visible": true
         },
@@ -561,6 +649,10 @@
       "sectionId": "try",
       "title": "Star, 4 circles",
       "visuals": [
+        {
+          "blockId": "try-keywords",
+          "visible": true
+        },
         {
           "blockId": "try-body",
           "visible": true
@@ -593,6 +685,10 @@
       "title": "Star, 16 circles",
       "visuals": [
         {
+          "blockId": "try-keywords",
+          "visible": true
+        },
+        {
           "blockId": "try-body",
           "visible": true
         },
@@ -623,6 +719,10 @@
       "sectionId": "try",
       "title": "Star, 64 circles",
       "visuals": [
+        {
+          "blockId": "try-keywords",
+          "visible": true
+        },
         {
           "blockId": "try-body",
           "visible": true
@@ -656,7 +756,7 @@
       "content": [
         {
           "type": "text",
-          "text": "A circle has no corners. Yet chain turning circles end to end, and they draw a shape with sharp corners. Let's see how many circles it takes."
+          "text": "A circle has no corners. Yet chain turning circles end to end, and they draw a note with sharp corners. Fourier coefficients decide how large each circle is and how fast it turns."
         }
       ]
     },
@@ -674,7 +774,7 @@
       "content": [
         {
           "type": "text",
-          "text": "Put a smaller circle on its rim, turning twice the other way. The pen's path bends, and three rounded corners appear."
+          "text": "Put a smaller circle on its rim. While the big one turns once, it turns twice the other way. The pen's path bends, and three rounded corners appear."
         }
       ]
     },
@@ -683,7 +783,7 @@
       "content": [
         {
           "type": "text",
-          "text": "Now take a musical note. With only the largest circle, all we get is a circle, about sixty-four percent off."
+          "text": "Now take a musical note. The discrete Fourier transform sizes the circles. With only the largest one, we still get a circle, about sixty-four percent off."
         }
       ]
     },
@@ -719,7 +819,7 @@
       "content": [
         {
           "type": "text",
-          "text": "Sixteen circles straighten the stem. Look at the corners: the curve overshoots and swings back."
+          "text": "Sixteen circles straighten the stem. But near the corners, the curve overshoots and swings back."
         }
       ]
     },
@@ -746,7 +846,7 @@
       "content": [
         {
           "type": "text",
-          "text": "Now a star. Guess how many circles it needs. With just two, it already has five corners."
+          "text": "Now a star. How many circles will it need? With just two, it already has five corners, because a star repeats itself every fifth of a turn."
         }
       ]
     },
@@ -773,7 +873,7 @@
       "content": [
         {
           "type": "text",
-          "text": "Sixty-four circles, and you can hardly tell it from the star. Pick another shape and try it yourself."
+          "text": "Sixty-four circles, and you can hardly tell it from the star. Any closed outline can be broken into turning circles like this."
         }
       ]
     }

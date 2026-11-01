@@ -41,7 +41,8 @@
       "title": "开始之前",
       "level": 1,
       "children": [
-        "text-1"
+        "text-1",
+        "start-keys"
       ],
       "stepOrder": [
         "start-step"
@@ -56,7 +57,8 @@
       "level": 2,
       "children": [
         "text-4",
-        "production-counter"
+        "production-counter",
+        "script-keys"
       ],
       "stepOrder": [
         "script-step"
@@ -71,7 +73,8 @@
       "level": 2,
       "children": [
         "timing-instructions",
-        "timing-scene"
+        "timing-scene",
+        "timing-keys"
       ],
       "stepOrder": [
         "timing-during",
@@ -86,7 +89,8 @@
       "title": "在时间线上预览",
       "level": 2,
       "children": [
-        "timeline-practice"
+        "timeline-practice",
+        "timeline-keys"
       ],
       "stepOrder": [
         "timeline-step"
@@ -100,7 +104,8 @@
       "title": "做一份静音讲授",
       "level": 2,
       "children": [
-        "silent-practice"
+        "silent-practice",
+        "silent-keys"
       ],
       "stepOrder": [
         "silent-step"
@@ -114,7 +119,8 @@
       "title": "选择音色，生成配音",
       "level": 2,
       "children": [
-        "text-6"
+        "text-6",
+        "voices-keys"
       ],
       "stepOrder": [
         "voices-step"
@@ -129,7 +135,8 @@
       "level": 2,
       "children": [
         "text-13",
-        "recording-more"
+        "recording-more",
+        "recording-keys"
       ],
       "stepOrder": [
         "recording-step"
@@ -143,7 +150,8 @@
       "title": "加入音频片段",
       "level": 2,
       "children": [
-        "text-16"
+        "text-16",
+        "media-editing-keys"
       ],
       "stepOrder": [
         "media-editing-step"
@@ -157,7 +165,8 @@
       "title": "导出视频",
       "level": 1,
       "children": [
-        "text-19"
+        "text-19",
+        "deliver-keys"
       ],
       "stepOrder": [
         "deliver-step"
@@ -171,7 +180,8 @@
       "title": "讲稿",
       "level": 1,
       "children": [
-        "g-script-intro"
+        "g-script-intro",
+        "g-script-keys"
       ],
       "stepOrder": [
         "g-script-step"
@@ -185,7 +195,8 @@
       "title": "预览",
       "level": 1,
       "children": [
-        "g-preview-intro"
+        "g-preview-intro",
+        "g-preview-keys"
       ],
       "stepOrder": [
         "g-preview-step"
@@ -199,7 +210,8 @@
       "title": "配音",
       "level": 1,
       "children": [
-        "g-voice-intro"
+        "g-voice-intro",
+        "g-voice-keys"
       ],
       "stepOrder": [
         "g-voice-step"
@@ -220,10 +232,14 @@
           "children": [
             {
               "type": "text",
-              "text": "本教程默认静音，打开时不调用语音服务。涉及声音的步骤使用“冒泡排序”附带的配音。"
+              "text": "讲授视频由讲稿驱动：每一步的讲稿决定念什么、何时触发动作、在哪里停顿；配音可以来自 AI 合成、自己的录音，也可以静音，只放字幕。本教程依次练习这些操作，最后导出带字幕的视频。教程本身是静音的，打开时不调用语音服务；需要听声音的练习使用“冒泡排序”附带的配音。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "production-counter": {
@@ -245,10 +261,14 @@
           "children": [
             {
               "type": "text",
-              "text": "本步讲稿包含三种标记：读音（SQL 读作 sequel）、触发下方计数器“加一次”的动作，以及一次停顿。点击工具栏中的“字幕”，可在讲稿栏中查看与编辑。"
+              "text": "本步的讲稿带有三种标记。读音标记让字幕显示“SQL”，配音读作“sequel”；动作标记在配音念到它时，让下方的计数器加一次；停顿标记让配音在该处停 240 毫秒。点击工具栏中的“字幕”，可以在讲稿栏中查看和编辑这些标记。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "timing-scene": {
@@ -294,7 +314,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "在“视频制作”中点击“选择音色”，选定音色及其应用范围（本步、本页或整份文稿）。"
+                      "text": "在“视频制作”中点击“选择音色”，选定音色及其应用范围：本步、本页或整份文稿。"
                     }
                   ]
                 }
@@ -310,7 +330,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "点击“播放”：缺失的配音将自动生成并缓存，随后继续播放。"
+                      "text": "点击“播放”：缺少的配音会自动生成并缓存，然后继续播放。"
                     }
                   ]
                 }
@@ -326,7 +346,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "如需一次性准备全部配音，点击“生成配音”。修改过的讲稿将标记为需要更新。"
+                      "text": "要一次准备好全部配音，点击“生成配音”。讲稿改过的步骤会标记为需要更新。"
                     }
                   ]
                 }
@@ -334,6 +354,10 @@
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-13": {
@@ -371,7 +395,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "录制完成后点击“停止录音”，试听后点击“保存为音频素材”。"
+                      "text": "录完后点击“停止录音”，试听后点击“保存为音频素材”。"
                     }
                   ]
                 }
@@ -387,7 +411,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "选中该录音，点击“采用为本步配音”。"
+                      "text": "选中这段录音，点击“采用为本步配音”。"
                     }
                   ]
                 }
@@ -395,6 +419,10 @@
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-16": {
@@ -407,10 +435,14 @@
           "children": [
             {
               "type": "text",
-              "text": "在“音频片段”中导入本地音频，设置入点、出点、延后与音量，再点击“采用到本步”。片段与讲稿配音同时播放，原文件保持不变。"
+              "text": "音频片段与讲稿的配音同时播放。在“音频片段”中导入本地音频，设置入点、出点、延后与音量，再点击“采用到本步”。片段只记录取用的时间范围，原文件保持不变。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-19": {
@@ -423,10 +455,14 @@
           "children": [
             {
               "type": "text",
-              "text": "配音或静音设置完成后，在“视频制作”中点击“导出”，选择“导出视频”，即可得到带字幕的讲授视频。"
+              "text": "配音或静音设置完成后，在“视频制作”中点击“导出”，选择“导出视频”，得到带字幕的讲授视频。视频里的声音、字幕与动作都来自每一步的讲稿：讲稿改过之后，重新生成配音再导出，视频随之更新。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "timing-instructions": {
@@ -439,10 +475,14 @@
           "children": [
             {
               "type": "text",
-              "text": "第一步的讲稿与动画同时开始，第二步在动画结束后开始。可在讲稿栏的“播放时机”中切换“同步动画”与“动画后”。"
+              "text": "第一步的讲稿与动画同时开始，第二步的讲稿等动画结束后才开始。在讲稿栏的“播放时机”中，可以在“同步动画”与“动画后”之间切换：讲解正在发生的变化时选同步动画，评论变化的结果时选动画后。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "timeline-practice": {
@@ -480,7 +520,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "底部时间线包含画面、配音与字幕三条轨道，配音轨显示音频波形。"
+                      "text": "底部的时间线有画面、配音与字幕三条轨道，配音轨显示音频波形。"
                     }
                   ]
                 }
@@ -496,7 +536,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "点击时间线上的步骤可跳转，拖动播放头可定位。"
+                      "text": "点击时间线上的某一步即可跳到那里，拖动播放头可以精确定位。"
                     }
                   ]
                 }
@@ -512,7 +552,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "点击“播放”，再将“播放速度”设为 1.5 倍。"
+                      "text": "点击“播放”，再把“播放速度”设为 1.5 倍。"
                     }
                   ]
                 }
@@ -520,6 +560,10 @@
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "silent-practice": {
@@ -557,7 +601,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "进入“视频制作”，点击“选择音色”，将“声音来源”设为“静音”。"
+                      "text": "进入“视频制作”，点击“选择音色”，把“声音来源”设为“静音”。"
                     }
                   ]
                 }
@@ -573,7 +617,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "将最短停留设为 2000 毫秒，点击“播放”：字幕按时推进，无声音输出。"
+                      "text": "把最短停留设为 2000 毫秒，点击“播放”：字幕按时推进，没有声音。"
                     }
                   ]
                 }
@@ -581,6 +625,10 @@
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "recording-more": {
@@ -593,10 +641,14 @@
           "children": [
             {
               "type": "text",
-              "text": "也可导入已有音频。配置转写服务后，可将录音转写为文字，“采用讲稿”后再改用 AI 配音。"
+              "text": "也可以导入已有的音频。配置转写服务后，录音可以转写成文字，点击“采用讲稿”把它用作本步的讲稿，之后还可以改用 AI 配音。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "g-script-intro": {
@@ -609,10 +661,14 @@
           "children": [
             {
               "type": "text",
-              "text": "讲稿中的标记与播放时机。"
+              "text": "讲稿除了文字，还可以带三种标记：读音、动作与停顿。每一步还要决定讲稿与动画同时开始，还是等动画结束再开始。接下来两页分别练习。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "g-preview-intro": {
@@ -625,10 +681,14 @@
           "children": [
             {
               "type": "text",
-              "text": "在时间线上预览讲授，并制作静音讲授。"
+              "text": "导出之前，先在时间线上预览整份讲授：画面、配音与字幕按步骤排在一起。还没有配音时，可以先做一份静音讲授，只让字幕按时推进。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "g-voice-intro": {
@@ -641,10 +701,394 @@
           "children": [
             {
               "type": "text",
-              "text": "AI 配音、录音与音频片段。"
+              "text": "讲授的声音有三种来源：AI 合成的配音、自己的录音，以及与配音同时播放的音频片段。接下来三页分别练习。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "start-keys": {
+      "id": "start-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "start-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲稿 → 配音（AI · 录音 · 静音）→ 带字幕的视频"
+            }
+          ]
+        },
+        {
+          "id": "start-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本教程静音，不调用语音服务"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "g-script-keys": {
+      "id": "g-script-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-script-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "标记：读音 · 动作 · 停顿"
+            }
+          ]
+        },
+        {
+          "id": "g-script-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "时机：随动画 · 动画后"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "script-keys": {
+      "id": "script-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "script-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "读音：SQL → sequel"
+            }
+          ]
+        },
+        {
+          "id": "script-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "动作：计数器加一"
+            }
+          ]
+        },
+        {
+          "id": "script-key-3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "停顿：240 毫秒"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "timing-keys": {
+      "id": "timing-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "timing-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一步：随动画开始讲"
+            }
+          ]
+        },
+        {
+          "id": "timing-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步：动画结束后再讲"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "g-preview-keys": {
+      "id": "g-preview-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-preview-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "时间线预览 · 静音讲授"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "timeline-keys": {
+      "id": "timeline-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "timeline-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "三条轨道：画面 · 配音 · 字幕"
+            }
+          ]
+        },
+        {
+          "id": "timeline-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "点击步骤跳转 · 拖动播放头定位"
+            }
+          ]
+        },
+        {
+          "id": "timeline-key-3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "播放速度 1.5 倍"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "silent-keys": {
+      "id": "silent-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "silent-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "声音来源：静音"
+            }
+          ]
+        },
+        {
+          "id": "silent-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每步至少停留 2000 毫秒"
+            }
+          ]
+        },
+        {
+          "id": "silent-key-3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "字幕按时推进"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "g-voice-keys": {
+      "id": "g-voice-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-voice-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "AI 配音 · 录音 · 音频片段"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "voices-keys": {
+      "id": "voices-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "voices-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "设置 → 语音服务密钥"
+            }
+          ]
+        },
+        {
+          "id": "voices-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "音色范围：本步 · 本页 · 整份文稿"
+            }
+          ]
+        },
+        {
+          "id": "voices-key-3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "缺少的配音：播放时自动生成"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "recording-keys": {
+      "id": "recording-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "recording-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "开始录音 → 停止录音 → 保存为音频素材 → 采用为本步配音"
+            }
+          ]
+        },
+        {
+          "id": "recording-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "转写 → 采用讲稿"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "media-editing-keys": {
+      "id": "media-editing-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "media-editing-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "入点 · 出点 · 延后 · 音量"
+            }
+          ]
+        },
+        {
+          "id": "media-editing-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "与配音同时播放，原文件不变"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "deliver-keys": {
+      "id": "deliver-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "deliver-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "视频制作 → 导出 → 导出视频"
+            }
+          ]
+        },
+        {
+          "id": "deliver-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "讲稿 → 声音 · 字幕 · 动作"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
       ]
     }
   },
@@ -656,9 +1100,15 @@
         {
           "blockId": "text-1",
           "visible": true
+        },
+        {
+          "blockId": "start-keys",
+          "visible": true
         }
       ],
-      "narrationIds": []
+      "narrationIds": [
+        "start-narration"
+      ]
     },
     "script-step": {
       "id": "script-step",
@@ -670,6 +1120,10 @@
         },
         {
           "blockId": "production-counter",
+          "visible": true
+        },
+        {
+          "blockId": "script-keys",
           "visible": true
         }
       ],
@@ -692,6 +1146,10 @@
         {
           "blockId": "timing-instructions",
           "visible": true
+        },
+        {
+          "blockId": "timing-keys",
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -713,6 +1171,10 @@
         {
           "blockId": "timing-instructions",
           "visible": true
+        },
+        {
+          "blockId": "timing-keys",
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -726,9 +1188,15 @@
         {
           "blockId": "text-6",
           "visible": true
+        },
+        {
+          "blockId": "voices-keys",
+          "visible": true
         }
       ],
-      "narrationIds": []
+      "narrationIds": [
+        "voices-narration"
+      ]
     },
     "recording-step": {
       "id": "recording-step",
@@ -741,9 +1209,15 @@
         {
           "blockId": "recording-more",
           "visible": true
+        },
+        {
+          "blockId": "recording-keys",
+          "visible": true
         }
       ],
-      "narrationIds": []
+      "narrationIds": [
+        "recording-narration"
+      ]
     },
     "media-editing-step": {
       "id": "media-editing-step",
@@ -752,9 +1226,15 @@
         {
           "blockId": "text-16",
           "visible": true
+        },
+        {
+          "blockId": "media-editing-keys",
+          "visible": true
         }
       ],
-      "narrationIds": []
+      "narrationIds": [
+        "media-editing-narration"
+      ]
     },
     "deliver-step": {
       "id": "deliver-step",
@@ -763,9 +1243,15 @@
         {
           "blockId": "text-19",
           "visible": true
+        },
+        {
+          "blockId": "deliver-keys",
+          "visible": true
         }
       ],
-      "narrationIds": []
+      "narrationIds": [
+        "deliver-narration"
+      ]
     },
     "timeline-step": {
       "id": "timeline-step",
@@ -774,9 +1260,15 @@
         {
           "blockId": "timeline-practice",
           "visible": true
+        },
+        {
+          "blockId": "timeline-keys",
+          "visible": true
         }
       ],
-      "narrationIds": []
+      "narrationIds": [
+        "timeline-narration"
+      ]
     },
     "silent-step": {
       "id": "silent-step",
@@ -785,9 +1277,15 @@
         {
           "blockId": "silent-practice",
           "visible": true
+        },
+        {
+          "blockId": "silent-keys",
+          "visible": true
         }
       ],
-      "narrationIds": []
+      "narrationIds": [
+        "silent-narration"
+      ]
     },
     "g-script-step": {
       "id": "g-script-step",
@@ -796,9 +1294,15 @@
         {
           "blockId": "g-script-intro",
           "visible": true
+        },
+        {
+          "blockId": "g-script-keys",
+          "visible": true
         }
       ],
-      "narrationIds": []
+      "narrationIds": [
+        "g-script-narration"
+      ]
     },
     "g-preview-step": {
       "id": "g-preview-step",
@@ -807,9 +1311,15 @@
         {
           "blockId": "g-preview-intro",
           "visible": true
+        },
+        {
+          "blockId": "g-preview-keys",
+          "visible": true
         }
       ],
-      "narrationIds": []
+      "narrationIds": [
+        "g-preview-narration"
+      ]
     },
     "g-voice-step": {
       "id": "g-voice-step",
@@ -818,9 +1328,15 @@
         {
           "blockId": "g-voice-intro",
           "visible": true
+        },
+        {
+          "blockId": "g-voice-keys",
+          "visible": true
         }
       ],
-      "narrationIds": []
+      "narrationIds": [
+        "g-voice-narration"
+      ]
     }
   },
   "narrations": {
@@ -829,7 +1345,7 @@
       "content": [
         {
           "type": "text",
-          "text": "这里展示 "
+          "text": "读音标记让 "
         },
         {
           "type": "pronunciation",
@@ -838,7 +1354,7 @@
         },
         {
           "type": "text",
-          "text": " 的读音标记。"
+          "text": " 按指定的读法念出来。"
         },
         {
           "id": "add-cue",
@@ -853,7 +1369,7 @@
         },
         {
           "type": "text",
-          "text": "计数器加一。"
+          "text": "动作标记一到，计数器就加一。"
         },
         {
           "id": "pause-cue",
@@ -862,7 +1378,7 @@
         },
         {
           "type": "text",
-          "text": "现在继续。"
+          "text": "停顿过后，配音接着往下念。"
         }
       ]
     },
@@ -871,7 +1387,7 @@
       "content": [
         {
           "type": "text",
-          "text": "这一段和动画同时开始。"
+          "text": "这一句和动画同时开始，适合讲解正在发生的变化。"
         }
       ]
     },
@@ -880,7 +1396,97 @@
       "content": [
         {
           "type": "text",
-          "text": "这一段在动画结束后开始。"
+          "text": "这一句等动画结束才开始，适合评论变化的结果。"
+        }
+      ]
+    },
+    "start-narration": {
+      "id": "start-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "讲授视频由讲稿驱动。讲稿决定念什么、何时触发动作、在哪里停。配音可以用 AI、用录音，也可以静音。"
+        }
+      ]
+    },
+    "g-script-narration": {
+      "id": "g-script-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "讲稿里可以加三种标记：读音、动作和停顿。每一步还要选，是跟动画一起讲，还是等动画放完再讲。"
+        }
+      ]
+    },
+    "g-preview-narration": {
+      "id": "g-preview-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "导出之前，先在时间线上把整份讲授看一遍。还没有配音，也可以先做静音版，只放字幕。"
+        }
+      ]
+    },
+    "timeline-narration": {
+      "id": "timeline-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "时间线把画面、配音和字幕排成三条轨道。点一下某一步就跳过去，拖动播放头可以细调位置。"
+        }
+      ]
+    },
+    "silent-narration": {
+      "id": "silent-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "静音讲授没有声音，只放字幕。每一步至少停两秒，字幕按时往下走。可以先排好节奏，再配音。"
+        }
+      ]
+    },
+    "g-voice-narration": {
+      "id": "g-voice-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "声音有三种来源：AI 配音，自己的录音，还有跟配音一起播放的音频片段。"
+        }
+      ]
+    },
+    "voices-narration": {
+      "id": "voices-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "AI 配音要先填语音服务的密钥。音色可以只用于一步、一页，或整份文稿。播放时缺少的配音会自动生成。"
+        }
+      ]
+    },
+    "recording-narration": {
+      "id": "recording-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "用自己的声音，就在原音频卡里录音，保存成素材，再采用为这一步的配音。录音还能转写成讲稿。"
+        }
+      ]
+    },
+    "media-editing-narration": {
+      "id": "media-editing-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "音频片段和配音同时播放。导入本地音频，截取一段，调好延后和音量，原文件不会被改动。"
+        }
+      ]
+    },
+    "deliver-narration": {
+      "id": "deliver-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "设置好配音或静音，就能导出带字幕的视频。声音、字幕和动作都来自讲稿；改了讲稿，重新配音再导出即可。"
         }
       ]
     }

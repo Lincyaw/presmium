@@ -1,0 +1,118 @@
+{
+  "key": "0fd6571d01eff550b56b5bd55324d282",
+  "audio": "0fd6571d01eff550b56b5bd55324d282.ogg",
+  "mime": "audio/ogg",
+  "duration": 6.24,
+  "words": [
+    {
+      "text": "视频",
+      "start": 0.1,
+      "end": 0.6875
+    },
+    {
+      "text": "也",
+      "start": 0.7125,
+      "end": 0.8625
+    },
+    {
+      "text": "出",
+      "start": 0.8625,
+      "end": 1.0375
+    },
+    {
+      "text": "自同",
+      "start": 1.05,
+      "end": 1.4375
+    },
+    {
+      "text": "一",
+      "start": 1.4625,
+      "end": 1.575
+    },
+    {
+      "text": "份",
+      "start": 1.575,
+      "end": 1.725
+    },
+    {
+      "text": "源文件",
+      "start": 1.7375,
+      "end": 2.4
+    },
+    {
+      "text": "你",
+      "start": 2.975,
+      "end": 3.1
+    },
+    {
+      "text": "现在",
+      "start": 3.1125,
+      "end": 3.475
+    },
+    {
+      "text": "听到",
+      "start": 3.4875,
+      "end": 3.8125
+    },
+    {
+      "text": "的",
+      "start": 3.8125,
+      "end": 3.9125
+    },
+    {
+      "text": "讲稿",
+      "start": 3.925,
+      "end": 4.45
+    },
+    {
+      "text": "就",
+      "start": 4.6625,
+      "end": 4.825
+    },
+    {
+      "text": "是",
+      "start": 4.825,
+      "end": 4.9375
+    },
+    {
+      "text": "它",
+      "start": 4.95,
+      "end": 5.1
+    },
+    {
+      "text": "的",
+      "start": 5.1,
+      "end": 5.2
+    },
+    {
+      "text": "脚本",
+      "start": 5.2125,
+      "end": 5.7
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "视频也出自同一份源文件。你现在听到的讲稿，就是它的脚本。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "0fd6571d01eff550b56b5bd55324d282",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "cc61b3872780ababe9d2e617aa2b652e8d0f58a3f0d44a66c610677187237658",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "1c61d1eff3b6329789741d0433fe78c3",
+  "request": {
+    "spoken": "视频也出自同一份源文件。你现在听到的讲稿，就是它的脚本。",
+    "rate": 1,
+    "style": ""
+  }
+}

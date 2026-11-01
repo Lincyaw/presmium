@@ -1,0 +1,108 @@
+{
+  "key": "5e632943f3f73f89a83ca35c96b0c1b6",
+  "audio": "5e632943f3f73f89a83ca35c96b0c1b6.ogg",
+  "mime": "audio/ogg",
+  "duration": 5.76,
+  "words": [
+    {
+      "text": "讲授",
+      "start": 0.1,
+      "end": 0.5375
+    },
+    {
+      "text": "的",
+      "start": 0.5375,
+      "end": 0.625
+    },
+    {
+      "text": "时候",
+      "start": 0.6375,
+      "end": 1.125
+    },
+    {
+      "text": "光标",
+      "start": 1.375,
+      "end": 1.85
+    },
+    {
+      "text": "会",
+      "start": 1.875,
+      "end": 2.0625
+    },
+    {
+      "text": "先",
+      "start": 2.0625,
+      "end": 2.2625
+    },
+    {
+      "text": "移到",
+      "start": 2.275,
+      "end": 2.5625
+    },
+    {
+      "text": "这个",
+      "start": 2.5875,
+      "end": 2.8
+    },
+    {
+      "text": "按钮",
+      "start": 2.8125,
+      "end": 3.175
+    },
+    {
+      "text": "上",
+      "start": 3.175,
+      "end": 3.475
+    },
+    {
+      "text": "等",
+      "start": 3.6875,
+      "end": 3.875
+    },
+    {
+      "text": "讲稿",
+      "start": 3.8875,
+      "end": 4.2875
+    },
+    {
+      "text": "念",
+      "start": 4.3125,
+      "end": 4.475
+    },
+    {
+      "text": "到",
+      "start": 4.475,
+      "end": 4.6
+    },
+    {
+      "text": "提示",
+      "start": 4.6125,
+      "end": 5.2125
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "讲授的时候，光标会先移到这个按钮上，等讲稿念到提示。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "5e632943f3f73f89a83ca35c96b0c1b6",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "5a6ed07814810c74c75853f11d231814ec32bccad5eaa858eeb219d098380897",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "b0e865790b0fd20b522631d69198715b",
+  "request": {
+    "spoken": "讲授的时候，光标会先移到这个按钮上，等讲稿念到提示。",
+    "rate": 1,
+    "style": ""
+  }
+}

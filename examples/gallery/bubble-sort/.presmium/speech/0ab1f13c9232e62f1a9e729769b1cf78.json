@@ -1,0 +1,88 @@
+{
+  "key": "0ab1f13c9232e62f1a9e729769b1cf78",
+  "audio": "0ab1f13c9232e62f1a9e729769b1cf78.ogg",
+  "mime": "audio/ogg",
+  "duration": 3.8,
+  "words": [
+    {
+      "text": "5",
+      "start": 0.1,
+      "end": 0.275
+    },
+    {
+      "text": "再",
+      "start": 0.275,
+      "end": 0.4625
+    },
+    {
+      "text": "和",
+      "start": 0.475,
+      "end": 0.6125
+    },
+    {
+      "text": "1",
+      "start": 0.625,
+      "end": 0.8
+    },
+    {
+      "text": "比",
+      "start": 0.8,
+      "end": 1.05
+    },
+    {
+      "text": "和",
+      "start": 1.275,
+      "end": 1.4125
+    },
+    {
+      "text": "3",
+      "start": 1.425,
+      "end": 1.7125
+    },
+    {
+      "text": "比",
+      "start": 1.7125,
+      "end": 1.9375
+    },
+    {
+      "text": "每次",
+      "start": 2.2,
+      "end": 2.6125
+    },
+    {
+      "text": "都",
+      "start": 2.625,
+      "end": 2.775
+    },
+    {
+      "text": "交换",
+      "start": 2.775,
+      "end": 3.2625
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "5 再和 1 比，和 3 比，每次都交换。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "0ab1f13c9232e62f1a9e729769b1cf78",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "fad97474751b824576f29f6e77e9b53bd9d5aa2e27561c42051b5e43920b3273",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "a0732e34e2d017bd2f025630b3773d89",
+  "request": {
+    "spoken": "5 再和 1 比，和 3 比，每次都交换。",
+    "rate": 1,
+    "style": ""
+  }
+}

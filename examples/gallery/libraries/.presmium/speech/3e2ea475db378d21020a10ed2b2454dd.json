@@ -1,0 +1,128 @@
+{
+  "key": "3e2ea475db378d21020a10ed2b2454dd",
+  "audio": "3e2ea475db378d21020a10ed2b2454dd.ogg",
+  "mime": "audio/ogg",
+  "duration": 9.16,
+  "words": [
+    {
+      "text": "先",
+      "start": 0.1,
+      "end": 0.3875
+    },
+    {
+      "text": "看",
+      "start": 0.3875,
+      "end": 0.7125
+    },
+    {
+      "text": "GSAP",
+      "start": 0.8125,
+      "end": 1.75
+    },
+    {
+      "text": "例子",
+      "start": 2.3125,
+      "end": 2.65
+    },
+    {
+      "text": "是",
+      "start": 2.6625,
+      "end": 2.825
+    },
+    {
+      "text": "字节",
+      "start": 2.85,
+      "end": 3.25
+    },
+    {
+      "text": "对",
+      "start": 3.275,
+      "end": 3.425
+    },
+    {
+      "text": "编码",
+      "start": 3.4375,
+      "end": 3.9375
+    },
+    {
+      "text": "三",
+      "start": 4.5125,
+      "end": 4.8125
+    },
+    {
+      "text": "个",
+      "start": 4.8125,
+      "end": 4.8875
+    },
+    {
+      "text": "词",
+      "start": 4.9,
+      "end": 5.1
+    },
+    {
+      "text": "low",
+      "start": 5.1,
+      "end": 5.3875
+    },
+    {
+      "text": "lower",
+      "start": 5.625,
+      "end": 6.0875
+    },
+    {
+      "text": "lowest",
+      "start": 6.3375,
+      "end": 6.875
+    },
+    {
+      "text": "先",
+      "start": 7.1625,
+      "end": 7.375
+    },
+    {
+      "text": "拆成",
+      "start": 7.375,
+      "end": 7.7125
+    },
+    {
+      "text": "一个",
+      "start": 7.7375,
+      "end": 7.9375
+    },
+    {
+      "text": "一个",
+      "start": 7.95,
+      "end": 8.15
+    },
+    {
+      "text": "字母",
+      "start": 8.1625,
+      "end": 8.625
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "先看 GSAP。例子是字节对编码。三个词 low、lower、lowest，先拆成一个一个字母。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "3e2ea475db378d21020a10ed2b2454dd",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "fa7bb9dbeccca1fb18c3f2b0e68374fb5fb9dfcd5d3f79d55f6b42749cb356c3",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "a719261d249be82080393f463b7b5553",
+  "request": {
+    "spoken": "先看 GSAP。例子是字节对编码。三个词 low、lower、lowest，先拆成一个一个字母。",
+    "rate": 1,
+    "style": ""
+  }
+}

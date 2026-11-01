@@ -1,0 +1,198 @@
+{
+  "key": "da4b81a2c84a8c04ce031144b3ee5647",
+  "audio": "da4b81a2c84a8c04ce031144b3ee5647.ogg",
+  "mime": "audio/ogg",
+  "duration": 11.5,
+  "words": [
+    {
+      "text": "讲稿",
+      "start": 0.1,
+      "end": 0.5
+    },
+    {
+      "text": "合成",
+      "start": 0.525,
+      "end": 0.85
+    },
+    {
+      "text": "语音",
+      "start": 0.8625,
+      "end": 1.1875
+    },
+    {
+      "text": "后",
+      "start": 1.1875,
+      "end": 1.475
+    },
+    {
+      "text": "字幕",
+      "start": 1.7625,
+      "end": 2.1
+    },
+    {
+      "text": "和",
+      "start": 2.125,
+      "end": 2.2375
+    },
+    {
+      "text": "提示",
+      "start": 2.25,
+      "end": 2.825
+    },
+    {
+      "text": "都",
+      "start": 2.925,
+      "end": 3.0625
+    },
+    {
+      "text": "排",
+      "start": 3.075,
+      "end": 3.2625
+    },
+    {
+      "text": "在",
+      "start": 3.2625,
+      "end": 3.4
+    },
+    {
+      "text": "同",
+      "start": 3.425,
+      "end": 3.6375
+    },
+    {
+      "text": "一条",
+      "start": 3.6375,
+      "end": 3.925
+    },
+    {
+      "text": "时间线",
+      "start": 3.95,
+      "end": 4.5125
+    },
+    {
+      "text": "上",
+      "start": 4.5125,
+      "end": 4.7875
+    },
+    {
+      "text": "导出",
+      "start": 5.35,
+      "end": 5.725
+    },
+    {
+      "text": "时",
+      "start": 5.725,
+      "end": 5.925
+    },
+    {
+      "text": "一",
+      "start": 5.95,
+      "end": 6.075
+    },
+    {
+      "text": "帧",
+      "start": 6.075,
+      "end": 6.25
+    },
+    {
+      "text": "一",
+      "start": 6.2625,
+      "end": 6.3875
+    },
+    {
+      "text": "帧",
+      "start": 6.3875,
+      "end": 6.5625
+    },
+    {
+      "text": "推进",
+      "start": 6.575,
+      "end": 7.0625
+    },
+    {
+      "text": "动画",
+      "start": 7.4,
+      "end": 7.9125
+    },
+    {
+      "text": "光标",
+      "start": 8.1,
+      "end": 8.475
+    },
+    {
+      "text": "和",
+      "start": 8.5,
+      "end": 8.625
+    },
+    {
+      "text": "点击",
+      "start": 8.6375,
+      "end": 9.1875
+    },
+    {
+      "text": "都",
+      "start": 9.2875,
+      "end": 9.4625
+    },
+    {
+      "text": "落在",
+      "start": 9.475,
+      "end": 9.7875
+    },
+    {
+      "text": "讲",
+      "start": 9.7875,
+      "end": 10
+    },
+    {
+      "text": "到",
+      "start": 10,
+      "end": 10.125
+    },
+    {
+      "text": "它",
+      "start": 10.1375,
+      "end": 10.275
+    },
+    {
+      "text": "的",
+      "start": 10.275,
+      "end": 10.35
+    },
+    {
+      "text": "那",
+      "start": 10.3625,
+      "end": 10.5375
+    },
+    {
+      "text": "一刻",
+      "start": 10.5375,
+      "end": 10.9625
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "讲稿合成语音后，字幕和提示都排在同一条时间线上。导出时一帧一帧推进，动画、光标和点击都落在讲到它的那一刻。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "da4b81a2c84a8c04ce031144b3ee5647",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "c02d60fa4d3b1a7eb076024ae53cb3ddb2910e3d8f1ab3bfce7f668f3fd0f7a2",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "fe741d2a8becf2b70cbdac7d48078285",
+  "request": {
+    "spoken": "讲稿合成语音后，字幕和提示都排在同一条时间线上。导出时一帧一帧推进，动画、光标和点击都落在讲到它的那一刻。",
+    "rate": 1,
+    "style": ""
+  }
+}

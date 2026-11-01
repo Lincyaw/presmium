@@ -1,0 +1,143 @@
+{
+  "key": "6114879beaa8602ece5fb2ff48d49ca1",
+  "audio": "6114879beaa8602ece5fb2ff48d49ca1.ogg",
+  "mime": "audio/ogg",
+  "duration": 7.5,
+  "words": [
+    {
+      "text": "同样",
+      "start": 0.1,
+      "end": 0.5
+    },
+    {
+      "text": "只",
+      "start": 0.525,
+      "end": 0.675
+    },
+    {
+      "text": "走",
+      "start": 0.675,
+      "end": 0.8375
+    },
+    {
+      "text": "一",
+      "start": 0.85,
+      "end": 1.025
+    },
+    {
+      "text": "步",
+      "start": 1.025,
+      "end": 1.275
+    },
+    {
+      "text": "第一个",
+      "start": 1.6125,
+      "end": 2.0125
+    },
+    {
+      "text": "模型",
+      "start": 2.025,
+      "end": 2.3625
+    },
+    {
+      "text": "的",
+      "start": 2.3625,
+      "end": 2.45
+    },
+    {
+      "text": "粒子",
+      "start": 2.4625,
+      "end": 2.9625
+    },
+    {
+      "text": "全",
+      "start": 3.0625,
+      "end": 3.35
+    },
+    {
+      "text": "挤",
+      "start": 3.35,
+      "end": 3.475
+    },
+    {
+      "text": "在",
+      "start": 3.475,
+      "end": 3.625
+    },
+    {
+      "text": "中间",
+      "start": 3.6375,
+      "end": 4.125
+    },
+    {
+      "text": "拉直",
+      "start": 4.5125,
+      "end": 4.825
+    },
+    {
+      "text": "之后",
+      "start": 4.8375,
+      "end": 5.325
+    },
+    {
+      "text": "一",
+      "start": 5.525,
+      "end": 5.7125
+    },
+    {
+      "text": "步",
+      "start": 5.7125,
+      "end": 5.85
+    },
+    {
+      "text": "就",
+      "start": 5.8625,
+      "end": 6
+    },
+    {
+      "text": "画",
+      "start": 6,
+      "end": 6.2
+    },
+    {
+      "text": "出",
+      "start": 6.2,
+      "end": 6.35
+    },
+    {
+      "text": "了",
+      "start": 6.35,
+      "end": 6.425
+    },
+    {
+      "text": "标志",
+      "start": 6.4375,
+      "end": 6.95
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "同样只走一步，第一个模型的粒子全挤在中间；拉直之后，一步就画出了标志。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "6114879beaa8602ece5fb2ff48d49ca1",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "7f280069840436d0e564ced8b56f5fabd202127bed3360af96828e3dd0ca1f2c",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "8ce03a4de1cf8e93486f119e7f857965",
+  "request": {
+    "spoken": "同样只走一步，第一个模型的粒子全挤在中间；拉直之后，一步就画出了标志。",
+    "rate": 1,
+    "style": ""
+  }
+}

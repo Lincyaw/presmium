@@ -1,0 +1,108 @@
+{
+  "key": "143d7b5889daf4dd98ab5335802fe70c",
+  "audio": "143d7b5889daf4dd98ab5335802fe70c.ogg",
+  "mime": "audio/ogg",
+  "duration": 6.06,
+  "words": [
+    {
+      "text": "查询",
+      "start": 0.1,
+      "end": 0.55
+    },
+    {
+      "text": "换",
+      "start": 0.5625,
+      "end": 0.7875
+    },
+    {
+      "text": "成",
+      "start": 0.7875,
+      "end": 1
+    },
+    {
+      "text": "mat",
+      "start": 1,
+      "end": 1.425
+    },
+    {
+      "text": "还是",
+      "start": 1.9875,
+      "end": 2.3125
+    },
+    {
+      "text": "这",
+      "start": 2.325,
+      "end": 2.4875
+    },
+    {
+      "text": "六根",
+      "start": 2.4875,
+      "end": 2.8125
+    },
+    {
+      "text": "柱子",
+      "start": 2.825,
+      "end": 3.3
+    },
+    {
+      "text": "平滑",
+      "start": 3.5625,
+      "end": 4.0625
+    },
+    {
+      "text": "地",
+      "start": 4.0625,
+      "end": 4.3375
+    },
+    {
+      "text": "变",
+      "start": 4.4375,
+      "end": 4.6125
+    },
+    {
+      "text": "到",
+      "start": 4.6125,
+      "end": 4.7375
+    },
+    {
+      "text": "新",
+      "start": 4.7625,
+      "end": 4.9875
+    },
+    {
+      "text": "的",
+      "start": 4.9875,
+      "end": 5.0875
+    },
+    {
+      "text": "高度",
+      "start": 5.1,
+      "end": 5.525
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "查询换成 mat。还是这六根柱子，平滑地变到新的高度。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "143d7b5889daf4dd98ab5335802fe70c",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "54605f5d9aded98d7fd456fd3b564689d94b765e8891f062dbee92266616083d",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "e57cbf796c51b8b0aed39860679528b2",
+  "request": {
+    "spoken": "查询换成 mat。还是这六根柱子，平滑地变到新的高度。",
+    "rate": 1,
+    "style": ""
+  }
+}

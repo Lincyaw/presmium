@@ -40,7 +40,8 @@
     "youtube",
     "g-semantic",
     "semantic",
-    "cards"
+    "cards",
+    "content-summary"
   ],
   "sections": {
     "rich-text": {
@@ -48,6 +49,7 @@
       "title": "文字与公式",
       "level": 2,
       "children": [
+        "rich-text-intro",
         "text-12"
       ],
       "stepOrder": [
@@ -62,6 +64,7 @@
       "title": "列表与引用",
       "level": 2,
       "children": [
+        "lists-intro",
         "text-36"
       ],
       "stepOrder": [
@@ -76,6 +79,7 @@
       "title": "表格",
       "level": 2,
       "children": [
+        "tables-intro",
         "text-59"
       ],
       "stepOrder": [
@@ -90,6 +94,7 @@
       "title": "分栏与选项卡",
       "level": 2,
       "children": [
+        "layout-intro",
         "columns",
         "tabs",
         "stack"
@@ -123,6 +128,7 @@
       "level": 2,
       "children": [
         "text-6",
+        "plantuml-keywords",
         "plantuml-diagram"
       ],
       "stepOrder": [
@@ -153,6 +159,7 @@
       "level": 2,
       "children": [
         "text-72",
+        "media-keywords",
         "video",
         "audio"
       ],
@@ -169,6 +176,7 @@
       "level": 2,
       "children": [
         "images-intro",
+        "images-keywords",
         "still-image",
         "animation"
       ],
@@ -184,6 +192,7 @@
       "title": "提示、折叠与术语",
       "level": 2,
       "children": [
+        "semantic-intro",
         "semantic-body"
       ],
       "stepOrder": [
@@ -231,6 +240,7 @@
       "level": 2,
       "children": [
         "net-youtube",
+        "youtube-keywords",
         "youtube-widget"
       ],
       "stepOrder": [
@@ -245,7 +255,8 @@
       "title": "文字与版式",
       "level": 1,
       "children": [
-        "g-text-intro"
+        "g-text-intro",
+        "g-text-keywords"
       ],
       "stepOrder": [
         "g-text-step"
@@ -259,7 +270,8 @@
       "title": "图表",
       "level": 1,
       "children": [
-        "g-diagrams-intro"
+        "g-diagrams-intro",
+        "g-diagrams-keywords"
       ],
       "stepOrder": [
         "g-diagrams-step"
@@ -273,7 +285,8 @@
       "title": "媒体",
       "level": 1,
       "children": [
-        "g-media-intro"
+        "g-media-intro",
+        "g-media-keywords"
       ],
       "stepOrder": [
         "g-media-step"
@@ -287,10 +300,27 @@
       "title": "语义标记",
       "level": 1,
       "children": [
-        "g-semantic-intro"
+        "g-semantic-intro",
+        "g-semantic-keywords"
       ],
       "stepOrder": [
         "g-semantic-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "content-summary": {
+      "id": "content-summary",
+      "title": "按要表达的关系选择内容",
+      "level": 1,
+      "children": [
+        "content-summary-text",
+        "content-summary-table",
+        "content-summary-keywords"
+      ],
+      "stepOrder": [
+        "content-summary-step"
       ],
       "layout": {
         "type": "stack"
@@ -404,7 +434,7 @@
             },
             {
               "type": "text",
-              "text": "背景强调",
+              "text": "背景强调。",
               "marks": [
                 {
                   "type": "background",
@@ -646,16 +676,6 @@
       "id": "text-59",
       "type": "text",
       "content": [
-        {
-          "id": "paragraph-60",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "表头、合并单元格、列宽与对齐。"
-            }
-          ]
-        },
         {
           "id": "table-37",
           "type": "table",
@@ -899,7 +919,7 @@
           "children": [
             {
               "type": "text",
-              "text": "分栏左侧：介绍问题。"
+              "text": "分栏左侧：提出问题。"
             }
           ]
         },
@@ -909,7 +929,7 @@
           "children": [
             {
               "type": "text",
-              "text": "两栏并排，适合对照。"
+              "text": "两栏并排，适合对照阅读。"
             }
           ]
         }
@@ -935,7 +955,7 @@
           "children": [
             {
               "type": "text",
-              "text": "窄屏下自动改为纵向排列。"
+              "text": "屏幕较窄时，两栏自动改为上下排列。"
             }
           ]
         }
@@ -1042,10 +1062,14 @@
           "children": [
             {
               "type": "text",
-              "text": "流程图与时序图以 Mermaid 源码书写，由浏览器绘制。"
+              "text": "流程图和时序图用 Mermaid 源码书写，由浏览器绘制。第一张流程图表示一份文稿经过编译得到网页、幻灯片和 notebook 三种形态；第二张时序图表示课堂上的一次提问、回答与点评。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "flowchart": {
@@ -1078,10 +1102,14 @@
           "children": [
             {
               "type": "text",
-              "text": "支持缩放、拖动与折叠分支。"
+              "text": "思维导图展示一个主题的层级结构。读者可以缩放和拖动画面，也可以折叠暂时不看的分支。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "video": {
@@ -1123,10 +1151,14 @@
           "children": [
             {
               "type": "text",
-              "text": "本地视频附带中英文字幕。同一时间仅播放一个媒体：开始播放音频时，视频自动暂停。"
+              "text": "视频和字幕文件随文稿保存在本地。下面的视频带中文和英文两份字幕，默认显示中文。页面同一时间只播放一个媒体：开始播放音频时，视频自动暂停。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "still-image": {
@@ -1856,10 +1888,14 @@
           "children": [
             {
               "type": "text",
-              "text": "由 PlantUML 服务渲染为图片，需要网络连接。"
+              "text": "UML 图用 PlantUML 源码书写，由 PlantUML 服务渲染为图片，因此需要网络连接。下图表示作者保存文稿后，编译器派生运行快照，再交给查看器发布。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "plantuml-diagram": {
@@ -1878,10 +1914,14 @@
           "children": [
             {
               "type": "text",
-              "text": "图片附带替代文字与说明。系统开启“减少动态效果”时，动图显示静止帧。"
+              "text": "每张图片都带替代文字和说明：替代文字供读屏软件朗读，说明随图片显示。动图另备一张静止帧，读者在系统中开启“减少动态效果”后，页面显示静止帧，不播放动画。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "net-intro": {
@@ -1894,7 +1934,7 @@
           "children": [
             {
               "type": "text",
-              "text": "本页引用外部网站的资源，需要网络连接。"
+              "text": "需要网络连接：本页资源来自外部网站。"
             }
           ]
         }
@@ -1910,10 +1950,14 @@
           "children": [
             {
               "type": "text",
-              "text": "音视频与图片可直接引用 HTTPS 地址。构建时默认不下载外部图片；离线发布时可启用资源本地化。"
+              "text": "音频、视频和图片都可以直接引用 HTTPS 地址。构建时默认不下载外部图片，读者打开页面时才从原地址读取；离线发布时可以启用资源本地化，把这些资源下载到发布产物中。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "net-youtube": {
@@ -1926,10 +1970,14 @@
           "children": [
             {
               "type": "text",
-              "text": "嵌入 YouTube 视频，并可指定起始时间；需要网络连接。"
+              "text": "YouTube 视频按视频编号嵌入，并可以指定起始时间，下面的视频从第 30 秒开始播放。嵌入的视频需要网络连接。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "g-text-intro": {
@@ -1942,10 +1990,14 @@
           "children": [
             {
               "type": "text",
-              "text": "富文本、列表、表格与分栏版式。"
+              "text": "讲义正文的每一种内容都是文稿中的一个内容块：文字、公式、列表、表格、图表、媒体和语义标记都以结构化数据保存，写一次，就同时出现在网页、幻灯片和 notebook 中。本合集逐页展示每一种内容的样子，并说明它适合表达什么。第一部分是文字与版式：富文本、列表、表格和分栏。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "g-diagrams-intro": {
@@ -1958,10 +2010,14 @@
           "children": [
             {
               "type": "text",
-              "text": "以源码书写的流程图、时序图、UML 图与思维导图。"
+              "text": "图表以文字源码书写，与正文一起保存在文稿中，改图只需改源码。流程图和时序图用 Mermaid 书写，UML 图用 PlantUML 书写，思维导图用层级数据描述。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "g-media-intro": {
@@ -1974,10 +2030,14 @@
           "children": [
             {
               "type": "text",
-              "text": "本地与在线的图片、音频与视频。"
+              "text": "媒体内容块放入图片、动图、音频和视频。文件可以随文稿保存在本地，也可以引用在线地址；引用在线地址的页面需要网络连接。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "g-semantic-intro": {
@@ -1990,10 +2050,519 @@
           "children": [
             {
               "type": "text",
-              "text": "提示、折叠、术语、卡片与同步选项卡。"
+              "text": "语义标记表明一段内容的作用：说明、提示和注意三种框区分信息的分量，折叠块先藏起答案，术语列表给出定义，卡片组织阅读路线，同步选项卡让读者只选一次编程语言。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "g-text-keywords": {
+      "id": "g-text-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-text-keywords-claim",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "写一次：网页 · 幻灯片 · notebook"
+            }
+          ]
+        },
+        {
+          "id": "g-text-keywords-part",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "富文本 · 列表 · 表格 · 分栏"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "rich-text-intro": {
+      "id": "rich-text-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "rich-text-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "文字内容块里的每一段都带有格式：粗体、颜色、行内公式、换行和对齐都记录在段落结构中。独立的公式用 LaTeX 书写；代码块只展示代码，需要运行的代码见“代码与运行”合集。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "lists-intro": {
+      "id": "lists-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "lists-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "并列的条目用无序列表，有先后的条目用有序列表，有序列表可以从任意编号开始；列表可以嵌套。清单的每一项记录是否完成，引用块用来摘录一段原话。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "tables-intro": {
+      "id": "tables-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "paragraph-60",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "表格用来比较几样东西的同一组属性。下表比较网页和 notebook 能否交互、适合什么场景，同时演示表头行与表头列、列宽、居中对齐，以及跨行和跨列的合并单元格。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "layout-intro": {
+      "id": "layout-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "layout-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "容器把几个内容块组合起来：分栏让两块内容并排对照，选项卡让读者在几块内容之间切换、一次只看一块，堆叠容器把几块内容排成一列并加上共同的标题。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "g-diagrams-keywords": {
+      "id": "g-diagrams-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-diagrams-keywords-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "源码画图：Mermaid · PlantUML · 思维导图"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "plantuml-keywords": {
+      "id": "plantuml-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "plantuml-keywords-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "PlantUML 服务渲染 · 需要网络连接"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "g-media-keywords": {
+      "id": "g-media-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-media-keywords-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本地或在线：图片 · 动图 · 音频 · 视频"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "media-keywords": {
+      "id": "media-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "media-keywords-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "中英文字幕 · 同一时间只播放一个媒体"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "images-keywords": {
+      "id": "images-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "images-keywords-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "替代文字 · 说明 · 减少动态效果时显示静止帧"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "youtube-keywords": {
+      "id": "youtube-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "youtube-keywords-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "从第 30 秒开始播放 · 需要网络连接"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "g-semantic-keywords": {
+      "id": "g-semantic-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-semantic-keywords-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "提示框 · 折叠 · 术语 · 卡片 · 同步选项卡"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "semantic-intro": {
+      "id": "semantic-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "semantic-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "三种提示框区分信息的分量：说明补充背景，提示给出技巧，注意标出容易出错的地方。折叠块适合放习题答案；术语列表把术语和定义成对排列；行内标记表示按键、上下标和缩写，交叉引用链接到本文稿的其他页面。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "content-summary-text": {
+      "id": "content-summary-text",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-summary-text-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "选择内容的形式时，先看要表达什么关系：比较属性用表格，有先后的过程用有序列表或流程图，层级用思维导图，可以暂时跳过的细节放进折叠块。无论选哪一种，内容都只写在一份 lecture.json 中，网页、幻灯片和 notebook 都由它生成，改一处，三种形态一起更新。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "content-summary-table": {
+      "id": "content-summary-table",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-summary-table-node",
+          "type": "table",
+          "headerRows": 1,
+          "children": [
+            {
+              "id": "content-summary-row-head",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "content-summary-row-head-relation",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "要表达的关系"
+                    }
+                  ]
+                },
+                {
+                  "id": "content-summary-row-head-form",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "内容形式"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "content-summary-row-compare",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "content-summary-row-compare-relation",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "几样东西比较同一组属性"
+                    }
+                  ]
+                },
+                {
+                  "id": "content-summary-row-compare-form",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "表格"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "content-summary-row-process",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "content-summary-row-process-relation",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "有先后的过程"
+                    }
+                  ]
+                },
+                {
+                  "id": "content-summary-row-process-form",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "有序列表、流程图"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "content-summary-row-exchange",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "content-summary-row-exchange-relation",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "角色之间的往来"
+                    }
+                  ]
+                },
+                {
+                  "id": "content-summary-row-exchange-form",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "时序图"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "content-summary-row-hierarchy",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "content-summary-row-hierarchy-relation",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "主题的层级"
+                    }
+                  ]
+                },
+                {
+                  "id": "content-summary-row-hierarchy-form",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "思维导图"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "content-summary-row-side",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "content-summary-row-side-relation",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "两块内容并排对照"
+                    }
+                  ]
+                },
+                {
+                  "id": "content-summary-row-side-form",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "分栏"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "content-summary-row-details",
+              "type": "tableRow",
+              "children": [
+                {
+                  "id": "content-summary-row-details-relation",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "可以暂时跳过的细节"
+                    }
+                  ]
+                },
+                {
+                  "id": "content-summary-row-details-form",
+                  "type": "tableCell",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "折叠块"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "content-summary-keywords": {
+      "id": "content-summary-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "content-summary-keywords-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一份 lecture.json → 网页 · 幻灯片 · notebook"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
       ]
     }
   },
@@ -2002,6 +2571,10 @@
       "id": "rich-text-step",
       "sectionId": "rich-text",
       "visuals": [
+        {
+          "blockId": "rich-text-intro",
+          "visible": true
+        },
         {
           "blockId": "text-12",
           "visible": true
@@ -2014,6 +2587,10 @@
       "sectionId": "lists",
       "visuals": [
         {
+          "blockId": "lists-intro",
+          "visible": true
+        },
+        {
           "blockId": "text-36",
           "visible": true
         }
@@ -2025,6 +2602,10 @@
       "sectionId": "tables",
       "visuals": [
         {
+          "blockId": "tables-intro",
+          "visible": true
+        },
+        {
           "blockId": "text-59",
           "visible": true
         }
@@ -2035,6 +2616,10 @@
       "id": "layout-step",
       "sectionId": "layout",
       "visuals": [
+        {
+          "blockId": "layout-intro",
+          "visible": true
+        },
         {
           "blockId": "columns",
           "visible": true
@@ -2119,6 +2704,10 @@
         {
           "blockId": "audio",
           "visible": true
+        },
+        {
+          "blockId": "media-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -2138,6 +2727,10 @@
         {
           "blockId": "animation",
           "visible": true
+        },
+        {
+          "blockId": "images-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -2146,6 +2739,10 @@
       "id": "semantic-step",
       "sectionId": "semantic",
       "visuals": [
+        {
+          "blockId": "semantic-intro",
+          "visible": true
+        },
         {
           "blockId": "semantic-body",
           "visible": true
@@ -2174,6 +2771,10 @@
         },
         {
           "blockId": "plantuml-diagram",
+          "visible": true
+        },
+        {
+          "blockId": "plantuml-keywords",
           "visible": true
         }
       ],
@@ -2217,6 +2818,10 @@
         {
           "blockId": "youtube-widget",
           "visible": true
+        },
+        {
+          "blockId": "youtube-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -2227,6 +2832,10 @@
       "visuals": [
         {
           "blockId": "g-text-intro",
+          "visible": true
+        },
+        {
+          "blockId": "g-text-keywords",
           "visible": true
         }
       ],
@@ -2239,6 +2848,10 @@
         {
           "blockId": "g-diagrams-intro",
           "visible": true
+        },
+        {
+          "blockId": "g-diagrams-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -2250,6 +2863,10 @@
         {
           "blockId": "g-media-intro",
           "visible": true
+        },
+        {
+          "blockId": "g-media-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -2260,6 +2877,29 @@
       "visuals": [
         {
           "blockId": "g-semantic-intro",
+          "visible": true
+        },
+        {
+          "blockId": "g-semantic-keywords",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "content-summary-step": {
+      "id": "content-summary-step",
+      "sectionId": "content-summary",
+      "visuals": [
+        {
+          "blockId": "content-summary-text",
+          "visible": true
+        },
+        {
+          "blockId": "content-summary-table",
+          "visible": true
+        },
+        {
+          "blockId": "content-summary-keywords",
           "visible": true
         }
       ],

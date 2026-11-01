@@ -1,0 +1,98 @@
+{
+  "key": "615cac50a2b558edda677cf5d3f9a33a",
+  "audio": "615cac50a2b558edda677cf5d3f9a33a.ogg",
+  "mime": "audio/ogg",
+  "duration": 6.36,
+  "words": [
+    {
+      "text": "5 比 2",
+      "start": 0.1,
+      "end": 0.6375
+    },
+    {
+      "text": "大",
+      "start": 0.6375,
+      "end": 0.9
+    },
+    {
+      "text": "所以",
+      "start": 1.175,
+      "end": 1.475
+    },
+    {
+      "text": "交换",
+      "start": 1.4875,
+      "end": 1.975
+    },
+    {
+      "text": "代码",
+      "start": 2.55,
+      "end": 2.9375
+    },
+    {
+      "text": "里",
+      "start": 2.9375,
+      "end": 3.125
+    },
+    {
+      "text": "就",
+      "start": 3.15,
+      "end": 3.2875
+    },
+    {
+      "text": "是",
+      "start": 3.2875,
+      "end": 3.3875
+    },
+    {
+      "text": "这",
+      "start": 3.4,
+      "end": 3.525
+    },
+    {
+      "text": "两行",
+      "start": 3.525,
+      "end": 4.05
+    },
+    {
+      "text": "判断",
+      "start": 4.25,
+      "end": 4.7875
+    },
+    {
+      "text": "然后",
+      "start": 5.0125,
+      "end": 5.325
+    },
+    {
+      "text": "互换",
+      "start": 5.3375,
+      "end": 5.8125
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "5 比 2 大，所以交换。代码里就是这两行：判断，然后互换。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "615cac50a2b558edda677cf5d3f9a33a",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "ec81d433189d5f3f0f22478ce7e07c4d50b3ee6904cfa2afa92a992fa3729bc8",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "97d976b488e3dd333c096041a3a02554",
+  "request": {
+    "spoken": "5 比 2 大，所以交换。代码里就是这两行：判断，然后互换。",
+    "rate": 1,
+    "style": ""
+  }
+}

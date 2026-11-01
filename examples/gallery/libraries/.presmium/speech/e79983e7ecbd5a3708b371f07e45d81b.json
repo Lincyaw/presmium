@@ -1,0 +1,103 @@
+{
+  "key": "e79983e7ecbd5a3708b371f07e45d81b",
+  "audio": "e79983e7ecbd5a3708b371f07e45d81b.ogg",
+  "mime": "audio/ogg",
+  "duration": 6.72,
+  "words": [
+    {
+      "text": "这个",
+      "start": 0.1,
+      "end": 0.3625
+    },
+    {
+      "text": "片头",
+      "start": 0.375,
+      "end": 0.9
+    },
+    {
+      "text": "是",
+      "start": 0.925,
+      "end": 1.075
+    },
+    {
+      "text": "Remotion",
+      "start": 1.0875,
+      "end": 1.575
+    },
+    {
+      "text": "写",
+      "start": 1.5875,
+      "end": 1.825
+    },
+    {
+      "text": "的",
+      "start": 1.825,
+      "end": 2.025
+    },
+    {
+      "text": "用",
+      "start": 2.325,
+      "end": 2.5
+    },
+    {
+      "text": "的",
+      "start": 2.5,
+      "end": 2.6
+    },
+    {
+      "text": "是",
+      "start": 2.6,
+      "end": 2.9375
+    },
+    {
+      "text": "React",
+      "start": 3.0375,
+      "end": 3.55
+    },
+    {
+      "text": "组件",
+      "start": 3.5625,
+      "end": 4.0625
+    },
+    {
+      "text": "先是",
+      "start": 4.6375,
+      "end": 5.1375
+    },
+    {
+      "text": "标题弹",
+      "start": 5.15,
+      "end": 5.7375
+    },
+    {
+      "text": "进来",
+      "start": 5.75,
+      "end": 6.1875
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "这个片头是 Remotion 写的，用的是 React 组件。先是标题弹进来。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "e79983e7ecbd5a3708b371f07e45d81b",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "a770aca0cc365138f5f4a3afe0a6230e83168608ba83ea4c920e4cfa6cbb782f",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "d23d5064ea3cfe7bc22168dbb13c02f7",
+  "request": {
+    "spoken": "这个片头是 Remotion 写的，用的是 React 组件。先是标题弹进来。",
+    "rate": 1,
+    "style": ""
+  }
+}

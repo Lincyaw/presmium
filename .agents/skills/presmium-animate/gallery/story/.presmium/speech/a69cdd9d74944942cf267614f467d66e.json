@@ -1,0 +1,213 @@
+{
+  "key": "a69cdd9d74944942cf267614f467d66e",
+  "audio": "a69cdd9d74944942cf267614f467d66e.ogg",
+  "mime": "audio/ogg",
+  "duration": 12.66,
+  "words": [
+    {
+      "text": "可",
+      "start": 0.1,
+      "end": 0.275
+    },
+    {
+      "text": "网络",
+      "start": 0.2875,
+      "end": 0.6125
+    },
+    {
+      "text": "的",
+      "start": 0.6125,
+      "end": 0.7125
+    },
+    {
+      "text": "箭头",
+      "start": 0.725,
+      "end": 1.3
+    },
+    {
+      "text": "始终",
+      "start": 1.4,
+      "end": 1.85
+    },
+    {
+      "text": "对",
+      "start": 1.8625,
+      "end": 1.9875
+    },
+    {
+      "text": "不",
+      "start": 2,
+      "end": 2.1
+    },
+    {
+      "text": "齐",
+      "start": 2.1,
+      "end": 2.2375
+    },
+    {
+      "text": "那",
+      "start": 2.2625,
+      "end": 2.3875
+    },
+    {
+      "text": "条",
+      "start": 2.3875,
+      "end": 2.6
+    },
+    {
+      "text": "线",
+      "start": 2.6,
+      "end": 2.9375
+    },
+    {
+      "text": "随机",
+      "start": 3.5,
+      "end": 3.9375
+    },
+    {
+      "text": "配对",
+      "start": 3.95,
+      "end": 4.3125
+    },
+    {
+      "text": "的",
+      "start": 4.3125,
+      "end": 4.425
+    },
+    {
+      "text": "直线",
+      "start": 4.45,
+      "end": 4.8625
+    },
+    {
+      "text": "会",
+      "start": 4.8875,
+      "end": 5.05
+    },
+    {
+      "text": "交叉",
+      "start": 5.0625,
+      "end": 5.5625
+    },
+    {
+      "text": "在",
+      "start": 5.8125,
+      "end": 5.9875
+    },
+    {
+      "text": "交叉",
+      "start": 6,
+      "end": 6.4125
+    },
+    {
+      "text": "处",
+      "start": 6.4125,
+      "end": 6.725
+    },
+    {
+      "text": "网络",
+      "start": 7.05,
+      "end": 7.5625
+    },
+    {
+      "text": "只能",
+      "start": 7.5875,
+      "end": 7.8875
+    },
+    {
+      "text": "学到",
+      "start": 7.8875,
+      "end": 8.25
+    },
+    {
+      "text": "各个",
+      "start": 8.275,
+      "end": 8.575
+    },
+    {
+      "text": "方向",
+      "start": 8.5875,
+      "end": 8.9375
+    },
+    {
+      "text": "的",
+      "start": 8.9375,
+      "end": 9
+    },
+    {
+      "text": "平均",
+      "start": 9.0125,
+      "end": 9.5375
+    },
+    {
+      "text": "所以",
+      "start": 9.7625,
+      "end": 10.3375
+    },
+    {
+      "text": "真正",
+      "start": 10.4375,
+      "end": 10.825
+    },
+    {
+      "text": "走",
+      "start": 10.8375,
+      "end": 11.0125
+    },
+    {
+      "text": "出来",
+      "start": 11.0125,
+      "end": 11.25
+    },
+    {
+      "text": "的",
+      "start": 11.25,
+      "end": 11.35
+    },
+    {
+      "text": "路",
+      "start": 11.35,
+      "end": 11.475
+    },
+    {
+      "text": "又",
+      "start": 11.5,
+      "end": 11.7125
+    },
+    {
+      "text": "弯",
+      "start": 11.7125,
+      "end": 11.95
+    },
+    {
+      "text": "了",
+      "start": 11.95,
+      "end": 12.15
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "可网络的箭头始终对不齐那条线。随机配对的直线会交叉，在交叉处，网络只能学到各个方向的平均，所以真正走出来的路又弯了。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "a69cdd9d74944942cf267614f467d66e",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "a379213c806bbf9ff6833bf757c38db8c262a468e7ed7df2a6b54752d674bce6",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "20c44d008428283f1f979eb1c5ad6673",
+  "request": {
+    "spoken": "可网络的箭头始终对不齐那条线。随机配对的直线会交叉，在交叉处，网络只能学到各个方向的平均，所以真正走出来的路又弯了。",
+    "rate": 1,
+    "style": ""
+  }
+}

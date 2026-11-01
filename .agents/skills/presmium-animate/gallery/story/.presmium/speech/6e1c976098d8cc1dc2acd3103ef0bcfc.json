@@ -1,0 +1,233 @@
+{
+  "key": "6e1c976098d8cc1dc2acd3103ef0bcfc",
+  "audio": "6e1c976098d8cc1dc2acd3103ef0bcfc.ogg",
+  "mime": "audio/ogg",
+  "duration": 14.38,
+  "words": [
+    {
+      "text": "Flow",
+      "start": 0.1,
+      "end": 0.4125
+    },
+    {
+      "text": "matching",
+      "start": 0.425,
+      "end": 0.825
+    },
+    {
+      "text": "的",
+      "start": 0.825,
+      "end": 0.9
+    },
+    {
+      "text": "训练",
+      "start": 0.9125,
+      "end": 1.325
+    },
+    {
+      "text": "很",
+      "start": 1.35,
+      "end": 1.575
+    },
+    {
+      "text": "简单",
+      "start": 1.575,
+      "end": 2.0625
+    },
+    {
+      "text": "随便",
+      "start": 2.625,
+      "end": 3.05
+    },
+    {
+      "text": "配",
+      "start": 3.0625,
+      "end": 3.2375
+    },
+    {
+      "text": "一个",
+      "start": 3.2375,
+      "end": 3.4125
+    },
+    {
+      "text": "噪声",
+      "start": 3.4375,
+      "end": 3.8875
+    },
+    {
+      "text": "点",
+      "start": 3.8875,
+      "end": 4.2
+    },
+    {
+      "text": "和",
+      "start": 4.3,
+      "end": 4.4375
+    },
+    {
+      "text": "一个",
+      "start": 4.45,
+      "end": 4.65
+    },
+    {
+      "text": "图",
+      "start": 4.675,
+      "end": 4.8625
+    },
+    {
+      "text": "上",
+      "start": 4.8625,
+      "end": 5.075
+    },
+    {
+      "text": "的",
+      "start": 5.075,
+      "end": 5.1875
+    },
+    {
+      "text": "点",
+      "start": 5.1875,
+      "end": 5.45
+    },
+    {
+      "text": "连",
+      "start": 5.775,
+      "end": 5.925
+    },
+    {
+      "text": "一条",
+      "start": 5.9375,
+      "end": 6.2125
+    },
+    {
+      "text": "直线",
+      "start": 6.225,
+      "end": 6.7625
+    },
+    {
+      "text": "在线",
+      "start": 7.3375,
+      "end": 7.7625
+    },
+    {
+      "text": "上",
+      "start": 7.7625,
+      "end": 7.9875
+    },
+    {
+      "text": "随便",
+      "start": 8.0125,
+      "end": 8.3875
+    },
+    {
+      "text": "取",
+      "start": 8.4,
+      "end": 8.575
+    },
+    {
+      "text": "一个",
+      "start": 8.575,
+      "end": 8.7625
+    },
+    {
+      "text": "时刻",
+      "start": 8.775,
+      "end": 9.275
+    },
+    {
+      "text": "让",
+      "start": 9.5875,
+      "end": 9.7625
+    },
+    {
+      "text": "网络",
+      "start": 9.775,
+      "end": 10.275
+    },
+    {
+      "text": "在",
+      "start": 10.3,
+      "end": 10.4875
+    },
+    {
+      "text": "这里",
+      "start": 10.4875,
+      "end": 10.7625
+    },
+    {
+      "text": "预测",
+      "start": 10.7875,
+      "end": 11.1125
+    },
+    {
+      "text": "的",
+      "start": 11.1125,
+      "end": 11.2
+    },
+    {
+      "text": "速度",
+      "start": 11.2125,
+      "end": 11.7125
+    },
+    {
+      "text": "去",
+      "start": 11.925,
+      "end": 12.125
+    },
+    {
+      "text": "逼近",
+      "start": 12.1375,
+      "end": 12.525
+    },
+    {
+      "text": "这",
+      "start": 12.5375,
+      "end": 12.6625
+    },
+    {
+      "text": "条",
+      "start": 12.6625,
+      "end": 12.8625
+    },
+    {
+      "text": "直线",
+      "start": 12.8875,
+      "end": 13.2625
+    },
+    {
+      "text": "的",
+      "start": 13.2625,
+      "end": 13.3375
+    },
+    {
+      "text": "方向",
+      "start": 13.35,
+      "end": 13.8375
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "Flow matching 的训练很简单。随便配一个噪声点和一个图上的点，连一条直线。在线上随便取一个时刻，让网络在这里预测的速度，去逼近这条直线的方向。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "6e1c976098d8cc1dc2acd3103ef0bcfc",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "6bfc3101cd51c1a5954395526fed79cfde0265ab9f27e2e5e5c04f9aac8322b3",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "d23b3723e84247b8e15171a4422dd311",
+  "request": {
+    "spoken": "Flow matching 的训练很简单。随便配一个噪声点和一个图上的点，连一条直线。在线上随便取一个时刻，让网络在这里预测的速度，去逼近这条直线的方向。",
+    "rate": 1,
+    "style": ""
+  }
+}

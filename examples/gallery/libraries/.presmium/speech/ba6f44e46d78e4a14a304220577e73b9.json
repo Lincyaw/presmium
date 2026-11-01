@@ -1,0 +1,63 @@
+{
+  "key": "ba6f44e46d78e4a14a304220577e73b9",
+  "audio": "ba6f44e46d78e4a14a304220577e73b9.ogg",
+  "mime": "audio/ogg",
+  "duration": 2.38,
+  "words": [
+    {
+      "text": "镜头",
+      "start": 0.1,
+      "end": 0.575
+    },
+    {
+      "text": "推",
+      "start": 0.5875,
+      "end": 0.8
+    },
+    {
+      "text": "近",
+      "start": 0.8,
+      "end": 0.975
+    },
+    {
+      "text": "其中",
+      "start": 1,
+      "end": 1.35
+    },
+    {
+      "text": "一",
+      "start": 1.3625,
+      "end": 1.5
+    },
+    {
+      "text": "团",
+      "start": 1.5,
+      "end": 1.85
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "镜头推近其中一团，",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "ba6f44e46d78e4a14a304220577e73b9",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "edb39ac58e20c7fa8dc00c5aa12b719324f5013ba7396dae4b24ad94960eba96",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "8a86c68857da3c8ccdc076c5771cb5c6",
+  "request": {
+    "spoken": "镜头推近其中一团，",
+    "rate": 1,
+    "style": ""
+  }
+}

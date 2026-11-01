@@ -195,6 +195,9 @@
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     }
   },
@@ -282,7 +285,7 @@
         },
         {
           "blockId": "brand-credits",
-          "visible": false
+          "visible": true
         }
       ],
       "narrationIds": []

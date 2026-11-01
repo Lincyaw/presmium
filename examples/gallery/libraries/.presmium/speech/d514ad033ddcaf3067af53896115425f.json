@@ -1,0 +1,63 @@
+{
+  "key": "d514ad033ddcaf3067af53896115425f",
+  "audio": "d514ad033ddcaf3067af53896115425f.ogg",
+  "mime": "audio/ogg",
+  "duration": 3.12,
+  "words": [
+    {
+      "text": "这些",
+      "start": 0.1,
+      "end": 0.4375
+    },
+    {
+      "text": "向量",
+      "start": 0.45,
+      "end": 1
+    },
+    {
+      "text": "指向",
+      "start": 1.1,
+      "end": 1.475
+    },
+    {
+      "text": "差不多",
+      "start": 1.5,
+      "end": 1.9625
+    },
+    {
+      "text": "的",
+      "start": 1.9625,
+      "end": 2.0625
+    },
+    {
+      "text": "方向",
+      "start": 2.075,
+      "end": 2.575
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "这些向量指向差不多的方向。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "d514ad033ddcaf3067af53896115425f",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "850fbfb93d774fc9052d048c821c2f80f6dd9281d1c5fc307f43508329a77363",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "838932af524c276d70a64199ce87f981",
+  "request": {
+    "spoken": "这些向量指向差不多的方向。",
+    "rate": 1,
+    "style": ""
+  }
+}

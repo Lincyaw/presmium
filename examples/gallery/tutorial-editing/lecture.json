@@ -33,7 +33,8 @@
       "title": "开始之前",
       "level": 1,
       "children": [
-        "start-goal"
+        "start-goal",
+        "start-keys"
       ],
       "stepOrder": [
         "start-step"
@@ -65,7 +66,8 @@
       "level": 1,
       "children": [
         "copy-actions",
-        "copy-boundary"
+        "copy-boundary",
+        "copy-keys"
       ],
       "stepOrder": [
         "copy-step"
@@ -80,7 +82,8 @@
       "level": 1,
       "children": [
         "scripts-actions",
-        "scripts-scope"
+        "scripts-scope",
+        "scripts-keys"
       ],
       "stepOrder": [
         "scripts-step"
@@ -94,7 +97,8 @@
       "title": "调整播放时机",
       "level": 1,
       "children": [
-        "timing-actions"
+        "timing-actions",
+        "timing-keys"
       ],
       "stepOrder": [
         "timing-step"
@@ -109,7 +113,8 @@
       "level": 1,
       "children": [
         "comments-actions",
-        "comments-agent"
+        "comments-agent",
+        "comments-keys"
       ],
       "stepOrder": [
         "comments-step"
@@ -124,7 +129,8 @@
       "level": 1,
       "children": [
         "delivery-actions",
-        "delivery-purpose"
+        "delivery-purpose",
+        "delivery-keys"
       ],
       "stepOrder": [
         "delivery-step"
@@ -145,10 +151,14 @@
           "children": [
             {
               "type": "text",
-              "text": "在工作台中打开本文稿，按后续页面的顺序依次操作，将“午餐预算”改为自己的方案。全程无需配置模型或语音服务。"
+              "text": "这份教程练习在工作台中修改一份讲义：复制页面、编辑正文与讲稿、调整播放时机、批注与查看版本历史，最后放映和导出。练习材料是下一页的“午餐预算”。在工作台中打开本文稿，按页面顺序操作，最后得到另一套方案“午餐方案 B”。修改会自动保存，也可以撤消；全程不需要配置模型或语音服务。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "budget-question": {
@@ -161,7 +171,7 @@
           "children": [
             {
               "type": "text",
-              "text": "每人预算 30 元。主食、配菜与饮品各选一份，如何检查是否超支？"
+              "text": "每人预算 30 元，主食、配菜、饮品各选一份。怎样确认没有超支？"
             }
           ]
         }
@@ -307,7 +317,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "先估算：12 + 8 约为 20，再加 5，应小于 30。"
+                      "text": "先估算：12 + 8 是 20，再加 5 也不到 30。"
                     }
                   ]
                 }
@@ -339,7 +349,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "核对余额：30 − 25 = 5，预算内剩余 5 元。"
+                      "text": "最后核对余额：30 − 25 = 5，预算内还剩 5 元。"
                     }
                   ]
                 }
@@ -396,7 +406,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "在页面栏打开“练习材料：午餐预算”的更多菜单，选择“复制页面”。"
+                      "text": "在页面栏中打开“练习材料：午餐预算”的更多菜单，选择“复制页面”。"
                     }
                   ]
                 }
@@ -412,7 +422,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "点击“撤消”，副本被移除；再点击“恢复”，副本重新出现。"
+                      "text": "点击“撤消”，副本消失；再点击“恢复”，副本回来。"
                     }
                   ]
                 }
@@ -428,7 +438,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "将副本重命名为“午餐方案 B”，并在表格中将配菜价格由 8 改为 10。"
+                      "text": "把副本重命名为“午餐方案 B”，再把表格中配菜的价格从 8 改为 10。"
                     }
                   ]
                 }
@@ -444,7 +454,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "将计算过程与结论改为：12 + 10 + 5 = 27，余额 3 元。"
+                      "text": "把计算过程与结论改为：12 + 10 + 5 = 27，余额 3 元。"
                     }
                   ]
                 }
@@ -452,6 +462,10 @@
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "copy-boundary": {
@@ -464,10 +478,14 @@
           "children": [
             {
               "type": "text",
-              "text": "副本拥有独立的正文、步骤与讲稿；图片与组件定义仍与原页共享。"
+              "text": "副本有独立的正文、步骤与讲稿，修改副本时原页保持不变；图片与组件定义仍与原页共用。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "scripts-actions": {
@@ -505,7 +523,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "将第一步讲稿中的“配菜八元”改为“配菜十元”。"
+                      "text": "把第一步讲稿中的“配菜八元”改为“配菜十元”。"
                     }
                   ]
                 }
@@ -521,7 +539,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "点击“下一步”，将合计与余额分别改为二十七元、三元。"
+                      "text": "点击“下一步”，把这一步讲稿中的算式与结果改为：十二加十加五，合计二十七元，还剩三元。"
                     }
                   ]
                 }
@@ -537,7 +555,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "刷新页面，确认正文与讲稿均已保存。"
+                      "text": "刷新页面，确认正文与讲稿都已保存。"
                     }
                   ]
                 }
@@ -545,6 +563,10 @@
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "scripts-scope": {
@@ -557,16 +579,30 @@
           "children": [
             {
               "type": "text",
-              "text": "每一步拥有独立的讲稿，同时用作配音文本与字幕。含动画的页面也可在动画卡片上直接编辑讲稿。"
+              "text": "每一步有自己的讲稿，它既是配音的文本，也是字幕。含动画的页面还可以直接在动画卡片上编辑讲稿。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "timing-actions": {
       "id": "timing-actions",
       "type": "text",
       "content": [
+        {
+          "id": "timing-lead",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "播放时机决定讲授视频中每一步停留多久：最短停留是这一步至少显示的时间，结束停顿是讲稿念完后再停的时间。页面可以统一设置，单独的步骤也可以改用自己的设置。"
+            }
+          ]
+        },
         {
           "id": "te-22",
           "type": "list",
@@ -598,7 +634,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "点击“统一本步时机”，将“配音开始”设为“动画后”，最短停留设为 1800 毫秒。"
+                      "text": "点击“统一本步时机”，把“配音开始”设为“动画后”，最短停留设为 1800 毫秒。"
                     }
                   ]
                 }
@@ -614,7 +650,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "点击“使用继承的时机”，本步恢复为页面设置。"
+                      "text": "点击“使用继承的时机”，本步恢复为页面的设置。"
                     }
                   ]
                 }
@@ -622,6 +658,10 @@
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "comments-actions": {
@@ -659,7 +699,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "在正文中输入一句话，再依次使用“撤消”与“恢复”。"
+                      "text": "在正文中输入一句话，再依次点击“撤消”与“恢复”。"
                     }
                   ]
                 }
@@ -683,6 +723,10 @@
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "comments-agent": {
@@ -695,10 +739,14 @@
           "children": [
             {
               "type": "text",
-              "text": "多条批注可一并“发送给 AI”进行修改；未配置模型时，编辑、批注与保存均可正常使用。"
+              "text": "多条批注可以一起“发送给 AI”修改；没有配置模型时，编辑、批注与保存照常可用。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "delivery-purpose": {
@@ -711,10 +759,14 @@
           "children": [
             {
               "type": "text",
-              "text": "放映和导出使用最近一次保存的版本。讲稿与配音的操作见“讲稿与配音”教程。"
+              "text": "放映与导出使用最近一次保存的版本。完成以上练习后，“午餐方案 B”的正文、讲稿与播放时机都已在工作台中改好，随时可以放映和导出。配音的操作见“讲稿与配音”教程。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "delivery-actions": {
@@ -736,7 +788,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "text": "点击“放映”，在第一步与第二步之间切换，结论按步骤显示与隐藏。"
+                      "text": "点击“放映”，在第一步与第二步之间切换，结论随步骤显示与隐藏。"
                     }
                   ]
                 }
@@ -760,6 +812,200 @@
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "start-keys": {
+      "id": "start-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "start-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "复制页面 → 改正文与讲稿 → 调整时机 → 批注 → 放映与导出"
+            }
+          ]
+        },
+        {
+          "id": "start-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "不需要模型或语音服务"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "copy-keys": {
+      "id": "copy-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "copy-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "复制页面 → 撤消 / 恢复 → 重命名 → 改价格与结论"
+            }
+          ]
+        },
+        {
+          "id": "copy-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "副本：独立的正文、步骤、讲稿"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "scripts-keys": {
+      "id": "scripts-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "scripts-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "工具栏“字幕” → 讲稿栏"
+            }
+          ]
+        },
+        {
+          "id": "scripts-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每一步的讲稿 = 配音文本 + 字幕"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "timing-keys": {
+      "id": "timing-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "timing-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "最短停留 1200 毫秒 · 结束停顿 250 毫秒"
+            }
+          ]
+        },
+        {
+          "id": "timing-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "页面设置 → 本步另设 → 恢复继承"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "comments-keys": {
+      "id": "comments-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "comments-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "批注 · 撤消 / 恢复 · 版本历史"
+            }
+          ]
+        },
+        {
+          "id": "comments-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "多条批注 → 发送给 AI"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "delivery-keys": {
+      "id": "delivery-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "delivery-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "放映：结论随步骤出现"
+            }
+          ]
+        },
+        {
+          "id": "delivery-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "导出：网站 · Notebook"
+            }
+          ]
+        },
+        {
+          "id": "delivery-key-3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "使用最近一次保存的版本"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
       ]
     }
   },
@@ -770,6 +1016,10 @@
       "visuals": [
         {
           "blockId": "start-goal",
+          "visible": true
+        },
+        {
+          "blockId": "start-keys",
           "visible": true
         }
       ],
@@ -839,9 +1089,15 @@
         {
           "blockId": "copy-boundary",
           "visible": true
+        },
+        {
+          "blockId": "copy-keys",
+          "visible": true
         }
       ],
-      "narrationIds": []
+      "narrationIds": [
+        "copy-narration"
+      ]
     },
     "scripts-step": {
       "id": "scripts-step",
@@ -854,9 +1110,15 @@
         {
           "blockId": "scripts-scope",
           "visible": true
+        },
+        {
+          "blockId": "scripts-keys",
+          "visible": true
         }
       ],
-      "narrationIds": []
+      "narrationIds": [
+        "scripts-narration"
+      ]
     },
     "timing-step": {
       "id": "timing-step",
@@ -865,9 +1127,15 @@
         {
           "blockId": "timing-actions",
           "visible": true
+        },
+        {
+          "blockId": "timing-keys",
+          "visible": true
         }
       ],
-      "narrationIds": []
+      "narrationIds": [
+        "timing-narration"
+      ]
     },
     "comments-step": {
       "id": "comments-step",
@@ -880,9 +1148,15 @@
         {
           "blockId": "comments-agent",
           "visible": true
+        },
+        {
+          "blockId": "comments-keys",
+          "visible": true
         }
       ],
-      "narrationIds": []
+      "narrationIds": [
+        "comments-narration"
+      ]
     },
     "delivery-step": {
       "id": "delivery-step",
@@ -895,9 +1169,15 @@
         {
           "blockId": "delivery-purpose",
           "visible": true
+        },
+        {
+          "blockId": "delivery-keys",
+          "visible": true
         }
       ],
-      "narrationIds": []
+      "narrationIds": [
+        "delivery-narration"
+      ]
     }
   },
   "narrations": {
@@ -906,7 +1186,7 @@
       "content": [
         {
           "type": "text",
-          "text": "用每人三十元的预算，练习把一份讲义改成自己的讲课方案。"
+          "text": "这份教程用一道午餐预算题做练习。复制页面，改正文和讲稿，最后放映、导出。全程不用配置模型。"
         }
       ]
     },
@@ -915,7 +1195,7 @@
       "content": [
         {
           "type": "text",
-          "text": "先看三项价格：主食十二元，配菜八元，饮品五元。价格表里的 "
+          "text": "三项价格是：主食十二元，配菜八元，饮品五元。表头的 "
         },
         {
           "type": "pronunciation",
@@ -924,7 +1204,7 @@
         },
         {
           "type": "text",
-          "text": " 是货币标记。"
+          "text": " 符号表示价格以元为单位。"
         },
         {
           "id": "budget-pause",
@@ -936,7 +1216,7 @@
         },
         {
           "type": "text",
-          "text": "现在自己估算一下。"
+          "text": "先自己估算一下，会超支吗？"
         }
       ]
     },
@@ -945,7 +1225,7 @@
       "content": [
         {
           "type": "text",
-          "text": "我们先按每人每样各买一份计算。"
+          "text": "每样各买一份，按一个人计算。"
         }
       ]
     },
@@ -954,7 +1234,52 @@
       "content": [
         {
           "type": "text",
-          "text": "三项合计二十五元，在三十元预算内，还剩五元。"
+          "text": "十二加八加五，合计二十五元。三十减二十五，还剩五元，没有超支。"
+        }
+      ]
+    },
+    "copy-narration": {
+      "id": "copy-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先复制练习页，再在副本上改价格。副本有自己的正文、步骤和讲稿，原页保持不变。"
+        }
+      ]
+    },
+    "scripts-narration": {
+      "id": "scripts-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "讲稿按步骤保存，既是配音的文本，也是字幕。所以正文里的价格改了，讲稿里的数字也要跟着改。"
+        }
+      ]
+    },
+    "timing-narration": {
+      "id": "timing-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "播放时机决定每一步停多久。这一页每步至少停一点二秒，讲完再停零点二五秒；单独一步可以另设，也能恢复。"
+        }
+      ]
+    },
+    "comments-narration": {
+      "id": "comments-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "批注记下要改的地方。几条批注可以一起交给 AI 修改；没有模型时，编辑和批注也照常可用。"
+        }
+      ]
+    },
+    "delivery-narration": {
+      "id": "delivery-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "放映和导出都用最近保存的版本。正文、讲稿和时机改好后，可以直接放映，也能导出成网站。"
         }
       ]
     }

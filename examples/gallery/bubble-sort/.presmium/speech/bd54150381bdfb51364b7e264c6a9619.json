@@ -1,0 +1,88 @@
+{
+  "key": "bd54150381bdfb51364b7e264c6a9619",
+  "audio": "bd54150381bdfb51364b7e264c6a9619.ogg",
+  "mime": "audio/ogg",
+  "duration": 4.14,
+  "words": [
+    {
+      "text": "接着",
+      "start": 0.1,
+      "end": 0.4125
+    },
+    {
+      "text": "比较",
+      "start": 0.425,
+      "end": 0.7375
+    },
+    {
+      "text": "5",
+      "start": 0.7625,
+      "end": 0.9
+    },
+    {
+      "text": "和",
+      "start": 0.9125,
+      "end": 1.0875
+    },
+    {
+      "text": "4",
+      "start": 1.0875,
+      "end": 1.4125
+    },
+    {
+      "text": "还是",
+      "start": 1.65,
+      "end": 1.9125
+    },
+    {
+      "text": "前面",
+      "start": 1.925,
+      "end": 2.2875
+    },
+    {
+      "text": "的",
+      "start": 2.2875,
+      "end": 2.3875
+    },
+    {
+      "text": "大",
+      "start": 2.4,
+      "end": 2.65
+    },
+    {
+      "text": "再",
+      "start": 2.925,
+      "end": 3.1
+    },
+    {
+      "text": "交换",
+      "start": 3.1,
+      "end": 3.6125
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "接着比较 5 和 4，还是前面的大，再交换。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "bd54150381bdfb51364b7e264c6a9619",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "71d6aa46a26d033a746ce3744fa75fc4b5f3c2d49e4027c4cc58f857525a0333",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "11f31f58caef1883665338b7e800b7ff",
+  "request": {
+    "spoken": "接着比较 5 和 4，还是前面的大，再交换。",
+    "rate": 1,
+    "style": ""
+  }
+}

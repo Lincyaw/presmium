@@ -1,0 +1,93 @@
+{
+  "key": "d1efe9bdd04694927e25d32bda51f7b7",
+  "audio": "d1efe9bdd04694927e25d32bda51f7b7.ogg",
+  "mime": "audio/ogg",
+  "duration": 4.76,
+  "words": [
+    {
+      "text": "然后",
+      "start": 0.1,
+      "end": 0.4625
+    },
+    {
+      "text": "数一数",
+      "start": 0.4875,
+      "end": 1.15
+    },
+    {
+      "text": "哪",
+      "start": 1.4375,
+      "end": 1.6
+    },
+    {
+      "text": "两",
+      "start": 1.6,
+      "end": 1.775
+    },
+    {
+      "text": "个",
+      "start": 1.775,
+      "end": 1.8375
+    },
+    {
+      "text": "相邻",
+      "start": 1.8625,
+      "end": 2.2
+    },
+    {
+      "text": "的",
+      "start": 2.2,
+      "end": 2.3
+    },
+    {
+      "text": "字母",
+      "start": 2.3125,
+      "end": 2.825
+    },
+    {
+      "text": "一起",
+      "start": 2.925,
+      "end": 3.275
+    },
+    {
+      "text": "出现",
+      "start": 3.2875,
+      "end": 3.625
+    },
+    {
+      "text": "得",
+      "start": 3.625,
+      "end": 3.7
+    },
+    {
+      "text": "最多",
+      "start": 3.7125,
+      "end": 4.2375
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "然后数一数，哪两个相邻的字母一起出现得最多。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "d1efe9bdd04694927e25d32bda51f7b7",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "7bfa9fe71e4bd4a4995dbfd211587c3cc9b6790cfaf6ba47579f25843a5ff26c",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "ceae37f4ae5af80dd88e17ca128177a0",
+  "request": {
+    "spoken": "然后数一数，哪两个相邻的字母一起出现得最多。",
+    "rate": 1,
+    "style": ""
+  }
+}

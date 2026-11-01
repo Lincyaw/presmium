@@ -42,7 +42,10 @@
       "title": "转动的圆，怎样画出一个音符？",
       "level": 1,
       "children": [
-        "question-body"
+        "question-body",
+        "question-keywords",
+        "question-equation",
+        "question-terms"
       ],
       "stepOrder": [
         "question-step"
@@ -53,7 +56,7 @@
     },
     "circles": {
       "id": "circles",
-      "title": "一个圆，再加一个圆",
+      "title": "一个圆画不出角，两个圆可以",
       "level": 2,
       "children": [
         "circles-body",
@@ -100,9 +103,10 @@
     },
     "try": {
       "id": "try",
-      "title": "换一个形状：五角星",
+      "title": "五角星：两个圆就有五个角",
       "level": 2,
       "children": [
+        "try-keywords",
         "try-body",
         "try-scene",
         "code-body",
@@ -136,25 +140,13 @@
           "children": [
             {
               "type": "text",
-              "text": "圆是最光滑的形状，没有一个尖角。可是把几个转动的圆一个接一个串起来，最后一个圆上的笔，能画出一个带尖角的音符。这节课回答：要几个圆，每个圆多大、转多快？"
-            }
-          ]
-        },
-        {
-          "id": "series-equation",
-          "type": "math",
-          "value": "z(t)=c_0+\\sum_{n\\ne 0} c_n e^{\\,int},\\qquad 0\\le t<2\\pi"
-        },
-        {
-          "id": "question-reading",
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "text": "把平面上的点看成复数 z=x+iy。每一项 cₙeⁱⁿᵗ 是一个圆：半径是 |cₙ|，笔每画一圈它转 n 圈，n 的正负决定转的方向。"
+              "text": "圆没有尖角，可是把几个转动的圆首尾相接，最后一个圆上的笔能画出带尖角的音符。每个圆的半径、转速和起始角度都由轮廓的傅里叶系数给出。圆按半径从大到小加进来，笔画出的曲线就越来越接近轮廓，只在尖角处留下不会完全消失的波纹。"
             }
           ]
         }
+      ],
+      "only": [
+        "web"
       ]
     },
     "circles-body": {
@@ -167,7 +159,7 @@
           "children": [
             {
               "type": "text",
-              "text": "一个圆只能画圆。在它的边上再放一个小圆，让小圆反向转两圈，笔画出的曲线就被掰出三个角。"
+              "text": "一个圆只能画出圆。在它的边上放一个半径为 0.36 的小圆，大圆转一圈时小圆反向转两圈，笔画出的曲线就出现三个圆角。这条曲线写成："
             }
           ]
         },
@@ -197,7 +189,7 @@
           "children": [
             {
               "type": "text",
-              "text": "先在音符的轮廓上等距取 1024 个点，再用离散傅里叶变换算出每个圆的半径和起始角度。图中只保留最大的 N 个圆，按大小串起来。虚线是目标轮廓；右边是误差：每个点与笔的位置之差的均方根，相对于轮廓的大小。"
+              "text": "圆的半径和起始角度由离散傅里叶变换算出。先在音符的轮廓上等距取 M = 1024 个点 zₖ，再按下式求出每个系数 cₙ。图中只保留半径最大的 N 个圆，按半径从大到小串起来；虚线是目标轮廓，右边的误差是各点与笔的位置之差的均方根，相对于轮廓的大小。"
             }
           ]
         },
@@ -212,7 +204,7 @@
           "children": [
             {
               "type": "text",
-              "text": "注意尖角：圆少的时候，曲线在尖角处冲过头又绕回来，留下小小的波纹。圆越多，波纹越贴近尖角，但不会完全消失。"
+              "text": "误差随圆数迅速下降：1 个圆时约 64%，8 个圆时约 8%，32 个圆时约 1%，64 个圆时不到 0.5%。尖角最难逼近：圆少时，曲线在尖角处冲过头又绕回来，留下波纹；圆越多，波纹越贴近尖角，但不会完全消失。"
             }
           ]
         }
@@ -248,7 +240,7 @@
           "children": [
             {
               "type": "text",
-              "text": "先猜：五角星有十个尖角、十条直边，要几个圆才能画像？"
+              "text": "五角星有十个尖角、十条直边。只用两个圆，曲线就已经有五个角；四个圆时尖角更尖、边更直；十六个圆时边已经是直的，只在尖角处略圆；六十四个圆时几乎和原来的五角星分不出来。两个圆就有五个角，原因是对称：五角星转过五分之一圈后与原来重合，所以只有转速 n 除以 5 余 1 的圆不为零。"
             }
           ]
         }
@@ -281,7 +273,7 @@
           "children": [
             {
               "type": "text",
-              "text": "下面就是本课计算系数的函数。换一组点，就能画出别的轮廓。"
+              "text": "下面是本课计算系数的函数 series：输入轮廓上一圈等距的点，返回第一个圆的圆心 c₀ 和其余各圆，按半径从大到小排列。换一组点，就能画出别的轮廓。"
             }
           ]
         }
@@ -312,7 +304,7 @@
           "children": [
             {
               "type": "text",
-              "text": "五角星转过五分之一圈后和原来一样，所以只有转速 n 除以 5 余 1 的圆不为零，两个圆就已经有五个角。试着改 epicycles.ts 里的形状，先预测要几个圆，再看结果。"
+              "text": "任何闭合轮廓都能这样拆成一串转动的圆：傅里叶系数给出每个圆的大小、转速和起始角度，圆越多，曲线越接近轮廓，尖角处的波纹只会变短。可以改 epicycles.ts 里的形状，先按对称性预测要几个圆，再看结果。"
             }
           ]
         },
@@ -336,6 +328,86 @@
       "only": [
         "web"
       ]
+    },
+    "question-equation": {
+      "id": "question-equation",
+      "type": "text",
+      "content": [
+        {
+          "id": "series-equation",
+          "type": "math",
+          "value": "z(t)=c_0+\\sum_{n\\ne 0} c_n e^{\\,int},\\qquad 0\\le t<2\\pi"
+        }
+      ]
+    },
+    "question-terms": {
+      "id": "question-terms",
+      "type": "text",
+      "content": [
+        {
+          "id": "question-reading",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "上式把平面上的点记作复数 z = x + iy。式中每一项 cₙeⁱⁿᵗ 是一个圆：半径为 |cₙ|，笔走完一圈时它转 n 圈，n 的正负决定转动方向；c₀ 是第一个圆的圆心。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "question-keywords": {
+      "id": "question-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "question-keywords--draw",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "转动的圆 → 带尖角的音符"
+            }
+          ]
+        },
+        {
+          "id": "question-keywords--coefficients",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "半径、转速、起始角度：傅里叶系数"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "try-keywords": {
+      "id": "try-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "try-keywords--claim",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "圆越多越像，尖角留下波纹"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
     }
   },
   "steps": {
@@ -346,6 +418,18 @@
       "visuals": [
         {
           "blockId": "question-body",
+          "visible": true
+        },
+        {
+          "blockId": "question-keywords",
+          "visible": true
+        },
+        {
+          "blockId": "question-equation",
+          "visible": true
+        },
+        {
+          "blockId": "question-terms",
           "visible": true
         }
       ],
@@ -530,6 +614,10 @@
       "title": "五角星，2 个圆",
       "visuals": [
         {
+          "blockId": "try-keywords",
+          "visible": true
+        },
+        {
           "blockId": "try-body",
           "visible": true
         },
@@ -560,6 +648,10 @@
       "sectionId": "try",
       "title": "五角星，4 个圆",
       "visuals": [
+        {
+          "blockId": "try-keywords",
+          "visible": true
+        },
         {
           "blockId": "try-body",
           "visible": true
@@ -592,6 +684,10 @@
       "title": "五角星，16 个圆",
       "visuals": [
         {
+          "blockId": "try-keywords",
+          "visible": true
+        },
+        {
           "blockId": "try-body",
           "visible": true
         },
@@ -622,6 +718,10 @@
       "sectionId": "try",
       "title": "五角星，64 个圆",
       "visuals": [
+        {
+          "blockId": "try-keywords",
+          "visible": true
+        },
         {
           "blockId": "try-body",
           "visible": true
@@ -655,7 +755,7 @@
       "content": [
         {
           "type": "text",
-          "text": "圆没有尖角。可是把转动的圆一个接一个串起来，就能画出带尖角的形状。我们来看看要几个圆。"
+          "text": "圆没有尖角。可是把转动的圆一个接一个串起来，就能画出带尖角的音符。每个圆多大、转多快，都由傅里叶系数决定。"
         }
       ]
     },
@@ -673,7 +773,7 @@
       "content": [
         {
           "type": "text",
-          "text": "在它的边上再放一个小圆，反向转两圈。笔的轨迹被掰弯，出现了三个圆角。"
+          "text": "在它的边上再放一个小圆，大圆转一圈，它反向转两圈。笔的轨迹被掰弯，出现了三个圆角。"
         }
       ]
     },
@@ -682,7 +782,7 @@
       "content": [
         {
           "type": "text",
-          "text": "现在换成音符。只用最大的一个圆，画出的只是一个圆，误差约百分之六十四。"
+          "text": "现在换成音符。圆的大小由离散傅里叶变换算出。只用最大的一个圆，画出的还是圆，误差约百分之六十四。"
         }
       ]
     },
@@ -718,7 +818,7 @@
       "content": [
         {
           "type": "text",
-          "text": "十六个圆，符杆变直了。注意尖角附近，曲线冲过头又绕回来。"
+          "text": "十六个圆，符杆变直了。可是在尖角附近，曲线冲过头又绕了回来。"
         }
       ]
     },
@@ -745,7 +845,7 @@
       "content": [
         {
           "type": "text",
-          "text": "换成五角星。先猜要几个圆。只用两个，就已经有了五个角。"
+          "text": "换成五角星。先猜猜，要几个圆？只用两个，就已经有了五个角，因为五角星转五分之一圈就和原来重合。"
         }
       ]
     },
@@ -772,7 +872,7 @@
       "content": [
         {
           "type": "text",
-          "text": "六十四个圆，和原来的五角星几乎分不出来。换一个形状，自己试试。"
+          "text": "六十四个圆，和原来的五角星几乎分不出来。任何闭合的轮廓，都能这样拆成一串转动的圆。"
         }
       ]
     }

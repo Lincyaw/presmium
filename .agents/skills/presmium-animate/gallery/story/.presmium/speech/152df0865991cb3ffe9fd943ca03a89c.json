@@ -1,0 +1,168 @@
+{
+  "key": "152df0865991cb3ffe9fd943ca03a89c",
+  "audio": "152df0865991cb3ffe9fd943ca03a89c.ogg",
+  "mime": "audio/ogg",
+  "duration": 9.54,
+  "words": [
+    {
+      "text": "生成",
+      "start": 0.1,
+      "end": 0.525
+    },
+    {
+      "text": "一",
+      "start": 0.5375,
+      "end": 0.6625
+    },
+    {
+      "text": "张",
+      "start": 0.6625,
+      "end": 0.8875
+    },
+    {
+      "text": "图",
+      "start": 0.8875,
+      "end": 1.2375
+    },
+    {
+      "text": "就",
+      "start": 1.475,
+      "end": 1.6375
+    },
+    {
+      "text": "是",
+      "start": 1.6375,
+      "end": 1.75
+    },
+    {
+      "text": "把",
+      "start": 1.7625,
+      "end": 1.9375
+    },
+    {
+      "text": "一",
+      "start": 1.9375,
+      "end": 2.05
+    },
+    {
+      "text": "团",
+      "start": 2.05,
+      "end": 2.3375
+    },
+    {
+      "text": "随机",
+      "start": 2.3625,
+      "end": 2.725
+    },
+    {
+      "text": "噪声",
+      "start": 2.7375,
+      "end": 3.15
+    },
+    {
+      "text": "推成",
+      "start": 3.175,
+      "end": 3.5625
+    },
+    {
+      "text": "图",
+      "start": 3.5625,
+      "end": 3.9125
+    },
+    {
+      "text": "每",
+      "start": 4.475,
+      "end": 4.6875
+    },
+    {
+      "text": "个",
+      "start": 4.6875,
+      "end": 4.775
+    },
+    {
+      "text": "噪声",
+      "start": 4.7875,
+      "end": 5.2125
+    },
+    {
+      "text": "点",
+      "start": 5.2125,
+      "end": 5.5375
+    },
+    {
+      "text": "沿着",
+      "start": 5.6375,
+      "end": 5.9375
+    },
+    {
+      "text": "自己的路",
+      "start": 5.95,
+      "end": 6.625
+    },
+    {
+      "text": "走",
+      "start": 6.9375,
+      "end": 7.1125
+    },
+    {
+      "text": "到",
+      "start": 7.1125,
+      "end": 7.2625
+    },
+    {
+      "text": "图",
+      "start": 7.275,
+      "end": 7.5375
+    },
+    {
+      "text": "里",
+      "start": 7.5375,
+      "end": 7.875
+    },
+    {
+      "text": "属于",
+      "start": 7.9,
+      "end": 8.225
+    },
+    {
+      "text": "它",
+      "start": 8.2375,
+      "end": 8.3875
+    },
+    {
+      "text": "的",
+      "start": 8.3875,
+      "end": 8.475
+    },
+    {
+      "text": "位置",
+      "start": 8.4875,
+      "end": 9
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "生成一张图，就是把一团随机噪声推成图。每个噪声点沿着自己的路，走到图里属于它的位置。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "152df0865991cb3ffe9fd943ca03a89c",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "bf992b0b21fbc1cb512dfc99c5bb0bc784d6fb8d7b32b3bac536c61e7f69fb01",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "c65dcbcc0c7fa0e629612889e2eeb0bd",
+  "request": {
+    "spoken": "生成一张图，就是把一团随机噪声推成图。每个噪声点沿着自己的路，走到图里属于它的位置。",
+    "rate": 1,
+    "style": ""
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "key": "3f81e3d50c0781147c644d8af127505c",
+  "audio": "3f81e3d50c0781147c644d8af127505c.ogg",
+  "mime": "audio/ogg",
+  "duration": 5.18,
+  "words": [
+    {
+      "text": "训练",
+      "start": 0.1,
+      "end": 0.5
+    },
+    {
+      "text": "之后",
+      "start": 0.5125,
+      "end": 0.975
+    },
+    {
+      "text": "意思",
+      "start": 1.2625,
+      "end": 1.525
+    },
+    {
+      "text": "相近",
+      "start": 1.5375,
+      "end": 1.9125
+    },
+    {
+      "text": "的",
+      "start": 1.9125,
+      "end": 2.025
+    },
+    {
+      "text": "词",
+      "start": 2.025,
+      "end": 2.4
+    },
+    {
+      "text": "靠",
+      "start": 2.5,
+      "end": 2.7
+    },
+    {
+      "text": "到",
+      "start": 2.7,
+      "end": 2.85
+    },
+    {
+      "text": "了",
+      "start": 2.85,
+      "end": 2.925
+    },
+    {
+      "text": "一起",
+      "start": 2.9375,
+      "end": 3.4625
+    },
+    {
+      "text": "聚成",
+      "start": 3.675,
+      "end": 4.05
+    },
+    {
+      "text": "三",
+      "start": 4.0625,
+      "end": 4.3
+    },
+    {
+      "text": "团",
+      "start": 4.3,
+      "end": 4.65
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "训练之后，意思相近的词靠到了一起，聚成三团。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "3f81e3d50c0781147c644d8af127505c",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "63c833943350ac820914f3f2bffad8f29db01fe19e43483152516bc0f3188c5e",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "affd680320ab787873635b861cd35b43",
+  "request": {
+    "spoken": "训练之后，意思相近的词靠到了一起，聚成三团。",
+    "rate": 1,
+    "style": ""
+  }
+}

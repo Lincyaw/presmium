@@ -1,0 +1,83 @@
+{
+  "key": "90ea9c9eab6231edfda6c469e750f333",
+  "audio": "90ea9c9eab6231edfda6c469e750f333.ogg",
+  "mime": "audio/ogg",
+  "duration": 3.06,
+  "words": [
+    {
+      "text": "是",
+      "start": 0.1,
+      "end": 0.4
+    },
+    {
+      "text": "l",
+      "start": 0.4,
+      "end": 0.675
+    },
+    {
+      "text": "和",
+      "start": 0.6875,
+      "end": 0.8875
+    },
+    {
+      "text": "o",
+      "start": 0.8875,
+      "end": 1.1375
+    },
+    {
+      "text": "三",
+      "start": 1.3875,
+      "end": 1.625
+    },
+    {
+      "text": "个",
+      "start": 1.625,
+      "end": 1.7125
+    },
+    {
+      "text": "词",
+      "start": 1.7125,
+      "end": 1.8875
+    },
+    {
+      "text": "里",
+      "start": 1.8875,
+      "end": 2.0375
+    },
+    {
+      "text": "都",
+      "start": 2.05,
+      "end": 2.2375
+    },
+    {
+      "text": "有",
+      "start": 2.2375,
+      "end": 2.525
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "是 l 和 o，三个词里都有。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "90ea9c9eab6231edfda6c469e750f333",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "bdb9dd62b8907e1ef262235037e690074961a94d7eecc57f69d7ef4d93d299b0",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "1d65bc0b2d87a88f0bf5df8e7fa7d638",
+  "request": {
+    "spoken": "是 l 和 o，三个词里都有。",
+    "rate": 1,
+    "style": ""
+  }
+}

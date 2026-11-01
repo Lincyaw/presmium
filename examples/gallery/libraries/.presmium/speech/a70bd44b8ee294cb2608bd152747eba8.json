@@ -1,0 +1,83 @@
+{
+  "key": "a70bd44b8ee294cb2608bd152747eba8",
+  "audio": "a70bd44b8ee294cb2608bd152747eba8.ogg",
+  "mime": "audio/ogg",
+  "duration": 3.56,
+  "words": [
+    {
+      "text": "接着",
+      "start": 0.1,
+      "end": 0.6625
+    },
+    {
+      "text": "副",
+      "start": 0.7625,
+      "end": 0.9625
+    },
+    {
+      "text": "标题",
+      "start": 0.9625,
+      "end": 1.4125
+    },
+    {
+      "text": "一个",
+      "start": 1.4375,
+      "end": 1.675
+    },
+    {
+      "text": "字",
+      "start": 1.675,
+      "end": 1.8375
+    },
+    {
+      "text": "一个",
+      "start": 1.8625,
+      "end": 2.1125
+    },
+    {
+      "text": "字",
+      "start": 2.1125,
+      "end": 2.3
+    },
+    {
+      "text": "地",
+      "start": 2.3,
+      "end": 2.3875
+    },
+    {
+      "text": "打",
+      "start": 2.4,
+      "end": 2.6125
+    },
+    {
+      "text": "出来",
+      "start": 2.6125,
+      "end": 3.0375
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "接着副标题一个字一个字地打出来。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "a70bd44b8ee294cb2608bd152747eba8",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "d1965f9dadffdbb1d17a9842c412d729566d4c6b57d2779a7cc95da567ccd1f8",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "358928480e95ba905bf025c0500b68f9",
+  "request": {
+    "spoken": "接着副标题一个字一个字地打出来。",
+    "rate": 1,
+    "style": ""
+  }
+}

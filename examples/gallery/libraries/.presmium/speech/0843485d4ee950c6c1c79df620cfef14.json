@@ -1,0 +1,133 @@
+{
+  "key": "0843485d4ee950c6c1c79df620cfef14",
+  "audio": "0843485d4ee950c6c1c79df620cfef14.ogg",
+  "mime": "audio/ogg",
+  "duration": 8.06,
+  "words": [
+    {
+      "text": "这",
+      "start": 0.1,
+      "end": 0.3
+    },
+    {
+      "text": "一",
+      "start": 0.3,
+      "end": 0.4375
+    },
+    {
+      "text": "页",
+      "start": 0.4375,
+      "end": 0.7125
+    },
+    {
+      "text": "用",
+      "start": 0.8125,
+      "end": 1.025
+    },
+    {
+      "text": "Anime",
+      "start": 1.0375,
+      "end": 1.5625
+    },
+    {
+      "text": "js",
+      "start": 1.8,
+      "end": 2.2625
+    },
+    {
+      "text": "画",
+      "start": 2.2625,
+      "end": 2.5625
+    },
+    {
+      "text": "编译",
+      "start": 2.6625,
+      "end": 2.95
+    },
+    {
+      "text": "管线",
+      "start": 2.9625,
+      "end": 3.475
+    },
+    {
+      "text": "最左",
+      "start": 4.05,
+      "end": 4.4625
+    },
+    {
+      "text": "边",
+      "start": 4.4625,
+      "end": 4.65
+    },
+    {
+      "text": "是",
+      "start": 4.65,
+      "end": 4.775
+    },
+    {
+      "text": "源文件",
+      "start": 4.7875,
+      "end": 5.45
+    },
+    {
+      "text": "一",
+      "start": 5.75,
+      "end": 5.8875
+    },
+    {
+      "text": "份",
+      "start": 5.8875,
+      "end": 6.05
+    },
+    {
+      "text": "讲义",
+      "start": 6.0625,
+      "end": 6.5875
+    },
+    {
+      "text": "只有",
+      "start": 6.6875,
+      "end": 6.9875
+    },
+    {
+      "text": "这",
+      "start": 7,
+      "end": 7.15
+    },
+    {
+      "text": "一",
+      "start": 7.15,
+      "end": 7.275
+    },
+    {
+      "text": "份",
+      "start": 7.275,
+      "end": 7.5375
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "这一页用 Anime.js 画编译管线。最左边是源文件，一份讲义只有这一份。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "0843485d4ee950c6c1c79df620cfef14",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "aea2b5507e818cced1d0fe191e24d1aaf81a62094b9efaead03146fb90fe4162",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "06d30e125d6e0cf83c12e7efc0cc1fb2",
+  "request": {
+    "spoken": "这一页用 Anime.js 画编译管线。最左边是源文件，一份讲义只有这一份。",
+    "rate": 1,
+    "style": ""
+  }
+}

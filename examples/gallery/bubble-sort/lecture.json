@@ -19,7 +19,7 @@
     "tags": [
       "课程"
     ],
-    "description": "一趟冒泡排序：代码、GSAP 动画、讲稿触发的计数组件与光标提示，并合成带字幕的讲授视频。"
+    "description": "一趟冒泡排序把最大的数带到末尾：代码、GSAP 动画、讲稿触发的计数组件与光标提示，并合成带字幕的讲授视频。"
   },
   "sectionOrder": [
     "intro",
@@ -32,7 +32,8 @@
       "title": "冒泡排序",
       "level": 1,
       "children": [
-        "intro--paragraph-1"
+        "intro--paragraph-1",
+        "intro--keywords"
       ],
       "stepOrder": [
         "intro--step-0"
@@ -43,9 +44,10 @@
     },
     "pass": {
       "id": "pass",
-      "title": "一趟冒泡",
+      "title": "一趟冒泡把最大的数带到末尾",
       "level": 2,
       "children": [
+        "pass--explain",
         "pass--sort-code",
         "pass--stats",
         "pass--bubble"
@@ -63,10 +65,11 @@
     },
     "summary": {
       "id": "summary",
-      "title": "小结",
+      "title": "每一趟让一个数归位",
       "level": 2,
       "children": [
-        "summary--paragraph-1"
+        "summary--paragraph-1",
+        "summary--keywords"
       ],
       "stepOrder": [
         "summary--step-0"
@@ -87,10 +90,14 @@
           "children": [
             {
               "type": "text",
-              "text": "用一个动画讲清楚冒泡排序的一趟。"
+              "text": "冒泡排序只做一种操作：比较相邻的两个数，前一个比后一个大就交换。从左到右这样走一遍称为一趟。一趟走完，最大的数一定落在末尾，因为它在每次比较中都比右边的数大，会被一路换到最后。本页用 5、2、4、1、3 这五个数演示一趟。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "pass--sort-code": {
@@ -124,10 +131,104 @@
           "children": [
             {
               "type": "text",
-              "text": "一趟下来，最大的数到了末尾。"
+              "text": "一趟冒泡比较了四次，把五个数中最大的 5 放到了末尾。下一趟只需处理前四个数，再把其中最大的放到倒数第二位。每一趟让一个数归位，所以 n 个数最多 n − 1 趟就排好了序。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "intro--keywords": {
+      "id": "intro--keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "intro--keywords--rule",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "比较相邻两数，前大则交换"
+            }
+          ]
+        },
+        {
+          "id": "intro--keywords--claim",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一趟：最大的数到末尾"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "pass--explain": {
+      "id": "pass--explain",
+      "type": "text",
+      "content": [
+        {
+          "id": "pass--explain--code",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "函数 bubble_pass 做一趟冒泡：下标 i 从左向右移动，a[i] 大于 a[i + 1] 时交换这两个数。五个数有四对相邻位置，所以一趟比较四次。"
+            }
+          ]
+        },
+        {
+          "id": "pass--explain--trace",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "动画中，5 先与 2 比较，5 更大，两者交换；接着 5 与 4 比较，再次交换；随后 5 依次越过 1 和 3，停在末尾，变为绿色。计数器随讲解累计比较次数，也可以点“比较一次”自己计数。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "summary--keywords": {
+      "id": "summary--keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "summary--keywords--pass",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一趟：4 次比较，最大的数归位"
+            }
+          ]
+        },
+        {
+          "id": "summary--keywords--total",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "n 个数：最多 n − 1 趟"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
       ]
     }
   },
@@ -138,7 +239,11 @@
       "visuals": [
         {
           "blockId": "intro--paragraph-1",
-          "visible": false
+          "visible": true
+        },
+        {
+          "blockId": "intro--keywords",
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -149,6 +254,10 @@
       "id": "pass--step-0",
       "sectionId": "pass",
       "visuals": [
+        {
+          "blockId": "pass--explain",
+          "visible": true
+        },
         {
           "blockId": "pass--sort-code",
           "visible": true
@@ -173,6 +282,10 @@
       "sectionId": "pass",
       "visuals": [
         {
+          "blockId": "pass--explain",
+          "visible": true
+        },
+        {
           "blockId": "pass--sort-code",
           "visible": true
         },
@@ -195,6 +308,10 @@
       "id": "pass--step-2",
       "sectionId": "pass",
       "visuals": [
+        {
+          "blockId": "pass--explain",
+          "visible": true
+        },
         {
           "blockId": "pass--sort-code",
           "visible": true
@@ -219,6 +336,10 @@
       "sectionId": "pass",
       "visuals": [
         {
+          "blockId": "pass--explain",
+          "visible": true
+        },
+        {
           "blockId": "pass--sort-code",
           "visible": true
         },
@@ -241,6 +362,10 @@
       "id": "pass--step-4",
       "sectionId": "pass",
       "visuals": [
+        {
+          "blockId": "pass--explain",
+          "visible": true
+        },
         {
           "blockId": "pass--sort-code",
           "visible": true
@@ -266,7 +391,11 @@
       "visuals": [
         {
           "blockId": "summary--paragraph-1",
-          "visible": false
+          "visible": true
+        },
+        {
+          "blockId": "summary--keywords",
+          "visible": true
         }
       ],
       "narrationIds": [
@@ -280,7 +409,7 @@
       "content": [
         {
           "type": "text",
-          "text": "用一个动画讲清楚冒泡排序的一趟。"
+          "text": "冒泡排序只做一件事：比较相邻的两个数，前面的大，就交换。从左走到右，这叫一趟。走完一趟，最大的数就到了最后。"
         }
       ]
     },
@@ -289,7 +418,7 @@
       "content": [
         {
           "type": "text",
-          "text": "冒泡排序每一趟比较相邻的两个数，把大的往后换。先看这五个数。"
+          "text": "这是五个数：5、2、4、1、3。我们从左往右，每次只比较相邻的两个。"
         }
       ]
     },
@@ -298,7 +427,7 @@
       "content": [
         {
           "type": "text",
-          "text": "第一次比较 5 和 2，"
+          "text": "第一次，比较 5 和 2。"
         },
         {
           "id": "cue-pass-1",
@@ -313,7 +442,7 @@
         },
         {
           "type": "text",
-          "text": " 比较次数加一。"
+          "text": " 计数器记下一次比较。"
         }
       ]
     },
@@ -322,7 +451,7 @@
       "content": [
         {
           "type": "text",
-          "text": "5 比 2 大，"
+          "text": "5 比 2 大，所以交换。"
         },
         {
           "id": "cue-pass-1-2",
@@ -337,7 +466,7 @@
         },
         {
           "type": "text",
-          "text": " 交换它们。"
+          "text": " 代码里就是这两行：判断，然后互换。"
         }
       ]
     },
@@ -346,7 +475,7 @@
       "content": [
         {
           "type": "text",
-          "text": "再比较 5 和 4，"
+          "text": "接着比较 5 和 4，"
         },
         {
           "id": "cue-pass-1-3",
@@ -361,7 +490,7 @@
         },
         {
           "type": "text",
-          "text": " 又是前面大，再交换。"
+          "text": " 还是前面的大，再交换。"
         }
       ]
     },
@@ -370,7 +499,37 @@
       "content": [
         {
           "type": "text",
-          "text": "5 继续往后，越过 1 和 3，"
+          "text": "5 再和 1 比，"
+        },
+        {
+          "id": "cue-pass-1-5",
+          "type": "cue",
+          "action": "click",
+          "target": {
+            "blockId": "pass--stats"
+          },
+          "parameters": {
+            "arg": "compare"
+          }
+        },
+        {
+          "type": "text",
+          "text": " 和 3 比，"
+        },
+        {
+          "id": "cue-pass-1-6",
+          "type": "cue",
+          "action": "click",
+          "target": {
+            "blockId": "pass--stats"
+          },
+          "parameters": {
+            "arg": "compare"
+          }
+        },
+        {
+          "type": "text",
+          "text": " 每次都交换。"
         },
         {
           "id": "cue-pass-1-4",
@@ -379,7 +538,7 @@
         },
         {
           "type": "text",
-          "text": " 停在最后，这一趟结束。"
+          "text": " 它停在最后。这一趟，一共比较了四次。"
         }
       ]
     },
@@ -388,7 +547,7 @@
       "content": [
         {
           "type": "text",
-          "text": "一趟下来，最大的数到了末尾。"
+          "text": "一趟下来，最大的数归位了。剩下四个数再走一趟，又有一个归位。所以五个数，最多四趟就排好。"
         }
       ]
     }

@@ -1,0 +1,173 @@
+{
+  "key": "9e15744409a41fefb26b2de31be280a7",
+  "audio": "9e15744409a41fefb26b2de31be280a7.ogg",
+  "mime": "audio/ogg",
+  "duration": 9.72,
+  "words": [
+    {
+      "text": "一",
+      "start": 0.1,
+      "end": 0.2375
+    },
+    {
+      "text": "趟",
+      "start": 0.2375,
+      "end": 0.4375
+    },
+    {
+      "text": "下来",
+      "start": 0.45,
+      "end": 0.9125
+    },
+    {
+      "text": "最大",
+      "start": 1.15,
+      "end": 1.5375
+    },
+    {
+      "text": "的",
+      "start": 1.5375,
+      "end": 1.625
+    },
+    {
+      "text": "数",
+      "start": 1.6375,
+      "end": 1.825
+    },
+    {
+      "text": "归位",
+      "start": 1.85,
+      "end": 2.2625
+    },
+    {
+      "text": "了",
+      "start": 2.2625,
+      "end": 2.45
+    },
+    {
+      "text": "剩下",
+      "start": 3.0125,
+      "end": 3.45
+    },
+    {
+      "text": "四",
+      "start": 3.475,
+      "end": 3.6625
+    },
+    {
+      "text": "个数",
+      "start": 3.6625,
+      "end": 4
+    },
+    {
+      "text": "再",
+      "start": 4.025,
+      "end": 4.2
+    },
+    {
+      "text": "走",
+      "start": 4.2,
+      "end": 4.375
+    },
+    {
+      "text": "一",
+      "start": 4.3875,
+      "end": 4.5125
+    },
+    {
+      "text": "趟",
+      "start": 4.5125,
+      "end": 4.8
+    },
+    {
+      "text": "又",
+      "start": 5.025,
+      "end": 5.175
+    },
+    {
+      "text": "有",
+      "start": 5.175,
+      "end": 5.2875
+    },
+    {
+      "text": "一个",
+      "start": 5.3,
+      "end": 5.525
+    },
+    {
+      "text": "归位",
+      "start": 5.5375,
+      "end": 6.0125
+    },
+    {
+      "text": "所以",
+      "start": 6.5875,
+      "end": 6.925
+    },
+    {
+      "text": "五",
+      "start": 6.95,
+      "end": 7.1125
+    },
+    {
+      "text": "个数",
+      "start": 7.1125,
+      "end": 7.525
+    },
+    {
+      "text": "最多",
+      "start": 7.725,
+      "end": 8.075
+    },
+    {
+      "text": "四",
+      "start": 8.0875,
+      "end": 8.3
+    },
+    {
+      "text": "趟",
+      "start": 8.3,
+      "end": 8.525
+    },
+    {
+      "text": "就",
+      "start": 8.55,
+      "end": 8.6375
+    },
+    {
+      "text": "排",
+      "start": 8.65,
+      "end": 8.8625
+    },
+    {
+      "text": "好",
+      "start": 8.8625,
+      "end": 9.1875
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "一趟下来，最大的数归位了。剩下四个数再走一趟，又有一个归位。所以五个数，最多四趟就排好。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "9e15744409a41fefb26b2de31be280a7",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "b3bd21353a73dfa991da7ef05b072a18c4b70c32a3542de1bb986b39409f0527",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "2e41a9afd85faacde98441db80b73204",
+  "request": {
+    "spoken": "一趟下来，最大的数归位了。剩下四个数再走一趟，又有一个归位。所以五个数，最多四趟就排好。",
+    "rate": 1,
+    "style": ""
+  }
+}

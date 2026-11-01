@@ -41,7 +41,8 @@
       "title": "搜索与脚注",
       "level": 2,
       "children": [
-        "text-7"
+        "text-7",
+        "reading-keys"
       ],
       "stepOrder": [
         "reading-step"
@@ -55,7 +56,8 @@
       "title": "放映与演讲者视图",
       "level": 2,
       "children": [
-        "text-8"
+        "text-8",
+        "views-keys"
       ],
       "stepOrder": [
         "views-step"
@@ -71,7 +73,8 @@
       "children": [
         "text-18",
         "web-only",
-        "notebook-only"
+        "notebook-only",
+        "slides-only"
       ],
       "stepOrder": [
         "scope-step"
@@ -86,6 +89,7 @@
       "level": 2,
       "children": [
         "text-20",
+        "extension-keys",
         "text-23"
       ],
       "stepOrder": [
@@ -101,6 +105,7 @@
       "level": 2,
       "children": [
         "text-24",
+        "offline-keys",
         "contrast"
       ],
       "stepOrder": [
@@ -115,7 +120,8 @@
       "title": "译文",
       "level": 2,
       "children": [
-        "text-27"
+        "text-27",
+        "translation-keys"
       ],
       "stepOrder": [
         "translation-step"
@@ -129,7 +135,8 @@
       "title": "AI 问答",
       "level": 2,
       "children": [
-        "text-30"
+        "text-30",
+        "assistant-keys"
       ],
       "stepOrder": [
         "assistant-step"
@@ -144,6 +151,7 @@
       "level": 2,
       "children": [
         "text-33",
+        "export-keys",
         "export-commands"
       ],
       "stepOrder": [
@@ -158,7 +166,8 @@
       "title": "阅读",
       "level": 1,
       "children": [
-        "g-read-intro"
+        "g-read-intro",
+        "g-read-keys"
       ],
       "stepOrder": [
         "g-read-step"
@@ -172,7 +181,8 @@
       "title": "输出与扩展",
       "level": 1,
       "children": [
-        "g-output-intro"
+        "g-output-intro",
+        "g-output-keys"
       ],
       "stepOrder": [
         "g-output-step"
@@ -193,7 +203,7 @@
           "children": [
             {
               "type": "text",
-              "text": "可搜索本句中的示例词：星河笔记。"
+              "text": "网页提供全文搜索：搜索“星河笔记”，结果会定位到这一句。"
             },
             {
               "type": "extension",
@@ -215,14 +225,22 @@
           "type": "paragraph",
           "children": [
             {
+              "type": "text",
+              "text": "页内链接可以跳到文稿的任一页，例如"
+            },
+            {
               "type": "link",
               "href": "#scope",
               "children": [
                 {
                   "type": "text",
-                  "text": "跳到“按媒介输出”"
+                  "text": "“按媒介输出”"
                 }
               ]
+            },
+            {
+              "type": "text",
+              "text": "。"
             }
           ]
         },
@@ -242,7 +260,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "value": "这是一条脚注。"
+                      "value": "脚注适合放出处与补充说明：读者需要时再看，正文读起来不被打断。"
                     }
                   ]
                 }
@@ -256,12 +274,16 @@
               "children": [
                 {
                   "type": "text",
-                  "text": "这是一条脚注。"
+                  "text": "脚注适合放出处与补充说明：读者需要时再看，正文读起来不被打断。"
                 }
               ]
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-8": {
@@ -274,10 +296,14 @@
           "children": [
             {
               "type": "text",
-              "text": "通过右上角的视图菜单进入放映。放映时可使用画笔、黑屏与冻结画面；演讲者视图显示下一页与讲稿。"
+              "text": "讲课时，从右上角的视图菜单进入放映。放映中可以用画笔在页面上标注，也可以黑屏或冻结画面，把听众的注意力引回讲者。演讲者视图另开一个窗口，显示当前页、下一页和讲稿。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "web-only": {
@@ -290,7 +316,7 @@
           "children": [
             {
               "type": "text",
-              "text": "本段仅出现在网页中。"
+              "text": "这一段只在网页中显示。"
             }
           ]
         }
@@ -309,7 +335,7 @@
           "children": [
             {
               "type": "text",
-              "text": "本段仅出现在 notebook 中。"
+              "text": "这一段只在 notebook 中显示。"
             }
           ]
         }
@@ -328,10 +354,40 @@
           "children": [
             {
               "type": "text",
-              "text": "以下两段分别仅出现在网页与 notebook 中。"
+              "text": "内容块的 "
+            },
+            {
+              "type": "text",
+              "text": "only",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 字段列出显示它的媒介，没有 "
+            },
+            {
+              "type": "text",
+              "text": "only",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 的块在所有媒介中显示。下面两段分别限定为网页和 notebook，所以网页和 notebook 各只显示其中一段；幻灯片两段都不显示，改为显示一行为放映准备的文字。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-20": {
@@ -344,10 +400,27 @@
           "children": [
             {
               "type": "text",
-              "text": "下方的计数器是由本讲的本地插件注册的 Web Component。"
+              "text": "文稿可以带一个本地插件，注册自己的网页组件（Web Component）。下面的计数器由本文稿 "
+            },
+            {
+              "type": "text",
+              "text": "plugin",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 目录中的插件注册，初值为 2，每点击一次加一。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-23": {
@@ -396,10 +469,14 @@
           "children": [
             {
               "type": "text",
-              "text": "高对比度开关可提高文字与背景的对比。发布后的网页可保存到本地离线阅读。"
+              "text": "高对比度开关提高文字与背景的对比度，视力较弱的读者和明亮教室里的投影都更容易看清。发布后的网页可以保存到本地，断网时照常阅读。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-27": {
@@ -412,10 +489,14 @@
           "children": [
             {
               "type": "text",
-              "text": "本文稿附带英文译文，可在语言菜单中切换。"
+              "text": "这份文稿有中文与英文两个版本，读者用语言菜单在两者之间切换。译文与原文的页面、内容块和步骤一一对应。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-30": {
@@ -428,10 +509,14 @@
           "children": [
             {
               "type": "text",
-              "text": "阅读页的“提问”功能使用读者自行配置的模型服务。课堂中，AI 的回答经主讲审阅后再发送给全班。"
+              "text": "读者可以在阅读页用“提问”就内容向 AI 提问，所用的模型服务由读者自己配置。课堂上，AI 的回答先经主讲审阅，再发送给全班。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-33": {
@@ -444,10 +529,27 @@
           "children": [
             {
               "type": "text",
-              "text": "网页、notebook、学生版以及 PDF、图片、PowerPoint 均由同一份文稿生成。"
+              "text": "网页、notebook、学生版以及 PDF、图片与 PowerPoint 都从这一份 lecture.json 生成：内容只写一次，每次构建后各种输出彼此一致。下面前两条命令分别构建网页与 notebook、构建学生版网页；"
+            },
+            {
+              "type": "text",
+              "text": "presmium-export --help",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 列出 PDF、图片与 PowerPoint 的导出方式。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "export-commands": {
@@ -466,10 +568,14 @@
           "children": [
             {
               "type": "text",
-              "text": "搜索、放映、无障碍、译文与问答。"
+              "text": "一份文稿发布之后，读者和作者各得到一组功能。读者在网页上可以全文搜索、查看脚注、进入放映、切换高对比度与译文，也可以就内容向 AI 提问；作者用同一份 lecture.json 按媒介筛选内容、加入自己的网页组件，并输出网页、notebook、学生版与 PDF、图片、PowerPoint。本部分的五页演示读者一侧的功能。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "g-output-intro": {
@@ -482,10 +588,254 @@
           "children": [
             {
               "type": "text",
-              "text": "按媒介筛选内容、自定义网页组件与多种导出格式。"
+              "text": "作者一侧，同一份文稿面向不同媒介：内容块可以限定在部分媒介中显示，本地插件可以加入自定义网页组件，构建与导出命令输出网页、notebook、学生版与 PDF、图片、PowerPoint。本部分的三页依次演示。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "g-read-keys": {
+      "id": "g-read-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-read-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "读者：搜索 · 脚注 · 放映 · 高对比度 · 译文 · 提问"
+            }
+          ]
+        },
+        {
+          "id": "g-read-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "作者：一份 lecture.json → 网页 · notebook · 幻灯片 · 导出"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "reading-keys": {
+      "id": "reading-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "reading-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "全文搜索 · 脚注 · 页内链接"
+            }
+          ]
+        },
+        {
+          "id": "reading-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "在网页中使用"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "views-keys": {
+      "id": "views-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "views-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "画笔 · 黑屏 · 冻结画面"
+            }
+          ]
+        },
+        {
+          "id": "views-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "演讲者视图：当前页、下一页、讲稿"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "offline-keys": {
+      "id": "offline-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "offline-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "高对比度 · 离线阅读"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "translation-keys": {
+      "id": "translation-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "translation-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "语言菜单：中文 ⇄ English"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "assistant-keys": {
+      "id": "assistant-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "assistant-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "提问：读者自己配置模型"
+            }
+          ]
+        },
+        {
+          "id": "assistant-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "课堂：主讲审阅后发给全班"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "g-output-keys": {
+      "id": "g-output-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-output-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "按媒介筛选 · 自定义组件 · 导出"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "extension-keys": {
+      "id": "extension-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "extension-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本地插件 → 自定义网页组件"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "export-keys": {
+      "id": "export-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "export-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一份 lecture.json → 网页 · notebook · 学生版 · PDF · 图片 · PowerPoint"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "slides-only": {
+      "id": "slides-only",
+      "type": "text",
+      "content": [
+        {
+          "id": "slides-only-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "这一行只在幻灯片中显示：幻灯片放关键词，网页与 notebook 放完整段落。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
       ]
     }
   },
@@ -497,6 +847,10 @@
         {
           "blockId": "text-7",
           "visible": true
+        },
+        {
+          "blockId": "reading-keys",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -507,6 +861,10 @@
       "visuals": [
         {
           "blockId": "text-8",
+          "visible": true
+        },
+        {
+          "blockId": "views-keys",
           "visible": true
         }
       ],
@@ -527,6 +885,10 @@
         {
           "blockId": "notebook-only",
           "visible": true
+        },
+        {
+          "blockId": "slides-only",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -541,6 +903,10 @@
         },
         {
           "blockId": "text-23",
+          "visible": true
+        },
+        {
+          "blockId": "extension-keys",
           "visible": true
         }
       ],
@@ -557,6 +923,10 @@
         {
           "blockId": "contrast",
           "visible": true
+        },
+        {
+          "blockId": "offline-keys",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -568,6 +938,10 @@
         {
           "blockId": "text-27",
           "visible": true
+        },
+        {
+          "blockId": "translation-keys",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -578,6 +952,10 @@
       "visuals": [
         {
           "blockId": "text-30",
+          "visible": true
+        },
+        {
+          "blockId": "assistant-keys",
           "visible": true
         }
       ],
@@ -594,6 +972,10 @@
         {
           "blockId": "export-commands",
           "visible": true
+        },
+        {
+          "blockId": "export-keys",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -605,6 +987,10 @@
         {
           "blockId": "g-read-intro",
           "visible": true
+        },
+        {
+          "blockId": "g-read-keys",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -615,6 +1001,10 @@
       "visuals": [
         {
           "blockId": "g-output-intro",
+          "visible": true
+        },
+        {
+          "blockId": "g-output-keys",
           "visible": true
         }
       ],

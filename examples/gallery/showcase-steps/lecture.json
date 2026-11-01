@@ -31,7 +31,8 @@
     "libraries",
     "g-interaction",
     "component",
-    "guidance"
+    "guidance",
+    "steps-summary"
   ],
   "sections": {
     "reveal": {
@@ -39,6 +40,7 @@
       "title": "逐项揭示",
       "level": 2,
       "children": [
+        "reveal-intro",
         "reveal-list"
       ],
       "stepOrder": [
@@ -60,6 +62,7 @@
       "title": "继承上一步",
       "level": 2,
       "children": [
+        "inherits-intro",
         "inherit-input",
         "inherit-explanation"
       ],
@@ -77,6 +80,7 @@
       "level": 2,
       "children": [
         "text-9",
+        "semantic-keywords",
         "semantic-scene"
       ],
       "stepOrder": [
@@ -94,6 +98,7 @@
       "level": 2,
       "children": [
         "d3-intro",
+        "d3-keywords",
         "d3-scene"
       ],
       "stepOrder": [
@@ -112,6 +117,7 @@
       "level": 2,
       "children": [
         "text-11",
+        "component-keywords",
         "action-counter"
       ],
       "stepOrder": [
@@ -127,6 +133,7 @@
       "level": 2,
       "children": [
         "guidance-intro",
+        "guidance-keywords",
         "guide-counter",
         "guide-cursor",
         "guide-spot",
@@ -146,7 +153,8 @@
       "title": "更多动画库",
       "level": 2,
       "children": [
-        "text-13"
+        "text-13",
+        "libraries-keywords"
       ],
       "stepOrder": [
         "libraries-step"
@@ -160,7 +168,8 @@
       "title": "步骤",
       "level": 1,
       "children": [
-        "g-steps-intro"
+        "g-steps-intro",
+        "g-steps-keywords"
       ],
       "stepOrder": [
         "g-steps-step"
@@ -174,7 +183,8 @@
       "title": "动画",
       "level": 1,
       "children": [
-        "g-animation-intro"
+        "g-animation-intro",
+        "g-animation-keywords"
       ],
       "stepOrder": [
         "g-animation-step"
@@ -188,10 +198,27 @@
       "title": "交互",
       "level": 1,
       "children": [
-        "g-interaction-intro"
+        "g-interaction-intro",
+        "g-interaction-keywords"
       ],
       "stepOrder": [
         "g-interaction-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "steps-summary": {
+      "id": "steps-summary",
+      "title": "每一步都写明画面",
+      "level": 1,
+      "children": [
+        "steps-summary-text",
+        "steps-summary-list",
+        "steps-summary-keywords"
+      ],
+      "stepOrder": [
+        "steps-summary-step"
       ],
       "layout": {
         "type": "stack"
@@ -278,7 +305,7 @@
           "children": [
             {
               "type": "text",
-              "text": "先观察输入：[3, 1, 2]。"
+              "text": "输入：[3, 1, 2]。"
             }
           ]
         }
@@ -294,7 +321,7 @@
           "children": [
             {
               "type": "text",
-              "text": "加入解释：只比较相邻的两个值。"
+              "text": "规则：每次只比较相邻的两个值。"
             }
           ]
         }
@@ -318,10 +345,14 @@
           "children": [
             {
               "type": "text",
-              "text": "每一步为动画指定一个状态（准备、比较、完成）及参数 value。"
+              "text": "这段动画声明了准备、比较、完成三个状态。三个步骤依次选定这三个状态，并把参数 value 设为 20、55 和 90：柱的长度随 value 变化，标题显示当前的状态与数值。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "d3-scene": {
@@ -349,10 +380,14 @@
           "children": [
             {
               "type": "text",
-              "text": "点击“加一次”，计数随之增加。讲稿也可以在指定位置自动触发这一动作。"
+              "text": "下面的计数器是一个可操作的组件：每点击一次“加一次”，计数加一。讲稿也可以在讲到指定位置时自动触发同一个动作。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "guide-counter": {
@@ -420,10 +455,14 @@
           "children": [
             {
               "type": "text",
-              "text": "本合集的动画使用 D3 与 defineScene 编写。GSAP、Anime.js、Motion、Three.js 与 Remotion 的写法参见“代码写成的动画”与各动画参考。"
+              "text": "本合集的两段动画分别用 defineScene 和 D3 编写。动画也可以用 GSAP、Anime.js、Motion、Three.js 或 Remotion 编写，写法见“代码写成的动画”和各份动画参考。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "d3-intro": {
@@ -436,10 +475,14 @@
           "children": [
             {
               "type": "text",
-              "text": "数据的进入、更新与退出各对应一个步骤。"
+              "text": "D3 的数据连接（data join）按键比较前后两组数据：两组都有的字母移到新位置，称为更新；新出现的字母落入，称为进入；消失的字母掉出，称为退出。四个步骤依次显示单词 dataviz、datajoin、enter 和 exit，每一步从上一个单词变为下一个，图例用三种颜色区分更新、进入和退出。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "guidance-intro": {
@@ -452,10 +495,14 @@
           "children": [
             {
               "type": "text",
-              "text": "模拟光标依次完成移动、悬停与点击，聚光与提示标出待操作的按钮。"
+              "text": "模拟光标分三步演示一次点击：移到“加一次”按钮，在按钮上停留，然后点击。聚光标出“加一次”，提示框说明旁边的“重置”按钮。光标的三个位置是三个状态，所以前后跳转时光标直接出现在对应的位置。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "g-steps-intro": {
@@ -468,10 +515,14 @@
           "children": [
             {
               "type": "text",
-              "text": "一页内容按步骤逐项呈现，任意跳转时画面均可直接还原。"
+              "text": "一页的画面由步骤组成。每个步骤写明这一刻哪些内容块可见、列表显示到第几项、动画处于哪个状态，所以放映时无论前进、后退还是直接跳到某一步，画面都能立即还原，不必重放前面的步骤。本合集分三部分展示这一做法：用步骤逐项呈现内容，把动画的状态和参数绑定到步骤，以及可操作的组件和引导操作的光标。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "g-animation-intro": {
@@ -484,10 +535,14 @@
           "children": [
             {
               "type": "text",
-              "text": "动画的状态与参数绑定到步骤。"
+              "text": "动画声明自己有哪些状态，每个步骤选定其中一个状态并给出参数。动画的画面只由当前的状态和参数决定，因此跳到任意一步，动画都直接停在这一步应有的样子。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "g-interaction-intro": {
@@ -500,10 +555,351 @@
           "children": [
             {
               "type": "text",
-              "text": "可操作的组件，以及引导操作的光标、聚光与提示。"
+              "text": "组件可以接受读者的操作，例如点击按钮改变计数。讲解操作方法时，模拟光标、聚光和提示框按步骤指出该点哪里。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "g-steps-keywords": {
+      "id": "g-steps-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-steps-keywords-claim",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "步骤 = 这一刻的画面：可见的块 + 动画状态"
+            }
+          ]
+        },
+        {
+          "id": "g-steps-keywords-jump",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "任意跳转，画面立即还原"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "reveal-intro": {
+      "id": "reveal-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "reveal-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "列表可以逐项出现。三个步骤分别写明显示一项、两项和三项，跳到第二步时直接显示前两项。网页上这一页使用滚动叙事版式，读者向下滚动时列表逐项出现。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "inherits-intro": {
+      "id": "inherits-intro",
+      "type": "text",
+      "content": [
+        {
+          "id": "inherits-intro-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "第二步继承第一步（inherits），只写出变化：规则段落由隐藏改为显示。输入段落沿用第一步的设定，跳到第二步时同样可见。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "g-animation-keywords": {
+      "id": "g-animation-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-animation-keywords-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "每个步骤：动画状态 + 参数"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "semantic-keywords": {
+      "id": "semantic-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "semantic-keywords-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "状态 ready → compare → complete；value 20 → 55 → 90"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "d3-keywords": {
+      "id": "d3-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "d3-keywords-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "按键连接数据：更新 · 进入 · 退出"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "libraries-keywords": {
+      "id": "libraries-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "libraries-keywords-used",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本合集：defineScene · D3"
+            }
+          ]
+        },
+        {
+          "id": "libraries-keywords-more",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "也可用：GSAP · Anime.js · Motion · Three.js · Remotion"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "g-interaction-keywords": {
+      "id": "g-interaction-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-interaction-keywords-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "可操作的组件 · 光标 · 聚光 · 提示"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "component-keywords": {
+      "id": "component-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "component-keywords-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "点击“加一次”：计数加一；讲稿也能触发"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "guidance-keywords": {
+      "id": "guidance-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "guidance-keywords-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "光标：移动 → 悬停 → 点击"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "steps-summary-text": {
+      "id": "steps-summary-text",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps-summary-text-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本合集的每个画面都由步骤写明：列表显示几项，哪一段可见，动画处于哪个状态、参数是多少，光标停在哪里。画面是步骤的直接结果，所以放映时可以任意跳转，网页的滚动叙事、幻灯片和讲授也按同一组步骤推进。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "steps-summary-list": {
+      "id": "steps-summary-list",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps-summary-items",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "steps-summary-item-reveal",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "steps-summary-item-reveal-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "逐项揭示：写明显示几项"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "steps-summary-item-inherits",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "steps-summary-item-inherits-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "继承：只写与上一步的差别"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "steps-summary-item-animation",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "steps-summary-item-animation-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "动画：写明状态和参数"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "steps-summary-item-guide",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "steps-summary-item-guide-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "光标：写明停在哪个位置"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "steps-summary-keywords": {
+      "id": "steps-summary-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "steps-summary-keywords-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "任意跳转，画面立即还原"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
       ]
     }
   },
@@ -513,6 +909,10 @@
       "sectionId": "reveal",
       "title": "先给出问题",
       "visuals": [
+        {
+          "blockId": "reveal-intro",
+          "visible": true
+        },
         {
           "blockId": "reveal-list",
           "visible": true,
@@ -529,6 +929,10 @@
       "title": "再比较方案",
       "visuals": [
         {
+          "blockId": "reveal-intro",
+          "visible": true
+        },
+        {
           "blockId": "reveal-list",
           "visible": true,
           "parameters": {
@@ -544,6 +948,10 @@
       "title": "最后总结理由",
       "visuals": [
         {
+          "blockId": "reveal-intro",
+          "visible": true
+        },
+        {
           "blockId": "reveal-list",
           "visible": true,
           "parameters": {
@@ -557,6 +965,10 @@
       "id": "inherits-step",
       "sectionId": "inherits",
       "visuals": [
+        {
+          "blockId": "inherits-intro",
+          "visible": true
+        },
         {
           "blockId": "inherit-input",
           "visible": true
@@ -586,12 +998,20 @@
       "title": "准备",
       "visuals": [
         {
+          "blockId": "text-9",
+          "visible": true
+        },
+        {
           "blockId": "semantic-scene",
           "visible": true,
           "state": "ready",
           "parameters": {
             "value": 20
           }
+        },
+        {
+          "blockId": "semantic-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -602,12 +1022,20 @@
       "title": "比较",
       "visuals": [
         {
+          "blockId": "text-9",
+          "visible": true
+        },
+        {
           "blockId": "semantic-scene",
           "visible": true,
           "state": "compare",
           "parameters": {
             "value": 55
           }
+        },
+        {
+          "blockId": "semantic-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -618,12 +1046,20 @@
       "title": "完成",
       "visuals": [
         {
+          "blockId": "text-9",
+          "visible": true
+        },
+        {
           "blockId": "semantic-scene",
           "visible": true,
           "state": "complete",
           "parameters": {
             "value": 90
           }
+        },
+        {
+          "blockId": "semantic-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -640,6 +1076,10 @@
           "blockId": "d3-scene",
           "visible": true,
           "state": "dataviz"
+        },
+        {
+          "blockId": "d3-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -656,6 +1096,10 @@
           "blockId": "d3-scene",
           "visible": true,
           "state": "datajoin"
+        },
+        {
+          "blockId": "d3-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -672,6 +1116,10 @@
           "blockId": "d3-scene",
           "visible": true,
           "state": "enter"
+        },
+        {
+          "blockId": "d3-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -688,6 +1136,10 @@
           "blockId": "d3-scene",
           "visible": true,
           "state": "exit"
+        },
+        {
+          "blockId": "d3-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -702,6 +1154,10 @@
         },
         {
           "blockId": "action-counter",
+          "visible": true
+        },
+        {
+          "blockId": "component-keywords",
           "visible": true
         }
       ],
@@ -731,6 +1187,10 @@
         {
           "blockId": "guide-hint",
           "visible": true
+        },
+        {
+          "blockId": "guidance-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -758,6 +1218,10 @@
         },
         {
           "blockId": "guide-hint",
+          "visible": true
+        },
+        {
+          "blockId": "guidance-keywords",
           "visible": true
         }
       ],
@@ -787,6 +1251,10 @@
         {
           "blockId": "guide-hint",
           "visible": true
+        },
+        {
+          "blockId": "guidance-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -797,6 +1265,10 @@
       "visuals": [
         {
           "blockId": "text-13",
+          "visible": true
+        },
+        {
+          "blockId": "libraries-keywords",
           "visible": true
         }
       ],
@@ -809,6 +1281,10 @@
         {
           "blockId": "g-steps-intro",
           "visible": true
+        },
+        {
+          "blockId": "g-steps-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -820,6 +1296,10 @@
         {
           "blockId": "g-animation-intro",
           "visible": true
+        },
+        {
+          "blockId": "g-animation-keywords",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -830,6 +1310,29 @@
       "visuals": [
         {
           "blockId": "g-interaction-intro",
+          "visible": true
+        },
+        {
+          "blockId": "g-interaction-keywords",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "steps-summary-step": {
+      "id": "steps-summary-step",
+      "sectionId": "steps-summary",
+      "visuals": [
+        {
+          "blockId": "steps-summary-text",
+          "visible": true
+        },
+        {
+          "blockId": "steps-summary-list",
+          "visible": true
+        },
+        {
+          "blockId": "steps-summary-keywords",
           "visible": true
         }
       ],

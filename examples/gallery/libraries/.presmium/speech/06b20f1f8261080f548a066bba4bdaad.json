@@ -1,0 +1,143 @@
+{
+  "key": "06b20f1f8261080f548a066bba4bdaad",
+  "audio": "06b20f1f8261080f548a066bba4bdaad.ogg",
+  "mime": "audio/ogg",
+  "duration": 8.72,
+  "words": [
+    {
+      "text": "这个",
+      "start": 0.1,
+      "end": 0.4
+    },
+    {
+      "text": "计数器",
+      "start": 0.4125,
+      "end": 1.0625
+    },
+    {
+      "text": "是",
+      "start": 1.15,
+      "end": 1.3125
+    },
+    {
+      "text": "文稿",
+      "start": 1.325,
+      "end": 1.7125
+    },
+    {
+      "text": "自己",
+      "start": 1.7375,
+      "end": 2.025
+    },
+    {
+      "text": "写",
+      "start": 2.0375,
+      "end": 2.225
+    },
+    {
+      "text": "的",
+      "start": 2.225,
+      "end": 2.3125
+    },
+    {
+      "text": "组件",
+      "start": 2.325,
+      "end": 2.825
+    },
+    {
+      "text": "它",
+      "start": 3.4,
+      "end": 3.55
+    },
+    {
+      "text": "有",
+      "start": 3.55,
+      "end": 3.6625
+    },
+    {
+      "text": "一个",
+      "start": 3.675,
+      "end": 3.875
+    },
+    {
+      "text": "具名",
+      "start": 3.9,
+      "end": 4.2375
+    },
+    {
+      "text": "动作",
+      "start": 4.25,
+      "end": 4.7125
+    },
+    {
+      "text": "叫",
+      "start": 4.9625,
+      "end": 5.1375
+    },
+    {
+      "text": "合并",
+      "start": 5.1625,
+      "end": 5.5375
+    },
+    {
+      "text": "一次",
+      "start": 5.55,
+      "end": 6.0125
+    },
+    {
+      "text": "讲稿",
+      "start": 6.2875,
+      "end": 6.7625
+    },
+    {
+      "text": "可以",
+      "start": 6.7875,
+      "end": 7.025
+    },
+    {
+      "text": "按",
+      "start": 7.0375,
+      "end": 7.2
+    },
+    {
+      "text": "名字",
+      "start": 7.2125,
+      "end": 7.55
+    },
+    {
+      "text": "调用",
+      "start": 7.575,
+      "end": 7.9375
+    },
+    {
+      "text": "它",
+      "start": 7.9375,
+      "end": 8.2
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "这个计数器是文稿自己写的组件。它有一个具名动作，叫“合并一次”，讲稿可以按名字调用它。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "06b20f1f8261080f548a066bba4bdaad",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "7a4f0fba203c017956475d468ece969b57960bcf47a2413a0161c41b54316f68",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "732494a2a132cf43eba9ca34b9063892",
+  "request": {
+    "spoken": "这个计数器是文稿自己写的组件。它有一个具名动作，叫“合并一次”，讲稿可以按名字调用它。",
+    "rate": 1,
+    "style": ""
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "key": "1ca80d9f60928646067dbe3eee539e17",
+  "audio": "1ca80d9f60928646067dbe3eee539e17.ogg",
+  "mime": "audio/ogg",
+  "duration": 4.36,
+  "words": [
+    {
+      "text": "它",
+      "start": 0.1,
+      "end": 0.25
+    },
+    {
+      "text": "停",
+      "start": 0.25,
+      "end": 0.45
+    },
+    {
+      "text": "在",
+      "start": 0.45,
+      "end": 0.6
+    },
+    {
+      "text": "最后",
+      "start": 0.6125,
+      "end": 1.1625
+    },
+    {
+      "text": "这",
+      "start": 1.7375,
+      "end": 1.9375
+    },
+    {
+      "text": "一",
+      "start": 1.9375,
+      "end": 2.0625
+    },
+    {
+      "text": "趟",
+      "start": 2.0625,
+      "end": 2.3625
+    },
+    {
+      "text": "一共",
+      "start": 2.5875,
+      "end": 2.8875
+    },
+    {
+      "text": "比较",
+      "start": 2.9,
+      "end": 3.1875
+    },
+    {
+      "text": "了",
+      "start": 3.1875,
+      "end": 3.2625
+    },
+    {
+      "text": "四",
+      "start": 3.275,
+      "end": 3.5375
+    },
+    {
+      "text": "次",
+      "start": 3.5375,
+      "end": 3.8375
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "它停在最后。这一趟，一共比较了四次。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "1ca80d9f60928646067dbe3eee539e17",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "08ff94b12accfca044d15b716b26a8e4178765e8f5a899a9845e1a97a2e653aa",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "bf524e0b21f4e27d1eb8205d3a5529fc",
+  "request": {
+    "spoken": "它停在最后。这一趟，一共比较了四次。",
+    "rate": 1,
+    "style": ""
+  }
+}

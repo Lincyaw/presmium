@@ -18,7 +18,7 @@
     },
     "translationOf": {
       "entry": "../../lecture.json",
-      "digest": "832444500ae1e9d9d24b3d0a60dea9bb93562ac69dc10768a4583c861bf3ec31"
+      "digest": "fd067fae1a5f9ec36c44cbedecf6ca49b2a7a5332c033b5cb15e82185792d180"
     },
     "tags": [
       "Collection"
@@ -42,7 +42,8 @@
       "title": "Search and footnotes",
       "level": 2,
       "children": [
-        "text-7"
+        "text-7",
+        "reading-keys"
       ],
       "stepOrder": [
         "reading-step"
@@ -56,7 +57,8 @@
       "title": "Presenting and presenter view",
       "level": 2,
       "children": [
-        "text-8"
+        "text-8",
+        "views-keys"
       ],
       "stepOrder": [
         "views-step"
@@ -72,7 +74,8 @@
       "children": [
         "text-18",
         "web-only",
-        "notebook-only"
+        "notebook-only",
+        "slides-only"
       ],
       "stepOrder": [
         "scope-step"
@@ -87,6 +90,7 @@
       "level": 2,
       "children": [
         "text-20",
+        "extension-keys",
         "text-23"
       ],
       "stepOrder": [
@@ -102,6 +106,7 @@
       "level": 2,
       "children": [
         "text-24",
+        "offline-keys",
         "contrast"
       ],
       "stepOrder": [
@@ -116,7 +121,8 @@
       "title": "Translation",
       "level": 2,
       "children": [
-        "text-27"
+        "text-27",
+        "translation-keys"
       ],
       "stepOrder": [
         "translation-step"
@@ -130,7 +136,8 @@
       "title": "AI questions",
       "level": 2,
       "children": [
-        "text-30"
+        "text-30",
+        "assistant-keys"
       ],
       "stepOrder": [
         "assistant-step"
@@ -145,6 +152,7 @@
       "level": 2,
       "children": [
         "text-33",
+        "export-keys",
         "export-commands"
       ],
       "stepOrder": [
@@ -159,7 +167,8 @@
       "title": "Reading",
       "level": 1,
       "children": [
-        "g-read-intro"
+        "g-read-intro",
+        "g-read-keys"
       ],
       "stepOrder": [
         "g-read-step"
@@ -173,7 +182,8 @@
       "title": "Output and extensions",
       "level": 1,
       "children": [
-        "g-output-intro"
+        "g-output-intro",
+        "g-output-keys"
       ],
       "stepOrder": [
         "g-output-step"
@@ -194,7 +204,7 @@
           "children": [
             {
               "type": "text",
-              "text": "Search for this unusual sentence: star-river notes."
+              "text": "The website has full-text search: search for “star-river notes” and the result lands on this sentence."
             },
             {
               "type": "extension",
@@ -216,14 +226,22 @@
           "type": "paragraph",
           "children": [
             {
+              "type": "text",
+              "text": "In-page links jump to any page of the document, for example "
+            },
+            {
               "type": "link",
               "href": "#scope",
               "children": [
                 {
                   "type": "text",
-                  "text": "Jump to “Per-medium output”"
+                  "text": "“Per-medium output”"
                 }
               ]
+            },
+            {
+              "type": "text",
+              "text": "."
             }
           ]
         },
@@ -243,7 +261,7 @@
                   "children": [
                     {
                       "type": "text",
-                      "value": "This is a footnote."
+                      "value": "Footnotes hold sources and side remarks: readers consult them when they need to, and the main text reads without interruption."
                     }
                   ]
                 }
@@ -257,12 +275,16 @@
               "children": [
                 {
                   "type": "text",
-                  "text": "This is a footnote."
+                  "text": "Footnotes hold sources and side remarks: readers consult them when they need to, and the main text reads without interruption."
                 }
               ]
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-8": {
@@ -275,10 +297,14 @@
           "children": [
             {
               "type": "text",
-              "text": "Start presenting from the view menu at the top right. While presenting you can draw, black out or freeze the screen; the presenter view shows the next page and the script."
+              "text": "To teach, start presenting from the view menu at the top right. While presenting, you can draw on the page, or black out or freeze the screen to bring the audience's attention back to you. The presenter view opens in a separate window and shows the current page, the next page and the script."
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "web-only": {
@@ -329,10 +355,40 @@
           "children": [
             {
               "type": "text",
-              "text": "The next two paragraphs appear only on the website and only in the notebook."
+              "text": "A block's "
+            },
+            {
+              "type": "text",
+              "text": "only",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " field lists the media that show it; a block without "
+            },
+            {
+              "type": "text",
+              "text": "only",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " appears in every medium. The next two paragraphs are limited to the website and to the notebook, so each of those shows only one of them. The slides show neither and display a line written for presenting instead."
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-20": {
@@ -345,10 +401,27 @@
           "children": [
             {
               "type": "text",
-              "text": "The counter below is a Web Component registered by this lecture’s local plugin."
+              "text": "A document can bring a local plugin that registers its own web components. The counter below is registered by the plugin in this document's "
+            },
+            {
+              "type": "text",
+              "text": "plugin",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " folder; it starts at 2 and goes up by one with each click."
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-23": {
@@ -397,10 +470,14 @@
           "children": [
             {
               "type": "text",
-              "text": "The high-contrast switch raises the contrast between text and background. A published website can be saved for offline reading."
+              "text": "The high-contrast switch raises the contrast between text and background, which helps readers with low vision and projection in a bright room. A published website can be saved locally and read offline."
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-27": {
@@ -413,10 +490,14 @@
           "children": [
             {
               "type": "text",
-              "text": "This document has an English translation; switch with the language menu."
+              "text": "This document exists in Chinese and English, and readers switch between the two with the language menu. The translation's pages, blocks and steps correspond one to one with the original's."
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-30": {
@@ -429,10 +510,14 @@
           "children": [
             {
               "type": "text",
-              "text": "The reader’s “Ask” uses a model service the reader configures. In class, the presenter reviews an AI answer before sharing it."
+              "text": "With “Ask”, readers put questions about the content to an AI, using a model service they configure themselves. In class, the presenter reviews each AI answer before it is sent to the whole class."
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-33": {
@@ -445,10 +530,27 @@
           "children": [
             {
               "type": "text",
-              "text": "Websites, notebooks, the student edition, PDF, images and PowerPoint all come from the same document."
+              "text": "The website, the notebook, the student edition, PDF, images and PowerPoint all come from this one lecture.json: content is written once, and after each build every output agrees with the others. The first two commands below build the website and notebook, and the student edition of the website; "
+            },
+            {
+              "type": "text",
+              "text": "presmium-export --help",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " lists the PDF, image and PowerPoint exports."
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "export-commands": {
@@ -467,10 +569,14 @@
           "children": [
             {
               "type": "text",
-              "text": "Search, presenting, accessibility, translation and questions."
+              "text": "Once a document is published, readers and authors each get a set of features. On the website, readers can search the full text, read footnotes, present, switch to high contrast or another language, and ask an AI about the content. From the same lecture.json, authors choose content per medium, add their own web components, and produce a website, a notebook, a student edition, PDF, images and PowerPoint. The five pages in this part show the reader's side."
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "g-output-intro": {
@@ -483,10 +589,254 @@
           "children": [
             {
               "type": "text",
-              "text": "Per-medium content, custom web components and export formats."
+              "text": "On the author's side, one document serves several media: a block can be limited to some media, a local plugin can add custom web components, and the build and export commands produce a website, a notebook, a student edition, PDF, images and PowerPoint. The three pages in this part show each in turn."
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "g-read-keys": {
+      "id": "g-read-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-read-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Readers: search · footnotes · presenting · high contrast · translation · questions"
+            }
+          ]
+        },
+        {
+          "id": "g-read-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Authors: one lecture.json → website · notebook · slides · export"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "reading-keys": {
+      "id": "reading-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "reading-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Full-text search · footnotes · in-page links"
+            }
+          ]
+        },
+        {
+          "id": "reading-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Used on the website"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "views-keys": {
+      "id": "views-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "views-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Pen · black out · freeze"
+            }
+          ]
+        },
+        {
+          "id": "views-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Presenter view: current page, next page, script"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "offline-keys": {
+      "id": "offline-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "offline-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "High contrast · offline reading"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "translation-keys": {
+      "id": "translation-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "translation-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Language menu: 中文 ⇄ English"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "assistant-keys": {
+      "id": "assistant-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "assistant-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Ask: the reader's own model service"
+            }
+          ]
+        },
+        {
+          "id": "assistant-key-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "In class: the presenter reviews before sharing"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "g-output-keys": {
+      "id": "g-output-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-output-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Per-medium content · custom components · export"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "extension-keys": {
+      "id": "extension-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "extension-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Local plugin → custom web component"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "export-keys": {
+      "id": "export-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "export-key-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "One lecture.json → website · notebook · student edition · PDF · images · PowerPoint"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "slides-only": {
+      "id": "slides-only",
+      "type": "text",
+      "content": [
+        {
+          "id": "slides-only-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "This line appears only in the slides: slides carry keywords, while the website and the notebook carry full paragraphs."
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
       ]
     }
   },
@@ -498,6 +848,10 @@
         {
           "blockId": "text-7",
           "visible": true
+        },
+        {
+          "blockId": "reading-keys",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -508,6 +862,10 @@
       "visuals": [
         {
           "blockId": "text-8",
+          "visible": true
+        },
+        {
+          "blockId": "views-keys",
           "visible": true
         }
       ],
@@ -528,6 +886,10 @@
         {
           "blockId": "notebook-only",
           "visible": true
+        },
+        {
+          "blockId": "slides-only",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -542,6 +904,10 @@
         },
         {
           "blockId": "text-23",
+          "visible": true
+        },
+        {
+          "blockId": "extension-keys",
           "visible": true
         }
       ],
@@ -558,6 +924,10 @@
         {
           "blockId": "contrast",
           "visible": true
+        },
+        {
+          "blockId": "offline-keys",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -569,6 +939,10 @@
         {
           "blockId": "text-27",
           "visible": true
+        },
+        {
+          "blockId": "translation-keys",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -579,6 +953,10 @@
       "visuals": [
         {
           "blockId": "text-30",
+          "visible": true
+        },
+        {
+          "blockId": "assistant-keys",
           "visible": true
         }
       ],
@@ -595,6 +973,10 @@
         {
           "blockId": "export-commands",
           "visible": true
+        },
+        {
+          "blockId": "export-keys",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -606,6 +988,10 @@
         {
           "blockId": "g-read-intro",
           "visible": true
+        },
+        {
+          "blockId": "g-read-keys",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -616,6 +1002,10 @@
       "visuals": [
         {
           "blockId": "g-output-intro",
+          "visible": true
+        },
+        {
+          "blockId": "g-output-keys",
           "visible": true
         }
       ],

@@ -1,0 +1,103 @@
+{
+  "key": "116d6710b7993311b880a465266745ec",
+  "audio": "116d6710b7993311b880a465266745ec.ogg",
+  "mime": "audio/ogg",
+  "duration": 4.22,
+  "words": [
+    {
+      "text": "把",
+      "start": 0.1,
+      "end": 0.2375
+    },
+    {
+      "text": "它们",
+      "start": 0.25,
+      "end": 0.475
+    },
+    {
+      "text": "合并",
+      "start": 0.5,
+      "end": 0.9
+    },
+    {
+      "text": "成",
+      "start": 0.9,
+      "end": 1.0625
+    },
+    {
+      "text": "一个",
+      "start": 1.075,
+      "end": 1.2625
+    },
+    {
+      "text": "新",
+      "start": 1.2875,
+      "end": 1.525
+    },
+    {
+      "text": "符号",
+      "start": 1.525,
+      "end": 1.8875
+    },
+    {
+      "text": "lo",
+      "start": 1.8875,
+      "end": 2.1375
+    },
+    {
+      "text": "词表",
+      "start": 2.375,
+      "end": 2.8
+    },
+    {
+      "text": "就",
+      "start": 2.825,
+      "end": 2.9625
+    },
+    {
+      "text": "多",
+      "start": 2.9625,
+      "end": 3.175
+    },
+    {
+      "text": "了",
+      "start": 3.175,
+      "end": 3.25
+    },
+    {
+      "text": "一",
+      "start": 3.2625,
+      "end": 3.3875
+    },
+    {
+      "text": "项",
+      "start": 3.3875,
+      "end": 3.6875
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "把它们合并成一个新符号 lo，词表就多了一项。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "116d6710b7993311b880a465266745ec",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "ea6414f69687afaafcc94e41f6172e8161eed8983552018ccdddc73f03b24121",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "98596b5bb79748a3bf67cfa842adb2a0",
+  "request": {
+    "spoken": "把它们合并成一个新符号 lo，词表就多了一项。",
+    "rate": 1,
+    "style": ""
+  }
+}

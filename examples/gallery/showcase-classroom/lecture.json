@@ -38,6 +38,7 @@
       "level": 2,
       "children": [
         "text-6",
+        "quiz-keys",
         "quiz-widget",
         "multi-quiz"
       ],
@@ -54,6 +55,7 @@
       "level": 2,
       "children": [
         "text-9",
+        "prediction-keys",
         "prediction-widget"
       ],
       "stepOrder": [
@@ -70,6 +72,7 @@
       "level": 2,
       "children": [
         "text-12",
+        "exercise-keys",
         "exercise-widget"
       ],
       "stepOrder": [
@@ -84,6 +87,8 @@
       "title": "提问与理解度投票",
       "level": 2,
       "children": [
+        "questions-text",
+        "questions-keys",
         "question-target",
         "questions-widget",
         "pulse"
@@ -100,7 +105,8 @@
       "title": "阅读笔记",
       "level": 2,
       "children": [
-        "text-16"
+        "text-16",
+        "notes-keys"
       ],
       "stepOrder": [
         "notes-step"
@@ -114,7 +120,8 @@
       "title": "跟随主讲",
       "level": 2,
       "children": [
-        "text-19"
+        "text-19",
+        "follow-keys"
       ],
       "stepOrder": [
         "follow-step"
@@ -129,7 +136,9 @@
       "level": 2,
       "children": [
         "teacher-note",
-        "text-23"
+        "text-23",
+        "teacher-keys",
+        "classroom-closing"
       ],
       "stepOrder": [
         "teacher-step"
@@ -143,7 +152,8 @@
       "title": "个人练习",
       "level": 1,
       "children": [
-        "g-self-intro"
+        "g-self-intro",
+        "g-self-keys"
       ],
       "stepOrder": [
         "g-self-step"
@@ -157,7 +167,8 @@
       "title": "课堂",
       "level": 1,
       "children": [
-        "g-class-intro"
+        "g-class-intro",
+        "g-class-keys"
       ],
       "stepOrder": [
         "g-class-step"
@@ -247,10 +258,14 @@
           "children": [
             {
               "type": "text",
-              "text": "提交后即时显示正误。课堂模式下，由主讲统一公布答案与统计结果。"
+              "text": "测验支持单选与多选，学生提交后立即看到正误。开启课堂时，答案与全班的统计结果改由主讲统一公布。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "prediction-answer": {
@@ -298,10 +313,14 @@
           "children": [
             {
               "type": "text",
-              "text": "先提交预测，下一步揭晓答案。"
+              "text": "先预测再揭晓，让学生在看到答案之前先给出自己的判断。学生提交预测后，下一步才显示答案。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "exercise-prompt": {
@@ -343,10 +362,53 @@
           "children": [
             {
               "type": "text",
-              "text": "点击“校验”，运行代码并检查结果。"
+              "text": "代码练习给出起始代码与校验用例。学生补全 "
+            },
+            {
+              "type": "text",
+              "text": "square(n)",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 后点击“校验”，代码随即运行，并用两个用例检查结果："
+            },
+            {
+              "type": "text",
+              "text": "square(2)",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 应为 4，"
+            },
+            {
+              "type": "text",
+              "text": "square(-3)",
+              "marks": [
+                {
+                  "type": "code"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 应为 9。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "question-target": {
@@ -359,7 +421,7 @@
           "children": [
             {
               "type": "text",
-              "text": "选中本段文字，即可就此向主讲提问。"
+              "text": "选中这段文字，即可针对它向主讲提问。"
             }
           ]
         }
@@ -415,10 +477,14 @@
           "children": [
             {
               "type": "text",
-              "text": "在阅读页选中文字即可添加笔记，笔记与所选内容关联。"
+              "text": "学生在阅读页选中文字即可添加笔记，笔记与所选的文字关联在一起。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "text-19": {
@@ -431,10 +497,14 @@
           "children": [
             {
               "type": "text",
-              "text": "学生扫码加入课堂后默认跟随主讲翻页，也可切换为独立浏览，并随时返回主讲所在位置。"
+              "text": "学生扫码加入课堂后，默认跟随主讲翻页；也可以切换为独立浏览，并随时返回主讲所在的位置。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "teacher-note": {
@@ -466,10 +536,14 @@
           "children": [
             {
               "type": "text",
-              "text": "上述教师提示仅出现在教师版中，构建学生版时将被移除。"
+              "text": "上面的教师提示只出现在教师版中，构建学生版时被移除：带教师受众标记的内容都按这一规则处理。教师版与学生版因此来自同一份文稿，不必分别维护。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "g-self-intro": {
@@ -482,10 +556,24 @@
           "children": [
             {
               "type": "text",
-              "text": "无需开启课堂即可使用的练习与笔记。"
+              "text": "同一份教学文稿既是学生自学的材料，也是课堂上的互动工具。个人练习不需要开启课堂，学生独自阅读时就能使用：单选与多选测验、先预测再揭晓、代码练习与阅读笔记。课堂功能在主讲开启课堂、学生加入后可用：提问、理解度投票与跟随主讲。两类互动都写在这一份文稿中，教师版与学生版也都由它构建。"
+            }
+          ]
+        },
+        {
+          "id": "g-self-intro-p2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本组四页演示个人练习。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
       ]
     },
     "g-class-intro": {
@@ -498,10 +586,474 @@
           "children": [
             {
               "type": "text",
-              "text": "开启课堂后使用的提问、投票与跟随功能，以及教师版与学生版输出。"
+              "text": "以下功能需要主讲先开启课堂，学生加入后可用：针对选中的文字提问、理解度投票、跟随主讲翻页。本组最后一页说明同一份文稿如何构建教师版与学生版。"
             }
           ]
         }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "g-self-keys": {
+      "id": "g-self-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-self-keys-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "无需开启课堂，独自阅读即可使用"
+            }
+          ]
+        },
+        {
+          "id": "g-self-key-list",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "g-self-key-quiz",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "g-self-key-quiz-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "测验"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "g-self-key-predict",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "g-self-key-predict-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "预测"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "g-self-key-exercise",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "g-self-key-exercise-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "代码练习"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "g-self-key-notes",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "g-self-key-notes-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "阅读笔记"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "quiz-keys": {
+      "id": "quiz-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "quiz-keys-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "提交即显示正误；课堂中由主讲公布答案与统计"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "prediction-keys": {
+      "id": "prediction-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "prediction-key-list",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "prediction-key-submit",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "prediction-key-submit-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "先提交预测"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "prediction-key-reveal",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "prediction-key-reveal-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "再揭晓答案"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ],
+      "reveal": {
+        "type": "items",
+        "order": [
+          "prediction-key-submit",
+          "prediction-key-reveal"
+        ]
+      }
+    },
+    "exercise-keys": {
+      "id": "exercise-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "exercise-keys-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "补全代码，点击“校验”运行用例"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "notes-keys": {
+      "id": "notes-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "notes-keys-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "选中文字，添加笔记"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "g-class-keys": {
+      "id": "g-class-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "g-class-keys-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "主讲开启课堂后可用"
+            }
+          ]
+        },
+        {
+          "id": "g-class-key-list",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "g-class-key-questions",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "g-class-key-questions-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "提问与投票"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "g-class-key-follow",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "g-class-key-follow-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "跟随主讲"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "g-class-key-teacher",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "g-class-key-teacher-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "教师版与学生版"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "questions-text": {
+      "id": "questions-text",
+      "type": "text",
+      "content": [
+        {
+          "id": "questions-text-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "加入课堂的学生可以随时提问：选中文稿中的一段文字再提问，问题就针对这段内容。理解度投票让每位学生选择自己的理解程度，主讲据此判断是否需要再举一个例子。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "questions-keys": {
+      "id": "questions-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "questions-key-list",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "questions-key-ask",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "questions-key-ask-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "提问：针对选中的文字"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "questions-key-pulse",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "questions-key-pulse-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "投票：自己的理解程度"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "follow-keys": {
+      "id": "follow-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "follow-keys-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "扫码加入，跟随主讲翻页"
+            }
+          ]
+        },
+        {
+          "id": "follow-keys-p2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "独立浏览，随时返回主讲位置"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "classroom-closing": {
+      "id": "classroom-closing",
+      "type": "text",
+      "content": [
+        {
+          "id": "classroom-closing-p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本文稿的所有互动都写在这一份文稿中。学生自学时使用测验、预测、代码练习与阅读笔记；主讲开启课堂后，同一份文稿又支持提问、理解度投票与跟随主讲；教师版与学生版也都从它构建。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web",
+        "notebook"
+      ]
+    },
+    "teacher-keys": {
+      "id": "teacher-keys",
+      "type": "text",
+      "content": [
+        {
+          "id": "teacher-key-list",
+          "type": "list",
+          "ordered": false,
+          "children": [
+            {
+              "id": "teacher-key-teacher",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "teacher-key-teacher-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "教师版：保留教师提示"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "teacher-key-student",
+              "type": "listItem",
+              "children": [
+                {
+                  "id": "teacher-key-student-p",
+                  "type": "paragraph",
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "学生版：构建时移除"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "teacher-keys-p2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一份文稿：自学、课堂、两种版本"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
       ]
     }
   },
@@ -529,6 +1081,10 @@
         {
           "blockId": "multi-prompt",
           "visible": true
+        },
+        {
+          "blockId": "quiz-keys",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -548,6 +1104,13 @@
         {
           "blockId": "prediction-answer",
           "visible": false
+        },
+        {
+          "blockId": "prediction-keys",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 1
+          }
         }
       ],
       "narrationIds": []
@@ -567,6 +1130,13 @@
         {
           "blockId": "prediction-answer",
           "visible": true
+        },
+        {
+          "blockId": "prediction-keys",
+          "visible": true,
+          "parameters": {
+            "revealedItems": 2
+          }
         }
       ],
       "narrationIds": []
@@ -585,6 +1155,10 @@
         },
         {
           "blockId": "exercise-prompt",
+          "visible": true
+        },
+        {
+          "blockId": "exercise-keys",
           "visible": true
         }
       ],
@@ -609,6 +1183,14 @@
         {
           "blockId": "pulse",
           "visible": true
+        },
+        {
+          "blockId": "questions-text",
+          "visible": true
+        },
+        {
+          "blockId": "questions-keys",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -620,6 +1202,10 @@
         {
           "blockId": "text-16",
           "visible": true
+        },
+        {
+          "blockId": "notes-keys",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -630,6 +1216,10 @@
       "visuals": [
         {
           "blockId": "text-19",
+          "visible": true
+        },
+        {
+          "blockId": "follow-keys",
           "visible": true
         }
       ],
@@ -646,6 +1236,14 @@
         {
           "blockId": "text-23",
           "visible": true
+        },
+        {
+          "blockId": "classroom-closing",
+          "visible": true
+        },
+        {
+          "blockId": "teacher-keys",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -657,6 +1255,10 @@
         {
           "blockId": "g-self-intro",
           "visible": true
+        },
+        {
+          "blockId": "g-self-keys",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -667,6 +1269,10 @@
       "visuals": [
         {
           "blockId": "g-class-intro",
+          "visible": true
+        },
+        {
+          "blockId": "g-class-keys",
           "visible": true
         }
       ],

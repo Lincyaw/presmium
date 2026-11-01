@@ -1,0 +1,213 @@
+{
+  "key": "2b25bd37a152ceca4fbe9b037c6534a4",
+  "audio": "2b25bd37a152ceca4fbe9b037c6534a4.ogg",
+  "mime": "audio/ogg",
+  "duration": 11.96,
+  "words": [
+    {
+      "text": "冒泡",
+      "start": 0.1,
+      "end": 0.45
+    },
+    {
+      "text": "排序",
+      "start": 0.4625,
+      "end": 0.9875
+    },
+    {
+      "text": "只",
+      "start": 1.0125,
+      "end": 1.175
+    },
+    {
+      "text": "做",
+      "start": 1.175,
+      "end": 1.3125
+    },
+    {
+      "text": "一",
+      "start": 1.325,
+      "end": 1.4625
+    },
+    {
+      "text": "件",
+      "start": 1.4625,
+      "end": 1.6875
+    },
+    {
+      "text": "事",
+      "start": 1.6875,
+      "end": 2.0125
+    },
+    {
+      "text": "比较",
+      "start": 2.2875,
+      "end": 2.6
+    },
+    {
+      "text": "相邻",
+      "start": 2.625,
+      "end": 2.975
+    },
+    {
+      "text": "的",
+      "start": 2.975,
+      "end": 3.05
+    },
+    {
+      "text": "两",
+      "start": 3.0625,
+      "end": 3.2625
+    },
+    {
+      "text": "个数",
+      "start": 3.2625,
+      "end": 3.675
+    },
+    {
+      "text": "前面",
+      "start": 3.9,
+      "end": 4.275
+    },
+    {
+      "text": "的",
+      "start": 4.275,
+      "end": 4.3625
+    },
+    {
+      "text": "大",
+      "start": 4.375,
+      "end": 4.6125
+    },
+    {
+      "text": "就",
+      "start": 4.8375,
+      "end": 4.9875
+    },
+    {
+      "text": "交换",
+      "start": 5,
+      "end": 5.525
+    },
+    {
+      "text": "从",
+      "start": 6.1,
+      "end": 6.35
+    },
+    {
+      "text": "左",
+      "start": 6.35,
+      "end": 6.5
+    },
+    {
+      "text": "走",
+      "start": 6.525,
+      "end": 6.675
+    },
+    {
+      "text": "到",
+      "start": 6.675,
+      "end": 6.8125
+    },
+    {
+      "text": "右",
+      "start": 6.825,
+      "end": 7.125
+    },
+    {
+      "text": "这",
+      "start": 7.4,
+      "end": 7.5875
+    },
+    {
+      "text": "叫",
+      "start": 7.5875,
+      "end": 7.75
+    },
+    {
+      "text": "一",
+      "start": 7.7625,
+      "end": 7.8875
+    },
+    {
+      "text": "趟",
+      "start": 7.8875,
+      "end": 8.1625
+    },
+    {
+      "text": "走完",
+      "start": 8.725,
+      "end": 9.1
+    },
+    {
+      "text": "一",
+      "start": 9.1125,
+      "end": 9.25
+    },
+    {
+      "text": "趟",
+      "start": 9.25,
+      "end": 9.5375
+    },
+    {
+      "text": "最大",
+      "start": 9.8,
+      "end": 10.1875
+    },
+    {
+      "text": "的",
+      "start": 10.1875,
+      "end": 10.2875
+    },
+    {
+      "text": "数",
+      "start": 10.2875,
+      "end": 10.525
+    },
+    {
+      "text": "就",
+      "start": 10.55,
+      "end": 10.675
+    },
+    {
+      "text": "到",
+      "start": 10.675,
+      "end": 10.8375
+    },
+    {
+      "text": "了",
+      "start": 10.8375,
+      "end": 10.9125
+    },
+    {
+      "text": "最后",
+      "start": 10.925,
+      "end": 11.4125
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "冒泡排序只做一件事：比较相邻的两个数，前面的大，就交换。从左走到右，这叫一趟。走完一趟，最大的数就到了最后。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "2b25bd37a152ceca4fbe9b037c6534a4",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "f2d075d285bddaa80bb0701eb42a096f3893fb92b3b8291b98825f9ebcd44865",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "12158911edc7f9e9d1803ffcb93c610a",
+  "request": {
+    "spoken": "冒泡排序只做一件事：比较相邻的两个数，前面的大，就交换。从左走到右，这叫一趟。走完一趟，最大的数就到了最后。",
+    "rate": 1,
+    "style": ""
+  }
+}

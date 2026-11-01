@@ -1,0 +1,128 @@
+{
+  "key": "77b2427361debcf8015a36a09cf4c5af",
+  "audio": "77b2427361debcf8015a36a09cf4c5af.ogg",
+  "mime": "audio/ogg",
+  "duration": 7.78,
+  "words": [
+    {
+      "text": "这",
+      "start": 0.1,
+      "end": 0.3
+    },
+    {
+      "text": "一",
+      "start": 0.3,
+      "end": 0.425
+    },
+    {
+      "text": "页",
+      "start": 0.425,
+      "end": 0.7
+    },
+    {
+      "text": "用",
+      "start": 0.8,
+      "end": 1.0125
+    },
+    {
+      "text": "Three",
+      "start": 1.0125,
+      "end": 1.3875
+    },
+    {
+      "text": "js",
+      "start": 1.625,
+      "end": 2.2125
+    },
+    {
+      "text": "画",
+      "start": 2.2125,
+      "end": 2.45
+    },
+    {
+      "text": "三维空间",
+      "start": 2.4625,
+      "end": 3.2625
+    },
+    {
+      "text": "每",
+      "start": 3.8375,
+      "end": 4.05
+    },
+    {
+      "text": "个",
+      "start": 4.05,
+      "end": 4.175
+    },
+    {
+      "text": "点",
+      "start": 4.1875,
+      "end": 4.5
+    },
+    {
+      "text": "是",
+      "start": 4.525,
+      "end": 4.6625
+    },
+    {
+      "text": "一个",
+      "start": 4.6625,
+      "end": 4.85
+    },
+    {
+      "text": "词向量",
+      "start": 4.8625,
+      "end": 5.575
+    },
+    {
+      "text": "一",
+      "start": 5.85,
+      "end": 5.975
+    },
+    {
+      "text": "开始",
+      "start": 5.975,
+      "end": 6.325
+    },
+    {
+      "text": "散",
+      "start": 6.35,
+      "end": 6.575
+    },
+    {
+      "text": "在",
+      "start": 6.575,
+      "end": 6.7125
+    },
+    {
+      "text": "各处",
+      "start": 6.725,
+      "end": 7.25
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "这一页用 Three.js 画三维空间。每个点是一个词向量，一开始散在各处。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "77b2427361debcf8015a36a09cf4c5af",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "b60ea1f230b12a1ecf79e6d3153486fa6878096dc0e1a3a860213a631051ec2b",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "dbbbddc81523db0e9ea226c3d0299614",
+  "request": {
+    "spoken": "这一页用 Three.js 画三维空间。每个点是一个词向量，一开始散在各处。",
+    "rate": 1,
+    "style": ""
+  }
+}

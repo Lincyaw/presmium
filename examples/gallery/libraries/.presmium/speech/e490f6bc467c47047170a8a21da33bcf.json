@@ -1,0 +1,153 @@
+{
+  "key": "e490f6bc467c47047170a8a21da33bcf",
+  "audio": "e490f6bc467c47047170a8a21da33bcf.ogg",
+  "mime": "audio/ogg",
+  "duration": 8.96,
+  "words": [
+    {
+      "text": "这",
+      "start": 0.1,
+      "end": 0.3
+    },
+    {
+      "text": "一",
+      "start": 0.3,
+      "end": 0.4125
+    },
+    {
+      "text": "页",
+      "start": 0.4125,
+      "end": 0.5875
+    },
+    {
+      "text": "用",
+      "start": 0.6,
+      "end": 0.8625
+    },
+    {
+      "text": "Motion",
+      "start": 0.9625,
+      "end": 1.4375
+    },
+    {
+      "text": "柱子",
+      "start": 2.0125,
+      "end": 2.35
+    },
+    {
+      "text": "的",
+      "start": 2.35,
+      "end": 2.45
+    },
+    {
+      "text": "高度",
+      "start": 2.4625,
+      "end": 2.9625
+    },
+    {
+      "text": "是",
+      "start": 3.05,
+      "end": 3.225
+    },
+    {
+      "text": "注意",
+      "start": 3.2375,
+      "end": 3.525
+    },
+    {
+      "text": "力权",
+      "start": 3.5375,
+      "end": 3.975
+    },
+    {
+      "text": "重",
+      "start": 3.975,
+      "end": 4.225
+    },
+    {
+      "text": "查询",
+      "start": 4.7875,
+      "end": 5.2625
+    },
+    {
+      "text": "词",
+      "start": 5.2625,
+      "end": 5.5375
+    },
+    {
+      "text": "是",
+      "start": 5.5625,
+      "end": 5.75
+    },
+    {
+      "text": "cat",
+      "start": 5.75,
+      "end": 6.075
+    },
+    {
+      "text": "的",
+      "start": 6.075,
+      "end": 6.175
+    },
+    {
+      "text": "时候",
+      "start": 6.1875,
+      "end": 6.6625
+    },
+    {
+      "text": "它",
+      "start": 6.8625,
+      "end": 7.0125
+    },
+    {
+      "text": "给",
+      "start": 7.0125,
+      "end": 7.15
+    },
+    {
+      "text": "自己",
+      "start": 7.1625,
+      "end": 7.4125
+    },
+    {
+      "text": "的",
+      "start": 7.4125,
+      "end": 7.5
+    },
+    {
+      "text": "权重",
+      "start": 7.5125,
+      "end": 7.9625
+    },
+    {
+      "text": "最大",
+      "start": 7.975,
+      "end": 8.425
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "这一页用 Motion。柱子的高度是注意力权重。查询词是 cat 的时候，它给自己的权重最大。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "e490f6bc467c47047170a8a21da33bcf",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "7726a47d91dc758b5c5ba370eab7ed2218691023f63b091f6c16f1ceb8b0c04d",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "703c1cfd3b0f396030f829c771923434",
+  "request": {
+    "spoken": "这一页用 Motion。柱子的高度是注意力权重。查询词是 cat 的时候，它给自己的权重最大。",
+    "rate": 1,
+    "style": ""
+  }
+}

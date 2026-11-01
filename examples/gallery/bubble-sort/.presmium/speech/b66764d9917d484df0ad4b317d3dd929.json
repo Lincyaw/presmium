@@ -1,0 +1,138 @@
+{
+  "key": "b66764d9917d484df0ad4b317d3dd929",
+  "audio": "b66764d9917d484df0ad4b317d3dd929.ogg",
+  "mime": "audio/ogg",
+  "duration": 8.18,
+  "words": [
+    {
+      "text": "这",
+      "start": 0.1,
+      "end": 0.275
+    },
+    {
+      "text": "是",
+      "start": 0.275,
+      "end": 0.4
+    },
+    {
+      "text": "五",
+      "start": 0.4125,
+      "end": 0.575
+    },
+    {
+      "text": "个数",
+      "start": 0.575,
+      "end": 1.0125
+    },
+    {
+      "text": "5",
+      "start": 1.3125,
+      "end": 1.5875
+    },
+    {
+      "text": "2",
+      "start": 1.8125,
+      "end": 2.0625
+    },
+    {
+      "text": "4",
+      "start": 2.3625,
+      "end": 2.6875
+    },
+    {
+      "text": "1",
+      "start": 2.9625,
+      "end": 3.2
+    },
+    {
+      "text": "3",
+      "start": 3.4625,
+      "end": 3.7625
+    },
+    {
+      "text": "我们",
+      "start": 4.325,
+      "end": 4.575
+    },
+    {
+      "text": "从",
+      "start": 4.6,
+      "end": 4.8125
+    },
+    {
+      "text": "左",
+      "start": 4.8125,
+      "end": 4.975
+    },
+    {
+      "text": "往",
+      "start": 4.9875,
+      "end": 5.1875
+    },
+    {
+      "text": "右",
+      "start": 5.1875,
+      "end": 5.5
+    },
+    {
+      "text": "每次",
+      "start": 5.8,
+      "end": 6.225
+    },
+    {
+      "text": "只",
+      "start": 6.2375,
+      "end": 6.4
+    },
+    {
+      "text": "比较",
+      "start": 6.4,
+      "end": 6.7
+    },
+    {
+      "text": "相邻",
+      "start": 6.725,
+      "end": 7.075
+    },
+    {
+      "text": "的",
+      "start": 7.075,
+      "end": 7.15
+    },
+    {
+      "text": "两",
+      "start": 7.1625,
+      "end": 7.4
+    },
+    {
+      "text": "个",
+      "start": 7.4,
+      "end": 7.65
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "这是五个数：5、2、4、1、3。我们从左往右，每次只比较相邻的两个。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "b66764d9917d484df0ad4b317d3dd929",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "0e86fe83f292901472c4c98bbd277050ff660d7406953f85199ec1b0b6acca97",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "c99c00a33d862e518e5eafe11bce2174",
+  "request": {
+    "spoken": "这是五个数：5、2、4、1、3。我们从左往右，每次只比较相邻的两个。",
+    "rate": 1,
+    "style": ""
+  }
+}

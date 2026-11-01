@@ -1,0 +1,93 @@
+{
+  "key": "f2763b75297cb39a8fec14c6b0ece891",
+  "audio": "f2763b75297cb39a8fec14c6b0ece891.ogg",
+  "mime": "audio/ogg",
+  "duration": 7.1,
+  "words": [
+    {
+      "text": "渲染",
+      "start": 0.1,
+      "end": 0.525
+    },
+    {
+      "text": "端",
+      "start": 0.525,
+      "end": 0.8125
+    },
+    {
+      "text": "从",
+      "start": 0.8375,
+      "end": 1.0875
+    },
+    {
+      "text": "IR",
+      "start": 1.1,
+      "end": 1.4875
+    },
+    {
+      "text": "里",
+      "start": 1.4875,
+      "end": 1.6625
+    },
+    {
+      "text": "各取所需",
+      "start": 1.6875,
+      "end": 2.5375
+    },
+    {
+      "text": "生成",
+      "start": 2.775,
+      "end": 3.1375
+    },
+    {
+      "text": "网页",
+      "start": 3.15,
+      "end": 3.65
+    },
+    {
+      "text": "幻灯片",
+      "start": 3.85,
+      "end": 4.55
+    },
+    {
+      "text": "notebook",
+      "start": 4.775,
+      "end": 5.425
+    },
+    {
+      "text": "还有",
+      "start": 5.6875,
+      "end": 5.95
+    },
+    {
+      "text": "视频",
+      "start": 5.9625,
+      "end": 6.55
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-read-aloud",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "微软 Edge 朗读",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "渲染端从 IR 里各取所需，生成网页、幻灯片、notebook，还有视频。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "微软 Edge 朗读",
+    "ProduceID": "f2763b75297cb39a8fec14c6b0ece891",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "f92f6351a42bd47c8c177860f9372286e3228f53c2adcd8b2c76e03fa9acae7d",
+  "profile": "e0b6474c2ea76214684ad6d8cb1fce0f5c03b13de1fa4881779e0ccb518f07de",
+  "requestKey": "d0ded438391a26973e236c830c1bc2d6",
+  "request": {
+    "spoken": "渲染端从 IR 里各取所需，生成网页、幻灯片、notebook，还有视频。",
+    "rate": 1,
+    "style": ""
+  }
+}
