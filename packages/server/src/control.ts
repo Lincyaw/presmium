@@ -102,6 +102,13 @@ export class ControlChannel {
     return this.#options.policy[kind] ?? 'ask'
   }
 
+  /** Whether the request can be decided: by the policy, or by a person in an open window who may answer it. */
+  answerable(request: ApprovalRequest): boolean {
+    if (this.policy(request.kind) !== 'ask') return true
+    const scoped = { ...request, scope: request.scope ?? 'workspace' }
+    return [...this.#windows.values()].some(window => this.#eligible(window.member, scoped))
+  }
+
   answer(id: string, allow: boolean, member: Member): 200 | 403 | 404 {
     const pending = this.#pending.get(id)
     if (!pending) return 404

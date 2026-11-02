@@ -36,7 +36,7 @@ const OPTIONS = {
   'dev': ['to', 'out', 'server-port', 'allow'],
   'ir': ['out'],
   'check': ['json', 'update-lock', 'env', 'audience', 'external-links'],
-  'serve': ['port', 'host', 'operator-dir', 'preview-origin', 'public-url'],
+  'serve': ['port', 'host', 'operator-dir', 'preview-origin', 'public-url', 'allow'],
 } as const
 
 type Name = keyof typeof OPTIONS
@@ -66,6 +66,7 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
   if (argv[0] === 'new') return runNewCommand(argv.slice(1), bundled)
   if (argv[0] === 'skills') return (await import('@lincyaw/skills')).main(argv.slice(1))
   if (argv[0] === 'studio') return runStudioCommand(argv.slice(1), bundled, options.bin ?? PRESMIUM_BIN)
+  if (argv[0] === 'mcp') return runMcpCommand(argv.slice(1), bundled)
   let command: Command | 'help'
   try {
     command = parseCommand(argv)
@@ -289,6 +290,7 @@ async function runServeCommand(command: Command, bundled: string): Promise<numbe
     check: compilation => compilation.check(),
     previewOrigins: command.previewOrigins,
     ...command.publicUrl ? { publicUrl: command.publicUrl } : {},
+    allow: command.allow,
   })
   process.stdout.write(`serve  ${started.url}\n${networkLines(command.listenAddress, started.url)}workspace  ${started.root}\nmcp  ${started.mcp.url}${t.token(started.mcp.stateFile)}\n`)
   if (command.listenAddress && !isLoopback(command.listenAddress)) {
@@ -331,6 +333,18 @@ async function runStudioCommand(argv: string[], bundled: string, presmiumBin: st
   }
   const { main: studioMain } = await createJiti(import.meta.url).import<{ main(argv: string[], options: { presmium: string }): Promise<number> }>(entry)
   return studioMain(argv, { presmium: presmiumBin })
+}
+
+/** MCP on stdio, from the installed `@lincyaw/mcp`; stdout carries only its messages. */
+async function runMcpCommand(argv: string[], bundled: string): Promise<number> {
+  const entry = resolveInstalled('@lincyaw/mcp/cli', bundled)
+  if (!entry) {
+    process.stderr.write(`${t.mcpMissing}\n`)
+    return 2
+  }
+  console.log = console.info = console.debug = console.error
+  const { main: mcpMain } = await createJiti(import.meta.url).import<{ main(argv: string[], options: { bundled: string }): Promise<number | undefined> }>(entry)
+  return await mcpMain(argv, { bundled }) ?? 0
 }
 
 function networkLines(listenAddress: string | undefined, url: string): string {

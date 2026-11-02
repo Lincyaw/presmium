@@ -1,4 +1,4 @@
-import type { ProjectAuthoring, AuthoringClients, DocumentHistory } from '@lincyaw/kernel'
+import type { ProjectAuthoring, AuthoringClients, DocumentCapture, DocumentHistory } from '@lincyaw/kernel'
 import type {
   AgentMode,
   AgentTool,
@@ -73,6 +73,7 @@ export interface McpHost {
   voiceAuthoring?: DocumentVoiceAuthoring
   transcriptions?: DocumentTranscriptions
   transcriptionAdoption?: DocumentTranscriptionAdoption
+  capture?: DocumentCapture
   process?: McpProcess
   documents(): Promise<DocumentSummary[]>
   compile(document: string): Promise<{ doc: IRDocument, diagnostics: Finding[] }>
@@ -84,6 +85,8 @@ export interface McpHost {
   jobs?: OutputJobs
   run(document: string, target: { section: string, block: string }, signal?: AbortSignal): Promise<RunResult>
   approve(request: ApprovalRequest, signal?: AbortSignal): Promise<boolean>
+  /** Whether `approve` can get an answer now; when not, asking would only wait for its timeout. */
+  answerable?(request: ApprovalRequest): boolean
   offers(kind: ApprovalKind): boolean
   approval?(kind: ApprovalKind): 'off' | 'ask' | 'allow'
   tools?(document?: string): Promise<McpPluginTools>

@@ -101,6 +101,19 @@ export function previewAppearance(): 'dark' | 'light' | undefined {
 }
 
 /**
+ * The allowed origins the page's parent can have: its own when the page can tell (`location.ancestorOrigins`, else the
+ * referrer) and it is allowed, else all of them. Posting only to the parent's own origin spares the browser a warning for
+ * each origin the parent does not have.
+ */
+export function parentOrigins(origins: readonly string[]): readonly string[] {
+  let known: string | undefined
+  try {
+    known = location.ancestorOrigins?.[0] ?? (document.referrer ? new URL(document.referrer).origin : undefined)
+  } catch {}
+  return known && origins.includes(known) ? [known] : origins
+}
+
+/**
  * The Content-Security-Policy of a served page: the site itself may embed it (a home page that plays a document's
  * presentation in a frame works in `presmium serve` as in the built site), and so may the workbench's origins.
  */

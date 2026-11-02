@@ -22,16 +22,24 @@ export function createStepClock(navigation: Navigation): { clock: StepClock, sto
   const rethrow = () => { const failed = failure; failure = undefined; if (failed) throw failed.error }
   const stop = observe(navigation.position, position => { const before = change.getSnapshot(); if (before && before.slide === position.slide && before.step === position.step) return; change.set({ slide: position.slide, step: position.step, at: clockNow(), forward: isForward(position, before) }); ensureTicking() }, true)
   let unfollow: Unsubscribe | undefined
+  // A driver that comes while an exclusive one holds the clock waits for it, the latest one only.
+  let waiting: StepClockDriver | undefined
+  const activate = (next: StepClockDriver) => { unfollow?.(); driver.set(next); unfollow = observe(next.elapsed, (now, before) => { if (now === undefined && before !== undefined) handOff(before) }) }
   const clock: StepClock = {
     drive(next) {
-      unfollow?.(); driver.set(next)
-      unfollow = observe(next.elapsed, (now, before) => { if (now === undefined && before !== undefined) handOff(before) })
-      return () => { if (driver.getSnapshot() !== next) return; const last = next.elapsed.getSnapshot(); unfollow?.(); unfollow = undefined; driver.set(undefined); if (last !== undefined) handOff(last) }
+      if (driver.getSnapshot()?.exclusive && !next.exclusive) waiting = next
+      else activate(next)
+      return () => {
+        if (waiting === next) { waiting = undefined; return }
+        if (driver.getSnapshot() !== next) return
+        const last = next.elapsed.getSnapshot(); unfollow?.(); unfollow = undefined; driver.set(undefined)
+        if (waiting) { const held = waiting; waiting = undefined; activate(held) } else if (last !== undefined) handOff(last)
+      }
     },
     wait(work) { if (!stopped) pending.add(work); void work.catch(error => { if (!stopped) failure ??= { error } }).finally(() => pending.delete(work)) },
     async settled() { let waited = false; for (let round = 0; round < 100; round++) { if (stopped) return; if (!pending.size) { if (waited) { waited = false; await nextFrame() } if (!pending.size) return rethrow() } await Promise.allSettled([...pending]); waited = true } throw new Error('the page kept preparing its picture: settled() stopped waiting after 100 rounds') },
   }
-  return { clock, stop() { if (stopped) return; stopped = true; stop(); unfollow?.(); driver.set(undefined); change.set(undefined); pending.clear(); failure = undefined } }
+  return { clock, stop() { if (stopped) return; stopped = true; stop(); unfollow?.(); waiting = undefined; driver.set(undefined); change.set(undefined); pending.clear(); failure = undefined } }
 }
 export interface StepTimeOptions { until?: number }
 const settle = (time: number, until: number | undefined) => until !== undefined && time >= until ? Infinity : Math.max(0, time)

@@ -29,6 +29,7 @@
 - 亮色在 `:root`，暗色在 `:root.dark` 只覆盖颜色与阴影；几何、字体层级与热区不变。业务组件不提供自己的暗色取值。
 - 悬停、按下、禁用透明度取语义令牌（`--pm-color-primary-hover`、`--pm-color-primary-pressed`、`--pm-color-accent-hover`、`--pm-color-accent-pressed`、`--pm-opacity-disabled`），页面不另写比例。
 - 嵌套形状间隙小于 2rem 时内层圆角等于外层减间隙，差值不大于 2px 时内层保留自己的圆角。成对取值写成令牌（`--pm-radius-control-inset`、`--pm-radius-menu-item`）或 `calc()`。
+- 分类色 `--pm-color-category-1` 到 `--pm-color-category-8`（各有填充 `--pm-color-category-<n>-soft`）用于图示与动画，表示身份（角色、系列、类别），不表示状态；一份作品中一种颜色只代表一样东西，状态仍用 `ok`、`warn`、`danger`，强调仍用 `accent`。按编号顺序取用：相邻两色对色觉异常的读者也分得开，前四色两两分得开，超过四样时另加文字标签。分类色在 `bg`、`surface` 上作线与文字都不低于 4.5:1；在自己的填充上文字用 `ink`，分类色只画边框。
 
 控件密度：
 
@@ -51,6 +52,7 @@
 | 输入表面 | `--pm-color-chrome` 表面、`--pm-color-line-strong` 边框；`--pm-color-line` 只用于非交互分隔 |
 | 焦点 | `--pm-color-accent` 边框加 `--pm-color-accent-line` 光圈，宽度 `--pm-space-px` |
 | 选中 | `--pm-color-selected` 或 `--pm-color-accent-soft`，配合形状标记 |
+| 图示与动画中的角色、系列、类别 | `--pm-color-category-1` 到 `--pm-color-category-8`，填充 `--pm-color-category-<n>-soft`；场景中写 `color('category-1')` |
 | 浮层 | `--pm-shadow-float`、`--pm-z-popover`、`--pm-z-dialog`、`--pm-z-tooltip` |
 | 时长 | `--pm-duration-fast`、`--pm-duration`、`--pm-duration-slow`、`--pm-ease`；循环 `--pm-duration-spin`、`--pm-duration-pulse` |
 

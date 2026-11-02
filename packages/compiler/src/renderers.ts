@@ -4,7 +4,7 @@ import { errorMessage, findComponentRenderer, isRecord } from '@lincyaw/kernel'
 import type { BoundRendererExtension, ComponentNode, ComponentRenderer, Exporter, Finding, IRBlock, IRDocument, NodeVitePlugin, RenderContext, RenderOutput, Renderer } from '@lincyaw/kernel'
 import { documentLink, publishedAsset } from './assets.ts'
 import type { Compilation, Compiler } from './compiler.ts'
-import { portable } from './paths.ts'
+import { portable, WORK_DIR } from './paths.ts'
 import { loadPlugin, pluginId } from './plugins.ts'
 import type { LoadedPlugin } from './plugins.ts'
 import { compileTranslations } from './translations.ts'
@@ -170,6 +170,24 @@ export function nodeVitePlugins(compilation: Pick<Compilation, 'plugins' | 'doc'
     const config = compilation.doc.config.presmium[pluginId(loaded)]
     return [{ id: pluginId(loaded), entry: loaded.entry, config: isRecord(config) ? config : {} }]
   })
+}
+
+/** The checks of the document's renderers (`Renderer.check`), each given the whole document; a crashed check becomes a finding. */
+export async function rendererChecks(compilation: Compilation): Promise<Finding[]> {
+  const { selected } = await selectRenderers(compilation)
+  const run = planRenderRun(compilation, selected, false)
+  const findings: Finding[] = []
+  for (const { renderer } of selected) {
+    if (!renderer.check) continue
+    const workDir = join(compilation.deckDir, WORK_DIR, renderer.id)
+    const ctx = renderContext(compilation, renderer.id, workDir, workDir, run, findings)
+    try {
+      for (const finding of await renderer.check(compilation.doc, ctx)) ctx.report(finding)
+    } catch (error) {
+      findings.push(renderFinding(compilation, 'error', `renderer ${renderer.id} could not check the document: ${errorMessage(error)}`))
+    }
+  }
+  return findings
 }
 
 export function unsupportedBlocks(doc: IRDocument, renderer: Renderer, extensions: BoundRendererExtension[]): RenderOutput['skipped'] {

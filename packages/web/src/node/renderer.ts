@@ -1,6 +1,7 @@
 import { join, resolve } from 'node:path'
 import type { IRDocument, RenderContext, RenderDevServer, Renderer, SiteDevServer, SiteDocument, SiteSpec } from '@lincyaw/kernel'
 import launchEditor from 'launch-editor'
+import { checkDocumentCode } from './document-bundle.ts'
 import { buildSite as buildPages } from './site-build.ts'
 import type { BuiltDocument } from './site-build.ts'
 import { documentContext, documentSourceFiles } from './site-model.ts'
@@ -65,6 +66,8 @@ export const renderer: Renderer = {
 
   dev: (doc, ctx) => devDocument(doc, ctx, 'web'),
 
+  check: checkDocumentCode,
+
   async buildSite(site: SiteSpec, ctx: RenderContext) {
     const documents: BuiltDocument[] = site.documents.flatMap((entry) => {
       if (!entry.doc) return []
@@ -100,6 +103,7 @@ export const renderer: Renderer = {
       },
       target: async () => server.origin,
       app: (dir, wait) => server.app(dir, wait),
+      codeFindings: dir => server.codeFindings(dir),
       warm: dir => server.warm(dir),
       close: () => server.close(),
     }

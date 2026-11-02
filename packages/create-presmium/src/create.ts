@@ -115,7 +115,9 @@ export function createProject(options: ProjectOptions): void {
     writeFileSync(join(dir, 'AGENTS.md'), c.agentsFile(kind, title))
   }
   agentFiles(dir, SKILLS[kind])
-  if (options.git) gitInit(dir)
+  // Claude Code reads a project's MCP servers from .mcp.json; `presmium mcp` finds the running studio or serve itself.
+  if (kind !== 'plugin') writeFileSync(join(dir, '.mcp.json'), `${JSON.stringify({ mcpServers: { presmium: { command: 'presmium', args: ['mcp'] } } }, null, 2)}\n`)
+  if (options.git) gitInit(dir, title)
 }
 
 const unchanged = (_path: string, text: string): string => text
@@ -153,9 +155,15 @@ function agentFiles(dir: string, skills: string[]): void {
   }
 }
 
-function gitInit(dir: string): void {
+function gitInit(dir: string, title: string): void {
   const inside = spawnSync('git', ['rev-parse', '--is-inside-work-tree'], { cwd: dir, encoding: 'utf8' })
   if (inside.error || inside.stdout.trim() === 'true') return
   // The Pages workflow publishes on pushes to main, whatever the machine's default branch is.
-  spawnSync('git', ['init', '--quiet', '--initial-branch=main'], { cwd: dir, stdio: 'ignore' })
+  if (spawnSync('git', ['init', '--quiet', '--initial-branch=main'], { cwd: dir, stdio: 'ignore' }).status !== 0) return
+  // The project as made is the first version, so the history starts from it; without the person's git identity the
+  // commit is Presmium's, as the studio's versions are.
+  const email = spawnSync('git', ['config', 'user.email'], { cwd: dir, encoding: 'utf8' })
+  const identity = email.status === 0 && email.stdout.trim() ? [] : ['-c', 'user.name=Presmium', '-c', 'user.email=presmium@presmium.invalid']
+  spawnSync('git', ['add', '-A'], { cwd: dir, stdio: 'ignore' })
+  spawnSync('git', [...identity, '-c', 'commit.gpgSign=false', 'commit', '--quiet', '--no-verify', '-m', title], { cwd: dir, stdio: 'ignore' })
 }

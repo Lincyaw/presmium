@@ -5,6 +5,7 @@ import type { CheckContext, Finding, RunResult } from '@lincyaw/kernel'
 import { build } from './build.ts'
 import type { BuildReport } from './build.ts'
 import type { Compilation } from './compiler.ts'
+import { rendererChecks } from './renderers.ts'
 import { frontmatterLine } from './source-lines.ts'
 
 export function checkContext(compilation: Compilation): CheckContext {
@@ -20,7 +21,7 @@ export function checkContext(compilation: Compilation): CheckContext {
   }
 }
 
-/** The plugins' checks and the publication checks; a crashed check or a duplicate check ID becomes a finding. */
+/** The plugins' checks, the publication checks and the renderers'; a crashed check or a duplicate check ID becomes a finding. */
 export async function runAllChecks(compilation: Compilation, options: { externalLinks?: boolean } = {}): Promise<Finding[]> {
   const { entry } = compilation
   const text = await readFile(entry, 'utf8').catch(() => '')
@@ -42,6 +43,7 @@ export async function runAllChecks(compilation: Compilation, options: { external
     findings.push(finding.source ? finding : { ...finding, source: places.get(finding.checkId) ?? { file: entry, line: 1 } })
   }
   findings.push(...await compilation.publishChecks({ externalLinks: options.externalLinks }))
+  findings.push(...await rendererChecks(compilation))
   return findings
 }
 

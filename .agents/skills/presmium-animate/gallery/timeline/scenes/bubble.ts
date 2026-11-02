@@ -33,6 +33,6 @@ export default gsapScene(({ root, gsap, at, color }) => {
   tl.to(bar(1), { left: slot(2), duration: 0.5 }, s(4))
   tl.to(bar(5), { left: slot(4), duration: 0.5 }, s(4) + 0.6)
   tl.to(bar(3), { left: slot(3), duration: 0.5 }, s(4) + 0.6)
-  tl.to(bar(5), { backgroundColor: '#2e8b57', duration: 0.3 }, s(4) + 1.1)
+  tl.to(bar(5), { backgroundColor: color('ok'), duration: 0.3 }, s(4) + 1.1)
   return tl
 })

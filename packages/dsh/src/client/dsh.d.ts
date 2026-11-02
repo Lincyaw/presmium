@@ -125,6 +125,17 @@ interface DshSessionBinding {
     beginSubmission(input: { mode: 'queue', text: string, attachments: [] }): { requestId: string, abandon(): void }
     prompt(content: { type: 'text', text: string }[], mode: 'queue', signal: AbortSignal | undefined, requestId: string): Promise<{ ok: true, value: { accepted: true } } | { ok: false, error: { code: string, message: string } }>
   }
+  /** The session's scope, which addresses its composer through `conversation.input`. */
+  ctx: unknown
+}
+
+/** A session's composer (`SessionInput` of `@deepseek-ai/dsh-client-ui-conversation`), as far as it is used here. */
+interface DshSessionInput {
+  /** Replaces the whole draft with plain text; the caret lands at its end. */
+  setDraft(text: string): void
+  /** Gives the keyboard back to the composer, with the caret it last held. */
+  focus(): void
+  readonly state: DshObservable<{ draft: string, phase: 'plain' | 'adjudicating' | 'claimed' | 'submitting' }>
 }
 
 interface DshClientContext {
@@ -141,6 +152,7 @@ interface DshClientContext {
   sidebarRight: { active(): { id: string, kind: string, contentId: string } | undefined, close(id: string): void, isExpanded(): boolean, toggleExpanded(): void }
   layout: { selectPanel(id: string | null): void }
   sessions: { list: DshObservable<{ byId: Record<string, { id: string, cwd?: string, retainedBy: { mainView?: number } }> }>, binding(id: string): DshSessionBinding | undefined }
+  conversation: { input: { for(scope: unknown): DshSessionInput } }
   uiWorkspace: { openWorkspace(id: string, beforeOpen?: (sessionId: string) => void): Promise<void>, startSession(id?: string): void }
   workspaces: { list: DshObservable<{ items: readonly { workspaceId: string, path: string }[] }> }
   configForms: {

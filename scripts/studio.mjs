@@ -27,4 +27,6 @@ if (parsed?.positionals.length === 0 && !parsed.values.help) {
   process.argv.splice(2, 0, dir)
 }
 
-await import('../packages/studio/bin/presmium-studio.mjs')
+// Through the main package's command, which hands Studio its own presmium (Studio does not depend on it).
+process.argv.splice(2, 0, 'studio')
+await import('../packages/presmium/bin/presmium.mjs')

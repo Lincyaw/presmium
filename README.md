@@ -40,7 +40,7 @@ To preview the site locally, run `pnpm serve` and open the address it prints.
 `lecture.json` is read and written by tools rather than edited by hand. There are two ways to edit a document:
 
 - **In the browser.** Install Presmium with `pnpm add -g @lincyaw/presmium` and run `presmium studio` in the project. Studio is included (experimental, about 865 MB with its dependencies). The workbench provides pages, rich text, step scripts, comments, version history, slides and video production. Editing and previewing need no language model; the AI assistant uses the API key entered under *Settings → Model*.
-- **With an AI coding tool.** Open the project in Claude Code, Codex or a similar tool and describe the change. The project's `AGENTS.md` and the skills in `.agents/skills` describe the document format and how to check it.
+- **With an AI coding tool.** Open the project in Claude Code, Codex or a similar tool and describe the change. The project's `AGENTS.md` and the skills in `.agents/skills` describe the document format and how to check it. Its `.mcp.json` connects Claude Code to `presmium mcp` (for Codex: `codex mcp add presmium -- presmium mcp`): while `presmium studio` runs, the AI edits through the workbench's own actions, the changes appear in the workbench, and it can take pictures of the slides (`capture_slides`) to check pages and animations.
 
 Run `presmium check` after a change to validate the document.
 
@@ -54,6 +54,7 @@ Install Presmium, including Studio, the command line, renderers and official plu
 | `presmium studio` | Open the browser workbench to edit documents, preview slides and produce videos |
 | `presmium dev` | Preview one document's web page and slides, updating on save |
 | `presmium serve` | Preview a workspace: its document list and every document's site |
+| `presmium mcp` | MCP on stdio for AI tools: relays to the running studio or serve of the project |
 | `presmium check` | Validate a document: structure, links, code references and plugin checks |
 | `presmium build` | Build into `dist/`: web pages, slides and notebooks; a workspace builds into `dist/web/` |
 

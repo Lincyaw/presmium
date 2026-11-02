@@ -9,6 +9,9 @@ import { CLIENT_MESSAGES } from './messages.ts'
  * the repair of the selected document's diagnostics. Each is prompted on the session after its document context is
  * set, and the conversation is shown. Without a usable model nothing is sent: the conversation is shown, where the
  * composer offers to set one up, and the request answers with that in the author's terms.
+ *
+ * Drafts (the slash menu's animation request) go into the session's composer instead, for the author to finish and
+ * send. Without a model the composer's takeover shows over the draft, which waits beneath it.
  */
 export function registerAgentRequests(ctx: DshClientContext, workbench: Workbench, setup: AssistantSetup): void {
   ctx.inject(['sessions', 'layout'], inner => inner.effect(() => {
@@ -61,4 +64,48 @@ export function registerAgentRequests(ctx: DshClientContext, workbench: Workbenc
     update()
     return () => { off(); offRequests?.() }
   }, 'presmium: hand the author\'s requests to the current session'))
+
+  ctx.inject(['sessions', 'layout', 'conversation'], inner => inner.effect(() => {
+    let offDrafts: (() => void) | undefined
+    let active: DshSessionBinding | undefined
+    const update = () => {
+      const row = mainViewAgentSession(inner.sessions.list.getSnapshot().byId)
+      const binding = row && inner.sessions.binding(row.id)
+      if (binding === active) return
+      offDrafts?.()
+      offDrafts = undefined
+      active = binding
+      if (!row || !binding) return
+      // Whatever the author wrote stays above the draft; a draft put here and not changed since is replaced by the next.
+      let last: { kept: string, text: string } | undefined
+      offDrafts = workbench.onAgentDraft(draft => {
+        if (active !== binding || inner.sessions.binding(row.id) !== binding) throw new Error('no-conversation')
+        const input = inner.conversation.input.for(binding.ctx)
+        const { draft: current, phase } = input.state.getSnapshot()
+        if (phase !== 'plain') throw new Error('no-conversation')
+        const kept = last && current.trim() === (last.kept + last.text).trim() ? last.kept : current.trim() ? `${current.trimEnd()}\n` : ''
+        const text = kept + draft.text
+        last = { kept, text: draft.text }
+        input.setDraft(text)
+        inner.layout.selectPanel(null)
+        // The composer takes the keyboard once the conversation is shown (under the takeover it stays where it was).
+        // Focus brings back the caret the composer last held, which the draft does not move: the browser's selection
+        // goes to the end of the focused editor, and the composer's editor follows it.
+        const frame = (then: () => void) => requestAnimationFrame(() => requestAnimationFrame(then))
+        if (setup.readiness.getSnapshot() !== 'missing') frame(() => {
+          input.focus()
+          frame(() => {
+            const editor = document.activeElement
+            if (!(editor instanceof HTMLElement) || !editor.isContentEditable || input.state.getSnapshot().draft !== text) return
+            const selection = getSelection()
+            selection?.selectAllChildren(editor)
+            selection?.collapseToEnd()
+          })
+        })
+      })
+    }
+    const off = inner.sessions.list.subscribe(update)
+    update()
+    return () => { off(); offDrafts?.() }
+  }, 'presmium: put the author\'s drafts in the current session\'s composer'))
 }

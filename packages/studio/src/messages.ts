@@ -18,6 +18,7 @@ export interface StudioMessages {
   serviceEnded: string
   appEnded: string
   modelVariables(variables: readonly string[], unset: string[]): string
+  presmiumMissing: string
 }
 
 export const STUDIO_MESSAGES: Record<Locale, StudioMessages> = {
@@ -42,6 +43,7 @@ presmium-studio-<散列>.log（每个安装一个）保存在 $XDG_STATE_HOME/pr
   -h, --help     显示本说明`,
     badPort: value => `--port 需要 0 到 65535 之间的端口号，而不是“${value}”。`,
     badUrl: (option, value) => `${option} 需要一个完整的网址，例如 https://studio.example.com/，而不是“${value}”。`,
+    presmiumMissing: 'presmium-studio 找不到 presmium 命令。Presmium Studio 随 Presmium 一起安装：请运行 pnpm add -g @lincyaw/presmium，然后用 presmium studio 启动。',
     unexpectedArgument: argument => `多余的参数“${argument}”。只能给出一个目录。`,
     notDirectory: dir => `${dir} 不是目录。请给出工作区的根目录或一份文稿所在的目录。`,
     log: file => `presmium studio: 日志在 ${file}`,
@@ -79,6 +81,7 @@ Options:
   -h, --help     show this help`,
     badPort: value => `--port takes a port number from 0 to 65535, not “${value}”.`,
     badUrl: (option, value) => `${option} takes a full address, such as https://studio.example.com/, not “${value}”.`,
+    presmiumMissing: 'presmium-studio can’t find the presmium command. Presmium Studio comes with Presmium: run pnpm add -g @lincyaw/presmium, then start it with presmium studio.',
     unexpectedArgument: argument => `Unexpected argument “${argument}”. Give one directory.`,
     notDirectory: dir => `${dir} is not a directory. Give the workspace root, or the directory of a document.`,
     log: file => `presmium studio: log ${file}`,

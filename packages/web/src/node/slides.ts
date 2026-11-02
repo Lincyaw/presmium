@@ -7,6 +7,7 @@ import type { IRDocument, Renderer, SlideShape } from '@lincyaw/kernel'
 import send from 'send'
 import { PRINTED_ATTRIBUTE, printQuery } from '../domain/index.ts'
 import type { SlidesPrintQuery } from '../domain/index.ts'
+import { checkDocumentCode } from './document-bundle.ts'
 import { devDocument } from './renderer.ts'
 import { buildSlidesSite } from './site-build.ts'
 
@@ -30,6 +31,8 @@ export const slidesRenderer: Renderer = {
     return { outDir: ctx.outDir, skipped: [] }
   },
   dev: (doc, ctx) => devDocument(doc, ctx, 'slides'),
+  // The same code as the web form's, bundled once: the second check finds the first one's bundle.
+  check: checkDocumentCode,
 }
 
 interface PrintingPage {

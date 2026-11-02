@@ -40,6 +40,7 @@
     "@lincyaw/studio": "workspace:*",
     "@lincyaw/host": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
+    "@lincyaw/mcp": "workspace:*",
     "@lincyaw/render-notebook": "workspace:*",
     "@lincyaw/render-slides": "workspace:*",
     "@lincyaw/addon-assistant": "workspace:*",

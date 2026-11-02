@@ -1195,6 +1195,9 @@ importers:
       '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
+      '@lincyaw/mcp':
+        specifier: workspace:*
+        version: link:../mcp
       '@lincyaw/render-notebook':
         specifier: workspace:*
         version: link:../render-notebook
@@ -1294,9 +1297,6 @@ importers:
       '@lincyaw/dsh':
         specifier: workspace:*
         version: link:../dsh
-      '@lincyaw/presmium':
-        specifier: workspace:^
-        version: link:../presmium
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
@@ -1617,6 +1617,9 @@ importers:
       mime-types:
         specifier: 3.0.2
         version: 3.0.2
+      playwright-chromium:
+        specifier: 1.64.1
+        version: 1.64.1
       yaml:
         specifier: ^2.9.1
         version: 2.9.1

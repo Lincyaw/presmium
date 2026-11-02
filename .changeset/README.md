@@ -41,7 +41,7 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@lincyaw/addon-lecture` | npm | 插件：讲授轨与导出视频 |
 | `@lincyaw/addon-speech` | npm | 插件：语音服务 |
 | `@lincyaw/dsh` | npm | DeepSeek Harness 的 bundle：工作台的宿主部分（工具、确认策略、文稿上下文、技能、路由）与客户端部分（根布局、面板、主题与品牌）；0.x、实验性，版本号不随统一版本（`docs/studio.md` 12 节）；技能由 `@lincyaw/skills` 从 `.agents/skills` 统一打包，客户端部分在打包时预编译（`build/client.mjs`，`docs/studio.md` 7.8 节） |
-| `@lincyaw/studio` | npm | `presmium studio`：组装 Presmium 的 profile，启动并监管 DeepSeek Harness（精确版本的依赖）与工作区服务，只打印一个网址；命令 `presmium-studio`（`pnpm add -g @lincyaw/studio`），随 `@lincyaw/presmium` 默认安装，以它为对等依赖宿主；`presmium studio` 使用当前主包自带的版本；0.x、实验性，版本号不随统一版本 |
+| `@lincyaw/studio` | npm | `presmium studio`：组装 Presmium 的 profile，启动并监管 DeepSeek Harness（精确版本的依赖）与工作区服务，只打印一个网址；命令 `presmium-studio`（`pnpm add -g @lincyaw/studio`），随 `@lincyaw/presmium` 默认安装，不依赖它（`presmium studio` 传入自己的命令，单独的 `presmium-studio` 用 PATH 上的 `presmium`）；`presmium studio` 使用当前主包自带的版本；0.x、实验性，版本号不随统一版本 |
 | `@lincyaw/workbench` | npm | 工作台的 React 面板与工作区服务的客户端（首页、文件树、源码编辑器、问题、预览）；0.x、实验性，版本号不随统一版本，由 `@lincyaw/dsh` 的客户端部分打包使用 |
 | `@lincyaw/presmium` | npm | `pnpm add -g @lincyaw/presmium`：`presmium` 命令连同 Studio、三个渲染端与全部官方插件；文稿与工作区中找不到的插件从它的依赖中找，命令始终使用自身所属的安装，不自动转交给项目中的版本；`presmium new` 运行 `create-presmium` |
 | `create-presmium` | npm | `presmium new` 与 `pnpm create presmium`：新建讲义、工作区或插件项目（不在 `@lincyaw` 作用域中：`pnpm create presmium` 运行的就是这个名字的包；它的模板在打包时从各自的源复制，在源码仓库中直接用源） |

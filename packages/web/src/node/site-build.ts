@@ -8,7 +8,7 @@ import { FONT_LICENSE, fontLicense } from '@lincyaw/kernel/node'
 import { SitemapStream, streamToPromise } from 'sitemap'
 import { chapterRedirects, offlineEnabled, pageLink, SERVICE_WORKER, searchDocuments, sitePageLayout, translationPages, webPages } from '../domain/index.ts'
 import type { AppConfig, SiteConfig, SiteShell, WebPage } from '../domain/index.ts'
-import { BUNDLE_ENTRY, buildDocumentBundle, documentComponents } from './document-bundle.ts'
+import { BUNDLE_ENTRY, buildDocumentBundle, codeFindings, documentComponents } from './document-bundle.ts'
 import type { DocumentBundle } from './document-bundle.ts'
 import { writeServiceWorker } from './offline.ts'
 import { publishedDocument, publishedFile } from './publish.ts'
@@ -126,6 +126,8 @@ async function documentFiles(ctx: RenderContext, built: Built, entry: BuiltDocum
     nodePlugins: entry.nodePlugins.map(({ entry: file, config }) => ({ entry: file, config })),
     components: documentComponents(entry.doc),
   })
+  // A file that does not bundle is left out: what imports it shows its failure, and the build reports it.
+  for (const finding of codeFindings(bundle?.failures ?? [], own.deckDir)) own.report(finding)
   // Named by its content, as the app is: the same in any checkout.
   const code = bundle && contentKey(bundle.dir, file => file === 'bundle.json')
   if (bundle && code) cpSync(bundle.dir, join(out, CODE_DIR, code), { recursive: true, filter: source => !source.endsWith('bundle.json') })

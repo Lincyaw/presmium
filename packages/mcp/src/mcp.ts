@@ -4,7 +4,7 @@ import { createMcpHandler, fromJsonSchema, McpServer, ResourceTemplate, UriTempl
 import type { AuthInfo, CallToolResult, JsonSchemaType, Variables } from '@modelcontextprotocol/server'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
 import { deckLocale, docBlocks, errorMessage, hasRole, isPresentingRole, isRecord, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
-import type { AgentTool, ApprovalKind, ApprovalScope, CodeNode, CompileJob, DocumentSummary, Finding, IRDocument } from '@lincyaw/kernel'
+import type { AgentTool, ApprovalKind, ApprovalRequest, ApprovalScope, CodeNode, CompileJob, DocumentSummary, Finding, IRDocument } from '@lincyaw/kernel'
 import { codeRef, deckInfo, diagnosticsOf, findBlock, findSection, locate, outputsOf, relativeToDeck, runInfo, search, sectionDetail, sectionSummary, stepDetail } from './deck.ts'
 import type { McpCaller, McpHost, McpProcess } from './host.ts'
 import { MCP_ERROR_TEXT, MCP_MESSAGES } from './messages.ts'
@@ -20,6 +20,7 @@ import { IMAGE_AUTHORING_TOOLS } from './image-authoring.ts'
 import { VOICE_AUTHORING_TOOLS } from './voice-authoring.ts'
 import { DIAGNOSTIC_TOOLS, diagnosticSnapshot } from './diagnostics.ts'
 import { registerSkillResources, SKILL_INSTRUCTIONS, SKILL_TOOLS } from './skills.ts'
+import { CAPTURE_TOOLS, ToolContent } from './capture.ts'
 
 const MCP_VERSION: string = (createRequire(import.meta.url)('../package.json') as { version: string }).version
 const POSITION_URI = 'presmium://position'
@@ -134,6 +135,7 @@ const TOOLS: ToolSpec[] = [
   ...IMAGE_AUTHORING_TOOLS,
   ...VOICE_AUTHORING_TOOLS,
   ...TRANSCRIPTION_TOOLS,
+  ...CAPTURE_TOOLS,
   {
     name: 'list_documents',
     description: 'The documents (decks) this host serves: directory, title, language, tags.',
@@ -425,6 +427,9 @@ function runPlan(doc: IRDocument, node: CodeNode): string {
 function hostSupports(host: McpHost, name: string): boolean {
   if (PROJECT_TOOLS.some(tool => tool.name === name)) return Boolean(host.projectAuthoring)
   switch (name) {
+    case 'capture_slides':
+    case 'capture_reading':
+    case 'capture_overview': return Boolean(host.capture)
     case 'get_authoring_clients':
     case 'request_authoring_client':
     case 'get_authoring_client_request': return Boolean(host.authoringClients)
@@ -487,6 +492,7 @@ function toText(data: unknown): string {
 async function toolResult(run: () => Promise<unknown>, structured = false, lang?: () => Promise<string | undefined>, codes?: AgentTool['errors']): Promise<CallToolResult> {
   try {
     const result = await run()
+    if (result instanceof ToolContent) return { content: result.content, structuredContent: result.structured }
     return { content: [{ type: 'text', text: toText(result) }], ...structured && isRecord(result) ? { structuredContent: result } : {} }
   } catch (error) {
     if (structured) {
@@ -496,7 +502,10 @@ async function toolResult(run: () => Promise<unknown>, structured = false, lang?
       const failure = { error: { code: status < 500 ? errorMessage(error) : 'tool-failed', message: explain ? explain(detail ?? {}) : errorMessage(error), status, retryable: status >= 500, ...detail ? { detail } : {} } }
       return { isError: true, structuredContent: failure, content: [{ type: 'text', text: toText(failure) }] }
     }
-    const coded = codes?.[deckLocale(await lang?.().catch(() => undefined) ?? '')]?.[errorMessage(error)]
+    const locale = deckLocale(await lang?.().catch(() => undefined) ?? '')
+    const status = isRecord(error) && typeof error.status === 'number' ? error.status : 500
+    const explain = status < 500 ? MCP_ERROR_TEXT[locale][errorMessage(error)] : undefined
+    const coded = codes?.[locale]?.[errorMessage(error)] ?? explain?.(isRecord(error) && isRecord(error.detail) ? error.detail : {})
     return { isError: true, content: [{ type: 'text', text: coded ?? errorMessage(error) }] }
   }
 }
@@ -541,12 +550,30 @@ function recompiles(process: McpProcess | undefined): string {
   }
 }
 
+/** The order of work, with the tools this host offers: what a model new to Presmium reads first. */
+function workflow(host: McpHost, offered: ReadonlySet<string>): string {
+  const has = (name: string) => offered.has(name)
+  const steps = [
+    'Learn the format first: list_skills, then read_skill presmium-author (writing, pages, steps, narration) and presmium-animate for animations. They are the rules for every change.',
+    `Find the target: list_documents, list_sections${host.focus ? '; get_focus says what the author selected or points at in Presmium Studio ("this page", "this paragraph")' : ''}.`,
+    host.authoring
+      ? 'Read before writing: get_authoring_capabilities, get_document_outline, then read_document_part for the values you change.'
+      : 'This host can neither change documents nor capture slides, because no Presmium Studio or presmium serve runs for this project. Ask the author to start presmium studio in the project and reconnect this MCP server; or edit lecture.json in the project as the skills say and check it with the tools here.',
+    ...host.authoring ? [`Change through plans: pages with plan_page_change then apply_page_change; text, blocks, steps and narration with plan_document_change then apply_document_change, passing the plan unchanged. A 409 means the document changed meanwhile: read it again and plan again. A write may wait for the author to allow it in Presmium; approval-unavailable means no Presmium window is open to ask, so tell the author to open it (or start presmium serve --allow operate).${has('undo_document_change') ? ' undo_document_change takes a change back.' : ''}`] : [],
+    'Check: check_document, then get_diagnostics for every problem with its source; fix what you caused.',
+    ...has('capture_slides') ? ['Look before you report: capture_slides on each page you changed returns its pictures as the presentation shows them, the rest frame of every step by default. For an animation, add `at` (milliseconds into a step) to see it move, `measure` (a CSS selector) for the boxes of its elements, and `arrive: \'backward\'` to check that going back to a step shows its frame. capture_reading shows the same page in the reading version (the web page), at a desktop or phone `width`. capture_overview takes every page at once (sheets of thumbnails and a directory of frames in reading order) for reviewing the whole piece, e.g. by a fresh reader. Check text overflow, overlaps and the dark appearance. Do not script a browser for this.'] : [],
+    ...has('start_voiceover') ? ['Voiceover costs money and time: read get_voiceover_status, tell the author the engine, voice and number of sentences, and call start_voiceover only after they agree. build exports the forms.'] : has('build') ? ['build exports the forms.'] : [],
+  ]
+  return `How to work, in this order:\n${steps.map((step, i) => `${i + 1}. ${step}`).join('\n')}`
+}
+
 function instructions(host: McpHost, caller: McpCaller, tools: { name: string, kind: 'read' | ApprovalKind }[], title?: string): string {
   const pages = Boolean(host.positions)
   const reads = tools.filter(tool => tool.kind === 'read').map(tool => tool.name)
   const operations = tools.filter(tool => tool.kind !== 'read').map(tool => tool.name)
   return [
     `Presmium: ${title ? `the lecture deck "${title}"` : 'lecture decks'} as tools.`,
+    workflow(host, new Set(tools.map(tool => tool.name))),
     SKILL_INSTRUCTIONS,
     `Read tools: ${reads.join(', ')}.`,
     `The same data is offered as resources: presmium://documents, presmium://deck, presmium://sections, presmium://sections/{section}, presmium://sections/{section}/steps/{step}, presmium://sections/{section}/outputs, presmium://diagnostics (the current diagnostic snapshot; reading it does not run checks), presmium://ir (the compiled deck)${pages ? ', presmium://position (subscribe to it to hear when the presentation moves)' : ''}, presmium://focus (what the author points at in the workbench; subscribe to it to hear of a new one)${host.classroomStatus ? ', presmium://classroom' : ''}. With several documents, add ?document=<dir> to a deck's resource (presmium://sections?document=<dir>). Subscribe to presmium://diagnostics?document=<dir> to hear when that document's current problems change; get_diagnostics reads bounded, version-bound snapshot fragments without running checks; check_document explicitly runs compilation and plugin checks. An empty snapshot is not browser or current-source verification.`,
@@ -560,7 +587,7 @@ function instructions(host: McpHost, caller: McpCaller, tools: { name: string, k
           : pages
             ? `Operate tools: ${operations.join(', ')}. Each may first wait for a person to allow it (in the page), and fails when refused.`
             : `Operate tools: ${operations.join(', ')}, allowed as presmium-mcp --allow says.`,
-    `${host.authoring ? 'Canonical authoring discovery starts with get_document_outline, then read_document_part for complete stable entities or fields. Keep the returned source on all continuation reads; source changes require starting again. Large values are explicit JSON-text fragments: concatenate text at nextOffset and JSON.parse the complete sequence. These bounded replies survive tool-result pruning; the legacy full get_document may exceed that budget. get_section/get_step are derived runtime data, never editable canonical content. Changes use plan_document_change and apply_document_change with the shared Web transaction; large generic write inputs/results are not yet bounded. Comments, voice inheritance and component base/step parameter or existing-Definition changes use plan_authoring_action/apply_authoring_action with compact source/plan/digest references. Use read_authoring_action_impact for the complete bounded component impact; inherited descendants may change. Independent implementation copies remain unavailable. Comment deletion requires reviewing the effect and confirmDeletion:true; recording adoption and generation remain separate real services. Page create/rename/move/delete use compact plan_page_change and apply_page_change references; delete requires reviewing the planned impact and confirmDeletion:true. Page duplication uses compact plan_page_duplication and apply_page_duplication references; its complete candidate and copied-ID mapping are optional resources, not model inputs to echo back. Read get_authoring_capabilities before editing; a saved result does not prove compilation or browser playback.' : 'This host has no canonical authoring service; get_authoring_capabilities reports the limitation.'} ${recompiles(host.process)} With several documents, name one with \`document\` (list_documents).`,
+    `${host.authoring ? 'Canonical authoring discovery starts with get_document_outline, then read_document_part for complete stable entities or fields. Keep the returned source on all continuation reads; source changes require starting again. Large values are explicit JSON-text fragments: concatenate text at nextOffset and JSON.parse the complete sequence. These bounded replies survive tool-result pruning; the legacy full get_document may exceed that budget. get_section/get_step are derived runtime data, never editable canonical content. Changes use plan_document_change and apply_document_change with the shared Web transaction; their results are compact (read changed values with read_document_part), while large generic write inputs are not yet bounded. Comments, voice inheritance and component base/step parameter or existing-Definition changes use plan_authoring_action/apply_authoring_action with compact source/plan/digest references. Use read_authoring_action_impact for the complete bounded component impact; inherited descendants may change. Independent implementation copies remain unavailable. Comment deletion requires reviewing the effect and confirmDeletion:true; recording adoption and generation remain separate real services. Page create/rename/move/delete use compact plan_page_change and apply_page_change references; delete requires reviewing the planned impact and confirmDeletion:true. Page duplication uses compact plan_page_duplication and apply_page_duplication references; its complete candidate and copied-ID mapping are optional resources, not model inputs to echo back. Read get_authoring_capabilities before editing; a saved result does not prove compilation or browser playback.' : 'This host has no canonical authoring service; get_authoring_capabilities reports the limitation.'} ${recompiles(host.process)} With several documents, name one with \`document\` (list_documents).`,
   ].join('\n')
 }
 
@@ -618,14 +645,17 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
         signal.throwIfAborted()
         const lang = options.lang ?? (await self.compiled()).doc.meta.lang
         const messages = MCP_MESSAGES[deckLocale(lang)]
-        const allowed = await host.approve({
+        const request = {
           kind,
           scope: options.scope ?? 'content',
           title: title(messages),
           detail: options.detail ?? messages.detail(caller.member.name),
           from: 'presmium.mcp',
           member: caller.member.id,
-        }, signal)
+        } satisfies ApprovalRequest
+        // Nobody can be asked (no Presmium window is open): say so at once instead of waiting for the timeout.
+        if (host.answerable?.(request) === false) throw Object.assign(new Error('approval-unavailable'), { status: 403, detail: { kind } })
+        const allowed = await host.approve(request, signal)
         // A denial or timeout is the author's decision, not a transient failure: retrying asks again.
         if (!allowed) throw Object.assign(new Error('operation-not-allowed'), { status: 403 })
       },

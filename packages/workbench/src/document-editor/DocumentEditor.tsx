@@ -14,15 +14,23 @@ import { captureTableIdentities, seedTableIdentities } from './table-identities.
 import type { DocumentNodeViews, NativeDocumentEditor } from './schema.tsx'
 import { nativeEditingCursor } from './selection.ts'
 import type { NativeDocumentSelection } from './selection.ts'
+import { documentInsertionPlace } from './insertion-place.ts'
+import type { DocumentInsertionPlace } from './insertion-place.ts'
 
 export interface DocumentEditingPosition {
   nativeBlockId: string
   sectionId: string
   position: number
 }
+/** Who takes the slash menu's request for an animation where it was opened; while none is available the menu has no such item. */
+export interface DocumentAnimationRequests {
+  available(): boolean
+  request(place: DocumentInsertionPlace): void
+}
 export interface DocumentEditorCommands {
   insertPage(after: string | undefined, title: string): NativePageCreation
   rememberComponentConfiguration(document: TeachingDocument): void
+  handleAnimationRequests(requests: DocumentAnimationRequests | undefined): void
 }
 
 export interface DocumentEditorProps {
@@ -73,6 +81,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
     return () => comments.close()
   }, [comments])
   const current = useRef(props), editor = useRef<NativeDocumentEditor>(), unsubscribe = useRef<() => void>()
+  const animationRequests = useRef<DocumentAnimationRequests>()
   const projectedDocument = useRef<NativeDocumentEditor['prosemirrorState']['doc']>()
   const pendingTransaction = useRef<Transaction>()
   const focusFrame = useRef<number>()
@@ -125,7 +134,16 @@ export function DocumentEditor(props: DocumentEditorProps) {
   }
   return <BlockNoteSurface identity={props.identity} reset={props.reset} initialContent={projection.content} locale={props.locale} contentLang={props.document.metadata.lang || 'zh-CN'} readOnly={props.readOnly}
     resolveAssetURL={props.resolveAssetURL} uploadImage={props.uploadImage}
-    comments={comments} commentsPortal={props.commentsPortal} onCommentDraftRestore={() => current.current.onCommentDraftRestore?.()} nodeViews={props.nodeViews} onComposition={props.onComposition} onSelection={props.onSelection} onSectionLink={sectionId => {
+    comments={comments} commentsPortal={props.commentsPortal} onCommentDraftRestore={() => current.current.onCommentDraftRestore?.()} nodeViews={props.nodeViews} onComposition={props.onComposition} onSelection={props.onSelection}
+    animationRequest={{
+      available: () => !current.current.readOnly && binding.current === projection && active.current === projection && Boolean(animationRequests.current?.available()),
+      request: value => {
+        if (value !== editor.current || binding.current !== projection || active.current !== projection) return
+        const place = documentInsertionPlace(value, projection)
+        if (place) animationRequests.current?.request(place)
+      },
+    }}
+    onSectionLink={sectionId => {
       if (!current.current.onSectionLink?.(sectionId)) return false
       // The click placed the caret in the link; it follows the reader to the page they asked for.
       const value = editor.current
@@ -162,7 +180,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
         })
         unsubscribe.current = () => { stopBefore(); stopComments(); stopSelection(); stopFocus(); cancelFocus() }
       }
-      const commands: DocumentEditorCommands | undefined = value ? { rememberComponentConfiguration: document => {
+      const commands: DocumentEditorCommands | undefined = value ? { handleAnimationRequests: requests => { animationRequests.current = requests }, rememberComponentConfiguration: document => {
         if (editor.current === value && active.current === projection && binding.current === projection && !value.prosemirrorView.isDestroyed) rememberComponentConfiguration(projection, document)
       }, insertPage: (after, title) => {
         if (current.current.readOnly || editor.current !== value || active.current !== projection || binding.current !== projection || value.prosemirrorView.isDestroyed) throw new Error('page-context-changed')

@@ -6,7 +6,7 @@ import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeS
 import type { ComponentProps, FormattingToolbarProps } from '@blocknote/react'
 import { useMediaQuery } from '@mantine/hooks'
 import type { Locale } from '../messages.ts'
-import { PmIconButton, PmNotice, PmTooltip } from '../components.tsx'
+import { PmIcon, PmIconButton, PmNotice, PmTooltip } from '../components.tsx'
 import { DOCUMENT_NODE_VIEWS, documentEditorSchema } from './schema.tsx'
 import type { DocumentEditorBlock, DocumentEditorInput, DocumentNodeViews, NativeDocumentEditor } from './schema.tsx'
 import { documentSelection } from './selection.ts'
@@ -16,6 +16,7 @@ import { blockNoteDictionary } from './blocknote-messages.ts'
 import { imageFileInput } from './file-input.ts'
 import type { ImageImportFailure } from './file-input.ts'
 import { nativeTextClipboard } from './clipboard.ts'
+import { documentPageBodies, focusDocumentEnd } from './page-body.ts'
 import { documentBlockColors } from './colors.ts'
 import { DOCUMENT_EDITOR_LOCALE } from './math.tsx'
 import { DOCUMENT_LINKS, DocumentColorButton, DocumentLinkToolbar, DocumentSideMenu, DocumentTableCellButton, DocumentTableHandle, FormulaToolbarButton, formulaSlashItems, openDocumentLink } from './authoring.tsx'
@@ -84,6 +85,8 @@ export interface BlockNoteSurfaceProps {
   onComposition?(composing: boolean): void
   /** Shows a page of this document from an in-document link; false when none matches. */
   onSectionLink?(sectionId: string): boolean
+  /** The slash menu's request to the AI for an animation where it was opened: it inserts nothing itself. */
+  animationRequest?: { available(): boolean, request(editor: NativeDocumentEditor): void }
   children?: ReactNode
 }
 
@@ -113,10 +116,11 @@ function PlainContentComments({ editor }: { editor: NativeDocumentEditor }) {
   return show && editor.getExtension('comments') ? <div className="pm-document-editor__comment-tools"><FormattingToolbar><AddCommentButton /></FormattingToolbar></div> : null
 }
 
-// Formulas join the group that holds tables so the menu keeps one heading per group.
-function withFormulas<Item extends { group?: string }>(items: Item[], formulas: Item[]): Item[] {
-  const index = items.findLastIndex(item => item.group === formulas[0]?.group)
-  return index < 0 ? [...items, ...formulas] : [...items.slice(0, index + 1), ...formulas, ...items.slice(index + 1)]
+// Added items join the end of their group (formulas the one that holds tables, the animation request the one that holds
+// pictures) so the menu keeps one heading per group.
+function withGroupItems<Item extends { group?: string }>(items: Item[], added: Item[]): Item[] {
+  const index = items.findLastIndex(item => item.group === added[0]?.group)
+  return index < 0 ? [...items, ...added] : [...items.slice(0, index + 1), ...added, ...items.slice(index + 1)]
 }
 
 /** One native editor owns selection, transactions and history across the complete document. */
@@ -156,7 +160,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
     dictionary, tables: { splitCells: true, cellBackgroundColor: true, cellTextColor: true, headers: true },
     // The surface's own click handler opens links in editable and read-only states alike.
     links: { onClick: () => true },
-    extensions: [nativeTextClipboard, documentBlockColors, imageFileInput({
+    extensions: [nativeTextClipboard, documentBlockColors, documentPageBodies(), imageFileInput({
       onStart: () => { if (current.current.identity === props.identity) setFileErrors(undefined) },
       onFailure: failure => { if (current.current.identity === props.identity) setFileErrors(value => ({ identity: props.identity, failures: [...(value?.identity === props.identity ? value.failures : []), failure] })) },
     }), ...props.comments ? [nativeCommentSelection(), nativeComments(props.comments, t.author)] : []],
@@ -196,7 +200,11 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         <LinkToolbarController linkToolbar={DocumentLinkToolbar} floatingUIOptions={linkToolbarOptions} />
         <SideMenuController sideMenu={DocumentSideMenu} />
         <TableHandlesController tableHandle={DocumentTableHandle} tableCellHandle={DocumentTableCellButton} />
-        <SuggestionMenuController triggerCharacter="/" getItems={async query => editor.getTextCursorPosition().block.type === 'presmiumPage' ? [] : filterSuggestionItems([...withFormulas(getDefaultReactSlashMenuItems(editor), formulaSlashItems(editor, props.locale, dictionary.slash_menu.table.group)), {
+        <SuggestionMenuController triggerCharacter="/" getItems={async query => editor.getTextCursorPosition().block.type === 'presmiumPage' ? [] : filterSuggestionItems([...withGroupItems(withGroupItems(getDefaultReactSlashMenuItems(editor), formulaSlashItems(editor, props.locale, dictionary.slash_menu.table.group)), current.current.animationRequest?.available() ? [{
+          title: t.animateWithAI, subtext: t.animateWithAIHint, group: dictionary.slash_menu.image.group, icon: <PmIcon name="sparkle" />, aliases: slashAliases('animateWithAIAliases'),
+          // The menu has already taken back the typed “/” and query; the AI is asked, the document stays as it was.
+          onItemClick: () => current.current.animationRequest?.request(editor),
+        }] : []), {
           title: t.page, aliases: slashAliases('pageAliases'), group: t.document,
           onItemClick: () => { const current = editor.getTextCursorPosition().block; editor.insertBlocks([{ type: 'presmiumPage', props: { sectionId: crypto.randomUUID() }, content: t.untitledPage }], current, 'after') },
         }], query)} />
@@ -204,6 +212,11 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         </NewCommentDraftProvider></BlockNoteViewEditor>
         </ComponentsContext.Provider>
       </BlockNoteView>
+      <div className="pm-document-editor__end" aria-hidden="true" data-editable={props.readOnly ? undefined : ''} onMouseDown={event => {
+        if (event.button !== 0 || !editor.isEditable || editor.prosemirrorView.composing) return
+        event.preventDefault()
+        focusDocumentEnd(editor)
+      }} />
     </div>
   </COMMENT_EDITOR_CONTEXT.Provider></DOCUMENT_NODE_VIEWS.Provider></DOCUMENT_LINKS.Provider></DOCUMENT_EDITOR_LOCALE.Provider>
 }

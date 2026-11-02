@@ -1,12 +1,17 @@
 import { createHash } from 'node:crypto'
-import { link, lstat, mkdir, mkdtemp, realpath, rm, rmdir, stat, unlink, writeFile } from 'node:fs/promises'
+import { link, lstat, mkdir, mkdtemp, realpath, rename, rm, rmdir, stat, unlink, writeFile } from 'node:fs/promises'
 import type { Stats } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { resourceBytes, resourceFiles, skillDirectory, skillName, SKILL_NAMES, SkillError } from './resources.ts'
 import type { SkillName } from './resources.ts'
 
-export interface InstallSkillsOptions { names?: readonly string[], signal?: AbortSignal }
-export interface InstallSkillsResult { installed: SkillName[], skipped: SkillName[] }
+export interface InstallSkillsOptions {
+  names?: readonly string[]
+  signal?: AbortSignal
+  /** Replace the skills installed before (by an earlier Presmium) with this version's; links and files are still kept. */
+  update?: boolean
+}
+export interface InstallSkillsResult { installed: SkillName[], skipped: SkillName[], updated: SkillName[] }
 const missing = (error: unknown) => (error as NodeJS.ErrnoException).code === 'ENOENT'
 const present = async (path: string) => { try { return await lstat(path) } catch (error) { if (missing(error)) return undefined; throw error } }
 const same = (a: Stats, b: Stats | undefined) => Boolean(b?.isDirectory() && !b.isSymbolicLink() && a.ino === b.ino && a.dev === b.dev)
@@ -33,11 +38,17 @@ export async function installBundledSkills(projectDir: string, options: InstallS
   catch { throw new SkillError('skill-project-invalid') }
   try {
     const destination = await directories(root)
-    const result: InstallSkillsResult = { installed: [], skipped: [] }
+    const result: InstallSkillsResult = { installed: [], skipped: [], updated: [] }
     for (const name of names) {
       cancelled(options.signal)
       const target = join(destination, name)
-      if (await present(target)) { result.skipped.push(name); continue }
+      const existing = await present(target)
+      if (existing && options.update && existing.isDirectory() && !existing.isSymbolicLink()) {
+        await replaceSkill(destination, target, name, options.signal)
+        result.updated.push(name)
+        continue
+      }
+      if (existing) { result.skipped.push(name); continue }
       const source = skillDirectory(name)
       const temporary = await mkdtemp(join(destination, `.presmium-${name}-`))
       let reserved: Stats | undefined
@@ -101,4 +112,30 @@ export async function installBundledSkills(projectDir: string, options: InstallS
     }
     return result
   } catch (error) { if (error instanceof SkillError) throw error; throw new SkillError('skill-install-unsafe') }
+}
+
+/** The skill's directory replaced as a whole by this version's: written aside, then swapped in by two renames. */
+async function replaceSkill(destination: string, target: string, name: SkillName, signal?: AbortSignal): Promise<void> {
+  const source = skillDirectory(name)
+  const temporary = await mkdtemp(join(destination, `.presmium-${name}-`))
+  const previous = `${temporary}-previous`
+  try {
+    for (const path of resourceFiles(source)) {
+      cancelled(signal)
+      const file = join(temporary, path)
+      await mkdir(dirname(file), { recursive: true })
+      await writeFile(file, resourceBytes(source, path), { flag: 'wx' })
+    }
+    cancelled(signal)
+    await rename(target, previous)
+    try {
+      await rename(temporary, target)
+    } catch (error) {
+      await rename(previous, target)
+      throw error
+    }
+    await rm(previous, { recursive: true, force: true })
+  } finally {
+    await rm(temporary, { recursive: true, force: true })
+  }
 }

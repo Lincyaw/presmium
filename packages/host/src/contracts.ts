@@ -156,6 +156,8 @@ export const PAGE_READINESS = defineService<PageReadiness>('presmium.pageReadine
 export interface StepClockDriver {
   readonly elapsed: Store<number | undefined>
   readonly recording?: boolean
+  /** Holds the clock until it is released (a capture of the page): other drivers wait until then. */
+  readonly exclusive?: boolean
 }
 
 export interface StepClock {

@@ -39,7 +39,7 @@ lecture.json + 引用的代码与媒体
 **查看器**（`packages/web/src/node/viewer-app.ts`，页面在 `src/app/`）为一组插件打包一次，文稿只是数据；工作台、`dev`、`serve` 与构建的站点都用它。
 
 - Vite 构建，组件按需分块，共享模块经导入映射给出；缓存在 `$XDG_CACHE_HOME/presmium/viewer-app/`，按源码与插件指纹命名。`PRESMIUM_VIEWER_SEED` 指定只读预打包目录。
-- **文稿代码包**（`document-bundle.ts`）：文稿组件与插件的 `documentModules`，代码变了才重建，只改文字不重载。
+- **文稿代码包**（`document-bundle.ts`）：文稿组件与插件的 `documentModules`，代码变了才重建，只改文字不重载。一个文件打包失败只影响载入它的部分：整体打包失败时，入口与文稿模块载入的每个部分（组件、场景、插件模块）各自单独打包，失败的部分改为以失败原因（文件、行与原因）拒绝的载入，像运行时出错的组件一样显示失败，其余照常。失败记在代码包中，预览、构建与检查都报告为 `presmium.preview.code` 错误，每个出错的文件一条。
 - **站点**：查看器在 `_app/<键>/`；每份文稿有 `ir.json`、`search.json`（MiniSearch）、`_code/<键>/document.js`。每页先 SSR，浏览器再 hydrate。
 - **站点服务**（`site-server.ts`）：`<base>__app/` 下有 `view`、`ir`（`ETag`）、`events`（SSE）、`search`、`source`。`dev` 中把 `/__presmium/` 代理到服务端。
 - **预览**：`preview` 等查看器与当前代码包就绪才答复，不以旧版本冒充当前版本；`prefetch=1` 只开始准备。每个面板最多两个 iframe。只有声明 `presmium.preview.restartable: true` 的包组成的预览可暂停复用。
@@ -163,7 +163,7 @@ packages/addon-<ctx>/
 | `passes` | 编译步骤；`after: 'execute'` 在执行之后 |
 | `executors`、`environments` | 编译时执行器；具名环境提供方 |
 | `resolvers`、`anchors`、`checks` | 锚点与检查 |
-| `renderer`、`rendererExtensions` | 渲染端；为其他渲染端的组件转换 |
+| `renderer`、`rendererExtensions` | 渲染端（`check` 随文稿的检查运行）；为其他渲染端的组件转换 |
 | `assets`、`documentModules` | 运行时文件；随文稿变化的模块 |
 | `exporters` | 重输出，作为工作区任务运行（13.3 节） |
 | `services` | Node 服务；`ctx.settings` 是运营者设置 |
@@ -176,6 +176,8 @@ packages/addon-<ctx>/
 ### 4.3 锚点与检查
 
 锚点写作 `scheme:target`，解析为 `exact`、`moved`、`fuzzy`、`lost`，后两种必须诊断。随文稿提交的 `.presmium/` 有 `anchors.lock.json`、执行缓存 `freeze/`、本地化资源 `assets/`、圈画 `drawings/`，新检出构建时不访问远程、不重新执行。另一环境的录制默认沿用并警告；`Executor.revision` 不同的不沿用。
+
+文稿的检查（`presmium check`、MCP 的 `check_document`）运行插件的 `checks`、发布检查与文稿所用渲染端的 `Renderer.check`（得到整份文稿）。网页与幻灯片渲染端的检查在 `.presmium/web/check/` 打包文稿自己的代码，与查看器一样按名字导入 Presmium 与文稿插件的模块（来自 Presmium 的安装，项目不必安装插件），每个打包失败的文件报告为一条 `presmium.preview.code` 错误，带文件与行。
 
 ### 4.4 宿主接口
 
@@ -322,7 +324,7 @@ PDF、图片与 PowerPoint 中组件显示 IR 的 `fallback`（`useStaticRender(
 | `presmium-lecture export` | `addon-lecture` | 逐帧导出讲授视频 |
 | `presmium-speech fake`、`clone`、`consent` | `addon-speech` | 假引擎；训练克隆音色；登记同意 |
 | `presmium-classroom-server` | `classroom-server` | 课堂同步 |
-| `presmium-mcp` | `mcp` | stdio MCP，`--allow operate` 才有操作类工具 |
+| `presmium mcp`、`presmium-mcp` | `mcp` | stdio MCP：转接这个目录正在运行的 `presmium studio`、`serve`（或 `dev`）的 `/mcp`，没有时自己编译文稿，`--allow operate` 才有操作类工具 |
 | `presmium-language-server` | `language-server` | 语言服务 |
 
 ## 9. 已知风险
@@ -370,7 +372,8 @@ presmium serve: 浏览器 → 服务端 ─┬ /__presmium/<插件 ID>/…、/__
 - 路由用 Fetch API，经 `@hono/node-server` 转换；流式用 SSE。
 - 反向代理用 `http-proxy-3`，HTTP 与 WebSocket 都代加头，浏览器拿不到凭据。
 - 启动命令给服务端 `ServerHost`（文档、编译、检查、构建、运行代码块）。
-- `mcp` 声明 `McpHost`；服务端在 `ServerHost`、控制通道与 `APPROVALS` 上实现并挂在 `/mcp`，`presmium-mcp` 在编译器上实现。每个请求一个无状态 MCP 服务器。
+- `mcp` 声明 `McpHost`；服务端在 `ServerHost`、控制通道与 `APPROVALS` 上实现并挂在 `/mcp`，`presmium mcp` 在编译器上实现。每个请求一个无状态 MCP 服务器。
+- 服务端把地址、MCP 访问令牌与进程号写在状态文件中（`serve` 在用户缓存目录的 `presmium/serve/<根目录摘要>/server.json`，`dev` 在文稿的 `.presmium/server.json`，路径由 `@lincyaw/kernel/node` 的 `serveStateDir`、`devStateFile` 给出），关闭时删除。`presmium mcp` 读它转接 stdio 与 `/mcp`，消息原样传递；地址不可达时重新读取，所以服务重启后（新端口、新令牌）客户端的配置不变。
 - `dev`、`serve` 自带同协议的课堂同步。
 - 写文档目录经 `DOCUMENT_FILES`，例外是课堂归档与圈画。
 
@@ -383,7 +386,7 @@ presmium serve: 浏览器 → 服务端 ─┬ /__presmium/<插件 ID>/…、/__
 
 ### 10.4 控制通道与确认
 
-页面连接 `/__presmium/presmium.server/control`（SSE 加 POST），报告位置、视图角色与 `STATUS`；MCP 经它读位置与课堂并跳转。`APPROVALS` 按种类策略：`off` 不提供，`ask` 经控制通道请求，50 秒无回答视为拒绝（低于 dsh 的 60 秒工具超时）。确认入口在 `PmToolbar` 与工作台应用栏。
+页面连接 `/__presmium/presmium.server/control`（SSE 加 POST），报告位置、视图角色与 `STATUS`；MCP 经它读位置与课堂并跳转。`APPROVALS` 按种类策略：`off` 不提供，`ask` 经控制通道请求，50 秒无回答视为拒绝（低于 dsh 的 60 秒工具超时）；没有可以回答的窗口时 MCP 立即以 `approval-unavailable` 失败，不等待。策略来自工作区配置的 `approvals`，`presmium dev --allow`、`presmium serve --allow` 覆盖它。确认入口在 `PmToolbar` 与工作台应用栏。
 
 ### 10.5 部署
 

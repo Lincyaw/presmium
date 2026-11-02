@@ -120,6 +120,19 @@ export function nativeTextPosition(editor: NativeDocumentEditor, point: { blockI
   return nativeTextPositionInDocument(editor.prosemirrorState.doc, point)
 }
 
+/** The native range of a block's whole inline text, to select it. */
+export function nativeBlockText(editor: NativeDocumentEditor, blockId: string): { from: number, to: number } | undefined {
+  let range: { from: number, to: number } | undefined
+  editor.prosemirrorState.doc.descendants((node, beforePos) => {
+    if (range) return false
+    if (node.attrs.id !== blockId) return
+    const info = getBlockInfoFromNode(node, beforePos)
+    if (info.hasContent && info.contentKind === 'inline') range = { from: info.contentStart, to: info.contentEnd }
+    return false
+  })
+  return range
+}
+
 /** Stable anchor lookup against a captured native transaction’s input document. */
 export function nativeTextPositionInDocument(document: ProseMirrorNode, point: { blockId: string, offset: number }): number | undefined {
   let position: number | undefined

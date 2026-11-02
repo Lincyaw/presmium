@@ -12,6 +12,11 @@ export interface AgentPlace {
 
 // A Latin word or a number set after Chinese text is spaced from it (docs/glossary.md 2).
 const spaced = (text: string) => (/^[A-Za-z0-9]/.test(text) ? ` ${text}` : text)
+// The start of a passage, enough to recognize it.
+const excerpt = (text: string, length: number) => [...text].length > length ? `${[...text].slice(0, length).join('').trimEnd()}…` : text
+
+/** Where on a page the author asks for new content: after a passage (its text, '' for content without text), at the start (none) or at the end. */
+interface AgentInsertion { after?: string, end: boolean }
 
 // Names of commands follow Microsoft Word's (撤消/Undo, 新建批注/New Comment, 版本历史/Version History…).
 const zh = {
@@ -357,6 +362,11 @@ const zh = {
       place.quote ? `\n原文：“${place.quote}”` : '',
     ].join('')).filter(Boolean),
   ].join('\n\n'),
+  animationRequest: (page: number, title: string, place: AgentInsertion) => {
+    const at = `第 ${page} 页${title ? `“${title}”` : ''}`
+    return place.end ? `在${at}的末尾加一个动画：` : place.after === undefined ? `在${at}的开头加一个动画：`
+      : place.after ? `在${at}中“${excerpt(place.after, 16)}”这一段之后加一个动画：` : `在${at}的这个位置加一个动画：`
+  },
   commentsRequest: (comments: (AgentPlace & { text: string })[]) => [
     comments.length === 1 ? '我在文稿上写了一条批注：' : `我在文稿上写了 ${comments.length} 条批注：`,
     ...comments.map((comment, i) => [
@@ -722,6 +732,11 @@ const en: WorkbenchMessages = {
       place.quote ? `\nText: “${place.quote}”` : '',
     ].join('')).filter(Boolean),
   ].join('\n\n'),
+  animationRequest: (page: number, title: string, place: AgentInsertion) => {
+    const at = `page ${page}${title ? `, “${title}”` : ''}`
+    return place.end ? `Add an animation at the end of ${at}: ` : place.after === undefined ? `Add an animation at the start of ${at}: `
+      : place.after ? `Add an animation on ${at}, after the paragraph “${excerpt(place.after, 40)}”: ` : `Add an animation at this point on ${at}: `
+  },
   commentsRequest: (comments: (AgentPlace & { text: string })[]) => [
     comments.length === 1 ? 'I left a comment on the document:' : `I left ${comments.length} comments on the document:`,
     ...comments.map((comment, i) => [

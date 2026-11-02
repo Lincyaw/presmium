@@ -133,32 +133,43 @@ export interface McpCliMessages {
   unexpectedArgument(argument: string): string
   badAllow(kinds: readonly string[], value: string): string
   notFound(entry: string): string
+  bridging(url: string): string
+  unreachable: string
 }
 
 export const MCP_CLI_MESSAGES: Record<Locale, McpCliMessages> = {
   'zh-CN': {
-    usage: `用法：presmium-mcp [<文稿>] [--allow <种类>]
+    usage: `用法：presmium mcp [<目录>] [--allow <种类>]
 
-经标准输入输出向编辑器中的 AI 提供这份文稿（含有 ${DOCUMENT_ENTRY} 的目录或这个文件本身；默认为 .）的
-工具与资源。
+经标准输入输出向 Claude Code、Codex 等 AI 工具提供 MCP 服务（<目录> 是工作区的根目录、
+含有 ${DOCUMENT_ENTRY} 的目录或这个文件本身；默认为 .）。这个目录（或它所在的工作区）的
+Presmium Studio 或 presmium serve 正在运行时转接到它，AI 可以修改文稿、查看版本历史和生成配音，
+它重新启动后自动跟上；没有运行时只编译这份文稿，提供阅读、检查、运行代码与导出。
 
-  --allow <种类>  提供并允许这些操作：operate（run_code、build）、spend
+  --allow <种类>  只编译时提供并允许这些操作：operate（run_code、build）、spend
   -h, --help      显示本说明`,
-    unexpectedArgument: argument => `多余的参数“${argument}”。presmium-mcp 只接受一份文稿。`,
+    unexpectedArgument: argument => `多余的参数“${argument}”。presmium mcp 只接受一个目录。`,
     badAllow: (kinds, value) => `--allow 不接受“${value}”。可用的种类：${kinds.join('、')}。`,
     notFound: entry => `找不到 ${entry}。请检查路径，或用 presmium new 新建文稿。`,
+    bridging: url => `presmium mcp: 转接到正在运行的 Presmium 服务 ${url}`,
+    unreachable: 'Presmium 服务已停止。请重新启动 presmium studio 或 presmium serve，然后重试。',
   },
   'en': {
-    usage: `Usage: presmium-mcp [deck] [--allow <kinds>]
+    usage: `Usage: presmium mcp [directory] [--allow <kinds>]
 
-Serves the document (a directory holding ${DOCUMENT_ENTRY}, or that entry file; default: .)
-as tools and resources on stdio, for the AI of an editor.
+Serves MCP on stdio for AI tools such as Claude Code and Codex (the directory is a workspace root,
+a directory holding ${DOCUMENT_ENTRY}, or that entry file; default: .). When the Presmium Studio or
+presmium serve of the directory (or of its workspace) runs, it relays to it: the AI can edit documents,
+read their history and generate voiceover, and it follows the service when it starts again. Otherwise
+it compiles the document itself, for reading, checking, running code and exporting.
 
-  --allow <kinds>  offer and allow these operations: operate (run_code, build), spend
+  --allow <kinds>  when compiling itself, offer and allow these operations: operate (run_code, build), spend
   -h, --help       show this help`,
-    unexpectedArgument: argument => `Unexpected argument “${argument}”. presmium-mcp serves one deck.`,
+    unexpectedArgument: argument => `Unexpected argument “${argument}”. presmium mcp takes one directory.`,
     badAllow: (kinds, value) => `--allow does not take “${value}”. The kinds are ${kinds.join(', ')}.`,
     notFound: entry => `Couldn’t find ${entry}. Check the path, or make a document with presmium new.`,
+    bridging: url => `presmium mcp: relaying to the running Presmium service at ${url}`,
+    unreachable: 'The Presmium service stopped. Start presmium studio or presmium serve again, then retry.',
   },
 }
 
@@ -168,6 +179,7 @@ const path = (detail: Detail) => typeof detail.path === 'string' ? detail.path :
 const which = (detail: Detail, zh: boolean) => detail.which === 'redo' ? zh ? '恢复' : 'redo' : zh ? '撤消' : 'undo'
 const paths = (detail: Detail) => Array.isArray(detail.paths) ? detail.paths.join(', ') : ''
 const list = (value: unknown, none: string) => Array.isArray(value) && value.length ? value.join(', ') : none
+const kind = (detail: Detail) => typeof detail.kind === 'string' ? detail.kind : 'operate'
 
 /**
  * Author-readable text for failure codes an agent relays, in the document's language. The code and the detail beside
@@ -194,6 +206,18 @@ export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => s
     'voice-engine-unsupported': () => '所选的语音服务不能生成配音。请在“设置 → 语音服务”中选择能生成配音的服务。',
     'voice-engine-unknown': () => '所选的语音服务没有设置。请在“设置 → 语音服务”中设置后重试。',
     'operation-not-allowed': () => '这项操作没有执行：你拒绝了它，或请求已过期。',
+    'capture-unavailable': () => '这里不能拍摄幻灯片：需要 Presmium Studio 或 presmium serve 正在运行。',
+    'capture-section-unknown': detail => `没有页面“${String(detail.section ?? '')}”。可以拍摄的页面：${list(detail.sections, '无')}。`,
+    'capture-step-invalid': detail => `这一页没有第 ${String(detail.step ?? '')} 步；步骤从 0 到 ${String(detail.last ?? 0)}。`,
+    'capture-moment-invalid': () => '时间点要是不小于 0 的毫秒数。',
+    'capture-too-many-frames': detail => `一次最多拍摄 ${String(detail.max ?? '')} 张（步骤数 × 时间点数），这次要 ${String(detail.requested ?? '')} 张。请分几次拍摄。`,
+    'capture-browser-unavailable': () => '无法启动用于拍摄的浏览器。请运行 pnpm exec playwright install chromium 后重试。',
+    'capture-preview-failed': () => '这份文稿现在无法放映，所以无法拍摄。原因见 get_diagnostics。',
+    'capture-slide-missing': () => '放映页面没有显示这一页。请稍后重试。',
+    'capture-failed': () => '拍摄失败。请稍后重试；问题反复出现时查看 get_diagnostics。',
+    'capture-width-invalid': detail => `窗口宽度要在 ${String(detail.min ?? 320)} 到 ${String(detail.max ?? 2560)} 像素之间。`,
+    'capture-page-reloaded': () => '放映页面在退回这一步时重新加载了：倒退没有保留页面，这是放映的问题。请检查这一页的组件。',
+    'approval-unavailable': detail => `这项操作需要你允许，但没有打开的 Presmium 窗口可以询问你。请在浏览器中打开 presmium studio 或 presmium serve 打印的网址后重试；也可以用 presmium serve --allow ${kind(detail)} 启动，或在 presmium.workspace.yaml 的 approvals 中允许这类操作。`,
     'authoring-review-required': () => '无法直接应用这项修改：请先接受或拒绝 AI 之前的修改。',
     'authoring-permission-denied': () => '无法应用这项修改：你没有编辑这份文稿的权限。',
   },
@@ -217,6 +241,18 @@ export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => s
     'voice-engine-unsupported': () => 'The selected voice service can’t generate voiceovers. Choose one that can in Settings > Voice Service.',
     'voice-engine-unknown': () => 'The selected voice service is not set up. Set it up in Settings > Voice Service and retry.',
     'operation-not-allowed': () => 'This operation did not run: you denied it, or the request expired.',
+    'capture-unavailable': () => 'Slides can’t be captured here: Presmium Studio or presmium serve must be running.',
+    'capture-section-unknown': detail => `There is no page “${String(detail.section ?? '')}”. Pages that can be captured: ${list(detail.sections, 'none')}.`,
+    'capture-step-invalid': detail => `This page has no step ${String(detail.step ?? '')}; its steps run from 0 to ${String(detail.last ?? 0)}.`,
+    'capture-moment-invalid': () => 'Moments are milliseconds, 0 or more.',
+    'capture-too-many-frames': detail => `At most ${String(detail.max ?? '')} pictures a call (steps × moments); this asks for ${String(detail.requested ?? '')}. Capture in several calls.`,
+    'capture-browser-unavailable': () => 'The browser for capturing could not start. Run pnpm exec playwright install chromium and retry.',
+    'capture-preview-failed': () => 'This document can’t be presented now, so it can’t be captured. get_diagnostics says why.',
+    'capture-slide-missing': () => 'The presentation did not show this page. Retry shortly.',
+    'capture-failed': () => 'Capturing failed. Retry shortly; if it keeps failing, read get_diagnostics.',
+    'capture-width-invalid': detail => `The window width must be from ${String(detail.min ?? 320)} to ${String(detail.max ?? 2560)} pixels.`,
+    'capture-page-reloaded': () => 'The presentation reloaded while going back to this step: going back did not keep the page, which is a fault of the presentation. Check this page’s components.',
+    'approval-unavailable': detail => `This operation needs your approval, but no Presmium window is open to ask you. Open the address presmium studio or presmium serve printed in a browser and retry, or start presmium serve --allow ${kind(detail)}, or allow this kind of operation under approvals in presmium.workspace.yaml.`,
     'authoring-review-required': () => 'Couldn’t apply this change yet: accept or reject the AI’s earlier changes first.',
     'authoring-permission-denied': () => 'Couldn’t apply this change: you don’t have permission to edit this document.',
   },

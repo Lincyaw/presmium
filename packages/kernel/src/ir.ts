@@ -318,6 +318,11 @@ export interface Renderer {
   dev?(doc: IRDocument, ctx: RenderContext): Promise<RenderDevServer>
   buildSite?(site: SiteSpec, ctx: RenderContext): Promise<RenderOutput>
   devSite?(site: SiteSpec, ctx: RenderContext, compile: (dir: string) => Promise<IRDocument>): Promise<SiteDevServer>
+  /**
+   * What would fail in its output of the whole document (every form's blocks), found ahead of a build: run with the
+   * document's checks (`presmium check`). The web renderer's: the document's own code that does not bundle.
+   */
+  check?(doc: IRDocument, ctx: RenderContext): Promise<Finding[]>
 }
 
 export interface SiteDocument {
@@ -364,6 +369,11 @@ export interface SiteDevServer {
    * With `wait`, a build still running after the wait rejects with `PreviewPreparing`; a failed build with its reason.
    */
   app?(dir: string, wait?: boolean): Promise<string | undefined>
+  /**
+   * The files of document `dir`'s own code that the bundle its pages load now leaves out, since they do not bundle:
+   * each module that imports one fails alone when the document shows it (`app` rejects when the whole does not bundle).
+   */
+  codeFindings?(dir: string): Finding[]
   close(): Promise<void>
 }
 

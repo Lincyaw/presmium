@@ -1,6 +1,6 @@
 import { PREVIEW_EVENTS_PARAM, previewEnvelope } from './contracts/preview.ts'
 import type { PreviewCommand, PreviewEventSubscription, PreviewEventTarget, PreviewEventMessage } from './contracts/preview.ts'
-import { previewNonce } from './preview-frame.ts'
+import { parentOrigins, previewNonce } from './preview-frame.ts'
 
 /** Uses the existing preview-ready handshake, origin fence and nonce; never opens a network connection. */
 export interface PreviewEvents {
@@ -17,8 +17,9 @@ export function createPreviewEvents(origins: readonly string[], document: string
   const connection = crypto.randomUUID()
   const readers = new Map<string, { target: PreviewEventTarget, received(message: PreviewEventMessage): void }>()
   let ready = false, stopped = false, parked = false
+  const targets = parentOrigins(origins)
   const post = (message: Parameters<typeof previewEnvelope>[1]) => {
-    if (!stopped) for (const origin of origins) window.parent.postMessage(previewEnvelope(nonce, message), origin)
+    if (!stopped) for (const origin of targets) window.parent.postMessage(previewEnvelope(nonce, message), origin)
   }
   const subscribe = (id: string, target: PreviewEventTarget) => post({ type: 'events-subscribe', connection, id, target })
   const park = () => {

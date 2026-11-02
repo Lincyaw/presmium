@@ -9,14 +9,14 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { stripVTControlCharacters } from 'node:util'
 import { errorMessage, irBlocks, isRecord, localRequestRefusal, siteFrameAncestors, PreviewPreparing, safeDecodeURIComponent, SLIDES_DIR, viewFor } from '@lincyaw/kernel'
-import type { IRDocument, NodeVitePlugin, RenderContext, RuntimeAssets, SiteSpec } from '@lincyaw/kernel'
+import type { Finding, IRDocument, NodeVitePlugin, RenderContext, RuntimeAssets, SiteSpec } from '@lincyaw/kernel'
 import { isInside, spawnInteractiveNode } from '@lincyaw/kernel/node'
 import { diffDocuments } from '@lincyaw/viewer/domain'
 import { createProxyServer } from 'http-proxy-3'
 import send from 'send'
 import { chapterRedirects, searchDocuments, sitePageLayout, translationPages, UPDATE_EVENT, webPages } from '../domain/index.ts'
 import type { AppConfig, DevUpdateEvent, WebPage } from '../domain/index.ts'
-import { BUNDLE_ENTRY, documentComponents, findDocumentBundle } from './document-bundle.ts'
+import { BUNDLE_ENTRY, codeFindings, documentComponents, findDocumentBundle } from './document-bundle.ts'
 import type { DocumentBundle, DocumentBundleInput } from './document-bundle.ts'
 import { irRevisionOfJson, PublicationCache, publishedDocument } from './publish.ts'
 import { findRuntimeAsset, REVISION_HEADER, runtimeAssets, searchIndex } from './site-files.ts'
@@ -90,6 +90,8 @@ export interface SiteServer {
   app(dir: string, wait?: boolean): Promise<string | undefined>
   /** Builds what the document's pages need ahead of their first request. */
   warm(dir: string): Promise<void>
+  /** The files of the document's code its current bundle leaves out, since they do not bundle (`SiteDevServer.codeFindings`). */
+  codeFindings(dir: string): Finding[]
   close(): Promise<void>
 }
 
@@ -368,12 +370,17 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
         const bundle = await worker.run<DocumentBundle | null>({ kind: 'document', input: bundleInput(dir, deckDir, externals) })
         if (state.externals === externals) { state.bundle = bundle; state.bundleFailure = undefined }
         if (bundle) log(`the code of ${dir || '.'} was bundled in ${((Date.now() - started) / 1000).toFixed(1)} s`)
+        for (const finding of codeFindings(bundle?.failures ?? [], deckDir)) log(`${finding.source ? `${finding.source.file}${finding.source.line ? `:${finding.source.line}` : ''}: ` : ''}${finding.message}; what imports it fails when shown`)
       } catch (error) {
         if (state.externals === externals) state.bundleFailure = stripVTControlCharacters(errorMessage(error))
         log(`the code of ${dir || '.'} could not be bundled: ${errorMessage(error)}`)
       } finally {
         state.building = undefined
-        if (state.stale) {
+        // Built for externals replaced meanwhile: the bundle for the current ones is built at once, so that a page
+        // waiting for this build finds that one building rather than none.
+        if (!closed && state.externals !== undefined && state.externals !== externals && state.bundle === undefined) {
+          void buildBundle(dir, deckDir, state, state.externals)
+        } else if (state.stale) {
           state.stale = false
           void refreshBundle(dir, deckDir, state)
         }
@@ -393,8 +400,11 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     const { externals, built } = await appWith(wanted)
     const state = stateOf(dir)
     watchDocument(dir, own.deckDir, state)
-    // A bundle that imports some of the app's modules by name runs with it; one that bundled any of them is built again.
-    if (!importsOnly(state.externals, externals)) {
+    // A bundle that imports some of the app's modules by name runs with it; one that bundled any of them is built again,
+    // and so is one built before the document named a plugin: its code imports that plugin's modules by name, which a
+    // document's directory need not resolve by itself (pnpm installs the plugins only as dependencies of presmium).
+    const named = wanted.flatMap(plugin => Object.keys(plugin.shared))
+    if (!importsOnly(state.externals, externals) || !importsOnly(named, state.externals ?? [])) {
       state.externals = externals
       state.bundle = undefined
       state.bundleFailure = undefined
@@ -799,6 +809,10 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     async warm(dir) {
       if (closed || !documents().includes(dir)) return
       await (await prepare(dir)).done
+    },
+    codeFindings(dir) {
+      const doc = latest.get(dir), bundle = states.get(dir)?.bundle
+      return doc && bundle ? codeFindings(bundle.failures, options.context(dir, doc).deckDir) : []
     },
     async close() {
       closed = true

@@ -40,9 +40,6 @@
     "@lincyaw/dsh": "workspace:*",
     "jiti": "^2.7.0"
   },
-  "peerDependencies": {
-    "@lincyaw/presmium": "workspace:^"
-  },
   "devDependencies": {
     "@lincyaw/cli": "workspace:*"
   }

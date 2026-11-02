@@ -23,5 +23,9 @@ export function h(type: ElementType | any, attrs?: Record<string, any> | ReactNo
   if (props.innerHTML !== undefined) { props.dangerouslySetInnerHTML = { __html: props.innerHTML }; delete props.innerHTML }
   if (props.tabindex !== undefined) { props.tabIndex = props.tabindex; delete props.tabindex }
   if (props.contenteditable !== undefined) { props.contentEditable = props.contenteditable; delete props.contenteditable }
-  return createElement(type, props, children, ...rest)
+  // Marks around React's own children (`contenteditable="false"` author controls): React keeps those children.
+  if (props.contentEditable !== undefined) props.suppressContentEditableWarning = true
+  // A list given as the children is the element's fixed content, not a list React must key: its items are passed one
+  // by one (keys they carry still identify them).
+  return Array.isArray(children) ? createElement(type, props, ...children as ReactNode[], ...rest) : createElement(type, props, children, ...rest)
 }

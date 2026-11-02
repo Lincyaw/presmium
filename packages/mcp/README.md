@@ -6,26 +6,24 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonica
 
 ## Connect
 
-There are two servers.
-
-**Workspace server (HTTP).** `presmium dev` and `presmium serve` serve MCP at `/mcp` over Streamable HTTP and print its address and the file that holds its bearer token:
+Run `presmium mcp` in the project as the AI tool's MCP server, over stdio. A project made by `presmium new` has a `.mcp.json` that does this for Claude Code; otherwise:
 
 ```sh
-presmium serve
-# mcp  <url>/mcp (its token is in <state file>)
+claude mcp add presmium -- presmium mcp
+codex mcp add presmium -- presmium mcp
 ```
 
-Point the client at that URL with `Authorization: Bearer <token>`. This server has everything below: authoring, history, projects, transcription, voiceover, audio and images, builds, the author's browser runtime and focus, and several documents (name one with `document`; see `list_documents`).
+`presmium mcp [directory]` relays to the Presmium server running for the directory, read from its state file: the Presmium Studio or `presmium serve` of the directory or of the workspace above it, else the `presmium dev` of the document. Their port and access token change when they start again; the relay reads them again whenever the server can't be reached, so the client's configuration names only the command. The client receives the server's whole tool set:
 
-**Compiler-only server (stdio).** Without a running server, serve one document on stdio:
+| Running for the project | Tools |
+| --- | --- |
+| Presmium Studio or `presmium serve` | Everything below: authoring, history, projects, transcription, voiceover, audio and images, pictures of slides and reading pages (`capture_slides`, `capture_reading`), builds, the author's windows and focus, several documents (name one with `document`; see `list_documents`) |
+| `presmium dev` | Reading, diagnostics, skills, the presentation's position, `run_code` and `build`; no authoring and no pictures |
+| Nothing | `presmium mcp` compiles the document itself: reading, diagnostics, skills, and with `--allow operate,spend` `run_code` and `build`. Start `presmium studio` and reconnect for the rest |
 
-```sh
-pnpm exec presmium-mcp <document directory> [--allow operate,spend]
-```
+The servers also serve MCP at `/mcp` over Streamable HTTP, with `Authorization: Bearer <token>`; `presmium dev` and `presmium serve` print the address and the state file that holds the token. `presmium-mcp` is the same command as `presmium mcp`.
 
-It compiles the document itself and offers reading, diagnostics, skills, `run_code` and `build`. It has no workspace services: authoring, history, transcription, voiceover and audio tools report themselves unavailable. Operations are offered only for the kinds `--allow` names. For skills alone, pass an existing empty directory.
-
-Plugin tools appear once their compilation is ready; follow tool-list change notifications.
+On connecting, the server's instructions give the order of work (skills, finding the target, reading, planned changes, checks, pictures, voiceover), naming the tools that host offers. Plugin tools appear once their compilation is ready; follow tool-list change notifications.
 
 ## Tools
 
@@ -36,6 +34,7 @@ Plugin tools appear once their compilation is ready; follow tool-list change not
 | Diagnostics | `get_diagnostics` (reads the snapshot), `check_document` (runs compilation and plugin checks) |
 | Runtime and focus | `get_runtime`, `get_focus`, `get_position`, `navigate` |
 | Run and build | `run_code`, `build`, `get_builds`, `cancel_build` |
+| Pictures | `capture_slides`: a page's steps as the presentation shows them (rest frames, `at` moments into the animation, or reached going `backward`), as PNG images, with the boxes of the elements a CSS selector `measure`s; `capture_reading`: a page of the reading version at a window `width`; `capture_overview`: every page at once, as sheets of thumbnails and a directory of frames in reading order |
 | Classroom | `get_classroom`, `classroom_start`, `classroom_end` |
 | Canonical reading | `get_authoring_capabilities`, `get_document_outline`, `read_document_part`, `get_document` (full document, may exceed a tool-result budget) |
 | Document changes | `plan_document_change`, `apply_document_change` |
@@ -72,14 +71,14 @@ With several documents, add `?document=<dir>`, for example `presmium://sections?
 
 ## Approval
 
-Each tool has a kind: `read`, or one of the approval kinds `operate`, `spend`, `write` and `agent`. Read tools run without asking. A read-only token sees no operations. On the workspace server, every other tool waits for the author to allow it in the page, or for the client's host to confirm it by Presmium's approval policy; a refusal fails with 403 and retrying asks again. Spending actions (`start_transcription`, `start_voiceover`, `preview_voice`) need their own approval. A token bound to one document cannot act on another. On stdio, `--allow` decides which kinds are offered and allowed.
+Each tool has a kind: `read`, or one of the approval kinds `operate`, `spend`, `write` and `agent`. Read tools run without asking. A read-only token sees no operations. On the workspace server, every other tool waits for the author to allow it in an open Presmium window (the studio's app bar shows Pending Approvals), or for the client's host to confirm it by Presmium's approval policy; a refusal fails with 403 `operation-not-allowed` and retrying asks again. With no Presmium window open to ask, it fails at once with 403 `approval-unavailable`: open Presmium, or allow the kind with `presmium serve --allow operate` or `approvals` in `presmium.workspace.yaml`. Spending actions (`start_transcription`, `start_voiceover`, `preview_voice`) need their own approval. A token bound to one document cannot act on another. When compiling itself, `presmium mcp --allow` decides which kinds are offered and allowed.
 
 ## Not supported
 
 - Compiler-only stdio has no workspace services (authoring, history, projects, transcription, voiceover, audio).
 - Retry receipts and plans are kept per process only.
 - Configurations that require agent review reject canonical apply.
-- Large generic `apply_document_change` inputs and results are not bounded.
+- Large generic `plan_document_change` and `apply_document_change` inputs are not bounded; their results leave the document out (read it with `read_document_part`).
 
 ## Documentation
 

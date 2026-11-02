@@ -47,9 +47,10 @@ export function skillDirectory(name: string): string {
   const packed = join(PACKAGE_DIR, 'skills', selected)
   const source = join(REPOSITORY_SKILLS, selected)
   try {
-    const bundled = lstatSync(packed, { throwIfNoEntry: false }) !== undefined
-    const dir = bundled ? packed : !PACKAGE_DIR.split(sep).includes('node_modules') ? source : packed
-    if (lstatSync(bundled ? join(PACKAGE_DIR, 'skills') : REPOSITORY_SKILLS).isSymbolicLink()) throw new SkillError('skill-path-invalid')
+    // In the repository the skills are read where they are written: the packed copy is made by prepack and may be older.
+    const fromSource = !PACKAGE_DIR.split(sep).includes('node_modules') && lstatSync(source, { throwIfNoEntry: false }) !== undefined
+    const dir = fromSource ? source : packed
+    if (lstatSync(fromSource ? REPOSITORY_SKILLS : join(PACKAGE_DIR, 'skills')).isSymbolicLink()) throw new SkillError('skill-path-invalid')
     const stat = lstatSync(dir)
     if (stat.isSymbolicLink() || !stat.isDirectory()) throw new SkillError('skill-path-invalid')
     return realpathSync(dir)

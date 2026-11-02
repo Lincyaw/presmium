@@ -43,6 +43,26 @@
   --pm-color-syntax-key: #7a3e8e;
   --pm-color-syntax-string: #2f6b3a;
   --pm-color-syntax-keyword: #8a3b12;
+  /* Categorical colours for diagrams and animations: each names one thing in a piece (a role, a series, a
+     category), never a status. Taken in order, neighbours stay apart for colour-blind readers and any two of the
+     first four do; past four, label the things too. Each reads as a line or as text on bg and surface (4.5:1);
+     on its *-soft fill the text is ink and the colour draws the edge. */
+  --pm-color-category-1: #3b62cf;
+  --pm-color-category-1-soft: #dde8ff;
+  --pm-color-category-2: #7b3e02;
+  --pm-color-category-2-soft: #fee2ce;
+  --pm-color-category-3: #9a3383;
+  --pm-color-category-3-soft: #fdddf3;
+  --pm-color-category-4: #04831a;
+  --pm-color-category-4-soft: #d7f0d5;
+  --pm-color-category-5: #7646b2;
+  --pm-color-category-5-soft: #ece2ff;
+  --pm-color-category-6: #c14455;
+  --pm-color-category-6-soft: #ffdfe0;
+  --pm-color-category-7: #0078a3;
+  --pm-color-category-7-soft: #cfedfe;
+  --pm-color-category-8: #7c720e;
+  --pm-color-category-8-soft: #edeac8;
 
   --pm-font-sans: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Noto Sans SC', system-ui, sans-serif;
   --pm-font-serif: 'Source Serif 4', 'Songti SC', 'Noto Serif CJK SC', 'Source Han Serif SC', 'Noto Serif SC', 'SimSun', serif;
@@ -287,6 +307,23 @@
   --pm-color-syntax-key: #d3a3e3;
   --pm-color-syntax-string: #9ccb8f;
   --pm-color-syntax-keyword: #e59a6b;
+  /* The same hues stepped for the dark page; the colour on its own fill stays above 3:1 as an edge. */
+  --pm-color-category-1: #5c86f4;
+  --pm-color-category-1-soft: #29395f;
+  --pm-color-category-2: #db740a;
+  --pm-color-category-2-soft: #563012;
+  --pm-color-category-3: #d061b4;
+  --pm-color-category-3-soft: #522b47;
+  --pm-color-category-4: #61a160;
+  --pm-color-category-4-soft: #224422;
+  --pm-color-category-5: #9c6edd;
+  --pm-color-category-5-soft: #413159;
+  --pm-color-category-6: #e35668;
+  --pm-color-category-6-soft: #592a2e;
+  --pm-color-category-7: #1c99cc;
+  --pm-color-category-7-soft: #034059;
+  --pm-color-category-8: #958801;
+  --pm-color-category-8-soft: #423c05;
 
   --pm-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
   --pm-shadow-float: 0 1px 2px rgba(0, 0, 0, 0.32), 0 8px 24px rgba(0, 0, 0, 0.32);

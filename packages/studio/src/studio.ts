@@ -1,10 +1,10 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeFileSync, writeSync } from 'node:fs'
+import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync, writeSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { createServer, isIP } from 'node:net'
 import type { AddressInfo } from 'node:net'
 import { homedir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { bracketIPv6, dshBin, inheritedEnv, isLauncherVariable, launchArgs, launchEnv, launchNode, launchWorkspaceServer, WEB_READY, writeProfile } from '@lincyaw/dsh/launch'
 import type { LaunchedProcess } from '@lincyaw/dsh/launch'
@@ -81,9 +81,36 @@ function installProfile(home: string, bundle: string): string {
   return name
 }
 
-/** The `presmium` command of this Studio's host package. */
-function presmiumBin(): string {
-  return join(dirname(createRequire(join(PACKAGE_DIR, 'package.json')).resolve('@lincyaw/presmium/package.json')), 'bin', 'presmium.mjs')
+/**
+ * The `presmium` command a Studio started by itself (`presmium-studio`) runs: `@lincyaw/presmium` where it can be
+ * resolved from here, else the one on PATH. `presmium studio` passes its own instead; Studio does not depend on it, which
+ * would make the two packages depend on each other.
+ */
+function presmiumBin(env: NodeJS.ProcessEnv, missing: string): string {
+  try {
+    return join(dirname(createRequire(join(PACKAGE_DIR, 'package.json')).resolve('@lincyaw/presmium/package.json')), 'bin', 'presmium.mjs')
+  } catch {}
+  const names = process.platform === 'win32' ? ['presmium.cmd', 'presmium'] : ['presmium']
+  for (const dir of (env.PATH ?? '').split(delimiter).filter(Boolean)) {
+    for (const name of names) {
+      const script = existsSync(join(dir, name)) ? nodeScript(join(dir, name)) : undefined
+      if (script) return script
+    }
+  }
+  throw new Error(missing)
+}
+
+/** The Node script a command runs: the file itself (an npm link), or the target a pnpm shim names. */
+function nodeScript(command: string): string | undefined {
+  try {
+    const file = realpathSync(command)
+    const head = readFileSync(file, 'utf8').slice(0, 4096)
+    if (/\.[cm]?js$/.test(file) || /^#!.*\bnode\b/.test(head)) return file
+    const target = /cmd-shim-target=(.+)$/m.exec(head)?.[1]?.trim()
+    return target && existsSync(target) ? target : undefined
+  } catch {
+    return undefined
+  }
 }
 
 const WILDCARD = /^(?:0\.0\.0\.0|::|(?:0+:){7}0+|::ffff:0\.0\.0\.0)$/i
@@ -168,7 +195,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
 
   try {
     const server = launchWorkspaceServer({
-      presmium: options.presmium ?? presmiumBin(),
+      presmium: options.presmium ?? presmiumBin(env, t.presmiumMissing),
       dir: resolve(options.dir),
       serviceToken,
       ...options.previewPort ? { port: options.previewPort } : {},

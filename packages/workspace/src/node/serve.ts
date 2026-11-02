@@ -1,16 +1,17 @@
 import { createProjectAuthoring } from './projects.ts'
 import { createDocumentHistory } from './document-history.ts'
 import { createAuthoringClients } from './authoring-clients.ts'
-import { createHash } from 'node:crypto'
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
-import { homedir, tmpdir } from 'node:os'
+import { createDocumentCapture } from './capture.ts'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { stripVTControlCharacters } from 'node:util'
+import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { Compiler, operatorDir as resolveOperatorDir, pluginLogger, runBlock, workspacePlugins } from '@lincyaw/compiler'
 import type { Compilation, CompilerOptions } from '@lincyaw/compiler'
-import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, DOCUMENT_VOICE_TASKS, errorMessage, PRODUCTION_AUDIO_AUTHORING, REVISIONS, SPEECH, VOICEOVER, VOICEOVER_EXECUTION } from '@lincyaw/kernel'
-import { irRevision, operatorSpeechSecrets } from '@lincyaw/kernel/node'
+import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, DOCUMENT_VOICE_TASKS, errorMessage, PreviewPreparing, PRODUCTION_AUDIO_AUTHORING, REVISIONS, SPEECH, VOICEOVER, VOICEOVER_EXECUTION } from '@lincyaw/kernel'
+import { irRevision, operatorSpeechSecrets, serveStateDir } from '@lincyaw/kernel/node'
 import { speechSettingsRoute } from './speech-settings.ts'
-import type { CanonicalSource, ChangeReviewService, Finding, IRDocument, Logger, ProductionAudioAuthoring, ServiceToken, SiteSpec, SpeechService } from '@lincyaw/kernel'
+import type { ApprovalKind, CanonicalSource, ChangeReviewService, Finding, IRDocument, Logger, ProductionAudioAuthoring, ServiceToken, SiteSpec, SpeechService } from '@lincyaw/kernel'
 import { serverConfigKey, servedDocument, startServer } from '@lincyaw/server'
 import type { DiagnosticStore, PresmiumServer, ServedDocument, ServedPlugin, ServerHost } from '@lincyaw/server'
 import { CompileSession } from './compile-session.ts'
@@ -26,7 +27,7 @@ import { createTaskReviewService } from './review/task-reviews.ts'
 import { Revisions } from './revisions.ts'
 import { WORKSPACE_ID, authorizeWorkspaceRoutes, workspaceRoutes, workspaceRoutesPlugin } from './routes.ts'
 import { refreshDocumentVitePlugins, siteContext, siteDocument, siteDocumentIR, siteSpec, untranslatedFindings, webRenderer } from './site.ts'
-import { SourceEditor } from './source-editor.ts'
+import { SourceEditor, versionOf } from './source-editor.ts'
 import { createDocumentEditor } from './document-editor.ts'
 import type { DocumentEditor } from './document-editor.ts'
 import { createDocumentTranscriptions } from './document-transcription.ts'
@@ -50,6 +51,8 @@ export interface ServeOptions {
   /** The address browsers use when a reverse proxy fronts the service (see `ServerOptions.publicUrl`). */
   publicUrl?: string
   env?: NodeJS.ProcessEnv
+  /** Approvals given without asking, over the workspace's `approvals` (`presmium serve --allow`). */
+  allow?: ApprovalKind[]
   approvalTimeoutMs?: number
   log?: Logger
 }
@@ -76,8 +79,7 @@ interface NodeServiceLoad { key: string, promise: Promise<AuthoringServices>, co
 const DISK_LOOK_MS = 1000
 
 function makeStateDir(root: string, env: NodeJS.ProcessEnv): string {
-  const base = env.XDG_CACHE_HOME || join(homedir(), '.cache')
-  const dir = join(base, 'presmium', 'serve', createHash('sha256').update(root).digest('hex').slice(0, 16))
+  const dir = serveStateDir(root, env)
   mkdirSync(dir, { recursive: true })
   return dir
 }
@@ -118,6 +120,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   let transcriptionAdoption: ReturnType<typeof createTranscriptionAdoption> | undefined
   let audioAuthoring: ReturnType<typeof createDocumentAudioAuthoring> | undefined
   let imageAuthoring: ReturnType<typeof createDocumentImageAuthoring> | undefined
+  let capture: ReturnType<typeof createDocumentCapture> | undefined
   let voiceAuthoring: ReturnType<typeof createDocumentVoiceAuthoring> | undefined
   let workspaceRoutesOwner: ReturnType<typeof workspaceRoutes> | undefined
   let routesPlugin: ServedPlugin | undefined
@@ -268,6 +271,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     get voiceAuthoring() { return voiceAuthoring?.service },
     get transcriptions() { return transcriptions },
     get transcriptionAdoption() { return transcriptionAdoption?.service },
+    get capture() { return capture?.service },
     get routes() { return workspaceRoutesOwner?.routes ? { [WORKSPACE_ID]: workspaceRoutesOwner.routes, ...voiceAuthoring ? { 'presmium.lecture': authorizeWorkspaceRoutes(voiceAuthoring.routes, launcherToken) } : {} } : undefined },
     agentTools(document) {
       const compiled = (document === undefined ? [...compileSessions.values()] : [compileSessions.get(document)]).flatMap(session => session?.latest ? [session.latest] : [])
@@ -355,7 +359,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       }
     },
     settings: config.settings,
-    approvals: config.approvals,
+    approvals: { ...config.approvals, ...Object.fromEntries((options.allow ?? []).map(kind => [kind, 'allow' as const])) },
     operatorDir: operatorDirectory,
     serverHost,
     env,
@@ -422,6 +426,15 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     throw error
   }
 
+  // A picture right after a save shows what was saved: the document is compiled first when its file is newer.
+  const savedCompilation = async (dir: string): Promise<Compilation> => {
+    const session = compileSessionOf(dir)
+    const compilation = await session.ready()
+    const entry = docs().find(doc => doc.dir === dir)?.entry
+    const saved = entry ? versionOf(readFileSync(join(root, entry))) : undefined
+    return saved && compilation.doc.source?.version !== saved ? await session.recompile() : compilation
+  }
+  capture = createDocumentCapture({ root, url: () => running.url, viewerPage: dir => site?.app(dir, true) ?? Promise.resolve(undefined), compiled: async dir => (await savedCompilation(dir)).doc, dir: join(stateDir, 'captures') })
   started()
 
   const compileForSite = async (dir: string): Promise<IRDocument> => {
@@ -433,6 +446,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     site = await startWorkspaceSite({ root, spec, basePath, bundled: options.bundled, stateDir, compile: compileForSite, stampPreviewRevision: (compilation, doc) => workbench!.stampPreviewRevision(compilation, doc), diagnostics: running.diagnostics, preview, log })
   } catch (error) {
     await closeAuthoring()
+    await capture.close()
     await workbench.close()
     await running.close()
     if (home) rmSync(home, { recursive: true, force: true })
@@ -448,6 +462,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       await closeAuthoring()
       for (const session of compileSessions.values()) session.close()
       await jobs.close()
+      await capture?.close()
       await workbench?.close()
       await site?.close()
       await running.close()
@@ -470,6 +485,23 @@ interface WorkspaceSiteOptions {
 }
 
 type WorkspaceSite = Awaited<ReturnType<typeof startWorkspaceSite>>
+
+/** The bundler's failure as a diagnostic: the file and the module it could not find, when that is the failure. */
+function codeFailure(error: unknown): Finding {
+  const text = stripVTControlCharacters(errorMessage(error))
+  const unresolved = /failed to resolve import "([^"]+)" from "([^"]+)"/.exec(text)
+  if (unresolved) {
+    return {
+      checkId: 'presmium.preview.code',
+      severity: 'error',
+      message: `the document's code could not be bundled: ${unresolved[1]} cannot be found from this file`,
+      hint: 'Name the plugin that provides it in metadata.plugins, or add its package to the project’s dependencies.',
+      source: { file: unresolved[2]! },
+    }
+  }
+  const reason = text.split('\n').map(line => line.replace(/^Error:\s*/, '').trim()).find(line => line && !/^Build failed/.test(line)) ?? text
+  return { checkId: 'presmium.preview.code', severity: 'error', message: `the document's code could not be bundled: ${reason}` }
+}
 
 /** The workspace site's dev router in this process, which serve forwards the site's paths to. */
 async function startWorkspaceSite(options: WorkspaceSiteOptions) {
@@ -497,7 +529,20 @@ async function startWorkspaceSite(options: WorkspaceSiteOptions) {
       })
     },
     warm: (dir: string): Promise<void> => dev.warm?.(dir) ?? Promise.resolve(),
-    app: (dir: string, wait: boolean): Promise<string | undefined> => dev.app?.(dir, wait) ?? Promise.resolve(undefined),
+    app: async (dir: string, wait: boolean): Promise<string | undefined> => {
+      // A file of the document's own code (a scene, a component) that does not bundle fails alone: what imports it
+      // shows its failure. Each such file is a diagnostic, where the author, the workbench's AI and MCP clients find
+      // it, until a preview bundles it; when none of the code bundles, the preview fails, and the reason is one.
+      const source = { document: dir, origin: 'preview', renderer: 'web', instance: 'code' } as const
+      try {
+        const page = await (dev.app?.(dir, wait) ?? Promise.resolve(undefined))
+        if (wait && page) options.diagnostics.replace(source, dev.codeFindings?.(dir) ?? [], { root, irRevision: options.diagnostics.irRevision(dir) })
+        return page
+      } catch (error) {
+        if (wait && !(error instanceof PreviewPreparing)) options.diagnostics.replace(source, [codeFailure(error)], { root, irRevision: options.diagnostics.irRevision(dir) })
+        throw error
+      }
+    },
     close: (): Promise<void> => dev.close(),
   }
 }

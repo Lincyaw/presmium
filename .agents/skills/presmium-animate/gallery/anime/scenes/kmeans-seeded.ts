@@ -12,7 +12,8 @@ export default animeScene(({ root, anime, at, color }) => {
     const [cx, cy] = CENTERS[i % 3]
     return [cx + gauss() * 120, cy + gauss() * 85] as [number, number]
   })
-  const palette = [color('accent'), color('warn'), color('ok')]
+  // A cluster is an identity, not a status: the categorical colours, taken in order.
+  const palette = [color('category-1'), color('category-2'), color('category-3')]
   const muted = color('muted')
   // k-means, run up front: the assignments and centroid positions of each round.
   let cents: Array<[number, number]> = [[150, 380], [300, 60], [700, 400]]

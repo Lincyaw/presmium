@@ -6,9 +6,9 @@ import { SkillError } from './resources.ts'
 
 export async function main(args: string[]): Promise<number> {
   const t = MESSAGES[systemLocale()]
-  let values: { json?: boolean, help?: boolean, name?: string[], 'parent-stdin'?: boolean }, positionals: string[]
+  let values: { json?: boolean, help?: boolean, name?: string[], update?: boolean, 'parent-stdin'?: boolean }, positionals: string[]
   try {
-    const parsed = parseArgs({ args, allowPositionals: true, options: { json: { type: 'boolean' }, help: { type: 'boolean', short: 'h' }, name: { type: 'string', multiple: true }, 'parent-stdin': { type: 'boolean' } } })
+    const parsed = parseArgs({ args, allowPositionals: true, options: { json: { type: 'boolean' }, help: { type: 'boolean', short: 'h' }, name: { type: 'string', multiple: true }, update: { type: 'boolean' }, 'parent-stdin': { type: 'boolean' } } })
     values = parsed.values; positionals = parsed.positionals
     if (values.help) { process.stdout.write(t.usage); return 0 }
     if (positionals.length !== 2 || positionals[0] !== 'install') throw new Error()
@@ -23,8 +23,8 @@ export async function main(args: string[]): Promise<number> {
     if (process.stdin.readableEnded || process.stdin.destroyed) stop()
   }
   try {
-    const result = await installBundledSkills(positionals[1]!, { names: values.name, signal: controller.signal })
-    process.stdout.write(values.json ? `${JSON.stringify(result)}\n` : `${t.installed(result.installed.length, result.skipped.length)}\n`)
+    const result = await installBundledSkills(positionals[1]!, { names: values.name, signal: controller.signal, update: values.update })
+    process.stdout.write(values.json ? `${JSON.stringify(result)}\n` : `${t.installed(result.installed.length, result.skipped.length, result.updated.length)}\n`)
     return 0
   } catch (error) {
     const code = error instanceof SkillError ? error.code : 'skill-unavailable'

@@ -49,6 +49,7 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     get voiceAuthoring() { return options.serverHost?.voiceAuthoring },
     get transcriptions() { return options.serverHost?.transcriptions },
     get transcriptionAdoption() { return options.serverHost?.transcriptionAdoption },
+    get capture() { return options.serverHost?.capture },
     readyTools: document => options.serverHost?.agentTools?.(document) ?? { tools: [], service: options.service },
     watchTools: listener => options.serverHost?.watchAgentTools?.(listener) ?? (() => {}),
     documents: () => host().documents(),
@@ -69,6 +70,7 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     },
     run: (document, target, signal) => host().run(document, target, signal),
     approve: (request, signal) => control.approvals.request(request, signal),
+    answerable: request => control.answerable(request),
     offers: kind => control.policy(kind) !== 'off',
     approval: kind => control.policy(kind),
     async tools(document) {

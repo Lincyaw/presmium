@@ -41,7 +41,7 @@
 1. **工作台的数据**：浏览器 → dsh 的 `/api/presmium/*`（经 dsh 的 cookie 与 `Host`、`Origin` 栅栏）→ bundle → 工作区服务（带服务令牌）。事件走每页一条 `/api/presmium/events` WebSocket，由 bundle 转接服务的 SSE。
 2. **预览**：iframe → 工作区服务的源。
 3. **agent 的工具**：dsh → bundle → 服务的 `/mcp`，每个会话一个会话令牌。
-4. **外部 agent**：`presmium-mcp`（stdio）或 `/mcp`。
+4. **外部 agent**：`presmium mcp`（stdio，转接正在运行的服务的 `/mcp`；新项目的 `.mcp.json` 为 Claude Code 配好它）或直接连 `/mcp`。
 
 没有替浏览器持有 cookie 或改写 `Origin` 的代理，否则 dsh 的栅栏失效。Web 补丁关掉 `client-hmr`：dsh 没有卸载前阻止的契约，热替换会丢掉未保存的批注稿。
 
@@ -51,7 +51,7 @@
 
 `@lincyaw/design` 是令牌、`pm-ui-*` 类、字体与图标，无框架。`@lincyaw/workbench` 是 React 面板与无框架逻辑（服务客户端、预览协议的工作台一侧、保存队列、通用组件）。`@lincyaw/dsh` 是 bundle 的宿主部分（Node）与预编译的客户端部分。`@lincyaw/studio` 是启动器，依赖精确版本的 `@deepseek-ai/dsh`。
 
-`scripts/check-layering.mjs` 检查：产物不引用 `workbench`；`@deepseek-ai/*` 只在 `packages/dsh` 与 `packages/studio`；`workbench` 不引用 `host` 与 dsh；`@modelcontextprotocol/*` 只在 `mcp`；`design` 不引用任何包。`@lincyaw/presmium` 默认包含 `@lincyaw/studio`（含依赖约 865 MB）；安装一次即可运行 `presmium studio`，使用当前命令所属安装中的版本。Studio 通过对等依赖使用主包作为宿主，主包向它传入自己的命令路径。
+`scripts/check-layering.mjs` 检查：产物不引用 `workbench`；`@deepseek-ai/*` 只在 `packages/dsh` 与 `packages/studio`；`workbench` 不引用 `host` 与 dsh；`@modelcontextprotocol/*` 只在 `mcp`；`design` 不引用任何包。`@lincyaw/presmium` 默认包含 `@lincyaw/studio`（含依赖约 865 MB）；安装一次即可运行 `presmium studio`，使用当前命令所属安装中的版本。Studio 不依赖主包（否则两个包互相依赖，发布顺序成环）：`presmium studio` 向它传入主包自己的命令路径；单独安装时的 `presmium-studio` 使用 PATH 上的 `presmium` 命令（pnpm 的包装脚本按它记下的目标解析）。
 
 ### 3.2 发布
 
@@ -185,7 +185,7 @@
 ## 9. MCP 与 dsh 的工具一致
 
 - `@lincyaw/mcp` 导出一张工具表（名字、说明、JSON Schema、种类），按文稿列出时按策略筛选，加上插件的 `AgentTool`；作者事务（`plan_document_change`、`apply_document_change` 等）复用 Web 的 `DocumentEditor` 与历史，见 [作者动作](authoring-actions.md)。
-- 适配器一是 `/mcp` 与 `presmium-mcp`。适配器二是 `presmium-tools`：作为 MCP 客户端用会话令牌连接回环 `/mcp`，把工具连同原样 schema 登记为 `presmium__<名字>`，调用时转成 `tools/call`，时限 10 分钟。编译只在服务中做一次；每个会话只登记所属文稿的工具。
+- 适配器一是 `/mcp` 与 `presmium mcp`（服务运行时转接 `/mcp`，否则在编译器上提供）。适配器二是 `presmium-tools`：作为 MCP 客户端用会话令牌连接回环 `/mcp`，把工具连同原样 schema 登记为 `presmium__<名字>`，调用时转成 `tools/call`，时限 10 分钟。结果中的图片（如 `capture_slides` 的截图）在会话最近一次请求所用的模型声明接受图片时存入 dsh 的附件，作为工具结果的图片交给模型；否则模型只得到文字（`capture_slides` 的文字列出每张图的文件），另有一行说明图片未附上。编译只在服务中做一次；每个会话只登记所属文稿的工具。
 - 同一文稿与设置下，MCP `tools/list` 等于会话中的 `presmium__*` 工具，`get_focus` 等于会话快照中的焦点。
 
 ## 10. 没有模型与没有 dsh 时
@@ -259,9 +259,9 @@ dsh 发版频繁、没有 CHANGELOG，所以升级 dsh 是单独的一次改动�
 
 ## 18. 文档编辑
 
-- **正文**：一个全篇 BlockNote 编辑器直接编辑结构化文稿，页面导航只滚动定位；公式、表格、图片等保存为类型化节点。
-- **页面**：页面栏的加号在当前页之后新建独立页面并聚焦正文，块的加号只在本页插入块。重命名、复制、移动、删除各是一个可撤消的版本；删除前显示关联的讲稿数。
-- **生成内容**：作者经公开参数、对话或批注修改，不看实现代码。共享素材默认修改“仅此处”，选“所有引用”才改共享素材。处理中保持上次成功的画面。
+- **正文**：一个全篇 BlockNote 编辑器直接编辑结构化文稿，页面导航只滚动定位；公式、表格、图片等保存为类型化节点。编辑器占满整张纸，单击最后一块之下的空白处，光标落到文稿末尾的空段落（没有就在最后一页末尾新建一段）；每页末尾的空段落即使没有光标也显示输入提示。
+- **页面**：页面栏的加号在当前页之后新建独立页面并选中它的默认标题，输入即替换标题，在标题末尾按回车进入正文的空段落；块的加号只在本页插入块。重命名、复制、移动、删除各是一个可撤消的版本；删除前显示关联的讲稿数。
+- **生成内容**：作者经公开参数、对话或批注修改，不看实现代码。共享素材默认修改“仅此处”，选“所有引用”才改共享素材。处理中保持上次成功的画面。斜杠菜单的“用 AI 插入动画…”不插入任何内容：它把焦点设为菜单所在的块，打开 AI 助手并在输入框中写好指明该处（第几页、哪一段之后或页末）的请求，光标在末尾，由作者写明要演示什么再发送；没有模型时草稿留在“设置模型”提示之下。
 - **字幕**：文档中只给字幕与配音开始。
 - **批注与 AI**：BlockNote 原生的评论扩展，跨块跨页，可逐条或批量交给 AI。AI 的修改接受或拒绝都保持作者位置，新版本显示后短暂闪烁受影响的块。
 - **材料到成稿**（目标，尚未实现）：作者提交一批材料，AI 分阶段生成，成稿以互相依赖的修改组为单位审阅采用。

@@ -1,12 +1,15 @@
+import { realpathSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { APPROVAL_KINDS, errorMessage, LOCAL_AUTHOR } from '@lincyaw/kernel'
 import type { ApprovalKind } from '@lincyaw/kernel'
-import { fileVersion } from '@lincyaw/kernel/node'
+import { devStateFile, fileVersion, readServiceState, serveStateDir } from '@lincyaw/kernel/node'
 import { buildSummary, buildToDist, Compiler, findPackageDir, resolveEntry, runBlock } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
+import { bridgeStdio } from './bridge.ts'
+import type { BridgeTarget } from './bridge.ts'
 import type { McpHost } from './host.ts'
 import { serveMcpStdio } from './mcp.ts'
 import { MCP_CLI_MESSAGES, systemLocale } from './messages.ts'
@@ -21,8 +24,9 @@ async function stamps(files: string[]): Promise<string> {
   return times.join(',')
 }
 
-export function compilerMcpHost(entry: string, allow: readonly ApprovalKind[]): McpHost {
-  const bundled = findPackageDir(CLI_PACKAGE, dirname(entry)) ?? findPackageDir(CLI_PACKAGE, OWN_DIR) ?? OWN_DIR
+/** `installation`: the package whose dependencies hold the renderers and plugins (the presmium command's own). */
+export function compilerMcpHost(entry: string, allow: readonly ApprovalKind[], installation?: string): McpHost {
+  const bundled = installation ?? findPackageDir(CLI_PACKAGE, dirname(entry)) ?? findPackageDir(CLI_PACKAGE, OWN_DIR) ?? OWN_DIR
   const compiler = new Compiler(entry, { bundled })
   let inputs = [entry]
   let latest: { compilation: Compilation, files: string[], stamp: string } | undefined
@@ -76,7 +80,7 @@ export function compilerMcpHost(entry: string, allow: readonly ApprovalKind[]): 
   }
 }
 
-export async function main(argv: string[]): Promise<number | undefined> {
+export async function main(argv: string[], options: { bundled?: string } = {}): Promise<number | undefined> {
   let deck: string
   let allow: ApprovalKind[]
   try {
@@ -93,9 +97,37 @@ export async function main(argv: string[]): Promise<number | undefined> {
     const exists = await stat(deck).then(info => info.isFile(), () => false)
     if (!exists && !await stat(positionals[0] ?? '.').then(info => info.isDirectory(), () => false)) throw new Error(t.notFound(deck))
   } catch (error) {
-    process.stderr.write(`presmium-mcp: ${errorMessage(error)}\n\n${t.usage}\n`)
+    process.stderr.write(`presmium mcp: ${errorMessage(error)}\n\n${t.usage}\n`)
     return 2
   }
-  serveMcpStdio(compilerMcpHost(deck, allow), { member: LOCAL_AUTHOR, mode: 'author', document: '' })
+  const dir = deck.endsWith('.json') ? dirname(deck) : deck
+  const running = runningService(dir)
+  if (running) {
+    process.stderr.write(`${t.bridging(running.mcp)}\n`)
+    await bridgeStdio(running, { locate: () => runningService(dir), unreachable: t.unreachable, log: message => process.stderr.write(`presmium mcp: ${message}\n`) })
+    return 0
+  }
+  serveMcpStdio(compilerMcpHost(deck, allow, options.bundled), { member: LOCAL_AUTHOR, mode: 'author', document: '' })
   return undefined
+}
+
+/**
+ * The Presmium server running for `dir`: the workspace service of `dir` or of a directory above it (`presmium serve`,
+ * or the one `presmium studio` starts), which edits documents; else the `presmium dev` of the document in `dir`.
+ */
+export function runningService(dir: string, env: NodeJS.ProcessEnv = process.env): BridgeTarget | undefined {
+  let at: string
+  try {
+    at = realpathSync(resolve(dir))
+  } catch {
+    return undefined
+  }
+  for (let next = at; ; at = next) {
+    const state = readServiceState(join(serveStateDir(at, env), 'server.json'))
+    if (state) return { mcp: state.mcp, token: state.token }
+    next = dirname(at)
+    if (next === at) break
+  }
+  const dev = readServiceState(devStateFile(realpathSync(resolve(dir))))
+  return dev ? { mcp: dev.mcp, token: dev.token } : undefined
 }

@@ -1,5 +1,5 @@
 import { currentLocale, OPERATIONS, pluginsOf, presmiumService, registerPresmiumPlugin, startHost, createStore, observe, runtimeRevision } from '@lincyaw/host'
-import { previewAppearance, reportStaleModule } from '@lincyaw/kernel'
+import { CAPTURE_PARAM, previewAppearance, reportStaleModule } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import { findView, loadDocumentParts, syncViewerWithOperations } from '@lincyaw/viewer'
 import type { LiveUpdate } from '@lincyaw/viewer/domain'
@@ -12,6 +12,7 @@ import type { ViewerModule } from '../client/runtime.ts'
 import { setDocumentModules } from './document-modules.ts'
 import { createPageApp } from './page-app.ts'
 import { blockPreviewReporter } from './block-report.ts'
+import { installCaptureHook } from './capture.ts'
 import { forgetIndex } from './site/search.tsx'
 import './base.css'
 import './site.css'
@@ -193,6 +194,7 @@ async function bootDocument(): Promise<void> {
   viewer!.view.subscribe(syncAddress)
   viewer!.position.subscribe(syncAddress)
   syncAddress()
+  if (new URLSearchParams(location.search).has(CAPTURE_PARAM)) installCaptureHook(viewer!)
 }
 
 void (config.kind === 'document' ? bootDocument() : bootPage()).catch((error: unknown) => {

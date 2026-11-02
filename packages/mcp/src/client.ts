@@ -12,9 +12,18 @@ export interface ListedTool {
   approval?: 'ask' | 'allow'
 }
 
+export interface CalledImage {
+  /** Base64, as MCP carries it. */
+  data: string
+  mimeType: string
+}
+
 export interface CalledTool {
   isError: boolean
+  /** The result's text parts, joined by line breaks. */
   text: string
+  /** The result's image parts, in order. */
+  images: CalledImage[]
 }
 
 export interface PresmiumMcpClient {
@@ -144,8 +153,12 @@ export async function connectPresmiumMcp(url: string, token: string, name = 'pre
     },
     async call(tool, args, signal) {
       const result = await client.callTool({ name: tool, arguments: args }, { signal, timeout: CALL_TIMEOUT_MS })
-      const content = Array.isArray(result.content) ? result.content as { type: string, text?: string }[] : []
-      return { isError: result.isError === true, text: content.map(part => part.text ?? '').join('\n') }
+      const content = Array.isArray(result.content) ? result.content as { type: string, text?: unknown, data?: unknown, mimeType?: unknown }[] : []
+      return {
+        isError: result.isError === true,
+        text: content.flatMap(part => (part.type === 'text' && typeof part.text === 'string' ? [part.text] : [])).join('\n'),
+        images: content.flatMap(part => (part.type === 'image' && typeof part.data === 'string' && typeof part.mimeType === 'string' ? [{ data: part.data, mimeType: part.mimeType }] : [])),
+      }
     },
     async read(uri) {
       const { contents } = await client.readResource({ uri })

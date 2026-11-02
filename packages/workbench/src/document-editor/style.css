@@ -1,4 +1,8 @@
-.pm-document-editor { min-width: 0; }
+.pm-document-editor { display: flex; flex: 1 0 auto; flex-direction: column; min-width: 0; }
+/* The page below the last block, down to the sheet's end: a press there continues the document at its end. */
+.pm-document-editor__end { flex: 1 0 auto; min-height: var(--pm-space-4); }
+.pm-document-editor__end[data-editable] { cursor: text; }
+.pm-document-editor .bn-block-content[data-page-end]:has(.ProseMirror-trailingBreak:only-child)::after { content: attr(data-placeholder); }
 .pm-document-editor__file-errors { display: flex; align-items: flex-start; gap: var(--pm-space-2); }
 .pm-document-editor__file-errors ul { flex: 1; min-width: 0; margin: 0; padding-inline-start: var(--pm-space-4); overflow-wrap: anywhere; }
 .pm-document-editor .pm-document-editor__page-title { margin-block: var(--pm-space-5) var(--pm-space-3); font-family: var(--pm-font-sans); font-size: var(--pm-text-title); font-weight: var(--pm-weight-semibold); line-height: var(--pm-leading-tight); }

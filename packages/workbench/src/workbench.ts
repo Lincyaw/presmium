@@ -26,7 +26,8 @@ import type { DocumentReturnPoint } from './document-return-point.ts'
 import type { DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentChangeAnswer, MediaClip, NarrationNode, TeachingDocument, DocumentTranscriptionRequest, TranscriptionTask, TranscriptionAdoptionDraft, TranscriptionAdoptionApply, TranscriptionAdoptionPlan, TranscriptionAdoptionAnswer } from '@lincyaw/kernel'
 import type { NativeDocumentEditor } from './document-editor/schema.tsx'
 import type { DocumentEditorCommands } from './document-editor/DocumentEditor.tsx'
-import { nativeTextPoint, nativeTextPosition } from './document-editor/selection.ts'
+import type { DocumentInsertionPlace } from './document-editor/insertion-place.ts'
+import { nativeBlockText, nativeTextPoint, nativeTextPosition } from './document-editor/selection.ts'
 import type { NativeTextPoint } from './document-editor/selection.ts'
 import type { DocumentFieldBookmark, DocumentFieldRegistration, DocumentHistoryEditor } from './document-editor/focus.ts'
 import { duplicateDocumentPage, moveDocumentPage, pageDeletion, removeDocumentPage, renameDocumentPage } from '@lincyaw/kernel'
@@ -95,6 +96,12 @@ export type SaveState =
 
 /** A request for the agent of the conversation: its text and what it is about. */
 export interface AgentRequest {
+  text: string
+  focus: FocusReport[]
+}
+
+/** A request for the author to finish and send in the conversation, and what it is about: the host only shows it. */
+export interface AgentDraft {
   text: string
   focus: FocusReport[]
 }
@@ -307,6 +314,7 @@ export class Workbench {
   readonly #jobs: DocumentJobs
   readonly #voiceover: VoiceoverJobs
   readonly #askers = new Set<(request: AgentRequest) => Promise<AgentAnswer | void>>()
+  readonly #drafters = new Set<(draft: AgentDraft) => void | Promise<void>>()
   readonly #previewSinks = new Set<PreviewSink>()
   readonly #playbackKeys = new Set<(command: PlaybackKey) => void>()
   #unsubscribeIr?: () => void
@@ -504,6 +512,12 @@ export class Workbench {
   onAgentRequest = (asker: (request: AgentRequest) => Promise<AgentAnswer | void>): (() => void) => {
     this.#askers.add(asker)
     return () => this.#askers.delete(asker)
+  }
+
+  /** The host's way to put a request in the conversation's composer for the author to finish; nothing is sent. */
+  onAgentDraft = (drafter: (draft: AgentDraft) => void | Promise<void>): (() => void) => {
+    this.#drafters.add(drafter)
+    return () => this.#drafters.delete(drafter)
   }
 
   #nextDocumentPosition(): string { return `${this.#positionSeed}:${++this.#positionSequence}` }
@@ -1749,12 +1763,16 @@ export class Workbench {
       if (editor.prosemirrorView.hasFocus()) focus()
       const stopSelection = editor.onSelectionChange(() => { this.#documentSelectionGeneration++ })
       this.#unsubscribeDocumentSelection = () => { this.#stopDocumentLayoutScroll?.(); stopSelection(); element.removeEventListener('focusin', focus) }
+      commands?.handleAnimationRequests({ available: () => this.#drafters.size > 0, request: place => this.draftAnimation(place) })
     } else this.#unsubscribeDocumentSelection = undefined
     this.#finishOpeningDocument()
   }
-  #focusDocumentNode(editor: NativeDocumentEditor, nodeId: string): void {
+  /** `selectText`: the node's whole text is selected, so typing replaces it. */
+  #focusDocumentNode(editor: NativeDocumentEditor, nodeId: string, selectText = false): void {
     this.#stopDocumentLayoutScroll?.(); this.#stopDocumentLayoutScroll = undefined
     editor.setTextCursorPosition(nodeId, 'start')
+    const text = selectText ? nativeBlockText(editor, nodeId) : undefined
+    if (text) editor.transact(transaction => transaction.setSelection(TextSelection.create(transaction.doc, text.from, text.to)))
     editor.focus()
     editor.prosemirrorView.dispatch(editor.prosemirrorState.tr.scrollIntoView())
     // React node views can finish sizing after the native editor mounts.
@@ -1888,7 +1906,8 @@ export class Workbench {
       const created = commands.insertPage(after, contentText(source.content.metadata.lang).newPage)
       this.#pendingDocumentField = undefined; this.#pendingDocumentSelection = undefined; this.#pendingDocumentFocus = undefined
       this.#set({ position: { section: created.sectionId, step: 0, trail: [], view: 'document' }, documentNavigation: { section: created.sectionId, request: crypto.randomUUID() } })
-      this.#focusDocumentNode(editor, created.nodeId)
+      // The default title is selected: the author's first words name the page, and Enter goes on to its body.
+      this.#focusDocumentNode(editor, `page:${created.sectionId}`, true)
       return true
     } catch (error) { this.#set({ pageEditFailure: this.#pageEditMessage(errorMessage(error)) }); return false }
   }
@@ -1963,6 +1982,40 @@ export class Workbench {
       asked({ 'presmium.ask.text': text, 'presmium.outcome': 'failed', 'presmium.error': errorMessage(error) })
       if (this.#state.document === document) this.#set({ isAsking: false, askFailure: errorMessage(error) })
       return false
+    }
+  }
+
+  /**
+   * Opens the conversation with a request, for the author to describe and send, to add an animation at `place` of the
+   * open document; the document's focus points the AI at the place's block. Nothing is inserted or sent.
+   */
+  draftAnimation(place: DocumentInsertionPlace): boolean {
+    const document = this.#state.document, content = this.#state.authoring?.content, drafter = [...this.#drafters][0]
+    const section = content?.sections[place.sectionId]
+    if (document === undefined || !content || !section || !drafter) return false
+    const report = (block?: string): FocusReport => ({ id: 'insertion', from: this.#state.previewRenderer, section: place.sectionId, ...block ? { block } : {}, ...place.text ? { quote: place.text.slice(0, 2000) } : {} })
+    const text = this.#messages.animationRequest(content.sectionOrder.indexOf(place.sectionId) + 1, section.title, place)
+    const focus = [report(place.blocks[0])]
+    void this.#focusFirst(document, [...place.blocks.map(block => [report(block)]), [report()], []])
+    const drafted = (attributes: Record<string, OperationValue>) => this.#record('agent.draft', { 'presmium.ask.kind': 'animation', 'presmium.ask.text': text, 'presmium.section': place.sectionId, 'presmium.block': place.blocks[0], ...attributes })
+    this.#set({ askFailure: undefined })
+    void (async () => drafter({ text, focus }))().then(() => drafted({ 'presmium.outcome': 'drafted' }), (error: unknown) => {
+      drafted({ 'presmium.outcome': 'failed', 'presmium.error': errorMessage(error) })
+      if (this.#state.document === document) this.#set({ askFailure: errorMessage(error) })
+    })
+    return true
+  }
+
+  /**
+   * Sets the first of `choices` the service can locate as the document's focus. Its runtime snapshot is compiled from the
+   * saved source, which may not have a block or page created moments ago yet; the last choice leaves no stale focus.
+   */
+  async #focusFirst(document: string, choices: FocusReport[][]): Promise<void> {
+    for (const focus of choices) {
+      this.setFocus(focus)
+      const version = this.#focusVersion
+      await this.#focusWriting
+      if (version !== this.#focusVersion || this.#state.document !== document || !this.#state.focusFailure) return
     }
   }
 

@@ -11,6 +11,16 @@ import { viewerMessages } from './viewer-messages.ts'
 import { useViewer } from './viewer-state.ts'
 import { h } from './element.ts'
 export type SectionLayout = 'document' | 'scrolly'
+/**
+ * A scrolly section's text for a step, beside its sticky stage: narration blocks of the older format, else the step's
+ * narration (the script written for that step), which is how a scrolly page explains each of its steps.
+ */
+function trackText(section: IRSection, k: number, step: number) {
+  const blocks = narrationAt(section, k)
+  if (blocks.length) return blocks.map(block => h(BlockView, { key: block.id, block, section, step }))
+  const id = section.stepIds?.[k]
+  return (id ? section.stepNarrations?.[id] ?? [] : []).map(line => h('p', { key: line.id, className: 'pm-step__text' }, line.text))
+}
 function SectionViewContent({ section, layout = 'document' }: { section: IRSection, layout?: SectionLayout }) {
   const viewer = useViewer(); const doc = useStore(viewer.doc); const view = useStore(viewer.pageView); const [scrolled, setScrolled] = useState(0); const root = useRef<HTMLElement>(null)
   useEffect(() => {
@@ -23,7 +33,7 @@ function SectionViewContent({ section, layout = 'document' }: { section: IRSecti
   const title = isChapterTitle(doc, section) ? 'h1' : 'h2'; const t = viewerMessages().section
   const blocks = section.blocks.filter(block => block.role === 'visual' || (block.only && !block.only.includes('lecture')) || isLegacyNarration(doc, block))
   const findings = viewer.options.diagnostics ? sectionDiagnostics(section, doc.diagnostics) : []
-  const body = layout === 'scrolly' ? [h('div', { className: 'pm-stage pm-board' }, blocks.filter(b => b.role === 'visual').map(block => h(BlockView, { key: block.id, block, section, step }))), h('div', { className: 'pm-track' }, Array.from({ length: section.steps + 1 }, (_, k) => h('div', { key: k, className: `pm-step${k === step ? ' pm-step--current' : ''}`, 'data-step': k }, narrationAt(section, k).map(block => h(BlockView, { key: block.id, block, section, step }))))) ] : h('div', { className: 'pm-section__body' }, blocks.map(block => h(BlockView, { key: block.id, block, section, step, expanded: true })))
+  const body = layout === 'scrolly' ? [h('div', { className: 'pm-stage pm-board' }, blocks.filter(b => b.role === 'visual').map(block => h(BlockView, { key: block.id, block, section, step }))), h('div', { className: 'pm-track' }, Array.from({ length: section.steps + 1 }, (_, k) => h('div', { key: k, className: `pm-step${k === step ? ' pm-step--current' : ''}`, 'data-step': k }, trackText(section, k, step)))) ] : h('div', { className: 'pm-section__body' }, blocks.map(block => h(BlockView, { key: block.id, block, section, step, expanded: true })))
   return h(SECTION_CONTEXT.Provider, { value: { section, step, view } }, h('section', { ref: root, className: `pm-section pm-section--${layout}`, 'data-section': section.id, 'data-index': section.index, 'data-step': layout === 'scrolly' ? step : undefined }, [h(title, { id: section.id, className: 'pm-section__title', tabIndex: -1, 'data-content-role': 'visual', 'data-content-label': viewerMessages().contentRoles.visual }, [contentMarks(section, 'visual', 0), section.title, viewer.options.sectionHeading?.(section, step), h('a', { className: 'header-anchor', href: `#${section.id}`, 'aria-label': t.anchor(section.title) }, '​')]), findings.length ? h('ul', { className: 'pm-diagnostics', role: 'alert' }, findings.map((finding, key) => h('li', { key, 'data-severity': finding.severity }, finding.message))) : null, body]))
 }
 

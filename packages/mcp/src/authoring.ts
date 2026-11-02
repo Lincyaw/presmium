@@ -98,9 +98,9 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
   },
   {
     name: 'plan_document_change', kind: 'read', structured: true,
-    description: 'Preflights a versioned DocumentChange with canonical semantic operations or an explicit replacement and optional same-document text files. Validates candidate, identity, references, all file bases and transaction limits without saving or compiling. Returns planId, candidate, entity impact, source and predicted files. Existing-file bases are exact versions; null exclusively creates a new text file.',
+    description: 'Preflights a versioned DocumentChange with canonical semantic operations or an explicit replacement and optional same-document text files. Validates candidate, identity, references, all file bases and transaction limits without saving or compiling. Returns planId, digest, issues, entity impact, source and predicted files; the candidate document is not repeated (read its parts with read_document_part). Existing-file bases are exact versions; null exclusively creates a new text file.',
     inputSchema: schema(),
-    run: async call => service(call).plan(await call.document(), call.args.change as DocumentChange, call.caller.member),
+    run: async call => withoutContent(await service(call).plan(await call.document(), call.args.change as DocumentChange, call.caller.member)),
   },
   {
     name: 'plan_page_change', kind: 'read', structured: true,
@@ -142,7 +142,7 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
   },
   {
     name: 'apply_document_change', kind: 'operate', structured: true,
-    description: 'Applies the unchanged DocumentChange and planId returned by plan_document_change through the same transaction as Web. Retains CAS, file scope, locking, rollback and history; reads saved source/files back. No compilation or paid service is requested. Retry the same id and payload only within the advertised idempotency scope; stale bases are refused. Required agent review is not yet supported by this action.',
+    description: 'Applies the unchanged DocumentChange and planId returned by plan_document_change through the same transaction as Web. Retains CAS, file scope, locking, rollback and history; reads saved source/files back and returns the saved version, fingerprint, files, issues and commit, not the document (read its parts with read_document_part). No compilation or paid service is requested. Retry the same id and payload only within the advertised idempotency scope; stale bases are refused. Required agent review is not yet supported by this action.',
     inputSchema: schema(true),
     run: async call => {
       const document = await call.document(), own = service(call)
@@ -151,7 +151,13 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
       const current = await own.read(document, call.caller.member)
       await call.approve('operate', messages => messages.applyDocumentChange, { lang: current.content.metadata.lang ?? '', detail: documentChangeSummary(MCP_MESSAGES[deckLocale(current.content.metadata.lang)], call.args.change as DocumentChange, current.content), check: () => own.checkApply(document, { change: call.args.change as DocumentChange, planId: String(call.args.planId) }, call.caller.member) })
       call.signal.throwIfAborted()
-      return own.apply(document, { change: call.args.change as DocumentChange, planId: String(call.args.planId) }, call.caller.member)
+      return withoutContent(await own.apply(document, { change: call.args.change as DocumentChange, planId: String(call.args.planId) }, call.caller.member))
     },
   },
 ]
+
+/** A plan or a saved change without the whole document it carries: a tool result has a budget, and parts can be read. */
+function withoutContent<T extends { content: unknown }>(result: T): Omit<T, 'content'> {
+  const { content: _content, ...rest } = result
+  return rest
+}

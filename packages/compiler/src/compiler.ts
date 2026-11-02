@@ -278,9 +278,11 @@ export class Compiler {
     const document = validated.document
     const headmatter = withHeadmatter({ ...document.metadata }, this.options.headmatter)
     const defaultVoice = document.production.defaults.voiceSource
-    const lecture = isRecord((headmatter.renderers as Record<string, unknown> | undefined)?.lecture) ? (headmatter.renderers as Record<string, Record<string, unknown>>).lecture : {}
+    const declared = isRecord((headmatter.renderers as Record<string, unknown> | undefined)?.lecture)
+    const lecture = declared ? (headmatter.renderers as Record<string, Record<string, unknown>>).lecture : {}
     if (lecture && Object.hasOwn(lecture, 'script')) throw new Error('/metadata/renderers/lecture/script: External lecture scripts are not supported. Author narration in lecture.json narrations and bind it through each step narrationIds.')
-    if (defaultVoice?.type === 'tts' || document.production.defaults.trailingPauseMs !== undefined || Object.keys(lecture ?? {}).length) headmatter.renderers = { ...(isRecord(headmatter.renderers) ? headmatter.renderers : {}), lecture: { ...lecture, ...defaultVoice?.type === 'tts' ? { voice: defaultVoice.voice } : {}, ...document.production.defaults.trailingPauseMs !== undefined ? { gap: document.production.defaults.trailingPauseMs } : {} } }
+    // The production defaults configure the lecture form where the document builds it; they never add the form.
+    if (declared && (defaultVoice?.type === 'tts' || document.production.defaults.trailingPauseMs !== undefined || Object.keys(lecture ?? {}).length)) headmatter.renderers = { ...(isRecord(headmatter.renderers) ? headmatter.renderers : {}), lecture: { ...lecture, ...defaultVoice?.type === 'tts' ? { voice: defaultVoice.voice } : {}, ...document.production.defaults.trailingPauseMs !== undefined ? { gap: document.production.defaults.trailingPauseMs } : {} } }
     const lang = typeof headmatter.lang === 'string' && headmatter.lang.trim() ? headmatter.lang.trim() : DEFAULT_LANG
     const inputs = new CompileInputs(workspaceRoot, this.#committed)
     const presmium = isRecord(headmatter.presmium) ? headmatter.presmium : {}

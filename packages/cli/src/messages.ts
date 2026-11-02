@@ -27,6 +27,7 @@ export interface CliMessages {
   noFfmpeg(command: string): string
   newMissing: string
   studioMissing: string
+  mcpMissing: string
   noProblems: string
   counts(errors: number, warnings: number, infos: number): string
   severity: Record<'error' | 'warning' | 'info', string>
@@ -53,6 +54,7 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
   skills  安装内置技能（与 MCP 和可视化编辑器共用）
           install <目录> [--json]  安装缺少的 .agents/skills，保留已有技能
           --name <技能>   只安装指定技能，可重复
+          --update        把已有的技能换成这个版本的（升级 Presmium 之后）
           --json          以 JSON 打印安装结果
   build   导出文稿：写出 <输出>/ir.json 与 <输出>/<形态>/；在工作区的根目录
           （有 presmium.workspace.yaml）把整个工作区导出为网站，写到 <输出>/web/
@@ -86,6 +88,11 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
                           工作区的路由要求它（Authorization: Bearer）
           --public-url <网址>  反向代理在前面时浏览器使用的地址：信任它的主机，预览与产物
                           的地址用它给出；带路径时代理原样转发该路径，服务的全部内容都在它下面
+          --allow <种类>  无需询问即允许的操作：operate、spend、write、agent（默认在打开的
+                          Presmium 窗口中询问）
+  mcp     以标准输入输出提供 MCP 服务，供 Claude Code、Codex 等 AI 工具连接：这个目录的
+          Presmium Studio 或 presmium serve 正在运行时转接到它，AI 可以修改文稿；否则只编译
+          文稿，提供阅读、检查与导出。详见 presmium mcp --help
   studio  启动 Presmium Studio（实验性）：浏览器中的编辑应用与这个目录（工作区的
           根目录或一份文稿）的工作区服务，只打印一个要打开的网址。随 Presmium 一起安装
           --port <端口>   Presmium Studio 的端口（默认为 4320，被占用时取空闲端口）
@@ -116,6 +123,7 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
     serveOpen: (address, port) => `presmium serve: 正在 ${address} 上监听，局域网中的设备可以访问，且没有登录：任何能访问端口 ${port} 的人都以你的身份使用这个工作区（编辑、运行代码、允许操作）。请只在可信的网络中使用；不加 --host 时只在本机监听。`,
     newMissing: 'presmium new: 没有安装 create-presmium。它随 presmium 一起安装，请运行 pnpm add -g @lincyaw/presmium。',
     studioMissing: 'presmium studio: 没有安装 Presmium Studio。它随 Presmium 一起安装，请运行 pnpm add -g @lincyaw/presmium。',
+    mcpMissing: 'presmium mcp: 没有安装 @lincyaw/mcp。它随 Presmium 一起安装，请运行 pnpm add -g @lincyaw/presmium。',
     noProblems: '没有问题',
     counts: (errors, warnings, infos) => `${errors} 个错误，${warnings} 个警告，${infos} 条信息`,
     severity: { error: '错误', warning: '警告', info: '信息' },
@@ -140,6 +148,7 @@ Commands:
   skills  install bundled skills, shared with MCP and the visual editor
           install <dir> [--json]  install missing .agents/skills; keep existing skills
           --name <skill>  install only the named skill; repeat for more
+          --update        replace the existing skills with this version's (after upgrading Presmium)
           --json          print the installation result as JSON
   build   export the deck: writes <out>/ir.json and <out>/<renderer>/; at a workspace root
           (presmium.workspace.yaml) exports the workspace as a website into <out>/web/
@@ -174,6 +183,11 @@ Commands:
           --public-url <url>  the address browsers use when a reverse proxy fronts the service: its
                           host is trusted, and previews and outputs are linked under it; with a path, the
                           proxy forwards that path unchanged and everything the service serves is below it
+          --allow <kinds>    approvals given without asking: operate, spend, write, agent (by default
+                          they are asked in an open Presmium window)
+  mcp     MCP on stdio for AI tools such as Claude Code and Codex: relays to the running Presmium
+          Studio or presmium serve of the directory, where the AI can edit documents; otherwise it
+          compiles the document for reading, checking and exporting. See presmium mcp --help
   studio  Presmium Studio (experimental): the editing app in the browser and the workspace service
           of the directory (the workspace root, or a deck); prints the one address to open.
           Included with Presmium
@@ -205,6 +219,7 @@ Exit Codes: 0 no errors, 1 error findings, 2 usage or internal error.`,
     serveOpen: (address, port) => `presmium serve: listening on ${address}, on the local network, with no login: anyone who reaches port ${port} uses this workspace as you (edits, runs code, approves). Use it on a network you trust; without --host it listens on this machine only.`,
     newMissing: 'presmium new: create-presmium is not installed. It comes with the presmium package: run pnpm add -g @lincyaw/presmium.',
     studioMissing: 'presmium studio: Presmium Studio is not installed. It comes with Presmium: run pnpm add -g @lincyaw/presmium.',
+    mcpMissing: 'presmium mcp: @lincyaw/mcp is not installed. It comes with Presmium: run pnpm add -g @lincyaw/presmium.',
     noProblems: 'no problems',
     counts: (errors, warnings, infos) => `${errors} errors, ${warnings} warnings, ${infos} infos`,
     severity: { error: 'error', warning: 'warning', info: 'info' },

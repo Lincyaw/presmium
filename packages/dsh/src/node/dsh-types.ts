@@ -9,6 +9,8 @@ export interface DshLogger {
 export interface DshSession {
   readonly id: string
   readonly header?: { cwd?: string }
+  /** The route the session's latest model request resolved to (its latest `request/context`). */
+  requestContext(): { provider: string, model: string } | undefined
 }
 
 export interface DshAgent {
@@ -20,6 +22,8 @@ export interface DshAgent {
 
 export interface DshToolExecution {
   readonly callId: string
+  /** The registry's identity of the call, the same in `execute` and `projectContent`. */
+  readonly token: symbol
   readonly name: string
   readonly arguments: unknown
   readonly agent?: DshAgent
@@ -31,12 +35,38 @@ export type DshPreDecision =
   | { kind: 'deny', reason: string }
   | { kind: 'ask', reason?: string, displayReason?: { en: string, [locale: string]: string } }
 
+export type DshImageMediaType = 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif'
+
+/** A durable image of dsh's attachment store (`ImageAttachmentRef`). */
+export interface DshImageRef {
+  attachmentId: string
+  mediaType: DshImageMediaType
+  bytes: number
+  width: number
+  height: number
+  name?: string
+}
+
+export type DshContentBlock = { type: 'text', text: string } | { type: 'image', attachment: DshImageRef }
+
 export interface DshToolDefinition {
   name: string
   description: string
   parameters: Record<string, unknown>
-  output: { schema: Record<string, unknown>, render(args: unknown, value: unknown): { type: 'text', text: string }[] }
+  output: { schema: Record<string, unknown>, render(args: unknown, value: unknown): DshContentBlock[] }
   execute(args: unknown, exec: DshToolExecution): Promise<unknown>
+  /** Content prepared during `execute` that replaces `output.render`'s, installed before `tools/post-execute`. */
+  projectContent?(exec: Readonly<DshToolExecution>, result: { readonly isError: boolean }): DshContentBlock[] | undefined
+}
+
+/** dsh's `attachments` service (`@deepseek-ai/dsh-attachment`), as far as tool results with images use it. */
+export interface DshAttachments {
+  saveImages(inputs: readonly { data: Uint8Array, mediaType: DshImageMediaType, name?: string }[]): Promise<readonly DshImageRef[]>
+}
+
+/** dsh's `llm` service, as far as the input a model takes is concerned. */
+export interface DshLlm {
+  resolveModelInfo(provider: string, model: string, signal?: AbortSignal): Promise<{ inputModalities?: readonly string[] }>
 }
 
 export interface DshTools {

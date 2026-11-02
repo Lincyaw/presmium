@@ -4,7 +4,7 @@
 
 A document has `schemaVersion`, `id`, `metadata`, `sectionOrder`, `sections`, `blocks`, `steps`, `narrations`, `assets`, `definitions` and `production`. Metadata includes title/language and optional plugins, renderer settings, execution, checks and translations. Credentials belong in operator settings, never metadata.
 
-Sections contain a title, ordered child block IDs, ordered step IDs and a layout (`stack`, `columns`, `canvas` or `scrolly`). Blocks are typed `text`, `container`, `image`, `code` or `component`. Containers own child IDs; component instances reference a definition plus their own parameters; image blocks reference an asset.
+Sections contain a title, ordered child block IDs, ordered step IDs and a layout (`stack`, `columns`, `canvas` or `scrolly`). On the reading page a `scrolly` section keeps its figures in place while a track of its steps scrolls beside them, each step showing its narration, so that narration is read as well as heard ([Writing](writing.md), section 6). Blocks are typed `text`, `container`, `image`, `code` or `component`. Containers own child IDs; component instances reference a definition plus their own parameters; image blocks reference an asset.
 
 Text blocks contain structured `paragraph`, `heading`, `list`, `blockquote`, `code`, `math` and `table` nodes. Actual editing units and list/table children retain IDs. Inline content is `text` with marks, `link`, `math` or `break`; rich text is adapted through BlockNote's public API. Do not put Markdown source in a string field to imitate this model.
 

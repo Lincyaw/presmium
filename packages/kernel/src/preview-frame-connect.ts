@@ -4,7 +4,7 @@ import { keyBelongsToTarget, watchFocusSource } from './keyboard.ts'
 import { errorMessage } from './errors.ts'
 import { sameProductionBinding } from './contracts/production.ts'
 import type { ProductionBinding, ProductionPlaybackState } from './contracts/production.ts'
-import { isPreviewActive, previewNonce, previewWindowName, routePreviewReports } from './preview-frame.ts'
+import { isPreviewActive, parentOrigins, previewNonce, previewWindowName, routePreviewReports } from './preview-frame.ts'
 import type { PreviewFrame, PreviewPage, PreviewProblem, PreviewTextHandle } from './preview-frame.ts'
 
 // The page's side of the preview protocol, apart from `preview-frame.ts` so that only a page the workbench embeds loads
@@ -819,9 +819,10 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
   root.dataset.presmiumPreview = 'on'
   installStyle()
 
+  const targets = parentOrigins(page.origins)
   const post = (message: PreviewReport) => {
     if (state.stopped || (!state.active && message.type !== 'ready' && message.type !== 'activity' && message.type !== 'playback-paused' && message.type !== 'production-playback-result')) return
-    for (const origin of page.origins) window.parent.postMessage(previewEnvelope(nonce, message), origin)
+    for (const origin of targets) window.parent.postMessage(previewEnvelope(nonce, message), origin)
   }
   const releaseReports = routePreviewReports(post)
   // Stored drafts must wait until the parent's first ready handshake, and an

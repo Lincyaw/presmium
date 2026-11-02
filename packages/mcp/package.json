@@ -27,7 +27,8 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./client": "./src/client.ts"
+    "./client": "./src/client.ts",
+    "./cli": "./src/cli.ts"
   },
   "files": [
     "bin",

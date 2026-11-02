@@ -27,6 +27,8 @@ A teaching segment, an explainer or paper video, a promo, a product demo and a d
 
 [Story](references/story.md) is the process, each stage ending in a check: brief, thesis, central picture, three storylines for the person to pick, a storyboard of rest frames with what carries each boundary, the script, an animatic the person approves, motion, review against the spec and with cold viewers. [Storyboards](references/storyboards.md) has filled-in examples for popular science, papers, courses, data stories and products; [Scenarios](references/scenarios.md) the usual pictures for each subject.
 
+A piece too large for one agent is made from one storyboard file every agent reads, with a term table, shared scene modules that only the coordinator changes, edits through the MCP author actions, review rounds appended to the storyboard and a cold read by a fresh agent: [Team](references/team.md).
+
 ## 5. Motion, rhythm and sound
 
 [Lengths](references/lengths.md): what each second shows at 1, 5, 10, 30 and 60 s, the rules every piece follows, the polish list, measured rhythm, carrying beats instead of replacing them, an operated camera, product screens, sound and music, and how to build and export a film.
@@ -41,7 +43,7 @@ Register an explicit component definition in `definitions` with a file implement
 
 Narration is structured in `narrations`; steps name narration IDs. Cue targets use stable block IDs. Timing and voice inheritance belong in `production`, never a second timing object on a step or scene. The voice comes from the workspace's speech engine (Volcengine built in, or an OpenAI-compatible service); see `presmium-author/references/lecture.md` for synthesis, playback and export, and `presmium-author/references/writing.md` for how narration is written.
 
-Validate the edited document, then build only the relevant form. Open the actual result, jump forward and backward in arbitrary order, and inspect the static fallback if it matters. Do not claim an animation works merely because JSON validation or compilation succeeded.
+Validate the edited document (`presmium check` or `check_document` also bundles each scene and reports one that doesn't compile, with its file and line), then look at the actual result. With the MCP server, `capture_slides` gives the rest frame of each step of a page and, with `at`, frames that many milliseconds into a step's animation, drawn by the step clock as a lecture export draws them, so they are reproducible; `measure` returns the boxes of elements (a CSS selector) in slide pixels, for positions and overlaps. Capture the steps in any order you like, since each picture is made from its step and time alone; `arrive: 'backward'` checks that going back to a step shows its frame, and `capture_reading` shows the scene on the reading page, also at a phone width (390). Without the MCP server, build only the relevant form, open it, jump forward and backward in arbitrary order, and inspect the static fallback if it matters (exports print it). Do not claim an animation works merely because JSON validation or compilation succeeded, and do not write browser scripts for pictures the tool takes.
 
 ```sh
 presmium check lesson --json

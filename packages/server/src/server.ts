@@ -3,6 +3,7 @@ import type { IncomingMessage } from 'node:http'
 import { dirname } from 'node:path'
 import { APPROVALS, errorMessage, hasRole, MAX_BODY, MCP_ENDPOINT, problemResponse } from '@lincyaw/kernel'
 import type { ApprovalKind, Logger, Member, ProxySpec, Route, ServiceToken } from '@lincyaw/kernel'
+import { removeServiceState } from '@lincyaw/kernel/node'
 import { pluginLogger } from '@lincyaw/compiler'
 import { createPresmiumMcp } from '@lincyaw/mcp'
 import type { McpCaller } from '@lincyaw/mcp'
@@ -250,6 +251,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   const http = nodeServer({ decide, decideUpgrade, fetch: handle, proxy })
   let closing: Promise<void> | undefined
   const close = (): Promise<void> => closing ??= Promise.resolve().then(async () => {
+    if (options.stateFile) removeServiceState(options.stateFile)
     mounts.stop()
     mcpTokens.revokeAgentSessions()
     control.close()
