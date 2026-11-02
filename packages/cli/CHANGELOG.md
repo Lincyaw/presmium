@@ -1,5 +1,19 @@
 # @lincyaw/cli
 
+## 1.0.0-rc.15
+
+### Patch Changes
+
+- 499f27e: Include Studio in the default Presmium installation so `presmium studio` works after one install. Always run the installed command's own version instead of forwarding to an older project installation, and update generated project instructions to use the shared command.
+- Updated dependencies [ae8d16d]
+- Updated dependencies [74f5eca]
+- Updated dependencies [0d47b70]
+  - @lincyaw/skills@1.0.0-rc.15
+  - @lincyaw/server@1.0.0-rc.15
+  - @lincyaw/workspace@1.0.0-rc.15
+  - @lincyaw/compiler@1.0.0-rc.15
+  - @lincyaw/kernel@1.0.0-rc.15
+
 ## 1.0.0-rc.14
 
 ### Patch Changes

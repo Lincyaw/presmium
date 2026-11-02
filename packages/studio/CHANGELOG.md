@@ -1,5 +1,13 @@
 # @lincyaw/studio
 
+## 0.2.0-rc.14
+
+### Patch Changes
+
+- 499f27e: Include Studio in the default Presmium installation so `presmium studio` works after one install. Always run the installed command's own version instead of forwarding to an older project installation, and update generated project instructions to use the shared command.
+- Updated dependencies [ae8d16d]
+  - @lincyaw/dsh@0.2.0-rc.14
+
 ## 0.2.0-rc.13
 
 ### Patch Changes

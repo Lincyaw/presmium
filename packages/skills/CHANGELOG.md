@@ -1,5 +1,14 @@
 # @lincyaw/skills
 
+## 1.0.0-rc.15
+
+### Patch Changes
+
+- ae8d16d: `presmium-present` is merged into `presmium-author`, which now covers writing, presenting and producing a document. Its writing guide gives each page a reading version (formal written language, in Chinese or English word order, every sentence carrying information) and a presentation version (a claim as heading, keywords, pictures and steps, with a separate spoken script as narration), shows how `only` keeps their words apart, and ends with a review from a fresh reader's seat. The skill lists the MCP author actions in the order an agent uses them; classroom and lecture production move into it, and the two publishing guides are one.
+- 74f5eca: The animation gallery's documents follow the writing guide of `presmium-author`: each opens with what the collection is for, each effect says when to use it and what it shows in formal written Chinese, and the narration is a spoken script; the narrated flow-matching explainer has fresh voiceover.
+- 0d47b70: The writing guide no longer asks for a picture on every slide: a page whose role is its words (a definition, a rule, short steps, a question, a summary) stays text, and slides vary their arrangement only where a shared one hides a relation in their content.
+- @lincyaw/kernel@1.0.0-rc.15
+
 ## 1.0.0-rc.14
 
 ### Patch Changes

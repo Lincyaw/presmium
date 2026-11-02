@@ -1,5 +1,42 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.15
+
+### Minor Changes
+
+- 499f27e: Include Studio in the default Presmium installation so `presmium studio` works after one install. Always run the installed command's own version instead of forwarding to an older project installation, and update generated project instructions to use the shared command.
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies [50fa16a]
+- Updated dependencies [ae8d16d]
+  - @lincyaw/studio@0.2.0-rc.14
+  - @lincyaw/cli@1.0.0-rc.15
+  - create-presmium@1.0.0-rc.15
+  - @lincyaw/addon-lecture@1.0.0-rc.15
+  - @lincyaw/addon-classroom@1.0.0-rc.15
+  - @lincyaw/addon-code@1.0.0-rc.15
+  - @lincyaw/addon-content@1.0.0-rc.15
+  - @lincyaw/addon-exec@1.0.0-rc.15
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.15
+  - @lincyaw/addon-exec-local@1.0.0-rc.15
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.15
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.15
+  - @lincyaw/addon-motion@1.0.0-rc.15
+  - @lincyaw/addon-publish@1.0.0-rc.15
+  - @lincyaw/addon-session@1.0.0-rc.15
+  - @lincyaw/addon-speech@1.0.0-rc.15
+  - @lincyaw/addon-stage@1.0.0-rc.15
+  - @lincyaw/render-notebook@1.0.0-rc.15
+  - @lincyaw/web@1.0.0-rc.15
+  - @lincyaw/addon-assistant@1.0.0-rc.15
+  - @lincyaw/addon-guide@1.0.0-rc.15
+  - @lincyaw/host@1.0.0-rc.15
+  - @lincyaw/kernel@1.0.0-rc.15
+  - @lincyaw/render-slides@1.0.0-rc.15
+  - @lincyaw/viewer@1.0.0-rc.15
+
 ## 1.0.0-rc.14
 
 ### Patch Changes
