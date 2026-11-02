@@ -31,7 +31,7 @@
   {"file": "packages/cli/src/messages.ts", "key": "CLI_MESSAGES.missingCommand", "rule": "Build", "reason": "names the command presmium build (glossary 8: CLI output)"},
   {"file": "packages/cli/src/messages.ts", "key": "CLI_MESSAGES.badPreviewOrigin", "rule": "HTTP", "reason": "the example origin http://127.0.0.1:4320 the option takes"},
   {"file": "packages/cli/src/messages.ts", "key": "CLI_MESSAGES.newMissing", "rule": "@lincyaw", "reason": "the command to install the package, pnpm add -g @lincyaw/presmium"},
-  {"file": "packages/cli/src/messages.ts", "key": "CLI_MESSAGES.studioMissing", "rule": "@lincyaw", "reason": "the command to install the package, pnpm add -g @lincyaw/studio"},
+  {"file": "packages/cli/src/messages.ts", "key": "CLI_MESSAGES.studioMissing", "rule": "@lincyaw", "reason": "the command to install the complete package, pnpm add -g @lincyaw/presmium"},
   {"file": "packages/cli/src/messages.ts", "key": "CLI_MESSAGES.compiled", "rule": "compiled", "reason": "developer output of presmium dev that tests and tools read (“compiled N sections”); its zh-CN text says 已更新"},
   {"file": "packages/cli/src/messages.ts", "key": "CLI_MESSAGES.token", "rule": "token", "reason": "the machine-read line “mcp  <url> (its token is in <file>)”, which the workspace and dsh tooling parse; its zh-CN text says 访问令牌"},
   {"file": "packages/mcp/src/messages.ts", "key": "MCP_CLI_MESSAGES.usage", "reason": "CLI help: names the tools run_code and build, and lecture.json (glossary 8: CLI output)"},

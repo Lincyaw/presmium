@@ -81,7 +81,7 @@ function installProfile(home: string, bundle: string): string {
   return name
 }
 
-/** The `presmium` command of the `@lincyaw/presmium` package this one depends on. */
+/** The `presmium` command of this Studio's host package. */
 function presmiumBin(): string {
   return join(dirname(createRequire(join(PACKAGE_DIR, 'package.json')).resolve('@lincyaw/presmium/package.json')), 'bin', 'presmium.mjs')
 }

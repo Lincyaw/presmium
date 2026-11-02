@@ -188,16 +188,3 @@ it('makes a lecture with presmium new in an empty directory and checks and build
     rmSync(empty, { recursive: true, force: true })
   }
 }, 600_000)
-
-it('hands the command to the presmium a project has installed', async () => {
-  const other = mkdtempSync(join(tmpdir(), 'presmium-local-'))
-  try {
-    mkdirSync(join(other, 'node_modules/@lincyaw/presmium/bin'), { recursive: true })
-    writeFileSync(join(other, 'node_modules/@lincyaw/presmium/package.json'), '{ "name": "@lincyaw/presmium", "version": "0.0.1", "type": "module" }\n')
-    writeFileSync(join(other, 'node_modules/@lincyaw/presmium/bin/presmium.mjs'), 'console.log(`the project\'s presmium: ${process.argv.slice(2).join(\' \')}`)\n')
-    const ran = await presmium(['check', 'deck'], other)
-    expect(ran.stdout.trim()).toBe('the project\'s presmium: check deck')
-  } finally {
-    rmSync(other, { recursive: true, force: true })
-  }
-})

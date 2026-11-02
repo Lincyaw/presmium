@@ -60,7 +60,7 @@ lecture.json + 引用的代码与媒体
 | `web` | 网页渲染端：查看器、站点外壳、宿主适配、站点构建与服务；`./slides` 是幻灯片页 |
 | `render-slides`、`render-notebook` | 幻灯片（含导出）与 notebook 渲染端 |
 | `cli` | `presmium` 命令；`./testing` 供集成测试 |
-| `presmium` | 全局 CLI，带渲染端与官方插件，转交给项目里的那一份 |
+| `presmium` | 完整安装入口，带 Studio、渲染端与官方插件；始终使用当前命令所属安装，不自动转交项目版本 |
 | `create-presmium` | 新建讲义、工作区或插件项目 |
 | `server` | 服务端：插件路由与代理、来源检查、确认、控制通道、MCP 挂载 |
 | `mcp` | MCP 工具与资源；`presmium-mcp` |

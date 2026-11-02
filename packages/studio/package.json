@@ -38,8 +38,10 @@
   "dependencies": {
     "@deepseek-ai/dsh": "0.2.1-alpha.4",
     "@lincyaw/dsh": "workspace:*",
-    "jiti": "^2.7.0",
-    "@lincyaw/presmium": "workspace:*"
+    "jiti": "^2.7.0"
+  },
+  "peerDependencies": {
+    "@lincyaw/presmium": "workspace:^"
   },
   "devDependencies": {
     "@lincyaw/cli": "workspace:*"

@@ -1,6 +1,6 @@
 # Editing with the studio and an agent
 
-Run `presmium studio <workspace-or-document>` when the Studio package is installed; open the complete address it prints. Editing and preview need no model. The document editor uses one native BlockNote editing surface across the whole document, including cross-block selection and native history/comments.
+Install Presmium once with `pnpm add -g @lincyaw/presmium`; Studio is included. Run `presmium studio <workspace-or-document>`; open the complete address it prints. Editing and preview need no model. The document editor uses one native BlockNote editing surface across the whole document, including cross-block selection and native history/comments.
 
 Web and agents modify the same `lecture.json`. Read the current document version, submit semantic edits or a full JSON document using the workspace's document transaction API, and retain unsaved input on conflict. `baseDocumentVersion` is the authoring CAS version, not a runtime IR digest.
 

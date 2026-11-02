@@ -37,6 +37,6 @@
 - `pnpm demo:build`、`pnpm demo:check`、`pnpm demo:ir`：公开示例工作区在 `examples/gallery`，包括五份功能合集、两份教程、两讲完整课程、傅里叶小课、产品宣传片与 14 份按场景整理的动画参考（索引见 `examples/gallery/FEATURES.md`）。`check`、`ir` 仍只针对原有两讲；`build` 构建整个工作区网页，再为原有两讲补充幻灯片、notebook 与讲授，并为小课与宣传片补充放映和讲授。站点在 `examples/gallery/dist/web/`，完整课程的其它形态汇入 `<讲义>/slides/`、`<讲义>/notebook/`、`<讲义>/lecture/`。原有讲解语音来自随讲义提交的合成缓存；改过的句子需要配置真实引擎并明确重新生成。
 - `pnpm e2e`：构建私有回归文稿后运行 Playwright。功能专用文稿放在 `e2e/fixtures/<组>/`；旧 BPE 文稿只保留在 `e2e/fixtures/regression/` 用于回归验证。Chromium 运行全部用例，冒烟另在 `PRESMIUM_E2E_BROWSERS`（默认 `firefox,webkit`）中已安装且能启动的浏览器运行。并行测试用 `PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT` 指定端口。性能用例最后运行，单独运行时加 `--no-deps`。
 - `pnpm verify`：全部
-- `pnpm changeset`（记录一次改动）、`pnpm release:check`（`pnpm -r publish --dry-run`，不实际发布）、`pnpm consumer [<目录>] [--studio]`（打包后在单仓之外用 pnpm 安装 `presmium`，得到一个消费者项目；`--studio` 另装 `presmium studio`，约 865 MB）
-- 从源码使用命令：`pnpm add -g ./packages/presmium` 之后的全局 `presmium` 就是这份源码（`presmium new`、`check`、`dev`、`build`、`serve`）。面向使用者的命令只写 pnpm 与 `presmium`，不写 npm、npx 与单仓中的路径
-- 工作台（实验性，`docs/studio.md`）：`presmium-studio [目录]`（`pnpm add -g ./packages/studio`）启动 DeepSeek Harness 加 Presmium 的 bundle 与工作区服务，只打印一个网址；项目里装了 `@lincyaw/studio` 时 `presmium studio` 相同
+- `pnpm changeset`（记录一次改动）、`pnpm release:check`（`pnpm -r publish --dry-run`，不实际发布）、`pnpm consumer [<目录>] [--studio]`（打包后在单仓之外用 pnpm 安装 `presmium`，得到一个消费者项目；默认包含 Studio，含其依赖约 865 MB；`--studio` 保留兼容，另将 Studio 声明为直接依赖）
+- 从源码使用命令：`pnpm add -g ./packages/presmium` 之后的全局 `presmium` 就是这份源码（`presmium new`、`studio`、`check`、`dev`、`build`、`serve`，默认包含 Studio）；命令始终使用自身安装，不自动转交项目版本，需项目版本时显式运行 `pnpm exec presmium`。面向使用者的命令只写 pnpm 与 `presmium`，不写 npm、npx 与单仓中的路径
+- 工作台（实验性，`docs/studio.md`）：`presmium studio [目录]` 启动 DeepSeek Harness 加 Presmium 的 bundle 与工作区服务，只打印一个网址；Studio 随主包安装，无需另外安装。独立安装 `@lincyaw/studio` 时仍提供 `presmium-studio`

@@ -1201,6 +1201,9 @@ importers:
       '@lincyaw/render-slides':
         specifier: workspace:*
         version: link:../render-slides
+      '@lincyaw/studio':
+        specifier: workspace:*
+        version: link:../studio
       '@lincyaw/viewer':
         specifier: workspace:*
         version: link:../viewer
@@ -1292,7 +1295,7 @@ importers:
         specifier: workspace:*
         version: link:../dsh
       '@lincyaw/presmium':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../presmium
       jiti:
         specifier: ^2.7.0

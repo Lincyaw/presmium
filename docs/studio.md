@@ -51,7 +51,7 @@
 
 `@lincyaw/design` 是令牌、`pm-ui-*` 类、字体与图标，无框架。`@lincyaw/workbench` 是 React 面板与无框架逻辑（服务客户端、预览协议的工作台一侧、保存队列、通用组件）。`@lincyaw/dsh` 是 bundle 的宿主部分（Node）与预编译的客户端部分。`@lincyaw/studio` 是启动器，依赖精确版本的 `@deepseek-ai/dsh`。
 
-`scripts/check-layering.mjs` 检查：产物不引用 `workbench`；`@deepseek-ai/*` 只在 `packages/dsh` 与 `packages/studio`；`workbench` 不引用 `host` 与 dsh；`@modelcontextprotocol/*` 只在 `mcp`；`design` 不引用任何包。`presmium studio` 在没装 `@lincyaw/studio` 时说明怎样安装（约 865 MB）。
+`scripts/check-layering.mjs` 检查：产物不引用 `workbench`；`@deepseek-ai/*` 只在 `packages/dsh` 与 `packages/studio`；`workbench` 不引用 `host` 与 dsh；`@modelcontextprotocol/*` 只在 `mcp`；`design` 不引用任何包。`@lincyaw/presmium` 默认包含 `@lincyaw/studio`（含依赖约 865 MB）；安装一次即可运行 `presmium studio`，使用当前命令所属安装中的版本。Studio 通过对等依赖使用主包作为宿主，主包向它传入自己的命令路径。
 
 ### 3.2 发布
 

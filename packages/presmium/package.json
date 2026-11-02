@@ -37,6 +37,7 @@
   ],
   "dependencies": {
     "@lincyaw/cli": "workspace:*",
+    "@lincyaw/studio": "workspace:*",
     "@lincyaw/host": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/render-notebook": "workspace:*",

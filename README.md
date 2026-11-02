@@ -39,18 +39,19 @@ To preview the site locally, run `pnpm serve` and open the address it prints.
 
 `lecture.json` is read and written by tools rather than edited by hand. There are two ways to edit a document:
 
-- **In the browser.** Install Presmium Studio with `pnpm add -g @lincyaw/studio` (experimental, about 865 MB) and run `presmium-studio` in the project. The workbench provides pages, rich text, step scripts, comments, version history, slides and video production. Editing and previewing need no language model; the AI assistant uses the API key entered under *Settings → Model*.
+- **In the browser.** Install Presmium with `pnpm add -g @lincyaw/presmium` and run `presmium studio` in the project. Studio is included (experimental, about 865 MB with its dependencies). The workbench provides pages, rich text, step scripts, comments, version history, slides and video production. Editing and previewing need no language model; the AI assistant uses the API key entered under *Settings → Model*.
 - **With an AI coding tool.** Open the project in Claude Code, Codex or a similar tool and describe the change. The project's `AGENTS.md` and the skills in `.agents/skills` describe the document format and how to check it.
 
 Run `presmium check` after a change to validate the document.
 
 ## Command reference
 
-Install the command line with `pnpm add -g @lincyaw/presmium` (run `pnpm setup` once before the first global installation).
+Install Presmium, including Studio, the command line, renderers and official plugins, with `pnpm add -g @lincyaw/presmium` (run `pnpm setup` once before the first global installation). The global command always uses that installation; use `pnpm exec presmium` explicitly to run a project installation.
 
 | Command | Description |
 |---|---|
 | `presmium new <dir> --type <kind>` | Create a project: `lecture` (one document), `workspace` (several documents), `site` (a website with a home page and a GitHub Pages workflow) or `plugin` |
+| `presmium studio` | Open the browser workbench to edit documents, preview slides and produce videos |
 | `presmium dev` | Preview one document's web page and slides, updating on save |
 | `presmium serve` | Preview a workspace: its document list and every document's site |
 | `presmium check` | Validate a document: structure, links, code references and plugin checks |

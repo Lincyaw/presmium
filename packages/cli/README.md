@@ -6,7 +6,7 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns structured 
 
 ## Install
 
-Most people install the `presmium` package, which brings this command with the renderers and the official plugins:
+Most people install the `presmium` package, which brings this command with Studio, the renderers and the official plugins:
 
 ```sh
 pnpm add -g @lincyaw/presmium
@@ -28,7 +28,7 @@ pnpm add -D @lincyaw/cli @lincyaw/web @lincyaw/render-slides @lincyaw/render-not
 | `presmium dev [deck]` | Dev servers that update on save (`--to`, `--out`, `--server-port`, `--allow`) |
 | `presmium new [dir]` | A new lecture, workspace or plugin project (`--type`, `--title`, `--name`, `--no-git`); from `create-presmium`, which the `presmium` package brings |
 | `presmium serve [dir]` | The workspace service, on this machine: the documents and their sites, compiled on demand (`--port`, `--host`, `--operator-dir`, `--preview-origin`) |
-| `presmium studio [dir]` | The workbench (experimental), from `@lincyaw/studio` installed in the project (`--port`, `--host`); installed globally, it is `presmium-studio` |
+| `presmium studio [dir]` | The workbench (experimental), included with Presmium (`--port`, `--host`); uses the running command's bundled version |
 
 `[deck]` is a directory with `lecture.json` or an entry file, by default the current directory. Exit codes: 0 no errors, 1 error findings, 2 usage or internal error. `presmium --help` lists every option.
 

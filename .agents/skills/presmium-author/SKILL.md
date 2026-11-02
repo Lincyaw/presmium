@@ -62,7 +62,7 @@ presmium ir lesson --out runtime-snapshot.json
 presmium studio .
 ```
 
-Commands use `pnpm` and `presmium`; install project dependencies with `pnpm install`. Generating voiceover has no command of its own: it runs in the studio (Video Production) or through `start_voiceover` on an MCP host, which `presmium studio` and `presmium serve` provide. With the voiceover generated, `presmium-lecture export lesson` writes the video ([Lecture production](references/lecture.md)).
+Commands use `pnpm` and `presmium`; `pnpm add -g @lincyaw/presmium` includes Studio, renderers and official plugins. The global command uses its installed version; use `pnpm exec presmium` to choose the project version. Install project dependencies with `pnpm install`. Generating voiceover has no command of its own: it runs in the studio (Video Production) or through `start_voiceover` on an MCP host, which `presmium studio` and `presmium serve` provide. With the voiceover generated, `presmium-lecture export lesson` writes the video ([Lecture production](references/lecture.md)).
 
 ## Rules for the source
 

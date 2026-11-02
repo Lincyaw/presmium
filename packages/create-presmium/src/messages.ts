@@ -108,7 +108,7 @@ pnpm build     # 导出网站到 dist/web/
 
 ## 编辑
 
-- 在浏览器中编辑：运行 \`pnpm add -g @lincyaw/studio\` 安装 Presmium Studio（实验版，约 865 MB），在本目录运行 \`presmium-studio\`，打开终端打印的网址。工作台提供页面、正文、讲稿、批注与版本历史；编辑和预览都不需要配置模型。版本历史记录在 git 中，所以本目录需要是一个 git 仓库（新建时会自动运行 git init）。
+- 在浏览器中编辑：Presmium 已包含 Studio（实验版），在本目录运行 \`presmium studio\`，打开终端打印的网址。工作台提供页面、正文、讲稿、批注与版本历史；编辑和预览都不需要配置模型。版本历史记录在 git 中，所以本目录需要是一个 git 仓库（新建时会自动运行 git init）。
 - 交给 AI 工具：在 Claude Code、Codex 等工具中打开本目录，用自然语言描述要改的内容。\`AGENTS.md\` 与 \`.agents/skills\` 中的技能说明了文稿的结构与检查方法。
 - \`lecture.json\` 由工具读写，不适合手工编辑；修改后运行 \`presmium check\` 确认文稿有效。
 
@@ -127,7 +127,7 @@ presmium build     # 导出网页、幻灯片与 Notebook，产物在 dist/
 
 ## 编辑
 
-- 在浏览器中编辑：运行 \`pnpm add -g @lincyaw/studio\` 安装 Presmium Studio（实验版，约 865 MB），在本目录运行 \`presmium-studio\`，打开终端打印的网址。工作台提供页面、正文、讲稿、批注与版本历史；编辑和预览都不需要配置模型。版本历史记录在 git 中，所以本目录需要是一个 git 仓库（新建时会自动运行 git init）。
+- 在浏览器中编辑：Presmium 已包含 Studio（实验版），在本目录运行 \`presmium studio\`，打开终端打印的网址。工作台提供页面、正文、讲稿、批注与版本历史；编辑和预览都不需要配置模型。版本历史记录在 git 中，所以本目录需要是一个 git 仓库（新建时会自动运行 git init）。
 - 交给 AI 工具：在 Claude Code、Codex 等工具中打开本目录，用自然语言描述要改的内容。\`AGENTS.md\` 与 \`.agents/skills\` 中的技能说明了文稿的结构与检查方法。
 - \`lecture.json\` 由工具读写，不适合手工编辑；修改后运行 \`presmium check\` 确认文稿有效。
 
@@ -147,7 +147,7 @@ presmium build           # 把工作区导出为网站，产物在 dist/web/
 
 ## 编辑
 
-- 在浏览器中编辑：运行 \`pnpm add -g @lincyaw/studio\` 安装 Presmium Studio（实验版，约 865 MB），在本目录运行 \`presmium-studio\`，打开终端打印的网址。工作台提供页面、正文、讲稿、批注与版本历史；编辑和预览都不需要配置模型。版本历史记录在 git 中，所以本目录需要是一个 git 仓库（新建时会自动运行 git init）。
+- 在浏览器中编辑：Presmium 已包含 Studio（实验版），在本目录运行 \`presmium studio\`，打开终端打印的网址。工作台提供页面、正文、讲稿、批注与版本历史；编辑和预览都不需要配置模型。版本历史记录在 git 中，所以本目录需要是一个 git 仓库（新建时会自动运行 git init）。
 - 交给 AI 工具：在 Claude Code、Codex 等工具中打开本目录，用自然语言描述要改的内容。\`AGENTS.md\` 与 \`.agents/skills\` 中的技能说明了文稿的结构与检查方法。
 - \`lecture.json\` 由工具读写，不适合手工编辑；修改后运行 \`presmium check\` 确认文稿有效。
 
@@ -247,7 +247,7 @@ To publish on GitHub Pages, commit the project and the \`pnpm-lock.yaml\` create
 
 ## Editing
 
-- In the browser: install Presmium Studio (experimental, about 865 MB) with \`pnpm add -g @lincyaw/studio\`, run \`presmium-studio\` in this directory and open the address it prints. The workbench has pages, text, scripts, comments and version history; editing and previewing need no model. The version history lives in git, so this directory has to be a git repository (a new project runs git init).
+- In the browser: Presmium includes Studio (experimental); run \`presmium studio\` in this directory and open the address it prints. The workbench has pages, text, scripts, comments and version history; editing and previewing need no model. The version history lives in git, so this directory has to be a git repository (a new project runs git init).
 - With an AI coding tool: open this directory in Claude Code, Codex or a similar tool and describe the change in plain words. \`AGENTS.md\` and the skills in \`.agents/skills\` explain the document's structure and how to check it.
 - \`lecture.json\` is read and written by tools and is not meant for editing by hand; run \`presmium check\` after a change to confirm the document is valid.
 
@@ -268,7 +268,7 @@ presmium build     # exports the web page, the slides, and the Notebook into dis
 
 ## Editing
 
-- In the browser: install Presmium Studio (experimental, about 865 MB) with \`pnpm add -g @lincyaw/studio\`, run \`presmium-studio\` in this directory and open the address it prints. The workbench has pages, text, scripts, comments and version history; editing and previewing need no model. The version history lives in git, so this directory has to be a git repository (a new project runs git init).
+- In the browser: Presmium includes Studio (experimental); run \`presmium studio\` in this directory and open the address it prints. The workbench has pages, text, scripts, comments and version history; editing and previewing need no model. The version history lives in git, so this directory has to be a git repository (a new project runs git init).
 - With an AI coding tool: open this directory in Claude Code, Codex or a similar tool and describe the change in plain words. \`AGENTS.md\` and the skills in \`.agents/skills\` explain the document's structure and how to check it.
 - \`lecture.json\` is read and written by tools and is not meant for editing by hand; run \`presmium check\` after a change to confirm the document is valid.
 
@@ -290,7 +290,7 @@ The Reader Q&A plugin the configuration lists lets readers “Ask”.
 
 ## Editing
 
-- In the browser: install Presmium Studio (experimental, about 865 MB) with \`pnpm add -g @lincyaw/studio\`, run \`presmium-studio\` in this directory and open the address it prints. The workbench has pages, text, scripts, comments and version history; editing and previewing need no model. The version history lives in git, so this directory has to be a git repository (a new project runs git init).
+- In the browser: Presmium includes Studio (experimental); run \`presmium studio\` in this directory and open the address it prints. The workbench has pages, text, scripts, comments and version history; editing and previewing need no model. The version history lives in git, so this directory has to be a git repository (a new project runs git init).
 - With an AI coding tool: open this directory in Claude Code, Codex or a similar tool and describe the change in plain words. \`AGENTS.md\` and the skills in \`.agents/skills\` explain the document's structure and how to check it.
 - \`lecture.json\` is read and written by tools and is not meant for editing by hand; run \`presmium check\` after a change to confirm the document is valid.
 

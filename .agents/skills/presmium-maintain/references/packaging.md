@@ -59,7 +59,7 @@ metadata, `references/` links, the document contract and that every `presmium <c
 
 A public package change adds a changeset (`pnpm changeset`, one sentence for users); tests, docs and
 examples need none. `pnpm release:check` packs without uploading. `pnpm consumer [<directory>]` installs
-`presmium` outside the monorepo (`--studio` adds the studio, about 865 MB). Publishing follows
+`presmium` outside the monorepo, including Studio by default (about 865 MB with its dependencies); `--studio` also lists Studio as a direct dependency for compatibility. Studio uses `@lincyaw/presmium` as its peer host; the host includes Studio as a dependency, so one install provides `presmium studio` without a hard dependency cycle. A global `presmium` always runs its own installation; it does not forward to a project installation. Use `pnpm exec presmium` explicitly to run a project version. Publishing follows
 `.changeset/README.md`; never publish unless asked.
 
 ## The VS Code extension
