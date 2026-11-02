@@ -18,7 +18,7 @@ codex mcp add presmium -- presmium mcp
 | Running for the project | Tools |
 | --- | --- |
 | Presmium Studio or `presmium serve` | Everything below: authoring, history, projects, transcription, voiceover, audio and images, pictures of slides and reading pages (`capture_slides`, `capture_reading`), builds, the author's windows and focus, several documents (name one with `document`; see `list_documents`) |
-| `presmium dev` | Reading, diagnostics, skills, the presentation's position, `run_code` and `build`; no authoring and no pictures |
+| `presmium dev` | Reading, diagnostics, skills, the presentation's position, `run_code` and `build`; no authoring and no pictures (start `presmium serve` or Studio for them) |
 | Nothing | `presmium mcp` compiles the document itself: reading, diagnostics, skills, and with `--allow operate,spend` `run_code` and `build`. Start `presmium studio` and reconnect for the rest |
 
 The servers also serve MCP at `/mcp` over Streamable HTTP, with `Authorization: Bearer <token>`; `presmium dev` and `presmium serve` print the address and the state file that holds the token. `presmium-mcp` is the same command as `presmium mcp`.

@@ -24,7 +24,6 @@ export interface CliMessages {
   token(file: string): string
   watching(ir: string): string
   serveOpen(address: string, port: string): string
-  noFfmpeg(command: string): string
   newMissing: string
   studioMissing: string
   mcpMissing: string
@@ -119,7 +118,6 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
     compiled: (sections, summary) => `已更新 ${sections} 个页面；${summary}`,
     token: file => ` （访问令牌在 ${file} 中）`,
     watching: ir => `正在监视修改；运行快照在 ${ir}`,
-    noFfmpeg: command => `presmium serve: 没有找到 FFmpeg，讲授视频只能由浏览器导出为 WebM，画质较低。安装后可导出清晰的 MP4：${command}`,
     serveOpen: (address, port) => `presmium serve: 正在 ${address} 上监听，局域网中的设备可以访问，且没有登录：任何能访问端口 ${port} 的人都以你的身份使用这个工作区（编辑、运行代码、允许操作）。请只在可信的网络中使用；不加 --host 时只在本机监听。`,
     newMissing: 'presmium new: 没有安装 create-presmium。它随 presmium 一起安装，请运行 pnpm add -g @lincyaw/presmium。',
     studioMissing: 'presmium studio: 没有安装 Presmium Studio。它随 Presmium 一起安装，请运行 pnpm add -g @lincyaw/presmium。',
@@ -215,7 +213,6 @@ Exit Codes: 0 no errors, 1 error findings, 2 usage or internal error.`,
     compiled: (sections, summary) => `compiled ${sections} sections; ${summary}`,
     token: file => ` (its token is in ${file})`,
     watching: ir => `watching; runtime snapshot in ${ir}`,
-    noFfmpeg: command => `presmium serve: FFmpeg was not found, so lecture videos export from the browser as WebM, at a lower quality. Install it for sharp MP4 videos: ${command}`,
     serveOpen: (address, port) => `presmium serve: listening on ${address}, on the local network, with no login: anyone who reaches port ${port} uses this workspace as you (edits, runs code, approves). Use it on a network you trust; without --host it listens on this machine only.`,
     newMissing: 'presmium new: create-presmium is not installed. It comes with the presmium package: run pnpm add -g @lincyaw/presmium.',
     studioMissing: 'presmium studio: Presmium Studio is not installed. It comes with Presmium: run pnpm add -g @lincyaw/presmium.',

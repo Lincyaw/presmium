@@ -35,9 +35,26 @@ const jiti = createJiti(import.meta.url)
 
 export async function loadPlugin(name: string, deckDir: string, sources?: PluginSources): Promise<{ loaded?: LoadedPlugin, problem?: PluginProblem }> {
   const problem = (severity: Severity, message: string): PluginProblem => ({ name, severity, message })
-  const dir = findPackageDir(name, resolve(deckDir)) ?? bundledDir(name, sources)
+  const own = findPackageDir(name, resolve(deckDir))
+  const bundled = bundledDir(name, sources)
+  // An official plugin is versioned with the Presmium that runs it (its host, viewer and kernel): the installation's
+  // copy runs when the project installed another version, whose browser code would bring a host of its own.
+  if (own && bundled && name.startsWith(PRESMIUM_SCOPE) && realpathSync(own) !== realpathSync(bundled) && packageVersion(own) !== packageVersion(bundled)) {
+    const result = await loadFrom(name, bundled, problem)
+    return result.problem ? result : { ...result, problem: problem('warning', `plugin "${name}": the project's ${packageVersion(own)} is not used; this Presmium runs its own ${packageVersion(bundled)}. Update the project's @lincyaw packages (pnpm up "@lincyaw/*") or run the project's own presmium (pnpm exec presmium)`) }
+  }
+  const dir = own ?? bundled
   if (!dir) return { problem: problem('error', `cannot load plugin "${name}": package not found from ${deckDir}`) }
   return loadFrom(name, dir, problem)
+}
+
+function packageVersion(dir: string): string | undefined {
+  try {
+    const { version } = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { version?: unknown }
+    return typeof version === 'string' ? version : undefined
+  } catch {
+    return undefined
+  }
 }
 
 function bundledDir(name: string, sources?: PluginSources): string | undefined {

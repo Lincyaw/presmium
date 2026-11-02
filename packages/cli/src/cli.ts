@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { createJiti } from 'jiti'
 import { APPROVAL_KINDS, errorMessage } from '@lincyaw/kernel'
-import { bracketIPv6, ffmpegInstallCommand, findFfmpeg, irRevision, lanAddresses } from '@lincyaw/kernel/node'
+import { bracketIPv6, irRevision, lanAddresses } from '@lincyaw/kernel/node'
 import type { ApprovalKind, Finding, Severity } from '@lincyaw/kernel'
 import { build, Compiler, dev, resolveEntry } from '@lincyaw/compiler'
 import type { BuildReport, Compilation, RunStats } from '@lincyaw/compiler'
@@ -296,7 +296,6 @@ async function runServeCommand(command: Command, bundled: string): Promise<numbe
   if (command.listenAddress && !isLoopback(command.listenAddress)) {
     process.stderr.write(`${t.serveOpen(command.listenAddress, new URL(started.url).port)}\n`)
   }
-  if (!findFfmpeg()) process.stderr.write(`${t.noFfmpeg(ffmpegInstallCommand())}\n`)
   await new Promise<void>((done) => {
     process.once('SIGINT', done)
     process.once('SIGTERM', done)
