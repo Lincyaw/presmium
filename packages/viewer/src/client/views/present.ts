@@ -1,6 +1,6 @@
 import { FocusScope } from '@radix-ui/react-focus-scope'
 import { PAGE_READINESS, PmApprovals, PmCaption, PmCaptionProvider, PmIcon, TIMED_CAPTIONS, useService, PLAYBACK_CONTROL, presmiumService } from '@lincyaw/host'
-import { notifyEmbedder } from '@lincyaw/kernel'
+import { CAPTIONS_PARAM, notifyEmbedder } from '@lincyaw/kernel'
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@lincyaw/host'
 import { h } from '../element.ts'
@@ -38,7 +38,7 @@ export function PresentView() {
     useOverlayBar(bar)
     const ownsFullscreen = useRef(false)
     const [fullscreen, setFullscreen] = useState(false)
-    const [captions, setCaptions] = useState(true)
+    const [captions, setCaptions] = useState(() => typeof location === 'undefined' || new URLSearchParams(location.search).get(CAPTIONS_PARAM) !== 'off')
     const timedCaptions = useStore(useService(TIMED_CAPTIONS)?.active, false)
     // The page that embeds the presentation learns when the current slide is drawn: no component still loading,
     // checked after the slide's components have mounted and taken their holds.
@@ -115,7 +115,7 @@ export function PresentView() {
         'data-pending-confirmation': pending || undefined,
       }, [
         h('div', { class: 'pm-present__slide', inert: pending ? '' : undefined, 'aria-hidden': pending || undefined }, [
-          h(SlideFit, { shape: shape, overlay: h('div', { ref: setCaptionContainer, className: 'pm-present__captions' }) }, h(SlideFace, { key: current.id, section: current, step: step })),
+          h(SlideFit, { shape: shape, overlay: h('div', { ref: setCaptionContainer, className: 'pm-present__captions', hidden: !captions || undefined }) }, h(SlideFace, { key: current.id, section: current, step: step })),
           overview
             ? h('div', { 'class': 'pm-overview', 'role': 'dialog', 'aria-label': t.present.overview }, h('ol', { class: 'pm-overview__grid' }, sections.map(s => h('li', { key: s.id }, h('button', {
                 'type': 'button',

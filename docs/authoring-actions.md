@@ -240,8 +240,8 @@ agent 的循环：探测能力 → 读源 → 预检 → 提交或开始任务 �
 
 **画面**（`packages/workspace/src/node/capture.ts`，契约 `packages/kernel/src/contracts/capture.ts`）
 
-- `capture_slides` 给出一页在放映中的画面：默认每一步的终态帧，`at` 给出进入一步之后若干毫秒的画面，一次最多 12 张（步骤数 × 时间点）；`arrive: 'backward'` 先显示后一步，再像讲者一样退回这一步（用页面自己的时钟），检查倒退的画面，页面因此重新加载时以 `capture-page-reloaded` 失败，最后一步之后没有步骤时照常显示并在 `problems` 中说明；`measure` 是 CSS 选择器，同时给出幻灯片中匹配元素的框（幻灯片像素），连同开头的文字与 `id`、`class`、`data-*` 属性；`appearance`、`scale`、`clip` 选择亮暗、倍率与区域。结果是 PNG 图片与它们在服务状态目录中的文件（保留最近 20 次）。
-- `capture_overview` 一次拍下全部页面（默认每页最后一步，`steps: 'all'` 为每一步）：每张画面写入一个目录，文件名补零后按阅读顺序排序（`03-12-页面.png`：第 3 页、第 12 步，步骤从 0 数），另给出每张 20 个缩略图、标注“页 · 步 标题”的总览图，供冷读评审与前后对比。
+- `capture_slides` 给出一页在放映中的画面：默认每一步的终态帧，`at` 给出进入一步之后若干毫秒的画面，一次最多 12 张（步骤数 × 时间点）；`arrive: 'backward'` 先显示后一步，再像讲者一样退回这一步（用页面自己的时钟），检查倒退的画面，页面因此重新加载时以 `capture-page-reloaded` 失败，最后一步之后没有步骤时照常显示并在 `problems` 中说明；`measure` 是 CSS 选择器，同时给出幻灯片中匹配元素的框（幻灯片像素），连同开头的文字与 `id`、`class`、`data-*` 属性；`appearance`、`scale`、`clip` 选择亮暗、倍率与区域；`captions: false` 不画放映的字幕层（放映页面的 `?captions=off`），每张画面的讲稿总以文本放在结果的 `narration` 中。结果是 PNG 图片与它们在服务状态目录中的文件（保留最近 20 次）。
+- `capture_overview` 一次拍下全部页面（默认每页最后一步，`steps: 'all'` 为每一步）：每张画面写入一个目录，文件名补零后按阅读顺序排序（`03-12-页面.png`：第 3 页、第 12 步，步骤从 0 数），目录中另有 `narration.md`（每张画面的讲稿，标题是文件名），并给出每张 20 个缩略图、标注“页 · 步 标题”的总览图，供冷读评审与前后对比。
 - `capture_reading` 给出阅读版（网页）的一页：按窗口宽度（默认 1280，手机 390）打开，整个 section 滚动一遍让组件加载，静止后截取，超过 8000 像素截断（`cut`）；`measure` 给出 section 中元素的框（CSS 像素）。
 - 工作区服务在无头 Chromium 中打开文稿的查看器页面（放映加 `form=slides`，都带 `capture`），窗口按幻灯片的尺寸调整，减弱动画。页面的 `presmiumCapture.show({ section, step, at })` 以独占的驱动推动步骤时钟（`StepClockDriver.exclusive`，讲授播放器等其它驱动等它结束），定位到这一步，等组件的代码加载完、幻灯片不再变化、时钟的工作完成后返回，因此同一步与时间的画面每次相同，与到达顺序无关。
 - 浏览器在第一次请求时启动，空闲两分钟后关闭；请求一次一个。文稿代码中打包失败的文件只影响载入它的部分：页面照常打开，那个组件或场景显示失败，每个出错的文件作为一条 `presmium.preview.code` 诊断记录（文件、行与原因，找不到的模块），准备预览时更新；有这个部分的页面 `capture_slides` 以 `capture-failed` 失败，原因是这个错误。整个代码都无法打包时预览失败，原因同样记录，`capture_slides` 以 `capture-preview-failed` 失败。

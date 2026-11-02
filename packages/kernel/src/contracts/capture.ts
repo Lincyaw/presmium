@@ -28,6 +28,8 @@ export interface SlideCaptureRequest {
    * step after it first and goes back as a presenter does, with the page's own clock, to check that going back works.
    */
   arrive?: 'direct' | 'backward'
+  /** Draw the presentation's captions over the slide (default true); false shows the whole slide, the narration being in `narration`. */
+  captions?: boolean
 }
 
 export interface ReadingCaptureRequest {
@@ -81,6 +83,8 @@ export interface CapturedSlide {
   step: number
   /** Milliseconds into the step, or null for its rest frame. */
   at: number | null
+  /** The step's narration (its script), as text: what the captions show. */
+  narration: string
   /** The PNG file of the picture, in the service's state directory. */
   file: string
   width: number
@@ -103,13 +107,17 @@ export interface OverviewCaptureRequest {
   appearance?: 'light' | 'dark'
   /** Thumbnails a row on a sheet (default 4). */
   columns?: number
+  /** Draw the presentation's captions over the slides (default true). */
+  captions?: boolean
 }
 
 export interface OverviewCaptureResult {
   document: string
   /** The directory of the pictures, named so that they sort in reading order (`03-12-page.png`: page 3, step 12 from 0). */
   dir: string
-  frames: { section: string, slide: number, step: number, file: string }[]
+  frames: { section: string, slide: number, step: number, file: string, narration: string }[]
+  /** `narration.md` beside the pictures: each picture's narration under its file name. */
+  narrationFile: string
   /** Sheets of thumbnails, at most `CAPTURE_SHEET_SIZE` each, in order. */
   sheets: string[]
   problems: string[]

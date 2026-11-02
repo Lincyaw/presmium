@@ -1,7 +1,7 @@
 import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { CAPTURE_HOOK, CAPTURE_MAX_BOXES, CAPTURE_MAX_FRAMES, CAPTURE_MAX_HEIGHT, CAPTURE_MAX_OVERVIEW, CAPTURE_PARAM, CAPTURE_SHEET_SIZE, errorMessage, PREVIEW_APPEARANCE_PARAM, slideShape } from '@lincyaw/kernel'
-import type { CapturedBox, CapturedSlide, CaptureHook, DocumentCapture, IRDocument } from '@lincyaw/kernel'
+import { basename, join } from 'node:path'
+import { CAPTIONS_PARAM, CAPTURE_HOOK, CAPTURE_MAX_BOXES, CAPTURE_MAX_FRAMES, CAPTURE_MAX_HEIGHT, CAPTURE_MAX_OVERVIEW, CAPTURE_PARAM, CAPTURE_SHEET_SIZE, errorMessage, PREVIEW_APPEARANCE_PARAM, slideShape } from '@lincyaw/kernel'
+import type { CapturedBox, CapturedSlide, CaptureHook, DocumentCapture, IRDocument, IRSection } from '@lincyaw/kernel'
 import { playwrightChromium } from '@lincyaw/kernel/node'
 
 /** What capturing uses of Playwright's Chromium. */
@@ -98,7 +98,7 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
   }
 
   /** The document's viewer page in a form, opened with its capture hook in a new context; `run` uses it, then it closes. */
-  const open = async <T>(document: string, form: 'web' | 'slides', view: View, signal: AbortSignal | undefined, run: (tab: Page, problems: Set<string>, out: string) => Promise<T>): Promise<T> => {
+  const open = async <T>(document: string, form: 'web' | 'slides', view: View & { captions?: boolean }, signal: AbortSignal | undefined, run: (tab: Page, problems: Set<string>, out: string) => Promise<T>): Promise<T> => {
     const page = await options.viewerPage(document).catch((error: unknown) => {
       throw new CaptureError('capture-preview-failed', 409, { reason: errorMessage(error) })
     })
@@ -112,6 +112,7 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
       tab.on('console', message => { if (message.type() === 'error') problems.add(message.text().slice(0, 500)) })
       const address = new URL(page, options.url())
       if (form === 'slides') address.searchParams.set('form', 'slides')
+      if (view.captions === false) address.searchParams.set(CAPTIONS_PARAM, 'off')
       address.searchParams.set(CAPTURE_PARAM, '')
       address.searchParams.set(PREVIEW_APPEARANCE_PARAM, view.appearance)
       await tab.goto(address.href, { waitUntil: 'load', timeout: PAGE_MS })
@@ -144,7 +145,7 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
     if (count === 0 || count > CAPTURE_MAX_FRAMES) throw new CaptureError('capture-too-many-frames', 400, { requested: count, max: CAPTURE_MAX_FRAMES })
     const shape = slideShape(doc)
     const scale = request.scale ?? 1
-    return await open(document, 'slides', { width: shape.width, height: shape.height, scale, appearance: request.appearance ?? 'light' }, signal, async (tab, problems, out) => {
+    return await open(document, 'slides', { width: shape.width, height: shape.height, scale, appearance: request.appearance ?? 'light', captions: request.captions }, signal, async (tab, problems, out) => {
       const show = (step: number, at: number | null, how: 'direct' | 'backward' = 'direct') => tab.evaluate(async ([hook, position]) => await (window as unknown as Record<string, CaptureHook>)[hook]!.show(position), [CAPTURE_HOOK, { section: section.id, step, arrive: how, ...at === null ? {} : { at } }] as const)
       await fit(tab, shape, section.id, steps[0]!, () => show(steps[0]!, moments[0]!))
       const frames: CapturedSlide[] = [], images: Uint8Array[] = []
@@ -162,7 +163,7 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
           const file = join(out, `${section.id}-${step}${at === null ? '' : `-${at}ms`}${arrive === 'backward' ? '-backward' : ''}.png`)
           writeFileSync(file, png)
           images.push(png)
-          frames.push({ section: section.id, slide: section.index, step, at, file, width: Math.round(clip.width * scale), height: Math.round(clip.height * scale), ...request.measure ? { boxes: measured.boxes } : {} })
+          frames.push({ section: section.id, slide: section.index, step, at, file, narration: narrationOf(section, step), width: Math.round(clip.width * scale), height: Math.round(clip.height * scale), ...request.measure ? { boxes: measured.boxes } : {} })
         }
       }
       return { document, shape: { width: shape.width, height: shape.height }, frames, problems: [...problems], images }
@@ -197,14 +198,14 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
     const shape = slideShape(doc)
     const appearance = request.appearance ?? 'light'
     const columns = Math.max(1, Math.min(8, Math.round(request.columns ?? 4)))
-    return await open(document, 'slides', { width: shape.width, height: shape.height, scale: 1, appearance }, signal, async (tab, problems, out) => {
+    return await open(document, 'slides', { width: shape.width, height: shape.height, scale: 1, appearance, captions: request.captions }, signal, async (tab, problems, out) => {
       const show = (section: string, step: number) => tab.evaluate(async ([hook, position]) => await (window as unknown as Record<string, CaptureHook>)[hook]!.show(position), [CAPTURE_HOOK, { section, step }] as const)
       const first = positions[0]!
       await fit(tab, shape, first.section.id, first.step, () => show(first.section.id, first.step))
       // Names that sort in reading order: the page number (from 1) and the step (from 0, as the tools count it) padded.
       const pageWidth = String(doc.sections.length).length
       const stepWidth = String(Math.max(...doc.sections.map(section => section.steps))).length
-      const frames: { section: string, slide: number, step: number, file: string }[] = [], pictures: Buffer[] = []
+      const frames: { section: string, slide: number, step: number, file: string, narration: string }[] = [], pictures: Buffer[] = []
       for (const { section, step } of positions) {
         signal?.throwIfAborted()
         for (const problem of (await show(section.id, step)).problems) problems.add(problem)
@@ -213,7 +214,7 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
         const png = await tab.screenshot({ type: 'png', clip: { x: measured.slide.x, y: measured.slide.y, width: measured.slide.width, height: measured.slide.height } })
         const file = join(out, `${String(section.index).padStart(pageWidth, '0')}-${String(step).padStart(stepWidth, '0')}-${section.id}.png`)
         writeFileSync(file, png)
-        frames.push({ section: section.id, slide: section.index, step, file })
+        frames.push({ section: section.id, slide: section.index, step, file, narration: narrationOf(section, step) })
         pictures.push(png)
       }
       // Sheets of thumbnails, each labelled with its page, step and title, for reading the whole piece at a glance.
@@ -229,7 +230,10 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
         sheets.push(file)
         images.push(png)
       }
-      return { document, dir: out, frames, sheets, problems: [...problems], images }
+      // The narration beside the pictures, for a reader who looks at whole slides and reads the script as text.
+      const narrationFile = join(out, 'narration.md')
+      writeFileSync(narrationFile, frames.map(frame => `## ${basename(frame.file)}\n\n${frame.narration || '—'}\n`).join('\n'))
+      return { document, dir: out, frames, narrationFile, sheets, problems: [...problems], images }
     })
   }
 
@@ -266,6 +270,12 @@ async function fit(tab: Page, shape: { width: number, height: number }, section:
     await tab.setViewportSize(viewport)
     await show()
   }
+}
+
+/** A step's narration as text: the script written for it, line by line. */
+function narrationOf(section: IRSection, step: number): string {
+  const id = section.stepIds?.[step]
+  return (id ? section.stepNarrations?.[id] ?? [] : []).map(line => line.text).join('\n')
 }
 
 const escapeHtml = (text: string) => text.replace(/[&<>"]/g, char => `&#${char.charCodeAt(0)};`)

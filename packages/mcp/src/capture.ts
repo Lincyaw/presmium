@@ -18,6 +18,7 @@ function service(call: Call): DocumentCapture {
 }
 
 const integers = (max: number) => ({ type: 'array', items: { type: 'integer', minimum: 0 }, minItems: 1, maxItems: max })
+const CAPTIONS = { type: 'boolean', description: 'Draw the presentation\'s captions over the slides (default true). false shows the whole slide; each frame\'s narration is in the result as text either way (and in narration.md beside an overview\'s pictures).' }
 const IMAGES = { type: 'boolean', description: 'Return the pictures in the result (default true); false returns only their files and boxes.' }
 
 export const CAPTURE_TOOLS: ToolSpec[] = [
@@ -35,6 +36,7 @@ export const CAPTURE_TOOLS: ToolSpec[] = [
         scale: { enum: [1, 2], description: 'Device pixels per slide pixel (default 1; 2 for fine detail).' },
         clip: { type: 'object', properties: { x: { type: 'number' }, y: { type: 'number' }, width: { type: 'number', exclusiveMinimum: 0 }, height: { type: 'number', exclusiveMinimum: 0 } }, required: ['x', 'y', 'width', 'height'], additionalProperties: false, description: 'Only this region of the slide, in slide pixels.' },
         measure: { type: 'string', minLength: 1, maxLength: 200, description: `A CSS selector inside the slide; up to ${CAPTURE_MAX_BOXES} boxes a picture.` },
+        captions: CAPTIONS,
         arrive: { enum: ['direct', 'backward'], description: 'direct (default): each step drawn from its step and moment. backward: the step after is shown first, then the presentation goes back to the step as a presenter does, with the page\'s own clock, to check that going back shows the right frame (compare with direct pictures); `at` does not apply.' },
         images: IMAGES,
       },
@@ -74,7 +76,7 @@ export const CAPTURE_TOOLS: ToolSpec[] = [
   },
   {
     name: 'capture_overview',
-    description: `Takes the whole presentation at once, page by page in reading order, as the workspace service's headless browser draws it: each page's last step (default) or every step of every page (\`steps: 'all'\`), at rest. Returns sheets of labelled thumbnails (page from 1 · step from 0, as the other tools count them  title, ${CAPTURE_SHEET_SIZE} a sheet) as PNG images, and the full-size picture of every frame as files in one directory, named to sort in reading order (03-12-page.png: page 3, step 12). Use it to review a whole piece: give the sheets or the directory to a fresh reader for a cold-read review (does each page say what it should, is every concept introduced before it is used, do terms stay the same), and to compare before and after a round of changes. For a single page use capture_slides.`,
+    description: `Takes the whole presentation at once, page by page in reading order, as the workspace service's headless browser draws it: each page's last step (default) or every step of every page (\`steps: 'all'\`), at rest. Returns sheets of labelled thumbnails (page from 1 · step from 0, as the other tools count them  title, ${CAPTURE_SHEET_SIZE} a sheet) as PNG images, and the full-size picture of every frame as files in one directory, named to sort in reading order (03-12-page.png: page 3, step 12), with narration.md giving each picture's narration under its file name. Use it to review a whole piece: give the sheets or the directory to a fresh reader for a cold-read review (does each page say what it should, is every concept introduced before it is used, do terms stay the same), and to compare before and after a round of changes. For a single page use capture_slides.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -82,6 +84,7 @@ export const CAPTURE_TOOLS: ToolSpec[] = [
         steps: { enum: ['last', 'all'], description: 'last (default): each page\'s last step; all: every step of every page.' },
         appearance: { enum: ['light', 'dark'], description: 'The colour scheme (default light).' },
         columns: { type: 'integer', minimum: 1, maximum: 8, description: 'Thumbnails a row on a sheet (default 4).' },
+      captions: CAPTIONS,
         images: IMAGES,
       },
       additionalProperties: false,

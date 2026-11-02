@@ -10,6 +10,9 @@ export const PREVIEW_PARAM = 'presmium-preview'
 /** The workbench's appearance when it loads a preview (`dark` or `light`), so that the page's first paint matches it. */
 export const PREVIEW_APPEARANCE_PARAM = 'presmium-appearance'
 
+/** `?captions=off` starts a presentation with its captions off (a reader turns them on again with the captions button). */
+export const CAPTIONS_PARAM = 'captions'
+
 export const PREVIEW_REVISION = 'presmiumRevision'
 
 export const AUTHOR_MARKS_CLASS = 'pm-author-marks'
