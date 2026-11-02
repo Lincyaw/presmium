@@ -1,5 +1,28 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.16
+
+### Minor Changes
+
+- 3d19daf: AI tools connect to Presmium with one command. `presmium mcp` serves MCP on stdio and relays to the Presmium Studio or `presmium serve` running for the project, reading their port and access token from the state file again whenever they start anew; with neither running it compiles the document itself. A new project has a `.mcp.json` for Claude Code and starts with a first commit, and its README and AGENTS.md say how to connect. On connecting, the server's instructions give the order of work with the tools that host offers.
+  
+  `capture_slides` takes pictures of a page's steps as the presentation shows them, as PNG images: each step's rest frame, moments into its animation (`at`), and the boxes of elements a CSS selector `measure`s. With `arrive: 'backward'` each step is reached from the step after it, as a presenter going back does. `capture_reading` takes a page of the reading version at a window width, and `capture_overview` every page at once, as a directory of frames in reading order and sheets of labelled thumbnails. The workspace service draws them in a headless browser through the viewer's capture hook, which drives the step clock exclusively (`StepClockDriver.exclusive`), so a picture is the same however often it is taken.
+  
+  A write that needs the author's approval fails at once with `approval-unavailable` when no Presmium window is open to ask, instead of waiting and reporting a refusal; `presmium serve --allow` allows kinds without asking, as `presmium dev --allow` does. `plan_document_change` and `apply_document_change` no longer return the whole document. A document whose code can't be bundled reports why as a `presmium.preview.code` diagnostic. Servers remove their state file when they stop. A preview in the workbench posts its messages only to the workbench's own origin, without a console warning for each other allowed origin. `presmium skills install --update` replaces skills an earlier Presmium installed.
+
+### Patch Changes
+
+- a76bea9: `capture_slides` and `capture_overview` take `captions: false` to picture the whole slide without the captions drawn over it, and give each frame's narration as text; an overview also writes `narration.md` beside its pictures. A presentation opened with `?captions=off` starts with its captions off.
+- 3d19daf: A scene or component file that does not compile fails alone: the document's code is still bundled, the part that loads the file shows its failure (the file, the line and the bundler's reason) as a component failing at run time does, and every other page previews and presents. Each such file is a `presmium.preview.code` diagnostic, and `presmium check` (and MCP `check_document`) now bundles the document's code and reports each file that does not bundle as an error with its file and line, also in a project whose own package.json depends only on `@lincyaw/presmium`. `presmium build` reports them too. Renderers can check a document (`Renderer.check`), run with the document's checks.
+- Updated dependencies [a76bea9]
+- Updated dependencies [3d19daf]
+- Updated dependencies [153f883]
+- Updated dependencies [3d19daf]
+- Updated dependencies [3d19daf]
+  - @lincyaw/kernel@1.0.0-rc.16
+  - @lincyaw/server@1.0.0-rc.16
+  - @lincyaw/compiler@1.0.0-rc.16
+
 ## 1.0.0-rc.15
 
 ### Patch Changes

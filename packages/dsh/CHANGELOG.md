@@ -1,5 +1,24 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.15
+
+### Patch Changes
+
+- 3d19daf: The document editor's slash menu has Insert Animation with AI…, beside Picture. It inserts nothing: it points the AI's focus at the block the menu was opened in, opens the AI Assistant and puts a request naming the place (the page, and after which paragraph or at its end) in its input box, with the caret at the end, for the author to say what the animation should show and send. Without a model the draft waits beneath the Set Up a Model notice. The workbench offers this through `onAgentDraft`, which the Studio client implements on the current chat's input box; text the author had already written there is kept above the draft.
+- 3d19daf: Presmium Studio's AI assistant sees the pictures `capture_slides` takes. A Presmium tool's images reach the model as images of its tool result, stored in DeepSeek Harness's attachments, when the model of the session's latest request takes images; with a text-only model it gets the text with the pictures' files and a line saying the images were not attached, and the call still succeeds. `connectPresmiumMcp`'s call result carries the images beside the text (`images`).
+- Updated dependencies [3d19daf]
+- Updated dependencies [a76bea9]
+- Updated dependencies [3d19daf]
+- Updated dependencies [3d19daf]
+- Updated dependencies [153f883]
+- Updated dependencies [3d19daf]
+- Updated dependencies [3d19daf]
+- Updated dependencies [3d19daf]
+  - @lincyaw/skills@1.0.0-rc.16
+  - @lincyaw/kernel@1.0.0-rc.16
+  - @lincyaw/mcp@1.0.0-rc.16
+  - @lincyaw/cli@1.0.0-rc.16
+
 ## 0.2.0-rc.14
 
 ### Patch Changes

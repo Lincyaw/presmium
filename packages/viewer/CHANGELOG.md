@@ -1,5 +1,17 @@
 # @lincyaw/viewer
 
+## 1.0.0-rc.16
+
+### Patch Changes
+
+- a76bea9: `capture_slides` and `capture_overview` take `captions: false` to picture the whole slide without the captions drawn over it, and give each frame's narration as text; an overview also writes `narration.md` beside its pictures. A presentation opened with `?captions=off` starts with its captions off.
+- 3d19daf: A `scrolly` page of the reading version shows each step's narration in its step track, which stayed empty for documents that keep narration in `narrations`. A document's production defaults no longer add the lecture form to its renderers: a workspace whose document lists only `web` and `slides` builds its slides instead of failing with "renderer lecture is not installed". The viewer passes a list of children as fixed content and marks its `contenteditable` controls, so server rendering no longer prints a React warning for each.
+- Updated dependencies [a76bea9]
+- Updated dependencies [3d19daf]
+- Updated dependencies [3d19daf]
+  - @lincyaw/kernel@1.0.0-rc.16
+  - @lincyaw/host@1.0.0-rc.16
+
 ## 1.0.0-rc.15
 
 ### Patch Changes

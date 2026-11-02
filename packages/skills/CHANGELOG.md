@@ -1,5 +1,25 @@
 # @lincyaw/skills
 
+## 1.0.0-rc.16
+
+### Minor Changes
+
+- 3d19daf: AI tools connect to Presmium with one command. `presmium mcp` serves MCP on stdio and relays to the Presmium Studio or `presmium serve` running for the project, reading their port and access token from the state file again whenever they start anew; with neither running it compiles the document itself. A new project has a `.mcp.json` for Claude Code and starts with a first commit, and its README and AGENTS.md say how to connect. On connecting, the server's instructions give the order of work with the tools that host offers.
+  
+  `capture_slides` takes pictures of a page's steps as the presentation shows them, as PNG images: each step's rest frame, moments into its animation (`at`), and the boxes of elements a CSS selector `measure`s. With `arrive: 'backward'` each step is reached from the step after it, as a presenter going back does. `capture_reading` takes a page of the reading version at a window width, and `capture_overview` every page at once, as a directory of frames in reading order and sheets of labelled thumbnails. The workspace service draws them in a headless browser through the viewer's capture hook, which drives the step clock exclusively (`StepClockDriver.exclusive`), so a picture is the same however often it is taken.
+  
+  A write that needs the author's approval fails at once with `approval-unavailable` when no Presmium window is open to ask, instead of waiting and reporting a refusal; `presmium serve --allow` allows kinds without asking, as `presmium dev --allow` does. `plan_document_change` and `apply_document_change` no longer return the whole document. A document whose code can't be bundled reports why as a `presmium.preview.code` diagnostic. Servers remove their state file when they stop. A preview in the workbench posts its messages only to the workbench's own origin, without a console warning for each other allowed origin. `presmium skills install --update` replaces skills an earlier Presmium installed.
+
+### Patch Changes
+
+- 3d19daf: A document that names a new plugin while `presmium studio` or `presmium serve` is running presents again without a restart: its code is bundled with the plugin's modules shared by name (a project need not resolve `@lincyaw/addon-motion/scene` itself), also when a build for the earlier plugins was still running. Run from the repository, `presmium new` and the skills (installation, MCP, Studio) read the templates and skills from their sources rather than from copies left by an earlier pack.
+- 3d19daf: Diagrams and animations have categorical colours for the things they tell apart (roles, series, categories): `--pm-color-category-1` to `--pm-color-category-8`, each with a `-soft` fill, with light and dark values, in `COLORS` and in scenes as `color('category-1')`. They carry identity, not status. Taken in order, neighbours stay apart for colour-blind readers and so does any pair among the first four; each reads as a line or as text on the page and on a surface. The k-means scene in the animation gallery colours its clusters with them instead of the status colours.
+- 3d19daf: The authoring and animation skills take in the review of a 19-page explainer made by several agents in parallel. The writing guide asks for one name per concept (a term table, and a sweep for the synonyms it rules out), formal words of the audience's field in titles, labels, metric names and narration, concepts shown before they are named and used, a method explained before its steps, the whole slide used rather than a band kept for captions, and narration that also reads well in a `scrolly` page's step track. The animation skill has a new reference, `team.md`, for making one piece with several agents: the storyboard every agent works from, shared scene modules with one owner, concurrent edits through the MCP author actions, review rounds and a cold-read prompt. Its library notes add the scene pitfalls met on the way: callbacks and timers under seeking, `cqw` in GSAP's `x` and `y`, `autoRound` in a small viewBox, drawing strokes with `pathLength`, arrowheads without markers, `max-width` on SVGs in an anchor, raw colours, and prefixed classes in shared modules.
+- Updated dependencies [a76bea9]
+- Updated dependencies [3d19daf]
+- Updated dependencies [3d19daf]
+  - @lincyaw/kernel@1.0.0-rc.16
+
 ## 1.0.0-rc.15
 
 ### Patch Changes

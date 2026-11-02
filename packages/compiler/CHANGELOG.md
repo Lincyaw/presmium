@@ -1,5 +1,17 @@
 # @lincyaw/compiler
 
+## 1.0.0-rc.16
+
+### Patch Changes
+
+- 153f883: An official plugin (`@lincyaw/*`) that the running Presmium also provides runs from Presmium's own installation when the project installed another version: a project still on an older `@lincyaw/addon-motion` no longer breaks every scene with "no host installed" under a newer `presmium`, and a warning says to update the project's packages or run its own `pnpm exec presmium`. `presmium serve` no longer prints a notice about FFmpeg at every start; a lecture video export still says when it is missing. The MCP instructions of `presmium dev` say that author actions and pictures need `presmium serve` or Studio.
+- 3d19daf: A scene or component file that does not compile fails alone: the document's code is still bundled, the part that loads the file shows its failure (the file, the line and the bundler's reason) as a component failing at run time does, and every other page previews and presents. Each such file is a `presmium.preview.code` diagnostic, and `presmium check` (and MCP `check_document`) now bundles the document's code and reports each file that does not bundle as an error with its file and line, also in a project whose own package.json depends only on `@lincyaw/presmium`. `presmium build` reports them too. Renderers can check a document (`Renderer.check`), run with the document's checks.
+- 3d19daf: A `scrolly` page of the reading version shows each step's narration in its step track, which stayed empty for documents that keep narration in `narrations`. A document's production defaults no longer add the lecture form to its renderers: a workspace whose document lists only `web` and `slides` builds its slides instead of failing with "renderer lecture is not installed". The viewer passes a list of children as fixed content and marks its `contenteditable` controls, so server rendering no longer prints a React warning for each.
+- Updated dependencies [a76bea9]
+- Updated dependencies [3d19daf]
+- Updated dependencies [3d19daf]
+  - @lincyaw/kernel@1.0.0-rc.16
+
 ## 1.0.0-rc.15
 
 ### Patch Changes

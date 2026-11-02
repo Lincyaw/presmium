@@ -1,5 +1,18 @@
 # @lincyaw/workbench
 
+## 0.2.0-rc.15
+
+### Patch Changes
+
+- 3d19daf: The document editor fills its page: a press below the last block puts the caret at the end of the document, in its empty last paragraph or in a new one. A page's empty last paragraph shows the typing hint even without the caret. New Page selects the new page's default title, so the author's first words name it, and Enter at the end of a title goes into the page's empty body paragraph instead of adding another.
+- 3d19daf: The document editor's slash menu has Insert Animation with AI…, beside Picture. It inserts nothing: it points the AI's focus at the block the menu was opened in, opens the AI Assistant and puts a request naming the place (the page, and after which paragraph or at its end) in its input box, with the caret at the end, for the author to say what the animation should show and send. Without a model the draft waits beneath the Set Up a Model notice. The workbench offers this through `onAgentDraft`, which the Studio client implements on the current chat's input box; text the author had already written there is kept above the draft.
+- Updated dependencies [a76bea9]
+- Updated dependencies [3d19daf]
+- Updated dependencies [3d19daf]
+- Updated dependencies [3d19daf]
+  - @lincyaw/kernel@1.0.0-rc.16
+  - @lincyaw/design@1.0.0-rc.16
+
 ## 0.2.0-rc.14
 
 ### Patch Changes
