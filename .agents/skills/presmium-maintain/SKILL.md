@@ -114,8 +114,11 @@ matters. The real run must show:
 
 When behavior or commands change, update the docs and skills that guide that task in the same change, with
 one complete definition pointed to from elsewhere ([packaging, Skills](references/packaging.md#skills)).
-Public package changes get a changeset ([packaging](references/packaging.md#changesets-and-releases)).
+Every update gets a changeset and a release ([packaging](references/packaging.md#changesets-and-releases)).
 
 Report the behavior after the change, why it sits at that boundary, what ran (passed, skipped, not run) and
 what remains unverified. Architecture advice names the concrete condition that would trigger a refactor.
-Without a request to commit or publish, leave a reviewable change.
+After scoped verification, commit this task's changes, push and release under the standing authorization in
+the root `AGENTS.md`; include release versions and changelogs in the pushed commits. Keep unrelated
+working-tree changes out of the commit and release. Report a failed or blocked step explicitly; a local
+commit, push or publishing dry run alone does not complete the release.

@@ -57,10 +57,13 @@ metadata, `references/` links, the document contract and that every `presmium <c
 
 ## Changesets and releases
 
-A public package change adds a changeset (`pnpm changeset`, one sentence for users); tests, docs and
-examples need none. `pnpm release:check` packs without uploading. `pnpm consumer [<directory>]` installs
+Every repository update adds a changeset (`pnpm changeset`, one sentence for users), including changes to
+tests, docs, skills, examples and configuration. Follow `.changeset/README.md` for package selection and
+the release procedure. `pnpm release:check` packs without uploading. `pnpm consumer [<directory>]` installs
 `presmium` outside the monorepo, including Studio by default (about 865 MB with its dependencies); `--studio` also lists Studio as a direct dependency for compatibility. Studio uses `@lincyaw/presmium` as its peer host; the host includes Studio as a dependency, so one install provides `presmium studio` without a hard dependency cycle. A global `presmium` always runs its own installation; it does not forward to a project installation. Use `pnpm exec presmium` explicitly to run a project version. Publishing follows
-`.changeset/README.md`; never publish unless asked.
+`.changeset/README.md` under the standing authorization in the root `AGENTS.md`: after scoped
+verification, commit, push and release every completed update without asking again. Publish from a
+checkout containing only committed changes for the release, so unrelated working-tree edits stay out.
 
 ## The VS Code extension
 

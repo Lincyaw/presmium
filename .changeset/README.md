@@ -55,15 +55,17 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 
 ## 记录一处修改
 
-改动了公开的包时，在提交中加一个变更记录：
+每次完成仓库更新，都在提交中加一个变更记录：
 
 ```sh
 pnpm changeset          # 选包与升级类型（patch、minor、major），写一句面向使用者的说明
 ```
 
-它在 `.changeset/` 中写一个 Markdown 文件，随提交入库。只改测试、文档或示例时不需要。
+它在 `.changeset/` 中写一个 Markdown 文件，随提交入库。改动公开包时选择受影响的包；只改测试、文档、技能、示例或配置而没有公开包内容变更时，为 `@lincyaw/presmium` 记录一次 patch，说明本次仓库更新。
 
-## 发布（维护者）
+## 每次更新的发布流程
+
+根目录 `AGENTS.md` 已持续授权每次更新的提交、推送与发版，无需逐次确认。先完成本次范围的验证，再提交本次任务的改动并推送。已有的无关改动不纳入提交或发布；工作区混有这类改动时，从本次提交建立独立工作树完成以下步骤。
 
 1. `pnpm changeset version`：按累积的变更记录升级全部公开包的版本（预发布模式中为 `1.0.0-rc.<n>`），写各包的 `CHANGELOG.md`；然后 `pnpm install` 更新锁文件，提交。
 2. `pnpm release:check`：`pnpm -r publish --dry-run --no-git-checks`，按发布的样子打包每个公开的包而不上传。消费者安装测试用同样的压缩包在单仓之外的项目中安装、检查、构建与运行：`pnpm test` 中的 `packages/cli/test/consumer.test.ts`，`pnpm e2e` 中的 `e2e/consumer.spec.ts`；`pnpm consumer [<目录>]` 单独做一个这样的项目。
@@ -71,12 +73,10 @@ pnpm changeset          # 选包与升级类型（patch、minor、major），写
 4. 让 `pnpm add -g @lincyaw/presmium` 与新项目装到这一版：对每个公开包运行 `pnpm dist-tag add <包>@<版本> latest`。预发布期间 `latest` 也指向最新的预发布版。
 5. 正式的 1.0.0：`pnpm changeset pre exit`，再走一遍 1 至 4。
 
+确认目标包版本已出现在 npm，`rc`（预发布期间）与 `latest` 指向本次版本，版本提交与标签已推送后，才算发版完成。发布预检不代替实际发布；失败时报告已完成步骤、阻塞原因与未完成步骤。
 
 ## 仓库与账号
 
 GitHub 仓库是 `Lincyaw/presmium`（远端 `origin`，与各包的 `repository` 一致）；Actions 运行 `.github/workflows/ci.yml`，`.github/workflows/pages.yml` 把示例发布到 GitHub Pages（<https://lincyaw.github.io/presmium/>）。
 
-下面的步骤需要账号与凭据，由维护者完成，不由开发流程完成：
-
-- 在 npm 创建组织 `@lincyaw`，为发布者创建令牌（或登录 `pnpm login`）；在 CI 中发布时把令牌存为仓库的 secret。
-- 实际发布：`pnpm changeset publish`（见上）。
+发布环境需要 npm 组织 `@lincyaw` 的发布权限，以及 Git 远端的推送权限。维护者负责准备账号与凭据：为发布者创建令牌或用 `pnpm login` 登录；在 CI 中发布时把令牌存为仓库的 secret。开发流程使用已配置的凭据完成上述发布步骤；缺少权限时报告阻塞原因。
