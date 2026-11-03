@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, realpathSync } from 'node:fs'
 import { createRequire, findPackageJSON } from 'node:module'
 
 export const FONT_LICENSE = 'presmium/fonts/LICENSE'
@@ -10,8 +10,11 @@ const FONT_COPYRIGHTS: Record<string, string> = {
 }
 
 export function fontLicense(from: string | URL): string {
-  const manifest = findPackageJSON('@lincyaw/host', from)
-  if (!manifest) throw new Error('@lincyaw/host is not installed')
+  const found = findPackageJSON('@lincyaw/host', from)
+  if (!found) throw new Error('@lincyaw/host is not installed')
+  // findPackageJSON keeps the symlinked path; the fonts are host's own dependencies, which an isolated store (pnpm's
+  // global store) puts beside the real package, so they are resolved from there.
+  const manifest = realpathSync(found)
   const { dependencies = {} } = JSON.parse(readFileSync(manifest, 'utf8')) as { dependencies?: Record<string, string> }
   const require = createRequire(manifest)
   const files = Object.keys(dependencies).filter(name => name.startsWith('@fontsource/')).sort().map((name) => {
