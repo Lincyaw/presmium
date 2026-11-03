@@ -1,5 +1,38 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.17
+
+### Patch Changes
+
+- Updated dependencies [e4a6636]
+- Updated dependencies [e4a6636]
+  - @lincyaw/viewer@1.0.0-rc.17
+  - @lincyaw/addon-motion@1.0.0-rc.17
+  - @lincyaw/web@1.0.0-rc.17
+  - @lincyaw/host@1.0.0-rc.17
+  - create-presmium@1.0.0-rc.17
+  - @lincyaw/addon-assistant@1.0.0-rc.17
+  - @lincyaw/addon-guide@1.0.0-rc.17
+  - @lincyaw/addon-lecture@1.0.0-rc.17
+  - @lincyaw/addon-session@1.0.0-rc.17
+  - @lincyaw/addon-stage@1.0.0-rc.17
+  - @lincyaw/addon-publish@1.0.0-rc.17
+  - @lincyaw/render-notebook@1.0.0-rc.17
+  - @lincyaw/render-slides@1.0.0-rc.17
+  - @lincyaw/cli@1.0.0-rc.17
+  - @lincyaw/mcp@1.0.0-rc.17
+  - @lincyaw/addon-classroom@1.0.0-rc.17
+  - @lincyaw/addon-content@1.0.0-rc.17
+  - @lincyaw/addon-exec@1.0.0-rc.17
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.17
+  - @lincyaw/addon-exec-local@1.0.0-rc.17
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.17
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.17
+  - @lincyaw/addon-speech@1.0.0-rc.17
+  - @lincyaw/addon-code@1.0.0-rc.17
+  - @lincyaw/studio@0.2.0-rc.16
+  - @lincyaw/kernel@1.0.0-rc.17
+
 ## 1.0.0-rc.16
 
 ### Minor Changes

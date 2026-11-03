@@ -1,5 +1,16 @@
 # @lincyaw/mcp
 
+## 1.0.0-rc.17
+
+### Patch Changes
+
+- Updated dependencies [e4a6636]
+- Updated dependencies [e4a6636]
+- Updated dependencies [b8e7b32]
+  - @lincyaw/skills@1.0.0-rc.17
+  - @lincyaw/compiler@1.0.0-rc.17
+  - @lincyaw/kernel@1.0.0-rc.17
+
 ## 1.0.0-rc.16
 
 ### Minor Changes
