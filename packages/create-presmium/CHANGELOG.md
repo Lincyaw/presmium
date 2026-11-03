@@ -1,5 +1,11 @@
 # create-presmium
 
+## 1.0.0-rc.19
+
+### Patch Changes
+
+- @lincyaw/kernel@1.0.0-rc.19
+
 ## 1.0.0-rc.18
 
 ### Patch Changes

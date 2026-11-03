@@ -1,5 +1,9 @@
 # @lincyaw/render-slides
 
+## 1.0.0-rc.19
+
+No changes in this release.
+
 ## 1.0.0-rc.18
 
 No changes in this release.
