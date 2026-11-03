@@ -1,5 +1,17 @@
 # @lincyaw/cli
 
+## 1.0.0-rc.18
+
+### Patch Changes
+
+- d4dd0d4: `presmium import <notes> --out <dir>` turns a folder of Markdown notes into documents, one `lecture.json` per note: frontmatter gives the title, description, tags and language; a page opens at each level-1 and level-2 heading; `[[note]]` and `[[note|text]]` wikilinks find their document by file name or alias; math, tables, task lists, Mermaid diagrams, images, callouts and footnotes come across; linked local files are copied into the document's `attachments/`; `--exclude` leaves folders such as `raw` out, and `--group` makes a folder the first tag by which the site's sidebar groups documents.
+- Updated dependencies [54f0896]
+  - @lincyaw/kernel@1.0.0-rc.18
+  - @lincyaw/compiler@1.0.0-rc.18
+  - @lincyaw/server@1.0.0-rc.18
+  - @lincyaw/skills@1.0.0-rc.18
+  - @lincyaw/workspace@1.0.0-rc.18
+
 ## 1.0.0-rc.17
 
 ### Patch Changes

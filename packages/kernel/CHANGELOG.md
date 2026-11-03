@@ -1,5 +1,11 @@
 # @lincyaw/kernel
 
+## 1.0.0-rc.18
+
+### Patch Changes
+
+- 54f0896: `presmium serve` and site builds find the fonts' licenses when Presmium is installed globally with pnpm (`pnpm add -g @lincyaw/presmium`): the viewer app no longer fails with "Cannot find module '@fontsource/ibm-plex-mono/LICENSE'".
+
 ## 1.0.0-rc.17
 
 No changes in this release.

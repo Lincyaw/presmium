@@ -1,5 +1,39 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.18
+
+### Patch Changes
+
+- 1e3e9b0: 仓库每次完成更新后都提交、推送并发版，同步维护技能与发布流程。
+- Updated dependencies [54f0896]
+- Updated dependencies [d4dd0d4]
+  - @lincyaw/kernel@1.0.0-rc.18
+  - @lincyaw/cli@1.0.0-rc.18
+  - @lincyaw/addon-assistant@1.0.0-rc.18
+  - @lincyaw/addon-classroom@1.0.0-rc.18
+  - @lincyaw/addon-code@1.0.0-rc.18
+  - @lincyaw/addon-content@1.0.0-rc.18
+  - @lincyaw/addon-exec@1.0.0-rc.18
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.18
+  - @lincyaw/addon-exec-local@1.0.0-rc.18
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.18
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.18
+  - @lincyaw/addon-guide@1.0.0-rc.18
+  - @lincyaw/addon-lecture@1.0.0-rc.18
+  - @lincyaw/addon-motion@1.0.0-rc.18
+  - @lincyaw/addon-publish@1.0.0-rc.18
+  - @lincyaw/addon-session@1.0.0-rc.18
+  - @lincyaw/addon-speech@1.0.0-rc.18
+  - @lincyaw/addon-stage@1.0.0-rc.18
+  - create-presmium@1.0.0-rc.18
+  - @lincyaw/host@1.0.0-rc.18
+  - @lincyaw/mcp@1.0.0-rc.18
+  - @lincyaw/render-notebook@1.0.0-rc.18
+  - @lincyaw/render-slides@1.0.0-rc.18
+  - @lincyaw/viewer@1.0.0-rc.18
+  - @lincyaw/web@1.0.0-rc.18
+  - @lincyaw/studio@0.2.0-rc.17
+
 ## 1.0.0-rc.17
 
 ### Patch Changes
