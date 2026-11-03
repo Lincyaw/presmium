@@ -39,7 +39,13 @@
 | regular | 创建、导出、确认等对话框 | `--pm-control-height`（36 px） | `--pm-text-sm`／`--pm-text-md` |
 | touch | 粗指针设备上的以上两类 | 热区 `--pm-control-hit-area`（44 px） | 输入 `--pm-text-lg`（16 px） |
 
-粗指针设备由公共媒体查询补足热区与输入字号。内容换行或字号放大时控件增高，不裁切文字。常用取值：
+粗指针设备由公共媒体查询补足热区与输入字号。内容换行或字号放大时控件增高，不裁切文字。
+
+控件形状：容器写 `data-shape="pill"` 时，其中按钮、图标按钮、输入与搜索框、分段控件的圆角取 `--pm-radius-pill`，密度不变。发布的网站在页头工具、首页与缺页页面使用胶囊形；工作台与文稿正文保持默认圆角。
+
+网站外观：带 `data-pm-site-theme` 的网站页面在 `tokens.css` 中把中性色换成冷灰（`bg`、`surface`、`sunk`、`chrome`、`ink`、`muted`、`line` 等，亮暗两套），界面字体用 `--pm-font-site`（Hanken Grotesk 加中文系统黑体），页头用 `--pm-site-glass` 半透明并模糊背后的内容，页面顶部的光晕取 `--pm-color-site-ambient-1` 到 `-3`。工作台与它预览中的文稿没有这些属性，保持暖色的阅读界面。
+
+常用取值：
 
 | 用途 | 令牌 |
 |---|---|

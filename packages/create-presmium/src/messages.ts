@@ -22,7 +22,7 @@ export interface Messages {
   next: string
   agents: string
   firstDocument: string
-  site: Record<'lang' | 'description' | 'kicker' | 'summary' | 'start' | 'featuresTitle' | 'learnTitle' | 'learnBody' | 'publishTitle' | 'publishBody' | 'personalTitle' | 'personalBody' | 'documentsTitle' | 'guideTitle' | 'guideIntro' | 'guideStartTitle' | 'guideStartBody' | 'guideStyleTitle' | 'guideStyleBody' | 'guidePublishTitle' | 'guidePublishBody', string>
+  site: Record<'lang' | 'description' | 'guideTitle' | 'guideIntro' | 'guideStartTitle' | 'guideStartBody' | 'guideStyleTitle' | 'guideStyleBody' | 'guidePublishTitle' | 'guidePublishBody', string>
   readme(kind: 'lecture' | 'workspace' | 'site', title: string): string
   agentsFile(kind: 'lecture' | 'workspace' | 'site', title: string): string
 }
@@ -68,17 +68,6 @@ export const MESSAGES: Record<Locale, Messages> = {
     site: {
       lang: 'zh-CN',
       description: '用文稿构建课程、文档与作品网站。',
-      kicker: '让知识被更多人看见',
-      summary: '把文章、演示与学习资料放在同一个地方。从第一篇内容开始，逐步构建属于你的网站。',
-      start: '开始阅读',
-      featuresTitle: '为你的内容而设计',
-      learnTitle: '把知识讲清楚',
-      learnBody: '用章节组织思路，让读者跟随内容深入。每份文稿都有可以直接访问的独立地址。',
-      publishTitle: '随时发布',
-      publishBody: '导出完整静态网站，在 GitHub Pages 发布，让读者通过浏览器直接访问。',
-      personalTitle: '呈现你的风格',
-      personalBody: '选择课程、文档或展示主题，再调整配色、字体与阅读宽度。内容始终由你掌握。',
-      documentsTitle: '开始探索',
       guideTitle: '开始创作',
       guideIntro: '这是你的第一份内容文稿。用自己的文字替换它，再添加更多章节和素材。',
       guideStartTitle: '写下第一篇内容',
@@ -91,7 +80,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     readme: (kind, title) => kind === 'site'
       ? `# ${title}
 
-一个 Presmium 网站：独立网站首页保存在 \`site/home.json\`，第一份教学文稿在 \`intro/lecture.json\`。首页负责品牌介绍、行动按钮与网站板块；教学文稿负责正文、步骤和放映。\`presmium.workspace.yaml\` 的 \`site\` 配置主题、个性化参数、导航与首页入口。
+一个 Presmium 网站：独立网站首页保存在 \`site/home.json\`，第一份教学文稿在 \`intro/lecture.json\`。首页先只列出全部文稿，需要时再加入首屏、亮点等板块；教学文稿负责正文、步骤和放映。\`presmium.workspace.yaml\` 的 \`site\` 配置主题、个性化参数、导航与首页入口。
 
 \`\`\`sh
 pnpm install
@@ -209,17 +198,6 @@ Options:
     site: {
       lang: 'en',
       description: 'A home for your courses, documentation, and projects.',
-      kicker: 'A place to share what you know',
-      summary: 'Bring explanations, demonstrations, and learning resources together. Start with your first article and create a site that feels like yours.',
-      start: 'Start Reading',
-      featuresTitle: 'Made for your content',
-      learnTitle: 'Make Ideas Clear',
-      learnBody: 'Organize your ideas into chapters and let readers explore. Every document has an address you can share.',
-      publishTitle: 'Ready to share',
-      publishBody: 'Export a complete static website and publish it on GitHub Pages so readers can visit directly in their browser.',
-      personalTitle: 'Make It Yours',
-      personalBody: 'Choose a course, documentation, or showcase template, then adjust the accent, typography, and reading width.',
-      documentsTitle: 'Explore the Documents',
       guideTitle: 'Start Creating',
       guideIntro: 'This is your first document. Replace it with your own words, then add more chapters and resources.',
       guideStartTitle: 'Write your first article',
@@ -232,7 +210,7 @@ Options:
     readme: (kind, title) => kind === 'site'
       ? `# ${title}
 
-A Presmium site: the independent website home page is \`site/home.json\`, and your first teaching document is \`intro/lecture.json\`. The home page presents your brand, actions, and website sections; teaching documents hold the content, steps, and presentation. The \`site\` section of \`presmium.workspace.yaml\` sets the theme, appearance parameters, navigation, and home page.
+A Presmium site: the independent website home page is \`site/home.json\`, and your first teaching document is \`intro/lecture.json\`. The home page starts as the list of your documents, and takes a hero and other sections when you need them; teaching documents hold the content, steps, and presentation. The \`site\` section of \`presmium.workspace.yaml\` sets the theme, appearance parameters, navigation, and home page.
 
 \`\`\`sh
 pnpm install

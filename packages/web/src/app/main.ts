@@ -1,5 +1,5 @@
 import { currentLocale, OPERATIONS, pluginsOf, presmiumService, registerPresmiumPlugin, startHost, createStore, observe, runtimeRevision } from '@lincyaw/host'
-import { CAPTURE_PARAM, previewAppearance, reportStaleModule } from '@lincyaw/kernel'
+import { CAPTURE_PARAM, previewAppearance, reportStaleModule, safeDecodeURIComponent } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import { findView, loadDocumentParts, syncViewerWithOperations } from '@lincyaw/viewer'
 import type { LiveUpdate } from '@lincyaw/viewer/domain'
@@ -141,6 +141,9 @@ async function bootDocument(): Promise<void> {
   let stopOperations: (() => void) | undefined
   if (!config.block) observe(runtimeRevision, () => { stopOperations?.(); const operations = presmiumService(OPERATIONS); stopOperations = operations ? syncViewerWithOperations(viewer!, operations) : undefined }, true)
   await app.mount('#app')
+  // The browser goes to the address's fragment while the page loads, before a page drawn here has it.
+  const fragment = location.hash && document.getElementById(safeDecodeURIComponent(location.hash.slice(1)))
+  if (fragment) requestAnimationFrame(() => fragment.scrollIntoView())
   dark.set(isDark())
   preview?.connect({ viewer: viewer!, dark, setActive: lifecycle.setActive })
   router?.listen()

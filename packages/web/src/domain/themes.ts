@@ -29,8 +29,8 @@ export function isThemeReference(value: unknown): value is string {
 }
 
 export const SITE_THEMES: Readonly<Record<SiteThemeId, Readonly<SiteThemeParams>>> = {
-  docs: { accent: 'teal', typography: 'reading', contentWidth: 'comfortable' },
-  course: { accent: 'teal', typography: 'reading', contentWidth: 'comfortable' },
+  docs: { accent: 'blue', typography: 'sans', contentWidth: 'comfortable' },
+  course: { accent: 'blue', typography: 'sans', contentWidth: 'comfortable' },
   showcase: { accent: 'violet', typography: 'sans', contentWidth: 'wide' },
 }
 

@@ -18,11 +18,13 @@ pnpm build    # 静态网站在 dist/web/
 
 | `site.theme` | 名称 | 文稿列表首页 | 文稿页 |
 |---|---|---|---|
-| `course` | 课程 | 有序课程目录 | 左侧课程名与编号的文稿目录 |
+| `course` | 课程 | 一列带编号的课程目录 | 左侧课程名与编号的文稿目录 |
 | `docs` | 文档 | 文稿卡片网格 | 左侧站内文稿，右侧本页大纲 |
-| `showcase` | 展示 | 网站介绍与大展示卡片 | 与 `docs` 相同；冷色背景与半透明页头，与产品首页一致 |
+| `showcase` | 展示 | 网站介绍与大展示卡片，两张一行，第一张占满一行 | 与 `docs` 相同 |
 
-每份文稿是一个完整的网页，所有节依次排列，与静态建站工具中一个源文件一页相同。左侧列出工作区的文稿，按每份文稿 `metadata.tags` 的第一个标签分组、按 `documents` 中的顺序排列，并展开当前文稿的各章；右侧“本页大纲”列出各节，章内的节缩进。节标题在指针移过时显示可复制的锚点 `#`。早先按章拆出的页面地址（如 `sort.html`）构建为跳转页，打开后到达整页中该章的位置。窄屏时两侧目录收进“目录”与“本页大纲”两个按钮。
+三个主题共用一套外观：冷灰的浅色页面（暗色为近黑），页面顶部有淡淡的蓝、青、紫色光晕；页头半透明，左侧是网站名称与导航（当前页的导航项下有强调色短线），右侧是搜索与工具，与正文的栏对齐；界面与 `sans` 正文用 Hanken Grotesk（中文用系统黑体），按钮、搜索框与分段选项是胶囊形。左侧当前文稿浮起为白色条目，章节与右侧大纲的当前项是强调色竖线加深色文字。工作台的界面不受网站外观影响。
+
+每份文稿是一个完整的网页，所有节依次排列，与静态建站工具中一个源文件一页相同。左侧列出工作区的文稿，按每份文稿 `metadata.tags` 的第一个标签分组、按 `documents` 中的顺序排列，并展开当前文稿的各章；右侧“本页大纲”列出各节，章内的节缩进。节标题在指针移过时显示可复制的锚点 `#`。早先按章拆出的页面地址（如 `sort.html`）构建为跳转页，打开后到达整页中该章的位置。右侧大纲显示时（1280 px 及以上），没有分章的文稿不在左侧重复列出各节；网站只有这一份没有分章的文稿时不显示左栏，页面为正文加右侧大纲。1280 px 以下右侧大纲隐藏，左侧展开当前文稿的各节。正文按阅读宽度排；页面中有图与文字并排的滚动叙事节时（`article` 布局），这些节铺开到两侧目录之间的全部宽度，最宽 `--pm-site-spread-width`（75rem），其余节仍按阅读宽度、与它们左对齐。从链接或地址中的 `#节` 到达时，节标题停在页头（窄屏还有其下的目录栏）下方。窄屏时两侧目录收进“目录”与“本页大纲”两个按钮。
 
 未写 `theme` 时为 `docs`。
 
@@ -33,8 +35,8 @@ site:
   base: /
   theme: course
   params:
-    accent: teal
-    typography: reading
+    accent: blue
+    typography: sans
     contentWidth: comfortable
     logo: ./assets/logo.svg
     logoAlt: 我的课程
@@ -43,23 +45,23 @@ site:
   head:
     description: 从示例开始学习，阅读讲义并观看演示。
   nav:
-    - text: 开始学习
-      link: /intro/
+    - text: 课程仓库
+      link: https://github.com/example/course
   footer:
     message: 按自己的节奏阅读和练习。
 ```
 
 | 参数 | 取值 | 默认（`docs`、`course` / `showcase`） |
 |---|---|---|
-| `site.params.accent` | `blue`、`teal`、`violet`、`amber` | `teal` / `violet` |
-| `site.params.typography` | `reading`、`sans` | `reading` / `sans` |
+| `site.params.accent` | `blue`、`teal`、`violet`、`amber` | `blue` / `violet` |
+| `site.params.typography` | `reading`（衬线正文）、`sans` | `sans` / `sans` |
 | `site.params.contentWidth` | `comfortable`、`wide` | `comfortable` / `wide` |
 | `site.params.logo` | 工作区内的图片路径 | 不显示 |
 | `site.params.logoAlt` | 替代文字，可为空字符串 | 空，按装饰图处理 |
 
 - 显式参数覆盖主题默认值；换主题时删掉旧参数即可用新主题的默认值。参数只接受上表的取值，不接受 CSS 或 HTML。
 - 配色随亮暗切换；字体与宽度只作用于网站正文，不改变幻灯片画布。
-- `site.nav`、`footer`、`head`、`sitemap`、`lang`、`locales` 照常有效。导航中的站内绝对路径会加上 `site.base`。
+- `site.nav`、`footer`、`head`、`sitemap`、`lang`、`locales` 照常有效。导航中的站内绝对路径会加上 `site.base`。页头导航只放网站级的去处（另一个站点、代码仓库、关于页），不为每份文稿各加一项：读者从首页的文稿列表与文稿页左侧的目录到达文稿；不写 `nav` 时页头只有网站名称与工具。
 - 文稿列表页的介绍取自工作区 `title` 与 `site.head.description`。
 - 修改后重启 `pnpm serve`，或重新 `pnpm build`。
 
@@ -120,7 +122,7 @@ site:
 }
 ```
 
-`title` 与 `sections` 必填。`hero` 可有 `eyebrow`、`title`、`description`、`image`、`imageAlt`、`actions`；每个操作有 `text`、`link`，可选 `variant: primary | secondary`。`sections` 按顺序显示，每项有唯一 `id`、一个 `type`，可带 `title`、`description`：
+`title` 与 `sections` 必填。`title` 是浏览器标签页与读屏的页面标题；不写 `hero` 时页面没有首屏，从第一节开始。`hero` 可有 `eyebrow`、`title`、`description`、`image`、`imageAlt`、`actions`（`title`、`description` 不写时取文件的同名字段）；每个操作有 `text`、`link`，可选 `variant: primary | secondary`。`sections` 按顺序显示，每项有唯一 `id`、一个 `type`，可带 `title`、`description`：
 
 | `type` | 字段 | 用途 |
 |---|---|---|
@@ -131,6 +133,8 @@ site:
 | `cta` | `title`、`actions` | 行动入口 |
 
 本地媒体在 JSON 文件中相对该文件定位，内联配置中相对工作区根目录定位。工作区的 `public/` 按原路径发布到网站根（如 `/files/slides.pptx`）。
+
+JSON 首页与没有 `landing` 时的文稿列表页排版相同，与常见博客、文档网站的首页一致：首屏居中，依次是眉题、标题、简介与操作，有 `image` 时图片在文字下方；各节的标题与说明居中；`features` 与 `documents` 的卡片等宽，一行放得下几张就放几张，整行居中，`course` 主题的文稿是一列带编号的目录；`text` 在阅读宽度的一栏内左对齐；`cta` 是居中的一张卡片。`primary` 操作是深色胶囊按钮，`secondary` 是浅色胶囊按钮。文稿列表页只有一份文稿时不显示搜索与标签筛选。768 px 以下卡片排成一列。首页各字段写多长、怎样写，见技能 `presmium-author` 的发布参考中“Write the homepage”一节。
 
 ### 3.2 HTML 模板首页
 
@@ -166,7 +170,7 @@ site:
 | 布局 | 行为 |
 |---|---|
 | `article` | 默认，按主题显示导航与大纲 |
-| `landing` | 全部页面合成一张 `index.html`，单栏全宽，不显示目录与翻页 |
+| `landing` | 全部页面合成一张 `index.html`，单栏全宽，不显示目录与翻页；第一节是居中的首屏，其中的子节仍左对齐 |
 | `wide` | 放宽正文，不显示右侧大纲 |
 
 布局不改变页面、内容块与步骤的身份。每份译本使用自己的 `layout`，未配置时为 `article`。整个工作区构建时主题由 `site` 决定；单独构建一份文稿时在 `metadata.renderers.web` 中写 `theme` 与 `params`：

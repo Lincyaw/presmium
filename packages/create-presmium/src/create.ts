@@ -95,7 +95,7 @@ export function createProject(options: ProjectOptions): void {
     const theme = options.theme ?? 'course'
     const params = theme === 'showcase'
       ? { accent: 'violet', typography: 'sans', contentWidth: 'wide' }
-      : { accent: 'teal', typography: 'reading', contentWidth: 'comfortable' }
+      : { accent: 'blue', typography: 'sans', contentWidth: 'comfortable' }
     const strings: Record<string, string> = { ...c.site, title, theme, ...params }
     copyTemplate('site', dir, (path, text) => {
       if (path.endsWith('.json')) {

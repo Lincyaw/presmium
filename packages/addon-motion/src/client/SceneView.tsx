@@ -29,6 +29,43 @@ import { loadScene, preloadScenes } from './deck-scenes.ts'
 import type { Scene } from './scene.ts'
 import './scene.css'
 
+/** What a scene read of its step's inputs while it was made, with the values it read. */
+interface ReadInputs { state?: { value: string | undefined }, parameters: Map<string, string>, all?: string }
+type Inputs = { current: { state?: string, parameters: Readonly<Record<string, unknown>> } }
+const json = (value: unknown) => JSON.stringify(value) ?? ''
+/** The step's parameters, read live; while `recording`, every key read (or all, when enumerated) is noted in `read`. */
+function liveParameters(inputs: Inputs, read: ReadInputs, recording: () => boolean): Readonly<Record<string, unknown>> {
+  return new Proxy({}, {
+    get: (_, key) => {
+      if (typeof key !== 'string') return undefined
+      const value = inputs.current.parameters[key]
+      if (recording()) read.parameters.set(key, json(value))
+      return value
+    },
+    has: (_, key) => key in inputs.current.parameters,
+    ownKeys: () => {
+      if (recording()) read.all = json(inputs.current.parameters)
+      return Reflect.ownKeys(inputs.current.parameters)
+    },
+    getOwnPropertyDescriptor: (_, key) => {
+      const descriptor = Reflect.getOwnPropertyDescriptor(inputs.current.parameters, key)
+      return descriptor && { ...descriptor, configurable: true }
+    },
+  })
+}
+/** Whether a scene made from `read` would be made differently from these inputs. */
+function changed(read: ReadInputs, state: string | undefined, parameters: Readonly<Record<string, unknown>>) {
+  if (read.state && read.state.value !== state) return true
+  if (read.all !== undefined) return read.all !== json(parameters)
+  for (const [key, value] of read.parameters) if (json(parameters[key]) !== value) return true
+  return false
+}
+const idle = (work: () => void) => {
+  if (typeof requestIdleCallback === 'undefined') { const timer = setTimeout(work, 1); return () => clearTimeout(timer) }
+  const id = requestIdleCallback(work, { timeout: 1000 })
+  return () => cancelIdleCallback(id)
+}
+
 export default function SceneView(props: SceneProps) {
   const t = useMessages(MOTION_MESSAGES)
   const durations = props.durations?.length ? props.durations : [0]
@@ -46,8 +83,11 @@ export default function SceneView(props: SceneProps) {
   const stepTime = useStepTime({ until: Math.max(...durations) })
   const { dark } = useAppearance()
   const expanded = scope.localPreview === true || !Number.isFinite(hostStep)
-  const [seen, setSeen] = useState(!expanded || printed)
-  const enabled = seen || printed || !expanded
+  // On a reading page every scene is made as it comes near the window, so a long page opens without making them all;
+  // slides make theirs at once, and a printed page all of them.
+  const eager = printed || (!expanded && viewRole !== 'reader')
+  const [seen, setSeen] = useState(eager)
+  const enabled = seen
   const [local, setLocal] = useState<number>()
   const [playing, setPlaying] = useState(false)
   const [status, setStatus] = useState<
@@ -55,7 +95,7 @@ export default function SceneView(props: SceneProps) {
   >('loading')
   // The page is not drawn while this scene loads its code (an embedding page waits for it).
   const readiness = useService(PAGE_READINESS)
-  useEffect(() => (status === 'loading' ? readiness?.hold() : undefined), [status, readiness])
+  useEffect(() => (status === 'loading' && enabled ? readiness?.hold() : undefined), [status, readiness, enabled])
   const [failure, setFailure] = useState('')
   const stage = useRef<HTMLDivElement>(null)
   const instance = useRef<Scene | undefined>(undefined)
@@ -95,6 +135,12 @@ export default function SceneView(props: SceneProps) {
   const localState = expanded && !scope.localPreview && local !== undefined ? scope.stateAt(selectedStep) : undefined
   const sceneState = localState ? localState.state : scope.state
   const sceneParameters = localState ? localState.parameters ?? {} : scope.parameters ?? {}
+  // A scene reads its step's state and parameters live. A build that read one of them is made again when it changes;
+  // one that did not keeps its timeline from step to step, since making a scene costs a whole build.
+  const inputs = useRef({ state: sceneState, parameters: sceneParameters })
+  inputs.current = { state: sceneState, parameters: sceneParameters }
+  const builtFrom = useRef<ReadInputs>()
+  const rebuildNow = useRef<() => void>()
   const stop = () => {
     playbackGeneration.current++
     activePlayback.current = undefined
@@ -184,7 +230,7 @@ export default function SceneView(props: SceneProps) {
   }, [shown, clock])
   useEffect(() => {
     if (seen) return
-    if (printed || !expanded || typeof IntersectionObserver === 'undefined') {
+    if (eager || typeof IntersectionObserver === 'undefined') {
       setSeen(true)
       return
     }
@@ -192,17 +238,22 @@ export default function SceneView(props: SceneProps) {
     if (!root) return
     // Observe the scene's stage against the viewport; after first visibility,
     // retain the instance when reading past it so steps remain reversible.
+    // A scene a screen away is made ahead, while the page is idle, so that the reader does not wait for it on the way.
+    let cancel: (() => void) | undefined
     const observer = new IntersectionObserver(
       (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return
-        setSeen(true)
+        const entry = entries.find((entry) => entry.isIntersecting)
+        if (!entry) return
         observer.disconnect()
+        const { top, bottom } = entry.boundingClientRect
+        if (top < window.innerHeight && bottom > 0) setSeen(true)
+        else cancel = idle(() => setSeen(true))
       },
-      { rootMargin: '200px' },
+      { rootMargin: '100% 0px' },
     )
     observer.observe(root)
-    return () => observer.disconnect()
-  }, [seen, printed, expanded])
+    return () => { observer.disconnect(); cancel?.() }
+  }, [seen, eager])
   useEffect(() => () => {
     instance.current?.dispose?.()
     instance.current = undefined
@@ -235,10 +286,15 @@ export default function SceneView(props: SceneProps) {
       // A build that draws text on a canvas measures and paints it with the page's fonts, so they load first.
       await document.fonts.ready
       if (!current()) { layer.remove(); return }
+      const read: ReadInputs = { parameters: new Map() }
+      let recording = true
       const made = await definition.create({
         root: layer,
-        parameters: sceneParameters,
-        state: sceneState,
+        parameters: liveParameters(inputs, read, () => recording),
+        get state() {
+          if (recording) read.state = { value: inputs.current.state }
+          return inputs.current.state
+        },
         durations,
         at: (step) => starts[Math.max(0, Math.min(step, durations.length))]!,
         total,
@@ -269,17 +325,22 @@ export default function SceneView(props: SceneProps) {
         }
         throw error
       })
+      recording = false
       // The first frame shows the scene's pictures: the video export captures a step as soon as it is ready.
       await Promise.all([...layer.querySelectorAll('img')].map((img) => img.decode().catch(() => undefined)))
-      if (!current()) {
+      // Made from inputs the reader has since left: the shown scene may still fit, else it is made again.
+      const stale = changed(read, inputs.current.state, inputs.current.parameters)
+      if (!current() || stale) {
         try { made.dispose?.() }
         finally { layer.remove() }
+        if (current() && (!instance.current || !builtFrom.current || changed(builtFrom.current, inputs.current.state, inputs.current.parameters))) rebuild()
         return
       }
       instance.current?.dispose?.()
       for (const child of [...root.children]) if (child !== layer) child.remove()
       delete layer.dataset.pending
       instance.current = made
+      builtFrom.current = read
       made.seek(shownNow.current)
       setStatus('ready')
     }
@@ -293,6 +354,7 @@ export default function SceneView(props: SceneProps) {
       })
       clock?.wait(work)
     }
+    rebuildNow.current = rebuild
     preloadScenes()
     rebuild()
     observer = new ResizeObserver(([entry]) => {
@@ -313,10 +375,15 @@ export default function SceneView(props: SceneProps) {
     observer.observe(root)
     return () => {
       disposed = true
+      if (rebuildNow.current === rebuild) rebuildNow.current = undefined
       clearTimeout(resizeTimer)
       observer?.disconnect()
     }
-  }, [enabled, props.scene, JSON.stringify(durations), JSON.stringify(sceneParameters), sceneState, dark, clock])
+  }, [enabled, props.scene, JSON.stringify(durations), dark, clock])
+  useEffect(() => {
+    const read = builtFrom.current
+    if (read && changed(read, sceneState, sceneParameters)) rebuildNow.current?.()
+  }, [sceneState, JSON.stringify(sceneParameters)])
   const box: CSSProperties = props.height
     ? { height: props.height }
     : { aspectRatio: (props.aspect ?? '16/9').replace('/', ' / ') }

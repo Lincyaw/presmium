@@ -10,8 +10,5 @@ site:
     contentWidth: {{contentWidth}}
   landing:
     source: ./site/home.json
-  nav:
-    - text: {{start}}
-      link: /intro/
   head:
     description: {{description}}

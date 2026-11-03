@@ -29,6 +29,13 @@
   --pm-ui-textarea-height: calc(var(--pm-size-row) * 2);
 }
 
+/* The pill shape, for a published website's buttons, search fields and segmented choices; it keeps the density. */
+[data-shape='pill'] {
+  --pm-ui-control-radius: var(--pm-radius-pill);
+  --pm-ui-frame-radius: var(--pm-radius-pill);
+  --pm-ui-frame-radius-inset: var(--pm-radius-pill);
+}
+
 .pm-ui {
   color: var(--pm-color-ink);
   font-family: var(--pm-font-sans);
@@ -942,7 +949,7 @@
   gap: var(--pm-space-1);
   min-width: 0;
   padding: var(--pm-space-px);
-  border-radius: var(--pm-radius-control);
+  border-radius: var(--pm-ui-frame-radius, var(--pm-radius-control));
   background: var(--pm-color-sunk);
 }
 
@@ -977,7 +984,7 @@
 
 /* Nested radius: an option sits the frame's padding inside it. */
 .pm-ui-segmented > .pm-ui-segmented__option {
-  border-radius: var(--pm-radius-control-inset);
+  border-radius: var(--pm-ui-frame-radius-inset, var(--pm-radius-control-inset));
 }
 
 .pm-ui-segmented__option[aria-pressed='true'],

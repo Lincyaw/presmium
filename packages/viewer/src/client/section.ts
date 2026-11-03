@@ -28,7 +28,9 @@ function SectionViewContent({ section, layout = 'document' }: { section: IRSecti
     if (root.current) observer.observe(root.current)
     return () => observer.disconnect()
   }, [section.id, viewer])
-  useEffect(() => { if (layout !== 'scrolly') return; const update = () => { const markers = [...root.current?.querySelectorAll<HTMLElement>('.pm-step') ?? []]; const step = Math.max(0, markers.filter(el => el.getBoundingClientRect().top < window.innerHeight * .6).length - 1); setScrolled(step); if (viewer.view.getSnapshot() === view) viewer.go({ section: section.id, step }) }; window.addEventListener('scroll', update, true); return () => window.removeEventListener('scroll', update, true) }, [layout, section.id, view])
+  // Every scrolly section follows the reading line with its own step; only the one across the line moves the reader's
+  // place, which is what a scene plays its step's motion against.
+  useEffect(() => { if (layout !== 'scrolly') return; const update = () => { const element = root.current; if (!element) return; const line = window.innerHeight * .6; const markers = [...element.querySelectorAll<HTMLElement>('.pm-step')]; const step = Math.max(0, markers.filter(el => el.getBoundingClientRect().top < line).length - 1); setScrolled(step); const { top, bottom } = element.getBoundingClientRect(); if (top < line && bottom > line && viewer.view.getSnapshot() === view) viewer.go({ section: section.id, step }) }; window.addEventListener('scroll', update, true); return () => window.removeEventListener('scroll', update, true) }, [layout, section.id, view])
   const step = layout === 'scrolly' ? scrolled : FINAL_STEP
   const title = isChapterTitle(doc, section) ? 'h1' : 'h2'; const t = viewerMessages().section
   const blocks = section.blocks.filter(block => block.role === 'visual' || (block.only && !block.only.includes('lecture')) || isLegacyNarration(doc, block))

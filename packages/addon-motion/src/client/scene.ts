@@ -26,6 +26,16 @@ export interface SceneContext {
   color(name: string): string
 }
 
+/**
+ * The context with a library's modules added. Its fields stay accessors of `ctx`, so that a scene reads its step's
+ * state and parameters only where it uses them: one that never reads them keeps its timeline from step to step.
+ */
+function withModules<T extends object>(ctx: SceneContext, modules: T): SceneContext & T {
+  const extended = { ...modules } as SceneContext & T
+  for (const key of Object.keys(ctx) as (keyof SceneContext)[]) Object.defineProperty(extended, key, { enumerable: true, configurable: true, get: () => ctx[key] })
+  return extended
+}
+
 /** A scene drawn at a place on its timeline. Its look is a function of that place only. */
 export interface Scene {
   /** Shows the scene at `ms` on its timeline. */
@@ -97,7 +107,7 @@ export function gsapScene(build: (ctx: SceneContext & { gsap: typeof Gsap, plugi
       const context = gsap.context(() => {}, ctx.root)
       try {
         context.add(() => {
-          animation = build({ ...ctx, gsap, plugins })
+          animation = build(withModules(ctx, { gsap, plugins }))
         })
         animation?.pause()
         return {
@@ -121,7 +131,7 @@ export function animeScene(build: (ctx: SceneContext & { anime: typeof AnimeModu
     async create(ctx) {
       const anime = await import('animejs')
       const scope = anime.createScope({ root: ctx.root })
-      const animation = scope.execute(() => build({ ...ctx, anime }))
+      const animation = scope.execute(() => build(withModules(ctx, { anime })))
       animation.pause()
       // Until a tween has been reached once it shows the element's own value, not its from-value: going to the end and
       // back sets them all up, so a time looks the same whatever was shown before it.
@@ -151,7 +161,7 @@ export function motionScene(build: (ctx: SceneContext & { motion: typeof MotionM
     engine: 'motion',
     async create(ctx) {
       const motion = await import('motion')
-      const controls = [build({ ...ctx, motion })].flat()
+      const controls = [build(withModules(ctx, { motion }))].flat()
       for (const control of controls) control.pause()
       return {
         seek(ms) {
@@ -224,7 +234,7 @@ export function threeScene(build: (ctx: SceneContext & { THREE: typeof ThreeModu
       }
       syncBuffer()
       // An async build can load its textures (`new THREE.TextureLoader().loadAsync(url)`) before the first frame.
-      const made = await build({ ...ctx, THREE, renderer, addons })
+      const made = await build(withModules(ctx, { THREE, renderer, addons }))
       const view: ThreeView = typeof made === 'function' ? { render: made } : made
       return {
         seek(ms) {
@@ -259,7 +269,7 @@ export function d3Scene(build: (ctx: SceneContext & { d3: typeof D3Module }) => 
     engine: 'd3',
     async create(ctx) {
       const d3 = await import('d3')
-      return scene(await build({ ...ctx, d3 }))
+      return scene(await build(withModules(ctx, { d3 })))
     },
   }
 }
@@ -290,7 +300,7 @@ export function remotionScene(build: (ctx: SceneContext & { React: typeof ReactM
         import('remotion'),
         import('@remotion/player'),
       ])
-      const composition = await build({ ...ctx, React, remotion })
+      const composition = await build(withModules(ctx, { React, remotion }))
       const frames = composition.durationInFrames ?? Math.max(1, Math.ceil(ctx.total * composition.fps / 1000))
       const root = createRoot(ctx.root)
       return {

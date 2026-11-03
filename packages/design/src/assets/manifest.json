@@ -45,6 +45,15 @@
       "usage": "Application interface typography with the declared CJK system fallbacks."
     },
     {
+      "id": "site-font",
+      "kind": "font",
+      "sourcePackage": "@fontsource-variable/hanken-grotesk",
+      "license": "OFL-1.1",
+      "source": "https://fontsource.org/fonts/hanken-grotesk",
+      "entry": "../fonts.css",
+      "usage": "The published website's interface and sans reading typography, with the declared CJK system fallbacks."
+    },
+    {
       "id": "reading-font",
       "kind": "font",
       "sourcePackage": "@fontsource/source-serif-4",

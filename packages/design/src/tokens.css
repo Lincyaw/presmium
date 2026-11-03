@@ -66,6 +66,8 @@
 
   --pm-font-sans: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Noto Sans SC', system-ui, sans-serif;
   --pm-font-serif: 'Source Serif 4', 'Songti SC', 'Noto Serif CJK SC', 'Source Han Serif SC', 'Noto Serif SC', 'SimSun', serif;
+  /* The published website: Hanken Grotesk for Latin text and numbers, the same CJK fallbacks as the interface. */
+  --pm-font-site: 'Hanken Grotesk Variable', 'Hanken Grotesk', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Noto Sans SC', system-ui, sans-serif;
   --pm-font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', monospace;
 
   --pm-text-xs: 0.75rem;
@@ -201,23 +203,47 @@
   --pm-skeleton-heading: 1.25rem;
 
   /* A document's site: its header, the chapters beside the page, the page's sections, the measure of its text. */
-  --pm-site-header-height: 3.5rem;
+  --pm-site-header-height: 4rem;
+  --pm-site-header-height-compact: 3.5rem;
+  /* On a phone, the bar under the header that opens the contents and the page's sections. */
+  --pm-site-localnav-height: 2.5rem;
+  --pm-site-glass-blur: 1.5rem;
   --pm-site-sidebar-width: 17rem;
   --pm-site-outline-width: 14rem;
   --pm-site-reading-width: 48rem;
+  /* The widest a page's figures beside their text spread, past the measure of its prose. */
+  --pm-site-spread-width: 75rem;
   --pm-site-wide-width: 72rem;
   --pm-site-reading-font: var(--pm-font-serif);
   --pm-site-hero-width: 54rem;
-  --pm-site-hero-title: clamp(2rem, 5vw, 4rem);
-  --pm-site-hero-surface: color-mix(in srgb, var(--pm-color-accent-soft) 42%, var(--pm-color-bg));
+  --pm-site-hero-title: clamp(2rem, 3.6vw, 3rem);
+  /* The text under a hero's title, and the tracking and leading of display and section titles. */
+  --pm-site-lead: 1.25rem;
+  --pm-site-tracking-display: -0.02em;
+  --pm-site-tracking-heading: -0.01em;
+  --pm-site-leading-display: 1.12;
+  /* The ambient wash behind the top of a site's page, deeper behind a home page's hero. */
+  --pm-site-ambient-height: 32.5rem;
+  --pm-site-ambient-hero-height: 60rem;
   --pm-site-landing-image-max: 24rem;
   --pm-site-landing-image-mobile-max: 13rem;
+  /* A front page (the workspace's home, a site's landing page): its centred column, the gap between its sections, the
+     measure of its lead and of its section titles, and the narrowest and widest of its cards. */
+  --pm-site-landing-width: 64rem;
+  --pm-site-section-space: 4rem;
+  --pm-site-lead-width: 40rem;
+  --pm-site-section-title: clamp(1.5rem, 2.6vw, 2rem);
   --pm-site-card-min-width: 18rem;
+  --pm-site-card-max-width: 20.5rem;
   --pm-site-showcase-card-height: 14rem;
   /* Product websites: editorial hero and ambient motion from the reference landing. */
   --pm-color-product-bg: #f7f8fa;
   --pm-color-product-accent: #6543a2;
   --pm-color-product-soft: #eee9f7;
+  /* The site's ambient wash: blue, teal and violet glows that fade to transparent at their edges. */
+  --pm-color-site-ambient-1: rgb(214 222 255 / 95%);
+  --pm-color-site-ambient-2: rgb(211 239 234 / 85%);
+  --pm-color-site-ambient-3: rgb(239 230 255 / 60%);
   /* A fixed photographic palette for authored product films, like colours in a photograph. */
   --pm-color-film-paper: #f5f5f7;
   --pm-color-film-ink: #111113;
@@ -275,6 +301,9 @@
   --pm-color-product-bg: #14151c;
   --pm-color-product-accent: #c0a8f2;
   --pm-color-product-soft: #2d263e;
+  --pm-color-site-ambient-1: rgb(142 160 255 / 20%);
+  --pm-color-site-ambient-2: rgb(45 212 191 / 14%);
+  --pm-color-site-ambient-3: rgb(167 139 250 / 14%);
   --pm-product-card-shadow: 0 1px 2px rgb(0 0 0 / 20%), 0 6px 20px -6px rgb(0 0 0 / 32%);
 
   --pm-color-bg: #161614;
@@ -330,6 +359,12 @@
   --pm-shadow-page: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
+@media (max-width: 767px) {
+  :root {
+    --pm-site-header-height: var(--pm-site-header-height-compact);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
     --pm-duration-fast: 0ms;
@@ -367,9 +402,53 @@
 
 /* Site presets select semantic token values; the same values reach portal controls through the root.
    A workbench's embedded document has no site attributes and keeps its own design system. */
+
+/* The published website's surface, after the AegisLab design system: a near-white cool grey page, white panels,
+   a soft near-black ink and hairlines, under translucent bars over a faint ambient wash. The workbench keeps the warm
+   reading surface above. */
+:root:has([data-pm-site-theme]),
+[data-pm-site-theme] {
+  --pm-color-bg: #f7f8fa;
+  --pm-color-surface: #ffffff;
+  --pm-color-sunk: #f1f3f5;
+  --pm-color-chrome: #ffffff;
+  --pm-color-canvas: #eceef2;
+  --pm-color-code: #f6f8fa;
+  --pm-color-ink: #1f2328;
+  --pm-color-muted: #5f6368;
+  --pm-color-muted-soft: #eef0f3;
+  --pm-color-line: #e3e6ea;
+  --pm-color-line-strong: #868c95;
+  --pm-color-gutter: #9aa0a6;
+  --pm-color-backdrop: rgb(31 35 40 / 28%);
+  /* The header and the bars that stay over the page as it scrolls. */
+  --pm-site-glass: color-mix(in srgb, var(--pm-color-bg) 72%, transparent);
+  --pm-shadow: 0 1px 2px rgb(31 35 40 / 4%), 0 6px 20px -6px rgb(31 35 40 / 8%);
+  --pm-shadow-float: 0 8px 24px -6px rgb(31 35 40 / 12%), 0 28px 64px -16px rgb(31 35 40 / 20%);
+}
+
+:root.dark:has([data-pm-site-theme]),
+:root.dark [data-pm-site-theme] {
+  --pm-color-bg: #0b0d12;
+  --pm-color-surface: #15181e;
+  --pm-color-sunk: #1e222a;
+  --pm-color-chrome: #15181e;
+  --pm-color-canvas: #07080b;
+  --pm-color-code: #11141a;
+  --pm-color-ink: #eef0f3;
+  --pm-color-muted: #9aa0a6;
+  --pm-color-muted-soft: #262b34;
+  --pm-color-line: #252a33;
+  --pm-color-line-strong: #6b7280;
+  --pm-color-gutter: #6b7280;
+  --pm-color-backdrop: rgb(0 0 0 / 55%);
+  --pm-shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 6px 20px -6px rgb(0 0 0 / 40%);
+  --pm-shadow-float: 0 8px 24px -6px rgb(0 0 0 / 45%), 0 28px 64px -16px rgb(0 0 0 / 60%);
+}
+
 :root:has([data-pm-site-typography='sans']),
 [data-pm-site-typography='sans'] {
-  --pm-site-reading-font: var(--pm-font-sans);
+  --pm-site-reading-font: var(--pm-font-site);
 }
 
 :root:has([data-pm-site-width='wide']),
@@ -379,8 +458,8 @@
 
 :root:has([data-pm-site-accent='blue']),
 [data-pm-site-accent='blue'] {
-  --pm-color-accent: #224fa3;
-  --pm-color-accent-soft: #e8eefb;
+  --pm-color-accent: #3c56f4;
+  --pm-color-accent-soft: #eef1fe;
   --pm-color-on-accent: #ffffff;
   --pm-color-selected: var(--pm-color-accent-soft);
 }
@@ -411,9 +490,9 @@
 
 :root.dark:has([data-pm-site-accent='blue']),
 :root.dark [data-pm-site-accent='blue'] {
-  --pm-color-accent: #9dbdf7;
-  --pm-color-accent-soft: #243b61;
-  --pm-color-on-accent: #111e35;
+  --pm-color-accent: #8ea0ff;
+  --pm-color-accent-soft: #1f2852;
+  --pm-color-on-accent: #0b0d12;
 }
 
 :root.dark:has([data-pm-site-accent='teal']),

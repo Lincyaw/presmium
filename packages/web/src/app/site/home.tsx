@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { WEB_MESSAGES } from '../../domain/index.ts'
 import type { AppConfig, HomeDocument, SiteAction, SiteLandingPage, SiteLandingSection } from '../../domain/index.ts'
-import { NavLinks, SiteFooter, SiteHeader, siteThemeAttributes } from './layout.tsx'
+import { NavLinks, SiteFooter, SiteHeader, siteRoot, siteThemeAttributes } from './layout.tsx'
 
 function HomeHeader({ config }: { config: AppConfig }) {
   const t = useMessages(WEB_MESSAGES)
@@ -13,7 +13,7 @@ function HomeHeader({ config }: { config: AppConfig }) {
   const items = configured.length ? configured : documents.length ? documents : [{ text: t.backHome, link: config.base }]
   return <><SiteHeader config={config} titleHref={config.base} hrefIn={locale => locale.base} onMenu={() => setOpen(true)} />
     <PmDrawer open={open} label={t.mobileNav} closeLabel={t.close} name="pm-site-menu" onOpenChange={setOpen}>
-      <NavLinks items={items} vertical onNavigate={() => setOpen(false)} />
+      <NavLinks items={items} root={siteRoot(config)} vertical onNavigate={() => setOpen(false)} />
     </PmDrawer></>
 }
 
@@ -23,7 +23,7 @@ export function WorkspaceHome({ config }: { config: AppConfig }) {
 
 function LandingActions({ actions }: { actions?: SiteAction[] }) {
   if (!actions?.length) return null
-  return <div className="pm-site-landing__actions">{actions.map((action, index) => <a key={`${action.link}-${index}`} className={`pm-ui-button${action.variant === 'secondary' ? '' : ' pm-ui-button--accent'}`} href={action.link}><span className="pm-ui-button__content">{action.text}</span></a>)}</div>
+  return <div className="pm-site-landing__actions">{actions.map((action, index) => <a key={`${action.link}-${index}`} className={`pm-ui-button${action.variant === 'secondary' ? '' : ' pm-ui-button--primary'}`} href={action.link}><span className="pm-ui-button__content">{action.text}</span></a>)}</div>
 }
 
 function LandingDocument({ document }: { document: HomeDocument }) {
@@ -67,16 +67,17 @@ export function IndependentLanding({ config, page }: { config: AppConfig, page: 
   const t = useMessages(WEB_MESSAGES), hero = page.hero, title = hero?.title ?? page.title, description = hero?.description ?? page.description
   return <div className="pm-site pm-site--landing" {...siteThemeAttributes(config)}>
     <a className="pm-site__skip" href="#pm-site-main">{t.skipToContent}</a><HomeHeader config={config} />
-    <main id="pm-site-main" className="pm-site-landing pm-ui" tabIndex={-1}>
-      <header className="pm-site-landing__hero" data-with-image={hero?.image ? '' : undefined}>
+    <main id="pm-site-main" className="pm-site-landing pm-ui" data-shape="pill" tabIndex={-1}>
+      {/* Without a hero the page starts at its first section; its title still names it to screen readers. */}
+      {hero ? <header className="pm-site-landing__hero" data-with-image={hero.image ? '' : undefined}>
         <div className="pm-site-landing__hero-content">
-          {hero?.eyebrow && <div className="pm-ui-badges"><PmBadge tone="accent">{hero.eyebrow}</PmBadge></div>}
+          {hero.eyebrow && <p className="pm-site-eyebrow">{hero.eyebrow}</p>}
           <h1 className="pm-site-landing__title">{title}</h1>
           {description && <p className="pm-site-landing__description">{description}</p>}
-          <LandingActions actions={hero?.actions} />
+          <LandingActions actions={hero.actions} />
         </div>
-        {hero?.image && <figure className="pm-site-landing__hero-visual"><img src={hero.image} alt={hero.imageAlt ?? ''} /></figure>}
-      </header>
+        {hero.image && <figure className="pm-site-landing__hero-visual"><img src={hero.image} alt={hero.imageAlt ?? ''} /></figure>}
+      </header> : <h1 className="pm-ui-sr-only">{page.title}</h1>}
       {page.sections.map(section => <LandingSection key={section.id} section={section} documents={config.documents ?? []} />)}
       <SiteFooter config={config} />
     </main>
@@ -95,7 +96,7 @@ function AutomaticWorkspaceHome({ config }: { config: AppConfig }) {
   const tags = [...new Set(documents.flatMap(doc => doc.tags ?? []))].sort()
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
   const shown = documents.filter(doc => (!tag || doc.tags?.includes(tag)) && words.every(word => `${doc.title} ${doc.dir} ${doc.description ?? ''} ${(doc.tags ?? []).join(' ')}`.toLowerCase().includes(word)))
-  useEffect(() => { const key = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); input.current?.focus() } }; window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key) }, [])
+  useEffect(() => { const key = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && input.current) { event.preventDefault(); input.current.focus() } }; window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key) }, [])
   const card = (doc: HomeDocument) => <li key={doc.dir} className="pm-site-home__document pm-ui-card pm-ui-card--interactive" data-document={doc.dir}>
     {course && <div className="pm-site-home__order" aria-hidden="true"><PmBadge tone="accent" pill>{String(documentOrder.get(doc.dir)).padStart(2, '0')}</PmBadge></div>}
     <div className="pm-site-home__card-content"><h3 className="pm-ui-card__title"><a className="pm-site-home__link" href={doc.href} lang={doc.lang}>{doc.title}</a></h3>
@@ -103,15 +104,15 @@ function AutomaticWorkspaceHome({ config }: { config: AppConfig }) {
       <div className="pm-ui-badges">{theme === 'docs' && <PmBadge className="pm-site-home__dir">{doc.dir}/</PmBadge>}{doc.pages ? <PmBadge>{t.pages(doc.pages)}</PmBadge> : null}{doc.lang && <PmBadge>{doc.lang}</PmBadge>}{doc.tags?.map(name => <PmBadge key={name} className="pm-site-home__badge">{name}</PmBadge>)}{theme === 'docs' && doc.problems && <PmBadge tone={doc.problems.errors ? 'danger' : doc.problems.warnings ? 'warn' : 'ok'}>{doc.problems.errors ? t.errors(doc.problems.errors) : doc.problems.warnings ? t.warnings(doc.problems.warnings) : t.checked}</PmBadge>}</div>
     </div>
   </li>
-  return <div className="pm-site pm-site--home" {...siteThemeAttributes(config)}><a className="pm-site__skip" href="#pm-site-main">{t.skipToContent}</a><HomeHeader config={config} /><main id="pm-site-main" className="pm-site-home pm-ui" tabIndex={-1}>
+  return <div className="pm-site pm-site--home" {...siteThemeAttributes(config)}><a className="pm-site__skip" href="#pm-site-main">{t.skipToContent}</a><HomeHeader config={config} /><main id="pm-site-main" className="pm-site-home pm-ui" data-shape="pill" tabIndex={-1}>
     <header className="pm-site-home__hero">
-      {theme !== 'docs' && <div className="pm-ui-badges"><PmBadge tone="accent">{t.documentCount(documents.length)}</PmBadge></div>}
+      {theme !== 'docs' && <p className="pm-site-eyebrow">{t.documentCount(documents.length)}</p>}
       <h1 className="pm-site-home__title">{config.site.title}</h1>
       {config.site.shell.head?.description && <p className="pm-site-home__intro">{config.site.shell.head.description}</p>}
-      {(course && documents[0] || showcase) && <div className="pm-site-home__actions">{course && documents[0] && <a className="pm-ui-button pm-ui-button--accent" href={documents[0].href}><span className="pm-ui-button__content">{t.startReading}<PmIcon name="chevron-right" /></span></a>}{showcase && <a className="pm-ui-button pm-ui-button--accent" href="#pm-site-home-documents"><span className="pm-ui-button__content">{t.browseDocuments}<PmIcon name="chevron-down" /></span></a>}</div>}
+      {(course && documents[0] || showcase) && <div className="pm-site-home__actions">{course && documents[0] && <a className="pm-ui-button pm-ui-button--primary" href={documents[0].href}><span className="pm-ui-button__content">{t.startReading}<PmIcon name="chevron-right" /></span></a>}{showcase && <a className="pm-ui-button pm-ui-button--primary" href="#pm-site-home-documents"><span className="pm-ui-button__content">{t.browseDocuments}<PmIcon name="chevron-down" /></span></a>}</div>}
     </header>
-    <section className="pm-site-home__section" aria-labelledby="pm-site-home-documents"><div className="pm-site-home__filters"><h2 id="pm-site-home-documents" className="pm-ui-heading">{course ? t.courseContents : t.documentsHeading}</h2><label className="pm-ui-search pm-site-home__search-box"><PmIcon name="search" /><input ref={input} className="pm-site-home__search" type="search" value={query} placeholder={t.searchDocuments} aria-label={t.searchDocuments} onChange={event => setQuery(event.target.value)} /><kbd className="pm-ui-kbd">{t.searchShortcut}</kbd></label>{tags.length > 0 && <div className="pm-site-home__tags pm-ui-segmented" role="group" aria-label={t.tags}><button type="button" className="pm-site-home__tag pm-ui-segmented__option" aria-pressed={tag === undefined} onClick={() => setTag(undefined)}>{t.allTags}</button>{tags.map(name => <button key={name} type="button" className="pm-site-home__tag pm-ui-segmented__option" aria-pressed={tag === name} onClick={() => setTag(tag === name ? undefined : name)}>{name}</button>)}</div>}</div>{shown.length ? <DocumentList className="pm-site-home__documents">{shown.map(card)}</DocumentList> : <PmEmpty icon="document">{t.noDocuments}</PmEmpty>}</section>
+    <section className="pm-site-home__section" aria-labelledby="pm-site-home-documents"><header className="pm-site-home__section-heading"><h2 id="pm-site-home-documents" className="pm-site-home__section-title">{course ? t.courseContents : t.documentsHeading}</h2></header>{documents.length > 1 && <div className="pm-site-home__filters"><label className="pm-ui-search pm-site-home__search-box"><PmIcon name="search" /><input ref={input} className="pm-site-home__search" type="search" value={query} placeholder={t.searchDocuments} aria-label={t.searchDocuments} onChange={event => setQuery(event.target.value)} /><kbd className="pm-ui-kbd">{t.searchShortcut}</kbd></label>{tags.length > 0 && <div className="pm-site-home__tags pm-ui-segmented" role="group" aria-label={t.tags}><button type="button" className="pm-site-home__tag pm-ui-segmented__option" aria-pressed={tag === undefined} onClick={() => setTag(undefined)}>{t.allTags}</button>{tags.map(name => <button key={name} type="button" className="pm-site-home__tag pm-ui-segmented__option" aria-pressed={tag === name} onClick={() => setTag(tag === name ? undefined : name)}>{name}</button>)}</div>}</div>}{shown.length ? <DocumentList className="pm-site-home__documents">{shown.map(card)}</DocumentList> : <PmEmpty icon="document">{t.noDocuments}</PmEmpty>}</section>
     <SiteFooter config={config} />
   </main></div>
 }
-export function MissingPage({ config }: { config: AppConfig }) { const t = useMessages(WEB_MESSAGES); return <div className="pm-site pm-site--missing" {...siteThemeAttributes(config)}><HomeHeader config={config} /><main id="pm-site-main" className="pm-site-missing"><p className="pm-site-missing__code">404</p><h1 className="pm-site-missing__title">{t.notFound}</h1><p className="pm-site-missing__text">{t.notFoundText}</p><a className="pm-ui-button pm-ui-button--primary" href={config.site.root ?? config.base}>{t.backHome}</a></main></div> }
+export function MissingPage({ config }: { config: AppConfig }) { const t = useMessages(WEB_MESSAGES); return <div className="pm-site pm-site--missing" {...siteThemeAttributes(config)}><HomeHeader config={config} /><main id="pm-site-main" className="pm-site-missing" data-shape="pill"><p className="pm-site-missing__code">404</p><h1 className="pm-site-missing__title">{t.notFound}</h1><p className="pm-site-missing__text">{t.notFoundText}</p><a className="pm-ui-button pm-ui-button--primary" href={config.site.root ?? config.base}>{t.backHome}</a></main></div> }

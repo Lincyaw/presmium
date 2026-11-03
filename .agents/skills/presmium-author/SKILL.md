@@ -30,6 +30,7 @@ Terms used throughout:
 | Make one large piece with several agents in parallel | `presmium-animate/references/team.md` |
 | Generate voiceover, choose voices, set captions, record or make the video | [Lecture production](references/lecture.md) |
 | Build a site, slides, PDF, PowerPoint, notebook, translation or student version; prepare offline | [Publishing](references/publishing.md) |
+| Write or restyle a site's homepage (`site/home.json`), choose its theme | [Publishing, Write the homepage](references/publishing.md#write-the-homepage) |
 | Run a class with quizzes, polls and students following along | [Classroom](references/classroom.md) |
 | Details of every studio and MCP action: conflicts, approvals, audio and image import, transcription | [Assistance](references/assistance.md) |
 | Implement a component or service | `presmium-develop` |

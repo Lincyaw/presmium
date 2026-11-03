@@ -132,20 +132,48 @@ pnpm serve
 
 The scaffold contains an independent homepage at `site/home.json`, a teaching document at `intro/lecture.json`, and `presmium.workspace.yaml`. `site.landing: { source: './site/home.json' }` selects the homepage file; a `SiteLandingPage` object can also be written directly in `site.landing`. The homepage uses its own `schemaVersion: 1`, `title`, optional description/hero, and required `sections` array. It is a site page, without teaching steps, narrations or production settings. Do not wrap independent homepage content in a teaching document or add it to `documents`.
 
+### Write the homepage
+
+The built-in themes lay a JSON homepage out the way blog and documentation sites lay out their front pages: a centred hero, then each section under a centred title, cards in a grid of equal widths centred as a group, running text in a reading column aligned to the start. The layout is the theme's; the homepage file decides only the words, their order and their length, and short words are what make the page look finished.
+
+First decide whether the site needs a hero at all. A site of a few documents whose name in the header already says what it is (one explainer, a set of notes) needs none: leave `hero` out and the page starts at the documents. The file's `title` still names the page in the browser tab. Write a hero when the site has more to say than its name: a course with a term and an audience, a product. Then write it like this:
+
+| Field | Write |
+|---|---|
+| `hero.eyebrow` | What the site is, in a few words: the course and term, or the topic (at most 12 Chinese characters or 5 English words). Leave it out rather than repeat the title. |
+| `hero.title` | The site's name or its promise, on one line on a desktop: at most 16 Chinese characters or 8 English words, no closing punctuation. |
+| `hero.description` | One or two sentences, at most 60 Chinese characters or 30 English words: who it is for and what they get. Not a list of features. |
+| `hero.actions` | One `primary` action to the first thing to read (the first document's `/dir/`), and at most one `secondary` (a section anchor such as `#features`, or `documents.html`). A verb and its object: 开始阅读, 浏览课程. |
+| `hero.image` | Only a picture of the content itself (a page, a slide, a diagram), shown under the words at most 24rem high; a transparent PNG or SVG, always with `imageAlt`. No stock photos. |
+
+Sections, two to four, usually in this order: `features` (what a reader gets), `documents` (where to start), optionally `text` or `media`, and a closing `cta`. Give each a `title` of at most 10 Chinese characters or 5 English words, and a `description` only when one sentence adds something.
+
+- `features`: three items (or six), written in parallel: a title of at most 8 Chinese characters or 4 English words, and a description of one or two lines on the card (at most 40 Chinese characters or 20 English words). Items of about the same length keep the cards the same height.
+- `documents`: always include one, so that readers reach the content. The theme draws the list (`course`: one numbered column; `docs`: cards; `showcase`: large cards). Each card shows a document's `metadata.title`, `metadata.description` (write one sentence) and `metadata.tags` (one or two), so write those in every `lecture.json`.
+- `text`: at most three short paragraphs; anything longer is a document.
+- `media`: one image or video that shows the work, with `alt`, and `captions` for speech.
+- `cta`: last, a short question or invitation and one action, usually the hero's primary action again.
+
+`site.nav` in the workspace configuration holds only site-wide destinations: another site, the code repository, an about page. Do not add an entry per document; readers reach documents from the homepage list and the contents beside every document page, and a site without `nav` shows only its name and tools in the header.
+
+No emoji, decorative symbols, exclamation marks, HTML or CSS in any field. Then look at the page in `presmium serve` at desktop width and below 768 px, light and dark: the hero title fits one line on the desktop, the lead runs two lines at most, and the feature cards are the same height.
+
 For a freely designed homepage, use `site.landing: { template: './site/home.html' }`. Vite builds the HTML entry and its CSS, JavaScript and local assets; it is not a React/viewer-shell plugin. The injected `script#presmium-site-data` contains only `schemaVersion`, `title`, `base`, `lang`, and public `documents` (`id`, `title`, `href`, optional `description`, `lang`, `tags`, `pages`). Read its JSON and use published `href` values; create DOM nodes with text content for document titles. Do not insert document IR, diagnostics, configuration or operator settings into template data. `source` and `template` are exclusive. A served template rebuilds on page refresh; there is no template hot update channel.
 
 Resolve JSON page media relative to that JSON file, inline media relative to the workspace configuration, and HTML assets relative to the HTML entry. Workspace `public/` files are published at the site root. Rebuild for deployment after changing the homepage.
 
 Existing string configuration `site.landing: welcome` remains available when the author intentionally wants a teaching document as the homepage. That directory must belong to `documents`; all its sections appear at the site root and its document URL remains available. Keep `lecture.json` as the only editable content source for that teaching document. Existing `site.home` redirects to a document and cannot be combined with any form of `landing`.
 
-In the workspace configuration, `site.theme` selects `course`, `docs` or `showcase`; the renderer defaults to `docs` to preserve existing sites, while a new `site` scaffold selects `course`. The workspace's theme and brand apply to all documents. `site.params` supports only these parameters:
+In the workspace configuration, `site.theme` selects `course`, `docs` or `showcase`; the renderer defaults to `docs`, while a new `site` scaffold selects `course`. All three share one surface: a cool light grey page (near-black in dark mode) under a translucent header with the site's name and navigation, sans-serif type and pill-shaped buttons. The workspace's theme and brand apply to all documents. `site.params` supports only these parameters:
 
-| Parameter | Values |
-|---|---|
-| `accent` | `blue`, `teal`, `violet`, `amber` |
-| `typography` | `reading`, `sans` |
-| `contentWidth` | `comfortable`, `wide` |
-| `logo`, `logoAlt` | The logo location and alternative text |
+| Parameter | Values | Default (`docs`, `course` / `showcase`) |
+|---|---|---|
+| `accent` | `blue`, `teal`, `violet`, `amber` | `blue` / `violet` |
+| `typography` | `reading` (serif text), `sans` | `sans` / `sans` |
+| `contentWidth` | `comfortable`, `wide` | `comfortable` / `wide` |
+| `logo`, `logoAlt` | The logo location and alternative text | none |
+
+Leave a parameter out to take the theme's default; a site that names `accent: teal` or `typography: reading` keeps that choice.
 
 For a look of its own, `site.theme` names a theme directory (`./theme`) or an installed theme package instead of a built-in id. The directory holds `theme.json`:
 
