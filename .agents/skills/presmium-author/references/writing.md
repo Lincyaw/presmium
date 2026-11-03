@@ -15,7 +15,7 @@ Write these down before the first page. When the request doesn't give the audien
 - **Core claim**: the one sentence the audience should understand at the end, with its reason: "读完后，读者明白 X，因为看到了 Y". A topic ("讲讲缓存") is not a claim; "第二次取同一本书只要伸手到桌上，所以缓存让重复读取变快" is.
 - **Forms that matter**: which of the reading page, the slides and the lecture video the author will actually hand out (`metadata.renderers` lists what the document builds: `web`, `notebook`, `slides`, `lecture`). Write the versions that are used; don't fill in a version nobody will see.
 - **One idea per page**: list the pages as one sentence each before writing any of them. If a page needs two sentences, it is two pages.
-- **Terms**: a table of the concepts the document uses, each with its one name and the synonyms not to use (section 2, "Name each concept once"). A document written by several people or agents doesn't stay consistent without it.
+- **Terms**: a table of the concepts the document uses, each with its one name, the synonyms and calques not to use, the page and step where it first appears and the sentence that defines it there (section 2, "Name each concept once"). A document written by several people or agents doesn't stay consistent without it.
 
 ## 2. The information principle
 
@@ -37,7 +37,7 @@ Search the draft for these markers. Most hits are deleted or rewritten; keep a h
 
 | Pattern | Markers | Repair |
 |---|---|---|
-| Defending against a misreading nobody had | 不代表、不意味着、并不是说、不等于; this does not mean, we do not claim | Delete. If the earlier claim really invites the misreading, narrow that claim instead |
+| Defending against a misreading nobody had | 不代表、不意味着、并不是说、不等于、只说明、不能说明、测不出来; this does not mean, we do not claim, only shows | Delete. If the earlier claim really invites the misreading, narrow that claim instead |
 | Strawman contrast | 不是 A 而是 B、并非 A 而是 B; not A but B | When nobody holds A, state B directly. When A is a real, common belief, keep it and say whose belief it is |
 | Narrated history | 起初、后来发现、我们首先尝试; initially, we first tried | Keep only the result |
 | Signpost | 值得注意的是、需要指出的是、不难看出; it is worth noting, note that | Delete the signpost and state the thing |
@@ -47,6 +47,8 @@ Search the draft for these markers. Most hits are deleted or rewritten; keep a h
 | General praise | 高效、强大、灵活、无缝; powerful, seamless, robust | Write the specific property and its number, or delete |
 
 The test for each hit: **would a reader who has read everything up to here plausibly believe what this sentence answers?** If not, the sentence answers a question nobody asked: delete it. Negations that state an advantage ("无需标注", "no retraining") or a condition in a definition are information; keep them.
+
+The same pattern comes a page at a time: a closing section on what the results cannot show defends the whole piece. Write what the work answers instead, each question with the measure that answers it; a limit the reader needs is stated once, as a condition of the claim it limits.
 
 ### Choose the medium
 
@@ -58,6 +60,7 @@ A second name tells the audience there is a second thing. In a 19-page explainer
 
 - **One name per concept** across the whole document: titles, labels, legends, narration and reading text. Keep it in the term table (section 1) with the synonyms not to use.
 - **One concept per name.** "Agent" meant both the agent that drafted the material and the agent under test, drawn in the same colour with the same icon, and viewers concluded that the tested agent wrote its own questions. Two roles get two names, and in pictures two colours.
+- **Define a term where it first appears.** The first title, label, line of narration or paragraph that uses a term says what it is, in one sentence; later pages use it without comment. A term appears nowhere before the step that defines it, and a page title's terms are defined in that page's first step. A 24-page storyboard written for eight agents first used the method's own name (搜索) on page 4 and explained it on page 10, and used a score (惊奇度) one page before the page that defined it: a reader of the web page meets each as an unexplained word. On a `scrolly` page the narration is the reading text, so the definition goes in the narration (section 6).
 - **Sweep at the end**: search the narration, the slide text and the words in scenes for every synonym the table rules out. A hit is renamed, not explained.
 
 ### Formal words in the audience's terms
@@ -76,6 +79,7 @@ A second name tells the audience there is a second thing. In a 19-page explainer
   | 走错的代价：悄悄认定与回溯 (a page title) | 错误结论的代价：静默确认与结论推翻 |
 
 - **The audience's own words, one metaphor system.** Use the everyday terms of the audience's field (an operations engineer says 排查, 协查 and 结案), not a vocabulary borrowed from elsewhere. A metaphor that helps (an evaluation as a game, the user as its non-player character) is mapped once, on one page, term by term; the other pages use the field's words. An explainer that mixed the vocabularies of games, courts, Kubernetes and operations left its viewers translating between four.
+- **The field's own words, not calques.** In Chinese, use the term the field already uses in Chinese (an experiment's arm is 对照组, not 臂); keep an English term the field keeps in English (agent, harness); a concept with neither gets a plain name for what it is (a facet becomes 问题定义). A calque reads as translated and leaves the reader to translate it back. Put the calques a draft is tempted by in the term table, as words not to use.
 - **A person is named, not 它.** In Chinese, refer to a person by their role (用户, 值班工程师), never 它, which makes them a thing.
 
 ## 3. One page, two versions
@@ -162,9 +166,11 @@ Review from the seat of someone who hasn't seen the document, not from the seat 
 
 1. **Read the reading version alone**, start to end, in the reading preview, with the slides and narration out of mind. Mark every place where a term is undefined, a step of reasoning is missing or a sentence depends on something said only in the narration.
 2. **Watch the presentation with the sound off**: each slide should show its point through the heading and the picture. Then **listen without looking**: the narration should not rely on "这里" or "如图" pointing at nothing.
-3. **Sweep both versions** with the marker table, the term table's banned synonyms and the colloquial words of section 2, and for Chinese, the translationese table of section 4. Include the words inside scenes, which a search of the text blocks misses.
-4. **Check the structure**: one idea per page, the core claim on the first page and again on the last, every concept introduced before it is used, a method explained before its steps, and no run of slides whose shared arrangement hides a relation their content has (section 5).
-5. **Ask a fresh reader** (a person, or a subagent given only the built output) to retell the core claim in their own words and to predict what the next page shows. "Clear" is not a pass; a correct retelling is. For a long piece, `presmium-animate/references/team.md` (section 7) has a prompt for a page-by-page cold read and a second pass on names and register.
-6. **Validate and preview**: `presmium check <document>`, then the reading page and the presentation of the changed pages. Labels and code must be visible, steps reversible and every page's final step complete.
+3. **Sweep both versions** with the marker table, the term table's banned synonyms and calques and the colloquial words of section 2, and for Chinese, the translationese table of section 4. Include the words inside scenes, which a search of the text blocks misses. Each marker hit is judged by the test of section 2, not deleted on sight: a search finds candidates, and reading the sentence in its place decides.
+4. **Read for definitions**, in page order, as someone who has seen only the earlier pages: at each term's first mention, does that sentence say what it is? A term met before its definition, or never defined, is fixed where it first appears.
+5. **Check the structure**: one idea per page, the core claim on the first page and again on the last, every concept introduced before it is used, a method explained before its steps, and no run of slides whose shared arrangement hides a relation their content has (section 5).
+6. **Check the argument as a chain**: write each page's claim in one sentence with the earlier claims it rests on, and read the chain in order. A later page must not contradict or quietly drop an earlier statement: one explainer said that random reading cannot tell how much was missed, while its own method bounded the misses with uniform reading. Correct the earlier statement.
+7. **Ask a fresh reader** (a person, or a subagent given only the built output) to retell the core claim in their own words and to predict what the next page shows. "Clear" is not a pass; a correct retelling is. For a long piece, `presmium-animate/references/team.md` (section 7) has a prompt for a page-by-page cold read, a second pass on names and register, and a third on definitions, information and the argument.
+8. **Validate and preview**: `presmium check <document>`, then the reading page and the presentation of the changed pages. Labels and code must be visible, steps reversible and every page's final step complete.
 
 Keep IDs when revising: comments, steps and narration stay attached to their blocks. See [Document format](document.md) for the entities and [Publishing](publishing.md) for the outputs.

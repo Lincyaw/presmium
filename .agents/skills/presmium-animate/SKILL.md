@@ -27,7 +27,7 @@ A teaching segment, an explainer or paper video, a promo, a product demo and a d
 
 [Story](references/story.md) is the process, each stage ending in a check: brief, thesis, central picture, three storylines for the person to pick, a storyboard of rest frames with what carries each boundary, the script, an animatic the person approves, motion, review against the spec and with cold viewers. [Storyboards](references/storyboards.md) has filled-in examples for popular science, papers, courses, data stories and products; [Scenarios](references/scenarios.md) the usual pictures for each subject.
 
-A piece too large for one agent is made from one storyboard file every agent reads, with a term table, shared scene modules that only the coordinator changes, edits through the MCP author actions, review rounds appended to the storyboard and a cold read by a fresh agent: [Team](references/team.md).
+A piece too large for one agent is made from one storyboard file every agent reads, with a term table that gives each term its definition and first page, shared scene modules that only the coordinator changes, edits through the MCP author actions, a reading of its own words every agent does against the storyboard, review rounds appended to the storyboard and a cold read by a fresh agent in three passes: [Team](references/team.md).
 
 ## 5. Motion, rhythm and sound
 

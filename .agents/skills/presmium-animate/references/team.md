@@ -16,8 +16,8 @@ One file at the project's root, `storyboard.md`, that every agent reads before i
 
 **D. Names, colours and space.**
 
-- **The term table**: every concept, its one name, the synonyms not to use, and the page that introduces it. Two roles that could be confused (the agent drafting the material and the agent under test) get two names, two colours and two icons.
-- **The register**: titles, labels, legends, metric names and narration in the formal written words of the audience's field; only a character's quoted speech in a bubble keeps colloquial words. A metaphor system (a game, a court) is mapped term by term on one page; the other pages use the field's own words.
+- **The term table**: every concept, its one name, the synonyms and calques not to use, the page and step that introduce it, and the sentence that defines it there (`presmium-author/references/writing.md`, section 2). A term appears nowhere before that step, and a page title's terms are defined in the page's first step. Two roles that could be confused (the agent drafting the material and the agent under test) get two names, two colours and two icons.
+- **The register**: titles, labels, legends, metric names and narration in the formal written words of the audience's field, its own terms rather than calques (对照组, not 臂, for an experiment's arm); only a character's quoted speech in a bubble keeps colloquial words. A metaphor system (a game, a court) is mapped term by term on one page; the other pages use the field's own words.
 - **Colours**: one colour, one meaning, as a table of roles (truth, wrong, the user, the agent under test) each mapped to a design token in the shared kit, through `color(name)` or `var(--pm-color-<name>)`, never a raw hex.
 - **Space**: one convention, such as left for upstream, input and before, right for downstream, output and after.
 
@@ -36,10 +36,12 @@ One file at the project's root, `storyboard.md`, that every agent reads before i
 11. The whole 16:9 frame is used; captions are an overlay that can be off, so no band is kept for them.
 12. Colours only from D, type sizes only from the kit's scale.
 13. The pitfalls in [Libraries](libraries.md), and every new one the coordinator forwards.
+14. Information: no sentence that defends against a reading nobody would make, no position set up only to be rejected, no list of what the piece does not show (`presmium-author/references/writing.md`, section 2). A negation stays when it states an advantage, a condition, or a position someone holds, named.
+15. A term's first mention defines it, with D's sentence; on a `scrolly` page that is in the narration.
 
 **F. Files and workflow**: who owns which file (section 2), how the document is changed (section 3), the checks, the captures and the report (section 4).
 
-**G. Pages.** The page order, grouped into parts, with a page that maps out the parts before the first one. Per page: its key (also the scene file's name), a title that states the page's claim (with a length limit), the concepts it introduces, and a step table:
+**G. Pages.** The page order, grouped into parts, with a page that maps out the parts before the first one. Per page: its key (also the scene file's name), a title that states the page's claim (with a length limit), the earlier claims it rests on, the concepts it introduces with their definitions from D, and a step table:
 
 | Step | Rest frame and motion | Introduces (each new concept, and the motion that brings it in) | Narration points |
 |---|---|---|---|
@@ -73,16 +75,18 @@ There is one `lecture.json`, so writers must not overwrite each other.
 
 An agent goes through these after every change, on its own pages only:
 
-1. **Check.** `check_document`, then `get_diagnostics`; fix the problems on these pages. A scene whose code doesn't bundle (a syntax error, a missing module) is reported by `check_document` and `presmium check` as a `presmium.preview.code` error with its file and line; it fails alone, so the other pages still preview and present, and its own page shows the failure (the capture's `problems` say why). Fix it before anything else.
-2. **Look at every step.** `capture_slides` on each page returns every step's rest frame (12 pictures a call; name `steps` for a longer page). Each must read in 3 seconds, with nothing overlapping or cut off; `measure` with a CSS selector gives the boxes of elements when an overlap is hard to see. Capture again with `arrive: 'backward'` and compare: going back must show the same frame. When the reading page matters, `capture_reading` at 1280 and 390. Change and capture again until every frame passes.
-3. **Check the motion.** Rest frames don't show it. Capture `at` moments inside the steps where something moves, and read the timeline: every move has a reason that means something (a cause, the same object, things converging); delete the moves that have none.
-4. **Report** in this form: for each page, its number of steps and one line describing each rest frame; the picture files; the check result; problems found in shared modules; where the page departs from the storyboard and why; what isn't done or isn't good enough.
+1. **Check the document.** `check_document`, then `get_diagnostics`; fix the problems on these pages. A scene whose code doesn't bundle (a syntax error, a missing module) is reported by `check_document` and `presmium check` as a `presmium.preview.code` error with its file and line; it fails alone, so the other pages still preview and present, and its own page shows the failure (the capture's `problems` say why). Fix it before anything else.
+2. **Reread the words.** Read your pages' narration, titles and on-screen words in order, as someone who has seen only the pages before them, against the storyboard: is each term's first mention its definition from D, and does no term appear before that step? Does any sentence defend against a reading nobody would make, set up a position nobody holds, or list what the piece does not show (E.14)? Is any word a banned synonym or a calque? Does each step's claim follow from what earlier pages stated, without contradicting them? Rewrite what fails; a sentence kept on purpose goes in the report with its reason. This is a reading, not a search: a marker word found by searching is only a candidate, and the sentence in its place decides.
+3. **Look at every step.** `capture_slides` on each page returns every step's rest frame (12 pictures a call; name `steps` for a longer page). Each must read in 3 seconds, with nothing overlapping or cut off; `measure` with a CSS selector gives the boxes of elements when an overlap is hard to see. Capture again with `arrive: 'backward'` and compare: going back must show the same frame. When the reading page matters, `capture_reading` at 1280 and 390. Change and capture again until every frame passes.
+4. **Check the motion.** Rest frames don't show it. Capture `at` moments inside the steps where something moves, and read the timeline: every move has a reason that means something (a cause, the same object, things converging); delete the moves that have none.
+5. **Report** in this form: for each page, its number of steps and one line describing each rest frame; the picture files; the check result; the sentences kept after rereading the words, with their reasons; problems found in shared modules; where the page departs from the storyboard and why; what isn't done or isn't good enough.
 
 ## 5. The coordinator during production
 
 - Dispatch each agent with the storyboard's path, its pages and files, and the reading list of E.1.
 - Read every report and look at its pictures. Settle a difference between pages (one part drawn two ways, one thing named two ways) at once: decide, write it into the storyboard, tell the agents concerned.
 - Forward a pitfall one agent hit to every agent still working, at once; finding it nine times costs more.
+- After each batch of reports, read the narration of the whole document in order for terms that one page uses before another page defines them: such a term belongs to neither agent alone. Settle it in the term table and tell both.
 - When every page is done, run the cold read (section 7) before the author sees the piece.
 
 ## 6. Review rounds
@@ -91,7 +95,7 @@ Each review, the cold read and then the author's, ends in a new section at the e
 
 Decisions about the subject itself (a rule of the method, what counts as a cost) belong to the author: ask, don't settle them in a convention.
 
-Before the author sees a round, sweep for terms: search the narration and text in `lecture.json` and the on-screen words in `scenes/*.ts` for every banned synonym in the term table, and for the colloquial words the register rules out. A hit is renamed, not explained.
+Before the author sees a round, sweep for terms: search the narration and text in `lecture.json` and the on-screen words in `scenes/*.ts` for every banned synonym and calque in the term table, and for the colloquial words the register rules out. A hit is renamed, not explained. Whether a first mention defines its term, whether a sentence carries information and whether the argument holds are judged by reading, in the cold read's third pass (section 7), not by a search.
 
 What the explainer's two rounds had to add, usable as a checklist for the first version:
 
@@ -104,9 +108,11 @@ What the explainer's two rounds had to add, usable as a checklist for the first 
 
 The lessons: the term table and the register belong in the first version (D), and "introduce, then name, then use" belongs in every step table, as its own column.
 
+A second explainer (24 pages, eight agents) added three rules in the middle of production, each at the cost of a message to every agent and a rewrite of finished pages: the information rule (E.14), definitions at first mention (D, E.15) and calques in the term table. Its review also had to read the argument as a chain (section 7, third pass): a background page said random reading cannot tell how much was missed, while the method's own bound on the misses came from uniform reading. These are in the outline above, so a first version starts with them.
+
 ## 7. The cold read
 
-A fresh agent that took no part sees only the pictures and the narration, in order, and reports what a first-time viewer gets. It finds what the makers can't see: contradictions between pages, one word with two meanings, names that drift, concepts used before they were introduced, elements nobody explained. In the explainer it found three problems that blocked the main line, more than twenty concepts left unclear and a dozen flaws in pictures, most of which the agents' own page-by-page checks had missed.
+A fresh agent that took no part sees only the pictures and the narration, in order, and reports what a first-time viewer gets. It finds what the makers can't see: contradictions between pages, one word with two meanings, names that drift, concepts used before they were introduced or never defined, sentences that carry nothing, elements nobody explained. In the explainer it found three problems that blocked the main line, more than twenty concepts left unclear and a dozen flaws in pictures, most of which the agents' own page-by-page checks had missed.
 
 **When**: after every round of production or fixes, before the author reviews. A new reviewer each round: one that saw the last version already knows the answers.
 
@@ -150,10 +156,21 @@ Check the wording once more, still changing no files:
 Add these to the problem list as P0, P1 or P2.
 ```
 
+**Third pass: definitions, information and the argument**, sent to the same reviewer after the second:
+
+```
+One more pass, still changing no files:
+1. The argument: write each page's claim in one sentence and the earlier pages it rests on. Where does a later page contradict, or quietly drop, what an earlier page stated? Where is a claim made without the step, picture or number that supports it?
+2. Definitions: for each term, the first picture where it appears. Does that step's narration say what it is? List the terms used before they were defined and those never defined.
+3. Sentences that carry nothing: which sentences defend against a reading nobody would make (does not mean, only shows, cannot tell), set up a position nobody holds in order to reject it, or list what the piece does not show? For each, say whether to delete it or to narrow the earlier claim instead.
+4. Calques: which terms are word-for-word translations that people in <the audience's field> would not say? Give the field's own word.
+Add these to the problem list; a contradiction in the argument is a P0.
+```
+
 **Use the report:**
 
-1. A P0 is usually a contradiction or a role ambiguity: decide one statement for the whole piece, write it into the storyboard (H) and send it to the pages concerned.
+1. A P0 is usually a contradiction or a role ambiguity: decide one statement for the whole piece, write it into the storyboard (H) and send it to the pages concerned. A contradiction in the argument is corrected where the wrong statement is made, usually the earlier page.
 2. A problem with the method itself, such as a rule whose reason no longer holds, goes to the author; don't decide it.
-3. The wording problems become one term table in the storyboard, which every page follows.
+3. The wording problems become one term table in the storyboard, which every page follows; definitions and calques go into its columns, which the next round's agents and reviewer read against.
 4. Fixes go to the agents that made the pages.
 5. After the fixes, capture everything again and give it to a new reviewer.
