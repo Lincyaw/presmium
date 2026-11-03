@@ -35,6 +35,11 @@ export interface CliMessages {
   documentRuns(executed: number, cached: number): string
   notRendered(blocks: number): string
   codeRuns(executed: number, cached: number, sandbox?: string): string
+  importMissing: string
+  badGroup(value: string): string
+  imported(documents: number, files: number, out: string): string
+  importUnresolved(note: string, link: string): string
+  importPatterns(patterns: string[]): string
 }
 
 export const CLI_MESSAGES: Record<Locale, CliMessages> = {
@@ -68,6 +73,15 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
           --allow <种类>  无需询问即允许的操作：operate、spend、write、agent
   ir      以 JSON 打印文稿的运行快照
           --out <文件>    写入文件，而不是打印
+  import  把 Markdown 笔记转成文稿（参数是一个 .md 文件或一个文件夹）：每份笔记成为
+          <输出>/<路径>/${DOCUMENT_ENTRY}，一级与二级标题各开一个页面；[[笔记]] 与 [[笔记|文字]]
+          按文件名或 frontmatter 的 aliases 找到对应的文稿，笔记链接的本地文件复制到文稿的
+          attachments/；再次导入时覆盖写过的文稿
+          --out <目录>    写到这个目录（默认为 .，通常是工作区的根目录）
+          --exclude <名称>  （可重复）不导入、也不复制其中文件的文件夹或文件，可用 *，例如 raw
+          --lang <语言>   没有在 frontmatter 中写 lang 的笔记的语言（默认按文字判断）
+          --group <层数>  把笔记所在的第几层文件夹作为文稿的第一个标签；网站的侧栏按第一个
+                          标签分组，例如 --group 2 让 projects/<项目>/ 中的笔记成为一组
   check   检查文稿并运行插件的检查
           --json          以 JSON 打印结果
           --update-lock   重新定位代码锚点，并重写 .presmium/anchors.lock.json
@@ -130,6 +144,11 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
     documentRuns: (executed, cached) => `  （代码运行：执行 ${executed} 个，取自缓存 ${cached} 个）`,
     notRendered: blocks => `  （${blocks} 个内容块未显示）`,
     codeRuns: (executed, cached, sandbox) => `代码运行：执行 ${executed} 个，取自缓存 ${cached} 个${sandbox ? `，隔离方式为 ${sandbox}` : ''}`,
+    badGroup: value => `--group 需要 1 或更大的整数，而不是“${value}”。`,
+    importMissing: '缺少要导入的笔记。请给出一个 .md 文件或一个文件夹，例如 presmium import notes --out site。',
+    imported: (documents, files, out) => `已导入 ${documents} 份文稿，复制了 ${files} 个文件，写在 ${out}`,
+    importUnresolved: (note, link) => `${note}：链接 ${link} 没有对应的笔记或文件，已改为普通文字`,
+    importPatterns: patterns => `presmium.workspace.yaml 的 documents 需要包含：\n${patterns.map(pattern => `  - '${pattern}'`).join('\n')}`,
   },
   'en': {
     usage: `Usage: presmium <command> [deck] [options]
@@ -161,6 +180,17 @@ Commands:
           --allow <kinds>    approvals given without asking: operate, spend, write, agent
   ir      print the runtime snapshot as JSON
           --out <file>    write it to a file instead
+  import  Markdown notes to documents (the argument is a .md file or a folder): each note becomes
+          <out>/<path>/${DOCUMENT_ENTRY}, a page for each level-1 and level-2 heading; [[note]] and
+          [[note|text]] find their document by file name or the aliases of the frontmatter, and
+          the local files a note links to are copied into the document's attachments/; importing
+          again overwrites the documents it wrote
+          --out <dir>     write there (default: ., usually the workspace root)
+          --exclude <name>  (repeatable) a folder or file, * allowed, whose notes are not imported
+                          and whose files are not copied, e.g. raw
+          --lang <tag>    the language of notes whose frontmatter has no lang (default: from the text)
+          --group <n>     make the note's folder at depth n the document's first tag; the site's
+                          sidebar groups documents by it, e.g. --group 2 groups projects/<project>/
   check   check the deck and run the plugins’ checks
           --json          print the result as JSON
           --update-lock   re-resolve anchors and rewrite .presmium/anchors.lock.json
@@ -225,6 +255,11 @@ Exit Codes: 0 no errors, 1 error findings, 2 usage or internal error.`,
     documentRuns: (executed, cached) => `  (code runs: ${executed} executed, ${cached} from cache)`,
     notRendered: blocks => `  (${blocks} blocks not rendered)`,
     codeRuns: (executed, cached, sandbox) => `code runs: ${executed} executed, ${cached} from cache${sandbox ? `, isolated by ${sandbox}` : ''}`,
+    badGroup: value => `--group needs a whole number of 1 or more, not “${value}”.`,
+    importMissing: 'No notes to import. Give a .md file or a folder, for example presmium import notes --out site.',
+    imported: (documents, files, out) => `imported ${documents} documents and copied ${files} files into ${out}`,
+    importUnresolved: (note, link) => `${note}: the link ${link} leads to no note or file; it is plain text now`,
+    importPatterns: patterns => `the documents of presmium.workspace.yaml need:\n${patterns.map(pattern => `  - '${pattern}'`).join('\n')}`,
   },
 }
 

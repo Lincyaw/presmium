@@ -15,6 +15,7 @@ import type { ApprovalPolicy } from '@lincyaw/server'
 import { buildWorkspace, isWorkspaceRoot, serveWorkspace } from '@lincyaw/workspace'
 import type { WorkspaceBuild } from '@lincyaw/workspace'
 import { runCheck } from './check.ts'
+import { documentPatterns, importMarkdown } from './import.ts'
 import type { CheckResult } from './check.ts'
 import { devHost } from './dev-host.ts'
 import { CLI_MESSAGES, systemLocale } from './messages.ts'
@@ -67,6 +68,7 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
   if (argv[0] === 'skills') return (await import('@lincyaw/skills')).main(argv.slice(1))
   if (argv[0] === 'studio') return runStudioCommand(argv.slice(1), bundled, options.bin ?? PRESMIUM_BIN)
   if (argv[0] === 'mcp') return runMcpCommand(argv.slice(1), bundled)
+  if (argv[0] === 'import') return runImportCommand(argv.slice(1))
   let command: Command | 'help'
   try {
     command = parseCommand(argv)
@@ -322,6 +324,48 @@ async function runNewCommand(argv: string[], bundled: string): Promise<number> {
   }
   const { main: createMain } = await createJiti(import.meta.url).import<{ main(argv: string[]): Promise<number> }>(entry)
   return createMain(argv)
+}
+
+/** Markdown notes to documents; prints what it wrote, the links it could not resolve and the patterns that list them. */
+function runImportCommand(argv: string[]): number {
+  let parsed
+  try {
+    parsed = parseArgs({ args: argv, allowPositionals: true, options: {
+      out: { type: 'string' }, exclude: { type: 'string', multiple: true }, lang: { type: 'string' }, group: { type: 'string' }, help: { type: 'boolean', short: 'h', default: false },
+    } })
+  } catch (error) {
+    process.stderr.write(`presmium: ${errorMessage(error)}\n\n${t.usage}\n`)
+    return 2
+  }
+  const { values, positionals } = parsed
+  if (values.help) {
+    process.stdout.write(`${t.usage}\n`)
+    return 0
+  }
+  const [input, ...extra] = positionals
+  if (!input) {
+    process.stderr.write(`presmium: ${t.importMissing}\n`)
+    return 2
+  }
+  if (extra.length > 0) {
+    process.stderr.write(`presmium: ${t.unexpectedArgument(extra[0]!)}\n`)
+    return 2
+  }
+  if (!existsSync(input)) {
+    process.stderr.write(`presmium: ${t.notFound(input)}\n`)
+    return 2
+  }
+  const group = values.group === undefined ? undefined : Number(values.group)
+  if (group !== undefined && !(Number.isInteger(group) && group >= 1)) {
+    process.stderr.write(`presmium: ${t.badGroup(values.group!)}\n`)
+    return 2
+  }
+  const out = resolve(values.out ?? '.')
+  const report = importMarkdown(input, { out, exclude: values.exclude, lang: values.lang, group })
+  for (const { note, link } of report.unresolved) process.stderr.write(`${t.importUnresolved(note, link)}\n`)
+  process.stdout.write(`${t.imported(report.documents.length, report.files, relative(process.cwd(), out) || '.')}\n`)
+  if (report.documents.length > 0) process.stdout.write(`${t.importPatterns(documentPatterns(report.documents))}\n`)
+  return 0
 }
 
 async function runStudioCommand(argv: string[], bundled: string, presmiumBin: string): Promise<number> {
