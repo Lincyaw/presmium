@@ -2,8 +2,9 @@ import { PmDrawer, PmIcon, PmIconButton, PmPopover, PmPresenterPanels, PmToolbar
 import { isChapterTitle, isRecord } from '@lincyaw/kernel'
 import { listViews, OverlayViewOutlet, PageViewOutlet, useViewer } from '@lincyaw/viewer'
 import { useEffect, useState } from 'react'
-import { sitePageLayout, WEB_MESSAGES } from '../../domain/index.ts'
-import type { AppConfig, NavItem, SiteLocale } from '../../domain/index.ts'
+import type { ReactElement } from 'react'
+import { directoryTree, folderLabel, sitePageLayout, WEB_MESSAGES } from '../../domain/index.ts'
+import type { AppConfig, DirectoryNode, NavItem, SiteLocale } from '../../domain/index.ts'
 import type { PageRouter } from '../router.ts'
 import { SearchDialog } from './search.tsx'
 
@@ -52,6 +53,11 @@ function Sidebar({ config, router, course = false }: { config: AppConfig, router
   const groups = new Map<string, { dir: string, title: string, href: string }[]>()
   for (const item of config.site.documents ?? [{ dir: config.document, title: doc.meta.title, href: own }]) groups.set(item.group ?? '', [...groups.get(item.group ?? '') ?? [], item])
   let number = 0
+  if (config.site.sidebar === 'directories' && config.site.documents) {
+    return <nav className="pm-site-sidebar" aria-label={t.sidebarNav}>
+      <DirectoryItems nodes={directoryTree(config.site.documents)} current={config.document} own={own} chapters={chapters} />
+    </nav>
+  }
   return <nav className="pm-site-sidebar" aria-label={course ? t.courseContents : t.sidebarNav}>
     {course && <div className="pm-site-sidebar__intro"><p className="pm-ui-heading">{t.courseContents}</p><p className="pm-site-sidebar__title">{config.site.brandTitle ?? doc.meta.title}</p></div>}
     {[...groups].map(([group, items]) => <div key={group} className="pm-site-sidebar__group">
@@ -66,6 +72,28 @@ function Sidebar({ config, router, course = false }: { config: AppConfig, router
       })}</ol>
     </div>)}
   </nav>
+}
+type SidebarDocument = NonNullable<AppConfig['site']['documents']>[number]
+/**
+ * The documents as a tree of the workspace's folders (`site.sidebar: directories`): a folder that holds documents opens
+ * and closes, and the folders on the way to this document are open.
+ */
+function DirectoryItems({ nodes, current, own, chapters }: { nodes: DirectoryNode<SidebarDocument>[], current: string, own: string, chapters: ReactElement }) {
+  return <ol className="pm-site-sidebar__tree">{nodes.map((node) => {
+    const here = node.doc?.dir === current
+    const label = node.doc
+      ? <a className="pm-site-sidebar__link" href={here ? own : node.doc.href} aria-current={here ? 'page' : undefined}><span>{node.doc.title}</span></a>
+      : <span className="pm-site-sidebar__folder">{folderLabel(node.name)}</span>
+    if (!node.children.length) return <li key={node.dir} className={`pm-site-sidebar__chapter${here ? ' pm-current' : ''}`}>{label}{here && chapters}</li>
+    const open = current === node.dir || current.startsWith(`${node.dir}/`)
+    return <li key={node.dir} className={`pm-site-sidebar__branch${here ? ' pm-current' : ''}`}>
+      <details open={open || undefined}>
+        <summary className="pm-site-sidebar__toggle">{label}<PmIcon name="chevron-down" /></summary>
+        {here && chapters}
+        <DirectoryItems nodes={node.children} current={current} own={own} chapters={chapters} />
+      </details>
+    </li>
+  })}</ol>
 }
 /** Every section of the page; in a document of chapters, the sections within one are indented under it. */
 function Outline({ router, compact = false }: { router: PageRouter, compact?: boolean }) { const viewer = useViewer(), doc = useStore(viewer.doc), position = useStore(viewer.position), shown = useStore(router.shown), t = useMessages(WEB_MESSAGES); const sections = (shown?.sections ?? []).flatMap(id => viewer.section(id) ?? []); const nested = sections.some(section => isChapterTitle(doc, section)) && sections.some(section => !isChapterTitle(doc, section)); const title = compact ? 'pm-site-outline-title-compact' : 'pm-site-outline-title'; return sections.length > 1 ? <nav className="pm-site-outline" aria-labelledby={title}><p id={title} className={`pm-site-outline__title${compact ? ' pm-ui-sr-only' : ''}`}>{t.outline}</p><ol className="pm-site-outline__items">{sections.map(section => <li key={section.id}><a className={`pm-site-outline__link${nested && !isChapterTitle(doc, section) ? ' pm-site-outline__link--nested' : ''}`} href={`#${encodeURIComponent(section.id)}`} aria-current={position.section === section.id ? 'location' : undefined}>{section.title}</a></li>)}</ol></nav> : null }
@@ -103,7 +131,7 @@ export function DocumentSite({ config, router }: { config: AppConfig, router: Pa
     <div className="pm-document pm-overlay-views"><OverlayViewOutlet /></div>
     {view === 'presenter' && <PmPresenterPanels to=".pm-presenter__side" docked />}
     {config.search && <SearchDialog open={searching} index={config.search} onOpenChange={setSearching} />}
-    <PmDrawer open={drawer !== undefined} label={drawer === 'site' ? t.mobileNav : course ? t.courseContents : t.menu} closeLabel={t.close} name="pm-site-menu" onOpenChange={open => { if (!open) setDrawer(undefined) }}>
+    <PmDrawer open={drawer !== undefined} label={drawer === 'site' ? t.siteNavTitle : course ? t.courseContents : t.menu} closeLabel={t.close} name="pm-site-menu" onOpenChange={open => { if (!open) setDrawer(undefined) }}>
       {drawer === 'site' ? <>{(config.site.nav ?? config.site.shell.nav)?.length ? <NavLinks items={config.site.nav ?? config.site.shell.nav!} root={siteRoot(config)} vertical /> : null}{config.site.home && <a className="pm-site-link" href={config.site.home}><PmIcon name="arrow-left" />{t.documents}</a>}<div className="pm-site-menu__tools"><ViewMenu place="screen" /><PmToolbar className="pm-toolbar--screen" /></div></> : <Sidebar config={config} router={router} course={course} />}
     </PmDrawer>
   </div>

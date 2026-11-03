@@ -3,7 +3,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'nod
 import { DEFAULT_LANG, DOCUMENT_ENTRY, SLIDES_DIR, deckLocale, docBlocks, isRecord, nodeMdast, NON_FILE_URL, safeDecodeURIComponent } from '@lincyaw/kernel'
 import type { DocumentLink, Finding, IRDocument, MdastNode, RenderContext, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
 import { findInstalledPackage, isInside } from '@lincyaw/kernel/node'
-import { crossFormLinks, pageLink, searchDocuments, sectionLinks, sitePageLayout, siteShell, translationPages, urlPath, WEB_MESSAGES, webPages } from '../domain/index.ts'
+import { crossFormLinks, pageLink, searchDocuments, sectionLinks, sidebarSettings, sitePageLayout, siteShell, treeOrder, translationPages, urlPath, WEB_MESSAGES, webPages } from '../domain/index.ts'
 import type { AppConfig, HomeDocument, NavItem, Neighbour, SearchDocument, SiteConfig, SiteLocale, SiteShell, WebPage } from '../domain/index.ts'
 import type { DocumentPage } from './publish.ts'
 
@@ -107,7 +107,8 @@ function cardOf(doc: IRDocument | undefined, root: string, pages = doc && webPag
 
 /** The home page's cards, in the site's language or in `lang` (a translation's, where a document has one). */
 export function homeDocuments(site: SiteSpec, base: string, compiled: ReadonlyMap<string, IRDocument> = new Map(), lang?: string): HomeDocument[] {
-  return site.documents.map((entry) => {
+  const ordered = sidebarSettings(site.config.sidebar).by === 'directories' ? [...site.documents.filter(entry => entry.dir === ''), ...sidebarDocuments(site)] : site.documents
+  return ordered.map((entry) => {
     const translated = lang ? translationOf(entry, lang) : undefined
     if (translated) {
       const root = `${documentBase(base, entry.dir)}${lang}/`
@@ -250,7 +251,7 @@ function lastPage(base: string, entry: SiteDocument, doc?: IRDocument): Neighbou
 
 /** The documents before and after `dir` (the pager goes on to them) and the other documents' sections, for its search. */
 export function siteNeighbours(site: SiteSpec, base: string, dir: string, docs: ReadonlyMap<string, IRDocument>): { neighbours: NonNullable<SiteConfig['neighbours']>, search: SearchDocument[] } {
-  const listed = site.documents.filter(entry => entry.dir !== '')
+  const listed = sidebarDocuments(site)
   const i = listed.findIndex(entry => entry.dir === dir)
   const before = listed[i - 1]
   const after = listed[i + 1]
@@ -279,6 +280,13 @@ export function siteShellBelow(site: SiteSpec, base: string): SiteShell {
   return shell.nav ? { ...shell, nav: navBelow(base, shell.nav) } : shell
 }
 
+/** The workspace's documents in the order the sidebar and the pager read them: the workspace's, or the folders' tree. */
+function sidebarDocuments(site: SiteSpec): SiteSpec['documents'] {
+  const listed = site.documents.filter(entry => entry.dir !== '')
+  const sidebar = sidebarSettings(site.config.sidebar)
+  return sidebar.by === 'directories' ? treeOrder(listed, sidebar.order) : listed
+}
+
 /** The site around a document's pages: its title, shell, languages, the workspace's list and neighbours. */
 export function documentSiteConfig(input: { site: SiteSpec, base: string, dir: string, doc: IRDocument, lang: string, docs: ReadonlyMap<string, IRDocument>, workspace: boolean }): SiteConfig {
   const { site, base, dir, doc } = input
@@ -303,7 +311,8 @@ export function documentSiteConfig(input: { site: SiteSpec, base: string, dir: s
     ...input.workspace ? {
       home: listLink(site, root),
       neighbours: siteNeighbours(site, base, dir, input.docs).neighbours,
-      documents: site.documents.filter(other => other.dir !== '').map(other => ({ dir: other.dir, title: other.title, href: documentBase(base, other.dir), ...other.tags?.[0] ? { group: other.tags[0] } : {} })),
+      documents: sidebarDocuments(site).map(other => ({ dir: other.dir, title: other.title, href: documentBase(base, other.dir), ...sidebarSettings(site.config.sidebar).by === 'tags' && other.tags?.[0] ? { group: other.tags[0] } : {} })),
+      ...sidebarSettings(site.config.sidebar).by === 'directories' ? { sidebar: 'directories' as const } : {},
     } : {},
   }
 }

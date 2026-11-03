@@ -426,6 +426,69 @@
   margin-top: var(--pm-space-px);
 }
 
+/* The site's documents as the tree of the workspace's folders (site.sidebar: directories): a folder of documents opens
+   and closes under its own row, its contents indented along a hairline. */
+.pm-site-sidebar__tree {
+  display: grid;
+  gap: var(--pm-space-px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pm-site-sidebar__tree .pm-site-sidebar__tree {
+  margin: var(--pm-space-px) 0 var(--pm-space-2) var(--pm-space-3);
+  padding-left: var(--pm-space-2);
+  border-left: var(--pm-size-hairline) solid var(--pm-color-line);
+}
+
+.pm-site-sidebar__toggle {
+  display: flex;
+  align-items: center;
+  border-radius: var(--pm-radius-control);
+  cursor: pointer;
+  list-style: none;
+}
+
+.pm-site-sidebar__toggle::-webkit-details-marker {
+  display: none;
+}
+
+.pm-site-sidebar__toggle > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.pm-site-sidebar__toggle > .pm-ui-icon {
+  flex: none;
+  width: var(--pm-size-icon-sm);
+  height: var(--pm-size-icon-sm);
+  margin-right: var(--pm-space-2);
+  color: var(--pm-color-muted);
+  transition: transform var(--pm-duration-fast) var(--pm-ease);
+}
+
+details:not([open]) > .pm-site-sidebar__toggle > .pm-ui-icon {
+  transform: rotate(-90deg);
+}
+
+.pm-site-sidebar__toggle:hover {
+  background: var(--pm-color-hover);
+}
+
+.pm-site-sidebar__toggle .pm-site-sidebar__link:hover {
+  background: none;
+}
+
+.pm-site-sidebar__folder {
+  display: block;
+  padding: var(--pm-space-2) var(--pm-space-3);
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-sm);
+  font-weight: var(--pm-weight-semibold);
+  line-height: var(--pm-leading-tight);
+}
+
 /* The site's documents, in groups by their first tag. */
 .pm-site-sidebar__group + .pm-site-sidebar__group {
   margin-top: var(--pm-space-5);
@@ -995,8 +1058,16 @@ html.pm-presenting {
 }
 
 .pm-site-home__tags {
+  flex: 1 1 100%;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+/* A deep document folder breaks inside its badge rather than widening its card past the column. */
+.pm-site-home__dir {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 /* Cards: equal widths, as many to a row as fit, the rows centred. */
@@ -1016,6 +1087,7 @@ html.pm-presenting {
 .pm-site-landing__feature,
 .pm-site-landing__document {
   position: relative;
+  min-width: 0;
   gap: var(--pm-space-3);
   margin: 0;
 }

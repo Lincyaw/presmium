@@ -35,6 +35,8 @@ export interface SiteConfig {
   locales: SiteLocale[]
   /** The workspace's documents in its order, for the sidebar; a document's first tag is its group there. */
   documents?: { dir: string, title: string, href: string, group?: string }[]
+  /** The sidebar shows `documents` (then in tree order) as the tree of the workspace's folders, not in groups by tag. */
+  sidebar?: 'directories'
   /** The documents before and after this one in the workspace: the pager goes on to them. */
   neighbours?: { prev?: Neighbour, next?: Neighbour }
   links: CrossFormLinks
