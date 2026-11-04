@@ -21,7 +21,11 @@ async function bounded<T>(work: () => Promise<T>): Promise<T> {
     const value = error as { message?: string, status?: number, code?: string, detail?: { conflict?: { version?: string }, exists?: boolean, issues?: { path?: string, code?: string, message?: string, severity?: string }[] } }
     if (error instanceof Error && error.name === 'AbortError') throw error
     if (value.message?.startsWith('source-') || value.message === 'authoring-review-required') throw error
-    if (value.message === 'document-invalid') throw new RequestError(422, 'document-invalid', { issues: value.detail?.issues?.slice(0, 4).map(issue => ({ ...issue, path: issue.path?.slice(0, 500), message: issue.message?.slice(0, 240) })) ?? [] })
+    if (value.message === 'document-invalid') {
+      const issues = value.detail?.issues?.slice(0, 4).map(issue => ({ path: issue.path?.slice(0, 500) ?? '', code: issue.code?.slice(0, 100) ?? 'document-invalid', message: issue.message?.slice(0, 240) ?? '', severity: issue.severity === 'warning' ? 'warning' : 'error' })) ?? []
+      while (size({ issues }) > SOURCE_MAX_RESPONSE_CHARS - 1024 && issues.length) issues.pop()
+      throw new RequestError(422, 'document-invalid', { issues })
+    }
     if (value.message === 'document-identity-changed') throw new RequestError(422, 'document-identity-changed')
     if (value.status === 409) throw new RequestError(409, value.detail?.exists ? 'source-file-exists' : 'source-version-changed', value.detail?.conflict?.version ? { version: value.detail.conflict.version } : undefined)
     const status = value.status ?? ({ ENOENT: 404, EEXIST: 409, ELOOP: 403, EACCES: 403, EISDIR: 415 } as Record<string, number>)[value.code ?? ''] ?? 500
