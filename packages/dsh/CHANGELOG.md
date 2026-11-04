@@ -1,5 +1,16 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.48
+
+### Patch Changes
+
+- 69077db: Recover native body drafts through the existing compact editor action: bounded metadata and explicit fragment reads, preserved recovery branches, confirmed discard, and source-pinned retry with cancellation and conflict guards.
+- Updated dependencies [69077db]
+  - @lincyaw/kernel@1.0.0-rc.49
+  - @lincyaw/mcp@1.0.0-rc.49
+  - @lincyaw/skills@1.0.0-rc.49
+  - @lincyaw/cli@1.0.0-rc.49
+
 ## 0.2.0-rc.47
 
 ### Patch Changes
