@@ -29,7 +29,7 @@ workspace 为每项能力创建一个实例，HTTP 与 MCP 共用实例与回执
 
 契约在 `packages/kernel/src/contracts/` 的同名文件，工具表在 `packages/mcp/src/mcp.ts`，每个工具的 `kind` 为 `read`、`operate` 或 `spend`。Web 经 `packages/workbench/src/workspace-client.ts` 调用同一组路由。
 
-Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页面、音色继承、批注、组件参数、字幕时间），语义动作分派在 `document-authoring-actions.ts`。不带工作区的 stdio 宿主（`compilerMcpHost`）没有这些服务，能力响应报告 unavailable。
+Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页面、音色继承、批注、组件参数、字幕时间、字幕大小），语义动作分派在 `document-authoring-actions.ts`。不带工作区的 stdio 宿主（`compilerMcpHost`）没有这些服务，能力响应报告 unavailable。
 
 ## 3. 能力与版本
 

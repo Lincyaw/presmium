@@ -8,7 +8,7 @@ export function captionScale(production: Pick<Production, 'captions'> | undefine
 }
 
 /** Sets the caption size, kept in range and rounded to a tenth; the default size 1 removes the setting. */
-export function changeCaptionScale(document: TeachingDocument, scale: number): TeachingDocument {
+export function changeDocumentCaptionScale(document: TeachingDocument, scale: number): TeachingDocument {
   if (!Number.isFinite(scale)) throw new Error('document-caption-scale')
   const value = Math.round(Math.min(CAPTION_SCALE_MAX, Math.max(CAPTION_SCALE_MIN, scale)) * 10) / 10
   if (value === captionScale(document.production)) return document
