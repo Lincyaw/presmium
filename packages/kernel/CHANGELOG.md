@@ -1,5 +1,11 @@
 # @lincyaw/kernel
 
+## 1.0.0-rc.44
+
+### Patch Changes
+
+- f0a5f16: Reuse native Studio view, editor history and recording controls through the compact MCP action interface, with exact pending-request cancellation and required-review enforcement. Share production enablement and owner-authorized voice training with canonical document and speech services.
+
 ## 1.0.0-rc.43
 
 ### Patch Changes
