@@ -38,6 +38,7 @@ Search the draft for these markers. Most hits are deleted or rewritten; keep a h
 | Pattern | Markers | Repair |
 |---|---|---|
 | Defending against a misreading nobody had | 不代表、不意味着、并不是说、不等于、只说明、不能说明、测不出来; this does not mean, we do not claim, only shows | Delete. If the earlier claim really invites the misreading, narrow that claim instead |
+| Hedging label or subtitle | 示意、数字为示意、逐级判断为示意、引文为转述、仅供参考 under a heading, beside a number or in a legend; illustrative, paraphrased, for reference only | Delete. Say once, where the illustration begins, what is illustrative; a paraphrased quote loses its quotation marks instead of gaining a disclaimer |
 | Strawman contrast | 不是 A 而是 B、并非 A 而是 B; not A but B | When nobody holds A, state B directly. When A is a real, common belief, keep it and say whose belief it is |
 | Narrated history | 起初、后来发现、我们首先尝试; initially, we first tried | Keep only the result |
 | Signpost | 值得注意的是、需要指出的是、不难看出; it is worth noting, note that | Delete the signpost and state the thing |
@@ -143,7 +144,7 @@ The slide supports a voice; it doesn't replace it. The audience reads the screen
 - **Vary the arrangement when the content allows.** The arrangement is how a slide's content is organized: a flow, a comparison, a timeline, a chart, a figure with labels, a code walkthrough, a single statement, a keyword list. (It is not the page's `layout` field, which has only four values.) When several pages in a row share an arrangement because their content has a relation the arrangement hides, reorganize them by that relation; changing colours or icons doesn't make it a different arrangement. Text-only pages in a row are fine when each one's role is its words; never invent a relation or a picture just to vary the look.
 - **The heading is a claim.** "缓存命中率" names a topic; "命中率超过 90% 后，加内存几乎不再变快" is the slide's point. It is written in formal words like every other label (section 2).
 - **Use the whole slide.** Captions are an overlay the presenter can switch off, so don't keep an empty band at the bottom for them or push the content toward the top. An explainer that kept the bottom 18% free left every slide empty there. Where captions would cover something essential, rearrange the layout.
-- **Numbers and sources stay honest.** Numbers come from the real run or the cited source. An illustrative value carries a label beside it in the document's language (示意 / illustrative), an estimate likewise (估算 / estimate).
+- **Numbers and sources stay honest, once.** Numbers come from the real run or the cited source. When a run of pages uses an illustrative dataset, say so once, in the narration or text where it first appears ("后面各页的点阵是 288 条的缩小示意"), and never again: a 示意 beside every readout, a subtitle such as "引文为转述 · 逐级判断为示意" under a figure, or a legend entry repeating it is a defence the audience did not ask for, and an explainer that carried over a hundred of them was rejected for it. A quote that is paraphrased drops its quotation marks; an estimate is named by how it was obtained ("按每周 50 条算").
 
 ## 6. The narration
 
