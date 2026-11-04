@@ -244,6 +244,33 @@ importers:
         specifier: 2.9.0
         version: 2.9.0
 
+  examples/papers:
+    dependencies:
+      '@lincyaw/addon-lecture':
+        specifier: workspace:*
+        version: link:../../packages/addon-lecture
+      '@lincyaw/addon-motion':
+        specifier: workspace:*
+        version: link:../../packages/addon-motion
+      '@lincyaw/addon-speech':
+        specifier: workspace:*
+        version: link:../../packages/addon-speech
+      '@lincyaw/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@lincyaw/presmium':
+        specifier: workspace:*
+        version: link:../../packages/presmium
+      '@lincyaw/render-slides':
+        specifier: workspace:*
+        version: link:../../packages/render-slides
+      '@lincyaw/web':
+        specifier: workspace:*
+        version: link:../../packages/web
+      yaml:
+        specifier: ^2.9.1
+        version: 2.9.1
+
   packages/addon-assistant:
     dependencies:
       eventsource-parser:
@@ -1679,30 +1706,6 @@ importers:
       '@types/mime-types':
         specifier: ^3.0.1
         version: 3.0.1
-
-  papers:
-    dependencies:
-      '@lincyaw/addon-lecture':
-        specifier: workspace:*
-        version: link:../packages/addon-lecture
-      '@lincyaw/addon-motion':
-        specifier: workspace:*
-        version: link:../packages/addon-motion
-      '@lincyaw/addon-speech':
-        specifier: workspace:*
-        version: link:../packages/addon-speech
-      '@lincyaw/cli':
-        specifier: workspace:*
-        version: link:../packages/cli
-      '@lincyaw/presmium':
-        specifier: workspace:*
-        version: link:../packages/presmium
-      '@lincyaw/render-slides':
-        specifier: workspace:*
-        version: link:../packages/render-slides
-      '@lincyaw/web':
-        specifier: workspace:*
-        version: link:../packages/web
 
   site:
     dependencies:

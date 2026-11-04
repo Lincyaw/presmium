@@ -4,7 +4,6 @@ packages:
   - .agents/skills/presmium-animate/gallery
   - e2e/fixtures/regression
   - site
-  - papers
 allowBuilds:
   '@ast-grep/lang-python': false
   '@deepseek-ai/dsh-subprocess-local': false

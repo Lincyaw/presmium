@@ -2,6 +2,8 @@
 
 这个目录是一个 Presmium 工作区：每篇论文一份文稿 `<slug>/lecture.json`，做成一段三分钟左右（一般不超过六分钟）的配音动画（讲授视频），同时是网页（画面固定、讲稿在旁边滚动）和幻灯片。在本目录 `pnpm serve` 预览整个网站，`pnpm build` 导出网站到 `dist/web/`。
 
+工作区在仓库的 `examples/papers/`，每篇论文是它的一个子目录。CI 检查并构建所有论文；推送到 `main` 后，Pages 工作流以示例站的 `/papers/` 为基础路径构建，并将产物合入同一次部署。新增论文由 `presmium.workspace.yaml` 的 `*/lecture.json` 自动收录。
+
 写文稿、做动画、配音与导出的通用规则在仓库的技能 `presmium-author`、`presmium-animate`（`.agents/skills/`）里；这里只写这个系列自己的标准和流水线。
 
 ## 标准
@@ -30,7 +32,7 @@
 | `<slug>/scenes/data/` | `derive.py` 与它算出的 JSON |
 | `<slug>/figures/` | 裁好的论文原图与它们的文字坐标（`*.json`） |
 | `<slug>/.presmium/speech/` | 合成好的配音（随文稿提交，导出与网站直接用） |
-| `tools/` | 这个系列自己的两个工具：取源码（`fetch.sh`）与生成文稿骨架（`new-paper.mjs`）；其余步骤用 Presmium 自带的命令 |
+| `tools/` | 取源码（`fetch.sh`）、生成文稿骨架（`new-paper.mjs`）与按工作区配置逐篇检查（`check.mjs`，`pnpm check`）；其余步骤用 Presmium 自带的命令 |
 | `.cache/` | 下载的 arXiv 源码、论文代码仓库（不提交） |
 
 ## 流水线

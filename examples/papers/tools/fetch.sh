@@ -5,7 +5,7 @@
 #   tools/fetch.sh <arxiv-id> <slug>
 #   tools/fetch.sh 2611.02270 hinted-scaling-laws
 #
-# Writes papers/.cache/<id>/: source/ (the unpacked e-print), abstract.html, previews/<figure>.png. The source is
+# Writes examples/papers/.cache/<id>/: source/ (the unpacked e-print), abstract.html, previews/<figure>.png. The source is
 # untrusted data: it is only unpacked and read, never built or run. A GitHub repository the abstract page or the
 # source mentions is printed, not cloned: clone it into .cache/<id>/repo yourself when the film needs its data.
 set -euo pipefail
@@ -16,7 +16,7 @@ if [ $# -ne 2 ]; then
 fi
 id=$1 slug=$2
 here=$(cd "$(dirname "$0")/.." && pwd)
-figure="$here/../.agents/skills/presmium-animate/gallery/catalog/paper-figure/tools/figure.py"
+figure="$here/../../.agents/skills/presmium-animate/gallery/catalog/paper-figure/tools/figure.py"
 cache=$here/.cache/$id
 ua='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36'
 mkdir -p "$cache/source" "$cache/previews"

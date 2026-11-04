@@ -7,6 +7,8 @@ Presmium is an open-source presentation toolkit for teaching and technical commu
 
 **Live examples:** [profile.aoyangfang.top/presmium](https://profile.aoyangfang.top/presmium/) — feature collections, tutorials, complete courses and an animation reference, all built from the [gallery](examples/gallery/README.md) in this repository.
 
+The [paper explainers](examples/papers/README.md) live in `examples/papers/`, one subfolder per paper. CI checks and builds them, and the Pages workflow publishes their website under `/papers/` alongside the gallery.
+
 ## Quick start
 
 Publish a site to GitHub Pages in three steps. Presmium requires Node.js 22.19 or later and pnpm (`corepack enable pnpm`).

@@ -1,4 +1,4 @@
-// Scaffold a new paper film: `papers/<slug>/` with a lecture.json in the series' standard order, the opening page
+// Scaffold a new paper film: `examples/papers/<slug>/` with a lecture.json in the series' standard order, the opening page
 // with its fixed line, a placeholder scene for every other page, a storyboard to fill in and a data module stub.
 //
 //   node tools/new-paper.mjs <slug> --title <文稿标题> --institution <单位> --paper <English title> \
@@ -216,4 +216,4 @@ TODO：\`scenes/data/derive.py\` 算出的每个数字与论文值的对照；�
 （每轮评审追加在这里：时间、谁看的、发现、改了什么。）
 `)
 console.log(`wrote ${slug}/: lecture.json (${order.length} pages), storyboard.md, scenes/ (opening, ${PAGES.map(p => p[0]).join(', ')}, paper.ts), scenes/data/derive.py, figures/`)
-console.log(`next: pnpm check ${slug}; fill storyboard.md A–H; write the narration in lecture.json`)
+console.log(`next: pnpm exec presmium check ${slug}; fill storyboard.md A–H; write the narration in lecture.json`)

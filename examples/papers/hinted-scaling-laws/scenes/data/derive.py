@@ -2,7 +2,7 @@
 """Everything the scenes of this film draw, computed from the paper's released results.
 
     uv run --no-project --with numpy --with scipy --with pandas python -I \
-        papers/hinted-scaling-laws/scenes/data/derive.py <clone of tatsu-lab/hinted-scaling-laws> <out.json>
+        examples/papers/hinted-scaling-laws/scenes/data/derive.py <clone of tatsu-lab/hinted-scaling-laws> <out.json>
 
 Reads only the CSV and JSON tables of `data/results` (and one problem of `data/benchmarks`); the fits follow the
 paper's Eq. (2) and its multi-start least squares, and the script prints each number the film quotes next to the

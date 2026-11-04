@@ -51,7 +51,7 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `presmium-animate-gallery` | 否 | presmium-animate 技能自带的效果合集，每个动画库一讲，在这里构建以检查场景（`.agents/skills/presmium-animate/gallery`）；技能发布时不带依赖与构建产物 |
 | `presmium-regression-fixture` | 否 | 集成测试的私有文稿与依赖（`e2e/fixtures/regression`） |
 | `presmium-docs` | 否 | 文档站（`site/`），一个 Presmium 工作区，`pnpm --filter presmium-docs build` 构建 |
-| `presmium-papers` | 否 | 三分钟读完一篇论文（`papers/`），一个 Presmium 工作区：每篇论文一份文稿与一段三分钟的配音动画，制作流程见 `papers/CLAUDE.md` |
+| `presmium-papers` | 否 | 三分钟读完一篇论文（`examples/papers/`），一个 Presmium 工作区：每篇论文一份文稿与一段三分钟的配音动画，制作流程见 `examples/papers/CLAUDE.md` |
 
 不在工作区中的测试替身也不发布：`packages/*/test/fixtures/**` 与 `e2e/fixtures/**` 中的插件与文稿都是 `private`，例如消费者安装测试的第三方插件 `presmium-plugin-hello`（`e2e/fixtures/consumer/plugin`）。
 
