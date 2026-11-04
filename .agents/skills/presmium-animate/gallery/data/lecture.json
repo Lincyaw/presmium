@@ -4,7 +4,7 @@
  "metadata": {
   "title": "数据与图表",
   "lang": "zh-CN",
-  "description": "数值与比例、统计图表、层次与网络、空间与信号：数据如何进入画面，又如何随步骤变化。",
+  "description": "数值与比例、统计图表、层次与网络、空间与信号、论文原图：数据如何进入画面，又如何随步骤变化。",
   "tags": [
    "动画参考"
   ],
@@ -50,7 +50,9 @@
   "d3-quadtree-find",
   "d3-globe",
   "dc-tile-map",
-  "dc-oscilloscope"
+  "dc-oscilloscope",
+  "figures",
+  "pf-figure-tour"
  ],
  "sections": {
   "numbers": {
@@ -662,6 +664,43 @@
     "dc-oscilloscope--step-0",
     "dc-oscilloscope--step-1",
     "dc-oscilloscope--step-2"
+   ],
+   "layout": {
+    "type": "stack",
+    "renderers": {
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "figures": {
+   "id": "figures",
+   "title": "论文原图",
+   "level": 1,
+   "children": [
+    "figures--intro"
+   ],
+   "stepOrder": [
+    "figures--step"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  },
+  "pf-figure-tour": {
+   "id": "pf-figure-tour",
+   "title": "论文原图：镜头逐区推近，按图的坐标标注",
+   "level": 2,
+   "children": [
+    "pf-figure-tour--notes",
+    "pf-figure-tour--shot"
+   ],
+   "stepOrder": [
+    "pf-figure-tour--step-0",
+    "pf-figure-tour--step-1",
+    "pf-figure-tour--step-2",
+    "pf-figure-tour--step-3"
    ],
    "layout": {
     "type": "stack",
@@ -3809,6 +3848,516 @@
     "scene": "dc/oscilloscope",
     "alt": "示波器：正弦波在 10 × 8 格的屏幕上扫出，频率从 2 Hz 升到 5 Hz，波形变密。"
    }
+  },
+  "figures--intro": {
+   "id": "figures--intro",
+   "type": "text",
+   "content": [
+    {
+     "id": "figures--intro--p",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "第五组讲论文自己的图：从图的 PDF 裁出原图，镜头一次只框一个区域，标注按图自己的坐标放在图上。"
+      }
+     ]
+    }
+   ]
+  },
+  "pf-figure-tour--notes": {
+   "id": "pf-figure-tour--notes",
+   "type": "text",
+   "content": [
+    {
+     "id": "pf-figure-tour--notes--n0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "讲论文的架构图或关键结果图时使用：原图从论文 arXiv 源码里的图 PDF 裁出，一步只放一张，镜头一次只框一个区域，标注、移动和对照都画在图上，并按图自己的坐标放置。原图的配色就是整段动画的配色；标注用一种设计令牌颜色，默认是强调色，与原图的颜色相近时换一种（这张蓝色的示意图用 "
+      },
+      {
+       "type": "text",
+       "text": "category-6",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "）。"
+      }
+     ]
+    },
+    {
+     "id": "pf-figure-tour--notes--n1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "节奏：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "每个镜头一个状态（这里 4 个：整体、左图、读数、外推）。按状态长度的比例安排：0.04 到 0.4 镜头移到这一镜的区域，绕画面上不动的点缩放，最多放大 2 倍，裁图仍然清晰；图比窗口大的方向上不越过图的边缘。0.05 右侧的关键词淡出，0.22 秒后换上下一个；0.38 圆框套到指定的词上，0.4 数据点弹出，0.45 两条点线引到坐标轴，0.6 出现数值；虚线从 0.35 起从左往右扫出，在离开图表的地方停在边缘上。标注一直保留，放大时线宽和字号不变。"
+      }
+     ]
+    },
+    {
+     "id": "pf-figure-tour--notes--n2",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "参数：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "image",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（裁好的图，完整网址）与 "
+      },
+      {
+       "type": "text",
+       "text": "map",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（词坐标表，裁图工具写在图旁的 JSON），缺省时用随片段提供的合成示意图；"
+      },
+      {
+       "type": "text",
+       "text": "axes",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（每条轴取两个刻度标签和它们的值，"
+      },
+      {
+       "type": "text",
+       "text": "log",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 表示对数轴，"
+      },
+      {
+       "type": "text",
+       "text": "range",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 是坐标范围，点线和虚线的终点要用）；"
+      },
+      {
+       "type": "text",
+       "text": "shots",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "，每个状态一镜："
+      },
+      {
+       "type": "text",
+       "text": "frame",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（"
+      },
+      {
+       "type": "text",
+       "text": "whole",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、一组词、图上的区域或 "
+      },
+      {
+       "type": "text",
+       "text": "{ data: [[x0, y0], [x1, y1]] }",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "），"
+      },
+      {
+       "type": "text",
+       "text": "ring",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "point",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "guides",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "label",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "line",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "、"
+      },
+      {
+       "type": "text",
+       "text": "keyword",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "；"
+      },
+      {
+       "type": "text",
+       "text": "source",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（图下的来源）；"
+      },
+      {
+       "type": "text",
+       "text": "ink",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（标注颜色的令牌名）。同名的词按出现顺序写成 "
+      },
+      {
+       "type": "text",
+       "text": "2.5#1",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（第二个）。文稿自己的裁图在自己的场景文件里导入，再交给 "
+      },
+      {
+       "type": "text",
+       "text": "figureTour",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（"
+      },
+      {
+       "type": "text",
+       "text": "catalog/paper-figure/scenes/lib/tour.ts",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "）：参数里的相对路径按页面地址解析，网页和幻灯片的地址不同。"
+      }
+     ]
+    },
+    {
+     "id": "pf-figure-tour--notes--n3",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "裁图：",
+       "marks": [
+        {
+         "type": "bold"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "uv run --no-project --with pymupdf python -I figure.py <图.pdf> <图.png> --words",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 列出每个词的位置，据此选定区域，再加 "
+      },
+      {
+       "type": "text",
+       "text": "--crop x0,y0,x1,y1",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "（PDF 的点，左上角为原点）裁切。工具在 "
+      },
+      {
+       "type": "text",
+       "text": "catalog/paper-figure/tools/figure.py",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "；这里的示意图由 "
+      },
+      {
+       "type": "text",
+       "text": "catalog/paper-figure/scenes/figures/demo-figure.py",
+       "marks": [
+        {
+         "type": "code"
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": " 用 matplotlib 画出，数据是合成的。"
+      }
+     ]
+    }
+   ]
+  },
+  "pf-figure-tour--shot": {
+   "id": "pf-figure-tour--shot",
+   "type": "component",
+   "definitionId": "pf-figure-tour--shot--definition",
+   "parameters": {
+    "scene": "pf/figure-tour",
+    "alt": "一张有两个分图的示意图（合成数据）：先整体出现；镜头推近左图，圈出图例中的 frontier；再推近 10²¹ FLOPs 附近，标出计算最优前沿上的点和它的损失 2.33，两条点线引到坐标轴；最后回到左图，按 10¹⁹ 到 10²⁰ 的趋势画出直线外推，它在 10²² 之前碰到图表下边缘，比前沿低。",
+    "axes": {
+     "x": {
+      "ticks": [
+       [
+        "1e19",
+        1e+19
+       ],
+       [
+        "1e21",
+        1e+21
+       ]
+      ],
+      "log": true,
+      "range": [
+       1e+18,
+       1e+22
+      ]
+     },
+     "y": {
+      "ticks": [
+       [
+        "2.5",
+        2.5
+       ],
+       [
+        "3.5",
+        3.5
+       ]
+      ],
+      "range": [
+       2,
+       4
+      ]
+     }
+    },
+    "shots": [
+     {
+      "frame": "whole",
+      "keyword": "两个分图"
+     },
+     {
+      "frame": [
+       "(a)",
+       "Validation",
+       "1e22",
+       "(FLOPs)"
+      ],
+      "ring": [
+       "frontier"
+      ],
+      "keyword": "计算最优前沿"
+     },
+     {
+      "frame": {
+       "data": [
+        [
+         1e+19,
+         1.88
+        ],
+        [
+         2.8e+21,
+         2.92
+        ]
+       ]
+      },
+      "point": [
+       1e+21,
+       2.329
+      ],
+      "guides": true,
+      "label": "2.33",
+      "keyword": "10²¹ FLOPs：损失 2.33"
+     },
+     {
+      "frame": [
+       "(a)",
+       "Validation",
+       "1e22",
+       "(FLOPs)"
+      ],
+      "line": [
+       [
+        1e+19,
+        2.986
+       ],
+       [
+        1e+22,
+        1.828
+       ]
+      ],
+      "keyword": "直线外推：偏低"
+     }
+    ],
+    "source": "示意图 · 合成数据",
+    "ink": "category-6"
+   }
   }
  },
  "steps": {
@@ -6034,6 +6583,81 @@
      "blockId": "dc-oscilloscope--shot",
      "visible": true,
      "state": "change"
+    }
+   ],
+   "narrationIds": []
+  },
+  "figures--step": {
+   "id": "figures--step",
+   "sectionId": "figures",
+   "visuals": [
+    {
+     "blockId": "figures--intro",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  },
+  "pf-figure-tour--step-0": {
+   "id": "pf-figure-tour--step-0",
+   "sectionId": "pf-figure-tour",
+   "visuals": [
+    {
+     "blockId": "pf-figure-tour--notes",
+     "visible": false
+    },
+    {
+     "blockId": "pf-figure-tour--shot",
+     "visible": true,
+     "state": "whole"
+    }
+   ],
+   "narrationIds": []
+  },
+  "pf-figure-tour--step-1": {
+   "id": "pf-figure-tour--step-1",
+   "sectionId": "pf-figure-tour",
+   "visuals": [
+    {
+     "blockId": "pf-figure-tour--notes",
+     "visible": false
+    },
+    {
+     "blockId": "pf-figure-tour--shot",
+     "visible": true,
+     "state": "panel"
+    }
+   ],
+   "narrationIds": []
+  },
+  "pf-figure-tour--step-2": {
+   "id": "pf-figure-tour--step-2",
+   "sectionId": "pf-figure-tour",
+   "visuals": [
+    {
+     "blockId": "pf-figure-tour--notes",
+     "visible": false
+    },
+    {
+     "blockId": "pf-figure-tour--shot",
+     "visible": true,
+     "state": "read"
+    }
+   ],
+   "narrationIds": []
+  },
+  "pf-figure-tour--step-3": {
+   "id": "pf-figure-tour--step-3",
+   "sectionId": "pf-figure-tour",
+   "visuals": [
+    {
+     "blockId": "pf-figure-tour--notes",
+     "visible": false
+    },
+    {
+     "blockId": "pf-figure-tour--shot",
+     "visible": true,
+     "state": "extend"
     }
    ],
    "narrationIds": []
@@ -8309,6 +8933,96 @@
         {
          "type": "text",
          "value": "示波器：正弦波在 10 × 8 格的屏幕上扫出，频率从 2 Hz 升到 5 Hz，波形变密。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "pf-figure-tour--shot--definition": {
+   "id": "pf-figure-tour--shot--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/pf/figure-tour.ts"
+   },
+   "parameterSchema": {
+    "type": "object",
+    "properties": {
+     "scene": {
+      "type": "string",
+      "title": "场景文件"
+     },
+     "alt": {
+      "type": "string",
+      "title": "替代文本"
+     },
+     "image": {
+      "type": "string",
+      "title": "裁好的图",
+      "description": "完整网址；缺省时用合成示意图"
+     },
+     "map": {
+      "type": "object",
+      "title": "词坐标表",
+      "description": "裁图工具写在图旁的 JSON"
+     },
+     "axes": {
+      "type": "object",
+      "title": "坐标轴",
+      "description": "每条轴两个刻度标签及其值、是否对数、坐标范围"
+     },
+     "shots": {
+      "type": "array",
+      "title": "镜头",
+      "description": "每个状态一镜：frame、ring、point、guides、label、line、keyword"
+     },
+     "source": {
+      "type": "string",
+      "title": "来源"
+     },
+     "ink": {
+      "type": "string",
+      "title": "标注颜色",
+      "description": "设计令牌的颜色名，默认 accent"
+     }
+    }
+   },
+   "states": [
+    {
+     "id": "whole"
+    },
+    {
+     "id": "panel"
+    },
+    {
+     "id": "read"
+    },
+    {
+     "id": "extend"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     2000,
+     2600,
+     3000,
+     3000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "一张有两个分图的示意图（合成数据）：先整体出现；镜头推近左图，圈出图例中的 frontier；再推近 10²¹ FLOPs 附近，标出计算最优前沿上的点和它的损失 2.33，两条点线引到坐标轴；最后回到左图，按 10¹⁹ 到 10²⁰ 的趋势画出直线外推，它在 10²² 之前碰到图表下边缘，比前沿低。"
         }
        ]
       }
