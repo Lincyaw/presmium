@@ -50,7 +50,8 @@ export function writeContactSheet(ffmpeg: Ffmpeg, video: string, frames: readonl
   try {
     const numbers = frames.map(frame => Math.max(0, Math.floor(frame.atMs * options.fps / 1000 + 1e-6)))
     const taken = [...new Set(numbers)].sort((a, b) => a - b)
-    runFfmpeg(ffmpeg, ['-i', video, '-an', '-sn', '-vf', `select='${taken.map(n => `eq(n,${n})`).join('+')}',scale=${options.width}:-2`, '-fps_mode', 'passthrough', '-start_number', '0', 'taken%04d.png'], dir)
+    // `setpts` makes the kept frames consecutive, so that each is written once without `-fps_mode` (FFmpeg 5.1 and later).
+    runFfmpeg(ffmpeg, ['-i', video, '-an', '-sn', '-vf', `select='${taken.map(n => `eq(n,${n})`).join('+')}',setpts=N/FRAME_RATE/TB,scale=${options.width}:-2`, '-start_number', '0', 'taken%04d.png'], dir)
     const missing = taken.findIndex((_, index) => !existsSync(join(dir, `${numbered('taken', index)}.png`)))
     if (missing >= 0) throw new Error(`ffmpeg took ${missing} of the ${taken.length} frames asked for from ${video}`)
     // Two times can fall on one frame: each place on the sheet gets its own copy.
