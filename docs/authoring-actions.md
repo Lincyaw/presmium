@@ -39,6 +39,8 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 工具是否可用以 MCP 的工具表为准；已列出的简单编辑工具可直接调用。需要了解高级动作限制时，`get_authoring_capabilities` 与各服务的 `get_*_capabilities` 报告能否预检与提交、预算、`idempotency` 与 `review`，不编译文稿。状态区分 available、unavailable 与 unknown；`verification: configuration-only` 只看了配置，不证明鉴权或合成可用。能力响应不含凭据。工具的参数来自同一份 `inputSchema`，没有单独维护的参数清单。外部 MCP 默认只列出当前上下文、页标题、讲稿编辑、文稿目录、操作查询及按权限种类分开的调用入口。`operations` 按关键字分页查找动作，指定 `name` 时返回自动生成的参数摘要，`schema: true` 才返回完整 Schema。`read_operation`、`edit_operation`、`spend_operation`、`write_operation` 与 `agent_operation` 只调用同种权限的已授权动作，保留目标 Schema 校验、确认策略与错误和图片结果；没有相应动作的入口不提供。Schema 只携带实际引用到的定义。
 
+一个工具含多种动作时，参数摘要从原 Schema 生成 `variants`，包括判别字段和可选值。`operations` 同时指定 `name` 与 `variant`，只读取所选动作的参数，例如 `{name: "editor_action", variant: "body-drafts.read"}`；加 `schema: true` 读取该动作的完整约束。嵌套对象参数沿原路径保留，公共字段与必填约束不删除。未知或不能唯一定位的动作拒绝筛选；使用分支位置、锚点或独立资源引用的 Schema 也拒绝筛选，仍可省略 `variant` 读取原完整定义。筛选仅用于发现参数，执行始终校验工具的原完整 Schema，不改变可调用动作、权限或确认策略。
+
 新增功能优先扩展既有语义动作与共享服务，不为同一保存结果增加平行入口。简单编辑与高级预检/应用共用事务；只在调用方需要先审阅固定影响时使用后者。默认保留少量高频快捷动作，其余按需发现。未提交文件、候选审阅与已提交历史分别处理工作文件、待接受的助手结果与版本撤销，不能互相代替。
 
 `presmium mcp` 的 stdio 连接也使用精简目录。已有客户端重新连接后按新目录查询动作；需要原有命名工具的 SDK 可显式连接 `/mcp?tools=all`。CLI `presmium mcp tools <工具>` 返回参数摘要，`--schema` 返回完整格式，`tools --all` 列出完整目录，`--json` 输出 JSON；`mcp call` 保留原命名工具调用。可信 dsh 宿主保留完整元数据，但给模型同一精简目录；解析真实目标及其原始 Schema 后，按 `presmium/workspace` 路由作者与候选工作区，并按目标的权限与审批元数据执行确认和审阅钩子。目标定义或绑定变化时拒绝旧调用，下一步请求前或空闲后重装模型目录。两种目录共享调用方权限，查询参数不会提升授权。

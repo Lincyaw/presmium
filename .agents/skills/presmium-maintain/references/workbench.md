@@ -32,6 +32,12 @@ Refuse a changed target definition or document binding. Tool-list refresh must r
 images and structured failures still use the original call result. Candidate services inherit the Studio launcher’s exact Presmium command, including its bundled renderers and plugins; do not fall back to the bare CLI from a different installation. Verify in the real Harness with a
 scripted local provider, including schema rejection, candidate publication, owner-state reads and approval.
 
+Variant discovery is also shared: derive discriminators and selected argument summaries from the original
+schema, including nested object parameters. Keep shared fields, required constraints and reachable root
+definitions. Refuse ambiguous values and projections that would break position/anchor/resource references;
+the complete schema stays readable. Discovery never narrows the schema used for execution. Verify both
+the external MCP and real Harness carrier, with plugin root unions and reference boundaries.
+
 ## Who it is for
 
 The workbench serves teachers who are not technical (section 1): point at a problem, edit it or hand it to

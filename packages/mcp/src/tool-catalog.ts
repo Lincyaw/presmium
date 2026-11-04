@@ -1,14 +1,14 @@
 import { fromJsonSchema } from '@modelcontextprotocol/server'
 import type { JsonSchemaType } from '@modelcontextprotocol/server'
 import type { ListedTool } from './client.ts'
-import { compactSchema, schemaArguments } from './schemas.ts'
+import { compactSchema, schemaArguments, selectSchemaVariant } from './schemas.ts'
 
 const COMMON = new Set(['get_context', 'rename_page', 'edit_narration', 'list_documents'])
 const KINDS = ['read', 'operate', 'spend', 'write', 'agent'] as const
 const dispatcher = (kind: ListedTool['kind']) => kind === 'operate' ? 'edit_operation' : `${kind}_operation`
 const failure = (message: string, status = 400) => Object.assign(new Error(message), { status })
 const QUERY_SCHEMA = { type: 'object', additionalProperties: false, properties: {
-  name: { type: 'string' }, query: { type: 'string' }, schema: { type: 'boolean' }, offset: { type: 'integer', minimum: 0 }, limit: { type: 'integer', minimum: 1, maximum: 20 },
+  name: { type: 'string' }, query: { type: 'string' }, variant: { type: 'string', minLength: 1, maxLength: 200 }, schema: { type: 'boolean' }, offset: { type: 'integer', minimum: 0 }, limit: { type: 'integer', minimum: 1, maximum: 20 },
 } }
 const CALL_SCHEMA = { type: 'object', additionalProperties: false, properties: {
   operation: { type: 'string', minLength: 1 }, arguments: { type: 'object', additionalProperties: true },
@@ -16,7 +16,7 @@ const CALL_SCHEMA = { type: 'object', additionalProperties: false, properties: {
 
 /** One catalog definition for MCP and trusted Harness hosts; the complete inventory stays host-side. */
 export function compactToolCatalog(tools: readonly ListedTool[]): ListedTool[] {
-  return [{ name: 'operations', kind: 'read', description: 'Find available operations by query, or inspect one operation. Argument summaries are automatic; request schema:true only when the full input definition is needed.', inputSchema: QUERY_SCHEMA },
+  return [{ name: 'operations', kind: 'read', description: 'Find operations by query, or inspect one by name. Generated summaries list variants; select variant for only that action’s arguments. Use schema:true for its full definition.', inputSchema: QUERY_SCHEMA },
     ...KINDS.filter(kind => tools.some(tool => tool.kind === kind)).map(kind => ({ name: dispatcher(kind), kind,
       description: `Calls one discovered ${kind} operation using its original schema, permissions and confirmation policy. Supply operation and its business arguments; use operations(name,schema:true) if needed.`, inputSchema: CALL_SCHEMA })),
     ...tools.filter(tool => COMMON.has(tool.name))]
@@ -51,10 +51,10 @@ export function queryToolCatalog(tools: readonly ListedTool[], args: Record<stri
   if (typeof args.name === 'string') {
     const tool = tools.find(tool => tool.name === args.name)
     if (!tool) throw failure('operation-unavailable', 404)
-    const schema = compactSchema(tool.inputSchema)
+    const schema = typeof args.variant === 'string' ? selectSchemaVariant(tool.inputSchema, args.variant) : compactSchema(tool.inputSchema)
     return { name: tool.name, kind: tool.kind, description: description(tool), ...args.schema ? { inputSchema: schema } : { arguments: schemaArguments(schema) } }
   }
-  if (args.schema) throw failure('operation-name-required')
+  if (args.schema || args.variant !== undefined) throw failure('operation-name-required')
   const query = String(args.query ?? '').toLowerCase(), offset = Number(args.offset ?? 0), limit = Number(args.limit ?? 10)
   const found = tools.filter(tool => `${tool.name} ${tool.description}`.toLowerCase().includes(query))
   return { operations: found.slice(offset, offset + limit).map(tool => ({ name: tool.name, kind: tool.kind, description: description(tool) })),
