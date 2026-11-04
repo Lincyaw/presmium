@@ -8,13 +8,15 @@
 //     --authors 'Suze van Adrichem, Luke Bailey, Rohith Kuditipudi 等'
 //
 // The pages, in the order every film follows (CLAUDE.md, 标准): opening; problem (问题, 为什么重要, 论文要解决什么);
-// method; evidence; close (条件, 结论); then the reading-only sources page, which the video skips. Each step has a TODO narration and its
-// scene a placeholder that shows the page and the step, so the document compiles and can be previewed at once.
+// method; evidence; close (条件, 结论); the ending with its fixed closing line; then the reading-only sources page, which the
+// video skips (its content is only in the web form). Each step has a TODO narration and its scene a placeholder that shows the page and the step, so the document compiles and can be previewed at once.
 // Narration, steps and scenes are then written in lecture.json and scenes/; the skeleton is never generated again.
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
-import { WORKSPACE } from './mcp.mjs'
+
+const WORKSPACE = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -34,6 +36,7 @@ if (existsSync(dir)) { console.error(`${dir} exists already`); process.exit(1) }
 
 const v = values
 const OPENING = `三分钟读完一篇论文。大家好，这里是翰林院传达室，今天给大家带来${v.institution}的《${v['paper-zh']}》。`
+const CLOSING = '一句话总结：TODO 论文做了什么，一句话。想看哪篇论文，欢迎在评论区留言。翰林院传达室为您分享最新论文，我们下期见。'
 /** key, page title, the title of each step (its TODO says what the step must carry). */
 const PAGES = [
   ['problem', 'TODO 问题（标题写成一句论断）', ['问题', '为什么重要', '论文要解决什么']],
@@ -69,6 +72,8 @@ page('opening', `三分钟读完一篇论文：${v['paper-zh']}`, ['开场'], 'o
 for (const [key, title, stepTitles] of PAGES) {
   page(key, title, stepTitles, key, { label: title }, stepTitles.map(s => `TODO ${s}：一到两句讲稿，25 到 60 字。`), `TODO：这一页最后一步的画面，用文字描述。`)
 }
+page('ending', '一句话总结', ['一句话总结'], 'ending', { summary: 'TODO 论文做了什么（一个短语，24 字以内）', paper: `${v.paper} · ${v.institution}` }, [CLOSING],
+  '结尾：一句话总结论文做了什么；下方是对话气泡和“想看哪篇论文？评论区告诉我们”，右侧是翰林院传达室的标志与“为您分享最新论文 · 下期见”。')
 const notes = 'notes--text'
 blocks[notes] = { id: notes, type: 'text', only: ['web'], content: [
   { id: 'notes--t0', type: 'heading', level: 3, children: [text('论文')] },
@@ -76,8 +81,8 @@ blocks[notes] = { id: notes, type: 'text', only: ['web'], content: [
   { id: 'notes--t2', type: 'heading', level: 3, children: [text('画面里的数字从哪里来')] },
   { id: 'notes--t3', type: 'paragraph', children: [text('TODO：每个上屏数字的来源（scenes/data/derive.py）与论文值的对照；示意与估算各是哪些。')] },
 ] }
-// The sources are a reading-only page (a scrolly page shows only its figures and narration). The lecture still plays
-// its one step, so production gives that step no hold: the video ends on the takeaway.
+// The sources are a reading-only page (a scrolly page shows only its figures and narration). Its content is only in the
+// web form, so the lecture leaves its step out and the video ends on the closing card.
 sections['p-notes'] = { id: 'p-notes', title: '来源与说明', level: 2, children: [notes], stepOrder: ['notes--step-0'], layout: { type: 'stack' } }
 steps['notes--step-0'] = { id: 'notes--step-0', sectionId: 'p-notes', visuals: [{ blockId: notes, visible: true }], narrationIds: [] }
 order.push('p-notes')
@@ -91,7 +96,7 @@ const doc = {
   sectionOrder: order, sections, blocks, steps, narrations, assets: {}, definitions,
   production: {
     defaults: { voiceSource: { type: 'tts', voice: { engine: 'volcengine', voice: 'zh_female_tianmeitaozi_uranus_bigtts' } }, narrationStart: 'with-animation', trailingPauseMs: 350 },
-    stepOverrides: { 'close--step-1': { minimumHoldMs: 0, trailingPauseMs: 3500 }, 'notes--step-0': { voiceSource: { type: 'none' }, minimumHoldMs: 0, trailingPauseMs: 0 } }, mediaClips: [],
+    stepOverrides: { 'ending--step-0': { minimumHoldMs: 0, trailingPauseMs: 1500 } }, mediaClips: [],
   },
 }
 
@@ -99,6 +104,7 @@ mkdirSync(join(dir, 'scenes', 'data'), { recursive: true })
 mkdirSync(join(dir, 'figures'), { recursive: true })
 writeFileSync(join(dir, 'lecture.json'), JSON.stringify(doc, null, 1) + '\n')
 writeFileSync(join(dir, 'scenes', 'opening.ts'), "export { default } from '../../kit/opening.ts'\n")
+writeFileSync(join(dir, 'scenes', 'ending.ts'), "export { default } from '../../kit/closing.ts'\n")
 writeFileSync(join(dir, 'scenes', 'paper.ts'), `// The data and the colours every scene of this film shares. Every number on screen is read from data/*.json, which
 // data/derive.py computes from the paper's released results (or, without them, copies from the paper with its table).
 
@@ -163,7 +169,7 @@ ABT：TODO，而且 TODO；但是 TODO；所以 TODO。
 ## C. 画面约定
 
 - 16:9 画面用容器单位（cqw、cqh），SVG 层的坐标是 160 × 90（\`kit/frame.ts\`）。
-- 要读的东西（坐标轴、刻度、关键数字）放在 78cqh 以上，下面是字幕带。
+- 要读的东西（坐标轴、横轴标题、刻度、关键数字）放在 77cqh 以上，下面是字幕带；坐标图的底边放在 61 个 SVG 单位（\`scale(…, 61, 16)\`）。
 - 左边是图，右边（约 66cqw 起）是关键词和读数。
 - 左上角固定是品牌角标 \`brand(PAPER.short)\`（开场页除外）。
 - 论文原图：TODO（哪几张、在哪一步、镜头框哪个区域）。
@@ -200,14 +206,14 @@ TODO：\`scenes/data/derive.py\` 算出的每个数字与论文值的对照；�
 ## I. 制作规则
 
 - 场景的样子只由时间决定：只用补间（tween）和 \`set\`，不用 \`onUpdate\`、\`call\` 之类的回调（按时间定位时 GSAP 跳过回调）。
-- 节拍用 \`clock\` 的 \`T(k, f)\`；\`tools/film.mjs retime\` 把状态时长换成真实配音后，节拍跟着句子走。
+- 节拍用 \`clock\` 的 \`T(k, f)\`：讲授时每个状态的时长就是这一步配音的长度，节拍跟着句子走。
 - 不用 SVG 的 \`id\` 和 \`url(#…)\`；颜色变化不补间 \`var()\` 或 \`color-mix()\`。
 - 只有协调者改 \`lecture.json\`、\`kit/\`、数据模块；每个 agent 只改分给自己的场景文件，保存前确认能编译。
-- 看结果用 \`node tools/mcp.mjs capture_slides '{"document":"${slug}","section":"p-<页>"}' --out <目录>\`，再用 \`tools/sheet.py\` 拼成一张。
+- 看结果用 \`pnpm exec presmium mcp call capture_slides '{"document":"${slug}","section":"p-<页>"}' --out <目录>\`，\`capture_overview\` 一次看全部页面。
 
 ## J. 评审记录
 
 （每轮评审追加在这里：时间、谁看的、发现、改了什么。）
 `)
 console.log(`wrote ${slug}/: lecture.json (${order.length} pages), storyboard.md, scenes/ (opening, ${PAGES.map(p => p[0]).join(', ')}, paper.ts), scenes/data/derive.py, figures/`)
-console.log(`next: pnpm exec presmium check ${slug} --json; fill storyboard.md A–H; write the narration in lecture.json`)
+console.log(`next: pnpm check ${slug}; fill storyboard.md A–H; write the narration in lecture.json`)

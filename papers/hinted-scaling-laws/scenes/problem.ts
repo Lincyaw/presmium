@@ -13,9 +13,9 @@ const bpb = new Map(D.delphi.bpb.map(p => [p.c.toFixed(3), p.bpb]))
 const mask = D.delphi.methods.mask
 const X = scale(18.25, 23.35, 16, 98)
 const ROW = 42
-const yLoss = scale(0.3, 1.3, 64, 16)
-const yAcc = scale(0, 0.4, 64, 16)
-const yAll = scale(0, 1, 64, 16)
+const yLoss = scale(0.3, 1.3, 61, 16)
+const yAcc = scale(0, 0.4, 61, 16)
+const yAll = scale(0, 1, 61, 16)
 const TARGET = 23
 
 // The trend of loss over the rungs it was measured on: log(bpb) linear in log(compute), drawn only over that range.

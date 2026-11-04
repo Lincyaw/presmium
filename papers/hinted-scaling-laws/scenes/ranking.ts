@@ -17,7 +17,7 @@ const NAMES: Record<string, string> = {
 }
 const hinted = R.curves['0.7']!
 const LX = 50, RX = 92
-const LY = scale(0, 0.01, 64, 18), RY = scale(0, 0.25, 64, 18)
+const LY = scale(0, 0.01, 61, 18), RY = scale(0, 0.25, 61, 18)
 
 /** The lowest and highest of a set of accuracies, as "0.06% 到 0.81%". */
 const range = (v: number[]) => { const f = (x: number) => (x * 100).toFixed(x < 0.01 ? 2 : 1); return `${f(Math.min(...v))}–${f(Math.max(...v))}%` }
@@ -34,7 +34,7 @@ function spread(ys: number[], gap: number): number[] {
 }
 
 // τ against k: log2 of the completions per problem on x.
-const KX = scale(-1.6, 7.25, 20, 98), KY = scale(0, 1, 64, 16)
+const KX = scale(-1.6, 7.25, 20, 98), KY = scale(0, 1, 61, 16)
 const kx = (k: number) => KX(Math.log2(k))
 const target = R.prior[0]!
 const cross = (() => {

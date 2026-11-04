@@ -27,7 +27,7 @@ const mask = D.delphi.methods.mask
 const sheet = D.delphi.sheet.delphi_1e21!.mask!
 const sheetLevels = mask.hints.map(h => sheet[String(h)]!)
 const accAt = mask.hints.map((_, j) => mask.acc[j]![RUNG] ?? 0)
-const HX = scale(0, 1, 92, 148), HY = scale(0, 1, 62, 17)
+const HX = scale(0, 1, 92, 148), HY = scale(0, 1, 60, 17)
 const PITCH = 1.8
 
 export default gsapScene(({ root, gsap, at, durations, color }) => {
