@@ -100,6 +100,8 @@ export default function PlayerPanel(_props: { view?: string }) {
   const time = useStore(player?.time, 0),
     clockPlaying = useStore(player?.clock.playing, false),
     rate = useStore(player?.clock.rate, 1)
+  const preparing = useStore(player?.preparing, false)
+  const buffering = useStore(player?.clock.buffering, false) || preparing
   // The page that embeds this one learns the lecture's state: it keeps its cover while loading, offers Play when waiting.
   useEffect(() => {
     if (!id) return
@@ -224,11 +226,11 @@ export default function PlayerPanel(_props: { view?: string }) {
       {panel === 'transcript' ? <TranscriptList track={player.track} language={lang} current={current?.id} stale={stale} onSeek={at => player.seek(at)} />
         : <ChapterList chapters={chapters} events={player.events} time={time} onSeek={at => player.seek(at)} />}
     </PmDrawer>}
-    <div className="pm-lecture-player" role="region" aria-label={t.player.region} data-state={state} data-time={Math.round(time)} data-clip={current?.clip} data-unsaid={unsaid.length || undefined}>
-      <PmIconButton small className="pm-lecture-player__play" icon={clockPlaying ? 'pause' : 'play'} label={clockPlaying ? t.player.pause : t.player.play}
-        hint={`${clockPlaying ? t.player.pause : t.player.play} · Space`} aria-keyshortcuts="Space"
-        onClick={() => player.playing ? player.pause() : void player.play()} />
-      <span className="pm-lecture-player__time" title={t.player.time(clockText(time), clockText(player.duration))}>{clockText(time)}<span className="pm-lecture-player__time-total"> / {clockText(player.duration)}</span></span>
+    <div className="pm-lecture-player" role="region" aria-label={t.player.region} aria-busy={buffering} data-state={buffering ? 'buffering' : state} data-time={Math.round(time)} data-clip={current?.clip} data-unsaid={unsaid.length || undefined}>
+      <PmIconButton small className="pm-lecture-player__play" icon={clockPlaying || preparing ? 'pause' : 'play'} label={clockPlaying || preparing ? t.player.pause : t.player.play}
+        hint={`${clockPlaying || preparing ? t.player.pause : t.player.play} · Space`} aria-keyshortcuts="Space"
+        onClick={() => player.playing || preparing ? player.pause() : void player.play()} />
+      <span className="pm-lecture-player__time" title={t.player.time(clockText(time), clockText(player.duration))}>{buffering ? t.player.buffering : clockText(time)}<span className="pm-lecture-player__time-total"> / {clockText(player.duration)}</span></span>
       <input className="pm-lecture-player__seek pm-ui-range" style={{ '--pm-range-progress': `${player.duration ? Math.max(0, Math.min(100, time / player.duration * 100)) : 0}%` } as CSSProperties} type="range" min="0" max={player.duration} step="100" value={Math.round(time)}
         aria-label={t.player.seek} aria-valuetext={t.player.time(clockText(time), clockText(player.duration))} onChange={event => player.seek(Number(event.target.value))} />
       <PmIconButton small icon="captions" label={t.player.captions} aria-pressed={captions} onClick={() => setCaptions(value => !value)} />

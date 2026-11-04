@@ -48,6 +48,15 @@ Rules for judging:
   when configured.
 - When the problem only happens in the author's tab, check that tab's console and network too.
 - Keep a baseline before the fix and rerun with the same document, views, timeout and load after it.
+- For lecture playback, verify that the active audio element has playable data and its media time advances. A moving
+  player timestamp or HTTP 200 for an audio file does not prove sound played. Check a cold load, a later clip and a
+  jump; the timeline must hold while the active audio is loading or buffering. A direct `?view=lecture` link with a
+  single track opens that track's player; multiple tracks keep their chooser. Pages publishes `/build-info.json`
+  with the checked-out commit and source CLI version for deployment diagnosis.
+  The lecture preloads a 30-second window of audio and pictures, with at most four audio files selected for preload.
+  Current audio needs two seconds of playable data (or the rest of a shorter clip), and the shared step clock must
+  confirm the picture is ready before playback starts. Check that future resources load before Play, and that a
+  previously finished clip plays again after seeking back.
 - After an upgrade, verify on the author's actual workspace copy (old `@lincyaw/slidev-addon-*` imports map
   to `@lincyaw/addon-*`). Never delete their copy, rewrite their sources or externalize modules to pass.
 

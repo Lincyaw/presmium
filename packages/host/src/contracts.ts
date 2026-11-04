@@ -169,6 +169,9 @@ export interface StepClock {
   drive(driver: StepClockDriver): Unsubscribe
   wait(work: Promise<unknown>): void
   settled(): Promise<void>
+  /** Warm pictures for the given slide indices before playback reaches them. */
+  prepare?(slides: readonly number[]): Promise<void>
+  registerPreparation?(slide: number, prepare: () => void | Promise<void>): Unsubscribe
 }
 
 export const STEP_CLOCK = defineService<StepClock>('presmium.stepClock')

@@ -8,6 +8,8 @@ export interface TrackClock {
   readonly error: Readonly<Store<Error | undefined>>
   /** The browser refused to start the sound before the reader acted on this page (autoplay): playback waits for them. */
   readonly blocked: Readonly<Store<boolean>>
+  readonly buffering: Readonly<Store<boolean>>
+  prepare(t: number, signal?: AbortSignal): Promise<void>
   play(): void
   pause(): void
   seek(t: number): void
@@ -21,6 +23,7 @@ export class SilentClock implements TrackClock {
   readonly rate = createStore(1)
   readonly error = createStore<Error | undefined>(undefined)
   readonly blocked = createStore(false)
+  readonly buffering = createStore(false)
   protected at = 0
   protected since = performance.now()
   protected readonly duration: number
@@ -33,6 +36,8 @@ export class SilentClock implements TrackClock {
     const t = this.playing.getSnapshot() ? this.at + (performance.now() - this.since) * this.rate.getSnapshot() : this.at
     return Math.min(t, this.duration)
   }
+
+  async prepare(_t: number, _signal?: AbortSignal): Promise<void> {}
 
   play(): void {
     if (this.playing.getSnapshot()) return
@@ -68,7 +73,7 @@ export class SilentClock implements TrackClock {
 }
 
 export interface ClockMedia {
-  url: string
+  url: string | ((signal?: AbortSignal) => Promise<string>)
   start: number
   duration: number
   sourceStartMs?: number
@@ -79,9 +84,14 @@ export interface ClockMedia {
 const DRIFT_MS = 250
 // How far a paused element may be from where it resumes: under a frame, not worth a seek.
 const RESUME_MS = 20
+export const BUFFER_AHEAD_MS = 30_000
+const START_BUFFER_MS = 2_000
+const MAX_PREFETCH_FILES = 4
+const BUFFER_TIMEOUT_MS = 30_000
 
 /** A part of an audio file on the timeline: from `start` for `duration`, playing the file from `sourceStartMs`. */
 interface Clip { start: number, duration: number, sourceStartMs: number, volume: number, muted: boolean }
+interface Voice { el: HTMLAudioElement, clips: Clip[], key: ClockMedia['url'], active?: Clip, loading?: Promise<void> }
 
 /**
  * Plays the timeline's audio with one element per file: a clip is where on the timeline a part of its file plays,
@@ -89,22 +99,25 @@ interface Clip { start: number, duration: number, sourceStartMs: number, volume:
  * click at their boundary. A file gets another element only for clips of it that overlap in time.
  */
 export class MediaClock extends SilentClock {
-  private readonly voices: { el: HTMLAudioElement, clips: Clip[] }[] = []
+  private readonly voices: Voice[] = []
+  private readonly lifetime = new AbortController()
+  private prefetchedAt = Number.NEGATIVE_INFINITY
 
   constructor(duration: number, media: ClockMedia[]) {
     super(duration)
     for (const { url, start, duration: length, sourceStartMs = 0, volume = 1, muted = false } of [...media].sort((a, b) => a.start - b.start)) {
       const clip = { start, duration: length, sourceStartMs, volume, muted }
-      const free = this.voices.find(voice => voice.el.src === new URL(url, location.href).href && voice.clips.at(-1)!.start + voice.clips.at(-1)!.duration <= start)
+      const key = typeof url === 'string' ? new URL(url, location.href).href : url
+      const free = this.voices.find(voice => voice.key === key && voice.clips.at(-1)!.start + voice.clips.at(-1)!.duration <= start)
       if (free) {
         free.clips.push(clip)
         continue
       }
       const el = new Audio()
-      el.preload = 'auto'
-      el.onerror = () => this.fail(new Error([url, el.error?.message].filter(Boolean).join(': ')))
-      el.src = url
-      this.voices.push({ el, clips: [clip] })
+      el.preload = 'none'
+      el.onerror = () => this.fail(new Error('playback-media-unavailable'))
+      if (typeof key === 'string') el.src = key
+      this.voices.push({ el, clips: [clip], key })
     }
   }
 
@@ -120,19 +133,86 @@ export class MediaClock extends SilentClock {
   private mediaAt(t: number) {
     for (const voice of this.voices) {
       const clip = MediaClock.clipAt(voice.clips, t)
-      if (clip) return { el: voice.el, ...clip }
+      if (clip) return { voice, clip, el: voice.el, ...clip }
     }
     return undefined
   }
 
+  private load(voice: Voice): Promise<void> {
+    if (typeof voice.key === 'string') return Promise.resolve()
+    if (voice.loading) return voice.loading
+    const signal = AbortSignal.any([this.lifetime.signal, AbortSignal.timeout(BUFFER_TIMEOUT_MS)])
+    return voice.loading = voice.key(signal).then(url => {
+      if (this.lifetime.signal.aborted) { if (url.startsWith('blob:')) URL.revokeObjectURL(url); return }
+      voice.el.src = url
+      const clip = MediaClock.clipAt(voice.clips, this.at)
+      if (clip) voice.el.currentTime = (clip.sourceStartMs + this.at - clip.start) / 1000
+    })
+  }
+
+  private prefetch(t: number, force = false): void {
+    if (!force && Math.abs(t - this.prefetchedAt) < 1_000) return
+    this.prefetchedAt = t
+    const upcoming = this.voices.flatMap(voice => {
+      const clip = voice.clips.find(clip => clip.start + clip.duration > t && clip.start < t + BUFFER_AHEAD_MS)
+      return clip ? [{ voice, at: Math.max(t, clip.start) }] : []
+    }).sort((a, b) => a.at - b.at).slice(0, MAX_PREFETCH_FILES)
+    for (const { voice } of upcoming) {
+      voice.el.preload = 'auto'
+      void this.load(voice).catch(() => { if (!this.lifetime.signal.aborted) this.fail(new Error('playback-media-unavailable')) })
+    }
+  }
+
+  override async prepare(t: number, signal?: AbortSignal): Promise<void> {
+    const batch = new AbortController()
+    const pending = AbortSignal.any([batch.signal, this.lifetime.signal, ...signal ? [signal] : []])
+    pending.throwIfAborted()
+    this.prefetch(t, true)
+    const active = this.voices.flatMap(voice => {
+      const clip = MediaClock.clipAt(voice.clips, t)
+      return clip ? [{ voice, clip }] : []
+    })
+    await Promise.all(active.map(({ voice }) => this.load(voice)))
+    pending.throwIfAborted()
+    try { await Promise.all(active.map(({ voice: { el }, clip }) => new Promise<void>((resolve, reject) => {
+      const events = ['loadedmetadata', 'progress', 'canplay', 'canplaythrough', 'seeked', 'error']
+      const cleanup = () => { clearTimeout(timeout); for (const name of events) el.removeEventListener(name, check); pending.removeEventListener('abort', abort) }
+      const abort = () => { cleanup(); reject(pending.reason) }
+      const check = () => {
+        if (el.error) { cleanup(); reject(new Error('playback-media-unavailable')); return }
+        const offset = (clip.sourceStartMs + t - clip.start) / 1000
+        const end = Math.min((clip.sourceStartMs + clip.duration) / 1000, Number.isFinite(el.duration) ? el.duration : Infinity)
+        const needed = Math.min(START_BUFFER_MS / 1000 * this.rate.getSnapshot(), end - offset)
+        if (el.readyState < 2) return
+        for (let i = 0; i < el.buffered.length; i++) if (el.buffered.start(i) <= offset + 0.05 && el.buffered.end(i) + 0.05 >= offset + needed) {
+          cleanup(); resolve(); return
+        }
+      }
+      const timeout = setTimeout(() => { cleanup(); reject(new Error('playback-timeout')) }, BUFFER_TIMEOUT_MS)
+      for (const name of events) el.addEventListener(name, check)
+      pending.addEventListener('abort', abort, { once: true })
+      if (pending.aborted) abort()
+      else check()
+    }))) } finally { batch.abort() }
+  }
+
   override now(): number {
-    const current = this.playing.getSnapshot() ? this.mediaAt(super.now()) : undefined
-    if (current && !current.el.paused && current.el.readyState >= 2) {
-      const t = Math.min(current.start + current.duration, current.start + current.el.currentTime * 1000 - current.sourceStartMs)
+    // Keep the current clip as the clock until its sound reaches the end. Wall time must not skip an unloaded clip
+    // or a stalled one; it is only the clock in the gaps between clips.
+    const current = this.playing.getSnapshot() ? this.mediaAt(this.at) ?? this.mediaAt(super.now()) : undefined
+    if (current) {
+      const end = current.start + current.duration
+      const active = current.voice.active === current.clip
+      const ready = active && !current.el.paused && current.el.readyState >= 2
+      this.buffering.set(!ready && !(active && current.el.ended))
+      const t = active && current.el.ended ? end : ready
+        ? Math.max(current.start, Math.min(end, current.start + current.el.currentTime * 1000 - current.sourceStartMs))
+        : Math.max(current.start, this.at)
       this.at = Math.min(t, this.duration)
       this.since = performance.now()
       return this.at
     }
+    this.buffering.set(false)
     return super.now()
   }
 
@@ -143,14 +223,21 @@ export class MediaClock extends SilentClock {
 
   override pause(): void {
     super.pause()
+    this.buffering.set(false)
     for (const { el } of this.voices) el.pause()
   }
 
   override seek(t: number): void {
     super.seek(t)
-    for (const { el, clips } of this.voices) {
+    this.prefetch(t, true)
+    for (const voice of this.voices) {
+      const { el, clips } = voice
       const clip = MediaClock.clipAt(clips, t)
-      if (clip) el.currentTime = (clip.sourceStartMs + t - clip.start) / 1000
+      voice.active = clip
+      if (clip) {
+        el.preload = 'auto'
+        el.currentTime = (clip.sourceStartMs + t - clip.start) / 1000
+      }
       else el.pause()
     }
     this.tick()
@@ -164,22 +251,27 @@ export class MediaClock extends SilentClock {
   override tick(): void {
     super.tick()
     const t = this.now()
-    for (const { el, clips } of this.voices) {
+    this.prefetch(t)
+    for (const voice of this.voices) {
+      const { el, clips } = voice
       const clip = this.playing.getSnapshot() ? MediaClock.clipAt(clips, t) : undefined
       if (!clip) {
         if (!el.paused) el.pause()
         continue
       }
+      if (!el.src) continue
       el.volume = clip.volume
       el.muted = clip.muted
+      el.preload = 'auto'
       // Where the file should be now; the element is moved only when it is elsewhere (a jump, or a clip that does not
       // continue the last one), never at the boundary between clips that continue each other.
       // A playing element is left alone within DRIFT_MS; a paused one resumes exactly where its clip is.
       const offset = (clip.sourceStartMs + t - clip.start) / 1000
-      if (Math.abs(el.currentTime - offset) * 1000 > (el.paused ? RESUME_MS : DRIFT_MS)) el.currentTime = offset
+      if (voice.active !== clip && el.ended || Math.abs(el.currentTime - offset) * 1000 > (el.paused ? RESUME_MS : DRIFT_MS)) el.currentTime = offset
+      voice.active = clip
       el.playbackRate = this.rate.getSnapshot()
       if (el.paused) void el.play().then(() => {
-        if (!this.playing.getSnapshot() || !MediaClock.clipAt(clips, super.now())) el.pause()
+        if (!this.playing.getSnapshot() || !MediaClock.clipAt(clips, this.now())) el.pause()
       }).catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return
         // Autoplay without the reader's gesture: not a failure, playback waits for their click.
@@ -194,6 +286,7 @@ export class MediaClock extends SilentClock {
   }
 
   override dispose(): void {
+    this.lifetime.abort()
     super.dispose()
     for (const { el } of this.voices) {
       el.pause()

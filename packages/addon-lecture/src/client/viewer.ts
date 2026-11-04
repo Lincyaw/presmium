@@ -27,7 +27,7 @@ const plugin: ViewerPlugin = (ctx) => {
     const player = keyboardPlayer.getSnapshot()
     if (!player) return false
     if (event?.repeat) return true
-    if (player.playing) player.pause()
+    if (player.playing || player.preparing.getSnapshot()) player.pause()
     else void player.play()
   } })
   ctx.registerLayer({ id: 'presmium.lecture.play', component: PlayLectureButton, views: ['present'], scope: 'bar' })

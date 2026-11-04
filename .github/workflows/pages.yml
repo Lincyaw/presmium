@@ -48,6 +48,20 @@ jobs:
       - run: pnpm --filter presmium-papers build
       - name: Include papers in the Pages site
         run: cp -R examples/papers/dist/web examples/gallery/dist/web/papers
+      - name: Record the source CLI and revision
+        run: |
+          node --input-type=module -e "
+            import { readFileSync, realpathSync, writeFileSync } from 'node:fs'
+            import { createRequire } from 'node:module'
+            import { resolve } from 'node:path'
+            const require = createRequire(resolve('examples/papers/package.json'))
+            const manifest = realpathSync(require.resolve('@lincyaw/presmium/package.json'))
+            if (manifest !== resolve('packages/presmium/package.json')) throw new Error('Pages must use the source workspace CLI: ' + manifest)
+            const { version } = JSON.parse(readFileSync(manifest, 'utf8'))
+            const build = { commit: process.env.GITHUB_SHA, presmium: version, source: 'packages/presmium' }
+            console.log(JSON.stringify(build))
+            writeFileSync('examples/gallery/dist/web/build-info.json', JSON.stringify(build, null, 2) + '\n')
+          "
       - uses: actions/upload-pages-artifact@v3
         with:
           path: examples/gallery/dist/web

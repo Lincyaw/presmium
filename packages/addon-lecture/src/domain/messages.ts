@@ -91,6 +91,8 @@ export interface LectureMessages {
     silent: string
     syntheticBy: (provider: string) => string
     loading: string
+    buffering: string
+    mediaUnavailable: string
     failed: (reason: string) => string
     missing: (id: string) => string
     dropped: (count: number) => string
@@ -253,6 +255,8 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       silent: '无声播放',
       syntheticBy: provider => `AI 生成的配音（${provider}）`,
       loading: '正在加载讲授…',
+      buffering: '正在缓冲…',
+      mediaUnavailable: '音频暂时无法加载，请重试',
       failed: reason => `无法加载讲授：${reason}`,
       missing: id => `找不到讲授 ${id}`,
       dropped: count => `文稿改动后有 ${count} 个操作失效，回放时略过`,
@@ -377,6 +381,8 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       silent: 'Silent playback',
       syntheticBy: provider => `AI-generated voiceover (${provider})`,
       loading: 'Loading the lecture…',
+      buffering: 'Buffering…',
+      mediaUnavailable: 'The audio could not be loaded. Please try again.',
       failed: reason => `Couldn’t load the lecture: ${reason}`,
       missing: id => `Lecture ${id} not found`,
       dropped: count => `${count} actions no longer match the document and are skipped`,

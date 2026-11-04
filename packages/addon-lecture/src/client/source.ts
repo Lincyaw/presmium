@@ -15,7 +15,7 @@ export interface LectureSummary {
 export interface LectureSource {
   list(): Promise<LectureSummary[]>
   track(id: string, planId?: string, signal?: AbortSignal): Promise<LectureTrack | undefined>
-  media(id: string, src: string): Promise<string>
+  media(id: string, src: string, signal?: AbortSignal): Promise<string>
   plan?(query: ProductionPlanQuery, signal?: AbortSignal): Promise<ProductionPlan>
   productionMedia?(binding: ProductionBinding, clipId: string, signal?: AbortSignal): Promise<string>
 }
@@ -54,9 +54,9 @@ export function serverSource(server: ServerClient): LectureSource {
       if (!response.ok) throw new Error(await refusal(response))
       return URL.createObjectURL(await response.blob())
     },
-    async media(id, src) {
+    async media(id, src, signal) {
       if (ABSOLUTE_URL.test(src)) return src
-      const response = await server.fetch(LECTURE_ID, `tracks/${encodeURIComponent(id)}/${src.split('/').map(encodeURIComponent).join('/')}`)
+      const response = await server.fetch(LECTURE_ID, `tracks/${encodeURIComponent(id)}/${src.split('/').map(encodeURIComponent).join('/')}`, { signal })
       if (!response.ok) throw new Error(`${src}: HTTP ${response.status}`)
       return URL.createObjectURL(await response.blob())
     },

@@ -4,6 +4,15 @@ How to write the narration (a spoken script for the presentation, not the readin
 
 `lecture.json` is the only content authority. Narrations contain typed text, pronunciation and cue nodes; steps name narration IDs. Read the installed kernel contract for exact fields. Captions, spoken text and alignments derive from the same narration structure. A transcript becomes authored text only through an explicit adopt action. Read a Whisper transcript before adopting it: `.en` models translate non-English speech into English; it invents "Thank you." over silence, so drop words that start inside a final silence (`silencedetect=noise=-35dB:d=0.6`); more than 20% `♪` or `�` tokens means it failed; Chinese can come back as one "word" per sentence, sometimes in Traditional characters for Simplified speech, so split it into phrases and spread the time by character count.
 
+## Watch a published lecture
+
+A `?view=lecture` link with one track opens its player directly. Before Play, the player buffers the selected audio
+and prepares its picture, including the scene and its images. Playback warms about 30 seconds ahead, selecting at
+most four audio files for preload, and starts when the current clip has about two seconds buffered (or the rest of
+a shorter clip) and the picture is ready. Loading or buffering holds the audio, picture and timeline together;
+seeking prepares the target position through the same path. Check actual audible media, a later step and replay
+after going back, rather than treating a moving time display as proof of sound.
+
 ## Open the saved version in the studio
 
 Use the document toolbar's presentation preview action after the authoring save is acknowledged. Preparation compiles the exact confirmed document and stays in the editor until compilation succeeds. Continue editing to cancel that transition; a late response must not take the author away from new input or another document. A compilation error leaves the document and draft intact with a readable failure.

@@ -98,6 +98,7 @@ export default function SceneView(props: SceneProps) {
   // slides make theirs at once, and a printed page all of them.
   const eager = printed || (!expanded && viewRole !== 'reader')
   const [seen, setSeen] = useState(eager)
+  useEffect(() => clock?.registerPreparation?.(cursor.slide, () => setSeen(true)), [clock, cursor.slide])
   const enabled = seen
   const [local, setLocal] = useState<number>()
   const [playing, setPlaying] = useState(false)

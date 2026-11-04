@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react'
 import { audioSegments, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, startingStop, timedEvents, trackDuration } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 import type { ClockMedia, TrackClock } from './clock.ts'
-import { MediaClock, SilentClock } from './clock.ts'
+import { BUFFER_AHEAD_MS, MediaClock, SilentClock } from './clock.ts'
 import { LecturePlayer } from './player.ts'
 import type { LectureSource } from './source.ts'
 import { lectureSource } from './source.ts'
@@ -19,24 +19,23 @@ async function createClock(track: LectureTrack, source: LectureSource, signal?: 
   const segments = audioSegments(track)
   if (!segments.length) return new SilentClock(length)
   // Clips cut from one file (a score split per step) share one download.
-  const files = new Map<string, Promise<string>>()
+  const files = new Map<string, (signal?: AbortSignal) => Promise<string>>()
   const fileOf = (segment: typeof segments[number]) => {
     const key = segment.sha256 ?? segment.assetId ?? segment.src
     let url = files.get(key)
     if (!url) {
-      url = track.binding && source.productionMedia && segment.clipId ? source.productionMedia(track.binding, segment.clipId, signal) : source.media(track.id, segment.src)
+      let loaded: Promise<string> | undefined
+      url = signal => loaded ??= track.binding && source.productionMedia && segment.clipId ? source.productionMedia(track.binding, segment.clipId, signal) : source.media(track.id, segment.src, signal)
       files.set(key, url)
     }
     return url
   }
-  const loaded = await Promise.allSettled(segments.map(async (segment): Promise<ClockMedia> => {
+  signal?.throwIfAborted()
+  const media = segments.map((segment): ClockMedia => {
     if (track.binding && source.productionMedia && !segment.clipId) throw new Error('production-clip-unavailable')
-    const url = await fileOf(segment)
+    const url = fileOf(segment)
     return { url, start: segment.start, duration: segment.duration, sourceStartMs: segment.sourceStartMs, volume: segment.volume, muted: segment.muted }
-  }))
-  const media = loaded.flatMap(result => result.status === 'fulfilled' ? [result.value] : [])
-  const failed = loaded.find(result => result.status === 'rejected')
-  if (failed || signal?.aborted) { for (const url of new Set(media.map(item => item.url))) if (url.startsWith('blob:')) URL.revokeObjectURL(url); if (failed) throw failed.reason; signal?.throwIfAborted() }
+  })
   return new MediaClock(length, media)
 }
 function installExportHook(player: LecturePlayer, clock: StepClock | undefined): void {
@@ -68,7 +67,16 @@ export function useLecturePlayback() {
     const clock = await createClock(track, source, signal)
     if (load !== generation.current || signal?.aborted) { clock.dispose(); signal?.throwIfAborted(); return }
     clear()
-    const next = new LecturePlayer(track, doc, ops, clock, playback, Boolean(plan))
+    const events = timedEvents(track).filter(event => event.type === 'go')
+    const preparePicture = exporting ? undefined : async (at: number, signal?: AbortSignal) => {
+      const before = events.findLastIndex(event => event.t <= at)
+      const slides = [...new Set(events.slice(Math.max(0, before)).filter(event => event.t <= at + BUFFER_AHEAD_MS)
+        .flatMap(event => doc.sections.find(section => section.id === event.data.section)?.index ?? []))].slice(0, 3)
+      await stepClock?.prepare?.(slides)
+      signal?.throwIfAborted()
+      await settleProductionPlayback(stepClock, signal)
+    }
+    const next = new LecturePlayer(track, doc, ops, clock, playback, Boolean(plan), preparePicture)
     current.current = next
     releaseClock.current = stepClock?.drive({ elapsed: next.stepTime, recording: exporting, stepLength: next.stepLength }) ?? (() => {})
     const seek = () => {
@@ -79,6 +87,10 @@ export function useLecturePlayback() {
     }
     if (plan) flushSync(seek)
     else seek()
+    if (!exporting) {
+      await next.prepare(signal)
+      if (load !== generation.current || signal?.aborted) { signal?.throwIfAborted(); return }
+    }
     if (plan && production) {
       await settleProductionPlayback(stepClock, signal)
       if (load !== generation.current || signal?.aborted) { signal?.throwIfAborted(); return }
@@ -147,6 +159,7 @@ export function useLecturePlayback() {
     if (!operations || track.id !== playing.getSnapshot()) return
     void start(track, lectureSource(server, doc.config.presmium[LECTURE_ID]), operations, ++generation.current, current.current?.time.getSnapshot() ?? 0).catch(error => setFailure(errorMessage(error)))
   }
-  const clockFailure = clockError?.message === 'playback-timeout' ? t.player.playbackTimeout : clockError?.message
-  return { player, status, failure: failure ?? clockFailure, language, setLanguage, reloadTrack }
+  const reason = failure ?? clockError?.message
+  const message = reason === 'playback-timeout' ? t.player.playbackTimeout : reason === 'playback-media-unavailable' ? t.player.mediaUnavailable : reason
+  return { player, status, failure: message, language, setLanguage, reloadTrack }
 }

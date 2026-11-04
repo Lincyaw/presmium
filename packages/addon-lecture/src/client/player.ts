@@ -11,6 +11,7 @@ export class LecturePlayer {
   readonly stepTime = createStore<number | undefined>(0)
   readonly trying = createStore(false)
   readonly waitingFor = createStore<string | undefined>(undefined)
+  readonly preparing = createStore(false)
   readonly cursor = createStore<{ sectionId: string, step: number } | undefined>(undefined)
   /** Event-identity selection can expose an empty interval while paused; time seeking and playback cannot. */
   readonly positionMode = createStore<'time' | 'step'>('time')
@@ -36,12 +37,15 @@ export class LecturePlayer {
   private disposed = false
   private generation = 0
   private readonly bufferMissing: boolean
+  private preparation?: AbortController
+  private readonly preparePicture?: (at: number, signal?: AbortSignal) => Promise<void>
 
-  constructor(track: LectureTrack, doc: IRDocument, operations: Operations, clock: TrackClock, playback?: PlaybackControl, bufferMissing = false) {
+  constructor(track: LectureTrack, doc: IRDocument, operations: Operations, clock: TrackClock, playback?: PlaybackControl, bufferMissing = false, preparePicture?: (at: number, signal?: AbortSignal) => Promise<void>) {
     this.track = track
     this.clock = clock
     this.operations = operations
     this.bufferMissing = bufferMissing
+    this.preparePicture = preparePicture
     const drift = eventDrift(track, doc)
     const kept = timedEvents(track).filter(event => drift[event.index]?.grade !== 'lost')
     this.dropped = track.events.length - kept.length
@@ -78,9 +82,34 @@ export class LecturePlayer {
     return this.clock.playing.getSnapshot()
   }
 
+  async prepare(signal?: AbortSignal): Promise<void> {
+    const at = this.clock.now()
+    await Promise.all([this.clock.prepare(at, signal), this.preparePicture?.(at, signal)])
+  }
+
+  private async resume(generation: number): Promise<boolean> {
+    const request = new AbortController()
+    this.preparation?.abort(); this.preparation = request
+    this.preparing.set(true)
+    try {
+      await this.prepare(request.signal)
+      if (this.disposed || generation !== this.generation || request.signal.aborted) return false
+      this.clock.play()
+      this.loop(generation)
+      return this.clock.playing.getSnapshot()
+    } catch (error) {
+      if (!this.disposed && generation === this.generation && !request.signal.aborted) {
+        this.pause(); this.clock.error.set(error instanceof Error ? error : new Error(String(error)))
+      }
+      return false
+    } finally {
+      if (this.preparation === request) { this.preparation = undefined; this.preparing.set(false) }
+    }
+  }
+
   async play(): Promise<boolean> {
     if (this.disposed) return false
-    if (this.playing) return true
+    if (this.playing || this.preparing.getSnapshot()) return true
     const generation = ++this.generation
     try {
       if (this.playback && !await this.playback.requestStart()) return false
@@ -97,9 +126,7 @@ export class LecturePlayer {
       this.positionMode.set('time')
       this.clock.error.set(undefined)
       if (this.bufferAt(this.clock.now(), this.clock.now())) return true
-      this.clock.play()
-      this.loop(generation)
-      return this.clock.playing.getSnapshot()
+      return await this.resume(generation)
     } catch (error) {
       if (!this.disposed && generation === this.generation) { this.pause(); this.clock.error.set(error instanceof Error ? error : new Error(String(error))) }
       return false
@@ -107,6 +134,7 @@ export class LecturePlayer {
   }
 
   pause(): void {
+    this.preparation?.abort(); this.preparation = undefined; this.preparing.set(false)
     this.waitingFor.set(undefined)
     this.generation++
     this.playback?.cancel()
@@ -155,6 +183,7 @@ export class LecturePlayer {
 
   dispose(): void {
     this.disposed = true
+    this.preparation?.abort(); this.preparing.set(false)
     this.playback?.dispose()
     cancelAnimationFrame(this.frame)
     this.unsubscribe()
@@ -193,6 +222,16 @@ export class LecturePlayer {
       if (generation !== this.generation || !this.clock.playing.getSnapshot()) { this.frame = 0; return }
       const before = this.time.getSnapshot(), now = this.clock.now()
       if (this.bufferAt(before, now)) { this.frame = 0; return }
+      let nextPicture: TimedEvent | undefined
+      for (let i = this.applied + 1; i < this.events.length && this.events[i]!.t <= now; i++) {
+        if (this.events[i]!.type === 'go') { nextPicture = this.events[i]; break }
+      }
+      if (nextPicture && this.preparePicture) {
+        this.clock.pause(); this.clock.seek(nextPicture.t); this.advanceTo(nextPicture.t)
+        this.frame = 0
+        void this.resume(generation)
+        return
+      }
       this.clock.tick()
       this.advanceTo(this.clock.now())
       this.frame = generation === this.generation && this.clock.playing.getSnapshot() ? requestAnimationFrame(step) : 0

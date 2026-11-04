@@ -34,7 +34,7 @@ export default function LectureView() {
       .then((list) => {
         if (!active) return
         setLectures(list)
-        const shown = isPreviewEmbedded()
+        const shown = list.length === 1 || isPreviewEmbedded()
           ? defaultTrack(list.map((item) => item.id))
           : undefined
         if (shown) open(shown)
