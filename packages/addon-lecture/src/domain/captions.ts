@@ -96,40 +96,68 @@ export function trackCaptionGroups(track: LectureTrack): CaptionGroup[] {
     ...track.captionOverrides?.flatMap(own => own.groups) ?? []].sort((a, b) => a.t - b.t)
 }
 
+const charWidth = (char: string | undefined) => isWide(char) ? 1 : 0.55
+
 /** How wide a caption's text is, in em: a wide (CJK or full-width) character takes one, any other about 0.55. */
 export function captionWidth(text: string): number {
   let width = 0
-  for (const char of text) width += isWide(char) ? 1 : 0.55
+  for (const char of text) width += charWidth(char)
   return width
 }
 
 /**
- * A caption cut into pieces no wider than `budget` em, about equally long, each ending where it reads best: after a
- * sentence, else after a clause, else at a space, else between two characters. A caption that fits stays whole.
+ * How well a caption reads cut before `chars[at]`: 3 after a sentence, 2 after a clause, 1 at a space, 0 between two
+ * characters, -1 inside an ASCII word or number, or with a punctuation mark left on the wrong side.
+ */
+function cutRank(chars: readonly string[], at: number): number {
+  const before = chars[at - 1]!, after = chars[at]!
+  const mark = CLOSING.test(after) ? undefined : markBefore(chars, at)
+  if (mark) return mark === 'sentence' ? 3 : 2
+  if (/\s/u.test(before) || /\s/u.test(after)) return 1
+  if (/[\p{Pe}\p{Pf}\p{Po}]/u.test(after) || /[\p{Ps}\p{Pi}]/u.test(before)) return -1
+  return isWide(before) || isWide(after) ? 0 : -1
+}
+
+/** A piece may be this much shorter or longer than an equal share of the caption; within that it ends where it reads best. */
+const SHARE_SLACK = 0.3
+
+/** `chars` cut into `count` pieces of about equal width; `reach[i]` is the width of the first `i` characters. */
+function cutInto(chars: readonly string[], reach: readonly number[], budget: number, count: number): string[] {
+  const pieces: string[] = []
+  let start = 0
+  for (let left = count; left > 1 && start < chars.length; left--) {
+    const rest = reach[chars.length]! - reach[start]!, share = rest / left
+    // No wider than the budget, and wide enough that the pieces after it can hold the rest.
+    const shortest = Math.max(share * (1 - SHARE_SLACK), rest - (left - 1) * budget), longest = Math.min(budget, share * (1 + SHARE_SLACK))
+    let cut = start + 1, best = -Infinity
+    for (let at = start + 1; at < chars.length && reach[at]! - reach[start]! <= longest; at++) {
+      const width = reach[at]! - reach[start]!
+      // The best mark nearest the share; a cut shorter than the shortest only when none is long enough.
+      const score = width < shortest ? width - 1000 : cutRank(chars, at) * 100 - Math.abs(width - share)
+      if (score > best) { best = score; cut = at }
+    }
+    pieces.push(chars.slice(start, cut).join('').trim())
+    start = cut
+    while (start < chars.length && /\s/u.test(chars[start]!)) start++
+  }
+  pieces.push(chars.slice(start).join('').trim())
+  return pieces.filter(Boolean)
+}
+
+/**
+ * A caption cut into pieces no wider than `budget` em: as few as fit, of about equal width (each within 30% of an equal
+ * share), each ending where it reads best: after a sentence, else after a clause, else at a space, else between two
+ * characters. A caption that fits stays whole.
  */
 export function captionChunks(text: string, budget: number): string[] {
-  const chars = [...text.trim()], total = captionWidth(text.trim())
-  if (total <= budget || budget <= 0) return [text.trim()]
-  const target = Math.min(budget, total / Math.ceil(total / budget) * 1.15)
-  const chunks: string[] = []
-  let start = 0
-  while (start < chars.length) {
-    while (start < chars.length && /\s/u.test(chars[start]!)) start++
-    let end = start, used = 0
-    while (end < chars.length && used + (isWide(chars[end]) ? 1 : 0.55) <= target) used += isWide(chars[end++]) ? 1 : 0.55
-    if (end >= chars.length) { chunks.push(chars.slice(start).join('').trim()); break }
-    // A break too early would leave a short piece; below 40% of the window take a weaker one.
-    const earliest = start + Math.ceil((end - start) * 0.4)
-    const after = (mark: Mark) => { for (let at = end; at > earliest; at--) if (markAt(chars, at - 1) === mark) return at; return -1 }
-    let cut = after('sentence')
-    if (cut < 0) cut = after('clause')
-    if (cut < 0) for (let at = end; at > earliest; at--) if (/\s/u.test(chars[at]!)) { cut = at; break }
-    if (cut < 0) cut = Math.max(end, start + 1)
-    while (cut < chars.length && CLOSING.test(chars[cut]!)) cut++
-    chunks.push(chars.slice(start, cut).join('').trim())
-    start = cut
+  const chars = [...text.trim()], reach = [0]
+  for (const char of chars) reach.push(reach.at(-1)! + charWidth(char))
+  const total = reach.at(-1)!
+  if (total <= budget || !(budget > 0)) return [text.trim()]
+  for (let count = Math.ceil(total / budget); ; count++) {
+    const pieces = cutInto(chars, reach, budget, count)
+    if (count >= chars.length || pieces.every(piece => captionWidth(piece) <= budget)) return pieces
   }
-  return chunks.filter(Boolean)
 }
 
 /** The piece of a caption shown at `time`: its pieces follow one another across its span, each for its share of the width. */
