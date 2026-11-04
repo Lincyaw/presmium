@@ -1,5 +1,37 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.32
+
+### Patch Changes
+
+- Updated dependencies [660d6d3]
+  - @lincyaw/studio@0.2.0-rc.31
+  - @lincyaw/addon-assistant@1.0.0-rc.32
+  - @lincyaw/addon-classroom@1.0.0-rc.32
+  - @lincyaw/addon-code@1.0.0-rc.32
+  - @lincyaw/addon-content@1.0.0-rc.32
+  - @lincyaw/addon-exec@1.0.0-rc.32
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.32
+  - @lincyaw/addon-exec-local@1.0.0-rc.32
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.32
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.32
+  - @lincyaw/addon-guide@1.0.0-rc.32
+  - @lincyaw/addon-lecture@1.0.0-rc.32
+  - @lincyaw/addon-motion@1.0.0-rc.32
+  - @lincyaw/addon-publish@1.0.0-rc.32
+  - @lincyaw/addon-session@1.0.0-rc.32
+  - @lincyaw/addon-speech@1.0.0-rc.32
+  - @lincyaw/addon-stage@1.0.0-rc.32
+  - @lincyaw/cli@1.0.0-rc.32
+  - create-presmium@1.0.0-rc.32
+  - @lincyaw/host@1.0.0-rc.32
+  - @lincyaw/kernel@1.0.0-rc.32
+  - @lincyaw/mcp@1.0.0-rc.32
+  - @lincyaw/render-notebook@1.0.0-rc.32
+  - @lincyaw/render-slides@1.0.0-rc.32
+  - @lincyaw/viewer@1.0.0-rc.32
+  - @lincyaw/web@1.0.0-rc.32
+
 ## 1.0.0-rc.31
 
 ### Patch Changes

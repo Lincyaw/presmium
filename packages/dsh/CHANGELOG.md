@@ -1,5 +1,15 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.31
+
+### Patch Changes
+
+- 660d6d3: Make Studio start after a normal pnpm installation by resolving the Harness native addon's platform package in strict dependency layouts.
+- @lincyaw/cli@1.0.0-rc.32
+  - @lincyaw/kernel@1.0.0-rc.32
+  - @lincyaw/mcp@1.0.0-rc.32
+  - @lincyaw/skills@1.0.0-rc.32
+
 ## 0.2.0-rc.30
 
 ### Patch Changes
