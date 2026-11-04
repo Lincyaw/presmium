@@ -160,8 +160,26 @@ export function captionChunks(text: string, budget: number): string[] {
   }
 }
 
+/** A caption with the time it spans. */
+export interface TimedCaption { text: string, t: number, d: number }
+
+/**
+ * The caption an export burns in at `time` in `lang`, with the time it spans (its pieces share it). In the lecture's
+ * language: the manual group there (an author's gap stays empty), else the caption group of `current`, the sentence
+ * heard then (`groups`, by default its word-aligned groups), else the whole sentence. In another language: the
+ * sentence's translation.
+ */
+export function burnedCaption(track: LectureTrack, current: Utterance | undefined, time: number, lang: string,
+  groups: (utterance: Utterance) => readonly CaptionGroup[] = captionGroups): TimedCaption | undefined {
+  if (lang !== track.lang) return current && { text: current.translations?.[lang]?.text ?? '', t: current.t, d: current.d }
+  const manual = track.captionOverrides?.find(own => own.startMs <= time && time < own.endMs)
+  const group = manual ? captionGroupAt(manual.groups, time) : current && captionGroupAt(groups(current), time)
+  if (group) return { text: group.text, t: group.t, d: group.d }
+  return manual ? undefined : current && { text: current.text, t: current.t, d: current.d }
+}
+
 /** The piece of a caption shown at `time`: its pieces follow one another across its span, each for its share of the width. */
-export function captionChunkAt(caption: { text: string, t: number, d: number }, time: number, budget: number): string {
+export function captionChunkAt(caption: TimedCaption, time: number, budget: number): string {
   const chunks = captionChunks(caption.text, budget)
   if (chunks.length < 2 || !(caption.d > 0)) return chunks[0] ?? ''
   const widths = chunks.map(chunk => Math.max(1, captionWidth(chunk))), total = widths.reduce((sum, width) => sum + width, 0)

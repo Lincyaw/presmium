@@ -108,6 +108,15 @@ export function stepStops(events: readonly TimedEvent[]): StepStop[] {
 }
 
 /**
+ * Where the lecture first plays `position` (a page ID and a step), until the next step starts (`until`; none for the
+ * last); undefined when it never goes there.
+ */
+export function playsStep(events: readonly TimedEvent[], position: { section: string, step: number }): (StepStop & { until?: number }) | undefined {
+  const stops = stepStops(events), index = stops.findIndex(stop => stop.section === position.section && stop.step === position.step)
+  return index < 0 ? undefined : { ...stops[index]!, ...stops[index + 1] ? { until: stops[index + 1]!.t } : {} }
+}
+
+/**
  * Where the lecture plays `position` (`sections`: the page IDs in the document's order): the first time it reaches that
  * step; for a step it leaves out, the first step it plays after it in the document's order, else the last one before.
  */
@@ -132,7 +141,7 @@ export function playedStop(events: readonly TimedEvent[], sections: readonly str
  */
 export function startStop(trackId: string, events: readonly TimedEvent[], sections: readonly string[], position: { section: string, step: number }): StepStop | undefined {
   if (trackId === SCRIPT_TRACK) return playedStop(events, sections, position)
-  return stepStops(events).find(stop => stop.section === position.section && stop.step === position.step)
+  return playsStep(events, position)
 }
 
 /**

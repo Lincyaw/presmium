@@ -4,20 +4,21 @@ import { isPreviewEmbedded, notifyEmbedder } from '@lincyaw/kernel'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
+  burnedCaption,
   captionChunkAt,
   captionLanguages,
   captionGroups,
   captionGroupAt,
-  captionText,
   clockText,
   isStale,
   LECTURE_ID,
   LECTURE_MESSAGES,
+  playsStep,
   SCRIPT_TRACK,
   trackChapters,
   utteranceAt,
 } from '../domain/index.ts'
-import type { CaptionGroup, Utterance } from '../domain/index.ts'
+import type { TimedCaption, Utterance } from '../domain/index.ts'
 import ChapterList from './ChapterList.tsx'
 import { useLecturePlayback } from './playback.ts'
 import { lectureSource } from './source.ts'
@@ -42,7 +43,7 @@ const BURNED_LINES = 2
 const BURNED_FILL = 0.9
 
 /** The caption an export burns into the picture: never more than two lines, its room read from its own styles. */
-function BurnedCaption({ caption, time, lang }: { caption: { text: string, t: number, d: number }, time: number, lang: string }) {
+function BurnedCaption({ caption, time, lang }: { caption: TimedCaption, time: number, lang: string }) {
   const element = useRef<HTMLParagraphElement>(null)
   const [budget, setBudget] = useState<number>()
   // The frame and the document's caption size set the font and the width; the budget is how many em two lines hold.
@@ -137,11 +138,10 @@ export default function PlayerPanel(_props: { view?: string }) {
     : []
   const languages = player ? captionLanguages(player.track) : []
   const timed = player ? utteranceAt(player.track, time) : undefined
-  const boundary = player && cursor ? player.events.findIndex(event => event.type === 'go' && event.data.section === cursor.sectionId && Number(event.data.step ?? 0) === cursor.step) : -1
-  const start = player?.events[boundary]?.t, end = player?.events.slice(boundary + 1).find(event => event.type === 'go')?.t ?? player?.duration
+  const played = player && cursor ? playsStep(player.events, { section: cursor.sectionId, step: cursor.step }) : undefined
   // A positive utterance may continue through a cue into another step. Preserve that real timing.
   const continuing = timed && cursor && timed.d > 0 && timed.section === cursor.sectionId && (timed.step ?? 0) <= cursor.step
-  const selectedZero = player && cursor && positionMode === 'step' && !clockPlaying && boundary >= 0 && start === end && time === start && !continuing
+  const selectedZero = player && cursor && positionMode === 'step' && !clockPlaying && played && played.t === (played.until ?? player.duration) && time === played.t && !continuing
   const selectedCaptions = selectedZero ? player.track.utterances.filter(utterance => utterance.section === cursor.sectionId && (utterance.step ?? 0) === cursor.step && utterance.d === 0 && utterance.t === time) : undefined
   const current = selectedZero ? selectedCaptions?.[0] : timed
   const voice = player?.track.voice
@@ -158,21 +158,14 @@ export default function PlayerPanel(_props: { view?: string }) {
   const manual = player?.track.captionOverrides?.find(own => own.startMs <= time && time < own.endMs), manualText = manual && captionGroupAt(manual.groups, time)?.text
   const originalLanguage = !lang || lang === player?.track.lang
   const caption = manual && originalLanguage ? manualText : selectedCaptions ? selectedCaptions.map(text).join(' ') : current ? text(current) : undefined
-  // What the export burns in, with the time it spans: a caption group (word-aligned or manual), else the whole sentence.
-  const span = (group: CaptionGroup | undefined) => group && { text: group.text, t: group.t, d: group.d }
-  const burned =
-    burnedCaptions && player && (current || manual)
-      ? burnedCaptions === player.track.lang
-        ? manual ? span(captionGroupAt(manual.groups, time)) : current && (span(captionGroupAt(groupedCaptions.get(current.id) ?? [], time)) ?? { text: current.text, t: current.t, d: current.d })
-        : current && { text: captionText(player.track, current, burnedCaptions) ?? '', t: current.t, d: current.d }
-      : undefined
+  const burned = burnedCaptions && player ? burnedCaption(player.track, current, time, burnedCaptions, u => groupedCaptions.get(u.id) ?? []) : undefined
   const stale = new Set(
     player && lang && lang !== player.track.lang
       ? player.track.utterances.filter((u) => isStale(u, lang)).map((u) => u.id)
       : [],
   )
   // A step the synthesized lecture leaves out has no sentence of its own: its preview shows no other step's caption.
-  const leftOut = player?.track.id === SCRIPT_TRACK && !player.events.some(event => event.type === 'go' && event.data.section === position.section && Number(event.data.step ?? 0) === position.step)
+  const leftOut = player?.track.id === SCRIPT_TRACK && !playsStep(player.events, position)
   if (controlled) return player && (current || manual) && caption && !leftOut ? <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang} /> : null
   if (!id) return null
   if (exporting) return player ? <div className="pm-lecture-layer">

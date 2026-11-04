@@ -18,9 +18,9 @@ export { recordedTrack, sectionSpan, simplifyPath, spliceSection } from './recor
 export type { PathPoint, Recording, TrackHead } from './recording.ts'
 export { scriptTrack } from './script-track.ts'
 export type { Clip, CutAnimation, RecordingClip, ScriptHead } from './script-track.ts'
-export { anchorOf, lastIndexAt, playedStop, startStop, stepStops, textPieces, timedEvents, trackChapters, utteranceAt, voicedLengths, wordTime } from './timing.ts'
-export { captionChunkAt, captionChunks, captionGroups, captionGroupAt, captionWidth, trackCaptionGroups } from './captions.ts'
-export type { CaptionGroup } from './captions.ts'
+export { anchorOf, lastIndexAt, playedStop, playsStep, startStop, stepStops, textPieces, timedEvents, trackChapters, utteranceAt, voicedLengths, wordTime } from './timing.ts'
+export { burnedCaption, captionChunkAt, captionChunks, captionGroups, captionGroupAt, captionWidth, trackCaptionGroups } from './captions.ts'
+export type { CaptionGroup, TimedCaption } from './captions.ts'
 export type { StepStop, TextPiece, TimedEvent, TrackChapter } from './timing.ts'
 export {
   audioSegments,
