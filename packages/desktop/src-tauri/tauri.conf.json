@@ -15,7 +15,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["deb", "rpm", "nsis", "app", "dmg"],
     "category": "Education",
     "shortDescription": "Presmium Studio",
     "longDescription": "Edit, compile and present Presmium documents: web pages, slides and narrated video.",

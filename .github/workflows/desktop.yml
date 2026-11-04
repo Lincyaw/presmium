@@ -57,7 +57,14 @@ jobs:
           cache: pnpm
       - run: pnpm --filter . --filter presmium-desktop... install --frozen-lockfile
       # Signing and notarization use Tauri's environment variables when the repository has them as secrets.
-      - run: pnpm --filter presmium-desktop build
+      - name: Build installers
+        shell: bash
+        run: |
+          # Without a certificate the build is unsigned; Tauri would try to import an empty one.
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            unset APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID
+          fi
+          pnpm --filter presmium-desktop build
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -70,7 +77,7 @@ jobs:
         run: |
           mkdir -p installers
           cd packages/desktop/src-tauri/target/release/bundle
-          for file in deb/*.deb rpm/*.rpm appimage/*.AppImage dmg/*.dmg msi/*.msi nsis/*.exe; do
+          for file in deb/*.deb rpm/*.rpm dmg/*.dmg nsis/*.exe; do
             [ -f "$file" ] || continue
             name=$(basename "$file")
             cp "$file" "$GITHUB_WORKSPACE/installers/${name%.*}-${{ matrix.target }}.${name##*.}"
