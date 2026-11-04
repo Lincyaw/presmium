@@ -1,5 +1,16 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.24
+
+### Patch Changes
+
+- 6933f96: Remove the black-cat mascot and its animations from Studio, and stop showing the transient "AI is changing the document" notice. Export progress and changed-block highlighting continue without a mascot sprite, walking trail, conversation slot, or settings entry.
+- Updated dependencies [6933f96]
+  - @lincyaw/kernel@1.0.0-rc.25
+  - @lincyaw/cli@1.0.0-rc.25
+  - @lincyaw/mcp@1.0.0-rc.25
+  - @lincyaw/skills@1.0.0-rc.25
+
 ## 0.2.0-rc.23
 
 ### Patch Changes

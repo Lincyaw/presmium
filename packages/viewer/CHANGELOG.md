@@ -1,5 +1,13 @@
 # @lincyaw/viewer
 
+## 1.0.0-rc.25
+
+### Patch Changes
+
+- Updated dependencies [6933f96]
+  - @lincyaw/kernel@1.0.0-rc.25
+  - @lincyaw/host@1.0.0-rc.25
+
 ## 1.0.0-rc.24
 
 ### Patch Changes
