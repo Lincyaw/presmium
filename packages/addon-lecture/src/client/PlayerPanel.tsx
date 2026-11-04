@@ -61,7 +61,8 @@ export default function PlayerPanel(_props: { view?: string }) {
     server = useServer()
   const available = useLecturesAvailable(),
     id = useStore(playing),
-    doc = useStore(viewer.doc)
+    doc = useStore(viewer.doc),
+    position = useStore(viewer.position)
   const { player, status, failure, language, setLanguage } =
     useLecturePlayback()
   const timedCaptions = useService(TIMED_CAPTIONS)
@@ -170,7 +171,9 @@ export default function PlayerPanel(_props: { view?: string }) {
       ? player.track.utterances.filter((u) => isStale(u, lang)).map((u) => u.id)
       : [],
   )
-  if (controlled) return player && (current || manual) && caption ? <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang} /> : null
+  // A step the synthesized lecture leaves out has no sentence of its own: its preview shows no other step's caption.
+  const leftOut = player?.track.id === SCRIPT_TRACK && !player.events.some(event => event.type === 'go' && event.data.section === position.section && Number(event.data.step ?? 0) === position.step)
+  if (controlled) return player && (current || manual) && caption && !leftOut ? <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang} /> : null
   if (!id) return null
   if (exporting) return player ? <div className="pm-lecture-layer">
     <div className="pm-lecture-export" data-time={Math.round(time)} data-clip={current?.clip}>

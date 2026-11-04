@@ -87,7 +87,7 @@
 | Badge、Card | `PmBadge`（`tone`）、`PmCard`（`default`、`interactive`、`dashed`） | |
 | Notice、Empty、Skeleton | `PmNotice`、`PmEmpty`、`PmSkeleton`（`document`、`list`、`preview`） | 见第 4.5 节 |
 | Range | `PmRange`（workbench，原生 range） | 拖动先本地预览，释放时提交一次；`Esc`、失焦丢弃手势；旁边读出数值时放在 `.pm-ui-range-row` 中 |
-| Timeline | `PmTimeline`（workbench） | 画面、配音、字幕三轨与稳定步骤身份；未知或估算时长不开放任意定位；只有真实样本才画波形；缩放只改视图；`excluded` 表示本页不在时间线中（讲授中没有这一页），状态与提示由调用方给出，不列片段 |
+| Timeline | `PmTimeline`（workbench） | 画面、配音、字幕三轨与稳定步骤身份；未知或估算时长不开放任意定位；只有真实样本才画波形；缩放只改视图；`excluded` 表示本页不在时间线中（讲授中没有这一页），状态与提示由调用方给出，不列片段；`notice` 是关于所选步骤的提示，显示在轨道下方（如这一步不在讲授中） |
 | Split panes | workbench `PmSplitGroup`、`PmSplitPanel`、`PmSplitHandle` | 通过 react-resizable-panels 公开接口实现双轴调整、键盘与双击恢复；隐藏与后台挂载由公共适配处理 |
 | SortableList | `PmSortableList`（workbench，dnd kit） | 按稳定 ID 提交一次移动；禁用排序不禁止选择 |
 | SchemaForm | `PmSchemaForm`（workbench，RJSF） | 用公共控件渲染组件参数；只显示声明的字段，未声明数据原样保留 |

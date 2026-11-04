@@ -528,6 +528,8 @@ export interface TimelineProps {
   variant?: 'default' | 'editor'
   /** The page has no place on this timeline (the lecture leaves it out): its status and notice say so, with no tracks to seek. */
   excluded?: { status: string, notice: string }
+  /** A note about the selected step, under the tracks. */
+  notice?: string
 }
 
 const timelineTime = (ms: number) => `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${(ms % 60000 / 1000).toFixed(3).padStart(6, '0')}`
@@ -542,7 +544,7 @@ function waveformPath(samples: readonly number[] | undefined): string | undefine
 }
 
 /** Data-only timeline; source, playback, seeking authority and all labels remain with its caller. */
-export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, currentTimeMs, selectedStepId, zoom, onZoomChange, onSelectStep, onSelectSegment, segmentPicker, onSeek, seekDisabled, disabled, loading, seeking, density = 'compact', showSteps = true, variant = 'default', excluded }: TimelineProps) {
+export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, currentTimeMs, selectedStepId, zoom, onZoomChange, onSelectStep, onSelectSegment, segmentPicker, onSeek, seekDisabled, disabled, loading, seeking, density = 'compact', showSteps = true, variant = 'default', excluded, notice }: TimelineProps) {
   const hintId = useId()
   const viewport = useRef<HTMLDivElement>(null), tick = useRef<HTMLSpanElement>(null), composing = useRef(false)
   const [width, setWidth] = useState(0), [tickWidth, setTickWidth] = useState(1), [localZoom, setLocalZoom] = useState(1), [raw, setRaw] = useState<string>(), [previewTime, setPreviewTime] = useState<number>()
@@ -628,6 +630,7 @@ export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, 
     </PmSelect></div>}
     {showSteps && <div className="pm-ui-timeline__steps">{steps.map(segment => <PmButton key={segment.stepId} density={density} disabled={blocked || segment.disabled} aria-pressed={segment.stepId === selectedStepId} variant={segment.stepId === selectedStepId ? 'accent' : 'default'} onClick={() => onSelectStep(segment.stepId!)}>{segment.label}</PmButton>)}</div>}
     {(excluded || !tracks.some(track => track.segments.length)) && <PmNotice>{excluded?.notice ?? labels.empty}</PmNotice>}
+    {notice && <PmNotice>{notice}</PmNotice>}
     <p id={hintId} className="pm-ui-sr-only">{labels.seekHint}</p>
   </section>
 }
