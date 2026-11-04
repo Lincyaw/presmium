@@ -1,4 +1,5 @@
 import type { LectureTrack, Utterance } from './track.ts'
+import { SCRIPT_TRACK } from './track.ts'
 
 export interface TimedEvent {
   t: number
@@ -122,6 +123,16 @@ export function playedStop(events: readonly TimedEvent[], sections: readonly str
     if (at < 0 && (!before || order(stop, before) > 0)) before = stop
   }
   return after ?? before
+}
+
+/**
+ * Where a lecture starts for the preview's `position`. The synthesized lecture (`script`) plays every step it keeps, so
+ * a step it leaves out starts at the nearest played one (`playedStop`); a recorded lecture holds only the steps it was
+ * recorded on, and starts at the position only where it went there.
+ */
+export function startStop(trackId: string, events: readonly TimedEvent[], sections: readonly string[], position: { section: string, step: number }): StepStop | undefined {
+  if (trackId === SCRIPT_TRACK) return playedStop(events, sections, position)
+  return stepStops(events).find(stop => stop.section === position.section && stop.step === position.step)
 }
 
 /**

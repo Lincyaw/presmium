@@ -4,7 +4,7 @@ import { errorMessage, PREVIEW_REVISION, sameProductionBinding } from '@lincyaw/
 import type { ProductionBinding, ProductionPlan } from '@lincyaw/kernel'
 import { flushSync } from 'react-dom'
 import { useEffect, useRef, useState } from 'react'
-import { audioSegments, LECTURE_ID, LECTURE_MESSAGES, playedStop, SCRIPT_TRACK, timedEvents, trackDuration } from '../domain/index.ts'
+import { audioSegments, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, startStop, timedEvents, trackDuration } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 import type { ClockMedia, TrackClock } from './clock.ts'
 import { MediaClock, SilentClock } from './clock.ts'
@@ -72,8 +72,7 @@ export function useLecturePlayback() {
     current.current = next
     releaseClock.current = stepClock?.drive({ elapsed: next.stepTime, recording: exporting, stepLength: next.stepLength }) ?? (() => {})
     const seek = () => {
-      // A step the lecture leaves out has no `go` of its own: the nearest played step stands in for it.
-      const stop = origin && playedStop(next.events, doc.sections.map(section => section.id), origin)
+      const stop = origin && startStop(track.id, next.events, doc.sections.map(section => section.id), origin)
       if (stop && next.seekStep(stop.section, stop.step)) return
       if (origin && plan) { clear(); throw new Error('production-binding-stale') }
       next.seek(at)
@@ -118,7 +117,7 @@ export function useLecturePlayback() {
       // An estimate remains a caption fallback for ordinary readers; explicit production loads inspect its plan.
       if (!binding && !exporting && track.id === SCRIPT_TRACK && track.utterances.length > 0 && track.utterances.every(utterance => Boolean(utterance.unsaid)) && audioSegments(track).length === 0) { play(undefined); return }
       const position = viewer.position.getSnapshot()
-      const at = exporting ? 0 : playedStop(timedEvents(track), doc.sections.map(section => section.id), position)?.t ?? 0
+      const at = exporting ? 0 : startStop(track.id, timedEvents(track), doc.sections.map(section => section.id), position)?.t ?? 0
       await start(track, source, operations, load, at, plan, signal, exporting ? undefined : position); check()
     }
     let selecting = false
