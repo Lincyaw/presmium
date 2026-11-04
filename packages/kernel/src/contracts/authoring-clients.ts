@@ -12,12 +12,19 @@ export const AUTHORING_CLIENT_MAX_REQUESTS = 64
 export const AUTHORING_CLIENT_REQUEST_TIMEOUT_MS = 30000
 export const AUTHORING_CLIENT_ACK_MAX_BYTES = 32768
 export const AUTHORING_CLIENT_EVENT_MAX_BYTES = 8 << 10
-export const AUTHORING_CLIENT_ACTIONS = ['state.read', 'source.flush', 'preview.prepare', 'comment-drafts.inspect', 'comment-drafts.read', 'comment-drafts.restore', 'comment-drafts.discard', 'component-drafts.inspect', 'component-drafts.read', 'component-drafts.restore', 'component-drafts.discard', 'playback.pause', 'position.step', 'playback.play', 'playback.seek', 'playback.rate'] as const
+export const AUTHORING_CLIENT_ACTIONS = ['state.read', 'source.flush', 'preview.prepare', 'view.set', 'native-history.undo', 'native-history.redo', 'recording.start', 'recording.stop', 'recording.cancel', 'recording.discard', 'recording.save', 'recording.listen', 'recording.pause', 'comment-drafts.inspect', 'comment-drafts.read', 'comment-drafts.restore', 'comment-drafts.discard', 'component-drafts.inspect', 'component-drafts.read', 'component-drafts.restore', 'component-drafts.discard', 'playback.pause', 'position.step', 'playback.play', 'playback.seek', 'playback.rate'] as const
 export type AuthoringClientActionType = typeof AUTHORING_CLIENT_ACTIONS[number]
+export type AuthoringClientView = 'document' | 'reading' | 'presentation' | 'production'
+/** Only these browser-owned actions may finish at a new saved source of the same document. */
+export const authoringClientActionChangesSource = (type: AuthoringClientActionType): boolean => ['source.flush', 'native-history.undo', 'native-history.redo', 'recording.save'].includes(type)
 export type AuthoringClientAction =
   | { type: 'state.read' }
   | { type: 'source.flush' }
   | { type: 'preview.prepare' }
+  | { type: 'view.set', view: AuthoringClientView }
+  | { type: 'native-history.undo' | 'native-history.redo' }
+  | { type: 'recording.start' | 'recording.stop' | 'recording.cancel' | 'recording.save' | 'recording.listen' | 'recording.pause' }
+  | { type: 'recording.discard', confirm: true }
   | { type: 'comment-drafts.inspect', cursor?: { after: string, token: string }, limit?: number }
   | { type: 'comment-drafts.read', draft: ClientCommentDraftReference, offset: number, maxChars?: number }
   | { type: 'comment-drafts.restore', draft: ClientCommentDraftReference, composerId: string, expectedCurrent: ClientCommentDraftReference | null }
@@ -78,6 +85,8 @@ export interface AuthoringClientSnapshot {
   revision: number
   source: CanonicalSource
   view: 'document' | 'present'
+  mode?: AuthoringClientView
+  recording?: { phase: 'idle' | 'requesting' | 'recording' | 'stopping' | 'ready' | 'failed', elapsedMs: number, candidate?: { byteLength: number, mime: string, assetId?: string }, error?: string, audition?: 'idle' | 'loading' | 'playing' | 'failed' }
   editing: { dirty: boolean, saving: boolean, composing: boolean, conflicted: boolean, locked: boolean, loading: boolean }
   interaction: string
   position?: { sectionId: string, stepId?: string }
@@ -97,6 +106,7 @@ export interface AuthoringClientDescriptor extends AuthoringClientConnection {
   observedAt: string
   verification: 'reported-state'
   snapshot: AuthoringClientSnapshot
+  pendingRequest?: { requestId: string, action: AuthoringClientActionType, cancellationRequested?: true }
 }
 export interface AuthoringClientList { document: string, clients: AuthoringClientDescriptor[], nextAfter?: string, unavailable: readonly string[] }
 export interface AuthoringClientRequest {
@@ -114,6 +124,7 @@ export interface AuthoringClientRequestResult extends AuthoringClientConnection 
   action: AuthoringClientActionType
   source: CanonicalSource
   state: AuthoringClientRequestState
+  cancellationRequested?: true
   admittedAt: string
   expiresAt: string
   observedAt?: string
@@ -138,6 +149,7 @@ export interface AuthoringClients {
   list(document: string, query: { clientId?: string, after?: string }, member: Member): Promise<AuthoringClientList>
   request(document: string, request: AuthoringClientRequest, member: Member): Promise<AuthoringClientRequestResult>
   get(document: string, query: { clientId: string, epoch: string, requestId: string }, member: Member): Promise<AuthoringClientRequestResult>
+  cancel?(document: string, query: { clientId: string, epoch: string, requestId: string }, member: Member): Promise<AuthoringClientRequestResult>
 }
 
 /** Reserve the complete receipt and the host-only lease, rather than budgeting only the text fragment. */
@@ -187,6 +199,10 @@ const position = object({ timeMs: number, stepTimeMs: number, sectionId: entity,
 const playback = object({ binding, status: { enum: ['loading', 'ready', 'estimated', 'unavailable', 'failed'] }, position, error: { type: 'string', maxLength: 300 } }, ['binding', 'status'])
 export const AUTHORING_CLIENT_SNAPSHOT_SCHEMA: Schema = object({
   revision: integer, source, view: { enum: ['document', 'present'] }, editing: object({ dirty: bool, saving: bool, composing: bool, conflicted: bool, locked: bool, loading: bool }),
+  mode: { enum: ['document', 'reading', 'presentation', 'production'] },
+  recording: object({ phase: { enum: ['idle', 'requesting', 'recording', 'stopping', 'ready', 'failed'] }, elapsedMs: number,
+    candidate: object({ byteLength: integer, mime: { type: 'string', maxLength: 200 }, assetId: entity }, ['byteLength', 'mime']),
+    error: entity, audition: { enum: ['idle', 'loading', 'playing', 'failed'] } }, ['phase', 'elapsedMs']),
   interaction: { type: 'string', maxLength: 200 }, position: object({ sectionId: entity, stepId: entity }, ['sectionId']), binding, playback,
   preview: { oneOf: [object({ status: { enum: ['unprepared', 'preparing', 'unavailable'] } }), object({ status: { const: 'prepared' }, source, irRevision: entity, projectRevision: integer })] },
   actions: { type: 'array', items: { enum: [...AUTHORING_CLIENT_ACTIONS] }, maxItems: AUTHORING_CLIENT_ACTIONS.length, uniqueItems: true }, unsubmittedContent: { const: 'not-inspected' },
@@ -194,6 +210,9 @@ export const AUTHORING_CLIENT_SNAPSHOT_SCHEMA: Schema = object({
 const action = (type: string, properties: Record<string, Schema> = {}): Schema => object({ type: { const: type }, ...properties })
 export const AUTHORING_CLIENT_ACTION_SCHEMA: Schema = { oneOf: [
   action('state.read'), action('source.flush'), action('preview.prepare'), action('playback.pause'), action('position.step', { sectionId: entity, stepId: entity }),
+  action('view.set', { view: { enum: ['document', 'reading', 'presentation', 'production'] } }),
+  ...['native-history.undo', 'native-history.redo', 'recording.start', 'recording.stop', 'recording.cancel', 'recording.save', 'recording.listen', 'recording.pause'].map(type => action(type)),
+  action('recording.discard', { confirm: { const: true } }),
   object({ type: { const: 'comment-drafts.inspect' }, cursor, limit: { type: 'integer', minimum: 1, maximum: 10 } }, ['type']),
   object({ type: { const: 'comment-drafts.read' }, draft: draftReference, offset: integer, maxChars: { type: 'integer', minimum: 2, maximum: 2048 } }, ['type', 'draft', 'offset']),
   action('comment-drafts.restore', { draft: draftReference, composerId: id, expectedCurrent: nullableCommentReference }),

@@ -55,6 +55,7 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
   const [commentsPortal, setCommentsPortal] = useState<HTMLDivElement | null>(null)
   const t = useMessages()
   const document = useWorkbenchState(state => state.document)
+  const sourceIdentity = useWorkbenchState(state => state.authoring?.identity)
   const view = useWorkbenchState(state => state.webView)
   const previousView = useRef({ document, workspace, view, active })
   const currentScope = useRef({ document, active })
@@ -72,7 +73,7 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
     setNavigationDocument(document)
     if (navigation && typeof matchMedia === 'function' && !matchMedia(ROOMY).matches) setNavigation(false)
   }
-  const compilePresentation = async (ready?: () => void, forReading = false): Promise<void> => {
+  const compilePresentation = async (ready?: () => void, forReading = false, signal?: AbortSignal, deadline?: number): Promise<void> => {
     if (preparing.current || workbench.getState().isPreparingPresentation) return
     preparing.current = true
     const generation = ++transition.current, identity = workbench.getState().authoring?.identity
@@ -80,34 +81,39 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
     setChangingView(true)
     const current = () => generation === transition.current && currentScope.current.active && currentScope.current.document === document && workbench.getState().authoring?.identity === identity
     try {
-      const prepared = await workbench.preparePresentation()
+      const prepared = await workbench.preparePresentation(signal, deadline)
+      signal?.throwIfAborted()
       if (!current()) return
       if (prepared) ready?.()
       else setViewFailure(forReading ? t.readingFailed : workbench.getState().presentationFailure)
     } catch { if (current()) setViewFailure(forReading ? t.readingFailed : t.presentationCompileFailed) }
     finally { preparing.current = false; if (current()) setChangingView(false) }
   }
-  const openProduction = async () => {
+  const openProduction = async (signal?: AbortSignal) => {
     if (changingView || workbench.client.capabilities?.production === false) return
     const generation = ++transition.current, identity = workbench.getState().authoring?.identity
     const current = () => generation === transition.current && currentScope.current.active && currentScope.current.document === document && workbench.getState().authoring?.identity === identity
     setChangingView(true); setViewFailure(undefined)
     try {
+      signal?.throwIfAborted()
       await workbench.pausePlayback()
-      await workbench.flushPendingEdits()
+      await workbench.flushPendingEdits(signal)
+      signal?.throwIfAborted()
       if (current()) { workbench.setMode('editing'); setWorkspace('production') }
     } catch { if (current()) setViewFailure(t.presentationPending) }
     finally { if (current()) setChangingView(false) }
   }
-  const exitPresent = (): Promise<void> => {
+  const exitPresent = (signal?: AbortSignal): Promise<void> => {
     if (exiting.current) return exiting.current
     const generation = ++transition.current, identity = workbench.getState().authoring?.identity
     setChangingView(true); setViewFailure(undefined)
     const current = () => generation === transition.current && currentScope.current.active && currentScope.current.document === document && workbench.getState().authoring?.identity === identity
     const work = Promise.resolve().then(async () => {
       try {
+        signal?.throwIfAborted()
         // The child flushes its latest position before acknowledging this pause.
         await workbench.pausePlayback()
+        signal?.throwIfAborted()
         if (!current()) return
         setWorkspace('document')
         workbench.setMode('editing')
@@ -120,6 +126,40 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
     exiting.current = work
     return work
   }
+  const controls = useRef({ workspace, changingView, viewFailure, generation: transition.current, compilePresentation, openProduction, exitPresent, setWorkspace })
+  controls.current = { workspace, changingView, viewFailure, generation: transition.current, compilePresentation, openProduction, exitPresent, setWorkspace }
+  useEffect(() => {
+    if (!active || !sourceIdentity) return
+    return workbench.registerAuthoringClientControls({ identity: sourceIdentity,
+      actions: () => {
+        const state = workbench.getState(), source = state.authoring
+        return currentScope.current.active && source?.identity === sourceIdentity && !controls.current.changingView
+          && !source.loading && !source.dirty && !source.saving && !source.composing && !source.restored && !source.error && !isAgentChanging(state)
+          && !state.isCreatingPage && !state.isEditingPage && !state.isHistoryBusy && !state.isHistoryPreparing ? ['view.set'] : []
+      },
+      snapshot: () => ({ mode: controls.current.workspace }),
+      execute: async (action, _source, signal, deadline) => {
+        if (action.type !== 'view.set') throw new Error('client-action-unavailable')
+        if (preparing.current || controls.current.changingView) throw new Error('client-action-unavailable')
+        if (action.view !== controls.current.workspace) {
+          if (action.view === 'document') await controls.current.exitPresent(signal)
+          else if (action.view === 'production') await controls.current.openProduction(signal)
+          else await controls.current.compilePresentation(() => {
+            workbench.setMode('viewing'); workbench.setWebView(action.view === 'presentation' ? 'present' : 'document')
+            controls.current.setWorkspace(action.view)
+          }, action.view === 'reading', signal, deadline)
+        }
+        const generation = transition.current
+        await workbench.waitForAuthoringClientState(() => {
+          if (!currentScope.current.active || workbench.getState().authoring?.identity !== sourceIdentity) throw new Error('client-document-changed')
+          if (generation !== transition.current) throw new Error('client-view-changed')
+          if (controls.current.generation === generation && controls.current.viewFailure && controls.current.workspace !== action.view) throw new Error('client-view-not-verified')
+          return controls.current.workspace === action.view && !controls.current.changingView
+        }, signal)
+      },
+    })
+  }, [workbench, active, sourceIdentity])
+  useEffect(() => workbench.refreshAuthoringClientControls(), [workbench, active, sourceIdentity, workspace, changingView])
   useEffect(() => {
     transition.current++; exiting.current = undefined
     setWorkspace('document')

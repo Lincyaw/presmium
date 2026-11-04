@@ -13,6 +13,7 @@ export interface McpMessages {
   generateVoiceover(scope: string): string
   cancelVoiceover(target: string): string
   previewVoice(voice: string): string
+  cloneVoice(voice: string): string
   changeSpeechSettings: string
   changeMediaClip(action: 'add' | 'update' | 'remove', clipId: string): string
   historyChange(which: 'undo' | 'redo' | 'revert', revision: string): string
@@ -58,6 +59,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     generateVoiceover: scope => `生成配音（${scope}）`,
     cancelVoiceover: () => '取消生成配音',
     previewVoice: voice => `试听音色“${voice}”`,
+    cloneVoice: voice => `训练音色“${voice}”`,
     changeSpeechSettings: '修改语音服务设置',
     changeMediaClip: action => action === 'add' ? '添加音频片段' : action === 'update' ? '调整音频片段' : '删除音频片段',
     historyChange: which => which === 'undo' ? '撤消上一次修改' : which === 'redo' ? '恢复上一次撤消的修改' : '撤消版本历史中的一项修改',
@@ -99,6 +101,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     generateVoiceover: scope => `Generate Voiceover (${scope})`,
     cancelVoiceover: () => 'Cancel Voiceover',
     previewVoice: voice => `Preview Voice “${voice}”`,
+    cloneVoice: voice => `Train Cloned Voice “${voice}”`,
     changeSpeechSettings: 'Change Speech Settings',
     changeMediaClip: action => action === 'add' ? 'Add Audio Clip' : action === 'update' ? 'Adjust Audio Clip' : 'Delete Audio Clip',
     historyChange: which => which === 'undo' ? 'Undo Last Change' : which === 'redo' ? 'Redo Last Change' : 'Undo a Change from Version History',
@@ -244,6 +247,12 @@ const kind = (detail: Detail) => typeof detail.kind === 'string' ? detail.kind :
 export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => string>> = {
   'zh-CN': {
     'operation-unavailable': () => '当前连接没有这项操作。请搜索可用操作。',
+    'client-busy': () => '这个客户端正在处理另一个请求。请等待完成，或取消那个请求后再试。',
+    'voice-clone-permission-denied': () => '训练和读取合成音色需要所有者权限。',
+    'voice-clone-invalid': () => '音色训练的参数不完整或格式不正确。',
+    'voice-clone-unavailable': () => '当前语音服务没有可用的音色训练功能。请检查服务配置。',
+    'voice-clone-audio-type': () => '请选择支持的音频文件作为样本和授权声明。',
+    'voice-clone-expired': () => '这次音色训练请求已过期，请重新选择样本后再开始。',
     'speech-settings-permission-denied': () => '修改语音服务设置需要工作区所有者的权限。',
     'speech-settings-invalid': () => '语音服务设置不完整或格式不正确。请检查后重试。',
     'speech-settings-conflict': () => '语音服务设置已经变化。请重新读取后再修改。',
@@ -291,6 +300,12 @@ export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => s
   },
   'en': {
     'operation-unavailable': () => 'This connection does not offer that operation. Read the available operations.',
+    'client-busy': () => 'This client is handling another request. Wait for it to finish or cancel that exact request.',
+    'voice-clone-permission-denied': () => 'Training and reading cloned voices requires owner access.',
+    'voice-clone-invalid': () => 'Voice cloning arguments are incomplete or invalid.',
+    'voice-clone-unavailable': () => 'The current speech service has no available voice cloning capability. Check its configuration.',
+    'voice-clone-audio-type': () => 'Select supported audio files for the sample and consent statement.',
+    'voice-clone-expired': () => 'This voice training request expired. Select the sample again before starting.',
     'speech-settings-permission-denied': () => 'Changing speech settings requires a workspace owner credential.',
     'speech-settings-invalid': () => 'Speech settings are incomplete or invalid. Check the values and retry.',
     'speech-settings-conflict': () => 'Speech settings changed. Read the current settings before editing again.',

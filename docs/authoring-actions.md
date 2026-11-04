@@ -38,7 +38,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 `presmium mcp` 的 stdio 连接也使用精简目录。已有客户端重新连接后按新目录查询动作；需要原有命名工具的 SDK 可显式连接 `/mcp?tools=all`。CLI `presmium mcp tools <工具>` 返回参数摘要，`--schema` 返回完整格式，`tools --all` 列出完整目录，`--json` 输出 JSON；`mcp call` 保留原命名工具调用。可信 dsh 宿主保持命名工具目录，按工具的 `presmium/workspace` 元数据路由作者与候选工作区，保留按目标工具执行的审批与审阅钩子。两种目录共享调用方权限，查询参数不会提升授权。
 
-`editor_action` 封装已接入的浏览器动作：只有一个已连接客户端时省略 `clientId`，服务端提供 source、连接版本与播放绑定，并短暂等待真实应答。多客户端要求明确选择；丢失应答不会自动重发。回执为 pending 时带现有请求引用，使用 `get_authoring_client_request` 查询，不把请求已接收当作执行完成。草稿的确切引用与恢复前提仍由调用方明确选择。
+`editor_action` 封装已接入的浏览器动作：只有一个已连接客户端时省略 `clientId`，服务端提供 source、连接版本与播放绑定，并短暂等待真实应答。多客户端要求明确选择；丢失应答不会自动重发。回执为 pending 时带现有请求引用，使用 `get_authoring_client_request` 查询，不把请求已接收当作执行完成。草稿的确切引用与恢复前提仍由调用方明确选择。 请求执行期间不再报告其他可执行动作；`cancel_authoring_client_request` 只取消同一调用方的确切请求，等待浏览器应答或超时，不宣称已保存的事务回滚。
 
 | 标识 | 来源 | 用途 |
 | --- | --- | --- |
@@ -130,6 +130,8 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 - 不设 `sourceRange` 时完整播放一次，设置时只写本步覆盖。字幕取当前讲稿文字，`alignment=none`，不移用 ASR 词时码。
 
+`production_enable` 复用文稿语义动作，补齐讲授和语音插件及讲授渲染端配置，重复调用不改变文稿。
+
 ## 8. 录音与转写
 
 ### 8.1 数据归属
@@ -166,6 +168,8 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 ### 8.4 麦克风录制
 
+`editor_action` 的 `view.set` 使用原生入口切换文档、阅读、放映与视频制作；`native-history.undo/redo` 使用当前编辑器的撤销栈，保存历史仍使用文稿历史动作。`recording.start/stop/cancel/discard/save/listen/pause` 复用当前录音候选和试听实例，开始时显示原音频卡。状态由客户端读取返回，不传音频字节。取消重录保留原候选，丢弃需明确确认，保存只创建资产。设备许可等待可取消，迟到的许可释放设备。要求审阅的工作区不接受经浏览器执行的原生撤销、重做或录音保存；调用方不能用浏览器通道绕过文稿事务的审阅限制。
+
 - 入口在 Video 的"原音频"卡，使用公开 `getUserMedia` 与 `MediaRecorder`；先取得设备许可再显示录制中。Doc 不提供录音控件。
 - 停止后形成内存 File，走 `document/audio` 的同一事务与限额。保存、采用、转写分开；重录不覆盖已保存资产。未上传的录音只在内存，不承诺崩溃恢复。
 
@@ -195,6 +199,10 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 - `--yes` 时以缺失语句所在步骤的 `steps` 范围（有跨步语句时为 `document`）调用 `prepare` 与 `run`，只合成缺失的语句，之后再读一遍 `sentences` 核验；仍有应配音的语句没有音频、被取消或文稿已变化时退出码为 1。CLI 不经 `DOCUMENT_VOICE_TASKS` 与 `createVoiceoverOwner`，生成锁只在本进程有效，不与运行中的工作台同时生成同一文稿。
 - `--voice <服务>:<音色>` 先按 `voice.set` 的文稿范围规则（`changeDocumentVoice`，保留页面与步骤的设置）改 `production.defaults.voiceSource`，经 `validateDocument` 后按文件原有的缩进原子写入 `lecture.json`；新音色下有语句因音色或服务不可用而不能生成时不写入。
 - `--prune` 经 `SpeechService.pruneCache` 删除当前语句都不用的缓存条目（`.presmium/speech/` 的音频、记录与对齐文件，以及 `speech.lock.json` 的条目）。条目按请求键（服务、音色、语言、语速、风格、文字与读音，与配置档无关）判断是否在用，同一句在另一配置下生成的音频保留；请求没有服务且没有默认服务、或文稿有错误诊断时拒绝。
+
+### 音色训练
+
+`clone_voice` 复用语音服务的训练与同意记录，只向文稿所有者执行。采样和口头同意是文稿内音频路径，每份最多 10 MiB；服务端固定原字节后才请求付费确认，执行前再次核对文稿来源。准备数据最多保留 90 秒和四份，关闭或取消释放。`get_voice_clone_status` 读取同一引擎与音色的状态；没有可用引擎时能力报告不可用。丢失训练应答时查询状态，不自动重新训练。
 
 ## 10. 任务反馈
 
@@ -279,7 +287,6 @@ agent 的循环：探测能力 → 读源 → 预检 → 提交或开始任务 �
 
 - 统一任务接口、事件游标与跨重启的意图账本。
 - 远程上传素材；MCP 只导入工作区内已有文件。
-- MCP 控制客户端录制。
 - 步骤的新建、重排与删除动作，共享讲稿的分离编辑，独立组件实现副本。
 - 审阅的 MCP 动作、项目恢复、任意 checkout 或 discard。
 - 新建批注 composer 的草稿恢复，其它未接入表单的草稿。

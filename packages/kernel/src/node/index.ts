@@ -5,7 +5,7 @@ export { validateDocumentOutlineQuery, validateDocumentPartQuery } from './docum
 export { DOCUMENT_AUTHORING_ACTION_SCHEMA, DOCUMENT_AUTHORING_ACTION_APPLY_SCHEMA, DOCUMENT_AUTHORING_ACTION_IMPACT_SCHEMA, validateDocumentAuthoringAction, validateDocumentAuthoringActionReference, validateDocumentAuthoringActionImpact } from './authoring-actions.ts'
 export { validateDocumentTranscriptionRequest } from './transcription.ts'
 export { validateDocumentRecordingAdoption, validateDocumentAudioInspect, validateDocumentWorkspaceAudioImport, validateDocumentWorkspaceAudioInspect, validateDocumentMediaClipValidation, validateDocumentMediaClipEdit, validateDocumentProductionPlanQuery } from './document-audio.ts'
-export { validateDocumentVoiceCatalogQuery } from './document-voice.ts'
+export { validateDocumentVoiceCatalogQuery, validateDocumentVoiceClone, validateDocumentVoiceCloneQuery } from './document-voice.ts'
 export { createVoiceoverOwner, VoiceoverOperationError, validateVoiceoverStart, validateVoiceoverStatus, validateVoiceoverJobQuery, validateVoicePreviewCheck, validateVoicePreviewStart } from './voiceover.ts'
 export { createVoiceoverRoutes } from './voiceover-routes.ts'
 export { validateTranscriptionAdoptionDraft, validateTranscriptionAdoptionApply } from './transcription-adoption.ts'

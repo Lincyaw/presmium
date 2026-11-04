@@ -10,7 +10,7 @@ export { DOCUMENT_COLOR_NAMES, documentColorToken, documentColorValue } from './
 export type { DocumentColorKind, DocumentColorName } from './document-colors.ts'
 export { applyDocumentCommentAction, degradeDocumentCommentAnchor, isDocumentTextLink, documentCommentTargets, validateDocumentCommentAnchor, DocumentCommentError } from './document-comments.ts'
 export { documentAnchorKey, documentAnchorOrder, documentBlockSection, walkDocumentPlaces } from './document-places.ts'
-export { applyDocumentAuthoringAction } from './document-authoring-actions.ts'
+export { applyDocumentAuthoringAction, enableDocumentProduction } from './document-authoring-actions.ts'
 export { applyDocumentComponentAction, effectiveComponentParameters, createDocumentParameterChanges, documentComponentSection, DocumentComponentError } from './document-components.ts'
 export type { DocumentStepVoice, DocumentVoiceImpact, DocumentVoiceOptions, DocumentVoiceScope } from './document-voices.ts'
 export { prepareTranscriptionAdoption } from './transcription-adoption.ts'

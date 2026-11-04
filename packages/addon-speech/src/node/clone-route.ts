@@ -1,9 +1,9 @@
-import { jsonResponse, problemResponse } from '@lincyaw/kernel'
+import { jsonResponse, problemResponse, VOICE_CLONE_MAX_AUDIO_BYTES } from '@lincyaw/kernel'
 import type { CloneInput } from './backend.ts'
 import { errorResponse } from './errors.ts'
 
 /** The clone route's body: a sample and a recorded consent statement, each at most this size. */
-export const MAX_CLONE_AUDIO = 10 * 1024 * 1024
+export const MAX_CLONE_AUDIO = VOICE_CLONE_MAX_AUDIO_BYTES
 
 const field = (form: FormData, name: string) => {
   const value = form.get(name)

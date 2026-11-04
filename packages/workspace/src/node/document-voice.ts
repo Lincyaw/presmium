@@ -1,6 +1,8 @@
-import { DOCUMENT_ENTRY, fnv1a64, hasRole, speechEngineId } from '@lincyaw/kernel'
-import type { CanonicalSource, DocumentVoiceAuthoring, Finding, Member, SpeechService, VoiceoverExecution, VoiceoverJob } from '@lincyaw/kernel'
-import { createVoiceoverOwner, createVoiceoverRoutes, validateDocumentVoiceCatalogQuery, validateVoicePreviewStart } from '@lincyaw/kernel/node'
+import { DOCUMENT_ENTRY, VOICE_CLONE_MAX_AUDIO_BYTES, fnv1a64, hasRole, speechEngineId } from '@lincyaw/kernel'
+import type { CanonicalSource, DocumentVoiceAuthoring, Finding, Member, PreparedVoiceClone, SpeechService, VoiceoverExecution, VoiceoverJob } from '@lincyaw/kernel'
+import { createVoiceoverOwner, createVoiceoverRoutes, validateDocumentVoiceCatalogQuery, validateDocumentVoiceClone, validateDocumentVoiceCloneQuery, validateVoicePreviewStart } from '@lincyaw/kernel/node'
+import { extname } from 'node:path'
+import { readDocumentAudioBytes } from './document-audio.ts'
 import { readAuthoringDocument } from './document-editor.ts'
 import { RequestError } from './errors.ts'
 import type { SourceEditor } from './source-editor.ts'
@@ -16,6 +18,7 @@ const same = (a: CanonicalSource, b: CanonicalSource) => a.documentId === b.docu
 export function createDocumentVoiceAuthoring({ editor, services, revision }: DocumentVoiceAuthoringOptions) {
   const pending = new Set<{ controller: AbortController, finished: Promise<unknown> }>()
   const owners = new Map<string, ReturnType<typeof createVoiceoverOwner>>()
+  const clones = new Set<PreparedVoiceClone>()
   let closed = false
   const authorize = (document: string, member: Member) => {
     if (!hasRole(member, 'editor')) throw new RequestError(403, 'voice-authoring-permission-denied')
@@ -61,13 +64,67 @@ export function createDocumentVoiceAuthoring({ editor, services, revision }: Doc
     catch { return 'unknown' }
   }
   const service: DocumentVoiceAuthoring = {
+    prepareClone: (document, value, member, signal) => work(signal, async signal => {
+      if (!hasRole(member, 'owner')) throw new RequestError(403, 'voice-clone-permission-denied')
+      if (!validateDocumentVoiceClone(value)) throw new RequestError(400, 'voice-clone-invalid')
+      if (clones.size >= 4) throw new RequestError(503, 'voice-authoring-busy')
+      const request = structuredClone(value), loaded = await load(document, member, signal, request.source)
+      const speech = loaded.speech, engine = request.engine ?? await speech?.defaultSynthesisEngine?.()
+      const mime = (path: string) => {
+        if (path.split(/[\\/]/).some(part => part.startsWith('.'))) throw new RequestError(403, 'audio-file-path')
+        const types: Record<string, string> = { '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.webm': 'audio/webm', '.ogg': 'audio/ogg', '.m4a': 'audio/mp4', '.mp4': 'audio/mp4', '.flac': 'audio/flac', '.aac': 'audio/aac' }
+        const type = types[extname(path).toLowerCase()]
+        if (!type) throw new RequestError(422, 'voice-clone-audio-type')
+        editor.assertEditable({ document, home: false }, path, member)
+        return type
+      }
+      const sampleType = mime(request.sample), statementType = mime(request.consent.statement)
+      const [sampleBytes, statementBytes] = await Promise.all([request.sample, request.consent.statement].map(path => readDocumentAudioBytes(editor, { document, member, rest: '' }, path, signal, VOICE_CLONE_MAX_AUDIO_BYTES)))
+      current(document, member, loaded.source); signal.throwIfAborted()
+      if (!speech?.cloneVoice || !engine || !(await speech.engines()).some(info => info.id === speechEngineId(engine) && info.clone)) throw new RequestError(409, 'voice-clone-unavailable')
+      current(document, member, loaded.source); signal.throwIfAborted()
+      // Several readers may finish concurrently; the retained byte budget is checked again before retaining blobs.
+      if (clones.size >= 4) throw new RequestError(503, 'voice-authoring-busy')
+      let sample: Blob | undefined = new Blob([sampleBytes! as Uint8Array<ArrayBuffer>], { type: sampleType })
+      let statement: Blob | undefined = new Blob([statementBytes! as Uint8Array<ArrayBuffer>], { type: statementType })
+      let started: ReturnType<NonNullable<SpeechService['cloneVoice']>> | undefined
+      let expired = false
+      const prepared: PreparedVoiceClone = { engine: speechEngineId(engine), voice: request.voice,
+        start: startSignal => {
+          if (started) return started
+          if (expired || !sample || !statement) return Promise.reject(new RequestError(409, 'voice-clone-expired'))
+          clearTimeout(timer)
+          const exactSample = sample, exactStatement = statement
+          started = work(startSignal, async ownedSignal => {
+            current(document, member, loaded.source); ownedSignal.throwIfAborted()
+            return speech.cloneVoice!({ engine, voice: request.voice, sample: exactSample,
+              ...request.lang ? { lang: request.lang } : {}, ...request.text ? { text: request.text } : {},
+              consent: { speaker: request.consent.speaker, scope: request.consent.scope, statement: exactStatement } }, ownedSignal)
+          }).finally(() => prepared.close())
+          return started
+        },
+        close: () => { expired = true; clearTimeout(timer); sample = undefined; statement = undefined; clones.delete(prepared) },
+      }
+      const timer = setTimeout(() => prepared.close(), 90000)
+      timer.unref()
+      clones.add(prepared)
+      return prepared
+    }),
+    cloneStatus: (document, query, member, signal) => work(signal, async signal => {
+      if (!hasRole(member, 'owner')) throw new RequestError(403, 'voice-clone-permission-denied')
+      if (!validateDocumentVoiceCloneQuery(query)) throw new RequestError(400, 'voice-clone-invalid')
+      const loaded = await load(document, member, signal), speech = loaded.speech, engine = query.engine ?? await speech?.defaultSynthesisEngine?.()
+      if (!speech?.cloneStatus || !engine || !(await speech.engines()).some(info => info.id === speechEngineId(engine) && info.clone)) throw new RequestError(409, 'voice-clone-unavailable')
+      current(document, member, loaded.source); signal.throwIfAborted()
+      return speech.cloneStatus(engine, query.voice, signal)
+    }),
     capabilities: (document, member, signal) => work(signal, async signal => {
       const loaded = await load(document, member, signal)
       const [engines, defaultEngine] = await Promise.all([loaded.speech?.engines() ?? [], loaded.speech?.defaultSynthesisEngine?.()])
       signal.throwIfAborted(); current(document, member, loaded.source)
       const configured = engines.some(engine => engine.tts), unknown = !loaded.speech && loaded.findings?.some(finding => finding.severity === 'error')
       const implemented = Boolean(loaded.voiceoverExecution)
-      return { document, source: loaded.source, verification: 'configuration-only', status: configured ? 'configured' : unknown ? 'unknown' : 'unavailable', ...!configured ? { reason: unknown ? 'services-unavailable' : 'not-configured' } as const : {}, voiceover: implemented, preview: implemented, engines, ...defaultEngine ? { defaultEngine } : {}, ...loaded.findings?.length ? { findings: loaded.findings } : {}, actions: { status: implemented, list: true, get: true, start: implemented && configured, cancel: true, quotePreview: implemented, preview: implemented && configured, readPreview: true }, tasks: { idempotency: 'process', limits: ownerOf(document, member).limits } }
+      return { document, source: loaded.source, verification: 'configuration-only', status: configured ? 'configured' : unknown ? 'unknown' : 'unavailable', ...!configured ? { reason: unknown ? 'services-unavailable' : 'not-configured' } as const : {}, voiceover: implemented, preview: implemented, engines, ...defaultEngine ? { defaultEngine } : {}, ...loaded.findings?.length ? { findings: loaded.findings } : {}, actions: { status: implemented, list: true, get: true, start: implemented && configured, cancel: true, quotePreview: implemented, preview: implemented && configured, readPreview: true, clone: hasRole(member, 'owner') && Boolean(loaded.speech?.cloneVoice) && engines.some(engine => engine.clone), cloneStatus: hasRole(member, 'owner') && Boolean(loaded.speech?.cloneStatus) && engines.some(engine => engine.clone) }, tasks: { idempotency: 'process', limits: ownerOf(document, member).limits } }
     }),
     catalog: (document, query, member, signal) => work(signal, async signal => {
       if (!validateDocumentVoiceCatalogQuery(query)) throw new RequestError(400, 'voice-catalog-query-invalid')
@@ -111,5 +168,5 @@ export function createDocumentVoiceAuthoring({ editor, services, revision }: Doc
     },
     readPreview: async (document, id, member) => ownerOf(document, member).readPreview(id),
   }
-  return { service, routes: createVoiceoverRoutes(service), async close() { closed = true; for (const operation of pending) operation.controller.abort(); await Promise.allSettled([...owners.values()].map(owner => owner.close())); await Promise.allSettled([...pending].map(operation => operation.finished)); owners.clear() } }
+  return { service, routes: createVoiceoverRoutes(service), async close() { closed = true; for (const prepared of clones) prepared.close(); for (const operation of pending) operation.controller.abort(); await Promise.allSettled([...owners.values()].map(owner => owner.close())); await Promise.allSettled([...pending].map(operation => operation.finished)); owners.clear() } }
 }

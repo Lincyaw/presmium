@@ -5,7 +5,7 @@ import type { AuthoringClientChannel } from './workspace-client.ts'
 
 const sameSource = (a: CanonicalSource, b: CanonicalSource) => a.documentId === b.documentId && a.version === b.version && a.fingerprint === b.fingerprint
 // Clock samples are observations, not user input revisions. Never push at animation-frame frequency.
-const signature = (value: AuthoringClientSnapshot) => JSON.stringify({ ...value, revision: 0, playback: value.playback && { ...value.playback,
+const signature = (value: AuthoringClientSnapshot) => JSON.stringify({ ...value, revision: 0, recording: value.recording && { ...value.recording, elapsedMs: 0 }, playback: value.playback && { ...value.playback,
   position: value.playback.position && { ...value.playback.position, timeMs: 0, stepTimeMs: 0 } } })
 type Attachment = { directory: string, identity: string, epoch: string, channel: AuthoringClientChannel, connectionId?: string }
 
@@ -71,7 +71,7 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
       if (value) publishState(owner, event.connectionId, value)
       return
     }
-    if (event.type === 'cancel') { if (event.connectionId === owner.connectionId && event.requestId === active?.requestId) active.controller.abort(); return }
+    if (event.type === 'cancel') { if (event.connectionId === owner.connectionId && event.requestId === active?.requestId) active.controller.abort(new Error('client-request-cancelled')); return }
     const request = event.request, connectionId = owner.connectionId
     if (!connectionId || request.clientId !== clientId || request.epoch !== owner.epoch || request.expectedClientState.connectionId !== connectionId || seen.has(request.requestId)) return
     seen.add(request.requestId)
@@ -110,7 +110,7 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
     } catch (error) {
       const result = snapshot()
       const code = error instanceof Error && /^(client|production)-[a-z-]{1,100}$/.test(error.message) ? error.message : 'client-action-not-verified'
-      if (!controller.signal.aborted && attached === owner && owner.connectionId === connectionId && result) await send(owner, connectionId, result, { requestId: request.requestId, state: 'failed', error: { code } }).catch(() => {})
+      if (attached === owner && owner.connectionId === connectionId && result) await send(owner, connectionId, result, { requestId: request.requestId, state: 'failed', error: { code } }).catch(() => {})
     } finally { clearTimeout(timeout); if (active === task) active = undefined }
   }
   const changed = () => {

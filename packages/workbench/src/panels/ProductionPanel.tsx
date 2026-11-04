@@ -244,7 +244,7 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
               </div></PmTabPanel>
               <PmTabPanel value="voice" keepMounted><div className="pmw-production__fields">
                 <DocumentVoiceField key={`${source.identity}:${stepId}`} stepId={stepId} disabled={blocked || closing} onGenerate={() => { voicePlayback.stop(); workbench.stopAuditions(); setGenerateStep(stepId) }} />
-                <ProductionRecording key={source.identity} identity={source.identity} sectionId={sectionId} stepId={stepId} active={!outputsOpen && (wide || tab === 'properties') && inspectorTab === 'voice'} disabled={blocked || closing}
+                <ProductionRecording key={source.identity} identity={source.identity} sectionId={sectionId} stepId={stepId} active={!outputsOpen && (wide || tab === 'properties') && inspectorTab === 'voice'} available={active && !outputsOpen} onReveal={() => { setInspectorTab('voice'); setTab('properties') }} disabled={blocked || closing}
                   onImportStarted={() => transcriptionSelection.current}
                   onImported={(assetId, selection) => {
                     setMediaRefresh(true)

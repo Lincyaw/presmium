@@ -2,7 +2,7 @@ import { DocumentProduction } from './document-production.ts'
 import { DocumentEditing } from './document-editing.ts'
 import { isAgentChanging } from './workbench-state.ts'
 import type { AgentAnswer, AgentDraft, AgentRequest, PlaybackKey, Pointer, PreviewSink, WebView, WorkbenchMode, WorkbenchState, WorkbenchStore } from './workbench-state.ts'
-import { randomUUID } from '@lincyaw/kernel'
+import { enableDocumentProduction, randomUUID } from '@lincyaw/kernel'
 import type { ProjectOperation, ProjectPlan } from '@lincyaw/kernel'
 import { CommentDraftBank } from './document-editor/comment-drafts.ts'
 import { ComponentPropertyDrafts } from './component-property-drafts.ts'
@@ -41,10 +41,17 @@ import { ProductionPlayback } from './production-playback.ts'
 import type { ProductionBinding, ProductionPlan, ProductionPlaybackCommand, ProductionPlaybackState } from '@lincyaw/kernel'
 import { workspaceClient, WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
-import type { AuthoringClientAction, AuthoringClientActionResult, AuthoringClientSnapshot } from '@lincyaw/kernel'
+import type { AuthoringClientAction, AuthoringClientActionType, AuthoringClientActionResult, AuthoringClientSnapshot } from '@lincyaw/kernel'
 import { PRODUCTION_PLAYBACK_RATES } from '@lincyaw/kernel'
 
 type Listener = () => void
+/** Mounted native controls advertise their own availability and execute the same human actions. */
+export interface AuthoringClientControls {
+  identity: string
+  actions(): readonly AuthoringClientActionType[]
+  snapshot?(): Pick<AuthoringClientSnapshot, 'mode' | 'recording'>
+  execute(action: AuthoringClientAction, source: CanonicalSource, signal: AbortSignal, deadline?: number): Promise<void>
+}
 const sameSource = (a: CanonicalSource, b: CanonicalSource) => a.documentId === b.documentId && a.version === b.version && a.fingerprint === b.fingerprint
 
 // The export of the lecture as a video (`@lincyaw/addon-lecture`).
@@ -109,6 +116,9 @@ export class Workbench {
   readonly editing: DocumentEditing
   #state: WorkbenchState
   readonly #listeners = new Set<Listener>()
+  readonly #clientControls = new Set<AuthoringClientControls>()
+  readonly #clientControlListeners = new Set<Listener>()
+  #clientControlRevision = 0
   readonly #commentDrafts = new CommentDraftBank()
   readonly #componentPropertyDrafts = new ComponentPropertyDrafts()
   readonly #positionSeed = Array.from(crypto.getRandomValues(new Uint32Array(2)), value => value.toString(36)).join('-')
@@ -280,11 +290,31 @@ export class Workbench {
   /** Only counters enter passive client state; no new form payload is exposed to MCP. */
   authoringDraftRevision(): string {
     const source = this.#state.authoring
-    return JSON.stringify([this.authoringCommentDraftRevision(), source?.identity && source.member?.id ? this.#componentPropertyDrafts.revision(source.identity, source.member.id) : 0])
+    return JSON.stringify([this.authoringCommentDraftRevision(), source?.identity && source.member?.id ? this.#componentPropertyDrafts.revision(source.identity, source.member.id) : 0, this.#clientControlRevision])
   }
   subscribeAuthoringDraftChanges(listener: () => void): () => void {
     const comments = this.#commentDrafts.subscribe(listener), properties = this.#componentPropertyDrafts.subscribe(listener)
-    return () => { comments(); properties() }
+    this.#clientControlListeners.add(listener)
+    return () => { comments(); properties(); this.#clientControlListeners.delete(listener) }
+  }
+
+  registerAuthoringClientControls(controls: AuthoringClientControls): () => void {
+    this.#clientControls.add(controls); this.refreshAuthoringClientControls()
+    return () => { this.#clientControls.delete(controls); this.refreshAuthoringClientControls() }
+  }
+  refreshAuthoringClientControls(): void {
+    this.#clientControlRevision++
+    for (const listener of this.#clientControlListeners) listener()
+  }
+  waitForAuthoringClientState(ready: () => boolean, signal: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const finish = (error?: unknown) => { stop(); stopControls(); signal.removeEventListener('abort', aborted); error ? reject(error) : resolve() }
+      const check = () => { try { signal.throwIfAborted(); if (ready()) finish() } catch (error) { finish(error) } }
+      const aborted = () => finish(signal.reason ?? new Error('client-request-expired'))
+      const stop = this.subscribe(check), stopControls = this.subscribeAuthoringDraftChanges(check)
+      signal.addEventListener('abort', aborted, { once: true })
+      check()
+    })
   }
 
   getState = (): WorkbenchState => this.#state
@@ -753,13 +783,21 @@ export class Workbench {
     const prepared = state.presentationSnapshot, actual = { documentId: content.id, version: source.version, fingerprint: source.fingerprint }
     const preparedCurrent = clean && prepared && prepared.version === source.version && prepared.fingerprint === source.fingerprint && prepared.project === (source.projectRevision ?? 0)
       && state.ir?.revision === prepared.revision && state.ir.doc.source?.version === source.version && state.ir.doc.source.fingerprint === source.fingerprint
+    const controls = [...this.#clientControls].filter(owner => owner.identity === source.identity)
+    const advertised = controls.flatMap(owner => owner.actions()), unique = advertised.filter((type, index) => advertised.indexOf(type) === index && advertised.lastIndexOf(type) === index)
+    const reported = controls.map(owner => owner.snapshot?.()).filter(value => value !== undefined)
+    const mode = reported.find(value => value.mode)?.mode, recording = reported.find(value => value.recording)?.recording
     return { revision, source: { documentId: content.id, version: source.version, fingerprint: source.fingerprint }, view: state.webView, editing,
+      ...mode ? { mode } : {}, ...recording ? { recording } : {},
       interaction: state.documentPositionToken,
       ...page && position ? { position: { sectionId: page.id, ...page.stepOrder[position.step] ? { stepId: page.stepOrder[position.step] } : {} } } : {},
       ...plan ? { binding: plan.binding } : {}, ...playback ? { playback } : {},
       preview: preparedCurrent ? { status: 'prepared', source: actual, irRevision: prepared.revision, projectRevision: prepared.project }
         : { status: state.isPreparingPresentation ? 'preparing' : state.presentationFailure ? 'unavailable' : 'unprepared' },
       actions: ['state.read', 'playback.pause', ...safe ? ['source.flush' as const] : [],
+        ...safe && state.mode === 'editing' && state.editorHistory?.undo ? ['native-history.undo' as const] : [],
+        ...safe && state.mode === 'editing' && state.editorHistory?.redo ? ['native-history.redo' as const] : [],
+        ...unique,
         ...commentDrafts?.readable ? ['comment-drafts.inspect' as const, 'comment-drafts.read' as const] : [],
         ...clean && !state.isHistoryBusy && !state.isHistoryPreparing && commentDrafts?.readable && commentDrafts.ownersKnown ? ['comment-drafts.discard' as const, ...state.webView === 'document' && commentDrafts.hasRestoreComposer() ? ['comment-drafts.restore' as const] : []] : [],
         ...source.member?.id && this.#componentPropertyDrafts.readable(source.identity, source.member.id) ? ['component-drafts.inspect' as const, 'component-drafts.read' as const] : [],
@@ -776,6 +814,19 @@ export class Workbench {
     const current = () => { owned(); const state = this.authoringClientSnapshot(0); if (!state || !sameSource(state.source, expected) || !state.actions.includes(action.type)) throw new Error('client-action-unavailable'); return state }
     current()
     if (action.type === 'state.read') return
+    if (action.type === 'native-history.undo' || action.type === 'native-history.redo') {
+      if (this.editing.nativeHistory(action.type === 'native-history.undo' ? 'undo' : 'redo') !== true) throw new Error('client-native-history-unavailable')
+      owned(); return
+    }
+    const controls = [...this.#clientControls].filter(owner => owner.identity === identity && owner.actions().includes(action.type))
+    if (controls.length) {
+      if (controls.length !== 1) throw new Error('client-action-ambiguous')
+      const control = controls[0]!
+      await control.execute(action, expected, signal, deadline)
+      owned()
+      if (!this.#clientControls.has(control)) throw new Error('client-action-unavailable')
+      return
+    }
     if (action.type === 'comment-drafts.inspect' || action.type === 'comment-drafts.read') {
       const drafts = identity ? this.documentCommentDrafts(identity) : undefined
       if (!drafts?.readable || !fits) throw new Error('client-comment-drafts-unavailable')
@@ -855,6 +906,7 @@ export class Workbench {
         || present && (!result || result.status !== 'ready' || result.position?.sectionId !== action.sectionId || result.position.stepId !== action.stepId || result.position.playing)) throw new Error('client-step-unverified')
       return
     }
+    if (action.type !== 'playback.play' && action.type !== 'playback.seek' && action.type !== 'playback.rate') throw new Error('client-action-unavailable')
     const plan = this.#state.productionPlan
     if (!plan || !sameProductionBinding(plan.binding, action.binding)) throw new Error('client-playback-binding-changed')
     if (action.type === 'playback.seek' && (plan.timing !== 'confirmed' || plan.durationMs === undefined || action.timeMs > plan.durationMs)) throw new Error('client-seek-out-of-range')
@@ -922,9 +974,7 @@ export class Workbench {
     await this.flushPendingEdits()
     const source = this.#state.authoring, document = this.getDocument(identity)
     if (scope !== this.#documentScope || !document || !source?.version || !source.fingerprint || source.dirty || source.saving || source.composing || source.restored || source.error || isAgentChanging(this.#state)) throw new Error('production-source-changed')
-    const plugins = [...new Set([...(document.metadata.plugins ?? []), '@lincyaw/addon-lecture', '@lincyaw/addon-speech'])]
-    const next = { ...document, metadata: { ...document.metadata, plugins, renderers: { ...document.metadata.renderers, lecture: document.metadata.renderers?.lecture ?? {} } } }
-    this.#documentSession.record(next)
+    this.#documentSession.record(enableDocumentProduction(document))
     await this.flushPendingEdits()
     if (scope !== this.#documentScope || this.#state.authoring?.identity !== identity || this.#state.authoring.dirty || this.#state.authoring.saving || this.#state.authoring.error) throw new Error('production-source-changed')
   }
@@ -1493,5 +1543,6 @@ export class Workbench {
     this.production.dispose()
     disposeTranscriptionSessions(this.client)
     disposeDocumentRecordings(this)
+    this.#clientControls.clear(); this.#clientControlListeners.clear()
   }
 }

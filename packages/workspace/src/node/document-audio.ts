@@ -29,6 +29,33 @@ const binding = (current: ReturnType<typeof readAuthoringDocument>): CanonicalSo
 const titleOf = (name: string) => [...(name.replaceAll('\\', '/').split('/').at(-1) ?? '').replace(/[\u0000-\u001f\u007f-\u009f]/g, '').trim()].slice(0, ASSET_TITLE_MAX_LENGTH).join('')
 const stamp = (stat: Awaited<ReturnType<Awaited<ReturnType<typeof open>>['stat']>>) => [stat.dev, stat.ino, stat.size, stat.mtimeMs, stat.ctimeMs].join(':')
 
+/** Scoped bounded audio reads are shared by import, inspection and voice cloning. */
+export async function readDocumentAudioBytes(editor: SourceEditor, ctx: RequestContext, path: string, signal?: AbortSignal, maxBytes = DOCUMENT_AUDIO_MAX_BYTES): Promise<Uint8Array> {
+  signal?.throwIfAborted()
+  const file = editor.readableFile({ document: ctx.document, home: false }, path, ctx.member)
+  const handle = await open(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK).catch(error => {
+    if (error.code === 'ELOOP') throw new RequestError(403, 'audio-file-path')
+    if (error.code === 'ENOENT' || error.code === 'ENOTDIR') throw new RequestError(404, 'audio-file-missing')
+    throw error
+  })
+  try {
+    const before = await handle.stat(), named = await lstat(editor.readableFile({ document: ctx.document, home: false }, path, ctx.member))
+    if (!before.isFile() || before.dev !== named.dev || before.ino !== named.ino) throw new RequestError(403, 'audio-file-path')
+    if (!before.size || before.size > maxBytes) throw new RequestError(413, 'production.asset-size')
+    const bytes = new Uint8Array(before.size + 1); let length = 0
+    while (length < bytes.length) {
+      signal?.throwIfAborted()
+      const read = await handle.read(bytes, length, bytes.length - length, length)
+      if (!read.bytesRead) break
+      length += read.bytesRead
+    }
+    const after = await handle.stat(), current = await lstat(editor.readableFile({ document: ctx.document, home: false }, path, ctx.member))
+    if (length !== before.size || stamp(before) !== stamp(after) || after.dev !== current.dev || after.ino !== current.ino) throw new RequestError(409, 'audio-file-changed')
+    signal?.throwIfAborted()
+    return bytes.slice(0, length)
+  } finally { await handle.close() }
+}
+
 /** Owns the canonical transaction and receipts; plugin services only inspect actual media. */
 export function createDocumentAudioAuthoring({ root, editor, revisions, audio, services, reviewRequired = false }: DocumentAudioAuthoringOptions): { service: DocumentAudioAuthoring, routes: Record<string, Route>, close(): Promise<void> } {
   const receipts = new Map<string, Receipt>(), imports = new Map<string, { signature: string, source: CanonicalSource, promise: Promise<VerifiedDocumentAudioImport> }>(), operations = new Set<Operation>()
@@ -64,31 +91,7 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
     editor.assertEditable(scopeOf(document), path, member)
     if (path.split('/').some(part => part.startsWith('.'))) throw new RequestError(403, 'audio-file-path')
   }
-  const reader = async (ctx: RequestContext, path: string, signal?: AbortSignal): Promise<Uint8Array> => {
-    signal?.throwIfAborted()
-    const file = editor.readableFile(scopeOf(ctx.document), path, ctx.member)
-    const handle = await open(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK).catch(error => {
-      if (error.code === 'ELOOP') throw new RequestError(403, 'audio-file-path')
-      if (error.code === 'ENOENT' || error.code === 'ENOTDIR') throw new RequestError(404, 'audio-file-missing')
-      throw error
-    })
-    try {
-      const before = await handle.stat(), named = await lstat(editor.readableFile(scopeOf(ctx.document), path, ctx.member))
-      if (!before.isFile() || before.dev !== named.dev || before.ino !== named.ino) throw new RequestError(403, 'audio-file-path')
-      if (!before.size || before.size > DOCUMENT_AUDIO_MAX_BYTES) throw new RequestError(413, 'production.asset-size')
-      const bytes = new Uint8Array(before.size + 1); let length = 0
-      while (length < bytes.length) {
-        signal?.throwIfAborted()
-        const read = await handle.read(bytes, length, bytes.length - length, length)
-        if (!read.bytesRead) break
-        length += read.bytesRead
-      }
-      const after = await handle.stat(), current = await lstat(editor.readableFile(scopeOf(ctx.document), path, ctx.member))
-      if (length !== before.size || stamp(before) !== stamp(after) || after.dev !== current.dev || after.ino !== current.ino) throw new RequestError(409, 'audio-file-changed')
-      signal?.throwIfAborted()
-      return bytes.slice(0, length)
-    } finally { await handle.close() }
-  }
+  const reader = (ctx: RequestContext, path: string, signal?: AbortSignal) => readDocumentAudioBytes(editor, ctx, path, signal)
   const pathOf = (ctx: RequestContext, asset: Asset) => {
     const file = productionAssetFile(join(root, ctx.document), asset.location)
     if (!file) throw new RequestError(422, 'production.asset-path')

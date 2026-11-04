@@ -40,9 +40,10 @@ function RecordingSlot({ label, hint, value, disabled, onChange }: { label: stri
   const capturing = ['requesting', 'recording', 'stopping'].includes(state.phase)
   const start = () => {
     setFailure(undefined)
-    void recording.start(async () => {
+    void recording.start(async signal => {
       workbench.stopAuditions()
       await workbench.pausePlayback()
+      signal.throwIfAborted()
       return workbench.registerAudioCapture(() => recording.stop())
     })
   }

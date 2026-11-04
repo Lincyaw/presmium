@@ -443,6 +443,9 @@ function hostSupports(host: McpHost, name: string): boolean {
   if (name !== 'get_authoring_capabilities' && [...AUTHORING_TOOLS, ...AUTHORING_ACTION_TOOLS, ...EDITING_TOOLS].some(tool => tool.name === name)) return Boolean(host.authoring)
   if (PROJECT_TOOLS.some(tool => tool.name === name)) return Boolean(host.projectAuthoring)
   switch (name) {
+    case 'cancel_authoring_client_request': return Boolean(host.authoringClients?.cancel)
+    case 'clone_voice': return Boolean(host.voiceAuthoring?.prepareClone)
+    case 'get_voice_clone_status': return Boolean(host.voiceAuthoring?.cloneStatus)
     case 'capture_slides':
     case 'capture_reading':
     case 'capture_overview': return Boolean(host.capture)
@@ -839,7 +842,7 @@ async function resolveDocument(host: McpHost, named: string | undefined, bound?:
       let after: string | undefined
       for (let page = 0; page < AUTHORING_CLIENT_MAX_CLIENTS; page++) {
         const report = await host.authoringClients!.list(document.dir, after ? { after } : {}, editorMember)
-        if (report.clients.some(client => client.connected && client.snapshot.view === 'document' && client.snapshot.position)) return document.dir
+        if (report.clients.some(client => client.connected && (client.snapshot.view === 'document' || client.snapshot.mode === 'production') && client.snapshot.position)) return document.dir
         after = report.nextAfter
         if (!after) break
       }

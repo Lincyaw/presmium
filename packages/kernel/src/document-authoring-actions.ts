@@ -9,9 +9,19 @@ import type { DocumentAuthoringAction, DocumentAuthoringActionEffect } from './c
 import type { DocumentCommentContext } from './contracts/document-comments.ts'
 import type { TeachingDocument } from './contracts/document.ts'
 
+export function enableDocumentProduction(document: TeachingDocument): TeachingDocument {
+  const plugins = [...new Set([...(document.metadata.plugins ?? []), '@lincyaw/addon-lecture', '@lincyaw/addon-speech'])]
+  if (JSON.stringify(plugins) === JSON.stringify(document.metadata.plugins) && document.metadata.renderers?.lecture) return document
+  return { ...document, metadata: { ...document.metadata, plugins, renderers: { ...document.metadata.renderers, lecture: document.metadata.renderers?.lecture ?? {} } } }
+}
+
 /** Fixed context is supplied by the owning adapter exactly once per semantic plan. */
 export function applyDocumentAuthoringAction(document: TeachingDocument, action: DocumentAuthoringAction, context: DocumentCommentContext): { content: TeachingDocument, effect: DocumentAuthoringActionEffect } {
   if (!context.member || !hasRole(context.member, 'editor')) throw new DocumentCommentError(403, 'authoring-permission-denied')
+  if (action.type === 'production.enable') {
+    const content = enableDocumentProduction(document)
+    return { content, effect: { kind: 'production', value: { enabled: true, changed: content !== document } } }
+  }
   if (action.type === 'caption.scale.set') {
     const content = changeDocumentCaptionScale(document, action.scale)
     return { content, effect: { kind: 'caption-scale', value: { scale: captionScale(content.production), changed: content !== document } } }

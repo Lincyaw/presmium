@@ -34,6 +34,7 @@ export const DOCUMENT_AUTHORING_ACTION_SCHEMA: Schema = {
       action('caption.timing.set', { stepId: id, value: { $ref: '#/$defs/CaptionTiming' } }),
       action('caption.timing.reset', { stepId: id }),
       action('caption.scale.set', { scale: { type: 'number' } }),
+      action('production.enable', {}),
       action('component.parameters.patch', { blockId: id, changes }),
       action('component.step-parameters.patch', { blockId: id, stepId: id, changes }),
       action('component.step-parameters.reset', { blockId: id, stepId: id }),

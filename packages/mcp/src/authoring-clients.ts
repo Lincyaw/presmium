@@ -1,4 +1,4 @@
-import { AUTHORING_CLIENT_MAX_CLIENTS, AUTHORING_CLIENT_MAX_REQUEST_CHARS, AUTHORING_CLIENT_MAX_RESPONSE_CHARS, AUTHORING_CLIENT_ACTION_SCHEMA, AUTHORING_CLIENT_QUERY_SCHEMA, AUTHORING_CLIENT_REQUEST_QUERY_SCHEMA, AUTHORING_CLIENT_REQUEST_SCHEMA } from '@lincyaw/kernel'
+import { AUTHORING_CLIENT_MAX_CLIENTS, AUTHORING_CLIENT_MAX_REQUEST_CHARS, AUTHORING_CLIENT_MAX_RESPONSE_CHARS, AUTHORING_CLIENT_ACTION_SCHEMA, AUTHORING_CLIENT_QUERY_SCHEMA, AUTHORING_CLIENT_REQUEST_QUERY_SCHEMA, AUTHORING_CLIENT_REQUEST_SCHEMA, authoringClientActionChangesSource } from '@lincyaw/kernel'
 import { randomUUID } from 'node:crypto'
 import { validateAuthoringClientRequest } from '@lincyaw/kernel/node'
 import type { AuthoringClients, AuthoringClientDescriptor, AuthoringClientAction, AuthoringClientRequestResult } from '@lincyaw/kernel'
@@ -22,14 +22,18 @@ export const AUTHORING_CLIENT_TOOLS: ToolSpec[] = [
       const document = await call.document(), own = service(call)
       const clients: AuthoringClientDescriptor[] = []
       let after: string | undefined
+      let reviewRequired = false
       for (let page = 0; page < AUTHORING_CLIENT_MAX_CLIENTS; page++) {
         const report = await own.list(document, { ...typeof call.args.clientId === 'string' ? { clientId: call.args.clientId } : {}, ...after ? { after } : {} }, call.caller.member)
         clients.push(...report.clients.filter(client => client.connected))
+        reviewRequired ||= report.unavailable.includes('source-writes-require-review')
         after = report.nextAfter
         if (!after) break
       }
       if (clients.length !== 1 || after) throw Object.assign(new Error('editor-context-unavailable'), { status: 409 })
       const client = clients[0]!, values = call.args.action as AuthoringClientAction
+      if (client.pendingRequest) throw Object.assign(new Error('client-busy'), { status: 409, detail: { request: { document, clientId: client.clientId, epoch: client.epoch, requestId: client.pendingRequest.requestId } } })
+      if (reviewRequired && authoringClientActionChangesSource(values.type) && values.type !== 'source.flush') throw Object.assign(new Error('authoring-review-required'), { status: 409 })
       const action = { ...values, ...['playback.play', 'playback.seek', 'playback.rate'].includes(values.type) ? { binding: client.snapshot.binding } : {} } as AuthoringClientAction
       const request = { clientId: client.clientId, epoch: client.epoch, requestId: randomUUID(), source: client.snapshot.source, expectedClientState: { connectionId: client.connectionId, revision: client.snapshot.revision }, action }
       if (!validateAuthoringClientRequest(request) || !client.snapshot.actions.includes(action.type)) throw Object.assign(new Error('client-action-unavailable'), { status: 409 })
@@ -44,6 +48,14 @@ export const AUTHORING_CLIENT_TOOLS: ToolSpec[] = [
       }
       if (call.args.details) return result
       return editorResult(result, { document, ...query })
+    }) },
+  { name: 'cancel_authoring_client_request', kind: 'operate', structured: true, workspace: 'author',
+    description: 'Requests cancellation of the caller’s exact browser request reference. It cannot run another browser action or cancel another member’s request. Returns cancellationRequested until a real browser acknowledgement or expiry; this does not claim a saved transaction was rolled back. Repeated cancellation never re-executes the action.',
+    inputSchema: readSchema(AUTHORING_CLIENT_REQUEST_QUERY_SCHEMA),
+    run: call => bounded(call, async () => {
+      const document = await call.document(), own = service(call), reference = query(call) as { clientId: string, epoch: string, requestId: string }
+      const result = await own.cancel!(document, reference, call.caller.member)
+      return editorResult(result, { document, ...reference })
     }) },
   { name: 'get_authoring_clients', kind: 'read', structured: true, inputSchema: readSchema(AUTHORING_CLIENT_QUERY_SCHEMA),
     description: 'Reads bounded last reported state of actual Studio document clients, scoped to this document and member. No editor text, drafts, credentials or server-estimated playhead. Inspect connected, epoch, connectionId, snapshot.source/revision and actual actions; offline reports are observations, never current capability. Use nextAfter for additional clients. No clients means unavailable. No compilation, open-document or UI mode change. Request<=4096 JSON chars; result<=7168 pretty UTF16 chars.',
@@ -60,7 +72,7 @@ export const AUTHORING_CLIENT_TOOLS: ToolSpec[] = [
       return service(call).request(document, request, call.caller.member)
     }) },
   { name: 'get_authoring_client_request', kind: 'read', structured: true, inputSchema: readSchema(AUTHORING_CLIENT_REQUEST_QUERY_SCHEMA),
-    description: 'Reads this exact retained browser request receipt: sent/executing/done/refused/failed/expired. HTTP admission is not success. browser-acknowledged means an actual client observation; current additionally checks that client epoch/connection/state still matches. A stale completed receipt never describes a newly opened document. No action is re-dispatched by reading. Read the client again for subsequent commands; recording, new-comment restore, active-comment discard and other unwired draft families cannot be inferred from these explicit comment/component reads or playback.',
+    description: 'Reads this exact retained browser request receipt: sent/executing/done/refused/failed/expired. HTTP admission is not success. browser-acknowledged means an actual client observation; current additionally checks that client epoch/connection/state still matches. A stale completed receipt never describes a newly opened document. No action is re-dispatched by reading. Read the client again for subsequent commands; new-comment restore, active-comment discard, timing/recording-range drafts and other unwired families cannot be inferred from these explicit comment/component reads or playback.',
     run: call => bounded(call, async () => service(call).get(await call.document(), query(call) as { clientId: string, epoch: string, requestId: string }, call.caller.member)) },
 ]
 
@@ -75,6 +87,9 @@ function businessActionSchema() {
 }
 function editorResult(result: AuthoringClientRequestResult, request: { document: string, clientId: string, epoch: string, requestId: string }) {
   return { state: result.state, acknowledged: result.verification === 'browser-acknowledged', current: result.current,
+    ...result.cancellationRequested ? { cancellationRequested: true } : {},
+    ...result.snapshot?.mode ? { mode: result.snapshot.mode } : {},
+    ...result.snapshot?.recording ? { recording: { phase: result.snapshot.recording.phase, ...result.snapshot.recording.candidate?.assetId ? { assetId: result.snapshot.recording.candidate.assetId } : {}, ...result.snapshot.recording.error ? { error: result.snapshot.recording.error } : {} } } : {},
     ...result.snapshot?.position ? { position: result.snapshot.position } : {},
     ...result.result ? { result: result.result } : {}, ...result.error ? { error: result.error } : {},
     ...['sent', 'executing'].includes(result.state) ? { request } : {} }

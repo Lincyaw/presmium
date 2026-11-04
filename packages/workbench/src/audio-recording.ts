@@ -10,6 +10,21 @@ const MAX_BYTES = 16 << 20
 const MAX_DURATION_MS = 10 * 60_000
 const MIME_TYPES = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4']
 
+/** getUserMedia has no AbortSignal; late permission grants must release their stream. */
+function recordingWait<T>(work: Promise<T>, signal: AbortSignal | undefined, releaseLate: (value: T) => void): Promise<T> {
+  if (!signal) return work
+  return new Promise((resolve, reject) => {
+    const abort = () => { signal.removeEventListener('abort', abort); reject(signal.reason ?? new Error('recording-cancelled')) }
+    signal.addEventListener('abort', abort, { once: true })
+    work.then(value => {
+      signal.removeEventListener('abort', abort)
+      if (signal.aborted) { releaseLate(value); return }
+      resolve(value)
+    }, error => { signal.removeEventListener('abort', abort); reject(error) })
+    if (signal.aborted) abort()
+  })
+}
+
 export function recordingUnavailable(): string | undefined {
   if (!globalThis.isSecureContext || !navigator.mediaDevices?.getUserMedia) return 'recording-context'
   if (typeof MediaRecorder === 'undefined' || !MIME_TYPES.some(type => MediaRecorder.isTypeSupported(type))) return 'recording-unsupported'
@@ -36,6 +51,7 @@ export class AudioRecording {
   #generation = 0
   #disposed = false
   #take?: Take
+  #request?: AbortController
   #release?: () => void
   #warning = false
   readonly #beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
@@ -57,19 +73,24 @@ export class AudioRecording {
     this.#set({ phase: error ? 'failed' : this.#state.candidate ? 'ready' : 'idle', candidate: this.#state.candidate, elapsedMs: this.#state.candidate?.elapsedMs ?? 0, ...error ? { error } : {} })
   }
 
-  async start(prepare: () => Promise<() => void>): Promise<void> {
+  async start(prepare: (signal: AbortSignal) => Promise<() => void>, signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) return
     if (this.#disposed || this.#take || this.#state.phase === 'requesting') return
     const unavailable = recordingUnavailable()
     if (unavailable) { this.#settle(unavailable); return }
     const generation = ++this.#generation
+    const request = this.#request = new AbortController()
+    const pendingSignal = signal ? AbortSignal.any([signal, request.signal]) : request.signal
+    const abort = () => { if (generation === this.#generation) this.cancelTake() }
+    signal?.addEventListener('abort', abort, { once: true })
     this.#set({ ...this.#state, phase: 'requesting', error: undefined })
     let stream: MediaStream | undefined
     let release: (() => void) | undefined
     try {
-      release = await prepare()
+      release = await recordingWait(prepare(pendingSignal), pendingSignal, release => release())
       if (generation !== this.#generation) { release(); return }
       this.#release = release
-      stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: { ideal: 1 } }, video: false })
+      stream = await recordingWait(navigator.mediaDevices.getUserMedia({ audio: { channelCount: { ideal: 1 } }, video: false }), pendingSignal, stream => stream.getTracks().forEach(track => track.stop()))
       if (generation !== this.#generation) { stream.getTracks().forEach(track => track.stop()); return }
       const mimeType = MIME_TYPES.find(type => MediaRecorder.isTypeSupported(type))!
       const recorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 128_000 })
@@ -102,13 +123,13 @@ export class AudioRecording {
       this.#take = undefined
       const name = error instanceof DOMException ? error.name : ''
       this.#settle(name === 'NotAllowedError' || name === 'SecurityError' ? 'recording-permission' : name === 'NotFoundError' ? 'recording-device' : name === 'NotReadableError' ? 'recording-device-busy' : name === 'NotSupportedError' ? 'recording-device-unsupported' : 'recording-failed')
-    }
+    } finally { signal?.removeEventListener('abort', abort); if (this.#request === request) this.#request = undefined }
   }
 
   stop(error?: string): void {
     const take = this.#take
     if (!take) {
-      if (this.#state.phase === 'requesting') { this.#generation++; this.#release?.(); this.#release = undefined; this.#settle(error) }
+      if (this.#state.phase === 'requesting') { this.#generation++; this.#request?.abort(new Error('recording-cancelled')); this.#request = undefined; this.#release?.(); this.#release = undefined; this.#settle(error) }
       return
     }
     if (error) take.error ??= error
@@ -159,6 +180,7 @@ export class AudioRecording {
     if (this.#disposed) return
     this.#disposed = true
     this.#generation++
+    this.#request?.abort(new Error('recording-cancelled')); this.#request = undefined
     const take = this.#take
     if (take) { take.discard = true; this.stop(); this.#finish(take) }
     this.#release?.(); this.#release = undefined

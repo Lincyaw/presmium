@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID, createHash } from 'node:crypto'
-import { AUTHORING_CLIENT_ACK_MAX_BYTES, AUTHORING_CLIENT_MAX_CLIENTS, AUTHORING_CLIENT_MAX_REQUESTS, AUTHORING_CLIENT_MAX_REQUEST_CHARS, AUTHORING_CLIENT_MAX_RESPONSE_CHARS, AUTHORING_CLIENT_REQUEST_TIMEOUT_MS, authoringClientResultFits, DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, problemResponse, pushStream, sseResponse } from '@lincyaw/kernel'
+import { AUTHORING_CLIENT_ACK_MAX_BYTES, AUTHORING_CLIENT_MAX_CLIENTS, AUTHORING_CLIENT_MAX_REQUESTS, AUTHORING_CLIENT_MAX_REQUEST_CHARS, AUTHORING_CLIENT_MAX_RESPONSE_CHARS, AUTHORING_CLIENT_REQUEST_TIMEOUT_MS, authoringClientActionChangesSource, authoringClientResultFits, DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, problemResponse, pushStream, sseResponse } from '@lincyaw/kernel'
 import type { AuthoringClientAcknowledgement, AuthoringClientConnection, AuthoringClientDescriptor, AuthoringClientEvent, AuthoringClientLease, AuthoringClientOpen, AuthoringClientReport, AuthoringClientRequest, AuthoringClientRequestResult, AuthoringClients, CanonicalSource, Member, PushStream, Route } from '@lincyaw/kernel'
 import { validateAuthoringClientAcknowledgement, validateAuthoringClientLease, validateAuthoringClientOpen, validateAuthoringClientQuery, validateAuthoringClientReport, validateAuthoringClientRequest, validateAuthoringClientRequestQuery } from '@lincyaw/kernel/node'
 import { readAuthoringDocument } from './document-editor.ts'
@@ -15,7 +15,8 @@ const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(va
 const terminal = (pending: Pending) => !['sent', 'executing'].includes(pending.value.state)
 
 /** Ephemeral live-client control. It owns no document writer, compilation or durable task ledger. */
-export function createAuthoringClients(editor: SourceEditor) {
+export function createAuthoringClients(editor: SourceEditor, options: { reviewRequired?: boolean } = {}) {
+  const requiresReview = (type: import('@lincyaw/kernel').AuthoringClientActionType) => options.reviewRequired && authoringClientActionChangesSource(type) && type !== 'source.flush'
   const clients = new Map<string, Client>(), requests = new Map<string, Pending>()
   let closed = false
   const clientKey = (member: string, clientId: string) => JSON.stringify([member, clientId])
@@ -69,9 +70,15 @@ export function createAuthoringClients(editor: SourceEditor) {
       if (!validateAuthoringClientQuery(query)) throw new RequestError(400, 'client-query-invalid')
       const all = [...clients.values()].filter(client => client.member === member.id && client.value.document === document && (!query.clientId || client.value.clientId === query.clientId)
         && (!query.after || client.value.clientId > query.after)).sort((a, b) => a.value.clientId.localeCompare(b.value.clientId))
-      const answer = { document, clients: [] as AuthoringClientDescriptor[], unavailable: ['recording', 'new-comment-restore', 'active-comment-discard', 'timing-drafts', 'recording-drafts', 'review', 'open-document'] }
+      const answer = { document, clients: [] as AuthoringClientDescriptor[], unavailable: ['new-comment-restore', 'active-comment-discard', 'timing-drafts', 'recording-range-drafts', 'review', 'open-document', ...options.reviewRequired ? ['source-writes-require-review'] : []] }
       for (const client of all) {
         const row = structuredClone(client.value)
+        row.snapshot.actions = row.snapshot.actions.filter(type => !requiresReview(type))
+        const pending = [...requests.values()].find(pending => pending.member === member.id && pending.value.document === document && pending.value.clientId === row.clientId && pending.value.epoch === row.epoch && !terminal(pending))
+        if (pending) {
+          row.pendingRequest = { requestId: pending.value.requestId, action: pending.value.action, ...pending.value.cancellationRequested ? { cancellationRequested: true } : {} }
+          row.snapshot.actions = []
+        }
         if (size({ ...answer, clients: [...answer.clients, row], nextAfter: row.clientId }) > AUTHORING_CLIENT_MAX_RESPONSE_CHARS) break
         answer.clients.push(row)
       }
@@ -81,6 +88,7 @@ export function createAuthoringClients(editor: SourceEditor) {
     async request(document, request, member) {
       const actual = current(document, member); budget(request)
       if (!validateAuthoringClientRequest(request)) throw new RequestError(400, 'client-request-invalid')
+      if (requiresReview(request.action.type)) throw new RequestError(409, 'authoring-review-required')
       const key = requestKey(member.id, document, request), signature = digest(request), known = requests.get(key)
       if (known) { if (known.signature !== signature) throw new RequestError(409, 'client-request-id-reused'); return readResult(known, actual) }
       const client = clients.get(clientKey(member.id, request.clientId)), state = client?.value
@@ -111,6 +119,21 @@ export function createAuthoringClients(editor: SourceEditor) {
       if (!pending) throw new RequestError(404, 'client-request-not-found')
       let actual: CanonicalSource | undefined
       try { actual = current(document, member) } catch { /* An old receipt stays readable if the current source is invalid. */ }
+      return readResult(pending, actual)
+    },
+    async cancel(document, query, member) {
+      if (closed) throw new RequestError(503, 'client-owner-closed')
+      if (!hasRole(member, 'editor')) throw new RequestError(403, 'client-permission-denied')
+      budget(query)
+      if (!validateAuthoringClientRequestQuery(query)) throw new RequestError(400, 'client-request-query-invalid')
+      const pending = requests.get(requestKey(member.id, document, query))
+      if (!pending) throw new RequestError(404, 'client-request-not-found')
+      if (!terminal(pending) && !pending.value.cancellationRequested) {
+        pending.value.cancellationRequested = true
+        clients.get(clientKey(member.id, query.clientId))?.send?.({ type: 'cancel', requestId: query.requestId, connectionId: pending.value.connectionId })
+      }
+      let actual: CanonicalSource | undefined
+      try { actual = current(document, member) } catch { /* Cancelling the caller's original request does not require a valid new source. */ }
       return readResult(pending, actual)
     },
   }
@@ -150,7 +173,7 @@ export function createAuthoringClients(editor: SourceEditor) {
     if (pending && Date.now() >= Date.parse(pending.value.expiresAt)) finish(pending, 'expired', 'client-request-timeout')
     if (!pending || terminal(pending) || pending.request.expectedClientState.connectionId !== lease.connectionId) throw new RequestError(409, 'client-request-expired')
     if (ack.state === 'executing' && pending.value.state !== 'sent' || ack.state === 'done' && pending.value.state !== 'executing') throw new RequestError(409, 'client-ack-state-invalid')
-    if ((ack.state === 'executing' || ack.state === 'done') && !sameSource(ack.snapshot.source, pending.request.source) && !(ack.state === 'done' && pending.request.action.type === 'source.flush' && ack.snapshot.source.documentId === pending.request.source.documentId)) throw new RequestError(409, 'client-source-changed')
+    if ((ack.state === 'executing' || ack.state === 'done') && !sameSource(ack.snapshot.source, pending.request.source) && !(ack.state === 'done' && authoringClientActionChangesSource(pending.request.action.type) && ack.snapshot.source.documentId === pending.request.source.documentId)) throw new RequestError(409, 'client-source-changed')
     const actual = ack.state === 'executing' || ack.state === 'done' ? current(document, member) : undefined
     if (ack.state === 'executing' && (ack.snapshot.revision !== pending.request.expectedClientState.revision || !actual || !sameSource(actual, pending.request.source))) throw new RequestError(409, 'client-state-changed')
     if (ack.state === 'done' && (!actual || !sameSource(actual, ack.snapshot.source))) throw new RequestError(409, 'client-source-changed')

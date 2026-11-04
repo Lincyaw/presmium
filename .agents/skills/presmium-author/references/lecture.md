@@ -13,6 +13,8 @@ a shorter clip) and the picture is ready. Loading or buffering holds the audio, 
 seeking prepares the target position through the same path. Check actual audible media, a later step and replay
 after going back, rather than treating a moving time display as proof of sound.
 
+Discover `production_enable` to add the production prerequisites once. `clone_voice` uses document-local sample and recorded-consent paths through the shared speech service; it requires owner permission and paid confirmation. If its reply is lost, read `get_voice_clone_status` for that engine and voice before deciding any further action.
+
 ## Open the saved version in the studio
 
 Use the document toolbar's presentation preview action after the authoring save is acknowledged. Preparation compiles the exact confirmed document and stays in the editor until compilation succeeds. Continue editing to cancel that transition; a late response must not take the author away from new input or another document. A compilation error leaves the document and draft intact with a readable failure.

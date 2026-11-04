@@ -1,5 +1,5 @@
-import { DOCUMENT_VOICE_CATALOG_SCHEMA, VOICEOVER_JOB_QUERY_SCHEMA, VOICEOVER_START_SCHEMA, VOICEOVER_STATUS_SCHEMA, VOICE_PREVIEW_CHECK_SCHEMA, VOICE_PREVIEW_START_SCHEMA } from '@lincyaw/kernel'
-import type { DocumentVoiceCatalogQuery, VoiceoverJobQuery, VoiceoverStart, VoiceoverStatusQuery, VoicePreviewCheck, VoicePreviewStart } from '@lincyaw/kernel'
+import { DOCUMENT_VOICE_CATALOG_SCHEMA, DOCUMENT_VOICE_CLONE_SCHEMA, DOCUMENT_VOICE_CLONE_QUERY_SCHEMA, VOICEOVER_JOB_QUERY_SCHEMA, VOICEOVER_START_SCHEMA, VOICEOVER_STATUS_SCHEMA, VOICE_PREVIEW_CHECK_SCHEMA, VOICE_PREVIEW_START_SCHEMA } from '@lincyaw/kernel'
+import type { DocumentVoiceCatalogQuery, DocumentVoiceCloneQuery, DocumentVoiceCloneRequest, VoiceCloneStatus, VoiceoverJobQuery, VoiceoverStart, VoiceoverStatusQuery, VoicePreviewCheck, VoicePreviewStart } from '@lincyaw/kernel'
 import type { Call, ToolSpec } from './mcp.ts'
 
 const document = { type: 'string', description: 'The served document directory.' }
@@ -11,13 +11,36 @@ const service = (call: Call) => {
 const language = async (call: Call, selected: string) => (await call.host.documents()).find(document => document.dir === selected)?.lang ?? ''
 export const VOICE_AUTHORING_TOOLS: ToolSpec[] = [
   {
+    name: 'get_voice_clone_status', kind: 'read', structured: true, workspace: 'author',
+    description: 'Reads the provider status of a cloned voice with its existing recorded consent. Requires owner access. This does not train a voice or synthesize audio. Use after an unknown clone acknowledgement; never blindly start training again.',
+    inputSchema: { ...DOCUMENT_VOICE_CLONE_QUERY_SCHEMA, properties: { document, ...DOCUMENT_VOICE_CLONE_QUERY_SCHEMA.properties } },
+    run: async call => {
+      const { document: _document, ...query } = call.args
+      return cloneResult(await service(call).cloneStatus!(await call.document(), query as unknown as DocumentVoiceCloneQuery, call.caller.member, call.signal))
+    },
+  },
+  {
+    name: 'clone_voice', kind: 'spend', structured: true, workspace: 'author',
+    description: 'Trains an owned voice slot from a sample and the speaker’s recorded consent statement, after spending approval. sample and consent.statement are audio file paths inside the selected document, each at most 10 MiB. Consent names the actual speaker and scope. The server fixes the original bytes before approval and records consent through the existing speech service. No automatic retry after a lost response; inspect clone status.',
+    inputSchema: { ...DOCUMENT_VOICE_CLONE_SCHEMA, properties: { document, ...DOCUMENT_VOICE_CLONE_SCHEMA.properties } },
+    run: async call => {
+      const selected = await call.document(), { document: _document, ...request } = call.args
+      const prepared = await service(call).prepareClone!(selected, request as unknown as DocumentVoiceCloneRequest, call.caller.member, call.signal)
+      try {
+        await call.approve('spend', messages => messages.cloneVoice(prepared.voice), { lang: await language(call, selected), detail: `${prepared.engine}: ${prepared.voice}` })
+        call.signal.throwIfAborted()
+        return cloneResult(await prepared.start(call.signal))
+      } finally { prepared.close() }
+    },
+  },
+  {
     name: 'get_voice_authoring_capabilities', kind: 'read', structured: true,
     description: 'Reads actual configured speech engines, default synthesis engine and installed voiceover/preview implementation for the canonical source. Configuration-only discovery does not verify provider authentication or generation success. No scene compilation or synthesis; compiler-only stdio reports host-unavailable.',
     inputSchema: { type: 'object', additionalProperties: false, properties: { document } },
     run: async call => {
       if (!call.host.voiceAuthoring) return { status: 'unavailable', reason: 'host-unavailable', voiceover: false, preview: false, engines: [], actions: { status: false, list: false, get: false, start: false, cancel: false, quotePreview: false, preview: false, readPreview: false } }
       const capability = await call.host.voiceAuthoring.capabilities(await call.document(), call.caller.member, call.signal)
-      return { ...capability, actions: { ...capability.actions, start: capability.actions.start && call.host.offers('spend'), preview: capability.actions.preview && call.host.offers('spend'), cancel: call.host.offers('operate') } }
+      return { ...capability, actions: { ...capability.actions, start: capability.actions.start && call.host.offers('spend'), preview: capability.actions.preview && call.host.offers('spend'), clone: capability.actions.clone && call.host.offers('spend'), cancel: call.host.offers('operate') } }
     },
   },
   {
@@ -91,3 +114,9 @@ export const VOICE_AUTHORING_TOOLS: ToolSpec[] = [
     },
   },
 ]
+
+function cloneResult(status: VoiceCloneStatus) {
+  return { engine: status.engine, voice: status.voice, state: status.state,
+    ...status.trainingsLeft !== undefined ? { trainingsLeft: status.trainingsLeft } : {},
+    ...status.state === 'failed' ? { error: 'voice-clone-failed' } : {} }
+}

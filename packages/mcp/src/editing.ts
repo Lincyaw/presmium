@@ -88,7 +88,7 @@ async function target(call: Call, opened: Awaited<ReturnType<typeof open>>, writ
     let after: string | undefined
     for (let page = 0; page < AUTHORING_CLIENT_MAX_CLIENTS; page++) {
       const report = await call.host.authoringClients.list(opened.document, after ? { after } : {}, call.caller.member)
-      for (const client of report.clients) if (client.connected && client.snapshot.view === 'document' && client.snapshot.position) {
+      for (const client of report.clients) if (client.connected && (client.snapshot.view === 'document' || client.snapshot.mode === 'production') && client.snapshot.position) {
         const key = JSON.stringify(client.snapshot.position)
         if (position && key !== position) throw Object.assign(new Error('editor-context-unavailable'), { status: 409 })
         position = key
