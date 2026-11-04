@@ -40,7 +40,7 @@
 8. **配音**：`node tools/voiceover.mjs <slug> --wait` 通过作者动作 `start_voiceover` 生成缺少的配音（Edge 的声音免费）。
 9. **对时**：`node tools/film.mjs timing <slug>` 量每步与总长（3:10 以内）；超长就删讲稿、重新配音；然后 `node tools/film.mjs retime <slug>` 把每个场景状态的时长换成真实配音的长度，动画节拍跟着句子走。
 10. **导出与复看**：`node tools/film.mjs export <slug>` 导出 MP4，`node tools/film.mjs frames <视频> <目录>` 生成每步的帧表；再请一个没参与制作的 agent 只看帧表和讲稿做冷读（`presmium-animate` 的 `references/team.md` 第 7 节），把发现与改动追加到 `storyboard.md` 的 J 节。
-11. **发布**：`pnpm build` 导出网站；成片复制到 `videos/<slug>.mp4`（连同字幕 `.zh-CN.vtt`）；提交文稿、场景、裁好的图、数据与 `derive.py`、配音缓存（`.presmium/speech/` 与 `speech.lock.json`，只留当前讲稿用到的条目）与成片。
+11. **发布**：`pnpm build` 导出网站；只提交源文件：文稿、场景、裁好的图、数据与 `derive.py`、配音缓存（`.presmium/speech/` 与 `speech.lock.json`，只留当前讲稿用到的条目）。成片不提交（每篇十几 MB），需要时用 `node tools/film.mjs export <slug>` 导出到 `<slug>/dist/`（已提交的配音缓存够用，不需要语音引擎与服务）。
 
 ## 运行服务
 
