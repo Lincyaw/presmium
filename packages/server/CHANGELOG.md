@@ -1,5 +1,14 @@
 # @lincyaw/server
 
+## 1.0.0-rc.42
+
+### Patch Changes
+
+- Updated dependencies [b93f5f3]
+  - @lincyaw/mcp@1.0.0-rc.42
+  - @lincyaw/compiler@1.0.0-rc.42
+  - @lincyaw/kernel@1.0.0-rc.42
+
 ## 1.0.0-rc.41
 
 ### Patch Changes

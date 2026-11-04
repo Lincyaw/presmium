@@ -1,5 +1,12 @@
 # @lincyaw/workbench
 
+## 0.2.0-rc.42
+
+### Patch Changes
+
+- @lincyaw/design@1.0.0-rc.42
+  - @lincyaw/kernel@1.0.0-rc.42
+
 ## 0.2.0-rc.41
 
 ### Patch Changes
