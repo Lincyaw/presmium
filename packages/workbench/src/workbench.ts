@@ -3,7 +3,7 @@ import { DocumentEditing } from './document-editing.ts'
 import { isAgentChanging } from './workbench-state.ts'
 import type { AgentAnswer, AgentDraft, AgentRequest, PlaybackKey, Pointer, PreviewSink, WebView, WorkbenchMode, WorkbenchState, WorkbenchStore } from './workbench-state.ts'
 import { enableDocumentProduction, randomUUID } from '@lincyaw/kernel'
-import type { ProjectOperation, ProjectPlan } from '@lincyaw/kernel'
+import type { ProjectOperation, ProjectPlan, AuthoringWindowSnapshot, AuthoringWindowAction, AuthoringWindowRequest, AuthoringWindowRequestResult } from '@lincyaw/kernel'
 import { CommentDraftBank } from './document-editor/comment-drafts.ts'
 import { ComponentPropertyDrafts } from './component-property-drafts.ts'
 import type { ComponentPropertyDraft } from './component-property-drafts.ts'
@@ -118,6 +118,7 @@ export class Workbench {
   #state: WorkbenchState
   readonly #listeners = new Set<Listener>()
   readonly #clientControls = new Set<AuthoringClientControls>()
+  readonly #navigationGuards = new Set<() => boolean>()
   readonly #clientControlListeners = new Set<Listener>()
   #clientControlRevision = 0
   readonly #commentDrafts = new CommentDraftBank()
@@ -307,6 +308,11 @@ export class Workbench {
     this.#clientControlRevision++
     for (const listener of this.#clientControlListeners) listener()
   }
+  /** A mounted native form owns any input/transaction that cannot safely leave its view. */
+  registerNavigationGuard(blocked: () => boolean): () => void {
+    this.#navigationGuards.add(blocked); this.refreshAuthoringClientControls()
+    return () => { this.#navigationGuards.delete(blocked); this.refreshAuthoringClientControls() }
+  }
   waitForAuthoringClientState(ready: () => boolean, signal: AbortSignal): Promise<void> {
     return new Promise((resolve, reject) => {
       const finish = (error?: unknown) => { stop(); stopControls(); signal.removeEventListener('abort', aborted); error ? reject(error) : resolve() }
@@ -437,7 +443,7 @@ export class Workbench {
     await this.operateDocument({ op: 'retitle', dir, title })
   }
 
-  async openDocument(dir: string, options: { focus?: 'body', expectedIdentity?: string, fallbackReturnPoint?: DocumentReturnPoint } = {}): Promise<void> {
+  async openDocument(dir: string, options: { focus?: 'body', expectedIdentity?: string, fallbackReturnPoint?: DocumentReturnPoint, signal?: AbortSignal } = {}): Promise<void> {
     if (this.#state.document === dir) {
       if (options.focus) { this.editing.beginOpening(dir, options.focus); this.editing.finishOpening() }
       return
@@ -452,9 +458,9 @@ export class Workbench {
     this.#record('document.open')
     this.#diagnostics.subscribe(dir)
     // Authoring is ready from source JSON; compilation and preview are independent.
-    const [opened] = await Promise.all([this.#documentSession.open(dir, options.expectedIdentity), this.#readFocus(dir), this.#history.read(dir)])
+    const [opened] = await Promise.all([this.#documentSession.open(dir, options.expectedIdentity, options.signal), this.#readFocus(dir, options.signal), this.#history.read(dir, options.signal)])
     if (opened === 'identity-changed' && scope === this.#documentScope && this.#state.document === dir) { this.closeDocument(); return }
-    this.editing.finishOpening()
+    if (scope === this.#documentScope && this.#state.document === dir) this.editing.finishOpening()
   }
 
   closeDocument(): void {
@@ -467,10 +473,10 @@ export class Workbench {
     void this.loadDocuments()
   }
 
-  async #readFocus(dir: string): Promise<void> {
+  async #readFocus(dir: string, signal?: AbortSignal): Promise<void> {
     const version = this.#focusVersion
     try {
-      const answer = await this.client.readFocus(dir)
+      const answer = await this.client.readFocus(dir, signal)
       if (this.#state.document === dir && version === this.#focusVersion) this.#set({ focus: answer.focus ?? [] })
     } catch {
     }
@@ -767,6 +773,64 @@ export class Workbench {
       && snapshot.version === binding.source.version && snapshot.fingerprint === binding.source.fingerprint && snapshot.project === (state.authoring?.projectRevision ?? 0)
       && state.previewIrRevision === binding.irRevision && state.webView === 'present' && state.previewRenderer === 'web'
       && !state.hasDocumentTimingDrafts && !state.documentTimingDraftStorageFailure)
+  }
+
+  /** Home is distinct from the root document, whose directory is the empty string. */
+  authoringWindowSnapshot(revision: number): AuthoringWindowSnapshot {
+    const state = this.#state, source = state.authoring
+    const recording = this.authoringClientSnapshot(0)?.recording
+    const guarded = !isAgentChanging(state) && !source?.composing && !source?.recovering && !state.isCreatingPage && !state.isEditingPage
+      && !state.isHistoryBusy && !state.isHistoryPreparing && !state.isPreparingPresentation && !state.hasDocumentTimingDrafts
+      && !this.#documentSession.hasPendingAssetWrite() && ![...this.#navigationGuards].some(blocked => blocked())
+      && !this.#previewModalOpen() && !(recording && (['requesting', 'recording', 'stopping'].includes(recording.phase) || recording.candidate && !recording.candidate.assetId))
+    return { revision, location: state.document === undefined ? { type: 'home' } : { type: 'document', document: state.document,
+      ...source?.directory === state.document && source.content ? { documentId: source.content.id } : {},
+      status: source?.directory !== state.document || source.loading ? 'loading' : source.content ? 'ready' : 'failed' },
+      actions: ['window.read', ...guarded ? ['document.open' as const, 'document.close' as const] : []] }
+  }
+
+  /** Uses the same native navigation and retained document actors; it never implicitly saves or discards. */
+  async executeAuthoringWindowAction(request: AuthoringWindowRequest, signal: AbortSignal): Promise<AuthoringWindowRequestResult['outcome']> {
+    const action = request.action
+    signal.throwIfAborted()
+    if (action.type === 'window.read') return 'observed'
+    const scope = this.#documentScope, content = this.#state.authoring?.content, identity = this.#state.authoring?.identity,
+      drafts = this.authoringDraftRevision(), view = this.#state.webView, playback = this.#state.productionNavigationVersion
+    const guard = () => {
+      signal.throwIfAborted()
+      if (scope !== this.#documentScope || identity !== this.#state.authoring?.identity || content !== this.#state.authoring?.content || drafts !== this.authoringDraftRevision()
+        || view !== this.#state.webView || playback !== this.#state.productionNavigationVersion || !this.authoringWindowSnapshot(0).actions.includes(action.type)) throw new Error('window-state-changed')
+    }
+    guard()
+    await waitForPreviewRequest(this.pausePlayback(), signal)
+    guard(); this.stopAuditions()
+    if (action.type === 'document.close') {
+      if (this.#state.document === undefined) return 'unchanged'
+      this.closeDocument(); return 'closed'
+    }
+    const target = request.target
+    if (!target || target.document !== action.document) throw new Error('window-target-changed')
+    const [answer, info] = await waitForPreviewRequest(Promise.all([this.client.readDocument(target.document, signal), this.client.readWorkbenchInfo()]), signal)
+    guard()
+    if (answer.document !== target.document || answer.content.id !== target.documentId || !info.root) throw new Error('window-target-changed')
+    if (this.#state.document === target.document && this.#state.authoring?.content?.id === target.documentId) return 'unchanged'
+    let navigationScope: number | undefined
+    const cancel = () => {
+      // A later human navigation owns its own scope. Never roll that view back.
+      if (navigationScope !== undefined && navigationScope === this.#documentScope && this.#state.document === target.document
+        && (this.#state.authoring?.loading || !this.#state.authoring?.content)) this.closeDocument()
+    }
+    signal.addEventListener('abort', cancel, { once: true })
+    try {
+      const opening = this.openDocument(target.document, { expectedIdentity: JSON.stringify([info.root, target.documentId]), signal })
+      navigationScope = this.#documentScope
+      await waitForPreviewRequest(opening, signal)
+      signal.throwIfAborted()
+      const location = this.authoringWindowSnapshot(0).location
+      if (navigationScope !== this.#documentScope || location.type !== 'document' || location.document !== target.document || location.documentId !== target.documentId
+        || location.status !== 'ready' || this.#state.authoring?.error) throw new Error('window-target-not-verified')
+      return 'opened'
+    } finally { signal.removeEventListener('abort', cancel) }
   }
 
   /** Bounded observations, without reading or publishing any unsubmitted editor content. */
@@ -1557,6 +1621,6 @@ export class Workbench {
     this.production.dispose()
     disposeTranscriptionSessions(this.client)
     disposeDocumentRecordings(this)
-    this.#clientControls.clear(); this.#clientControlListeners.clear()
+    this.#clientControls.clear(); this.#navigationGuards.clear(); this.#clientControlListeners.clear()
   }
 }

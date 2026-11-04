@@ -71,6 +71,7 @@ export interface WorkspaceClient {
   capabilities?: Readonly<WorkspaceCapabilities>
   subscribePreviewEvents?: PreviewEventSubscription
   openAuthoringClient?: AuthoringClientSubscription
+  openAuthoringWindow?: AuthoringWindowSubscription
   subscribeRequests?(listener: (event: WorkspaceRequestEvent) => void): () => void
   readDocuments(document?: string): Promise<DocumentsAnswer>
   planProjectChange(request: ProjectPlanRequest): Promise<ProjectPlan>
@@ -130,16 +131,16 @@ export interface WorkspaceClient {
   prefetchPreview(document: string, renderer: PreviewRenderer): Promise<PreviewAnswer>
   /** The MCP address and the workspace root, read once. */
   readWorkbenchInfo(): Promise<WorkbenchAnswer>
-  readFocus(document: string): Promise<FocusAnswer>
+  readFocus(document: string, signal?: AbortSignal): Promise<FocusAnswer>
   writeFocus(document: string, focus: FocusReport[]): Promise<FocusAnswer>
   subscribeReview(document: string, update: (event: ReviewUpdate) => void): () => void
   acceptReview(document: string, body: { reject?: string[], message?: string }): Promise<{ ended: ReviewEnd }>
   rejectReview(document: string, paths?: string[]): Promise<ReviewUpdate>
   restoreReview(document: string, step: string): Promise<{ review: ReviewSnapshot }>
-  readChanges(document: string): Promise<{ files: UncommittedFile[] }>
+  readChanges(document: string, signal?: AbortSignal): Promise<{ files: UncommittedFile[] }>
   commitChanges(document: string, message: string, paths?: string[]): Promise<unknown>
   discardChanges(document: string, paths?: string[]): Promise<unknown>
-  readRevisions(document: string, query?: import('@lincyaw/kernel').DocumentHistoryQuery): Promise<RevisionsAnswer>
+  readRevisions(document: string, query?: import('@lincyaw/kernel').DocumentHistoryQuery, signal?: AbortSignal): Promise<RevisionsAnswer>
   readHistoryFile(document: string, query: import('@lincyaw/kernel').DocumentHistoryRead): Promise<import('@lincyaw/kernel').DocumentHistoryFile>
   revertRevision(document: string, request: import('@lincyaw/kernel').DocumentHistoryChange): Promise<import('@lincyaw/kernel').DocumentHistoryChanged>
   /** Takes back the document's latest change; `expect` is the `undo` of the history read, refused when it is not the latest any more. */
@@ -170,9 +171,16 @@ export interface AuthoringClientChannel {
   close(): void
 }
 export type AuthoringClientSubscription = (document: string, open: import('@lincyaw/kernel').AuthoringClientOpen, received: (event: import('@lincyaw/kernel').AuthoringClientEvent) => void, failed: () => void) => AuthoringClientChannel
+export interface AuthoringWindowChannel {
+  publish(connectionId: string, report: import('@lincyaw/kernel').AuthoringWindowReport): Promise<void>
+  acknowledge(connectionId: string, report: import('@lincyaw/kernel').AuthoringWindowAcknowledgement): Promise<void>
+  close(): void
+}
+export type AuthoringWindowSubscription = (open: import('@lincyaw/kernel').AuthoringWindowOpen, received: (event: import('@lincyaw/kernel').AuthoringWindowEvent) => void, failed: () => void) => AuthoringWindowChannel
 export interface WorkspaceSubscription {
   (address: string, event: string, received: (data: string, event?: string) => void, failed?: () => void, ready?: () => void): () => void
   openAuthoringClient?: AuthoringClientSubscription
+  openAuthoringWindow?: AuthoringWindowSubscription
 }
 
 /** A remote host may add its CSRF header without replacing the page's global fetch. */
@@ -330,6 +338,7 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
   const projectIntents = new Map<string, { id: string, plan?: ProjectPlan }>()
   return client = {
     ...subscription?.openAuthoringClient ? { openAuthoringClient: subscription.openAuthoringClient } : {},
+    ...subscription?.openAuthoringWindow ? { openAuthoringWindow: subscription.openAuthoringWindow } : {},
     ...subscription ? { subscribePreviewEvents: ((target, received) => {
       const address = new URL(base, globalThis.document.baseURI)
       for (const [key, value] of Object.entries(target)) if (key !== 'topic') address.searchParams.set(key, value)
@@ -434,20 +443,20 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
       })
       return workbenchInfo
     },
-    readFocus: document => call(url('focus', document)),
+    readFocus: (document, signal) => call(url('focus', document), { signal }),
     writeFocus: (document, focus) => post(url('focus'), { document, focus }),
     subscribeReview: (document, update) => subscribe(url('review', document), 'review', update),
     acceptReview: (document, body) => post(url('review/accept', document), body),
     rejectReview: (document, paths) => post(url('review/reject', document), paths ? { paths } : {}),
     restoreReview: (document, step) => post(url('review/restore', document), { step }),
-    readChanges: document => call(url('changes', document)),
+    readChanges: (document, signal) => call(url('changes', document), { signal }),
     commitChanges: (document, message, paths) => post(url('changes/commit', document), { message, ...paths ? { paths } : {} }),
     discardChanges: (document, paths) => post(url('changes/discard', document), paths ? { paths } : {}),
     readJobs: document => call(url('jobs', document)),
     startJob: (document, target, source) => post(url('jobs', document), { target, source } satisfies StartJobRequest),
     cancelJob: (document, id) => post(url('jobs/cancel', document), { id }),
     subscribeJobs: (document, changed, failed, ready) => subscribe(url('jobs/events', document), 'job', changed, failed, ready),
-    readRevisions: (document, query = {}) => call(url('revisions', document, { query: JSON.stringify(query) })),
+    readRevisions: (document, query = {}, signal) => call(url('revisions', document, { query: JSON.stringify(query) }), { signal }),
     readHistoryFile: (document, query) => call(url('history/file', document, { query: JSON.stringify(query) })),
     revertRevision: (document, request) => post(url('revisions/revert', document), request),
     undo: (document, request) => post(url('history/undo', document), request),

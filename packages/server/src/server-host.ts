@@ -52,6 +52,7 @@ export interface ServerHost {
   authoring?: DocumentAuthoring
   documentHistory?: DocumentHistory
   authoringClients?: AuthoringClients
+  authoringWindows?: import('@lincyaw/kernel').AuthoringWindows
   audioAuthoring?: DocumentAudioAuthoring
   imageAuthoring?: DocumentImageAuthoring
   voiceAuthoring?: DocumentVoiceAuthoring

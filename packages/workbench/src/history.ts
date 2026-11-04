@@ -42,13 +42,13 @@ export class DocumentHistory {
     this.#review = undefined
   }
 
-  async read(dir: string): Promise<void> {
+  async read(dir: string, signal?: AbortSignal): Promise<void> {
     this.#offsets = [0]
     this.#page = 0
     const read = ++this.#reads, scope = this.#scope
     const current = () => this.#store.state.document === dir && read === this.#reads && scope === this.#scope
     try {
-      const [history, { files }] = await Promise.all([this.#client.readRevisions(dir), this.#client.readChanges(dir)])
+      const [history, { files }] = await Promise.all([this.#client.readRevisions(dir, undefined, signal), this.#client.readChanges(dir, signal)])
       if (current()) {
         const historyFailure = this.#store.state.historyFailure
         this.#store.set({ history, outside: files, ...this.#readFailure === historyFailure ? { historyFailure: undefined } : {} })

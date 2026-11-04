@@ -1,6 +1,8 @@
 import { createProjectAuthoring } from './projects.ts'
 import { createDocumentHistory } from './document-history.ts'
 import { createAuthoringClients } from './authoring-clients.ts'
+import { createAuthoringWindows } from './authoring-windows.ts'
+import { readAuthoringDocument } from './document-editor.ts'
 import { createDocumentCapture } from './capture.ts'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { stripVTControlCharacters } from 'node:util'
@@ -124,6 +126,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   let workspaceChanges: ReturnType<typeof createWorkspaceChanges> | undefined
   let projectAuthoring: ReturnType<typeof createProjectAuthoring> | undefined
   let authoringClients: ReturnType<typeof createAuthoringClients> | undefined
+  let authoringWindows: ReturnType<typeof createAuthoringWindows> | undefined
   let transcriptions: ReturnType<typeof createDocumentTranscriptions> | undefined
   let transcriptionAdoption: ReturnType<typeof createTranscriptionAdoption> | undefined
   let audioAuthoring: ReturnType<typeof createDocumentAudioAuthoring> | undefined
@@ -205,7 +208,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     authoringServicesClosed = true
     transcriptionAdoption?.close()
     for (const load of nodeServicePending) load.controller.abort()
-    await Promise.all([projectAuthoring?.close(), transcriptions?.close(), audioAuthoring?.close(), voiceAuthoring?.close(), documentHistory?.close(), authoringClients?.close(), workspaceRoutesOwner?.close?.()])
+    await Promise.all([projectAuthoring?.close(), transcriptions?.close(), audioAuthoring?.close(), voiceAuthoring?.close(), documentHistory?.close(), authoringClients?.close(), authoringWindows?.close(), workspaceRoutesOwner?.close?.()])
     await Promise.allSettled([...nodeServicePending].map(load => load.promise))
     nodeServiceLoads.clear()
   }
@@ -274,6 +277,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     get documentHistory() { return documentHistory?.service },
     get projectAuthoring() { return projectAuthoring?.service },
     get authoringClients() { return authoringClients?.service },
+    get authoringWindows() { return authoringWindows?.service },
     get audioAuthoring() { return audioAuthoring?.service },
     get imageAuthoring() { return imageAuthoring?.service },
     get voiceAuthoring() { return voiceAuthoring?.service },
@@ -399,6 +403,10 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   documentEditor = createDocumentEditor({ productionPlan: async (document, source) => { const audio = (await authoringServices(document, source)).audio; if (!audio) throw new RequestError(503, 'caption-production-unavailable'); return audio.readPlan({ source }) }, editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   projectAuthoring = createProjectAuthoring({ config, documentEditor, operations: history?.operations, revisions: history?.revisions, git: history?.git })
   authoringClients = createAuthoringClients(editor, { reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
+  authoringWindows = createAuthoringWindows((document, member) => {
+    if (!docs().some(value => value.dir === document)) throw new RequestError(404, 'window-target-unavailable')
+    return readAuthoringDocument(editor, { document, member }).content.id
+  })
   documentHistory = createDocumentHistory({ config, editor, locks, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required', changed: (before, after) => documentsChanged(documentsDiff(before, after)), reverted: (target, revision) => history?.agentSessionReviews.reverted(target, revision) })
   transcriptions = createDocumentTranscriptions({ root, editor, services: authoringServices })
   transcriptionAdoption = createTranscriptionAdoption({ documentEditor, transcriptions })
@@ -415,7 +423,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       audioAuthoringRoutes: audioAuthoring.routes,
       imageAuthoringRoutes: imageAuthoring.routes,
       historyRoutes: documentHistory.routes,
-      authoringClientRoutes: authoringClients.routes,
+      authoringClientRoutes: { ...authoringClients.routes, ...authoringWindows.routes },
       projectRoutes: projectAuthoring.routes,
       locks,
       ...history ? { revisions: history.revisions, operations: history.operations, reviews: history.agentSessionReviews } : {},

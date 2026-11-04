@@ -1,5 +1,5 @@
 import { applyDocumentCaptionTiming, changeDocumentCaptionScale, DOCUMENT_AUDIO_MAX_BYTES, randomUUID, replaceStepNarrations, sameProductionBinding, validateDocument } from '@lincyaw/kernel'
-import type { DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentCaptionTimingAction, DocumentChangeAnswer, DocumentRecordingAdoption, DocumentTranscriptionRequest, MediaClip, Narration, ProductionBinding, TeachingDocument, TranscriptionAdoptionAnswer, TranscriptionAdoptionApply, TranscriptionAdoptionDraft, TranscriptionAdoptionPlan, TranscriptionTask, VerifiedDocumentRecordingAdoption, VoiceSource } from '@lincyaw/kernel'
+import type { DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentCaptionTimingAction, DocumentChangeAnswer, DocumentRecordingAdoption, DocumentTranscriptionRequest, MediaClip, Narration, ProductionBinding, TeachingDocument, TimeRange, TranscriptionAdoptionAnswer, TranscriptionAdoptionApply, TranscriptionAdoptionDraft, TranscriptionAdoptionPlan, TranscriptionTask, VerifiedDocumentRecordingAdoption, VoiceSource } from '@lincyaw/kernel'
 import { isAgentChanging } from './workbench-state.ts'
 import type { WorkbenchStore } from './workbench-state.ts'
 import type { DocumentSession, DocumentSessionState } from './document-session.ts'
@@ -29,6 +29,7 @@ interface ProductionOptions {
   stopPreviewOutputs(): void
   sourceCurrent(binding: ProductionBinding): boolean
 }
+export interface RecordingRangeDraft { version: string, voice: Extract<VoiceSource, { type: 'recording' }>, range?: TimeRange, startText?: string, endText?: string }
 
 /** Source-bound media transactions, timing drafts and narration edits share the document actor. */
 export class DocumentProduction {
@@ -36,6 +37,7 @@ export class DocumentProduction {
   readonly #audioFingerprints = new WeakMap<File, Promise<string>>()
   readonly #documentTimingDrafts = new DocumentTimingDrafts()
   readonly #captionTimingDrafts = new CaptionTimingDrafts()
+  readonly #recordingRangeDrafts = new Map<string, Map<string, RecordingRangeDraft>>()
   readonly #removedCueTimings = new Map<string, { pauseMs: number }>()
   readonly #removedNarrations = new Map<string, { narration: Narration, override?: { narrationStart: 'with-animation' | 'after-animation' } }>()
   #cueTimingScope?: string
@@ -52,7 +54,13 @@ export class DocumentProduction {
     }
   }
   reset(): void { this.#removedCueTimings.clear(); this.#removedNarrations.clear(); this.#cueTimingScope = undefined }
-  dispose(): void { this.reset(); this.#captionTimingDrafts.close() }
+  dispose(): void { this.reset(); this.#captionTimingDrafts.close(); this.#recordingRangeDrafts.clear() }
+  /** Native pending range input survives mode and document changes within this workbench. */
+  recordingRangeDrafts(identity: string): Map<string, RecordingRangeDraft> {
+    let values = this.#recordingRangeDrafts.get(identity)
+    if (!values) { values = new Map(); this.#recordingRangeDrafts.set(identity, values) }
+    return values
+  }
 
   source(expected: { identity: string, version: string }): DocumentSessionState {
     const source = this.#options.store.state.authoring

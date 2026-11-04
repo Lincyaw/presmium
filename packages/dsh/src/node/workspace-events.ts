@@ -94,13 +94,15 @@ export function apply(ctx: EventContext): void {
           const current = () => !closed && !controller.signal.aborted && subscriptions.get(command.id) === entry
           void ctx.presmium.server.ready.then(endpoint => {
             if (!current()) return
-            if (command.topic === 'authoring-client') {
+            if (command.topic === 'authoring-client' || command.topic === 'authoring-window') {
+              const resource = command.topic === 'authoring-window' ? 'authoring-windows' : 'authoring-clients'
+              const documentQuery: Record<string, string> = command.topic === 'authoring-client' ? { document: command.document } : {}
               // Keep the client credential on the trusted host, off browser messages and MCP reads.
               let lease: AuthoringClientLease | undefined
               let publication: Promise<void> = Promise.resolve()
               let publications = 0
               const post = async (kind: string, value: unknown) => {
-                const path = `${WORKSPACE_ROUTES}authoring-clients/${kind}?${new URLSearchParams({ document: command.document })}`
+                const path = `${WORKSPACE_ROUTES}${resource}/${kind}?${new URLSearchParams(documentQuery)}`
                 const response = await ctx.presmium.server.request(path, { method: 'POST', body: value, signal: controller.signal })
                 if (!response.ok) throw new Error('client-publication-refused')
                 return response.json() as Promise<unknown>
@@ -120,8 +122,8 @@ export function apply(ctx: EventContext): void {
                 if (!current()) return
                 if (!validateAuthoringClientLease(value)) throw new Error('client-registration-invalid')
                 lease = value
-                const query = new URLSearchParams({ document: command.document, clientId: lease.clientId, epoch: lease.epoch, connectionId: lease.connectionId })
-                const path = `${WORKSPACE_ROUTES}authoring-clients/events?${query}`
+                const query = new URLSearchParams({ ...documentQuery, clientId: lease.clientId, epoch: lease.epoch, connectionId: lease.connectionId })
+                const path = `${WORKSPACE_ROUTES}${resource}/events?${query}`
                 source = new EventSource(new URL(path, endpoint.url), {
                   fetch: (_address, init) => ctx.presmium.server.request(path, { headers: { ...Object.fromEntries(new Headers(init?.headers)), 'X-Presmium-Authoring-Client': value.credential }, signal: init?.signal ? AbortSignal.any([controller.signal, init.signal]) : controller.signal }),
                 })

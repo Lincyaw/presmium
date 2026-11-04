@@ -12,6 +12,7 @@ const approvals = z.strictObject({ type: z.literal('subscribe'), id: subscriptio
 
 export const workspaceEventCommand = z.union([
   z.strictObject({ type: z.literal('subscribe'), id: subscriptionId, topic: z.literal('authoring-client'), document: z.string().max(1024), clientId: subscriptionId, epoch: subscriptionId, snapshot: z.unknown() }),
+  z.strictObject({ type: z.literal('subscribe'), id: subscriptionId, topic: z.literal('authoring-window'), clientId: subscriptionId, epoch: subscriptionId, snapshot: z.unknown() }),
   z.strictObject({ type: z.literal('authoring-client-publish'), id: subscriptionId, connectionId: subscriptionId, sequence: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER), kind: z.enum(['state', 'ack']), value: z.unknown() }),
   viewerSite, viewerControl, approvals,
   z.strictObject({ type: z.literal('subscribe'), id: subscriptionId, topic: z.enum(WORKSPACE_EVENT_TOPICS), document: z.string().max(1024) }),
@@ -26,6 +27,6 @@ export const workspaceEventMessage = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('event'), id: subscriptionId, event: z.string().max(40).optional(), data: z.string() }),
 ])
 
-export type WorkspaceEventTopic = typeof WORKSPACE_EVENT_TOPICS[number] | 'viewer-site' | 'viewer-control' | 'approvals' | 'authoring-client'
+export type WorkspaceEventTopic = typeof WORKSPACE_EVENT_TOPICS[number] | 'viewer-site' | 'viewer-control' | 'approvals' | 'authoring-client' | 'authoring-window'
 export type WorkspaceEventCommand = z.infer<typeof workspaceEventCommand>
 export type WorkspaceEventMessage = z.infer<typeof workspaceEventMessage>

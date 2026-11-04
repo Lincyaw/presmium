@@ -44,6 +44,7 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     get authoring() { return options.serverHost?.authoring },
     get documentHistory() { return options.serverHost?.documentHistory },
     get authoringClients() { return options.serverHost?.authoringClients },
+    get authoringWindows() { return options.serverHost?.authoringWindows },
     get audioAuthoring() { return options.serverHost?.audioAuthoring },
     get imageAuthoring() { return options.serverHost?.imageAuthoring },
     get voiceAuthoring() { return options.serverHost?.voiceAuthoring },

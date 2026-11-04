@@ -143,7 +143,7 @@ export class DocumentSession {
     this.#leaveTarget = target
   }
 
-  async open(directory: string, expectedIdentity?: string): Promise<'identity-changed' | void> {
+  async open(directory: string, expectedIdentity?: string, signal?: AbortSignal): Promise<'identity-changed' | void> {
     if (this.#active !== directory) this.interrupt()
     const opening = ++this.#opening
     this.#active = directory
@@ -152,7 +152,7 @@ export class DocumentSession {
     if (cached) { cached.read++; cached.state = { ...cached.state, loading: true } }
     this.#changed(cached ? { ...cached.state } : { directory, loading: true, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: [] })
     try {
-      const [info, answer] = await Promise.all([this.#client.readWorkbenchInfo(), this.#client.readDocument(directory)])
+      const [info, answer] = await waitForDraft(Promise.all([this.#client.readWorkbenchInfo(), this.#client.readDocument(directory, signal)]), signal)
       if (this.#active !== directory || opening !== this.#opening) return
       if (expectedIdentity !== undefined && JSON.stringify([info.root, answer.content.id]) !== expectedIdentity) return 'identity-changed'
       let slot = this.#slots.get(directory)
@@ -212,6 +212,7 @@ export class DocumentSession {
     if (this.#active === slot.state.directory && this.#slots.get(slot.state.directory) === slot) this.#changed({ ...slot.state })
   }
   bodyDraftRevision(): number { const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active); return slot?.drafts.revision ?? 0 }
+  hasPendingAssetWrite(): boolean { return Boolean(this.#active !== undefined && this.#slots.get(this.#active)?.assetFlight) }
   bodyDraftCapabilities(): { read: boolean, mutate: boolean, current: boolean } {
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
     const read = Boolean(slot?.state.identity && slot.state.content && slot.state.version && !slot.state.loading && !this.#disposed)

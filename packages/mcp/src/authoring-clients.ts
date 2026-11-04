@@ -3,11 +3,24 @@ import { randomUUID } from 'node:crypto'
 import { validateAuthoringClientRequest } from '@lincyaw/kernel/node'
 import type { AuthoringClients, AuthoringClientDescriptor, AuthoringClientAction, AuthoringClientRequestResult } from '@lincyaw/kernel'
 import type { Call, ToolSpec } from './mcp.ts'
+import { AUTHORING_WINDOW_ACTION_SCHEMA, AUTHORING_WINDOW_HANDLE_SCHEMA } from '@lincyaw/kernel'
+import type { AuthoringWindowAction, AuthoringWindowReference } from '@lincyaw/kernel'
+import { executeWindowAction, windowActionType, windowResult, windowService } from './window-actions.ts'
 
 const documentProperty = { type: 'string', maxLength: 200, description: 'Served document directory; empty string means the root document.' }
-const readSchema = (schema: typeof AUTHORING_CLIENT_QUERY_SCHEMA) => ({ ...schema, properties: { document: documentProperty, ...schema.properties as object } })
+const readSchema = (schema: typeof AUTHORING_CLIENT_QUERY_SCHEMA) => ({ ...schema, properties: { document: documentProperty, scope: { enum: ['document', 'workspace'] }, ...schema.properties as object } })
 const service = (call: Call): AuthoringClients => { if (!call.host.authoringClients) throw Object.assign(new Error('authoring-client-host-unavailable'), { status: 503 }); return call.host.authoringClients }
-const query = (call: Call) => { const { document: _document, ...value } = call.args; return value }
+const query = (call: Call) => { const { document: _document, scope: _scope, details: _details, ...value } = call.args; return value }
+const requestReadSchema = () => ({
+  type: 'object', additionalProperties: false,
+  properties: { ...readSchema(AUTHORING_CLIENT_REQUEST_QUERY_SCHEMA).properties, handle: AUTHORING_WINDOW_HANDLE_SCHEMA },
+  oneOf: [
+    { required: ['handle'], not: { anyOf: ['document', 'scope', 'clientId', 'epoch', 'requestId'].map(key => ({ required: [key] })) } },
+    { required: ['clientId', 'epoch', 'requestId'], not: { required: ['handle'] } },
+  ],
+})
+const windowQuery = (call: Call) => typeof call.args.handle === 'string' ? call.args.handle : query(call) as AuthoringWindowReference
+const isWindowQuery = (call: Call) => call.args.handle !== undefined || call.args.scope === 'workspace'
 async function bounded(call: Call, run: () => Promise<unknown>) {
   if (JSON.stringify(call.args).length > AUTHORING_CLIENT_MAX_REQUEST_CHARS) throw Object.assign(new Error('client-request-too-large'), { status: 413 })
   const answer = await run()
@@ -16,9 +29,10 @@ async function bounded(call: Call, run: () => Promise<unknown>) {
 }
 export const AUTHORING_CLIENT_TOOLS: ToolSpec[] = [
   { name: 'editor_action', kind: 'operate', structured: true, audience: 'external', workspace: 'author',
-    description: 'Requests one advertised browser action and waits briefly for its acknowledgement. Client source, connection, revision and playback binding are supplied internally. Omit clientId only when exactly one connected editor exists. A pending result is not completion; inspect its returned request reference without resending.',
+    description: 'Requests one advertised browser action and waits briefly for its acknowledgement. Client source, connection, revision and playback binding are supplied internally. window.read, document.open and document.close control the root window, including home, through an unbound external owner connection; omit the top-level document for these actions. Omit clientId only when exactly one connected editor exists. A pending result is not completion; inspect its returned request reference without resending.',
     inputSchema: { type: 'object', additionalProperties: false, properties: { document: documentProperty, clientId: { type: 'string', maxLength: 80 }, action: businessActionSchema(), details: { type: 'boolean' } }, required: ['action'] },
     run: call => bounded(call, async () => {
+      if (windowActionType((call.args.action as AuthoringWindowAction).type)) return executeWindowAction(call, call.args.action as AuthoringWindowAction)
       const document = await call.document(), own = service(call)
       const clients: AuthoringClientDescriptor[] = []
       let after: string | undefined
@@ -53,16 +67,23 @@ export const AUTHORING_CLIENT_TOOLS: ToolSpec[] = [
       return editorResult(result, { document, ...query })
     }) },
   { name: 'cancel_authoring_client_request', kind: 'operate', structured: true, workspace: 'author',
-    description: 'Requests cancellation of the caller’s exact browser request reference. It cannot run another browser action or cancel another member’s request. Returns cancellationRequested until a real browser acknowledgement or expiry; this does not claim a saved transaction was rolled back. Repeated cancellation never re-executes the action.',
-    inputSchema: readSchema(AUTHORING_CLIENT_REQUEST_QUERY_SCHEMA),
+    description: 'Requests cancellation using the exact returned request reference; window requests need only handle. It cannot run another browser action or cancel another member’s request. Returns cancellationRequested until a real browser acknowledgement or expiry; this does not claim a saved transaction was rolled back. Repeated cancellation never re-executes the action.',
+    inputSchema: requestReadSchema(),
     run: call => bounded(call, async () => {
+      if (isWindowQuery(call)) return windowResult(await windowService(call).cancel(windowQuery(call), call.caller.member))
       const document = await call.document(), own = service(call), reference = query(call) as { clientId: string, epoch: string, requestId: string }
       const result = await own.cancel!(document, reference, call.caller.member)
       return editorResult(result, { document, ...reference })
     }) },
-  { name: 'get_authoring_clients', kind: 'read', structured: true, inputSchema: readSchema(AUTHORING_CLIENT_QUERY_SCHEMA),
-    description: 'Reads bounded last reported state of actual Studio document clients, scoped to this document and member. No editor text, drafts, credentials or server-estimated playhead. Inspect connected, epoch, connectionId, snapshot.source/revision and actual actions; offline reports are observations, never current capability. Use nextAfter for additional clients. No clients means unavailable. No compilation, open-document or UI mode change. Request<=4096 JSON chars; result<=7168 pretty UTF16 chars.',
-    run: call => bounded(call, async () => service(call).list(await call.document(), query(call), call.caller.member)) },
+  { name: 'get_authoring_clients', kind: 'read', structured: true, inputSchema: { ...readSchema(AUTHORING_CLIENT_QUERY_SCHEMA), properties: { ...readSchema(AUTHORING_CLIENT_QUERY_SCHEMA).properties, details: { type: 'boolean' } } },
+    description: 'Reads bounded last reported Studio clients. Default scope is document. scope:workspace lists root windows, including home, for an unbound external owner; returns clientId, connected, location, actions, observedAt and pending handle. details:true includes transport metadata. No editor text, drafts or credentials; offline reports are observations, never current capability. Use nextAfter for additional clients. No clients means unavailable. No compilation, open-document or UI mode change. Request<=4096 JSON chars; result<=7168 pretty UTF16 chars.',
+    run: call => bounded(call, async () => {
+      if (call.args.scope !== 'workspace') return service(call).list(await call.document(), query(call), call.caller.member)
+      const report = await windowService(call).list(query(call), call.caller.member)
+      if (call.args.details) return report
+      return { ...report, clients: report.clients.map(client => ({ clientId: client.clientId, connected: client.connected, location: client.snapshot.location, actions: client.snapshot.actions, observedAt: client.observedAt,
+        ...client.pendingRequest ? { pending: { handle: client.pendingRequest.requestId, action: client.pendingRequest.action, ...client.pendingRequest.cancellationRequested ? { cancellationRequested: true } : {} } } : {} })) }
+    }) },
   { name: 'request_authoring_client', kind: 'operate', structured: true,
     inputSchema: { type: 'object', additionalProperties: false, properties: { document: documentProperty, request: AUTHORING_CLIENT_REQUEST_SCHEMA }, required: ['request'] },
     description: 'Advanced browser request with exact client/epoch, source, connection/revision and requestId; prefer editor_action for ordinary calls. Operate approval admits execution, not completion: inspect get_authoring_client_request for actual browser ACK. Only advertised actions execute. Draft inspect returns bounded metadata; draft read returns exact-reference UTF-16 JSON fragments with UTF-8 SHA-256; assemble before parsing. Restore preserves the current branch without submitting it. Body retry explicitly saves a current branch with strict canonical CAS; local body reads remain available when saved-source observations are stale. Required review refuses browser source writes. Use the action schema for family-specific references and confirmation. Cancellation does not roll back a saved transaction. Lost ACKs, changed input/source, disconnect and timeout never authorize automatic resubmission; identical requestId reads its retained receipt. Passive state never includes draft content.',
@@ -74,9 +95,9 @@ export const AUTHORING_CLIENT_TOOLS: ToolSpec[] = [
       call.signal.throwIfAborted()
       return service(call).request(document, request, call.caller.member)
     }) },
-  { name: 'get_authoring_client_request', kind: 'read', structured: true, inputSchema: readSchema(AUTHORING_CLIENT_REQUEST_QUERY_SCHEMA),
-    description: 'Reads this exact retained browser request receipt: sent/executing/done/refused/failed/expired. HTTP admission is not success. browser-acknowledged means an actual client observation; current additionally checks that client epoch/connection/state still matches. A stale completed receipt never describes a newly opened document. No action is re-dispatched by reading. Read the client again for subsequent commands; new-comment restore, active-comment discard, timing/recording-range drafts and other unwired families cannot be inferred from these explicit comment/component reads or playback.',
-    run: call => bounded(call, async () => service(call).get(await call.document(), query(call) as { clientId: string, epoch: string, requestId: string }, call.caller.member)) },
+  { name: 'get_authoring_client_request', kind: 'read', structured: true, inputSchema: requestReadSchema(),
+    description: 'Reads the exact returned request reference (window: handle only), without redispatching: sent/executing/done/refused/failed/expired. HTTP admission is not success. browser-acknowledged means an actual client observation; current additionally checks that client epoch/connection/state still matches. A stale completed receipt never describes a newly opened document. No action is re-dispatched by reading. Read the client again for subsequent commands; new-comment restore, active-comment discard, timing/recording-range drafts and other unwired families cannot be inferred from these explicit comment/component reads or playback.',
+    run: call => bounded(call, async () => isWindowQuery(call) ? windowResult(await windowService(call).get(windowQuery(call), call.caller.member)) : service(call).get(await call.document(), query(call) as { clientId: string, epoch: string, requestId: string }, call.caller.member)) },
 ]
 
 /** The browser owns the action schema. Only transport-owned playback bindings are omitted. */
@@ -86,6 +107,7 @@ function businessActionSchema() {
     if (variant.properties) delete variant.properties.binding
     if (Array.isArray(variant.required)) variant.required = variant.required.filter(key => key !== 'binding')
   }
+  schema.oneOf?.push(...structuredClone(AUTHORING_WINDOW_ACTION_SCHEMA).oneOf ?? [])
   return schema
 }
 function editorResult(result: AuthoringClientRequestResult, request: { document: string, clientId: string, epoch: string, requestId: string }) {

@@ -81,6 +81,15 @@ independent snapshots and never take focus or mode while editing.
   epoch and input revision. Source-changing actions also pin the canonical source. Admission is not completion; only the browser acknowledges. No MCP ACK tool,
   per-tab SSE, automatic compile or mode switch, or replay after disconnect. Passive state never contains
   draft content. See `docs/authoring-actions.md` section 11.
+- Root window navigation reuses `editor_action` and the existing authenticated WebSocket, with a
+  separate `AuthoringWindows` lifetime from document leases. Home is not the root document `""`.
+  Pin target UUID before approval and recheck before native adoption and done ACK; keep old document
+  ACK scope strict. Only an unbound, unconfirmed external owner can navigate. Keep transport fields
+  internal: compact pending handles resolve uniquely among the member's retained requests, never replay.
+  Native document slots retain body saves; the production owner retains recording range drafts by identity.
+  Composition, pending forms and asset writes block navigation; cancellation/human input retire pending
+  loads without overwriting a later human view. Verify real home/open/close, root directory, approval,
+  cancellation, multiple windows, disconnect and preservation of input during slow saves.
 - Body recovery uses `DocumentSession` and its native backup store through `editor_action`, with bounded
   metadata and explicit fragment reads. Local inspection/recovery/retirement stays available when the saved
   source observation is stale; only a real native read can restore saved content. Retry is a canonical write:

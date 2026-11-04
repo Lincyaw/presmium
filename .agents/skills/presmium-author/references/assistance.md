@@ -39,3 +39,12 @@ Expand an animation card's step captions/script area to edit canonical narration
 Preview compilation is independent. When it fails, retain valid document content, show readable diagnostics and identify the previous snapshot's version. Do not fix a preview by writing generated IR or silently replacing the authoring file with editor-private state.
 
 For agent changes, state the affected objects and intended result, inspect the actual diff and validate the same document. Never infer a paid provider capability from a prototype or silently synthesize narration while editing.
+
+For browser navigation, discover `editor_action` with `variant: "document.open"`, `"document.close"` or
+`"window.read"`. An unbound external workspace owner can open a served document from home using
+`action.document` (the root document is `""`); omit the top-level document. With several windows, choose
+`clientId` from `get_authoring_clients({scope: "workspace"})`. Its default list is compact; `details:true`
+is for transport diagnostics. A pending window result returns `{handle}`: pass it unchanged to
+`get_authoring_client_request` or `cancel_authoring_client_request`, never resend the action. Navigation
+uses native retained document state without implicitly saving or discarding drafts; composition, pending
+forms, recordings and asset writes can block it. A document-bound assistant cannot navigate other documents.

@@ -1,4 +1,4 @@
-import { connectAuthoringClient, localeOf, Workbench, workspaceClient } from '@lincyaw/workbench'
+import { connectAuthoringClient, connectAuthoringWindow, localeOf, Workbench, workspaceClient } from '@lincyaw/workbench'
 import type { Locale } from '@lincyaw/workbench'
 import { workspaceSubscriptions } from './workspace-events.ts'
 import { registerAuthorSettings } from './author-settings.ts'
@@ -55,6 +55,7 @@ export function apply(ctx: DshClientContext): void {
   const workbench = new Workbench({ client: workspaceClient('api/presmium/', workspaceSubscriptions(ctx)), locale: workbenchLocale(ctx.locale.getLocale().active) })
   workbench.client.openSpeechSettings = openSpeechSettings
   ctx.effect(() => connectAuthoringClient(workbench), 'presmium: authoring client control')
+  ctx.effect(() => connectAuthoringWindow(workbench), 'presmium: authoring window control')
   ctx.effect(() => runtimeDiagnostics(workbench).start(), 'presmium: runtime diagnostics')
   let showEditor = (layout: DshClientContext['layout']) => layout.selectPanel(FALLBACK_PANEL)
   registerSourceLinks(ctx, workbench, layout => showEditor(layout))

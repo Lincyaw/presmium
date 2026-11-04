@@ -1,6 +1,6 @@
 import { WebSocket } from 'partysocket'
 import type { WorkspaceSubscription } from '@lincyaw/workbench'
-import type { AuthoringClientAcknowledgement, AuthoringClientEvent, AuthoringClientReport } from '@lincyaw/kernel'
+import type { AuthoringClientEvent, AuthoringWindowEvent } from '@lincyaw/kernel'
 import { AUTHORING_CLIENT_REQUEST_TIMEOUT_MS } from '@lincyaw/kernel'
 import { WORKSPACE_EVENTS_PATH, workspaceEventMessage } from '../workspace-events.ts'
 import type { WorkspaceEventTopic, WorkspaceEventCommand } from '../workspace-events.ts'
@@ -89,7 +89,7 @@ export function workspaceSubscriptions(ctx: Pick<DshClientContext, 'effect'>): W
     const topic = TOPICS[name]
     const query = new URL(address).searchParams
     const document = query.get('document')
-    if (!topic || topic === 'authoring-client' || document === null) throw new Error('Invalid workspace event subscription.')
+    if (!topic || topic === 'authoring-client' || topic === 'authoring-window' || document === null) throw new Error('Invalid workspace event subscription.')
     const request: Subscription['request'] = topic === 'viewer-site'
       ? { type: 'subscribe', id: '', topic, document, app: query.get('app') ?? '', lang: query.get('lang') ?? '', form: query.get('form') === 'slides' ? 'slides' : 'web' }
       : topic === 'viewer-control' ? { type: 'subscribe', id: '', topic, document, window: query.get('window') ?? '' }
@@ -97,18 +97,20 @@ export function workspaceSubscriptions(ctx: Pick<DshClientContext, 'effect'>): W
     const reader: Subscription = { request, received, failed, ready }
     return add(reader)
   }
-  subscription.openAuthoringClient = (document, open, received, failed) => {
-    const reader: Subscription = { request: { type: 'subscribe', id: '', topic: 'authoring-client', document, ...open }, pending: new Map(), failed,
-      received(raw) { let event: AuthoringClientEvent; try { event = JSON.parse(raw) } catch { return }; if (event.type === 'connected') rejectPublications(reader); received(event) } }
+  const openControl = <Event extends { type: string }>(request: Subscription['request'], received: (event: Event) => void, failed: () => void) => {
+    const reader: Subscription = { request, pending: new Map(), failed,
+      received(raw) { let event: Event; try { event = JSON.parse(raw) } catch { return }; if (event.type === 'connected') rejectPublications(reader); received(event) } }
     const close = add(reader)
-    const publish = (kind: 'state' | 'ack', connectionId: string, report: AuthoringClientReport | AuthoringClientAcknowledgement) => new Promise<void>((resolve, reject) => {
+    const publish = (kind: 'state' | 'ack', connectionId: string, report: { sequence: number }) => new Promise<void>((resolve, reject) => {
       if (closed || !readers.has(reader) || !reader.id || socket.readyState !== WebSocket.OPEN || reader.pending!.has(report.sequence)) { reject(new Error('client-transport-disconnected')); return }
       // A lost publication receipt must release the queue without authorizing a repeated action.
       const timer = setTimeout(() => { reader.pending!.delete(report.sequence); reject(new Error('client-publication-timeout')) }, AUTHORING_CLIENT_REQUEST_TIMEOUT_MS / 2)
       reader.pending!.set(report.sequence, { resolve, reject, timer })
       socket.send(JSON.stringify({ type: 'authoring-client-publish', id: reader.id, connectionId, sequence: report.sequence, kind, value: report }))
     })
-    return { close, publish: (connectionId, report) => publish('state', connectionId, report), acknowledge: (connectionId, report) => publish('ack', connectionId, report) }
+    return { close, publish: (connectionId: string, report: { sequence: number }) => publish('state', connectionId, report), acknowledge: (connectionId: string, report: { sequence: number }) => publish('ack', connectionId, report) }
   }
+  subscription.openAuthoringClient = (document, open, received, failed) => openControl<AuthoringClientEvent>({ type: 'subscribe', id: '', topic: 'authoring-client', document, ...open }, received, failed)
+  subscription.openAuthoringWindow = (open, received, failed) => openControl<AuthoringWindowEvent>({ type: 'subscribe', id: '', topic: 'authoring-window', ...open }, received, failed)
   return subscription
 }

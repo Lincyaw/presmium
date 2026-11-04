@@ -45,7 +45,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 `presmium mcp` 的 stdio 连接也使用精简目录。已有客户端重新连接后按新目录查询动作；需要原有命名工具的 SDK 可显式连接 `/mcp?tools=all`。CLI `presmium mcp tools <工具>` 返回参数摘要，`--schema` 返回完整格式，`tools --all` 列出完整目录，`--json` 输出 JSON；`mcp call` 保留原命名工具调用。可信 dsh 宿主保留完整元数据，但给模型同一精简目录；解析真实目标及其原始 Schema 后，按 `presmium/workspace` 路由作者与候选工作区，并按目标的权限与审批元数据执行确认和审阅钩子。目标定义或绑定变化时拒绝旧调用，下一步请求前或空闲后重装模型目录。两种目录共享调用方权限，查询参数不会提升授权。
 
-`editor_action` 封装已接入的浏览器动作：只有一个已连接客户端时省略 `clientId`，服务端提供 source、连接版本与播放绑定，并短暂等待真实应答。多客户端要求明确选择；丢失应答不会自动重发。回执为 pending 时带现有请求引用，使用 `get_authoring_client_request` 查询，不把请求已接收当作执行完成。草稿的确切引用与恢复前提仍由调用方明确选择。 请求执行期间不再报告其他可执行动作；`cancel_authoring_client_request` 只取消同一调用方的确切请求，等待浏览器应答或超时，不宣称已保存的事务回滚。
+`editor_action` 封装已接入的浏览器动作：只有一个已连接客户端时省略 `clientId`，服务端提供 source、连接版本与播放绑定，并短暂等待真实应答。多客户端要求明确选择；丢失应答不会自动重发。回执为 pending 时带请求引用（窗口请求只有 `handle`），使用 `get_authoring_client_request` 查询，不把请求已接收当作执行完成。草稿的确切引用与恢复前提仍由调用方明确选择。 请求执行期间不再报告其他可执行动作；`cancel_authoring_client_request` 只取消同一调用方的确切请求，等待浏览器应答或超时，不宣称已保存的事务回滚。
 
 | 标识 | 来源 | 用途 |
 | --- | --- | --- |
@@ -242,7 +242,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 | 工具 | kind | 作用 |
 | --- | --- | --- |
-| `get_authoring_clients` | read | 客户端的 source、revision、位置、编辑状态与可用动作；不含未提交内容 |
+| `get_authoring_clients` | read | 默认读取文稿客户端；`scope: workspace` 读取窗口的位置与可用动作，不含未提交内容 |
 | `editor_action` | operate | 业务动作；连接与源校验由服务端提供 |
 | `cancel_authoring_client_request` | operate | 取消同一调用方确切的待执行请求，等待真实应答 |
 | `request_authoring_client` | operate | 指定 clientId、epoch、connectionId、客户端 revision、source、requestId 与动作 |
@@ -260,6 +260,18 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 - 正文 restore 选择非 current 备份，先严格保存原分支再恢复到原生编辑器，不自动保存或消除冲突。discard 带 `confirm: true`：current 恢复当前已保存正文，非 current 只退休选中的备份。retry 选择确切 current 引用，显式刷新并保存；服务端在确认前固定源版本，浏览器刷新与最终 CAS 都必须匹配该版本。并发刷新替换观察、输入变化、组词或来源变化时拒绝，不隐式换源重试。要求审阅的工作区拒绝 retry。
 - 正文 inspect、read、restore、discard 按同一成员、文稿、客户端连接与输入版本授权；即使保存源暂时失效或浏览器观察落后，仍可读取与退休本地备份。restore 与 current discard 另外需要原生入口成功读取保存源。只涉及本地草稿的完成回执不宣称服务端源已核验。取消会终止等待与未提交的恢复标记事务，已排队的作者备份仍保存；回执只报告实际 outcome、dirty、conflicted 与必要的备份状态。
 - `current` 是对该客户端的观察，不是跨窗口原子结论。主题、缩放、面板与播放头是客户端设置，不写进文稿。
+
+### 窗口与文稿导航
+
+窗口动作复用 `editor_action`：`window.read` 等待窗口现场应答，`document.open` 接受 `action.document`，`document.close` 返回首页。顶层 `document` 不用于这些动作；根文稿目录是空字符串，与首页不同。只有未绑定文稿、未预先确认的工作区所有者连接可调用，文稿内助手不能离开自身文稿。多个在线窗口必须明确传入 `clientId`。
+
+`AuthoringWindows` 与 `AuthoringClients` 的生命周期不同：窗口从首页到文稿切换一直在线，文稿租约在离开时退休。两者复用同一认证 WebSocket，窗口通道不带 CanonicalSource、不放宽原文稿 ACK。服务端在批准前固定目标文稿 UUID，提交、执行授权和完成应答时复查；同一路径换成另一份文稿会拒绝。浏览器完成原生打开并确认文稿身份后才返回 opened。
+
+`get_authoring_clients({scope: "workspace"})` 返回被动的最后报告：`clientId`、`connected`、`location`、`actions`、`observedAt` 与待执行请求的 `pending.handle`；`details: true` 才展开 epoch、connectionId 与 snapshot revision。被动观察与 `window.read` 的现场应答不相互替代。pending 回执只有 `{handle}`，直接交给既有查询或取消工具；它只能解析同一成员的已有回执，不授权重发。未知句柄拒绝，不唯一区分的句柄要求完整引用；完整的 scope/clientId/epoch/requestId 仍可用于调试，不能与 handle 混传。
+
+导航暂停播放并停止试听，调用工作台原生打开或关闭入口，不隐式保存、丢弃、恢复或编译。正文的原生文稿 actor 与后台保存继续归原文稿所有；录音范围输入由原 `DocumentProduction` 按文稿身份保留，切换后仍可继续 Apply。组词、未完成表单、待提交录音、素材写入与进行中的录音范围保存阻止导航。新的输入、人工导航、取消和断线中止待执行导航；已由作者切换到的新视图不会被旧请求覆盖。取消未完成的目标载入返回首页，已提交事务不回滚。
+
+窗口最多保留 16 个客户端与 64 个短期请求，请求 30 秒过期。同一请求 ID 只返回原回执；断线后不重放。`current` 只比较这一个连接最后报告的状态与原目标身份，不是跨窗口原子结论。
 
 ## 12. 历史、审阅与权限
 
