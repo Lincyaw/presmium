@@ -1,4 +1,4 @@
-import { authoringClientResultFits, randomUUID } from '@lincyaw/kernel'
+import { authoringClientActionMutatesDraft, authoringClientResultFits, randomUUID } from '@lincyaw/kernel'
 import type { AuthoringClientActionResult, AuthoringClientEvent, AuthoringClientSnapshot, CanonicalSource } from '@lincyaw/kernel'
 import type { Workbench } from './workbench.ts'
 import type { AuthoringClientChannel } from './workspace-client.ts'
@@ -83,7 +83,7 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
       controller.signal.throwIfAborted()
       if (closed || attached !== owner || owner.connectionId !== connectionId || active !== task || Date.now() >= Date.parse(event.expiresAt)) throw new Error('client-request-expired')
     }
-    if (active || value.revision !== request.expectedClientState.revision || !sameSource(value.source, request.source) || !value.actions.includes(request.action.type) || Date.now() >= Date.parse(event.expiresAt)) {
+    if (active || value.revision !== request.expectedClientState.revision || (request.action.type === 'body-drafts.retry' ? value.source.documentId !== request.source.documentId : !sameSource(value.source, request.source)) || !value.actions.includes(request.action.type) || Date.now() >= Date.parse(event.expiresAt)) {
       await send(owner, connectionId, value, { requestId: request.requestId, state: 'refused', error: { code: 'client-state-changed' } }).catch(() => {})
       return
     }
@@ -95,7 +95,7 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
       await send(owner, connectionId, value, { requestId: request.requestId, state: 'executing' })
       owned()
       const latest = snapshot()
-      if (!latest || latest.revision !== request.expectedClientState.revision || !sameSource(latest.source, request.source)) throw new Error('client-state-changed')
+      if (!latest || latest.revision !== request.expectedClientState.revision || (request.action.type === 'body-drafts.retry' ? latest.source.documentId !== request.source.documentId : !sameSource(latest.source, request.source))) throw new Error('client-state-changed')
       const fits = (result: AuthoringClientActionResult) => authoringClientResultFits({ request, connection: { clientId, epoch: owner.epoch, connectionId }, document: owner.directory, snapshot: snapshot() ?? value }, result)
       const actionResult = await workbench.executeAuthoringClientAction(request.action, request.source, controller.signal, expiresAt, fits)
       owned()
@@ -104,8 +104,8 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
       await send(owner, connectionId, result, { requestId: request.requestId, state: 'done', ...actionResult ? { result: actionResult } : {} }, actionResult ? () => {
         owned()
         const latest = snapshot()
-        if (!latest || latest.revision !== result.revision || !['component-drafts.restore', 'component-drafts.discard', 'comment-drafts.restore', 'comment-drafts.discard'].includes(actionResult.type) && latest.revision !== request.expectedClientState.revision) throw new Error(actionResult.family === 'component' ? 'client-component-drafts-changed' : 'client-comment-drafts-changed')
-        if (!fits(actionResult)) throw new Error(actionResult.family === 'component' ? 'client-component-result-too-large' : 'client-comment-result-too-large')
+        if (!latest || latest.revision !== result.revision || !authoringClientActionMutatesDraft(actionResult.type) && latest.revision !== request.expectedClientState.revision) throw new Error(`client-${actionResult.family}-drafts-changed`)
+        if (!fits(actionResult)) throw new Error(`client-${actionResult.family}-result-too-large`)
       } : undefined)
     } catch (error) {
       const result = snapshot()

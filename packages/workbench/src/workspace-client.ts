@@ -81,14 +81,14 @@ export interface WorkspaceClient {
   /** Saves a small set of files in one document with one version and rollback boundary. */
   saveSourceTransaction(document: string, changes: SourceTransactionChange[], message?: string): Promise<SourceTransactionAnswer>
   readIr(document: string): Promise<IrAnswer>
-  readDocument(document: string): Promise<DocumentAnswer>
+  readDocument(document: string, signal?: AbortSignal): Promise<DocumentAnswer>
   readAuthoringCapabilities(document: string, signal?: AbortSignal): Promise<AuthoringCapabilities>
   planDocumentAction(document: string, request: DocumentAuthoringActionRequest, signal?: AbortSignal): Promise<DocumentAuthoringActionPlan>
   readDocumentActionPlan(document: string, reference: DocumentAuthoringActionRead, signal?: AbortSignal): Promise<DocumentAuthoringActionInspection>
   applyDocumentAction(document: string, reference: DocumentAuthoringActionReference, signal?: AbortSignal): Promise<AppliedDocumentAuthoringAction>
   /** A same-origin display URL; the canonical asset location remains untouched. */
   documentAssetURL(document: string, assetId: string): string
-  changeDocument(document: string, change: DocumentChange): Promise<DocumentChangeAnswer>
+  changeDocument(document: string, change: DocumentChange, signal?: AbortSignal): Promise<DocumentChangeAnswer>
   importDocumentImage(document: string, file: File, change: DocumentImageImport, signal?: AbortSignal): Promise<DocumentImageImportAnswer>
   readDocumentAudio(document: string, assetId: string, baseDocumentVersion: string, signal?: AbortSignal): Promise<DocumentAudioInspectionAnswer>
   importDocumentAudio(document: string, file: File, change: DocumentAudioImport, signal?: AbortSignal): Promise<DocumentAudioImportAnswer>
@@ -359,13 +359,13 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     saveSource: (document, path, content, base, message) => post(url('source', document), { path, content, base, ...message ? { message } : {} }),
     saveSourceTransaction: (document, changes, message) => post(url('source/transaction', document), { changes, ...message ? { message } : {} }),
     readIr,
-    readDocument: document => call(url('document', document)),
+    readDocument: (document, signal) => call(url('document', document), { signal }),
     readAuthoringCapabilities: (document, signal) => call(url('document/capabilities', document), { signal }),
     planDocumentAction: (document, request, signal) => post(url('document/action/plan', document), request, signal),
     readDocumentActionPlan: (document, reference, signal) => call(url('document/action/plan', document, { planId: reference.planId, digest: reference.digest }), { signal }),
     applyDocumentAction: (document, reference, signal) => post(url('document/action/apply', document), reference, signal),
     documentAssetURL: (document, asset) => url('document/asset', document, { asset }),
-    changeDocument: (document, change) => post(url('document/change', document), change),
+    changeDocument: (document, change, signal) => post(url('document/change', document), change, signal),
     importDocumentImage: (document, file, change, signal) => {
       const body = new FormData()
       body.set('change', JSON.stringify(change)); body.set('file', file)

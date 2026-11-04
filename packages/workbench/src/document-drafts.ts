@@ -2,7 +2,7 @@ import { isRecord, randomUUID, validateDocument } from '@lincyaw/kernel'
 import type { TeachingDocument } from '@lincyaw/kernel'
 import { DocumentDraftStore } from './document-draft-store.ts'
 import { sha256 as tokenOf } from './sha256.ts'
-import type { DraftStoreCommit } from './document-draft-store.ts'
+import type { DraftStoreCommit, DraftStoreOperation } from './document-draft-store.ts'
 
 export interface DocumentDraftReference { id: string, revision: number, token: string }
 export interface DocumentDraft {
@@ -54,24 +54,28 @@ export class DocumentDrafts {
   #store?: DocumentDraftStore
   #identity?: string
   #closed = false
+  #revision = 0
+  get revision(): number { return this.#revision }
+  #touch(): void { if (!this.#closed) { this.#revision++; this.#changed?.() } }
   readonly #changed?: () => void
   constructor(changed?: () => void) { this.#changed = changed }
 
   #storage(identity: string): DocumentDraftStore | undefined {
     if (this.#closed || this.#identity !== undefined && this.#identity !== identity) return
     this.#identity = identity
-    return this.#store ??= new DocumentDraftStore(identity, this.#changed)
+    return this.#store ??= new DocumentDraftStore(identity, () => this.#touch())
   }
   matches(identity: string, key: string | null): boolean { return key === null || key.startsWith(prefix(identity)) || key.startsWith(markerPrefix(identity)) }
 
-  async read(identity: string, documentId: string): Promise<{ records: RecoverableDocumentDraft[], failed: boolean }> {
+  async read(identity: string, documentId: string, signal?: AbortSignal): Promise<{ records: RecoverableDocumentDraft[], failed: boolean }> {
+    signal?.throwIfAborted()
     const store = this.#storage(identity), values: { key: string, raw: unknown, source: 'durable' | 'rescue' }[] = []
     let failed = false, durable = new Map<string, unknown>()
     if (!store) return { records: [], failed: true }
     try {
-      durable = await store.read([prefix(identity), markerPrefix(identity)])
+      durable = await store.read([prefix(identity), markerPrefix(identity)], signal, signal ? 2048 : undefined)
       for (const [key, raw] of durable) if (key.startsWith(prefix(identity))) values.push({ key, raw, source: 'durable' })
-    } catch { failed = true }
+    } catch { signal?.throwIfAborted(); failed = true }
     // Existing localStorage input is never removed or silently treated as a strict commit.
     try {
       const keys: string[] = []
@@ -83,9 +87,10 @@ export class DocumentDrafts {
         const raw = localStorage.getItem(key)
         if (raw !== null) values.push({ key, raw, source: 'rescue' })
       }
-    } catch { failed = true }
+    } catch { signal?.throwIfAborted(); failed = true }
     const records = new Map<string, RecoverableDocumentDraft>()
     for (const { key, raw, source } of values) {
+      signal?.throwIfAborted()
       try {
         if (typeof raw !== 'string' || raw.length > MAX_CHARS) throw new Error('document-draft-size')
         const value: unknown = JSON.parse(raw)
@@ -101,8 +106,9 @@ export class DocumentDrafts {
         const id = JSON.stringify([value.id, value.revision, token])
         if (!records.has(id)) records.set(id, { ...draft, format: 2, identity, id: value.id, owner: value.owner, revision: value.revision, updatedAt: value.updatedAt, token, source,
           owned: source === 'durable' && value.owner === this.#owner && (this.#owned.get(value.id)?.raw === raw || store.owns(key, raw)) })
-      } catch { failed = true }
+      } catch { signal?.throwIfAborted(); failed = true }
     }
+    signal?.throwIfAborted()
     return { records: [...records.values()], failed }
   }
 
@@ -125,21 +131,25 @@ export class DocumentDrafts {
     const commit = this.#store!.put(keyOf(identity, next.record.id), next.raw)
     if (!commit) return
     this.#owned.set(next.record.id, { identity, revision: next.record.revision, raw: next.raw })
+    void commit.done.then(() => this.#touch())
     if (previous && previous.id !== next.record.id) this.archive(previous)
     return { ...commit, record: next.record, clearing: false }
   }
 
-  async fork(identity: string, draft: DocumentDraft): Promise<StoredDocumentDraft | undefined> {
+  async fork(identity: string, draft: DocumentDraft, operation?: DraftStoreOperation): Promise<StoredDocumentDraft | undefined> {
     const next = this.#record(identity, draft)
-    if (!next || !await this.#store!.create(keyOf(identity, next.record.id), next.raw)) return
+    if (!next || !await this.#store!.create(keyOf(identity, next.record.id), next.raw, operation)) return
     this.#owned.set(next.record.id, { identity, revision: next.record.revision, raw: next.raw })
+    this.#touch()
     return next.record
   }
 
   /** Immutable, revision-specific markers never delete another tab's newer record. */
-  async settle(identity: string, values: readonly DocumentDraftReference[]): Promise<boolean> {
+  async settle(identity: string, values: readonly DocumentDraftReference[], operation?: DraftStoreOperation): Promise<boolean> {
     const store = this.#storage(identity)
-    return Boolean(store && await store.mark(values.map(value => [settledKey(identity, value), value.token])))
+    const done = Boolean(store && await store.mark(values.map(value => [settledKey(identity, value), value.token]), operation))
+    if (done) this.#touch()
+    return done
   }
 
   remove(identity: string, record: StoredDocumentDraft, origins: readonly DocumentDraftReference[]): DocumentDraftCommit | undefined {
@@ -147,7 +157,7 @@ export class DocumentDrafts {
     if (!store || !owned || owned.identity !== identity || record.owner !== this.#owner || owned.revision !== record.revision) return
     const commit = store.remove(keyOf(identity, record.id), origins.map(value => [settledKey(identity, value), value.token]))
     if (!commit) return
-    void commit.done.then(result => { if (result === 'committed' && this.#owned.get(record.id)?.revision === record.revision) this.#owned.delete(record.id) })
+    void commit.done.then(result => { if (result === 'committed' && this.#owned.get(record.id)?.revision === record.revision) this.#owned.delete(record.id); this.#touch() })
     return { ...commit, record, clearing: true }
   }
 

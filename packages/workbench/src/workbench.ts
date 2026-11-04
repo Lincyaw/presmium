@@ -12,6 +12,7 @@ import { applyDocumentComponentAction, documentComponentSection, effectiveCompon
 import type { DocumentAuthoringActionPlan, DocumentComponentAction, AppliedDocumentAuthoringAction } from '@lincyaw/kernel'
 import { inspectCommentDrafts } from './document-editor/comment-draft-inspection.ts'
 import { mutateCommentDrafts } from './document-editor/comment-draft-actions.ts'
+import { executeBodyDraftAction } from './body-draft-actions.ts'
 import { inspectComponentDrafts } from './component-draft-inspection.ts'
 import { mutateComponentDrafts } from './component-draft-actions.ts'
 import { DocumentSession } from './document-session.ts'
@@ -290,7 +291,7 @@ export class Workbench {
   /** Only counters enter passive client state; no new form payload is exposed to MCP. */
   authoringDraftRevision(): string {
     const source = this.#state.authoring
-    return JSON.stringify([this.authoringCommentDraftRevision(), source?.identity && source.member?.id ? this.#componentPropertyDrafts.revision(source.identity, source.member.id) : 0, this.#clientControlRevision])
+    return JSON.stringify([this.#documentSession.bodyDraftRevision(), this.authoringCommentDraftRevision(), source?.identity && source.member?.id ? this.#componentPropertyDrafts.revision(source.identity, source.member.id) : 0, this.#clientControlRevision])
   }
   subscribeAuthoringDraftChanges(listener: () => void): () => void {
     const comments = this.#commentDrafts.subscribe(listener), properties = this.#componentPropertyDrafts.subscribe(listener)
@@ -779,15 +780,16 @@ export class Workbench {
     const plan = state.productionPlan, playback = state.productionPlayback
     const ready = clean && plan?.canPreview && this.#productionReady() && playback?.status === 'ready' && sameProductionBinding(plan.binding, playback.binding)
     const position = state.position, page = position && content.sections[position.section]
+    const bodyDrafts = this.#documentSession.bodyDraftCapabilities()
     const commentDrafts = source.member?.id ? this.#commentDrafts.peek(source.identity, source.member.id) : undefined
-    const prepared = state.presentationSnapshot, actual = { documentId: content.id, version: source.version, fingerprint: source.fingerprint }
+    const prepared = state.presentationSnapshot, actual = this.#documentSession.canonicalSource() ?? { documentId: content.id, version: source.version, fingerprint: source.fingerprint }
     const preparedCurrent = clean && prepared && prepared.version === source.version && prepared.fingerprint === source.fingerprint && prepared.project === (source.projectRevision ?? 0)
       && state.ir?.revision === prepared.revision && state.ir.doc.source?.version === source.version && state.ir.doc.source.fingerprint === source.fingerprint
     const controls = [...this.#clientControls].filter(owner => owner.identity === source.identity)
     const advertised = controls.flatMap(owner => owner.actions()), unique = advertised.filter((type, index) => advertised.indexOf(type) === index && advertised.lastIndexOf(type) === index)
     const reported = controls.map(owner => owner.snapshot?.()).filter(value => value !== undefined)
     const mode = reported.find(value => value.mode)?.mode, recording = reported.find(value => value.recording)?.recording
-    return { revision, source: { documentId: content.id, version: source.version, fingerprint: source.fingerprint }, view: state.webView, editing,
+    return { revision, source: actual, view: state.webView, editing,
       ...mode ? { mode } : {}, ...recording ? { recording } : {},
       interaction: state.documentPositionToken,
       ...page && position ? { position: { sectionId: page.id, ...page.stepOrder[position.step] ? { stepId: page.stepOrder[position.step] } : {} } } : {},
@@ -798,6 +800,9 @@ export class Workbench {
         ...safe && state.mode === 'editing' && state.editorHistory?.undo ? ['native-history.undo' as const] : [],
         ...safe && state.mode === 'editing' && state.editorHistory?.redo ? ['native-history.redo' as const] : [],
         ...unique,
+        ...bodyDrafts.read ? ['body-drafts.inspect' as const, 'body-drafts.read' as const] : [],
+        ...bodyDrafts.mutate && !locked && !state.isCreatingPage && !state.isEditingPage && !state.isHistoryBusy && !state.isHistoryPreparing && !state.hasDocumentTimingDrafts
+          ? ['body-drafts.restore' as const, 'body-drafts.discard' as const, ...bodyDrafts.current ? ['body-drafts.retry' as const] : []] : [],
         ...commentDrafts?.readable ? ['comment-drafts.inspect' as const, 'comment-drafts.read' as const] : [],
         ...clean && !state.isHistoryBusy && !state.isHistoryPreparing && commentDrafts?.readable && commentDrafts.ownersKnown ? ['comment-drafts.discard' as const, ...state.webView === 'document' && commentDrafts.hasRestoreComposer() ? ['comment-drafts.restore' as const] : []] : [],
         ...source.member?.id && this.#componentPropertyDrafts.readable(source.identity, source.member.id) ? ['component-drafts.inspect' as const, 'component-drafts.read' as const] : [],
@@ -811,7 +816,7 @@ export class Workbench {
   async executeAuthoringClientAction(action: AuthoringClientAction, expected: CanonicalSource, signal: AbortSignal, deadline?: number, fits?: (result: AuthoringClientActionResult) => boolean): Promise<void | AuthoringClientActionResult> {
     const scope = this.#documentScope, identity = this.#state.authoring?.identity, document = this.#state.document, interaction = this.#state.documentPositionToken
     const owned = () => { signal.throwIfAborted(); if (scope !== this.#documentScope || identity !== this.#state.authoring?.identity || document !== this.#state.document) throw new Error('client-document-changed') }
-    const current = () => { owned(); const state = this.authoringClientSnapshot(0); if (!state || !sameSource(state.source, expected) || !state.actions.includes(action.type)) throw new Error('client-action-unavailable'); return state }
+    const current = () => { owned(); const state = this.authoringClientSnapshot(0); if (!state || (action.type === 'body-drafts.retry' ? state.source.documentId !== expected.documentId : !sameSource(state.source, expected)) || !state.actions.includes(action.type)) throw new Error('client-action-unavailable'); return state }
     current()
     if (action.type === 'state.read') return
     if (action.type === 'native-history.undo' || action.type === 'native-history.redo') {
@@ -826,6 +831,15 @@ export class Workbench {
       owned()
       if (!this.#clientControls.has(control)) throw new Error('client-action-unavailable')
       return
+    }
+    if (action.type === 'body-drafts.inspect' || action.type === 'body-drafts.read' || action.type === 'body-drafts.restore' || action.type === 'body-drafts.discard' || action.type === 'body-drafts.retry') {
+      if (!identity || !fits) throw new Error('client-body-drafts-unavailable')
+      const guard = () => {
+        owned()
+        const actual = this.#documentSession.canonicalSource()
+        if (!actual || actual.documentId !== expected.documentId || action.type !== 'body-drafts.inspect' && action.type !== 'body-drafts.read' && isAgentChanging(this.#state)) throw new Error('client-source-changed')
+      }
+      return executeBodyDraftAction(this.#documentSession, () => this.#state.authoring, action, { signal, guard, source: expected, ...action.type !== 'body-drafts.retry' ? { localDraft: true as const } : {} }, fits)
     }
     if (action.type === 'comment-drafts.inspect' || action.type === 'comment-drafts.read') {
       const drafts = identity ? this.documentCommentDrafts(identity) : undefined
@@ -1074,9 +1088,9 @@ export class Workbench {
   recordDocument(content: TeachingDocument): void { if (!isAgentChanging(this.#state)) this.#documentSession.record(content) }
   documentComposition(composing: boolean, owner = 'body', identity?: string): void { this.#documentSession.composition(composing, owner, identity) }
   retryDocument(): Promise<void> { return this.#documentSession.retry() }
-  discardDocument(): Promise<void> { return this.#documentSession.discard() }
+  discardDocument(): Promise<void> { return this.#documentSession.discard().then(() => {}) }
   recoverDocumentDraft(value: DocumentDraftReference, identity: string): Promise<void> {
-    return this.#state.authoring?.identity === identity && !isAgentChanging(this.#state) ? this.#documentSession.recoverDraft(value) : Promise.resolve()
+    return this.#state.authoring?.identity === identity && !isAgentChanging(this.#state) ? this.#documentSession.recoverDraft(value).then(() => {}) : Promise.resolve()
   }
   forgetDocumentDraft(value: DocumentDraftReference, identity: string): void {
     if (this.#state.authoring?.identity === identity && !isAgentChanging(this.#state)) void this.#documentSession.forgetDraft(value)

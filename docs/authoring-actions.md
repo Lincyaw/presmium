@@ -246,14 +246,17 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 | `request_authoring_client` | operate | 指定 clientId、epoch、connectionId、客户端 revision、source、requestId 与动作 |
 | `get_authoring_client_request` | read | sent、executing、done、refused、failed、expired，及浏览器观察与 `current` |
 
-动作清单是 `AUTHORING_CLIENT_ACTIONS`（`kernel/src/contracts/authoring-clients.ts`）：`state.read`、`source.flush`、`preview.prepare`、`playback.pause/play/seek/rate`、`position.step`，`view.set`、`native-history.undo/redo`、`recording.start/stop/cancel/discard/save/listen/pause`，以及 `comment-drafts.*` 与 `component-drafts.*` 的 inspect、read、restore、discard。
+动作清单是 `AUTHORING_CLIENT_ACTIONS`（`kernel/src/contracts/authoring-clients.ts`）：`state.read`、`source.flush`、`preview.prepare`、`playback.pause/play/seek/rate`、`position.step`，`view.set`、`native-history.undo/redo`、`recording.start/stop/cancel/discard/save/listen/pause`，以及 `body-drafts.*`、`comment-drafts.*` 与 `component-drafts.*` 的 inspect、read、restore、discard；正文另有 `body-drafts.retry`。
 
 - 客户端执行前报告 executing，服务端确认该连接仍拥有请求；断线、来源变化或超时都不授权执行。请求 30 秒过期，同 requestId 只读原回执；丢失回执先 `state.read`，不换 requestId 重试。
 - `source.flush` 只等待当前 source actor 保存；组词、冲突或锁定时不开放。
 - 定位与播放先暂停，不切模式、不编译；播放只面向已准备的 `ProductionBinding`。
 - `preview.prepare` 显式编译并准备已保存源，不合成或播放；编辑未保存或有模态框时不开放。
-- 草稿 inspect 只返回元数据；read 按第 4 节分片，带完整 UTF-8 SHA-256，格式为 `presmium-rich-text-json-v1`（批注）或 `presmium-component-parameters-json-v1`（组件属性）。当前内存稿遮蔽同 ID 的旧存储。
-- restore 带候选引用与 `expectedCurrent`，先备份当前稿再分出新分支；恢复不提交，仍由作者 Save 或 Apply。discard 只退休选中的备份。
+- 草稿 inspect 每页最多 10 项，只返回元数据；read 按第 4 节分片，带完整 UTF-8 SHA-256，格式为 `presmium-document-json-v1`（正文）、`presmium-rich-text-json-v1`（批注）或 `presmium-component-parameters-json-v1`（组件属性）。当前内存稿遮蔽同 ID 的旧存储。
+- 批注与组件属性的 restore 带候选引用与 `expectedCurrent`，先备份当前稿再分出新分支；恢复不提交，仍由作者 Save 或 Apply。discard 只退休选中的备份。
+- 正文动作复用当前 `DocumentSession` 与原生备份库。inspect 返回单个不透明的确切分支引用、`current` 标记、存储状态、基线版本、组词与待提交状态；`baseObserved` 只比较浏览器上次观察的保存版本。存储读取不完整时报告 `coverage: partial`。read 必须显式选择引用；被动状态与 inspect 都不带正文。
+- 正文 restore 选择非 current 备份，先严格保存原分支再恢复到原生编辑器，不自动保存或消除冲突。discard 带 `confirm: true`：current 恢复当前已保存正文，非 current 只退休选中的备份。retry 选择确切 current 引用，显式刷新并保存；服务端在确认前固定源版本，浏览器刷新与最终 CAS 都必须匹配该版本。并发刷新替换观察、输入变化、组词或来源变化时拒绝，不隐式换源重试。要求审阅的工作区拒绝 retry。
+- 正文 inspect、read、restore、discard 按同一成员、文稿、客户端连接与输入版本授权；即使保存源暂时失效或浏览器观察落后，仍可读取与退休本地备份。restore 与 current discard 另外需要原生入口成功读取保存源。只涉及本地草稿的完成回执不宣称服务端源已核验。取消会终止等待与未提交的恢复标记事务，已排队的作者备份仍保存；回执只报告实际 outcome、dirty、conflicted 与必要的备份状态。
 - `current` 是对该客户端的观察，不是跨窗口原子结论。主题、缩放、面板与播放头是客户端设置，不写进文稿。
 
 ## 12. 历史、审阅与权限
@@ -324,7 +327,7 @@ agent 的循环：探测能力 → 读源 → 预检 → 提交或开始任务 �
 - 统一任务接口、事件游标与跨重启的意图账本。
 - 远程上传素材；MCP 只导入工作区内已有文件。
 - 步骤的新建、重排与删除动作，共享讲稿的分离编辑，独立组件实现副本。
-- 项目恢复、任意 checkout 或 discard；未提交文件的提交与丢弃尚未接入 MCP。
+- 任意 checkout；选中文件的提交与丢弃使用第 12 节的共享未提交修改入口。
 - 新建批注 composer 的草稿恢复，其它未接入表单的草稿。
 - 原音与新讲稿的自动词对齐、跨步连续分配原音、只转写所选区间。
 - 通用 `plan_document_change`、`apply_document_change` 的大文稿输入没有预算（它们的结果不带文稿，用 `read_document_part` 读取）；agent 优先用页面与语义动作。

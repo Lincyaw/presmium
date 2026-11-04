@@ -70,11 +70,19 @@ independent snapshots and never take focus or mode while editing.
   compile step or tool adapter with its own queue. Unimplemented actions are not advertised. Tools, budgets
   and receipts: `docs/authoring-actions.md` sections 2 to 10.
 - `rename_page` and `edit_document` compose the existing read/plan/check/apply owner in one MCP call. Keep the operation schema derived from the kernel schema and CLI introspection derived from live tools/list. The owner's credential authorizes canonical editing only; execution, paid tools and browser control retain their policy. Return actual saved-source readback and bounded client-reported editor/preview state separately. Do not add automatic compilation or turn pending editor feedback into a failed save or another write. Simple edits use their receipt; checks and captures follow the task scope.
-- Browser-only MCP actions (`preview.prepare`, `source.flush`, comment and component-property draft reads)
-  go over the shared workspace WebSocket to the `AuthoringClients` owner and need exact source, client
-  epoch and input revision. Admission is not completion; only the browser acknowledges. No MCP ACK tool,
+- Browser-only MCP actions (`preview.prepare`, `source.flush`, body, comment and component-property drafts)
+  go over the shared workspace WebSocket to the `AuthoringClients` owner and need exact client
+  epoch and input revision. Source-changing actions also pin the canonical source. Admission is not completion; only the browser acknowledges. No MCP ACK tool,
   per-tab SSE, automatic compile or mode switch, or replay after disconnect. Passive state never contains
   draft content. See `docs/authoring-actions.md` section 11.
+- Body recovery uses `DocumentSession` and its native backup store through `editor_action`, with bounded
+  metadata and explicit fragment reads. Local inspection/recovery/retirement stays available when the saved
+  source observation is stale; only a real native read can restore saved content. Retry is a canonical write:
+  pin the source internally before approval, reject a superseded refresh, check the actor base again before
+  CAS, and never rebase/retry the same MCP request against a newer source. Preserve human input during a
+  slow save and keep recovery gates on failure. Cancellation aborts pending guarded storage mutations;
+  author backups queued independently still finish. Required review refuses retry. Verify actual browser
+  recovery, fragment paging, blocked storage cancellation, refresh/save conflicts and continuing input.
 - Comments use native rich-text ranges with stable unit IDs and offsets; cross-block selection uses the
   editor's public APIs, not DOM `selectionchange`. The editor's Y.Doc is not storage. Web and MCP share the
   pure comment actions; owner and editor permissions apply in both. Reply and edit drafts are backed up by

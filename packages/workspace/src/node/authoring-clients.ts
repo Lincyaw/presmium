@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID, createHash } from 'node:crypto'
-import { AUTHORING_CLIENT_ACK_MAX_BYTES, AUTHORING_CLIENT_MAX_CLIENTS, AUTHORING_CLIENT_MAX_REQUESTS, AUTHORING_CLIENT_MAX_REQUEST_CHARS, AUTHORING_CLIENT_MAX_RESPONSE_CHARS, AUTHORING_CLIENT_REQUEST_TIMEOUT_MS, authoringClientActionChangesSource, authoringClientResultFits, DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, problemResponse, pushStream, sseResponse } from '@lincyaw/kernel'
+import { AUTHORING_CLIENT_ACK_MAX_BYTES, AUTHORING_CLIENT_MAX_CLIENTS, AUTHORING_CLIENT_MAX_REQUESTS, AUTHORING_CLIENT_MAX_REQUEST_CHARS, AUTHORING_CLIENT_MAX_RESPONSE_CHARS, AUTHORING_CLIENT_REQUEST_TIMEOUT_MS, authoringClientActionChangesSource, authoringClientActionMutatesDraft, authoringClientActionUsesLocalDraft, authoringClientResultFits, DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, problemResponse, pushStream, sseResponse } from '@lincyaw/kernel'
 import type { AuthoringClientAcknowledgement, AuthoringClientConnection, AuthoringClientDescriptor, AuthoringClientEvent, AuthoringClientLease, AuthoringClientOpen, AuthoringClientReport, AuthoringClientRequest, AuthoringClientRequestResult, AuthoringClients, CanonicalSource, Member, PushStream, Route } from '@lincyaw/kernel'
 import { validateAuthoringClientAcknowledgement, validateAuthoringClientLease, validateAuthoringClientOpen, validateAuthoringClientQuery, validateAuthoringClientReport, validateAuthoringClientRequest, validateAuthoringClientRequestQuery } from '@lincyaw/kernel/node'
 import { readAuthoringDocument } from './document-editor.ts'
@@ -86,15 +86,15 @@ export function createAuthoringClients(editor: SourceEditor, options: { reviewRe
       return { ...answer, ...answer.clients.length < all.length ? { nextAfter: answer.clients.at(-1)!.clientId } : {} }
     },
     async request(document, request, member) {
-      const actual = current(document, member); budget(request)
+      authorize(document, member); budget(request)
       if (!validateAuthoringClientRequest(request)) throw new RequestError(400, 'client-request-invalid')
       if (requiresReview(request.action.type)) throw new RequestError(409, 'authoring-review-required')
       const key = requestKey(member.id, document, request), signature = digest(request), known = requests.get(key)
-      if (known) { if (known.signature !== signature) throw new RequestError(409, 'client-request-id-reused'); return readResult(known, actual) }
+      if (known) { if (known.signature !== signature) throw new RequestError(409, 'client-request-id-reused'); return readResult(known, authoringClientActionUsesLocalDraft(request.action.type) ? undefined : current(document, member)) }
       const client = clients.get(clientKey(member.id, request.clientId)), state = client?.value
       if (!client || !state?.connected || state.document !== document || state.epoch !== request.epoch) throw new RequestError(409, 'client-unavailable')
       if (state.connectionId !== request.expectedClientState.connectionId || state.snapshot.revision !== request.expectedClientState.revision) throw new RequestError(409, 'client-state-changed')
-      if (!sameSource(actual, request.source) || !sameSource(state.snapshot.source, request.source)) throw new RequestError(409, 'client-source-changed')
+      if (!authoringClientActionUsesLocalDraft(request.action.type) && !sameSource(current(document, member), request.source) || (request.action.type === 'body-drafts.retry' ? state.snapshot.source.documentId !== request.source.documentId : !sameSource(state.snapshot.source, request.source))) throw new RequestError(409, 'client-source-changed')
       if (!state.snapshot.actions.includes(request.action.type)) throw new RequestError(409, 'client-action-unavailable')
       if ([...requests.values()].some(value => !terminal(value) && value.member === member.id && value.request.clientId === request.clientId)) throw new RequestError(409, 'client-busy')
       while (requests.size >= AUTHORING_CLIENT_MAX_REQUESTS) {
@@ -110,7 +110,7 @@ export function createAuthoringClients(editor: SourceEditor, options: { reviewRe
       pending.timer = setTimeout(() => finish(pending, 'expired', 'client-request-timeout'), AUTHORING_CLIENT_REQUEST_TIMEOUT_MS)
       requests.set(key, pending)
       client.send?.({ type: 'request', request: pending.request, expiresAt: value.expiresAt })
-      return readResult(pending, actual)
+      return readResult(pending, authoringClientActionUsesLocalDraft(request.action.type) ? undefined : current(document, member))
     },
     async get(document, query, member) {
       authorize(document, member); budget(query)
@@ -173,24 +173,33 @@ export function createAuthoringClients(editor: SourceEditor, options: { reviewRe
     if (pending && Date.now() >= Date.parse(pending.value.expiresAt)) finish(pending, 'expired', 'client-request-timeout')
     if (!pending || terminal(pending) || pending.request.expectedClientState.connectionId !== lease.connectionId) throw new RequestError(409, 'client-request-expired')
     if (ack.state === 'executing' && pending.value.state !== 'sent' || ack.state === 'done' && pending.value.state !== 'executing') throw new RequestError(409, 'client-ack-state-invalid')
-    if ((ack.state === 'executing' || ack.state === 'done') && !sameSource(ack.snapshot.source, pending.request.source) && !(ack.state === 'done' && authoringClientActionChangesSource(pending.request.action.type) && ack.snapshot.source.documentId === pending.request.source.documentId)) throw new RequestError(409, 'client-source-changed')
-    const actual = ack.state === 'executing' || ack.state === 'done' ? current(document, member) : undefined
-    if (ack.state === 'executing' && (ack.snapshot.revision !== pending.request.expectedClientState.revision || !actual || !sameSource(actual, pending.request.source))) throw new RequestError(409, 'client-state-changed')
-    if (ack.state === 'done' && (!actual || !sameSource(actual, ack.snapshot.source))) throw new RequestError(409, 'client-source-changed')
+    if ((ack.state === 'executing' || ack.state === 'done') && !sameSource(ack.snapshot.source, pending.request.source) && !(ack.state === 'executing' && pending.request.action.type === 'body-drafts.retry' && ack.snapshot.source.documentId === pending.request.source.documentId) && !(ack.state === 'done' && (authoringClientActionChangesSource(pending.request.action.type) || authoringClientActionUsesLocalDraft(pending.request.action.type)) && ack.snapshot.source.documentId === pending.request.source.documentId)) throw new RequestError(409, 'client-source-changed')
+    const localDraft = authoringClientActionUsesLocalDraft(pending.request.action.type)
+    const actual = !localDraft && (ack.state === 'executing' || ack.state === 'done') ? current(document, member) : undefined
+    if (ack.state === 'executing' && (ack.snapshot.revision !== pending.request.expectedClientState.revision || !localDraft && (!actual || !sameSource(actual, pending.request.source)))) throw new RequestError(409, 'client-state-changed')
+    if (ack.state === 'done' && !localDraft && (!actual || !sameSource(actual, ack.snapshot.source))) throw new RequestError(409, 'client-source-changed')
     const action = pending.request.action
-    const family = action.type.startsWith('comment-drafts.') ? 'comment' : action.type.startsWith('component-drafts.') ? 'component' : undefined
+    const family = action.type.startsWith('body-drafts.') ? 'body' : action.type.startsWith('comment-drafts.') ? 'comment' : action.type.startsWith('component-drafts.') ? 'component' : undefined
     if (ack.result && (!family || ack.state !== 'done' || ack.result.type !== action.type || ack.result.family !== family)) throw new RequestError(400, 'client-result-invalid')
     if (family && ack.state === 'done') {
       const result = ack.result
-      const mutation = action.type === 'component-drafts.restore' || action.type === 'component-drafts.discard' || action.type === 'comment-drafts.restore' || action.type === 'comment-drafts.discard'
+      const mutation = authoringClientActionMutatesDraft(action.type)
       if (!result || (mutation ? ack.snapshot.revision <= pending.request.expectedClientState.revision : ack.snapshot.revision !== pending.request.expectedClientState.revision)) throw new RequestError(409, `client-${family}-drafts-changed`)
       if (!authoringClientResultFits({ request: pending.request, connection: client.value, document, snapshot: ack.snapshot }, result)) throw new RequestError(413, `client-${family}-result-too-large`)
+      if (action.type === 'body-drafts.read' && (result.type !== action.type || result.draft !== action.draft
+        || result.offset !== action.offset || result.endOffset !== result.offset + result.jsonText.length || result.endOffset > result.totalUtf16
+        || result.jsonText.length > (action.maxChars ?? 2048))) throw new RequestError(400, 'client-result-invalid')
       if ((action.type === 'comment-drafts.read' || action.type === 'component-drafts.read') && (result.type !== action.type || result.draft.id !== action.draft.id || result.draft.revision !== action.draft.revision || result.draft.token !== action.draft.token
         || action.type === 'component-drafts.read' && (result.type !== action.type || result.draft.blockId !== action.draft.blockId || result.draft.stepId !== action.draft.stepId)
         || result.offset !== action.offset || result.endOffset !== result.offset + result.jsonText.length || result.endOffset > result.totalUtf16
         || result.jsonText.length > (action.maxChars ?? 2048))) throw new RequestError(400, 'client-result-invalid')
-      if ((action.type === 'comment-drafts.inspect' || action.type === 'component-drafts.inspect') && (result.type !== action.type || result.drafts.length > (action.limit ?? 10)
+      if ((action.type === 'comment-drafts.inspect' || action.type === 'component-drafts.inspect' || action.type === 'body-drafts.inspect') && (result.type !== action.type || result.drafts.length > (action.limit ?? 10)
         || action.cursor && action.cursor.token !== result.token || result.next && result.next.token !== result.token)) throw new RequestError(400, 'client-result-invalid')
+      if (action.type === 'body-drafts.restore' || action.type === 'body-drafts.discard' || action.type === 'body-drafts.retry') {
+        if (result.type !== action.type || !('outcome' in result) || result.draft !== action.draft
+          || (action.type === 'body-drafts.restore' ? !['restored', 'already-saved'].includes(result.outcome)
+            : action.type === 'body-drafts.discard' ? !['source-restored', 'backup-discarded'].includes(result.outcome) : result.outcome !== 'saved')) throw new RequestError(400, 'client-result-invalid')
+      }
       const sameComment = (a: import('@lincyaw/kernel').ClientCommentDraftReference | null, b: import('@lincyaw/kernel').ClientCommentDraftReference | null) => a === null || b === null ? a === b
         : a.id === b.id && a.revision === b.revision && a.token === b.token
       if (action.type === 'comment-drafts.restore' && (result.type !== action.type || !sameComment(result.draft, action.draft) || result.composerId !== action.composerId

@@ -1,3 +1,14 @@
+export interface DraftStoreOperation { signal?: AbortSignal, guard?(): void }
+export async function waitForDraft<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {
+  signal?.throwIfAborted()
+  if (!signal) return work
+  return new Promise<T>((resolve, reject) => {
+    const abort = () => { signal.removeEventListener('abort', abort); reject(signal.reason) }
+    signal.addEventListener('abort', abort, { once: true })
+    work.then(value => { signal.removeEventListener('abort', abort); signal.aborted ? reject(signal.reason) : resolve(value) }, error => { signal.removeEventListener('abort', abort); reject(error) })
+  })
+}
+
 export type DraftStoreResult = 'committed' | 'superseded' | 'failed'
 export interface DraftStoreCommit { generation: number, done: Promise<DraftStoreResult> }
 interface Operation extends DraftStoreCommit {
@@ -98,31 +109,47 @@ export class DocumentDraftStore {
 
   #notify(): void { if (!this.#closing) this.#channel?.postMessage({ scope: this.#scope, ...this.#writerOwner ? { owner: this.#writerOwner } : {}, ...this.#family ? { family: this.#family } : {} }) }
 
-  async #commit(key: string | undefined, raw: string | undefined, markers: readonly [string, string][]): Promise<{ committed: boolean, foreign: boolean }> {
+  async #commit(key: string | undefined, raw: string | undefined, markers: readonly [string, string][], operation?: DraftStoreOperation): Promise<{ committed: boolean, foreign: boolean }> {
     try {
-      const db = await this.#db()
-      return await new Promise(resolve => {
+      operation?.signal?.throwIfAborted(); operation?.guard?.()
+      const db = await waitForDraft(this.#db(), operation?.signal)
+      operation?.signal?.throwIfAborted(); operation?.guard?.()
+      return await new Promise((resolve, reject) => {
         const tx = db.transaction(ENTRIES, 'readwrite', { durability: 'strict' }), store = tx.objectStore(ENTRIES)
-        let foreign = false
-        tx.oncomplete = () => resolve({ committed: true, foreign })
-        tx.onabort = () => resolve({ committed: false, foreign })
+        let foreign = false, failure: unknown
+        const abort = () => { try { tx.abort() } catch {} }
+        const stop = () => operation?.signal?.removeEventListener('abort', abort)
+        operation?.signal?.addEventListener('abort', abort, { once: true })
+        tx.oncomplete = () => { stop(); resolve({ committed: true, foreign }) }
+        tx.onabort = () => { stop(); failure || operation?.signal?.aborted ? reject(failure ?? operation?.signal?.reason) : resolve({ committed: false, foreign }) }
         tx.onerror = () => { /* The abort event delivers the terminal transaction result. */ }
         if (tx.durability !== 'strict') { tx.abort(); return }
+        const check = () => { operation?.signal?.throwIfAborted(); operation?.guard?.() }
         const apply = () => {
+          check()
           for (const [marker, value] of markers) store.put(value, marker)
         }
-        if (key === undefined) { apply(); return }
+        if (key === undefined) {
+          if (operation) {
+            const gate = store.get(markers[0]?.[0] ?? 'presmium-draft-guard')
+            gate.onsuccess = () => { try { apply() } catch (error) { failure = error; abort() } }
+          } else { try { apply() } catch (error) { failure = error; abort() } }
+          return
+        }
         const request = store.get(key), expected = this.#confirmed.get(key)
         request.onsuccess = () => {
-          foreign = request.result !== expected
-          if (raw !== undefined) {
-            if (foreign) { tx.abort(); return }
-            store.put(raw, key)
-          } else if (!foreign) store.delete(key)
-          apply()
+          try {
+            check()
+            foreign = request.result !== expected
+            if (raw !== undefined) {
+              if (foreign) { tx.abort(); return }
+              store.put(raw, key)
+            } else if (!foreign) store.delete(key)
+            apply()
+          } catch (error) { failure = error; abort() }
         }
       })
-    } catch { return { committed: false, foreign: false } }
+    } catch (error) { if (operation) throw error; return { committed: false, foreign: false } }
   }
 
   #stage(key: string, raw: string | undefined, markers: readonly [string, string][]): DraftStoreCommit | undefined {
@@ -157,16 +184,16 @@ export class DocumentDraftStore {
   }
 
   /** A candidate copy must be strictly committed before the actor switches to it. */
-  async create(key: string, raw: string): Promise<boolean> {
+  async create(key: string, raw: string, operation?: DraftStoreOperation): Promise<boolean> {
     if (this.#closing) return false
-    const result = await this.#commit(key, raw, [])
+    const result = await this.#commit(key, raw, [], operation)
     if (result.committed) { this.#confirmed.set(key, raw); this.#notify() }
     return result.committed
   }
 
-  async mark(markers: readonly [string, string][]): Promise<boolean> {
+  async mark(markers: readonly [string, string][], operation?: DraftStoreOperation): Promise<boolean> {
     if (this.#closing) return false
-    const result = await this.#commit(undefined, undefined, markers)
+    const result = await this.#commit(undefined, undefined, markers, operation)
     if (result.committed) this.#notify()
     return result.committed
   }
