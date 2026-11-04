@@ -1,5 +1,16 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.49
+
+### Patch Changes
+
+- a2022e7: Discover one action's arguments from its existing schema with operations(name, variant), including nested parameters. Keep original execution validation and reject ambiguous or unsafe schema projections.
+- Updated dependencies [a2022e7]
+  - @lincyaw/mcp@1.0.0-rc.50
+  - @lincyaw/skills@1.0.0-rc.50
+  - @lincyaw/cli@1.0.0-rc.50
+  - @lincyaw/kernel@1.0.0-rc.50
+
 ## 0.2.0-rc.48
 
 ### Patch Changes

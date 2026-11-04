@@ -1,5 +1,9 @@
 # @lincyaw/addon-exec-webgpu
 
+## 1.0.0-rc.50
+
+No changes in this release.
+
 ## 1.0.0-rc.49
 
 No changes in this release.
