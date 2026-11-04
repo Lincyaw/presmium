@@ -194,8 +194,14 @@ export interface Production {
   cueTimings?: Record<string, { pauseMs: number }>
   /** Stale mappings remain inspectable but never retime audio or replace changed narration. */
   captionTimings?: Record<StepId, CaptionTiming>
+  /** How large the captions are, in the presentation and burned into a lecture video; absent is the default size. */
+  captions?: CaptionStyle
   mediaClips: MediaClip[]
 }
+/** `scale` multiplies the captions' default size, from `CAPTION_SCALE_MIN` to `CAPTION_SCALE_MAX` (Studio offers tenths). */
+export interface CaptionStyle { scale: number }
+export const CAPTION_SCALE_MIN = 0.7
+export const CAPTION_SCALE_MAX = 1.6
 
 /** A stable rich-text/code ID, or `page:${sectionId}` reserved for an existing section title. */
 export interface DocumentTextPoint { blockId: string, offset: number }

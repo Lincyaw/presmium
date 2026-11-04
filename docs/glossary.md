@@ -56,6 +56,7 @@ zh-CN 以 Microsoft Office 的简体中文本地化为首选，没有对应时�
 | 音色 | Voice | 合成配音所用的声音 | `TTS 音色`、`发音人` |
 | 语音服务 | Voice Service | 合成配音与识别录音的服务 | `TTS`、`引擎`、`Engine` |
 | 字幕 | Captions | 播放时显示的文字，由讲稿或转写文本派生 | `Subtitles` |
+| 字幕大小 | Caption size | 视频制作中整个文稿的字幕大小，放映中显示的与导出视频中烧录的字幕都按它缩放 | |
 | 转写文本 | Transcript | 识别录音得到的文字；与讲稿分开保存 | `识别稿`、`听写稿` |
 | 编排 | Sequence | 视频制作中按时间排列画面、配音与字幕的视图与其中的决定 | `编排轨`，单独的 Production |
 | 时间线 | Timeline | 编排中的时间轴 | `时间轴线`、`Track list` |

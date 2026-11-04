@@ -58,6 +58,7 @@ const zh = {
   segmentStatus: { recorded: '原音频', cached: '已有配音', silent: '静音', missing: '配音待生成', blocked: '暂不可用' },
   waveformLoading: '正在加载波形…', waveformUnavailable: '波形不可用', stepNumber: (index: number) => `步骤 ${index + 1}`,
   notInLecture: '不在讲授中', notInLectureHint: '这一页的内容都限定在其他形态，又没有讲稿与音频，讲授视频中没有这一页。',
+  captionSize: '字幕大小', captionSizeHint: '整个文稿的字幕：放映中显示的与导出视频中烧录的都按这个大小。',
   timelineLabels: { position: '位置', seconds: '秒', seek: '播放头位置', zoomIn: '放大时间线', zoomOut: '缩小时间线', fit: '适配本页', estimated: '估计时长', unknown: '时长未知', loading: '正在加载时间线…', empty: '当前页暂无时间线片段', seekHint: '选择步骤，或用时间尺、方向键和精确时间定位；定位会先暂停播放。', invalidPosition: '请输入本页时长范围内的秒数。' },
   failures: {
     'production-source-changed': '文稿已更新，旧播放请求已停止。请重新准备当前版本。',
@@ -131,6 +132,7 @@ export const PRODUCTION_MESSAGES: Record<Locale, typeof zh> = {
     segmentStatus: { recorded: 'Original audio', cached: 'Voiceover cached', silent: 'Silent', missing: 'Voiceover needed', blocked: 'Unavailable' },
     waveformLoading: 'Loading waveform…', waveformUnavailable: 'Waveform unavailable', stepNumber: index => `Step ${index + 1}`,
     notInLecture: 'Not in the lecture', notInLectureHint: 'Everything on this page is limited to other forms and it has no script or audio, so the lecture video leaves it out.',
+    captionSize: 'Caption size', captionSizeHint: 'For the whole document: captions shown in the presentation and burned into an exported video use this size.',
     timelineLabels: { position: 'Position', seconds: 'seconds', seek: 'Playhead position', zoomIn: 'Zoom In Timeline', zoomOut: 'Zoom Out Timeline', fit: 'Fit Page', estimated: 'Estimated duration', unknown: 'Unknown duration', loading: 'Loading the timeline…', empty: 'This page has no timeline segments', seekHint: 'Select a step, or use the ruler, arrow keys, or an exact time to seek. Seeking pauses playback first.', invalidPosition: 'Enter a time in seconds within this page’s duration.' },
     failures: {
       'production-source-changed': 'The document changed and the old playback request stopped. Prepare the current version.',

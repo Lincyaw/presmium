@@ -9,7 +9,7 @@
   background: var(--pm-color-chrome);
   color: var(--pm-color-ink);
   font-family: var(--pm-font-sans);
-  font-size: var(--pm-text-lg);
+  font-size: var(--pm-caption-size);
   line-height: var(--pm-leading-ui);
   text-align: center;
   overflow-wrap: anywhere;

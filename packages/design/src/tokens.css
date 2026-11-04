@@ -74,17 +74,20 @@
   --pm-text-sm: 0.8125rem;
   --pm-text-md: 0.875rem;
   --pm-text-lg: 1rem;
-  --pm-caption-max-width: 48rem;
+  /* The document's caption size (`production.captions.scale`), which the presentation sets on the page; the caption
+     sizes below multiply it. */
+  --pm-caption-scale: 1;
+  --pm-caption-size: calc(var(--pm-text-lg) * var(--pm-caption-scale));
+  --pm-caption-max-width: calc(48rem * var(--pm-caption-scale));
   --pm-caption-max-height: 28vh;
   --pm-caption-safe-bottom: 3rem;
   --pm-caption-overlay-max-height: 35%;
-  /* Captions burned into an exported video, measured on its frame (the export window is the frame): about 48 px text on
-     a 1080p frame, the size of a slide's body text, across up to 89% of the width so that most sentences take one line
-     (two at most), its box about 30 px above the bottom edge; one line takes the bottom tenth of the frame. The box is a
-     see-through light gray, so that it hides as little of the picture as it can; near-black ink with a faint light halo
-     stays readable over light and dark pictures alike. Colours come from ink and page, so the dark appearance turns
-     them into a see-through dark gray with light text. */
-  --pm-caption-burn-size: 4.5vh;
+  /* Captions burned into an exported video, measured on its frame (the export window is the frame): at the default
+     scale about 60 px text on a 1080p frame, across up to 89% of the width so that most sentences take one line (two at
+     most), its box about 30 px above the bottom edge. The box is a see-through light gray, so that it hides as little
+     of the picture as it can; near-black ink with a faint light halo stays readable over light and dark pictures alike.
+     Colours come from ink and page, so the dark appearance turns them into a see-through dark gray with light text. */
+  --pm-caption-burn-size: calc(5.6vh * var(--pm-caption-scale));
   --pm-caption-burn-leading: 1.35;
   --pm-caption-burn-width: 89vw;
   --pm-caption-burn-bottom: 2.8vh;

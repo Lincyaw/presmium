@@ -87,6 +87,7 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 | `narrationOverrides` | 迁移保留的讲稿开始时机，位于页面与步骤之间 |
 | `cueTimings` | cue 的停顿时长 |
 | `captionTimings` | 作者设定的本步字幕时间（2.12） |
+| `captions` | 整个文稿的字幕大小 `{ scale }`：默认大小的倍数，0.7 到 1.6（Studio 以 0.1 为一档），缺省为 1；放映中显示的字幕与导出视频中烧录的字幕都按它缩放（页面上的 `--pm-caption-scale`） |
 | `mediaClips` | 挂在步骤上的音频片段 |
 
 - `VoiceSource` 是 `none`、`tts` 或 `recording`（可选 `sourceRange`）。

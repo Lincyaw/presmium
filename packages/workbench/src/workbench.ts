@@ -1,4 +1,4 @@
-import { applyDocumentCaptionTiming } from '@lincyaw/kernel'
+import { applyDocumentCaptionTiming, changeCaptionScale } from '@lincyaw/kernel'
 import type { DocumentCaptionTimingAction } from '@lincyaw/kernel'
 import { reconcileCaptionTiming } from './caption-timing.ts'
 import type { ProjectOperation, ProjectPlan } from '@lincyaw/kernel'
@@ -1596,6 +1596,14 @@ export class Workbench {
     const next = changeStepTiming(document, stepId, patch)
     if (next === document) return
     this.stopAuditions()
+    this.#documentSession.record(next)
+  }
+  /** The whole document's caption size (`production.captions.scale`), recorded like a step's timing. */
+  setDocumentCaptionScale(scale: number, identity?: string): void {
+    const document = this.getDocument(identity)
+    if (!document || isAgentChanging(this.#state)) return
+    const next = changeCaptionScale(document, scale)
+    if (next === document) return
     this.#documentSession.record(next)
   }
   documentTimingDraft(stepId: string, key: StepDurationKey, identity: string, reset: number): StepDurationDraft | undefined {
