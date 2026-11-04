@@ -1,5 +1,15 @@
 # @lincyaw/mcp
 
+## 1.0.0-rc.43
+
+### Patch Changes
+
+- e8932fb: Expose speech configuration status and credential changes through MCP using the same settings instance and canonical parameter schema as Web. Restrict operator settings to workspace owner credentials, retain write approval and revision checks, and keep secret values write-only.
+- Updated dependencies [e8932fb]
+  - @lincyaw/kernel@1.0.0-rc.43
+  - @lincyaw/skills@1.0.0-rc.43
+  - @lincyaw/compiler@1.0.0-rc.43
+
 ## 1.0.0-rc.42
 
 ### Patch Changes

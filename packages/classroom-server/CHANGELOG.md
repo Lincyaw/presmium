@@ -1,5 +1,12 @@
 # @lincyaw/classroom-server
 
+## 1.0.0-rc.43
+
+### Patch Changes
+
+- Updated dependencies [e8932fb]
+  - @lincyaw/kernel@1.0.0-rc.43
+
 ## 1.0.0-rc.42
 
 ### Patch Changes
