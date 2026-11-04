@@ -526,6 +526,8 @@ export interface TimelineProps {
   showSteps?: boolean
   /** A flush docked editor, with status and zoom in the same tool row. */
   variant?: 'default' | 'editor'
+  /** The page has no place on this timeline (the lecture leaves it out): its status and notice say so, with no tracks to seek. */
+  excluded?: { status: string, notice: string }
 }
 
 const timelineTime = (ms: number) => `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${(ms % 60000 / 1000).toFixed(3).padStart(6, '0')}`
@@ -540,11 +542,11 @@ function waveformPath(samples: readonly number[] | undefined): string | undefine
 }
 
 /** Data-only timeline; source, playback, seeking authority and all labels remain with its caller. */
-export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, currentTimeMs, selectedStepId, zoom, onZoomChange, onSelectStep, onSelectSegment, segmentPicker, onSeek, seekDisabled, disabled, loading, seeking, density = 'compact', showSteps = true, variant = 'default' }: TimelineProps) {
+export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, currentTimeMs, selectedStepId, zoom, onZoomChange, onSelectStep, onSelectSegment, segmentPicker, onSeek, seekDisabled, disabled, loading, seeking, density = 'compact', showSteps = true, variant = 'default', excluded }: TimelineProps) {
   const hintId = useId()
   const viewport = useRef<HTMLDivElement>(null), tick = useRef<HTMLSpanElement>(null), composing = useRef(false)
   const [width, setWidth] = useState(0), [tickWidth, setTickWidth] = useState(1), [localZoom, setLocalZoom] = useState(1), [raw, setRaw] = useState<string>(), [previewTime, setPreviewTime] = useState<number>()
-  const span = Number.isFinite(durationMs) && durationMs! >= 0 ? durationMs : undefined
+  const span = !excluded && Number.isFinite(durationMs) && durationMs! >= 0 ? durationMs : undefined
   const timing = durationStatus ?? (span === undefined ? 'unknown' : 'confirmed')
   const timed = span !== undefined && span > 0 && timing !== 'unknown'
   const blocked = Boolean(disabled || loading), cannotSeek = Boolean(blocked || seeking || seekDisabled || !timed || timing !== 'confirmed')
@@ -585,10 +587,10 @@ export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, 
     const marks = Array.from({ length: Math.min(200, Math.floor(span / unit) + 1) }, (_, index) => index * unit)
     return [0, ...marks.filter(time => time > 0 && time < span && Math.min(time, span - time) / span * width * scale >= tickWidth), span]
   }, [span, timed, width, scale, tickWidth])
-  const status = <div className="pm-ui-timeline__status" role="status">{loading ? labels.loading : timing === 'unknown' || span === undefined ? labels.unknown : `${timing === 'estimated' ? `${labels.estimated} · ` : ''}${timelineTime(span)}`}</div>
+  const status = <div className="pm-ui-timeline__status" role="status">{loading ? labels.loading : excluded ? excluded.status : timing === 'unknown' || span === undefined ? labels.unknown : `${timing === 'estimated' ? `${labels.estimated} · ` : ''}${timelineTime(span)}`}</div>
   return <section className="pm-ui-timeline" data-variant={variant} data-density={density} data-disabled={blocked || undefined} data-segment-picker={segmentPicker?.track} aria-label={label} aria-busy={loading || seeking || undefined}>
     <div className="pm-ui-timeline__tools">
-      <PmInput label={`${labels.position} (${labels.seconds})`} labelHidden={variant === 'editor'} width="time" density={density} inputMode="decimal" maxLength={32} value={raw ?? (position === undefined ? '' : (position / 1000).toFixed(3))} placeholder={labels.unknown} error={invalid ? labels.invalidPosition : undefined} disabled={cannotSeek}
+      <PmInput label={`${labels.position} (${labels.seconds})`} labelHidden={variant === 'editor'} width="time" density={density} inputMode="decimal" maxLength={32} value={raw ?? (position === undefined ? '' : (position / 1000).toFixed(3))} placeholder={excluded ? undefined : labels.unknown} error={invalid ? labels.invalidPosition : undefined} disabled={cannotSeek}
         onChange={event => setRaw(event.target.value)} onBlur={commitPosition}
         onCompositionStart={() => { composing.current = true }} onCompositionEnd={() => { composing.current = false }}
         onKeyDown={event => { if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return; if (event.key === 'Enter') { event.preventDefault(); commitPosition() } else if (event.key === 'Escape') setRaw(undefined) }} />
@@ -625,7 +627,7 @@ export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, 
       <option value="">{segmentPicker.placeholder}</option>{pickerSegments.map(segment => <option key={segment.id} value={segment.id} disabled={segment.disabled}>{timelineTime(segment.startMs!)} · {segment.label}</option>)}
     </PmSelect></div>}
     {showSteps && <div className="pm-ui-timeline__steps">{steps.map(segment => <PmButton key={segment.stepId} density={density} disabled={blocked || segment.disabled} aria-pressed={segment.stepId === selectedStepId} variant={segment.stepId === selectedStepId ? 'accent' : 'default'} onClick={() => onSelectStep(segment.stepId!)}>{segment.label}</PmButton>)}</div>}
-    {!tracks.some(track => track.segments.length) && <PmNotice>{labels.empty}</PmNotice>}
+    {(excluded || !tracks.some(track => track.segments.length)) && <PmNotice>{excluded?.notice ?? labels.empty}</PmNotice>}
     <p id={hintId} className="pm-ui-sr-only">{labels.seekHint}</p>
   </section>
 }
