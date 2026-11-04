@@ -1,5 +1,12 @@
 # @lincyaw/compiler
 
+## 1.0.0-rc.24
+
+### Patch Changes
+
+- fe3c3ba: Use Presmium's own copy of an official plugin whenever the project has a separate installation, even when both copies have the same version. This prevents duplicate `@lincyaw/host` instances that make `PmScene` fail with `no host installed`.
+- @lincyaw/kernel@1.0.0-rc.24
+
 ## 1.0.0-rc.23
 
 ### Patch Changes
