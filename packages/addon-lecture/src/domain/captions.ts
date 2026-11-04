@@ -4,6 +4,8 @@ import { isWide, locate } from './words.ts'
 export interface CaptionGroup { id: string, text: string, t: number, d: number, alignment: 'words' | 'proportional' | 'none' | 'manual' }
 
 const MAX_CHARACTERS = 42
+/** A group that would pass `MAX_CHARACTERS` ends at its last clause mark when that leaves it at least this long. */
+const MIN_CLAUSE_CHARACTERS = 12
 const hasText = /[\p{L}\p{N}]/u
 
 /** Where a caption reads best when cut: after a sentence, else after a clause. */
@@ -51,7 +53,7 @@ export function captionGroups(utterance: Utterance): CaptionGroup[] {
   }
   if (hasText.test(utterance.text.slice(end))) return [full]
   const asciiTokens = [...utterance.text.matchAll(/[\x21-\x7e]+/g)].map(match => ({ start: match.index, end: match.index + match[0].length }))
-  let token = 0
+  const insideToken = (at: number) => asciiTokens.some(token => token.start < at && at < token.end)
   const groups: CaptionGroup[] = []
   let from = 0, first = 0
   const append = (last: number, to: number) => {
@@ -62,14 +64,24 @@ export function captionGroups(utterance: Utterance): CaptionGroup[] {
     from = to; first = last + 1
     return true
   }
+  // Word `index` ends where the next one starts; a group ends after a word, never inside an ASCII token.
+  const after = (index: number) => places[index + 1]?.start ?? utterance.text.length
+  const characters = (to: number) => [...utterance.text.slice(from, to)].length
   for (let index = 0; index < words.length; index++) {
-    const to = places[index + 1]?.start ?? utterance.text.length
-    while (asciiTokens[token] && asciiTokens[token]!.end <= to) token++
-    const insideToken = asciiTokens[token] && asciiTokens[token]!.start < to && to < asciiTokens[token]!.end
-    const next = places[index + 2]?.start ?? utterance.text.length
-    if (!insideToken && (index + 1 === words.length || markBefore(utterance.text, to, from) === 'sentence' || [...utterance.text.slice(from, next)].length > MAX_CHARACTERS)) {
+    const to = after(index)
+    if (insideToken(to)) continue
+    if (index + 1 === words.length || markBefore(utterance.text, to, from) === 'sentence') {
       if (!append(index, to)) return [full]
+      continue
     }
+    if (characters(after(index + 1)) <= MAX_CHARACTERS) continue
+    // The next word would pass the limit: end at the group's last clause mark, unless that leaves it too short.
+    let clause = index
+    while (clause >= first && (insideToken(after(clause)) || markBefore(utterance.text, after(clause), from) !== 'clause')) clause--
+    if (clause < first || characters(after(clause)) < MIN_CLAUSE_CHARACTERS) clause = index
+    if (!append(clause, after(clause))) return [full]
+    // The words after the clause start the next group, which the next word may still take past the limit.
+    if (clause < index) index--
   }
   return groups
 }

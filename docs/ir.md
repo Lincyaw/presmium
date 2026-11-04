@@ -163,6 +163,7 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 
 - 绑定 `ProductionBinding { source, irRevision, planId }`。`planId` 覆盖讲授轨、词时码、事件、字幕、时机与音频的缓存键、摘要和时长，只补缓存也得到新计划。
 - 页面、步骤、讲稿按稳定 ID 给出范围，时间是同一讲授时钟的毫秒。跨步 cue 的音频与字幕各一段，列出覆盖的 `stepIds`。
+- 有真实词时码且显示文字能逐词对上时，一句的字幕分成可读的组，网页播放、VTT 与烧录字幕共用：句末结束一组；一组最多 42 个字符，下一个词会使它超出时，在组内最后一个分句标点处结束（这部分至少约 12 个字符，否则在超出前的词后结束）；组从不在半角词（数字、标识符、网址）内部断开。句末与分句的标点与烧录字幕的切分相同（`design-system.md`）：全角标点在哪里都算，半角的 `. ! ? ;` 与 `, :` 后面是空格或全文结尾时才算。
 - `timing` 为 `confirmed`、`estimated`、`unknown`；只有完整确认的计划 `canPreview`、`canExport`。`voiceSource: none` 用实际动画、停留与停顿，不按字数估时。
 - 动画场景定义的 `durations` 是计划中每步的最短停留，也是阅读页与手动步进时状态的长度。播放计划的讲授轨时，状态延长到第一个显示它的步骤的配音结束（`architecture.md` 5.3 节），配音等动画结束才开始的步骤除外；配音之后不改写 `durations`。
 - 合成语音是 `audio`，导入音频是 `media`（`ProductionAssetInspection`）。预览与导出共用同一放置、裁切与混音计算。
