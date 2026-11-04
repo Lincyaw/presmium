@@ -983,6 +983,9 @@ importers:
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
+      node-addon-require-builtin:
+        specifier: 0.1.9
+        version: 0.1.9
       ws:
         specifier: 8.22.0
         version: 8.22.0

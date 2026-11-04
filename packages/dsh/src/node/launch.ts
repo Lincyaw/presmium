@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
+import { delimiter, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { machineState, NODE_RESOURCE_ARGS, nodeResourceArgs, resourceEnvironment } from '@lincyaw/kernel/node'
 export { bracketIPv6, systemLocale } from '@lincyaw/kernel/node'
@@ -41,7 +41,12 @@ export function dshBin(from = PACKAGE_DIR): string {
 }
 
 export function launchEnv(dshHome: string, env: NodeJS.ProcessEnv = process.env): Record<string, string> {
-  return resourceEnvironment({ DSH_HOME: dshHome, DSH_AGENTS_HOME: join(dshHome, 'agents'), DSH_TELEMETRY_MODE: 'DISABLED', PRESMIUM_MAX_THREADS: env.PRESMIUM_MAX_THREADS }, 'interactive')
+  // The native addon's shared CJS loader resolves its optional platform package from its own directory.
+  // Strict pnpm installs keep that package beside the entry package instead; expose its declared dependencies.
+  const nativeModules = dirname(dirname(createRequire(import.meta.url).resolve('node-addon-require-builtin/package.json')))
+  return resourceEnvironment({ DSH_HOME: dshHome, DSH_AGENTS_HOME: join(dshHome, 'agents'), DSH_TELEMETRY_MODE: 'DISABLED', PRESMIUM_MAX_THREADS: env.PRESMIUM_MAX_THREADS,
+    NODE_PATH: [nativeModules, env.NODE_PATH].filter(Boolean).join(delimiter),
+  }, 'interactive')
 }
 
 /** The variables a launcher sets for the processes it starts; they are never inherited from its own environment. */

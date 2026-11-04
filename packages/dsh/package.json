@@ -88,6 +88,7 @@
     "@lincyaw/mcp": "workspace:*",
     "eventsource": "3.0.7",
     "jiti": "^2.7.0",
+    "node-addon-require-builtin": "0.1.9",
     "ws": "8.22.0",
     "zod": "4.4.3",
     "@lincyaw/skills": "workspace:*"

@@ -68,6 +68,11 @@ back, and `--dry-run` only polls and reports. `pnpm consumer [<directory>]` inst
 verification, commit, push and release every completed update without asking again. Publish from a
 checkout containing only committed changes for the release, so unrelated working-tree edits stay out.
 
+For Studio installation changes, verify a fresh default pnpm installation outside the monorepo and start
+its actual installed command, with no inherited `NODE_PATH` or hoisting options.
+The bundle owns the native addon dependency and its child-process search path (`docs/studio.md` 11.2).
+Keep platform binaries as package-manager dependencies resolved through public package exports.
+
 ## The VS Code extension
 
 `pnpm --filter presmium-vscode package:vsix` builds the VSIX for the current platform, including the

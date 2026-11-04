@@ -209,6 +209,10 @@
 
 输出写进 `$DSH_HOME/presmium-studio-<散列>.log`，标准错误转发工作区服务的阶段与耗时。三个进程各有父进程退出的看门狗，`kill -9` 启动器后不留进程。
 
+`@lincyaw/dsh` 直接依赖 Harness 使用的 `node-addon-require-builtin`。
+启动器通过该包公开的 `package.json` 导出定位其依赖目录，加入 Harness 子进程的 `NODE_PATH`，并保留调用者已有的搜索路径。
+共享原生加载器由此能在 pnpm 的严格依赖布局中找到平台预编译包，普通全局安装与项目安装使用同一启动流程。
+
 ### 11.3 模型、局域网与代理
 
 - 只用 dsh 的模型设置。`DEEPSEEK_API_KEY` 与 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` 映射为 `DEEPSEEK_*`；界面中保存的密钥优先。
