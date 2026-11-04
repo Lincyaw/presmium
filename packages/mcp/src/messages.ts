@@ -150,9 +150,10 @@ export const MCP_CLI_MESSAGES: Record<Locale, McpCliMessages> = {
       presmium mcp call <工具> [<JSON 参数>] [--out <目录>]
 
 经标准输入输出向 Claude Code、Codex 等 AI 工具提供 MCP 服务（<目录> 是工作区的根目录、
-含有 ${DOCUMENT_ENTRY} 的目录或这个文件本身；默认为 .）。这个目录（或它所在的工作区）的
-Presmium Studio 或 presmium serve 正在运行时转接到它，AI 可以修改文稿、查看版本历史和生成配音，
-它重新启动后自动跟上；没有运行时只编译这份文稿，提供阅读、检查、运行代码与导出。
+含有 ${DOCUMENT_ENTRY} 的目录或这个文件本身；默认为 .；名为 tools 或 call 的目录写作 ./tools、
+./call）。这个目录（或它所在的工作区）的 Presmium Studio 或 presmium serve 正在运行时转接到它，
+AI 可以修改文稿、查看版本历史和生成配音，它重新启动后自动跟上；没有运行时只编译这份文稿，提供
+阅读、检查、运行代码与导出。
 
 tools 与 call 在命令行中使用当前目录正在运行的 Presmium 服务的工具，与 AI 经 presmium mcp
 得到的相同：tools 列出每个工具的名称、种类与说明；call 调用一个工具，参数是一个 JSON 对象
@@ -182,10 +183,11 @@ capture_overview）用 --out 保存为 PNG 文件，路径写到标准错误。�
        presmium mcp call <tool> [<JSON arguments>] [--out <dir>]
 
 Serves MCP on stdio for AI tools such as Claude Code and Codex (the directory is a workspace root,
-a directory holding ${DOCUMENT_ENTRY}, or that entry file; default: .). When the Presmium Studio or
-presmium serve of the directory (or of its workspace) runs, it relays to it: the AI can edit documents,
-read their history and generate voiceover, and it follows the service when it starts again. Otherwise
-it compiles the document itself, for reading, checking, running code and exporting.
+a directory holding ${DOCUMENT_ENTRY}, or that entry file; default: .; write a directory named tools
+or call as ./tools or ./call). When the Presmium Studio or presmium serve of the directory (or of its
+workspace) runs, it relays to it: the AI can edit documents, read their history and generate
+voiceover, and it follows the service when it starts again. Otherwise it compiles the document
+itself, for reading, checking, running code and exporting.
 
 tools and call use the tools of the Presmium service running for the current directory from the
 command line, the same tools an AI gets through presmium mcp: tools lists each tool’s name, kind and
