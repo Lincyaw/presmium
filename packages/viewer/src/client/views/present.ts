@@ -8,7 +8,7 @@ import { viewerMessages } from '../viewer-messages.ts'
 import { useViewer, presentationConfirmed } from '../viewer-state.ts'
 import type { Viewer } from '../viewer-state.ts'
 import { overviewOpen, useActions } from './actions.ts'
-import { button, layers, useCurrentSection, useModal, useOverlayBar } from './overlay.ts'
+import { button, layers, useCaptionScale, useCurrentSection, useModal, useOverlayBar } from './overlay.ts'
 import { SlideFace, SlideFit, useSlides } from './slide.ts'
 
 function moveInOverview(root: HTMLElement | null | undefined, key: string): boolean {
@@ -53,6 +53,7 @@ export function PresentView() {
     }, [loading, section?.id, step])
     const overview = useStore(overviewOpen)
     const doc = useStore(viewer.doc)
+    useCaptionScale(doc)
     useStore(viewer.options.confirmedRevision)
     const pending = !presentationConfirmed(viewer)
     useEffect(() => { if (pending) { overviewOpen.set(false); presmiumService(PLAYBACK_CONTROL)?.pause() } }, [pending])

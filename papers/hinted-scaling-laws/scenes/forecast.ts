@@ -17,7 +17,7 @@ const fitted = rungs.filter(r => r.c <= W.boundary + 1e-6), held = rungs.filter(
 const mix = D.delphi.methods.logit_mix
 const HS = [0.2, 0.4, 0.6, 0.8, 1.0, 1.4]
 const X = scale(18.25, 23.35, 16, 98)
-const yAll = scale(0, 1, 64, 16), yAcc = scale(0, 0.4, 64, 16)
+const yAll = scale(0, 1, 61, 16), yAcc = scale(0, 0.4, 61, 16)
 const TOP = 23
 // Curves that all agree with six zeros (illustrative): S curves whose rise begins anywhere past the window.
 const ZFAN = [21.3, 22.0, 22.7, 23.4]

@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { closeSync, constants, fstatSync, mkdirSync, openSync, readFileSync, readSync, realpathSync, renameSync, writeFileSync } from 'node:fs'
+import { closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import type { AigcLabel, DocumentFiles, SpeechWord, SynthesisRequest } from '@lincyaw/kernel'
 import { isRecord, speechEngineId } from '@lincyaw/kernel'
@@ -212,6 +212,44 @@ export class SynthesisCache {
       if (dropped > 0) await this.#writeLock(Object.fromEntries(kept.map(key => [key, lock.synthesis[key]!])))
       return dropped
     })
+  }
+
+  /**
+   * Keeps the entries made for one of `requests` (request keys, which do not depend on the configuration profile);
+   * lists the others, including lock entries without files, and with `remove` deletes their files and lock entries.
+   */
+  async prune(requests: ReadonlySet<string>, remove: boolean): Promise<{ kept: number, unused: { key: string, bytes: number }[] }> {
+    let names: string[] = []
+    try { names = readdirSync(this.dir) }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
+    if (names.length && !this.#contained()) throw new Error(`the synthesis cache ${this.dir} resolves outside the deck`)
+    const files = new Map<string, string[]>()
+    for (const name of names) {
+      const key = /^([0-9a-f]{32})\.(?:json|wav|ogg|align\.json)$/.exec(name)?.[1]
+      if (key) files.set(key, [...files.get(key) ?? [], name])
+    }
+    const used = (key: string): boolean => {
+      try {
+        const record: unknown = JSON.parse(readRegular(join(this.dir, `${key}.json`), 1_048_576)?.toString('utf8') ?? 'null')
+        return isRecord(record) && record.key === key && requests.has(typeof record.requestKey === 'string' ? record.requestKey : key)
+      } catch {
+        return false
+      }
+    }
+    const kept = new Set<string>(), unused: { key: string, bytes: number, files: string[] }[] = []
+    for (const [key, own] of files) {
+      if (used(key)) kept.add(key)
+      else unused.push({ key, bytes: own.reduce((sum, name) => sum + lstatSync(join(this.dir, name)).size, 0), files: own })
+    }
+    for (const key of Object.keys(this.#readLock()?.lock.synthesis ?? {})) if (!files.has(key)) unused.push({ key, bytes: 0, files: [] })
+    if (remove) {
+      const doomed = unused.flatMap(entry => entry.files.map(name => join(this.dir, name)))
+      const writer = this.#files()
+      if (writer) { if (doomed.length) await writer.write(doomed.map(file => ({ path: relative(this.#workspaceRoot, file).split(sep).join('/'), remove: true as const }))) }
+      else for (const file of doomed) rmSync(file, { force: true })
+      await this.pruneLock(kept)
+    }
+    return { kept: kept.size, unused: unused.map(({ key, bytes }) => ({ key, bytes })) }
   }
 
   async #lock(key: string, record: CacheRecord): Promise<void> {

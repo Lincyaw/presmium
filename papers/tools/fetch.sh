@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fetch a paper's arXiv source for a film: the LaTeX and its figures, previews of every figure, and the list of
-# figures with their captions, so the author can choose what to crop (tools/figure.py).
+# figures with their captions, so the author can choose what to crop (figure.py of the presmium-animate skill).
 #
 #   tools/fetch.sh <arxiv-id> <slug>
 #   tools/fetch.sh 2611.02270 hinted-scaling-laws
@@ -16,6 +16,7 @@ if [ $# -ne 2 ]; then
 fi
 id=$1 slug=$2
 here=$(cd "$(dirname "$0")/.." && pwd)
+figure="$here/../.agents/skills/presmium-animate/gallery/catalog/paper-figure/tools/figure.py"
 cache=$here/.cache/$id
 ua='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36'
 mkdir -p "$cache/source" "$cache/previews"
@@ -82,11 +83,11 @@ while IFS= read -r ref; do
   [ -z "$file" ] && { echo "  not found: $ref" >&2; continue; }
   name=$(basename "${file%.*}")
   case $file in
-    *.pdf) uv run --no-project --with pymupdf python -I "$here/tools/figure.py" "$file" "$cache/previews/$name.png" --width 1400 >/dev/null 2>&1 \
+    *.pdf) uv run --no-project --with pymupdf python -I "$figure" "$file" "$cache/previews/$name.png" --width 1400 >/dev/null 2>&1 \
              || echo "  could not render $file" >&2 ;;
     *) cp "$file" "$cache/previews/$name.${file##*.}" ;;
   esac
   n=$((n + 1))
 done < "$cache/figures.txt"
 echo; echo "$n previews in $cache/previews (each PDF also has its word map next to it, for choosing a crop)"
-echo "next: node tools/new-paper.mjs $slug --arxiv $id …   then crop with tools/figure.py <figure.pdf> $slug/figures/<name>.png --crop x0,y0,x1,y1"
+echo "next: node tools/new-paper.mjs $slug --arxiv $id …   then crop with $figure <figure.pdf> $slug/figures/<name>.png --crop x0,y0,x1,y1"

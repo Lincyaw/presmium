@@ -48,11 +48,11 @@ When the MCP server `presmium` offers author actions (the studio's assistant; or
 3. **Plan, then apply.** Page create, rename, move and delete: `plan_page_change`, `apply_page_change`. Content, steps and narration: `plan_document_change`, `apply_document_change`. Pass the source version you read; a 409 means the document changed, so read again and plan again rather than retrying. A write may wait for the author's approval in Presmium; a refusal is final for that request. `approval-unavailable` means no Presmium window is open to ask: tell the author to open Presmium Studio (or to start `presmium serve --allow operate`).
 4. **Check.** `check_document`, then `get_diagnostics` for the full list. Fix what you caused; report what you can't fix in words the author understands.
 5. **Look at the result.** `capture_slides` returns pictures of a changed page as the presentation shows it: the rest frame of every step, or with `at` moments (milliseconds) into a step's animation, and with `measure` (a CSS selector) the boxes of its elements in slide pixels; `capture_reading` returns the same page in the reading version at a window `width` (390 for a phone); `capture_overview` takes every page at once, for reviewing the whole document. Look at them for overflow, overlaps, what each step shows, the phone layout and the dark appearance before you report; a successful compile doesn't prove the page reads well or that its steps work. Don't script a browser for this.
-6. **Voiceover and outputs are explicit.** Editing narration never generates audio. Read `get_voiceover_status`, tell the author the engine, the voice and the number of sentences (a cloud engine charges for them), and call `start_voiceover` only after the author agrees. `build` and `get_builds` make and list outputs. Details in [Lecture production](references/lecture.md) and [Publishing](references/publishing.md).
+6. **Voiceover and outputs are explicit.** Editing narration never generates audio. Read `get_voiceover_status`, tell the author the engine, the voice and the number of sentences (a cloud engine charges for them), and call `start_voiceover` only after the author agrees; without an MCP host, `presmium voiceover` gives the same report and generates with `--yes`. `build` and `get_builds` make and list outputs. Details in [Lecture production](references/lecture.md) and [Publishing](references/publishing.md).
 
 Undo is `undo_document_change`; `get_document_history` lists the saved changes.
 
-To connect an AI tool: a project made by `presmium new` has `.mcp.json` for Claude Code; otherwise run `claude mcp add presmium -- presmium mcp` or `codex mcp add presmium -- presmium mcp` in the project. `presmium mcp` relays to the Presmium Studio or `presmium serve` running for the project and follows it when it starts again (a `presmium dev` only previews: it has no author actions and takes no pictures); with neither running it only reads, checks and exports, and the author starts `presmium studio` then reconnects the server.
+To connect an AI tool: a project made by `presmium new` has `.mcp.json` for Claude Code; otherwise run `claude mcp add presmium -- presmium mcp` or `codex mcp add presmium -- presmium mcp` in the project. `presmium mcp` relays to the Presmium Studio or `presmium serve` running for the project and follows it when it starts again (a `presmium dev` only previews: it has no author actions and takes no pictures); with neither running it only reads, checks and exports, and the author starts `presmium studio` then reconnects the server. A script or pipeline without an MCP client calls the same tools of the running service from the project's directory: `presmium mcp tools` lists them, `presmium mcp call <tool> '<JSON arguments>'` prints the result as JSON, and `--out <dir>` saves the pictures a capture returns as PNG files.
 
 Without an MCP host that has author actions (working on files in a project), edit `lecture.json` directly and use the command line:
 
@@ -63,10 +63,15 @@ presmium dev lesson
 presmium build lesson --to web
 presmium build lesson --to slides
 presmium ir lesson --out runtime-snapshot.json
+presmium script export lesson
+presmium script import lesson
+presmium voiceover lesson
+presmium voiceover lesson --yes --prune
+presmium speech key status .
 presmium studio .
 ```
 
-Commands use `pnpm` and `presmium`; `pnpm add -g @lincyaw/presmium` includes Studio, renderers and official plugins. The global command uses its installed version; use `pnpm exec presmium` to choose the project version. Install project dependencies with `pnpm install`. Generating voiceover has no command of its own: it runs in the studio (Video Production) or through `start_voiceover` on an MCP host, which `presmium studio` and `presmium serve` provide. With the voiceover generated, `presmium-lecture export lesson` writes the video ([Lecture production](references/lecture.md)).
+Commands use `pnpm` and `presmium`; `pnpm add -g @lincyaw/presmium` includes Studio, renderers and official plugins. The global command uses its installed version; use `pnpm exec presmium` to choose the project version. Install project dependencies with `pnpm install`. `presmium script export lesson` writes the narration as one file to polish (`lesson/dist/script.md`); `presmium script import lesson` writes the edited paragraphs back. `presmium voiceover lesson` only reports what generating the voiceover would do (voice service, voice, sentences and characters without audio; a cloud service charges by the character); tell the author, and run it again with `--yes` only after they agree. It generates in the command's own process through the same execution as the studio's Video Production, so no studio or `presmium serve` needs to run; the speech key comes from the workspace's operator directory (`presmium speech key set`). With the voiceover generated, `presmium-lecture export lesson` writes the video ([Lecture production](references/lecture.md)).
 
 ## Rules for the source
 

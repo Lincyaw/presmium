@@ -1,7 +1,7 @@
 import type { Operations, PlaybackControl, PlaybackLease } from '@lincyaw/host'
 import type { IRDocument } from '@lincyaw/kernel'
 import { createStore } from '@lincyaw/host'
-import { eventDrift, lastIndexAt, timedEvents, trackDuration } from '../domain/index.ts'
+import { eventDrift, lastIndexAt, SCRIPT_TRACK, timedEvents, trackDuration, voicedLengths } from '../domain/index.ts'
 import type { LectureTrack, TimedEvent } from '../domain/index.ts'
 import type { TrackClock } from './clock.ts'
 
@@ -17,6 +17,11 @@ export class LecturePlayer {
   readonly duration: number
   readonly events: TimedEvent[]
   readonly dropped: number
+  /**
+   * How long each step's voice lasts (ms), by the slide's index and the step: the scenes of the narrated script fill it
+   * (`StepClockDriver.stepLength`). A recorded lecture has none: it was spoken over the scenes at their own pace.
+   */
+  readonly stepLength?: (slide: number, step: number) => number | undefined
 
   readonly track: LectureTrack
   readonly clock: TrackClock
@@ -54,6 +59,11 @@ export class LecturePlayer {
       return since
     })
     this.duration = Math.max(trackDuration(track), this.events.at(-1)?.t ?? 0)
+    if (track.id === SCRIPT_TRACK) {
+      const lengths = voicedLengths(this.events, track.utterances, this.duration)
+      const sections = new Map(doc.sections.map(section => [section.index, section.id]))
+      this.stepLength = (slide, step) => { const id = sections.get(slide); return id === undefined ? undefined : lengths.get(`${id}\u0000${step}`) }
+    }
     this.unsubscribe = operations.subscribe(operation => {
       if (operation.type === 'go' && typeof operation.data.section === 'string') {
         const step = Number(operation.data.step ?? 0)

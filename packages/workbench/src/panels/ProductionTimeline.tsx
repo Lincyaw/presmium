@@ -36,6 +36,10 @@ export function ProductionTimeline({ plan, sectionId, stepId, active, current, s
   }, [workbench, directory, plan, sectionId, active, current])
   const document = source?.content, section = document?.sections[sectionId]
   const page = current ? plan?.pages.find(page => page.sectionId === sectionId) : undefined
+  // The current plan lists every page of the lecture; a page of the document it lacks is left out of the lecture.
+  const excluded = Boolean(current && plan && section && !page)
+  // On a page of the lecture, a step it leaves out is missing from the page's steps.
+  const stepLeftOut = Boolean(page && !page.steps.some(step => step.stepId === stepId))
   const start = page?.startMs, end = page?.endMs, duration = start !== undefined && end !== undefined ? Math.max(0, end - start) : undefined
   const position = plan && current && playback && sameProductionBinding(playback.binding, plan.binding) && playback.position?.sectionId === sectionId && start !== undefined ? Math.max(0, playback.position.timeMs - start) : undefined
   const tracks: TimelineTrack[] = page && plan ? plan.tracks.map(track => ({ id: track.kind, label: p.tracks[track.kind], segments: track.segments.filter(segment => segment.sectionId === sectionId).map(segment => {
@@ -49,9 +53,10 @@ export function ProductionTimeline({ plan, sectionId, stepId, active, current, s
       statusLabel: [status, track.kind === 'caption' && p.alignmentStatus[segment.alignment ?? 'none'], segment.audio && (wave === false ? p.waveformUnavailable : wave === undefined ? p.waveformLoading : undefined)].filter(Boolean).join(' · '),
       waveform: wave ? wave.peaks : undefined,
     }
-  }) })) : [{ id: 'visual', label: p.tracks.visual, segments: section?.stepOrder.map((id, index) => ({ id, stepId: id, label: document?.steps[id]?.title ?? p.stepNumber(index), timing: 'unknown' as const })) ?? [] }, { id: 'voice', label: p.tracks.voice, segments: [] }, { id: 'caption', label: p.tracks.caption, segments: [] }]
+  }) })) : [{ id: 'visual', label: p.tracks.visual, segments: excluded ? [] : section?.stepOrder.map((id, index) => ({ id, stepId: id, label: document?.steps[id]?.title ?? p.stepNumber(index), timing: 'unknown' as const })) ?? [] }, { id: 'voice', label: p.tracks.voice, segments: [] }, { id: 'caption', label: p.tracks.caption, segments: [] }]
   const captionChoices = current ? plan?.tracks.find(track => track.kind === 'caption')?.segments.filter(segment => segment.stepId === stepId && (segment.alignment === 'words' || segment.alignment === 'manual') && segment.timing === 'confirmed').map(segment => segment.id) ?? [] : []
   return <PmTimeline variant="editor" label={p.timeline} tracks={tracks} labels={p.timelineLabels} durationMs={duration} durationStatus={page?.timing ?? 'unknown'} currentTimeMs={position} selectedStepId={stepId} showSteps={false}
+    excluded={excluded ? { status: p.notInLecture, notice: p.notInLectureHint } : undefined} notice={stepLeftOut ? p.notInLectureStep : undefined}
     segmentPicker={{ track: 'caption', ids: captionChoices, label: p.captionSegment, placeholder: p.chooseCaptionSegment }}
     zoom={zoom} onZoomChange={setZoom} disabled={disabled} loading={loading} seeking={seeking} seekDisabled={!seekEnabled || start === undefined}
     onSelectStep={onSelectStep} onSelectSegment={(track, selected) => {

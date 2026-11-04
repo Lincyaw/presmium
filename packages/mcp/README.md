@@ -23,6 +23,18 @@ codex mcp add presmium -- presmium mcp
 
 The servers also serve MCP at `/mcp` over Streamable HTTP, with `Authorization: Bearer <token>`; `presmium dev` and `presmium serve` print the address and the state file that holds the token. `presmium-mcp` is the same command as `presmium mcp`.
 
+### From the command line
+
+Scripts and pipelines call the same tools without an MCP client, from a directory whose service runs (found as the relay finds it):
+
+```sh
+presmium mcp tools                                     # name, kind (read, operate, spend, write, agent) and summary of each tool
+presmium mcp call list_documents
+presmium mcp call capture_slides '{"document":"intro","section":"p-problem"}' --out shots
+```
+
+`call` takes the tool's arguments as one JSON object (default `{}`) and writes the result to stdout as JSON: the structured content, else the result's text. Pictures the tool returns (`capture_slides`, `capture_reading`, `capture_overview`) are saved with `--out <dir>` as `<tool>-00.png`, `<tool>-01.png`, …; their paths, and every other message, go to stderr, so stdout pipes to `jq`. Tools other than reading wait for the author's approval as an AI's calls do (an open Presmium window, or `presmium serve --allow`). It exits 0 on success, 1 when the tool reports an error (its result is still written), and 2 on a usage error, an unknown tool, or when no service runs for the directory.
+
 On connecting, the server's instructions give the order of work (skills, finding the target, reading, planned changes, checks, pictures, voiceover), naming the tools that host offers. Plugin tools appear once their compilation is ready; follow tool-list change notifications.
 
 ## Tools

@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
-"""Crop a figure of a paper's arXiv source into a PNG for a scene, with a map of the words in it.
+"""Crop one region of a figure PDF (from a paper's arXiv source) into a PNG for a scene, with a map of every word in it.
 
-    uv run --no-project --with pymupdf python -I papers/tools/figure.py <figure.pdf> <out.png> \
-        [--crop x0,y0,x1,y1] [--width 2400] [--words]
+    uv run --no-project --with pymupdf python -I figure.py <figure.pdf> <out.png> \
+        [--crop x0,y0,x1,y1] [--width 2400] [--page 0] [--words]
 
-`--crop` is in the PDF's points (0,0 top left; `--words` without `--crop` prints the page size and every word's
-box, which is how a crop is chosen). The PNG is `--width` pixels wide. Beside it the script writes `<out>.json`:
-the crop's size in points and the box of every word inside it, as fractions of the crop (x, y, w, h), so a scene
-can place an overlay on a tick label or a legend entry without guessing pixels. Axis transforms come from those
-words: two tick labels give the scale of an axis.
+`--words` prints the page size and the box of every word (in the region, or on the whole page without `--crop`);
+that is how a crop is chosen. `--crop` is in the PDF's points, origin top left. The PNG is `--width` pixels wide
+(2400 is the widest a Presmium build publishes). Beside it the script writes `<out>.json`, the word map:
+
+    { "source": "<figure.pdf>", "crop": [x0, y0, x1, y1], "size": [px wide, px high], "aspect": width / height,
+      "words": [{ "text": "1e21", "x": 0.61, "y": 0.83, "w": 0.04, "h": 0.05 }, ...] }
+
+Each word's box is in fractions of the crop (left, top, width, height), so a scene places a mark on a tick label or a
+legend entry without guessing pixels, and two tick labels of an axis give that axis's transform from data values to
+the figure (the label's centre is its tick). A word cut by the crop's edge is kept, with a box reaching past 0 or 1.
+Figures whose text was converted to outlines have no words; ask for the figure's source or use another figure.
 """
 import argparse
 import json
