@@ -1,5 +1,13 @@
 # @lincyaw/skills
 
+## 1.0.0-rc.47
+
+### Patch Changes
+
+- 93de973: Expose the workspace Changes panel through bounded MCP operations with minimal commit/discard arguments. Share the Web transaction, freeze approved commit content before confirmation, preserve unrelated staging and restore both selected files and index on discard. Reject stale state, unsafe file substitutions and invalid documents.
+- Updated dependencies [93de973]
+  - @lincyaw/kernel@1.0.0-rc.47
+
 ## 1.0.0-rc.46
 
 ### Patch Changes

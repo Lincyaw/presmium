@@ -1,5 +1,12 @@
 # @lincyaw/compiler
 
+## 1.0.0-rc.47
+
+### Patch Changes
+
+- Updated dependencies [93de973]
+  - @lincyaw/kernel@1.0.0-rc.47
+
 ## 1.0.0-rc.46
 
 ### Patch Changes
