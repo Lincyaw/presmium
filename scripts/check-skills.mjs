@@ -140,6 +140,7 @@ function cliCommands() {
 }
 
 const commands = cliCommands()
+const expandedHelp = new Set()
 if (commands.size === 0) fail('could not read the commands from `presmium --help`')
 const MENTION = /(?<![\w@/.-])presmium[ \t]+([a-z][\w-]*)([^`|;&，。）)\n]*)/g
 for (const [file, text] of texts) {
@@ -151,6 +152,11 @@ for (const [file, text] of texts) {
       continue
     }
     for (const [, option] of rest.matchAll(/(?:^|\s)--([\w-]+)/g)) {
+      if (!options.has(option) && !expandedHelp.has(command)) {
+        const usage = execFileSync(process.execPath, [join(root, 'packages/presmium/bin/presmium.mjs'), command, '--help'], { encoding: 'utf8' })
+        for (const [, flag] of usage.matchAll(/^\s+--([\w-]+)/gm)) options.add(flag)
+        expandedHelp.add(command)
+      }
       if (!options.has(option)) fail(`${where}: "presmium ${command}" has no option --${option}`)
     }
   }

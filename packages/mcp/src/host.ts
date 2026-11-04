@@ -25,6 +25,8 @@ export interface McpCaller {
   member: Member
   mode: AgentMode
   confirmed?: boolean
+  /** The workspace owner's credential authorizes document edits; execution and paid tools keep their policy. */
+  authoringConfirmed?: boolean
   document?: string
 }
 

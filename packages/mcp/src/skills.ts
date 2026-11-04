@@ -44,7 +44,7 @@ function skillFile(args: Record<string, unknown>) {
   }))
 }
 
-export const SKILL_INSTRUCTIONS = 'Before creating or changing Presmium documents, animations, presentations or plugins, call list_skills and read the matching SKILL.md with read_skill. Read the referenced files needed for the task from that skill\'s listed relative paths. Follow nextOffset to finish a file and compare its version/hash across fragments; restart a read if they change. These bundled instructions are also resources at presmium://skills and presmium://skills/{name}/{+path}; file resources return the same bounded JSON text fragments and accept ?offset=<n>&limit=<n>. They are available without a document. The client decides when to read them; connecting does not install skills or load their full text into a prompt.'
+export const SKILL_INSTRUCTIONS = 'For composition, layout, animation, presentation design or plugin work, use list_skills and read the matching SKILL.md with read_skill, then only the referenced files the task needs. Reuse a skill already read at its current version; an explicit simple edit such as renaming a page needs no skill-discovery calls. Follow nextOffset to finish a file and compare its version/hash across fragments; restart a read if they change. These bundled instructions are also resources at presmium://skills and presmium://skills/{name}/{+path}; file resources return the same bounded JSON text fragments and accept ?offset=<n>&limit=<n>. They are available without a document. Connecting does not install skills or load their full text into a prompt.'
 
 export const SKILL_TOOLS: ToolSpec[] = [
   {

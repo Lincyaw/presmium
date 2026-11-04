@@ -91,7 +91,7 @@
 ### 5.2 令牌
 
 - **服务令牌**：启动器经 `PRESMIUM_SERVICE_TOKEN` 交给服务与 dsh（不在命令行）。设置后工作区与服务端路由要求 Bearer，预览中的脚本因此不能改源码；产物插件路由只查 `Host` 与 `Origin`。它只是纵深防御。
-- **外部 MCP 令牌**：Studio 为每个启动目录的真实路径保存一个令牌，经 `PRESMIUM_MCP_TOKEN` 交给工作区服务。文件在 `$XDG_STATE_HOME/presmium/studio/mcp/<目录散列>.token`（未设置时用 `~/.local/state`），权限为 `0600`，独立于安装版本与临时服务状态。它沿用外部作者的确认策略，与每次启动生成的服务令牌、每个会话签发的令牌分开。
+- **外部 MCP 令牌**：Studio 为每个启动目录的真实路径保存一个令牌，经 `PRESMIUM_MCP_TOKEN` 交给工作区服务。文件在 `$XDG_STATE_HOME/presmium/studio/mcp/<目录散列>.token`（未设置时用 `~/.local/state`），权限为 `0600`，独立于安装版本与临时服务状态。服务自身的作者令牌已经授予常规文稿内容编辑权限，此类编辑不再向 Studio 请求第二次确认；通用接口的整份替换与工程文件写入、代码执行、收费操作及浏览器控制仍遵守各自的确认策略。经接口签发的其他令牌保持原策略。该令牌与每次启动生成的服务令牌、每个会话签发的令牌分开。
 - **会话令牌**：bundle 为每个 dsh 会话 `POST tokens { document, session }`，模式“主机已确认”（`MCP_ENDPOINT.issue` 的 `{ confirmed: true }`）：操作类工具不再向页面请求确认，dsh 已按策略决定。没有服务令牌时 `tokens` 一律 403。
 
 ### 5.3 当前诊断

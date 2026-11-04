@@ -1,4 +1,5 @@
 [
+  {"file": "packages/mcp/src/messages.ts", "key": "MCP_CLI_MESSAGES.unknownTool", "rule": "MCP", "reason": "CLI error gives the exact presmium mcp tools command used to discover available tool definitions."},
   {"file": "packages/workbench/src/speech-settings-messages.ts", "key": "SPEECH_SETTINGS_MESSAGES.keyHint", "rule": "ID", "reason": "Volcengine App ID is a required provider credential paired with an access token; naming it lets the operator find the matching console field, rather than exposing a document internal ID."},
   {"file": "packages/workbench/src/speech-settings-messages.ts", "key": "SPEECH_SETTINGS_MESSAGES.appId", "rule": "ID", "reason": "Provider configuration field must use the Volcengine console name App ID; this is not a document or component internal identifier."},
   {"file": "packages/workbench/src/speech-settings-messages.ts", "key": "SPEECH_SETTINGS_MESSAGES.appIdHint", "rule": "ID", "reason": "Explains exactly when the provider App ID is needed and when a new API key clears the old credential pairing."},

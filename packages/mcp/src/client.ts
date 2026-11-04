@@ -199,6 +199,8 @@ export function describeOperation(tool: string, args: Record<string, unknown>, l
     case 'navigate': return m.navigate(text(args.section), typeof args.step === 'number' ? args.step : 0)
     case 'run_code': return m.run(text(args.section), text(args.block))
     case 'build': return m.build(m.renderers(Array.isArray(args.to) ? args.to.map(text) : []))
+    case 'rename_page':
+    case 'edit_document':
     case 'apply_document_change': return m.applyDocumentChange
     case 'apply_page_duplication': return m.duplicatePage
     case 'apply_page_change': return m.applyPagePlan

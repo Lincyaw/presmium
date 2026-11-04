@@ -126,16 +126,20 @@ async function toolCommand(command: 'call' | 'tools', argv: string[]): Promise<n
   let tool = ''
   let args: Record<string, unknown> = {}
   let out: string | undefined
+  let json = false
   try {
-    const { values, positionals } = parseArgs({ args: argv, allowPositionals: true, options: { out: { type: 'string' }, help: { type: 'boolean', short: 'h' } } })
+    const { values, positionals } = parseArgs({ args: argv, allowPositionals: true, options: { out: { type: 'string' }, json: { type: 'boolean' }, help: { type: 'boolean', short: 'h' } } })
     if (values.help) {
       process.stdout.write(`${t.usage}\n`)
       return 0
     }
     if (command === 'tools') {
-      if (positionals.length > 0) throw new Error(t.unexpectedToolArgument(positionals[0]!))
+      if (positionals.length > 1) throw new Error(t.unexpectedToolArgument(positionals[1]!))
       if (values.out !== undefined) throw new Error(t.unexpectedToolArgument('--out'))
+      tool = positionals[0] ?? ''
+      json = values.json === true || tool !== ''
     } else {
+      if (values.json !== undefined) throw new Error(t.unexpectedToolArgument('--json'))
       if (!positionals[0]) throw new Error(t.missingTool)
       if (positionals.length > 2) throw new Error(t.unexpectedToolArgument(positionals[2]!))
       tool = positionals[0]
@@ -160,7 +164,14 @@ async function toolCommand(command: 'call' | 'tools', argv: string[]): Promise<n
   }
   try {
     if (command === 'tools') {
-      for (const listed of await client.tools()) process.stdout.write(`${listed.name}\t${listed.kind}\t${listed.description.replace(/\s+/g, ' ').split(/(?<=\.) /)[0]}\n`)
+      const tools = await client.tools()
+      const selected = tool ? tools.find(listed => listed.name === tool) : undefined
+      if (tool && !selected) {
+        process.stderr.write(`presmium mcp: ${t.unknownTool(tool)}\n`)
+        return 2
+      }
+      if (json) process.stdout.write(`${JSON.stringify(selected ?? tools, null, 2)}\n`)
+      else for (const listed of tools) process.stdout.write(`${listed.name}\t${listed.kind}\t${listed.description.replace(/\s+/g, ' ').split(/(?<=\.) /)[0]}\n`)
       return 0
     }
     const result = await client.call(tool, args)

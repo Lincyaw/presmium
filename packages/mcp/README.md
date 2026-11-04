@@ -13,7 +13,7 @@ claude mcp add presmium -- presmium mcp
 codex mcp add presmium -- presmium mcp
 ```
 
-`presmium mcp [directory]` relays to the Presmium server running for the directory, read from its state file: the Presmium Studio or `presmium serve` of the directory or of the workspace above it, else the `presmium dev` of the document. Their port and access token change when they start again; the relay reads them again whenever the server can't be reached, so the client's configuration names only the command. The client receives the server's whole tool set:
+`presmium mcp [directory]` relays to the Presmium server running for the directory, read from its state file: the Presmium Studio or `presmium serve` of the directory or of the workspace above it, else the `presmium dev` of the document. The relay reads the endpoint again whenever the server cannot be reached, so the client's configuration names only the command. Studio defaults to fixed HTTP MCP port 4321 and keeps its access token for the same launch directory across restarts and upgrades. The client receives the server's whole tool set:
 
 | Running for the project | Tools |
 | --- | --- |
@@ -29,13 +29,16 @@ Scripts and pipelines call the same tools without an MCP client, from a director
 
 ```sh
 presmium mcp tools                                     # name, kind (read, operate, spend, write, agent) and summary of each tool
+presmium mcp tools rename_page                         # live definition and input schema, directly from tools/list
+presmium mcp tools --json                              # complete live tool definitions
 presmium mcp call list_documents
+presmium mcp call rename_page '{"section":1,"title":"New title"}'
 presmium mcp call capture_slides '{"document":"intro","section":"p-problem"}' --out shots
 ```
 
-`call` takes the tool's arguments as one JSON object (default `{}`) and writes the result to stdout as JSON: the structured content, else the result's text. Pictures the tool returns (`capture_slides`, `capture_reading`, `capture_overview`) are saved with `--out <dir>` as `<tool>-00.png`, `<tool>-01.png`, …; their paths, and every other message, go to stderr, so stdout pipes to `jq`. Tools other than reading wait for the author's approval as an AI's calls do (an open Presmium window, or `presmium serve --allow`). It exits 0 on success, 1 when the tool reports an error (its result is still written), and 2 on a usage error, an unknown tool, or when no service runs for the directory.
+`call` takes the tool's arguments as one JSON object (default `{}`) and writes the result to stdout as JSON: the structured content, else the result's text. Pictures the tool returns (`capture_slides`, `capture_reading`, `capture_overview`) are saved with `--out <dir>` as `<tool>-00.png`, `<tool>-01.png`, …; their paths, and every other message, go to stderr, so stdout pipes to `jq`. The local owner's access token authorizes ordinary canonical editing without another Studio prompt; full replacement and file writes through the generic interface, execution, paid generation and browser control keep their own confirmation policies. Other issued tokens keep their existing policy. It exits 0 on success, 1 when the tool reports an error (its result is still written), and 2 on a usage error, an unknown tool, or when no service runs for the directory.
 
-On connecting, the server's instructions give the order of work (skills, finding the target, reading, planned changes, checks, pictures, voiceover), naming the tools that host offers. Plugin tools appear once their compilation is ready; follow tool-list change notifications.
+`rename_page` handles an explicit title change in one call. `edit_document` handles canonical content operations through the same read, preflight and save transaction internally. Both return saved-source verification and reported editor synchronization separately from preview preparation; they do not automatically compile or generate voiceover. Pass optional source when intent depends on an earlier read. A conflict requires a fresh decision, and a lost response requires checking current state before repeating a write. Plan/apply tools remain for advanced impact review. Simple edits use their receipt; compilation and capture follow the task scope. Plugin tools appear once their compilation is ready; follow tool-list change notifications.
 
 ## Tools
 
@@ -49,8 +52,8 @@ On connecting, the server's instructions give the order of work (skills, finding
 | Pictures | `capture_slides`: a page's steps as the presentation shows them (rest frames, `at` moments into the animation, or reached going `backward`), as PNG images, with the boxes of the elements a CSS selector `measure`s; `capture_reading`: a page of the reading version at a window `width`; `capture_overview`: every page at once, as sheets of thumbnails and a directory of frames in reading order |
 | Classroom | `get_classroom`, `classroom_start`, `classroom_end` |
 | Canonical reading | `get_authoring_capabilities`, `get_document_outline`, `read_document_part`, `get_document` (full document, may exceed a tool-result budget) |
-| Document changes | `plan_document_change`, `apply_document_change` |
-| Pages | `plan_page_change`, `apply_page_change`, `plan_page_duplication`, `apply_page_duplication` |
+| Document changes | `edit_document`, `plan_document_change`, `apply_document_change` |
+| Pages | `rename_page`, `plan_page_change`, `apply_page_change`, `plan_page_duplication`, `apply_page_duplication` |
 | Comments, voice settings, component parameters, caption timing | `plan_authoring_action`, `apply_authoring_action`, `read_authoring_action_impact` |
 | History | `get_document_history`, `read_history_file` |
 | Projects | `get_project_capabilities`, `plan_project_change`, `apply_project_change` |

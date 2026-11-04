@@ -16,7 +16,7 @@ workspace 为每项能力创建一个实例，HTTP 与 MCP 共用实例与回执
 
 | 服务（`packages/workspace/src/node/`） | HTTP 路由 | MCP 适配（`packages/mcp/src/`） |
 | --- | --- | --- |
-| `createDocumentEditor`（`document-authoring.ts`） | `document`、`document/{change,outline,part,capabilities}`、`document/page/*`、`document/action/*` | `authoring.ts`、`authoring-actions.ts` |
+| `createDocumentEditor`（`document-authoring.ts`） | `document`、`document/{change,outline,part,capabilities}`、`document/page/*`、`document/action/*` | `editing.ts`、`authoring.ts`、`authoring-actions.ts` |
 | `createProjectAuthoring`（`projects.ts`） | `project/*` | `projects.ts` |
 | `createDocumentHistory`（`document-history.ts`） | `history/*` | `history.ts` |
 | `createDocumentAudioAuthoring`（`document-audio.ts`） | `document/audio`、`document/media-clip*`、`document/recording/adopt` | `audio-authoring.ts` |
@@ -33,7 +33,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 ## 3. 能力与版本
 
-调用方先探测能力，再读权威版本。`get_authoring_capabilities` 与各服务的 `get_*_capabilities` 不编译，报告各动作能否预检与提交、预算、`idempotency` 与 `review`。状态区分 available、unavailable 与 unknown；`verification: configuration-only` 只看了配置，不证明鉴权或合成可用。能力响应不含凭据。
+工具是否可用以 MCP 的工具表为准；已列出的简单编辑工具可直接调用。需要了解高级动作限制时，`get_authoring_capabilities` 与各服务的 `get_*_capabilities` 报告能否预检与提交、预算、`idempotency` 与 `review`，不编译文稿。状态区分 available、unavailable 与 unknown；`verification: configuration-only` 只看了配置，不证明鉴权或合成可用。能力响应不含凭据。工具的参数来自同一份 `inputSchema`：MCP `tools/list` 与 CLI `presmium mcp tools <工具>`、`tools --json` 共用服务端返回的定义，没有单独维护的参数清单。
 
 | 标识 | 来源 | 用途 |
 | --- | --- | --- |
@@ -59,7 +59,13 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 ## 5. 文稿修改
 
-每类写入分两步。预检只读，返回 `planId`、`digest`、`expiresAt`、source、影响与问题；提交只带 `{ planId, source, digest }`，服务从同一计划表取回确切候选，在事务内全部重查。完整候选、ID 映射和详情是按需读取的资源，模型不回抄。
+普通编辑通过一次 MCP 调用完成。`rename_page` 接收页码（从 1 开始）或稳定 ID 与标题；`edit_document` 接收最多 32 个标准内容操作。适配器在服务端串联现有 `read/plan/checkApply/apply`，沿用 CAS、验证、锁、修改历史与保存后读取，不持有第二套事务或计划表。请求最多 32768 个 JSON 字符；标准操作的参数格式直接复用内核 `DocumentChange` 的定义。可选 `source` 将意图绑定到先前读取的版本；省略时以本次调用读取的版本为基础，期间发生并发写入仍返回 409，不自动重试。请求回执丢失时先读取当前状态，不盲目重新写入。
+
+回执给出保存版本、修改摘要、修改历史 ID，以及 `rename_page` 实际保存的标题。编辑器反馈最多等待 750 毫秒，使用 `AuthoringClients` 的真实报告，分别列出保存版本是否已被编辑器采用、预览是否准备为同一版本。`current/pending/unavailable` 描述编辑器报告，不代表视觉检查；反馈失败也保留成功的保存状态。普通编辑按回执报告结果，不默认编译整份文稿、截图或生成配音。
+
+服务自身的作者访问令牌授权普通规范内容编辑，无需再次在 Studio 确认。通用接口携带 `fileChanges` 或 `replacement` 时保留原确认；代码执行、收费服务和浏览器控制也保持各自策略。经接口签发的其他令牌维持原有授权方式。
+
+需要单独审阅影响的写入保留两步接口。预检只读，返回 `planId`、`digest`、`expiresAt`、source、影响与问题；提交从同一计划表取回确切候选，在事务内全部重查。完整候选、ID 映射和详情是按需读取的资源，模型不回抄。
 
 | 计划族 | 预检 → 提交 | 范围 |
 | --- | --- | --- |

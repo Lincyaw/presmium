@@ -58,6 +58,7 @@ independent snapshots and never take focus or mode while editing.
   `createDocumentAudioAuthoring`, `createDocumentVoiceAuthoring`. Never add a second writer, replay ledger,
   compile step or tool adapter with its own queue. Unimplemented actions are not advertised. Tools, budgets
   and receipts: `docs/authoring-actions.md` sections 2 to 10.
+- `rename_page` and `edit_document` compose the existing read/plan/check/apply owner in one MCP call. Keep the operation schema derived from the kernel schema and CLI introspection derived from live tools/list. The owner's credential authorizes canonical editing only; execution, paid tools and browser control retain their policy. Return actual saved-source readback and bounded client-reported editor/preview state separately. Do not add automatic compilation or turn pending editor feedback into a failed save or another write. Simple edits use their receipt; checks and captures follow the task scope.
 - Browser-only MCP actions (`preview.prepare`, `source.flush`, comment and component-property draft reads)
   go over the shared workspace WebSocket to the `AuthoringClients` owner and need exact source, client
   epoch and input revision. Admission is not completion; only the browser acknowledges. No MCP ACK tool,

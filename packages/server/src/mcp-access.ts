@@ -39,7 +39,7 @@ export class McpTokens {
 
   callerOf(mcpToken: string | undefined): McpCaller | undefined {
     if (mcpToken === undefined) return undefined
-    return mcpToken === this.processMcpToken ? { member: LOCAL_AUTHOR, mode: 'author' } : this.#callers.get(mcpToken)
+    return mcpToken === this.processMcpToken ? { member: LOCAL_AUTHOR, mode: 'author', authoringConfirmed: true } : this.#callers.get(mcpToken)
   }
 
   /** Ties an event stream to the grant that opened it, so that revoking the grant ends the stream. */
