@@ -61,9 +61,9 @@ function pageTitle(doc: IRDocument, section: string): string {
   return doc.sections.find(s => s.id === section)?.title || section
 }
 
-/** The lecture video against `maximumDurationMs`: an error when its confirmed length is over it. */
+/** A confirmed lecture video against `maximumDurationMs`: an error when it is longer. */
 function lengthFindings(ctx: CheckContext, plan: Omit<ProductionPlan, 'binding'>, limit: number): Finding[] {
-  const timing = lectureTiming(ctx.ir, plan), over = plan.timing === 'confirmed' ? overLimit(timing, limit) : undefined
+  const timing = lectureTiming(ctx.ir, plan), over = overLimit(timing, limit)
   if (!over) return []
   const t = LECTURE_MESSAGES[deckLocale(ctx.ir.meta.lang)].timing
   const cut = over.cut && timing.rate ? { rate: timing.rate.toFixed(1), characters: over.cut } : undefined
@@ -85,14 +85,20 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
   if (limit === 'invalid') findings.push({ checkId: LECTURE_ID, severity: 'error', message: messages.timing.limitInvalid, source })
   let prepared: SynthesizedLecture | undefined
   if (typeof limit === 'number') {
-    // Missing voiceover throws nothing: it leaves the plan estimated, which `lengthFindings` does not compare and the
-    // findings below report. What does throw (an audio file changed or unreadable) means the length went unchecked.
+    const unchecked = (reason: string) => findings.push({ checkId: LECTURE_ID, severity: 'warning', message: messages.timing.unchecked(reason), source })
+    // Reading the cache-only production fails only on its files (an audio file changed or unreadable); missing
+    // voiceover or no voice chosen leaves the plan estimated instead, and a step of unknown length leaves it unknown.
+    let production: Awaited<ReturnType<typeof cachedProduction>> | undefined
     try {
-      const production = await cachedProduction(ctx.ir, ctx.deckDir, ctx.service?.(SPEECH))
-      findings.push(...lengthFindings(ctx, production.projected, limit))
-      prepared = production.made
+      production = await cachedProduction(ctx.ir, ctx.deckDir, ctx.service?.(SPEECH))
     } catch (error) {
-      findings.push({ checkId: LECTURE_ID, severity: 'warning', message: messages.timing.unchecked(lengthFailure(ctx.ir, messages, error)), source })
+      unchecked(lengthFailure(ctx.ir, messages, error))
+    }
+    if (production) {
+      prepared = production.made
+      const timing = production.projected.timing
+      if (timing === 'confirmed') findings.push(...lengthFindings(ctx, production.projected, limit))
+      else unchecked(timing === 'estimated' ? messages.timing.uncheckedEstimated : messages.timing.uncheckedUnknown)
     }
   }
   if (!prepared && (view.production?.mediaClips.length || Object.keys(view.production?.captionTimings ?? {}).length || deck.recorded)) prepared = await synthesizeLecture(view, ctx.deckDir, ctx.service?.(SPEECH), undefined, { cacheOnly: true })

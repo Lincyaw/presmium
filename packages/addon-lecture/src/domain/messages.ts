@@ -22,6 +22,8 @@ export interface LectureMessages {
     /** The length could not be checked against the limit; `reason` is a sentence of this catalog. */
     unchecked(reason: string): string
     uncheckedReason: string
+    uncheckedEstimated: string
+    uncheckedUnknown: string
     columns: { page: string, step: string, characters: string, voice: string, rate: string, animation: string, length: string }
     totals(steps: number, characters: number, voiceSeconds: string, rate?: string): string
     /** The video's length, then `verdict` (`within` or `over`) when the document sets a limit. */
@@ -185,6 +187,8 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       limitInvalid: 'metadata.renderers.lecture.maximumDurationMs 须为大于 0 的毫秒数。',
       unchecked: reason => `无法检查讲授视频是否超过时长上限。${reason}`,
       uncheckedReason: '读取配音或音频文件失败。请重新运行 presmium check。',
+      uncheckedEstimated: '部分讲稿还没有配音或没有选择音色，视频时长只是估算；生成配音后再检查。',
+      uncheckedUnknown: '有步骤的时长无法确定，原因见这次检查的其他问题。',
       columns: { page: '页面', step: '步骤', characters: '字数', voice: '配音（秒）', rate: '每秒字数', animation: '动画（秒）', length: '时长（秒）' },
       totals: (steps, characters, voice, rate) => `共 ${steps} 步，讲稿 ${characters} 字，配音 ${voice} 秒${rate ? `（每秒 ${rate} 字）` : ''}。`,
       video: (length, seconds, verdict) => `视频长 ${length}（${seconds} 秒）。${verdict ?? ''}`,
@@ -306,6 +310,8 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       limitInvalid: 'metadata.renderers.lecture.maximumDurationMs must be a number of milliseconds greater than 0.',
       unchecked: reason => `Couldn’t check the lecture video’s length against its limit. ${reason}`,
       uncheckedReason: 'Reading the voiceover or audio files failed. Run presmium check again.',
+      uncheckedEstimated: 'Some of the script has no voiceover or no voice is chosen, so the video’s length is only an estimate. Check again once the voiceover is generated.',
+      uncheckedUnknown: 'Some steps have no known length; the other problems of this check say why.',
       columns: { page: 'Page', step: 'Step', characters: 'Characters', voice: 'Voiceover (s)', rate: 'Characters/s', animation: 'Animation (s)', length: 'Length (s)' },
       totals: (steps, characters, voice, rate) => `${steps} step${steps === 1 ? '' : 's'}, ${characters} character${characters === 1 ? '' : 's'} of script, ${voice} s of voiceover${rate ? ` (${rate} characters a second)` : ''}.`,
       video: (length, seconds, verdict) => `The video is ${length} long (${seconds} s).${verdict ? ` ${verdict}` : ''}`,
