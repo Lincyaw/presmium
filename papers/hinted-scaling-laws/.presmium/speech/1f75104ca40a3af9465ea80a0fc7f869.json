@@ -1,0 +1,328 @@
+{
+  "key": "1f75104ca40a3af9465ea80a0fc7f869",
+  "audio": "1f75104ca40a3af9465ea80a0fc7f869.ogg",
+  "mime": "audio/ogg",
+  "duration": 15.59975,
+  "words": [
+    {
+      "text": "论",
+      "start": 0.045,
+      "end": 0.245
+    },
+    {
+      "text": "文",
+      "start": 0.245,
+      "end": 0.465
+    },
+    {
+      "text": "图",
+      "start": 0.465,
+      "end": 0.715
+    },
+    {
+      "text": "1",
+      "start": 0.715,
+      "end": 0.745
+    },
+    {
+      "text": "展",
+      "start": 1.045,
+      "end": 1.225
+    },
+    {
+      "text": "示",
+      "start": 1.225,
+      "end": 1.405
+    },
+    {
+      "text": "了",
+      "start": 1.405,
+      "end": 1.535
+    },
+    {
+      "text": "三",
+      "start": 1.535,
+      "end": 1.725
+    },
+    {
+      "text": "种",
+      "start": 1.725,
+      "end": 1.915
+    },
+    {
+      "text": "提",
+      "start": 1.915,
+      "end": 2.075
+    },
+    {
+      "text": "示",
+      "start": 2.075,
+      "end": 2.205
+    },
+    {
+      "text": "方",
+      "start": 2.205,
+      "end": 2.415
+    },
+    {
+      "text": "法：",
+      "start": 2.415,
+      "end": 2.445
+    },
+    {
+      "text": "截",
+      "start": 3.125,
+      "end": 3.325
+    },
+    {
+      "text": "断",
+      "start": 3.325,
+      "end": 3.595
+    },
+    {
+      "text": "给",
+      "start": 3.595,
+      "end": 3.785
+    },
+    {
+      "text": "出",
+      "start": 3.785,
+      "end": 4.005
+    },
+    {
+      "text": "参",
+      "start": 4.005,
+      "end": 4.215
+    },
+    {
+      "text": "考",
+      "start": 4.215,
+      "end": 4.425
+    },
+    {
+      "text": "解",
+      "start": 4.425,
+      "end": 4.635
+    },
+    {
+      "text": "答",
+      "start": 4.635,
+      "end": 4.825
+    },
+    {
+      "text": "的",
+      "start": 4.825,
+      "end": 4.935
+    },
+    {
+      "text": "前",
+      "start": 4.935,
+      "end": 5.295
+    },
+    {
+      "text": "H",
+      "start": 5.365,
+      "end": 5.615
+    },
+    {
+      "text": "比",
+      "start": 5.615,
+      "end": 5.815
+    },
+    {
+      "text": "例；",
+      "start": 5.815,
+      "end": 6.085
+    },
+    {
+      "text": "遮",
+      "start": 6.600042,
+      "end": 6.7150416
+    },
+    {
+      "text": "盖",
+      "start": 6.7150416,
+      "end": 6.9450417
+    },
+    {
+      "text": "按",
+      "start": 6.995042,
+      "end": 7.1550417
+    },
+    {
+      "text": "比",
+      "start": 7.1550417,
+      "end": 7.325042
+    },
+    {
+      "text": "例",
+      "start": 7.325042,
+      "end": 7.475042
+    },
+    {
+      "text": "H",
+      "start": 7.585042,
+      "end": 7.9450417
+    },
+    {
+      "text": "随",
+      "start": 8.005042,
+      "end": 8.255042
+    },
+    {
+      "text": "机",
+      "start": 8.255042,
+      "end": 8.415042
+    },
+    {
+      "text": "保",
+      "start": 8.415042,
+      "end": 8.565042
+    },
+    {
+      "text": "留",
+      "start": 8.565042,
+      "end": 8.735042
+    },
+    {
+      "text": "词；",
+      "start": 8.735042,
+      "end": 9.135042
+    },
+    {
+      "text": "logit",
+      "start": 9.560083,
+      "end": 9.605083
+    },
+    {
+      "text": "混",
+      "start": 10.025084,
+      "end": 10.225083
+    },
+    {
+      "text": "合",
+      "start": 10.225083,
+      "end": 10.495084
+    },
+    {
+      "text": "按",
+      "start": 10.585083,
+      "end": 10.725083
+    },
+    {
+      "text": "权",
+      "start": 10.725083,
+      "end": 11.005083
+    },
+    {
+      "text": "重",
+      "start": 11.005083,
+      "end": 11.205084
+    },
+    {
+      "text": "H",
+      "start": 11.295083,
+      "end": 11.655084
+    },
+    {
+      "text": "将",
+      "start": 11.875084,
+      "end": 12.095083
+    },
+    {
+      "text": "教",
+      "start": 12.095083,
+      "end": 12.305083
+    },
+    {
+      "text": "师",
+      "start": 12.305083,
+      "end": 12.505083
+    },
+    {
+      "text": "模",
+      "start": 12.505083,
+      "end": 12.685083
+    },
+    {
+      "text": "型",
+      "start": 12.685083,
+      "end": 12.895083
+    },
+    {
+      "text": "的",
+      "start": 12.895083,
+      "end": 12.985084
+    },
+    {
+      "text": "logits",
+      "start": 13.445084,
+      "end": 13.475083
+    },
+    {
+      "text": "混",
+      "start": 13.595083,
+      "end": 13.855083
+    },
+    {
+      "text": "入",
+      "start": 13.855083,
+      "end": 14.035084
+    },
+    {
+      "text": "被",
+      "start": 14.035084,
+      "end": 14.225083
+    },
+    {
+      "text": "测",
+      "start": 14.225083,
+      "end": 14.415083
+    },
+    {
+      "text": "模",
+      "start": 14.415083,
+      "end": 14.585083
+    },
+    {
+      "text": "型",
+      "start": 14.585083,
+      "end": 14.765083
+    },
+    {
+      "text": "的",
+      "start": 14.765083,
+      "end": 14.855083
+    },
+    {
+      "text": "logits。",
+      "start": 15.525084,
+      "end": 15.555083
+    }
+  ],
+  "engine": "volcengine",
+  "model": "seed-tts-2.0",
+  "voice": "zh_female_tianmeitaozi_uranus_bigtts",
+  "provider": "火山引擎",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "论文图 1 展示了三种提示方法：截断给出参考解答的前 H 比例；遮盖按比例 H 随机保留词；logit 混合按权重 H 将教师模型的 logits 混入被测模型的 logits。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "火山引擎",
+    "ProduceID": "1f75104ca40a3af9465ea80a0fc7f869",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "3ec89a4dd9b98d16abf411093ed024ec3f1a289762caa9599f8c735acccf370b",
+  "profile": "690d5ae216b5e2235e2ea04afbb839b644f2da78da4c1c010caf76bd7d25d975",
+  "requestKey": "a1de76d53c4b3bcd774400a1bd3d0b9a",
+  "request": {
+    "spoken": "论文图 1 展示了三种提示方法：截断给出参考解答的前 H 比例；遮盖按比例 H 随机保留词；logit 混合按权重 H 将教师模型的 logits 混入被测模型的 logits。",
+    "rate": 1,
+    "style": ""
+  }
+}
