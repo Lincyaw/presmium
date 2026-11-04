@@ -1,5 +1,13 @@
 # @lincyaw/skills
 
+## 1.0.0-rc.45
+
+### Patch Changes
+
+- 54141d9: Expose bounded workspace review summaries, file diffs and accept/reject/checkpoint actions to external owner MCP clients. Bind approval to the exact candidate tree, publish immutable reviewed bytes and recheck after waiting for editor flush and workspace locks. Keep document assistants from approving their own changes.
+- Updated dependencies [54141d9]
+  - @lincyaw/kernel@1.0.0-rc.45
+
 ## 1.0.0-rc.44
 
 ### Patch Changes
