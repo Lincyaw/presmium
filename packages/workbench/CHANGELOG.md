@@ -1,5 +1,11 @@
 # @lincyaw/workbench
 
+## 0.2.0-rc.29
+
+### Patch Changes
+
+- 45e6837: Remove a duplicate hash dependency declaration from the Studio package metadata.
+
 ## 0.2.0-rc.28
 
 ### Patch Changes
