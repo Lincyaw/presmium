@@ -15,7 +15,7 @@ import type { PresmiumMcpClient } from './client.ts'
 import type { McpHost } from './host.ts'
 import { serveMcpStdio } from './mcp.ts'
 import { MCP_CLI_MESSAGES, systemLocale } from './messages.ts'
-import { schemaArguments } from './schemas.ts'
+import { queryToolCatalog } from './tool-catalog.ts'
 
 const OWN_DIR = fileURLToPath(new URL('..', import.meta.url))
 const CLI_PACKAGE = '@lincyaw/cli'
@@ -179,7 +179,7 @@ async function toolCommand(command: 'call' | 'tools', argv: string[]): Promise<n
         process.stderr.write(`presmium mcp: ${t.unknownTool(tool)}\n`)
         return 2
       }
-      const overview = (listed: typeof tools[number]) => ({ name: listed.name, kind: listed.kind, description: listed.description.slice(0, 180), arguments: schemaArguments(listed.inputSchema) })
+      const overview = (listed: typeof tools[number]) => queryToolCatalog([listed], { name: listed.name })
       if (json) process.stdout.write(`${JSON.stringify(schemas ? selected ?? tools : selected ? overview(selected) : tools.map(overview))}\n`)
       else for (const listed of tools) process.stdout.write(`${listed.name}\t${listed.kind}\t${listed.description.replace(/\s+/g, ' ').split(/(?<=\.) /)[0]}\n`)
       return 0
