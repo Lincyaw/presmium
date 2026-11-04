@@ -185,6 +185,7 @@ packages/addon-<ctx>/
 
 - `useStepState`、`StepScope`：块内步骤状态。
 - `useStepTime`：步内时间；现场按页面时间，回放与导出由 `STEP_CLOCK` 驱动，停定、后退与减少动态效果时为 `Infinity`。
+- `useDrivenStepLength`：驱动 `STEP_CLOCK` 的播放给每步的长度（`StepClockDriver.stepLength`，按幻灯片序号与步骤，毫秒）。只有讲授计划派生的讲授轨（`script`）在播放或停在某一步时给出，为该步从开始到配音结束的时间；配音等动画结束才开始的步骤（`after-animation`）、没有配音的步骤、录制的讲授、截图、读者试看与手动步进都没有。
 - `useActions`：具名动作，报告 `click`，讲授经它重放。
 - `useSharedState` 的 `scope`：`view`、`local`（本机窗口，BroadcastChannel）、`remote`（经同步传输跨设备）。
 - `useServer`、`useLocale`、`useMessages`、`siteBase`、`PmBoundary`、`registerPresmiumPlugin`、`startHost`、`stopHost`。
@@ -257,6 +258,8 @@ packages/addon-<ctx>/
 ### 5.3 步骤可逆
 
 视觉状态是步骤的纯函数；动画是（步骤，步内时间）的纯函数，时间只取 `useStepTime()`。读者的本地步进不写回宿主。
+
+动画场景的状态 k 按定义的 `durations[k]` 播放。有 `useDrivenStepLength` 时（讲授的播放与导出、视频制作的预览），状态 k 持续到第一个显示它的步骤的配音结束，不短于 `durations[k]`，其后的停顿与停留中保持终态；场景的 `durations`、`at`、`total` 都是这条时间线。场景在得到步长时重建一次，新场景换上之前，旧场景仍按自己的时间线显示，按帧导出等 `STEP_CLOCK.settled()` 时也等到新场景建好，所以没有一帧取自旧时间线。场景把节拍放在状态长度的比例处（`at(k) + f · durations[k]`），节拍就随配音移动，配音之后不必改写 `durations`；阅读页、手动步进的幻灯片、静态渲染与截图仍按定义的时长。
 
 ### 5.4 错误隔离
 

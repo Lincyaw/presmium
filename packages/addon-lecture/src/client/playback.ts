@@ -70,7 +70,7 @@ export function useLecturePlayback() {
     clear()
     const next = new LecturePlayer(track, doc, ops, clock, playback, Boolean(plan))
     current.current = next
-    releaseClock.current = stepClock?.drive({ elapsed: next.stepTime, recording: exporting }) ?? (() => {})
+    releaseClock.current = stepClock?.drive({ elapsed: next.stepTime, recording: exporting, stepLength: next.stepLength }) ?? (() => {})
     const seek = () => {
       if (origin && next.seekStep(origin.section, origin.step)) return
       if (origin && plan) { clear(); throw new Error('production-binding-stale') }

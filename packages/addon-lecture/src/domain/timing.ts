@@ -105,3 +105,27 @@ export function stepStops(events: readonly TimedEvent[]): StepStop[] {
   }
   return list
 }
+
+/**
+ * How long each step's voice lasts from the step's start (ms), by `section\u0000step`: until the last sentence heard in
+ * the step ends, at most until the next step. Pauses and holds after the voice do not count. A step where no sentence is
+ * heard has no length, nor one whose voice waits for its animation (`after-animation`: a hold at the step's start). A
+ * step reached again keeps what it had the first time.
+ */
+export function voicedLengths(events: readonly TimedEvent[], utterances: readonly Utterance[], end: number): Map<string, number> {
+  const stops = stepStops(events)
+  const waits = new Set(events.flatMap(event => event.type === 'pause' && event.data.hold === true ? [event.t] : []))
+  const seen = new Set<string>()
+  const lengths = new Map<string, number>()
+  for (const [i, stop] of stops.entries()) {
+    const key = `${stop.section}\u0000${stop.step}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    if (waits.has(stop.t)) continue
+    const until = stops[i + 1]?.t ?? end
+    let voiced = stop.t
+    for (const u of utterances) if (!u.silent && u.d > 0 && u.t < until && u.t + u.d > stop.t) voiced = Math.max(voiced, Math.min(until, u.t + u.d))
+    if (voiced > stop.t) lengths.set(key, voiced - stop.t)
+  }
+  return lengths
+}
