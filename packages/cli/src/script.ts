@@ -39,7 +39,7 @@ export function scriptLines(content: NarrationNode[]): string[] {
 }
 
 /** A narration's lines read back: joined by line breaks, a run of blank lines one blank line, none at either end. */
-function body(lines: readonly string[]): string {
+function linesToText(lines: readonly string[]): string {
   return lines.join('\n').replace(/\n{3,}/g, '\n\n').replace(/^\n+|\n+$/g, '')
 }
 
@@ -75,7 +75,7 @@ export function exportScript(document: TeachingDocument, instructions: string): 
 export function readScript(text: string): Map<string, { body: string, line: number }> {
   const found = new Map<string, { body: string, line: number }>()
   let current: { id: string, line: number, lines: string[] } | undefined
-  const close = () => { if (current) found.set(current.id, { body: body(current.lines), line: current.line }); current = undefined }
+  const close = () => { if (current) found.set(current.id, { body: linesToText(current.lines), line: current.line }); current = undefined }
   const lines = text.replace(/\r\n/g, '\n').split('\n')
   lines.forEach((raw, index) => {
     const line = raw.trim()
@@ -140,12 +140,12 @@ export function importScript(document: TeachingDocument, text: string): { docume
   const changed: string[] = []
   let narrations = document.narrations
   for (const id of expected) {
-    const { body: text, line } = found.get(id)!
+    const { body, line } = found.get(id)!
     const before = document.narrations[id]!
-    if (body(scriptLines(before.content)) === text) continue
-    if (!text) throw new ScriptError('script-empty', [id], line)
+    if (linesToText(scriptLines(before.content)) === body) continue
+    if (!body) throw new ScriptError('script-empty', [id], line)
     if (narrations === document.narrations) narrations = { ...narrations }
-    narrations[id] = { ...before, content: contentOf(id, text, before.content) }
+    narrations[id] = { ...before, content: contentOf(id, body, before.content) }
     changed.push(id)
   }
   return { document: changed.length ? { ...document, narrations } : document, changed }
