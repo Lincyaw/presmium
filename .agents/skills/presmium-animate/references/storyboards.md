@@ -163,7 +163,7 @@ Pitfalls: three circles in 2-D is a simplification (a phone needs four satellite
 
 ## Papers
 
-Design to the venue's clock: SIGGRAPH's Fast Forward gives 20 s narrated or 10 s silent, a CHI preview 30 s with the title in the first 3–4 s and captions, ECCV summaries under 60, 90 or 120 s, a Three Minute Thesis 3:00 (a second over disqualifies), IOP video abstracts 4 minutes, Elsevier and SIGCHI video figures 5. Every number carries its table ("论文表 1") and stays inside the paper: venues treat the video as part of the record. Result first suits pieces under a minute and method or systems papers; theory opens with the puzzle, clinical abstracts with the design (credibility depends on it), a thesis talk with a human question.
+Design to the venue's clock: SIGGRAPH's Fast Forward gives 20 s narrated or 10 s silent, a CHI preview 30 s with the title in the first 3–4 s and captions, ECCV summaries under 60, 90 or 120 s, a Three Minute Thesis 3:00 (a second over disqualifies), IOP video abstracts 4 minutes, Elsevier and SIGCHI video figures 5. Every number carries its table ("论文表 1") and stays inside the paper: venues treat the video as part of the record. When the evidence is one of the paper's figures, show that figure itself, cropped from the arXiv source, one figure a step and one region of it a shot, and draw the marks on it in its own coordinates (catalog/paper-figure `figure-tour`, `procedural.md` for the crop); its colours become the piece's colours. Result first suits pieces under a minute and method or systems papers; theory opens with the puzzle, clinical abstracts with the design (credibility depends on it), a thesis talk with a human question.
 
 ### A method teaser: NeRF, 30 s
 

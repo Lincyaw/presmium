@@ -1,5 +1,5 @@
 import type { LectureTrack, Utterance } from './track.ts'
-import { locate } from './words.ts'
+import { isWide, locate } from './words.ts'
 
 export interface CaptionGroup { id: string, text: string, t: number, d: number, alignment: 'words' | 'proportional' | 'none' | 'manual' }
 
@@ -56,4 +56,58 @@ export function captionGroupAt(groups: readonly CaptionGroup[], timeMs: number):
 export function trackCaptionGroups(track: LectureTrack): CaptionGroup[] {
   return [...track.utterances.filter(u => !track.captionOverrides?.some(own => own.section === u.section && own.step === u.step)).flatMap(captionGroups),
     ...track.captionOverrides?.flatMap(own => own.groups) ?? []].sort((a, b) => a.t - b.t)
+}
+
+/** How wide a caption's text is, in em: a wide (CJK or full-width) character takes one, any other about 0.55. */
+export function captionWidth(text: string): number {
+  let width = 0
+  for (const char of text) width += isWide(char) ? 1 : 0.55
+  return width
+}
+
+const SENTENCE_END = /[。！？!?；;…]/u
+const CLAUSE_END = /[，、,：:]/u
+const CLOSING = /[”’"'）)\]」』]/u
+
+/**
+ * A caption cut into pieces no wider than `budget` em, about equally long, each ending where it reads best: after a
+ * sentence, else after a clause, else at a space, else between two characters. A caption that fits stays whole.
+ */
+export function captionChunks(text: string, budget: number): string[] {
+  const chars = [...text.trim()], total = captionWidth(text.trim())
+  if (total <= budget || budget <= 0) return [text.trim()]
+  const target = Math.min(budget, total / Math.ceil(total / budget) * 1.15)
+  const chunks: string[] = []
+  let start = 0
+  while (start < chars.length) {
+    while (start < chars.length && /\s/u.test(chars[start]!)) start++
+    let end = start, used = 0
+    while (end < chars.length && used + (isWide(chars[end]) ? 1 : 0.55) <= target) used += isWide(chars[end++]) ? 1 : 0.55
+    if (end >= chars.length) { chunks.push(chars.slice(start).join('').trim()); break }
+    // A break too early would leave a short piece; below 40% of the window take a weaker one.
+    const earliest = start + Math.ceil((end - start) * 0.4)
+    const after = (mark: RegExp) => { for (let at = end; at > earliest; at--) if (mark.test(chars[at - 1]!)) return at; return -1 }
+    let cut = after(SENTENCE_END)
+    if (cut < 0) cut = after(CLAUSE_END)
+    if (cut < 0) for (let at = end; at > earliest; at--) if (/\s/u.test(chars[at]!)) { cut = at; break }
+    if (cut < 0) cut = Math.max(end, start + 1)
+    while (cut < chars.length && CLOSING.test(chars[cut]!)) cut++
+    chunks.push(chars.slice(start, cut).join('').trim())
+    start = cut
+  }
+  return chunks.filter(Boolean)
+}
+
+/** The piece of a caption shown at `time`: its pieces follow one another across its span, each for its share of the width. */
+export function captionChunkAt(caption: { text: string, t: number, d: number }, time: number, budget: number): string {
+  const chunks = captionChunks(caption.text, budget)
+  if (chunks.length < 2 || !(caption.d > 0)) return chunks[0] ?? ''
+  const widths = chunks.map(chunk => Math.max(1, captionWidth(chunk))), total = widths.reduce((sum, width) => sum + width, 0)
+  const at = (time - caption.t) / caption.d * total
+  let reached = 0
+  for (const [index, chunk] of chunks.entries()) {
+    reached += widths[index]!
+    if (at < reached) return chunk
+  }
+  return chunks.at(-1)!
 }

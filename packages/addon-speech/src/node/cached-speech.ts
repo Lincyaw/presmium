@@ -1,5 +1,5 @@
 import { DOCUMENT_FILES, speechEngineId } from '@lincyaw/kernel'
-import type { NodeServiceContext, SpeechWord, SynthesisRequest, TranscriptionRequest, VoiceCatalog } from '@lincyaw/kernel'
+import type { NodeServiceContext, SpeechCachePrune, SpeechWord, SynthesisRequest, TranscriptionRequest, VoiceCatalog } from '@lincyaw/kernel'
 import type { DeckSpeechConfig } from '../domain/index.ts'
 import { applyLexicon, deckSpeechConfig } from '../domain/index.ts'
 import type { CloneInput, SpeechBackend, SynthesisResult } from './backend.ts'
@@ -54,6 +54,19 @@ export class CachedSpeech implements SpeechBackend {
     const key = await this.synthesisKey({ ...request, engine })
     const hit = key ? await this.cached(key) : undefined
     return hit && hit.record.engine === speechEngineId(engine!) && hit.record.text === request.text && hit.record.lang === request.lang && hit.record.voice === request.voice ? hit : undefined
+  }
+
+  /** Entries are told apart by request key, so audio of the same request made under another configuration stays. */
+  async pruneCache(keep: readonly SynthesisRequest[], options: { remove?: boolean, signal?: AbortSignal } = {}): Promise<SpeechCachePrune> {
+    const requests = new Set<string>()
+    for (const request of keep) {
+      options.signal?.throwIfAborted()
+      const engine = request.engine ?? await this.defaultSynthesisEngine()
+      if (!engine) throw new SpeechError(409, 'speech-prune-engine-unknown')
+      requests.add(cacheKey({ ...request, engine: speechEngineId(engine) }, applyLexicon(request.text, request.lexicon)))
+    }
+    options.signal?.throwIfAborted()
+    return { ...await this.cache.prune(requests, options.remove === true), removed: options.remove === true }
   }
 
   /** The engine that transcribes without one named: the deck's transcription engine, else its default engine when that one transcribes. */

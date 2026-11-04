@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 import type { Unsubscribe } from '@lincyaw/kernel/contracts'
 import type { Navigation, NavigationPosition, StepClock, StepClockDriver } from './contracts.ts'
 import { useHost, usePrefersReducedMotion } from './host.ts'
@@ -54,4 +54,11 @@ export function useStepTime(options: StepTimeOptions = {}): number {
   const renderedTime = useRef(time); renderedTime.current = time
   useEffect(() => { const running = () => Number.isFinite(renderedTime.current) && driver.getSnapshot()?.elapsed.getSnapshot() === undefined; live.add(running); ensureTicking(); return () => { live.delete(running) } }, [step, cursor.slide, player, options.until, reduced])
   return time
+}
+const unobserved = () => () => {}
+/** While the driver of the clock paces the steps it plays (a narrated lecture), the length it gives a step: `StepClockDriver.stepLength`. */
+export function useDrivenStepLength(): StepClockDriver['stepLength'] {
+  const player = useStore(driver)
+  const playing = () => player?.elapsed.getSnapshot() !== undefined
+  return useSyncExternalStore(player?.elapsed.subscribe ?? unobserved, playing, playing) ? player?.stepLength : undefined
 }

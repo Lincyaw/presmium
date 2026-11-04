@@ -1,9 +1,10 @@
 import { PmCaption, PmDrawer, PmIconButton, PmMenu, PmTabs, PRODUCTION_PLAYBACK, TIMED_CAPTIONS, useMessages, useServer, useService, useStore } from '@lincyaw/host'
 import type { MenuItem } from '@lincyaw/host'
 import { isPreviewEmbedded, notifyEmbedder } from '@lincyaw/kernel'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
+  captionChunkAt,
   captionLanguages,
   captionGroups,
   captionGroupAt,
@@ -16,7 +17,7 @@ import {
   trackChapters,
   utteranceAt,
 } from '../domain/index.ts'
-import type { Utterance } from '../domain/index.ts'
+import type { CaptionGroup, Utterance } from '../domain/index.ts'
 import ChapterList from './ChapterList.tsx'
 import { useLecturePlayback } from './playback.ts'
 import { lectureSource } from './source.ts'
@@ -35,13 +36,33 @@ import TranscriptList from './TranscriptList.tsx'
 import './PlayerPanel.css'
 /** `&autoplay` starts the first lecture that becomes ready on this page, once. */
 let autoplayPending = autoplay
+/** A burned caption takes at most this many lines; a longer one is shown in pieces across its time. */
+const BURNED_LINES = 2
+/** Line breaks fall between words and before punctuation, so a line holds a little less than its width. */
+const BURNED_FILL = 0.9
+
+/** The caption an export burns into the picture: never more than two lines, its room read from its own styles. */
+function BurnedCaption({ caption, time, lang }: { caption: { text: string, t: number, d: number }, time: number, lang: string }) {
+  const element = useRef<HTMLParagraphElement>(null)
+  const [budget, setBudget] = useState<number>()
+  // The frame and the document's caption size set the font and the width; the budget is how many em two lines hold.
+  useLayoutEffect(() => {
+    const style = element.current && getComputedStyle(element.current)
+    if (!style) return
+    const size = parseFloat(style.fontSize), room = parseFloat(style.maxWidth) - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+    if (size > 0 && room > 0) setBudget(BURNED_LINES * room / size * BURNED_FILL)
+  })
+  return <p ref={element} className="pm-lecture-caption" lang={lang}>{budget ? captionChunkAt(caption, time, budget) : caption.text}</p>
+}
+
 export default function PlayerPanel(_props: { view?: string }) {
   const t = useMessages(LECTURE_MESSAGES),
     viewer = useViewer(),
     server = useServer()
   const available = useLecturesAvailable(),
     id = useStore(playing),
-    doc = useStore(viewer.doc)
+    doc = useStore(viewer.doc),
+    position = useStore(viewer.position)
   const { player, status, failure, language, setLanguage } =
     useLecturePlayback()
   const timedCaptions = useService(TIMED_CAPTIONS)
@@ -137,22 +158,28 @@ export default function PlayerPanel(_props: { view?: string }) {
   const manual = player?.track.captionOverrides?.find(own => own.startMs <= time && time < own.endMs), manualText = manual && captionGroupAt(manual.groups, time)?.text
   const originalLanguage = !lang || lang === player?.track.lang
   const caption = manual && originalLanguage ? manualText : selectedCaptions ? selectedCaptions.map(text).join(' ') : current ? text(current) : undefined
+  // What the export burns in, with the time it spans: a caption group (word-aligned or manual), else the whole sentence.
+  const span = (group: CaptionGroup | undefined) => group && { text: group.text, t: group.t, d: group.d }
   const burned =
     burnedCaptions && player && (current || manual)
-      ? burnedCaptions === player.track.lang ? manual ? manualText : current && text(current) : current && captionText(player.track, current, burnedCaptions)
+      ? burnedCaptions === player.track.lang
+        ? manual ? span(captionGroupAt(manual.groups, time)) : current && (span(captionGroupAt(groupedCaptions.get(current.id) ?? [], time)) ?? { text: current.text, t: current.t, d: current.d })
+        : current && { text: captionText(player.track, current, burnedCaptions) ?? '', t: current.t, d: current.d }
       : undefined
   const stale = new Set(
     player && lang && lang !== player.track.lang
       ? player.track.utterances.filter((u) => isStale(u, lang)).map((u) => u.id)
       : [],
   )
-  if (controlled) return player && (current || manual) && caption ? <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang} /> : null
+  // A step the synthesized lecture leaves out has no sentence of its own: its preview shows no other step's caption.
+  const leftOut = player?.track.id === SCRIPT_TRACK && !player.events.some(event => event.type === 'go' && event.data.section === position.section && Number(event.data.step ?? 0) === position.step)
+  if (controlled) return player && (current || manual) && caption && !leftOut ? <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang} /> : null
   if (!id) return null
   if (exporting) return player ? <div className="pm-lecture-layer">
     <div className="pm-lecture-export" data-time={Math.round(time)} data-clip={current?.clip}>
       {voice?.kind === 'synthetic' && <span className="pm-lecture-player__ai pm-ui-badge pm-ui-badge--accent pm-ui-badge--pill">{synthetic}</span>}
     </div>
-    {burned && <p className="pm-lecture-caption" lang={burnedCaptions}>{burned}</p>}
+    {burned?.text && <BurnedCaption caption={burned} time={time} lang={burnedCaptions!} />}
   </div> : null
   const problem = failure ? t.player.failed(failure) : status === 'missing' ? t.player.missing(id) : undefined
   if (!player || problem) return <div className="pm-lecture-player__status" role={problem ? 'alert' : 'status'}>

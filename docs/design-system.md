@@ -86,12 +86,13 @@
 | Menu | `PmMenu`（Radix Dropdown Menu） | 图标、危险项、禁用项、快捷键、分隔、勾选；workbench 的 `description` 与 `toolbarItem` |
 | Badge、Card | `PmBadge`（`tone`）、`PmCard`（`default`、`interactive`、`dashed`） | |
 | Notice、Empty、Skeleton | `PmNotice`、`PmEmpty`、`PmSkeleton`（`document`、`list`、`preview`） | 见第 4.5 节 |
-| Range | `PmRange`（workbench，原生 range） | 拖动先本地预览，释放时提交一次；`Esc`、失焦丢弃手势 |
-| Timeline | `PmTimeline`（workbench） | 画面、配音、字幕三轨与稳定步骤身份；未知或估算时长不开放任意定位；只有真实样本才画波形；缩放只改视图 |
+| Range | `PmRange`（workbench，原生 range） | 拖动先本地预览，释放时提交一次；`Esc`、失焦丢弃手势；旁边读出数值时放在 `.pm-ui-range-row` 中 |
+| Timeline | `PmTimeline`（workbench） | 画面、配音、字幕三轨与稳定步骤身份；未知或估算时长不开放任意定位；只有真实样本才画波形；缩放只改视图；`excluded` 表示本页不在时间线中（讲授中没有这一页），状态与提示由调用方给出，不列片段；`notice` 是关于所选步骤的提示，显示在轨道下方（如这一步不在讲授中） |
 | Split panes | workbench `PmSplitGroup`、`PmSplitPanel`、`PmSplitHandle` | 通过 react-resizable-panels 公开接口实现双轴调整、键盘与双击恢复；隐藏与后台挂载由公共适配处理 |
 | SortableList | `PmSortableList`（workbench，dnd kit） | 按稳定 ID 提交一次移动；禁用排序不禁止选择 |
 | SchemaForm | `PmSchemaForm`（workbench，RJSF） | 用公共控件渲染组件参数；只显示声明的字段，未声明数据原样保留 |
-| Caption | `PmCaption`、`PmCaptionProvider`（host），`caption.css` | 放映字幕浮层，超长在安全区内滚动，不改变画布布局 |
+| Caption | `PmCaption`、`PmCaptionProvider`（host），`caption.css` | 放映字幕浮层，超长在安全区内滚动，不改变画布布局；字号与最大宽度乘以文稿的字幕大小（`--pm-caption-scale`，放映页面设定） |
+| 烧录字幕 | `.pm-lecture-caption`（addon-lecture） | 导出视频画面上的字幕，与放映字幕浮层分开；字号、宽度、底边距、内边距与颜色取 `--pm-caption-burn-*` 令牌，按画面比例：默认字号取画面高度的 5.6% 与宽度的 3.15% 中较小的一个（1080p 画面上约 60 px，1080×1920 画面上约 34 px），乘以文稿的字幕大小（`--pm-caption-scale`），最宽为画面宽度的 89%，框底距底边约 30 px（1080p）。烧录字幕从不超过两行：讲授播放器按字幕框的字号与宽度算出两行能放下的长度，更长的字幕（没有词时码的整句、录音、译文）在句末或分句处切成几段，在这句的时间里按长度依次显示；两行时行长平衡。底色是半透明的浅灰，尽量少遮挡画面，近黑色半粗字带一圈很淡的浅色描边，在浅色与深色画面上都可读；颜色由墨色与页面色混合，暗色外观下是半透明深灰与浅色字 |
 | 领域控件 | workbench 的 `NarrationEditor`、`MediaClipEditor`、`DocumentBlockPreview` | 组合以上控件；领域数据只决定内容，边界、焦点与热区遵循本规范 |
 | 编辑器适配 | `pm-ui-block-editor` | 通过 BlockNote 的公开类（`.bn-side-menu`、`.bn-formatting-toolbar`、`.bn-suggestion-menu`、`.bn-thread`）适配热区与令牌 |
 

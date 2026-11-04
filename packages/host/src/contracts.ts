@@ -158,6 +158,11 @@ export interface StepClockDriver {
   readonly recording?: boolean
   /** Holds the clock until it is released (a capture of the page): other drivers wait until then. */
   readonly exclusive?: boolean
+  /**
+   * How long (ms) the animation of step `step` of slide `slide` may take while this driver plays it: a narrated lecture
+   * gives the time from the step's start until its voice ends. Undefined for a step it does not pace.
+   */
+  readonly stepLength?: (slide: number, step: number) => number | undefined
 }
 
 export interface StepClock {

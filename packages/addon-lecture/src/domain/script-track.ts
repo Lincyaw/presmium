@@ -61,7 +61,9 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
   let t = 0
   let inked = false
   for (const section of plan.sections) {
-    let current = 0
+    const played = Array.from({ length: section.steps + 1 }, (_, step) => step).filter(step => !section.leftOut?.includes(step))
+    if (played.length === 0) continue
+    let current = played[0]!
     let since = t
     const go = (at: number, step: number) => events.push([at, 'go', { section: section.id, step: section.webStep(step) }])
     // A step lasts as long as its longest animation: the lecture waits for it before it moves on.
@@ -71,10 +73,10 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
       events.push([t, 'pause', { ms: until - t, hold: true }])
       t = until
     }
-    go(t, 0)
+    go(t, current)
     if (inked) events.push([t, 'ink', { clear: true }])
     inked = false
-    for (let step = 0; step <= section.steps; step++) {
+    for (const step of played) {
       if (step > current) {
         hold()
         go(t, step)
@@ -126,11 +128,12 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
           }
           for (const c of piece.cues) {
             if (c.name === 'next') {
-              if (current >= section.steps) continue
-              const end = since + (section.holds[current] ?? 0)
-              current++
+              const following = played.find(step => step > current)
+              if (following === undefined) continue
+              const from = current, end = since + (section.holds[current] ?? 0)
+              current = following
               since = cue(c, { section: section.id, step: section.webStep(current) })
-              if (since < end) cuts.push({ section: section.id, step: current - 1, left: end - since, ...paragraph.source ? { source: paragraph.source } : {} })
+              if (since < end) cuts.push({ section: section.id, step: from, left: end - since, ...paragraph.source ? { source: paragraph.source } : {} })
             } else {
               cue(c, c.data)
             }

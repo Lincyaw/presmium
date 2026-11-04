@@ -28,5 +28,13 @@ export function timelinePosition(durations: readonly number[], step: number, tim
   return starts[step]! + Math.min(Math.max(0, time), durations[step]!)
 }
 
+/**
+ * The durations a scene plays with while a narrated lecture paces its steps: state k lasts as long as `voiced(k)`, the
+ * voice of the first step that shows it, and never less than its authored duration. A state no step voices keeps its own.
+ */
+export function voicedDurations(durations: readonly number[], voiced: (state: number) => number | undefined): number[] {
+  return durations.map((ms, k) => Math.max(ms, voiced(k) ?? 0))
+}
+
 export { MOTION_MESSAGES } from './messages.ts'
 export type { MotionMessages } from './messages.ts'

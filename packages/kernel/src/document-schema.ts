@@ -1,5 +1,5 @@
 import type { Schema } from '@cfworker/json-schema'
-import { ASSET_TITLE_MAX_LENGTH, DOCUMENT_SCHEMA_VERSION } from './contracts/document.ts'
+import { ASSET_TITLE_MAX_LENGTH, CAPTION_SCALE_MAX, CAPTION_SCALE_MIN, DOCUMENT_SCHEMA_VERSION } from './contracts/document.ts'
 
 const ref = (name: string): Schema => ({ $ref: `#/$defs/${name}` })
 const string: Schema = { type: 'string' }
@@ -77,7 +77,7 @@ export const DOCUMENT_JSON_SCHEMA: Schema = {
     StepProduction: object({ narrationStart: { enum: ['with-animation', 'after-animation'] }, minimumHoldMs: nonnegative, trailingPauseMs: nonnegative, voiceSource: ref('VoiceSource') }, []),
     MediaClip: object({ id, assetId: id, sourceRange: object({ startMs: nonnegative, endMs: nonnegative }), attachment: object({ stepId: id, offsetMs: nonnegative }), volume: { type: 'number', minimum: 0, maximum: 1 }, muted: { type: 'boolean' } }, ['id', 'assetId', 'sourceRange', 'attachment', 'volume']),
     CaptionTiming: object({ narrationIds: ids, sourceFingerprint: { type: 'string', pattern: '^[a-f0-9]{16}$' }, playbackFingerprint: { type: 'string', pattern: '^[a-f0-9]{16}$' }, durationMs: { type: 'integer', minimum: 1 }, segments: { type: 'array', minItems: 1, maxItems: 32, items: object({ id, from: integer, to: integer, startMs: integer, endMs: integer }) } }),
-    Production: object({ defaults: ref('StepProduction'), sectionOverrides: record(ref('StepProduction')), stepOverrides: record(ref('StepProduction')), narrationOverrides: record(object({ narrationStart: { enum: ['with-animation', 'after-animation'] } })), cueTimings: record(object({ pauseMs: nonnegative })), captionTimings: record(ref('CaptionTiming')), mediaClips: list(ref('MediaClip')) }, ['defaults', 'stepOverrides', 'mediaClips']),
+    Production: object({ defaults: ref('StepProduction'), sectionOverrides: record(ref('StepProduction')), stepOverrides: record(ref('StepProduction')), narrationOverrides: record(object({ narrationStart: { enum: ['with-animation', 'after-animation'] } })), cueTimings: record(object({ pauseMs: nonnegative })), captionTimings: record(ref('CaptionTiming')), captions: object({ scale: { type: 'number', minimum: CAPTION_SCALE_MIN, maximum: CAPTION_SCALE_MAX } }), mediaClips: list(ref('MediaClip')) }, ['defaults', 'stepOverrides', 'mediaClips']),
     TextPoint: object({ blockId: { type: 'string', minLength: 1, maxLength: 205 }, offset: integer }),
     Comment: object({ id, type: tag('comment'), userId: id, createdAt: string, updatedAt: string, deletedAt: string, content: list(ref('RichTextNode')), metadata: ref('JsonObject'), reactions: list(object({ emoji: string, createdAt: string, userIds: ids })) }, ['id', 'type', 'userId', 'createdAt', 'updatedAt', 'reactions']),
     Thread: object({ id, type: tag('thread'), createdAt: string, updatedAt: string, resolved: { type: 'boolean' }, resolvedUpdatedAt: string, resolvedBy: id, metadata: ref('JsonObject'), deletedAt: string, anchor: object({ from: ref('TextPoint'), to: ref('TextPoint') }), comments: list(ref('Comment')) }, ['id', 'type', 'createdAt', 'updatedAt', 'resolved', 'comments']),

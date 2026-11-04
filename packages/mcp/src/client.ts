@@ -24,6 +24,8 @@ export interface CalledTool {
   text: string
   /** The result's image parts, in order. */
   images: CalledImage[]
+  /** The result's structured content, when the tool gives one. */
+  structured?: Record<string, unknown>
 }
 
 export interface PresmiumMcpClient {
@@ -158,6 +160,7 @@ export async function connectPresmiumMcp(url: string, token: string, name = 'pre
         isError: result.isError === true,
         text: content.flatMap(part => (part.type === 'text' && typeof part.text === 'string' ? [part.text] : [])).join('\n'),
         images: content.flatMap(part => (part.type === 'image' && typeof part.data === 'string' && typeof part.mimeType === 'string' ? [{ data: part.data, mimeType: part.mimeType }] : [])),
+        ...isRecord(result.structuredContent) ? { structured: result.structuredContent } : {},
       }
     },
     async read(uri) {

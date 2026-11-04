@@ -1,11 +1,14 @@
-import { deckLocale, errorMessage, SPEECH } from '@lincyaw/kernel'
-import type { Check, CheckContext, Finding, IRDocument, Severity } from '@lincyaw/kernel'
-import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, LECTURE_MESSAGES, missingVoiceover, plannedUtterances, unchanged } from '../domain/index.ts'
-import type { EventDrift } from '../domain/index.ts'
+import { deckLocale, errorMessage, ProductionAudioRefusal, SPEECH } from '@lincyaw/kernel'
+import type { Check, CheckContext, Finding, IRDocument, ProductionPlan, Severity } from '@lincyaw/kernel'
+import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, LECTURE_MESSAGES, lectureTiming, maximumDuration, missingVoiceover, overLimit, plannedUtterances, unchanged } from '../domain/index.ts'
+import type { EventDrift, LectureMessages } from '../domain/index.ts'
+import { productionAudioMessage } from '../domain/production-audio.ts'
 import { lectureView } from './latest-ir.ts'
-import { deckPlan } from './plan.ts'
+import { deckPlan, lectureConfig } from './plan.ts'
+import { cachedProduction } from './production.ts'
 import { readTrack, trackIds } from './store.ts'
 import { synthesizeClip, synthesizeLecture } from './synthesize.ts'
+import type { SynthesizedLecture } from './synthesize.ts'
 
 const SEVERITY: Record<EventDrift['grade'], Severity> = { exact: 'info', moved: 'info', fuzzy: 'warning', lost: 'warning' }
 
@@ -58,16 +61,51 @@ function pageTitle(doc: IRDocument, section: string): string {
   return doc.sections.find(s => s.id === section)?.title || section
 }
 
+/** A confirmed lecture video against `maximumDurationMs`: an error when it is longer. */
+function lengthFindings(ctx: CheckContext, plan: Omit<ProductionPlan, 'binding'>, limit: number): Finding[] {
+  const timing = lectureTiming(ctx.ir, plan), over = overLimit(timing, limit)
+  if (!over) return []
+  const t = LECTURE_MESSAGES[deckLocale(ctx.ir.meta.lang)].timing
+  const cut = over.cut && timing.rate ? { rate: timing.rate.toFixed(1), characters: over.cut } : undefined
+  return [{ checkId: LECTURE_ID, severity: 'error', message: t.tooLong(clockText(timing.durationMs!), clockText(limit), (over.overMs / 1000).toFixed(1), cut), source: { file: ctx.ir.meta.entry, line: 1 } }]
+}
+
+/** Why the length could not be checked, in the document's language: a known code's text, never the raw message. */
+function lengthFailure(doc: IRDocument, messages: LectureMessages, error: unknown): string {
+  const code = errorMessage(error)
+  return messages.production.reasons[code] ?? (error instanceof ProductionAudioRefusal ? productionAudioMessage(doc, error.code) : messages.timing.uncheckedReason)
+}
+
 async function planFindings(ctx: CheckContext): Promise<Finding[]> {
   const view = lectureView(ctx.ir)
   const deck = deckPlan(view)
   const findings = [...deck.findings]
-  const prepared = view.production?.mediaClips.length || Object.keys(view.production?.captionTimings ?? {}).length || deck.recorded ? await synthesizeLecture(view, ctx.deckDir, ctx.service?.(SPEECH), undefined, { cacheOnly: true }) : undefined
-  findings.push(...(prepared?.mediaDiagnostics ?? []).map(issue => ({ checkId: LECTURE_ID, severity: issue.severity, message: issue.message, source: { file: ctx.ir.meta.entry, line: 1 } })))
-  findings.push(...(prepared?.captionDiagnostics ?? []).map(issue => ({ checkId: LECTURE_ID, severity: issue.severity, message: issue.message, source: { file: ctx.ir.meta.entry, line: 1 } })))
+  const source = { file: ctx.ir.meta.entry, line: 1 }, messages = LECTURE_MESSAGES[deckLocale(ctx.ir.meta.lang)], t = messages.production
+  const limit = maximumDuration(lectureConfig(ctx.ir))
+  if (limit === 'invalid') findings.push({ checkId: LECTURE_ID, severity: 'error', message: messages.timing.limitInvalid, source })
+  let prepared: SynthesizedLecture | undefined
+  if (typeof limit === 'number') {
+    const unchecked = (reason: string) => findings.push({ checkId: LECTURE_ID, severity: 'warning', message: messages.timing.unchecked(reason), source })
+    // Reading the cache-only production fails only on its files (an audio file changed or unreadable); missing
+    // voiceover or no voice chosen leaves the plan estimated instead, and a step of unknown length leaves it unknown.
+    let production: Awaited<ReturnType<typeof cachedProduction>> | undefined
+    try {
+      production = await cachedProduction(ctx.ir, ctx.deckDir, ctx.service?.(SPEECH))
+    } catch (error) {
+      unchecked(lengthFailure(ctx.ir, messages, error))
+    }
+    if (production) {
+      prepared = production.made
+      const timing = production.projected.timing
+      if (timing === 'confirmed') findings.push(...lengthFindings(ctx, production.projected, limit))
+      else unchecked(timing === 'estimated' ? messages.timing.uncheckedEstimated : messages.timing.uncheckedUnknown)
+    }
+  }
+  if (!prepared && (view.production?.mediaClips.length || Object.keys(view.production?.captionTimings ?? {}).length || deck.recorded)) prepared = await synthesizeLecture(view, ctx.deckDir, ctx.service?.(SPEECH), undefined, { cacheOnly: true })
+  findings.push(...(prepared?.mediaDiagnostics ?? []).map(issue => ({ checkId: LECTURE_ID, severity: issue.severity, message: issue.message, source })))
+  findings.push(...(prepared?.captionDiagnostics ?? []).map(issue => ({ checkId: LECTURE_ID, severity: issue.severity, message: issue.message, source })))
   if (!deck.voice) return findings
   const speech = ctx.service?.(SPEECH)
-  const source = { file: ctx.ir.meta.entry, line: 1 }, t = LECTURE_MESSAGES[deckLocale(ctx.ir.meta.lang)].production
   if (!speech) {
     findings.push({ checkId: LECTURE_ID, severity: 'error', message: t.missingSpeech, source })
     return findings

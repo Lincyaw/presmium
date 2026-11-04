@@ -80,7 +80,16 @@ A second name tells the audience there is a second thing. In a 19-page explainer
   | 走错的代价：悄悄认定与回溯 (a page title) | 错误结论的代价：静默确认与结论推翻 |
 
 - **The audience's own words, one metaphor system.** Use the everyday terms of the audience's field (an operations engineer says 排查, 协查 and 结案), not a vocabulary borrowed from elsewhere. A metaphor that helps (an evaluation as a game, the user as its non-player character) is mapped once, on one page, term by term; the other pages use the field's words. An explainer that mixed the vocabularies of games, courts, Kubernetes and operations left its viewers translating between four.
-- **The field's own words, not calques.** In Chinese, use the term the field already uses in Chinese (an experiment's arm is 对照组, not 臂); keep an English term the field keeps in English (agent, harness); a concept with neither gets a plain name for what it is (a facet becomes 问题定义). A calque reads as translated and leaves the reader to translate it back. Put the calques a draft is tempted by in the term table, as words not to use.
+- **The field's own words, not calques.** In Chinese, use the term the field already uses in Chinese (an experiment's arm is 对照组, not 臂); keep an English term the field keeps in English (agent, harness, logit, FLOPs); a concept with neither gets a plain name for what it is (a facet becomes 问题定义). A calque reads as translated and leaves the reader to translate it back. Put the calques a draft is tempted by in the term table, as words not to use. A first rewrite often keeps the English structure in Chinese words, so read it again; the narration of a paper film went through these:
+
+  | English behind it | Calque | First rewrite | Chinese |
+  |---|---|---|---|
+  | compute and hint enter a sigmoid | 算力和提示量一起进入 S 形函数 | 算力和提示量相加后放进 S 形函数 | 先把算力和提示量加权相加，再把得到的值代入 S 形函数 |
+  | the noise floor | 噪声底 | 噪声水平 | 随机作答水平 |
+  | held-out models | 留出的模型 | | 未参与拟合的模型 |
+  | consistent with zero | 与零分相容 | | 能拟合接近零的准确率 |
+  | a second yardstick of capability | 衡量能力的第二把尺子 | | 提示量也能衡量模型能力 |
+  | hinted / plain sampling | 带提示的排序、普通采样 | | 提示辅助排序、原题采样 |
 - **A person is named, not 它.** In Chinese, refer to a person by their role (用户, 值班工程师), never 它, which makes them a thing.
 
 ## 3. One page, two versions
@@ -137,7 +146,7 @@ The reading version is a book chapter. A reader alone must understand it without
 
 The slide supports a voice; it doesn't replace it. The audience reads the screen and listens at once, so the screen carries what the voice can't: the picture, the structure and a few words.
 
-- **Little text.** A heading that states the page's point, then keywords: short labels beside the part of the picture they name, a number with its unit, a formula's named terms. No paragraphs, no full sentences repeating the narration, no cards of several lines: a slide of two columns of three-line cards is six paragraphs in boxes, and was rejected as such. Text on screen that duplicates the narration makes it harder to follow than the narration alone; the explanation belongs in the narration. Set limits in characters before writing (one explainer used a label of at most 4 汉字, a value of at most 14, and at most one new line of explanation a step) and keep to them.
+- **Little text.** A heading that states the page's point, then keywords and key phrases: short labels beside the part of the picture they name, a number with its unit, a formula's named terms; legends, tick labels and tables keep their usual text. No paragraphs, no full sentences repeating the narration, no cards of several lines: a slide of two columns of three-line cards is six paragraphs in boxes, and was rejected as such. A label that is a sentence becomes a phrase: in a paper film "曲线分开：模型能力差异清楚可见" became "曲线分离 · 能力差异可见", and "区分度提高，顺序基本不变" became "区分度提高 · 顺序稳定". Text on screen that duplicates the narration makes it harder to follow than the narration alone; the explanation belongs in the narration. Set limits in characters before writing (one explainer used a label of at most 4 汉字, a value of at most 14, and at most one new line of explanation a step) and keep to them.
 - **Introduce, then name, then use.** A concept first appears through the picture: where it comes from and what it consists of, shown by motion or by a reveal. Its keyword appears beside it after that, and only then do other labels, numbers and the narration use it. A label that relies on something not yet shown ("F3 = 5" before the facts have been numbered) stops a viewer at that slide.
 - **Graphics where the content has a shape.** When the words describe a relation, turn it into a picture: a flow for a process, a diagram for parts, a timeline for order, a chart for numbers, an animation for change (`presmium-animate`). Graphics carry information and show relations; a paragraph inside a box is still a paragraph. A page whose role is the words themselves (a definition, a rule, a short list of steps, a question, a summary) stays text: don't add a decorative picture or screenshot to fill it.
 - **Reveal with the voice.** Use steps so each part appears when the narration reaches it, not everything at once on the first beat. One teaching state per step; a reveal binds the explicit IDs of the list items or blocks it shows, never their positions. Narration plays in the order of the step's `narrationIds`.
@@ -151,13 +160,24 @@ The slide supports a voice; it doesn't replace it. The audience reads the screen
 Narration is a separate script for the ear, written for the presentation version. It is not the reading paragraphs read aloud: the reading version is written for the eye and is too dense to follow by listening.
 
 - **Spoken rhythm, formal words.** Shorter sentences than the reading version, one idea each, the subject near the verb, everyday connectives (所以、可是、接下来). The words stay formal (section 2): spoken rhythm doesn't license colloquial terms such as 折腾 or 拉不开, and a person is 用户 or their role, never 它. It remains standard Chinese or English: no filler words, no translationese, no chatty asides.
-- **Say what the picture can't show**: the cause, the size, the consequence. Never narrate what is visible ("如图所示，红点越来越多"); say the rule behind it ("一个人传三个，三个传九个").
+- **Describe the picture, then say what it shows.** In a narrated video the narration is also the captions, and a viewer who looks away, or follows the captions, gets the frame only from it. When a picture first appears, say what is drawn (the axes, what a colour or a point stands for), then what it shows, then what the picture can't show: the cause, the size, the consequence. Every keyword on the screen is spoken in that step's narration, in the same words. A paper film's draft said "预训练损失随算力平滑下降" over a new chart; the narration that worked says "纵轴换成预训练损失，八个模型连成一条平滑下降的曲线". Pointing at a change without its rule ("如图所示，红点越来越多") is not describing it: say the rule behind it ("一个人传三个，三个传九个").
 - **No pointing at nothing.** "这里"、"如图"、"看这个" only when the step reveals or highlights that thing at that moment. A cue (a node inside the narration that triggers an action, such as pointing at a block, when the voice reaches it) can do the pointing.
 - **Budget by time.** A step usually speaks for 6 to 15 seconds: about 20 to 50 汉字 in Chinese (3.5 a second, pauses included) or 15 to 40 words in English (2.5 a second); measure the chosen voice afterwards. A step lasts as long as its narration, so a long script stretches the step while the picture stands still: split the step or trim the script.
+- **A length target gives way to the definitions.** When a piece runs long, cut repetitions and asides, never what the viewer needs to follow: what a term or a baseline is, what a metric means, the conditions of the claim. A paper film cut to 3:06 had dropped its teacher model, the definition of the standard scaling law and the meaning of Kendall's τ; with them back it ran 5:45, inside its six-minute ceiling, and the target of three minutes was exceeded on purpose. Measure the synthesized voice before cutting, and don't speed it up to fit.
 - **Write for the voice.** Spell out what a synthesized voice can misread: numbers with units ("百分之九十"), symbols, abbreviations and English terms inside Chinese. A word that must be shown one way in the captions and spoken another uses a pronunciation node in the narration (`pronunciation { display, spoken }`) instead of changing the visible text.
 - **Narration that is also read.** On a page with the `scrolly` layout, the reading page keeps the figure in place while a track of the page's steps scrolls beside it, each step showing its narration. There the narration is read as well as heard: each step's narration is complete sentences that make sense beside that step's frame, and a number or symbol keeps its written form, with the spoken form in a pronunciation node.
 - **Questions turn the talk**: "那如果数组已经排好了呢？" before a turn, with a short pause after it.
 - **Wording can differ, the claim can't.** Narration may order, simplify and repeat differently from the reading version, but it states the same facts and numbers. When one changes, check the other.
+
+### A narrated explainer, step by step
+
+Put each step's rest frame (a capture) beside its narration and go through the steps in order, after the first draft and after every round of changes:
+
+1. **The screen holds keywords and key phrases** (section 5). Legends, tick labels, numbers with units and tables keep their text; any sentence moves into the narration.
+2. **The narration describes the frame**: what is drawn, then what it shows. Every keyword on the screen is in that step's narration, in the same words (above).
+3. **Calques before anything else.** Search the titles, keywords and narration for English expressions put into Chinese word for word (section 2: 进入 S 形函数, 噪声底, 留出的模型), noun stacks and passives (section 4), and rewrite them in Chinese word order with the field's Chinese terms; then read the rewrite once more, since a first rewrite can still be a calque.
+4. **Every term is defined in the step where it first appears** (section 2), on the screen or in the narration.
+5. **The length is measured, not guessed**: synthesize the voice, time it, and cut repetitions and asides, never definitions (above).
 
 Generating voiceover from narration, choosing voices and producing the video are in [Lecture production](lecture.md). Changing narration text never generates audio by itself.
 
@@ -166,7 +186,7 @@ Generating voiceover from narration, choosing voices and producing the video are
 Review from the seat of someone who hasn't seen the document, not from the seat of the writer.
 
 1. **Read the reading version alone**, start to end, in the reading preview, with the slides and narration out of mind. Mark every place where a term is undefined, a step of reasoning is missing or a sentence depends on something said only in the narration.
-2. **Watch the presentation with the sound off**: each slide should show its point through the heading and the picture. Then **listen without looking**: the narration should not rely on "这里" or "如图" pointing at nothing.
+2. **Watch the presentation with the sound off**: each slide should show its point through the heading and the picture. Then **listen without looking**: the narration should not rely on "这里" or "如图" pointing at nothing. For a narrated video, go through the steps with the list at the end of section 6.
 3. **Sweep both versions** with the marker table, the term table's banned synonyms and calques and the colloquial words of section 2, and for Chinese, the translationese table of section 4. Include the words inside scenes, which a search of the text blocks misses. Each marker hit is judged by the test of section 2, not deleted on sight: a search finds candidates, and reading the sentence in its place decides.
 4. **Read for definitions**, in page order, as someone who has seen only the earlier pages: at each term's first mention, does that sentence say what it is? A term met before its definition, or never defined, is fixed where it first appears.
 5. **Check the structure**: one idea per page, the core claim on the first page and again on the last, every concept introduced before it is used, a method explained before its steps, and no run of slides whose shared arrangement hides a relation their content has (section 5).

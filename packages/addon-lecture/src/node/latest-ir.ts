@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import { viewFor } from '@lincyaw/compiler'
 import { isRecord } from '@lincyaw/kernel'
 import type { IRDocument, IRPass } from '@lincyaw/kernel'
-import { configuredLectureVoice, LECTURE_ID, LECTURE_RENDERER, prepareNarrationVoices } from '../domain/index.ts'
+import { configuredLectureVoice, LECTURE_ID, LECTURE_RENDERER, otherFormSteps, prepareNarrationVoices } from '../domain/index.ts'
 import { deckPlan } from './plan.ts'
 import { trackIds } from './store.ts'
 
@@ -40,6 +40,14 @@ function writeLecturesFlag(doc: IRDocument, deckDir: string): void {
   doc.config.presmium = { ...doc.config.presmium, [LECTURE_ID]: { ...own, lectures } }
 }
 
+/** Records the steps that show only blocks of other forms while the whole document has them (the lecture's view does not). */
+function markOtherFormSteps(doc: IRDocument): void {
+  for (const section of doc.sections) {
+    const steps = otherFormSteps(section)
+    if (steps.length) section.config = { ...section.config, [LECTURE_ID]: { ...section.config?.[LECTURE_ID], otherFormSteps: steps } }
+  }
+}
+
 export const rememberLatestIrPass: IRPass = {
   name: 'presmium.lecture.keep',
   after: 'execute',
@@ -48,6 +56,7 @@ export const rememberLatestIrPass: IRPass = {
     try { prepareNarrationVoices(doc) } catch (error) {
       ctx.report({ checkId: LECTURE_ID, severity: 'error', message: error instanceof Error ? error.message : String(error), source: { file: doc.meta.entry, line: 1 } })
     }
+    markOtherFormSteps(doc)
     rememberLatestIr(doc, ctx.deckDir)
     writeLecturesFlag(doc, ctx.deckDir)
   },

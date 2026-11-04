@@ -1916,6 +1916,11 @@
   .pm-ui-narration-editor .bn-editor { font-size: var(--pm-text-lg); }
 }
 
+/* A range with its value read out beside it. */
+.pm-ui-range-row { display: flex; align-items: center; gap: var(--pm-space-2); min-width: 0; }
+.pm-ui-range-row > .pm-ui-range { flex: 1; min-width: var(--pm-control-number-width); }
+.pm-ui-range-row > output { font-variant-numeric: tabular-nums; }
+
 /* Controlled native range; keyboard behavior and pointer capture remain browser-owned. */
 .pm-ui-range {
   appearance: none;
