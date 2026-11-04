@@ -19,6 +19,9 @@ export interface LectureMessages {
     /** The planned video is longer than the limit; `cut` is about how much script to remove at the measured rate. */
     tooLong(length: string, limit: string, overSeconds: string, cut?: { rate: string, characters: number }): string
     limitInvalid: string
+    /** The length could not be checked against the limit; `reason` is a sentence of this catalog. */
+    unchecked(reason: string): string
+    uncheckedReason: string
     columns: { page: string, step: string, characters: string, voice: string, rate: string, animation: string, length: string }
     totals(steps: number, characters: number, voiceSeconds: string, rate?: string): string
     /** The video's length, then `verdict` (`within` or `over`) when the document sets a limit. */
@@ -180,6 +183,8 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
     timing: {
       tooLong: (length, limit, over, cut) => `讲授视频长 ${length}，比上限 ${limit} 长 ${over} 秒。${cut ? `按配音的实测语速（每秒 ${cut.rate} 字），约需删去讲稿 ${cut.characters} 字。` : ''}`,
       limitInvalid: 'metadata.renderers.lecture.maximumDurationMs 须为大于 0 的毫秒数。',
+      unchecked: reason => `无法检查讲授视频是否超过时长上限。${reason}`,
+      uncheckedReason: '读取配音或音频文件失败。请重新运行 presmium check。',
       columns: { page: '页面', step: '步骤', characters: '字数', voice: '配音（秒）', rate: '每秒字数', animation: '动画（秒）', length: '时长（秒）' },
       totals: (steps, characters, voice, rate) => `共 ${steps} 步，讲稿 ${characters} 字，配音 ${voice} 秒${rate ? `（每秒 ${rate} 字）` : ''}。`,
       video: (length, seconds, verdict) => `视频长 ${length}（${seconds} 秒）。${verdict ?? ''}`,
@@ -299,6 +304,8 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
     timing: {
       tooLong: (length, limit, over, cut) => `The lecture video is ${length} long, ${over} s over its limit of ${limit}.${cut ? ` At the voiceover’s measured rate of ${cut.rate} characters a second, cut about ${cut.characters} characters of the script.` : ''}`,
       limitInvalid: 'metadata.renderers.lecture.maximumDurationMs must be a number of milliseconds greater than 0.',
+      unchecked: reason => `Couldn’t check the lecture video’s length against its limit. ${reason}`,
+      uncheckedReason: 'Reading the voiceover or audio files failed. Run presmium check again.',
       columns: { page: 'Page', step: 'Step', characters: 'Characters', voice: 'Voiceover (s)', rate: 'Characters/s', animation: 'Animation (s)', length: 'Length (s)' },
       totals: (steps, characters, voice, rate) => `${steps} step${steps === 1 ? '' : 's'}, ${characters} character${characters === 1 ? '' : 's'} of script, ${voice} s of voiceover${rate ? ` (${rate} characters a second)` : ''}.`,
       video: (length, seconds, verdict) => `The video is ${length} long (${seconds} s).${verdict ? ` ${verdict}` : ''}`,

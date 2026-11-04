@@ -1,7 +1,8 @@
-import { deckLocale, errorMessage, SPEECH } from '@lincyaw/kernel'
+import { deckLocale, errorMessage, ProductionAudioRefusal, SPEECH } from '@lincyaw/kernel'
 import type { Check, CheckContext, Finding, IRDocument, ProductionPlan, Severity } from '@lincyaw/kernel'
 import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, LECTURE_MESSAGES, lectureTiming, maximumDuration, missingVoiceover, overLimit, plannedUtterances, unchanged } from '../domain/index.ts'
-import type { EventDrift } from '../domain/index.ts'
+import type { EventDrift, LectureMessages } from '../domain/index.ts'
+import { productionAudioMessage } from '../domain/production-audio.ts'
 import { lectureView } from './latest-ir.ts'
 import { deckPlan, lectureConfig } from './plan.ts'
 import { cachedProduction } from './production.ts'
@@ -69,6 +70,12 @@ function lengthFindings(ctx: CheckContext, plan: Omit<ProductionPlan, 'binding'>
   return [{ checkId: LECTURE_ID, severity: 'error', message: t.tooLong(clockText(timing.durationMs!), clockText(limit), (over.overMs / 1000).toFixed(1), cut), source: { file: ctx.ir.meta.entry, line: 1 } }]
 }
 
+/** Why the length could not be checked, in the document's language: a known code's text, never the raw message. */
+function lengthFailure(doc: IRDocument, messages: LectureMessages, error: unknown): string {
+  const code = errorMessage(error)
+  return messages.production.reasons[code] ?? (error instanceof ProductionAudioRefusal ? productionAudioMessage(doc, error.code) : messages.timing.uncheckedReason)
+}
+
 async function planFindings(ctx: CheckContext): Promise<Finding[]> {
   const view = lectureView(ctx.ir)
   const deck = deckPlan(view)
@@ -78,10 +85,15 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
   if (limit === 'invalid') findings.push({ checkId: LECTURE_ID, severity: 'error', message: messages.timing.limitInvalid, source })
   let prepared: SynthesizedLecture | undefined
   if (typeof limit === 'number') {
-    // Missing voiceover leaves the length estimated: the findings below say so, and the length is checked once it is generated.
-    const production = await cachedProduction(ctx.ir, ctx.deckDir, ctx.service?.(SPEECH)).catch(() => undefined)
-    if (production) findings.push(...lengthFindings(ctx, production.projected, limit))
-    prepared = production?.made
+    // Missing voiceover throws nothing: it leaves the plan estimated, which `lengthFindings` does not compare and the
+    // findings below report. What does throw (an audio file changed or unreadable) means the length went unchecked.
+    try {
+      const production = await cachedProduction(ctx.ir, ctx.deckDir, ctx.service?.(SPEECH))
+      findings.push(...lengthFindings(ctx, production.projected, limit))
+      prepared = production.made
+    } catch (error) {
+      findings.push({ checkId: LECTURE_ID, severity: 'warning', message: messages.timing.unchecked(lengthFailure(ctx.ir, messages, error)), source })
+    }
   }
   if (!prepared && (view.production?.mediaClips.length || Object.keys(view.production?.captionTimings ?? {}).length || deck.recorded)) prepared = await synthesizeLecture(view, ctx.deckDir, ctx.service?.(SPEECH), undefined, { cacheOnly: true })
   findings.push(...(prepared?.mediaDiagnostics ?? []).map(issue => ({ checkId: LECTURE_ID, severity: issue.severity, message: issue.message, source })))
