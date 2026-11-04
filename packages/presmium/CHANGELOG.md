@@ -1,5 +1,37 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.40
+
+### Patch Changes
+
+- Updated dependencies [9e3a598]
+  - @lincyaw/addon-lecture@1.0.0-rc.40
+  - @lincyaw/addon-motion@1.0.0-rc.40
+  - @lincyaw/host@1.0.0-rc.40
+  - @lincyaw/addon-assistant@1.0.0-rc.40
+  - @lincyaw/addon-classroom@1.0.0-rc.40
+  - @lincyaw/addon-content@1.0.0-rc.40
+  - @lincyaw/addon-exec@1.0.0-rc.40
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.40
+  - @lincyaw/addon-exec-local@1.0.0-rc.40
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.40
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.40
+  - @lincyaw/addon-guide@1.0.0-rc.40
+  - @lincyaw/addon-publish@1.0.0-rc.40
+  - @lincyaw/addon-session@1.0.0-rc.40
+  - @lincyaw/addon-speech@1.0.0-rc.40
+  - @lincyaw/addon-stage@1.0.0-rc.40
+  - @lincyaw/viewer@1.0.0-rc.40
+  - @lincyaw/web@1.0.0-rc.40
+  - @lincyaw/addon-code@1.0.0-rc.40
+  - @lincyaw/cli@1.0.0-rc.40
+  - create-presmium@1.0.0-rc.40
+  - @lincyaw/kernel@1.0.0-rc.40
+  - @lincyaw/mcp@1.0.0-rc.40
+  - @lincyaw/render-notebook@1.0.0-rc.40
+  - @lincyaw/render-slides@1.0.0-rc.40
+  - @lincyaw/studio@0.2.0-rc.39
+
 ## 1.0.0-rc.39
 
 ### Patch Changes
