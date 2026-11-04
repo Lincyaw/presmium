@@ -52,7 +52,7 @@ When the MCP server `presmium` offers author actions (the studio's assistant; or
 
 Undo is `undo_document_change`; `get_document_history` lists the saved changes.
 
-To connect an AI tool: a project made by `presmium new` has `.mcp.json` for Claude Code; otherwise run `claude mcp add presmium -- presmium mcp` or `codex mcp add presmium -- presmium mcp` in the project. `presmium mcp` relays to the Presmium Studio or `presmium serve` running for the project and follows it when it starts again (a `presmium dev` only previews: it has no author actions and takes no pictures); with neither running it only reads, checks and exports, and the author starts `presmium studio` then reconnects the server.
+To connect an AI tool: a project made by `presmium new` has `.mcp.json` for Claude Code; otherwise run `claude mcp add presmium -- presmium mcp` or `codex mcp add presmium -- presmium mcp` in the project. `presmium mcp` relays to the Presmium Studio or `presmium serve` running for the project and follows it when it starts again (a `presmium dev` only previews: it has no author actions and takes no pictures); with neither running it only reads, checks and exports, and the author starts `presmium studio` then reconnects the server. A script or pipeline without an MCP client calls the same tools of the running service from the project's directory: `presmium mcp tools` lists them, `presmium mcp call <tool> '<JSON arguments>'` prints the result as JSON, and `--out <dir>` saves the pictures a capture returns as PNG files.
 
 Without an MCP host that has author actions (working on files in a project), edit `lecture.json` directly and use the command line:
 

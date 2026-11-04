@@ -325,6 +325,7 @@ PDF、图片与 PowerPoint 中组件显示 IR 的 `fallback`（`useStaticRender(
 | `presmium-speech fake`、`clone`、`consent` | `addon-speech` | 假引擎；训练克隆音色；登记同意 |
 | `presmium-classroom-server` | `classroom-server` | 课堂同步 |
 | `presmium mcp`、`presmium-mcp` | `mcp` | stdio MCP：转接这个目录正在运行的 `presmium studio`、`serve`（或 `dev`）的 `/mcp`，没有时自己编译文稿，`--allow operate` 才有操作类工具 |
+| `presmium mcp tools`、`call` | `mcp` | 在命令行中列出、调用当前目录正在运行的服务的 MCP 工具：结果以 JSON 写到标准输出，图片用 `--out` 存为 PNG 文件；工具失败时退出码为 1，没有服务时为 2 |
 | `presmium-language-server` | `language-server` | 语言服务 |
 
 ## 9. 已知风险
