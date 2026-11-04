@@ -222,10 +222,12 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 | 工具 | kind | 作用 |
 | --- | --- | --- |
 | `get_authoring_clients` | read | 客户端的 source、revision、位置、编辑状态与可用动作；不含未提交内容 |
+| `editor_action` | operate | 业务动作；连接与源校验由服务端提供 |
+| `cancel_authoring_client_request` | operate | 取消同一调用方确切的待执行请求，等待真实应答 |
 | `request_authoring_client` | operate | 指定 clientId、epoch、connectionId、客户端 revision、source、requestId 与动作 |
 | `get_authoring_client_request` | read | sent、executing、done、refused、failed、expired，及浏览器观察与 `current` |
 
-动作清单是 `AUTHORING_CLIENT_ACTIONS`（`kernel/src/contracts/authoring-clients.ts`）：`state.read`、`source.flush`、`preview.prepare`、`playback.pause/play/seek/rate`、`position.step`，以及 `comment-drafts.*` 与 `component-drafts.*` 的 inspect、read、restore、discard。
+动作清单是 `AUTHORING_CLIENT_ACTIONS`（`kernel/src/contracts/authoring-clients.ts`）：`state.read`、`source.flush`、`preview.prepare`、`playback.pause/play/seek/rate`、`position.step`，`view.set`、`native-history.undo/redo`、`recording.start/stop/cancel/discard/save/listen/pause`，以及 `comment-drafts.*` 与 `component-drafts.*` 的 inspect、read、restore、discard。
 
 - 客户端执行前报告 executing，服务端确认该连接仍拥有请求；断线、来源变化或超时都不授权执行。请求 30 秒过期，同 requestId 只读原回执；丢失回执先 `state.read`，不换 requestId 重试。
 - `source.flush` 只等待当前 source actor 保存；组词、冲突或锁定时不开放。
