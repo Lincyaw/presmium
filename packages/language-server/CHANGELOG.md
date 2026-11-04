@@ -1,5 +1,17 @@
 # @lincyaw/language-server
 
+## 1.0.0-rc.37
+
+### Patch Changes
+
+- Updated dependencies [ef93837]
+  - @lincyaw/web@1.0.0-rc.37
+  - @lincyaw/cli@1.0.0-rc.37
+  - @lincyaw/compiler@1.0.0-rc.37
+  - @lincyaw/host@1.0.0-rc.37
+  - @lincyaw/kernel@1.0.0-rc.37
+  - @lincyaw/viewer@1.0.0-rc.37
+
 ## 1.0.0-rc.36
 
 ### Patch Changes
