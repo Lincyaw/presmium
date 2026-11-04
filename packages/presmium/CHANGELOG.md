@@ -1,5 +1,37 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.21
+
+### Patch Changes
+
+- 1596e94: The papers workspace keeps only the sources of its films; the video is exported from them when needed (`node tools/film.mjs export <slug>`) instead of being committed.
+- @lincyaw/addon-assistant@1.0.0-rc.21
+  - @lincyaw/addon-classroom@1.0.0-rc.21
+  - @lincyaw/addon-code@1.0.0-rc.21
+  - @lincyaw/addon-content@1.0.0-rc.21
+  - @lincyaw/addon-exec@1.0.0-rc.21
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.21
+  - @lincyaw/addon-exec-local@1.0.0-rc.21
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.21
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.21
+  - @lincyaw/addon-guide@1.0.0-rc.21
+  - @lincyaw/addon-lecture@1.0.0-rc.21
+  - @lincyaw/addon-motion@1.0.0-rc.21
+  - @lincyaw/addon-publish@1.0.0-rc.21
+  - @lincyaw/addon-session@1.0.0-rc.21
+  - @lincyaw/addon-speech@1.0.0-rc.21
+  - @lincyaw/addon-stage@1.0.0-rc.21
+  - @lincyaw/cli@1.0.0-rc.21
+  - create-presmium@1.0.0-rc.21
+  - @lincyaw/host@1.0.0-rc.21
+  - @lincyaw/kernel@1.0.0-rc.21
+  - @lincyaw/mcp@1.0.0-rc.21
+  - @lincyaw/render-notebook@1.0.0-rc.21
+  - @lincyaw/render-slides@1.0.0-rc.21
+  - @lincyaw/viewer@1.0.0-rc.21
+  - @lincyaw/web@1.0.0-rc.21
+  - @lincyaw/studio@0.2.0-rc.20
+
 ## 1.0.0-rc.20
 
 ### Patch Changes
