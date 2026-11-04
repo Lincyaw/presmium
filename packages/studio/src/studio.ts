@@ -252,8 +252,9 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
   }
 
   try {
+    const presmium = options.presmium ?? presmiumBin(env, t.presmiumMissing)
     const server = launchWorkspaceServer({
-      presmium: options.presmium ?? presmiumBin(env, t.presmiumMissing),
+      presmium,
       dir: resolve(options.dir),
       serviceToken,
       mcpToken,
@@ -285,6 +286,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
         ...inheritedEnv(env, name => isLauncherVariable(name) || ['DEEPSEEK_API_KEY', 'DEEPSEEK_BASE_URL', 'DEEPSEEK_SEARCH_BASE_URL'].includes(name)),
         ...modelEnv(env).env,
         ...launchEnv(home, env),
+        PRESMIUM_COMMAND: presmium,
         PRESMIUM_SERVICE_URL: url,
         PRESMIUM_SERVICE_TOKEN: serviceToken,
         PRESMIUM_WORKSPACE: root,

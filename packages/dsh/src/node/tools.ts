@@ -1,4 +1,5 @@
 import { errorMessage } from '@lincyaw/kernel'
+import { compactToolCatalog, queryToolCatalog, resolveCatalogCall } from '@lincyaw/mcp/client'
 import type { CalledImage, ListedTool } from '@lincyaw/mcp/client'
 import type { DshAgent, DshAttachments, DshContentBlock, DshContext, DshImageMediaType, DshLlm, DshToolDefinition, DshToolExecution } from './dsh-types.ts'
 import type { DocumentBinding } from './bindings.ts'
@@ -17,6 +18,13 @@ export const CANDIDATE_TOOLS = new Set([
 
 /** New tools carry their routing with their schema; the names retain compatibility with older servers. */
 export const isCandidateTool = (tool: ListedTool): boolean => tool.workspace ? tool.workspace === 'candidate' : CANDIDATE_TOOLS.has(tool.name)
+
+export async function resolvePresmiumCall(binding: DocumentBinding | undefined, exec: Pick<DshToolExecution, 'name' | 'arguments'>) {
+  if (!binding || !exec.name.startsWith(PREFIX)) throw new Error('operation-unavailable')
+  const target = await resolveCatalogCall(binding.registeredTools ?? binding.tools, exec.name.slice(PREFIX.length), exec.arguments)
+  if (!target.discovery && JSON.stringify(binding.tools.find(tool => tool.name === target.tool.name)) !== JSON.stringify(target.tool)) throw new Error('operation-definition-changed')
+  return target
+}
 
 const IMAGE_TYPES = new Set<string>(['image/png', 'image/jpeg', 'image/webp', 'image/gif'])
 
@@ -51,7 +59,10 @@ function definition(ctx: DshContext, binding: DocumentBinding, tool: ListedTool)
     parameters: tool.inputSchema,
     output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: String(value) }] },
     async execute(args, exec) {
-      const result = await (isCandidateTool(tool) ? binding.client : binding.authorClient).call(tool.name, (args ?? {}) as Record<string, unknown>, exec.signal)
+      if (exec.agent && ctx.presmium.bindings.bindingOf(exec.agent) !== binding) throw new Error('operation-binding-changed')
+      const target = await resolvePresmiumCall(binding, { name: PREFIX + tool.name, arguments: args })
+      if (target.discovery) return JSON.stringify(queryToolCatalog(binding.registeredTools ?? binding.tools, target.arguments))
+      const result = await (isCandidateTool(target.tool) ? binding.client : binding.authorClient).call(target.tool.name, target.arguments, exec.signal)
       if (result.isError) throw new Error(result.text)
       if (result.images.length > 0) prepared.set(exec.token, [...result.text ? [{ type: 'text' as const, text: result.text }] : [], ...await imageBlocks(ctx, tool.name, result.images, exec)])
       return result.text
@@ -74,10 +85,11 @@ export function apply(ctx: DshContext): void {
     if (previous && previous.binding === binding && previous.tools === binding?.tools) return
     previous?.stop?.()
     for (const dispose of previous?.dispose ?? []) dispose()
+    if (binding) binding.registeredTools = binding.tools
     registered.set(agent, {
       binding, tools: binding?.tools,
       stop: binding?.toolChanges.watch(() => { if (agent.status === 'idle') install(agent, binding) }),
-      dispose: binding?.tools.map(tool => agent.ctx.tools.register(definition(ctx, binding, tool))) ?? [],
+      dispose: binding ? compactToolCatalog(binding.tools).map(tool => agent.ctx.tools.register(definition(ctx, binding, tool))) : [],
     })
   }
   const sync = async (agent: DshAgent) => {

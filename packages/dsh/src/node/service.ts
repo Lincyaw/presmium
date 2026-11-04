@@ -12,6 +12,7 @@ import { SERVER_ROUTES, WORKSPACE_ROUTES } from './server-routes.ts'
 export const name = 'presmium-service'
 
 export interface Config {
+  presmium?: string
   url?: string
   token?: string
   root?: string
@@ -41,18 +42,20 @@ function cliBin(): string {
 /** The workspace server the bundle works with: the one the launcher gives (`url`, `token`), or one it launches itself. */
 export class WorkspaceServerClient {
   readonly ready: Promise<Endpoint>
+  readonly presmium: string
   readonly #launched: LaunchedProcess | undefined
   #documents: { at: number, list: Promise<DocumentSummary[]> } | undefined
   #closed = false
 
   constructor(config: Config, log: DshLogger) {
     const root = resolve(config.root || process.cwd())
+    this.presmium = config.presmium ?? cliBin()
     if (config.url) {
       this.ready = Promise.resolve({ url: config.url.replace(/\/+$/, ''), serviceToken: config.token ?? '', root })
     } else {
       const serviceToken = randomBytes(24).toString('base64url')
       const server = launchWorkspaceServer({
-        presmium: cliBin(),
+        presmium: this.presmium,
         dir: root,
         serviceToken,
         env: { ...process.env, ...config.candidate ? { PRESMIUM_AGENT_CANDIDATE: '1' } : {} },

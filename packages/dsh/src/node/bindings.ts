@@ -20,6 +20,8 @@ export interface DocumentBinding {
   authorClient: PresmiumMcpClient
   workspaceRoot: string
   readonly tools: ListedTool[]
+  /** Complete metadata for the currently registered model surface; replaced only at tool installation. */
+  registeredTools?: readonly ListedTool[]
   toolChanges: BindingTools
   diagnostics: BindingDiagnostics
 }
@@ -216,7 +218,7 @@ export class DocumentBindings {
     if (!pending) {
       pending = (async () => {
         const { root } = await this.#server.requestJson<{ root: string }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id } })
-        const candidate = new CandidateServer({ root, candidate: true }, this.#log)
+        const candidate = new CandidateServer({ root, candidate: true, presmium: this.#server.presmium }, this.#log)
         await candidate.ready
         return candidate
       })()

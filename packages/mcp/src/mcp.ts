@@ -26,7 +26,9 @@ import { WORKSPACE_CHANGES_TOOLS } from './workspace-changes.ts'
 import { DIAGNOSTIC_TOOLS, diagnosticSnapshot } from './diagnostics.ts'
 import { registerSkillResources, SKILL_INSTRUCTIONS, SKILL_TOOLS } from './skills.ts'
 import { CAPTURE_TOOLS, ToolContent } from './capture.ts'
-import { compactSchema, schemaArguments } from './schemas.ts'
+import { compactSchema } from './schemas.ts'
+import { compactToolCatalog, queryToolCatalog, resolveCatalogCall } from './tool-catalog.ts'
+import type { ListedTool } from './client.ts'
 
 const MCP_VERSION: string = (createRequire(import.meta.url)('../package.json') as { version: string }).version
 const POSITION_URI = 'presmium://position'
@@ -679,41 +681,19 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
     ? (tool as ToolSpec).inputSchema ?? schemaOf((tool as ToolSpec).properties, (tool as ToolSpec).required) : pluginSchema(tool as AgentTool))
   const all = [...builtIn, ...plugins]
   const full = caller.confirmed === true || caller.toolset === 'all'
-  const common = new Set(['get_context', 'rename_page', 'edit_narration', 'list_documents'])
-  if (!full) {
-    server.registerTool('operations', {
-      description: 'Find available operations by query, or inspect one operation. Argument summaries are automatic; request schema:true only when the full input definition is needed.',
-      inputSchema: fromJsonSchema<Args>({ type: 'object', additionalProperties: false, properties: { name: { type: 'string' }, query: { type: 'string' }, schema: { type: 'boolean' }, offset: { type: 'integer', minimum: 0 }, limit: { type: 'integer', minimum: 1, maximum: 20 } } }),
-      annotations: { readOnlyHint: true }, _meta: meta('read'),
-    }, async args => toolResult(async () => {
-      const description = (tool: ToolSpec | AgentTool) => tool.description.slice(0, 180)
-      if (typeof args.name === 'string') {
-        const tool = all.find(tool => tool.name === args.name)
-        if (!tool) throw Object.assign(new Error('operation-unavailable'), { status: 404 })
-        const schema = toolSchema(tool)
-        return { name: tool.name, kind: tool.kind, description: description(tool), ...args.schema ? { inputSchema: schema } : { arguments: schemaArguments(schema) } }
-      }
-      if (args.schema) throw Object.assign(new Error('operation-name-required'), { status: 400 })
-      const query = String(args.query ?? '').toLowerCase(), offset = Number(args.offset ?? 0), limit = Number(args.limit ?? 10)
-      const found = all.filter(tool => `${tool.name} ${tool.description}`.toLowerCase().includes(query))
-      return { operations: found.slice(offset, offset + limit).map(tool => ({ name: tool.name, kind: tool.kind, description: description(tool) })),
-        ...offset + limit < found.length ? { next: offset + limit } : {} }
-    }, true))
-    for (const kind of ['read', 'operate', 'spend', 'write', 'agent'] as const) {
-      if (!all.some(tool => tool.kind === kind)) continue
-      const name = kind === 'operate' ? 'edit_operation' : `${kind}_operation`
-      server.registerTool(name, {
-        description: `Calls one discovered ${kind} operation using its original schema, permissions and confirmation policy. Supply operation and its business arguments; use operations(name,schema:true) if needed.`,
-        inputSchema: fromJsonSchema<Args>({ type: 'object', additionalProperties: false, properties: { operation: { type: 'string', minLength: 1 }, arguments: { type: 'object', additionalProperties: true } }, required: ['operation'] }),
-        annotations: { readOnlyHint: kind === 'read' }, _meta: meta(kind),
-      }, async (args, context) => {
-        const tool = all.find(tool => tool.name === args.operation && tool.kind === kind)
-        if (!tool) return toolResult(async () => { throw Object.assign(new Error('operation-unavailable'), { status: 404 }) }, true)
-        const parsed = await fromJsonSchema<Args>(toolSchema(tool) as JsonSchemaType)['~standard'].validate(args.arguments ?? {})
-        if (parsed.issues) return { isError: true, content: [{ type: 'text', text: parsed.issues.slice(0, 3).map(issue => issue.message.slice(0, 160)).join('; ') }] }
-        return execute(tool, parsed.value, context.mcpReq.signal)
-      })
-    }
+  const catalog: ListedTool[] = all.map(tool => ({ name: tool.name, description: tool.description, kind: tool.kind, inputSchema: toolSchema(tool) }))
+  const compact = compactToolCatalog(catalog), common = new Set(compact.map(tool => tool.name))
+  if (!full) for (const tool of compact.filter(tool => !catalog.includes(tool))) {
+    server.registerTool(tool.name, {
+      description: tool.description, inputSchema: fromJsonSchema<Args>(tool.inputSchema as JsonSchemaType),
+      annotations: { readOnlyHint: tool.kind === 'read' }, _meta: meta(tool.kind),
+    }, async (args, context) => {
+      try {
+        const target = await resolveCatalogCall(catalog, tool.name, args)
+        if (target.discovery) return toolResult(async () => queryToolCatalog(catalog, target.arguments), true)
+        return execute(all.find(tool => tool.name === target.tool.name)!, target.arguments, context.mcpReq.signal)
+      } catch (error) { return toolResult(async () => { throw error }, true) }
+    })
   }
 
   const call = (args: Args, signal: AbortSignal, authoring = false, contextual = false): Call => {

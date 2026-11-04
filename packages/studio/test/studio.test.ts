@@ -245,7 +245,6 @@ describe('presmium studio in a fresh home, with the model of the environment', (
     const context = /<presmium-document>([\s\S]*?)<\/presmium-document>/.exec(JSON.stringify(turn.body.messages))?.[1] ?? ''
     expect(context).toContain('Document \\"lectures/alpha\\"')
     expect(context).toContain('alpha-one')
-    expect(turn.body.tools.map((tool: { name: string }) => tool.name)).toContain('presmium__list_sections')
     expect(readdirSync(home.home)).toEqual([])
     expect(existsSync(join(home.dshHome, 'documents'))).toBe(false)
     for (const entry of readdirSync(home.dir)) expect(['home', 'state', 'cache', 'config', 'data']).toContain(entry)

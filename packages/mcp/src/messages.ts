@@ -256,6 +256,7 @@ const kind = (detail: Detail) => typeof detail.kind === 'string' ? detail.kind :
 export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => string>> = {
   'zh-CN': {
     'operation-unavailable': () => '当前连接没有这项操作。请搜索可用操作。',
+    'operation-arguments-invalid': () => '操作参数不符合要求，请查看参数说明后重新决定。',
     'client-busy': () => '这个客户端正在处理另一个请求。请等待完成，或取消那个请求后再试。',
     'voice-clone-permission-denied': () => '训练和读取合成音色需要所有者权限。',
     'voice-clone-invalid': () => '音色训练的参数不完整或格式不正确。',
@@ -363,6 +364,7 @@ export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => s
   },
   'en': {
     'operation-unavailable': () => 'This connection does not offer that operation. Read the available operations.',
+    'operation-arguments-invalid': () => 'The operation arguments are invalid. Check its argument summary before deciding again.',
     'client-busy': () => 'This client is handling another request. Wait for it to finish or cancel that exact request.',
     'voice-clone-permission-denied': () => 'Training and reading cloned voices requires owner access.',
     'voice-clone-invalid': () => 'Voice cloning arguments are incomplete or invalid.',

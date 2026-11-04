@@ -51,7 +51,7 @@ export function launchEnv(dshHome: string, env: NodeJS.ProcessEnv = process.env)
 
 /** The variables a launcher sets for the processes it starts; they are never inherited from its own environment. */
 export function isLauncherVariable(name: string): boolean {
-  return /^(?:DSH_|PRESMIUM_MODEL_|PRESMIUM_SERVICE_|PRESMIUM_MCP_)/.test(name) || ['PRESMIUM_WORKSPACE', 'NODE_ENV', 'PORT'].includes(name)
+  return /^(?:DSH_|PRESMIUM_MODEL_|PRESMIUM_SERVICE_|PRESMIUM_MCP_)/.test(name) || ['PRESMIUM_WORKSPACE', 'PRESMIUM_COMMAND', 'NODE_ENV', 'PORT'].includes(name)
 }
 
 export function inheritedEnv(env: NodeJS.ProcessEnv, drop: (name: string) => boolean): Record<string, string> {

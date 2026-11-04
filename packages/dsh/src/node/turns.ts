@@ -3,7 +3,7 @@ import { errorMessage } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
 import type { DshAgent, DshContext, DshToolExecution } from './dsh-types.ts'
 import { WORKSPACE_ROUTES } from './server-routes.ts'
-import { isCandidateTool, PREFIX } from './tools.ts'
+import { isCandidateTool, PREFIX, resolvePresmiumCall } from './tools.ts'
 
 // What a writing tool answers when the change cannot be recorded. The AI reads it and tells the author in their own
 // language, so it names what the author sees (Version History) and none of the internals behind it.
@@ -107,7 +107,8 @@ export function apply(ctx: DshContext): void {
     if (!isInside(ctx.presmium.bindings.workingDirectoryOf(exec.agent), root)) return next()
     await ctx.presmium.bindings.candidateOf(exec.agent)
     const binding = ctx.presmium.bindings.bindingOf(exec.agent)
-    const tool = exec.name.startsWith(PREFIX) ? binding?.tools.find(tool => `${PREFIX}${tool.name}` === exec.name) : undefined
+    const target = exec.name.startsWith(PREFIX) ? await resolvePresmiumCall(binding, exec) : undefined
+    const tool = target?.tool
     if (!WRITING_TOOLS.has(exec.name) && (!tool || tool.kind === 'read' || !isCandidateTool(tool))) return next()
     const document = ctx.presmium.bindings.bindingOf(exec.agent)?.document.dir ?? ''
     const agentSessionId = rootAgentSessionOf(exec.agent.session.id)
@@ -120,7 +121,7 @@ export function apply(ctx: DshContext): void {
     state.document = document
     state.wrote = true
     const result = await next()
-    await postReview(document, agentSessionId, 'step', { ...state.turn !== undefined ? { turn: state.turn } : {}, label: labelOf(exec), tool: exec.name })
+    await postReview(document, agentSessionId, 'step', { ...state.turn !== undefined ? { turn: state.turn } : {}, label: labelOf(target ? { ...exec, name: PREFIX + target.tool.name, arguments: target.arguments } : exec), tool: target ? PREFIX + target.tool.name : exec.name })
     return result
   })
 

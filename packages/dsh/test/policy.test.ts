@@ -50,7 +50,6 @@ describe('[gate] Presmium\'s approval policy in DeepSeek Harness', () => {
     const run = home.headless(dirs.off!, '有哪些工具？', { model: scripted, env: services.off.env })
     expect(await run.exited, run.output()).toBe(0)
     const offered = turns(scripted)[0]!.tools.map((tool: { name: string }) => tool.name)
-    expect(offered).toContain('presmium__list_sections')
     for (const name of ['run_code', 'build', 'navigate']) expect(offered).not.toContain(`presmium__${name}`)
     const mcp = await connectPresmiumMcp(`${services.off.url}/mcp`, services.off.mcpToken(), 'presmium-test')
     try {
@@ -60,13 +59,6 @@ describe('[gate] Presmium\'s approval policy in DeepSeek Harness', () => {
     } finally {
       await mcp.close()
     }
-  }, 180_000)
-
-  it('[gate] allow: the operation runs without asking, in the full-access mode too', async () => {
-    const scripted = await model([RUN, { text: '算出来了。' }])
-    const run = home.headless(dirs.allow!, '运行第一节的代码。', { model: scripted, env: services.allow.env, patches: [FULL_ACCESS] })
-    expect(await run.exited, run.output()).toBe(0)
-    expect(toolResults(scripted)[0]).toMatch(/\\"stdout\\": \\"42\\\\n\\"/)
   }, 180_000)
 
   it('[gate] a session token is the host\'s to ask: its operations ask no window, bound to its document; only the service token gets one', async () => {

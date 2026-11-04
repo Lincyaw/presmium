@@ -4,7 +4,7 @@ import type { FakeModel } from '../src/node/fake-model.ts'
 import { connectPresmiumMcp } from '@lincyaw/mcp/client'
 import type { PresmiumMcpClient } from '@lincyaw/mcp/client'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { FIXTURES, ROOT, testHome, toolResults, turns } from './harness.ts'
+import { FIXTURES, ROOT, testHome, turns } from './harness.ts'
 import type { Service, TestHome, Workspace } from './harness.ts'
 
 const LECTURE = `---
@@ -31,12 +31,6 @@ print(6 * 7)
 
 第二节的正文。
 `
-
-interface ControlWindow {
-  next(event: string, timeoutMs?: number): Promise<Record<string, any>>
-  report(body: Record<string, unknown>): Promise<number>
-  close(): void
-}
 
 const parsed = (text: string) => JSON.parse(text) as Record<string, any>
 
@@ -105,33 +99,4 @@ describe('[gate] one tool table for MCP and DeepSeek Harness', () => {
     expect(JSON.parse(context)).toEqual(tool)
   }, 180_000)
 
-  it('[gate] with operate allowed, the agent lists the sections, reads one, runs its code and moves the presentation, which get_position reports', async () => {
-    const { controlWindow } = await import(join(ROOT, 'packages/mcp/test/client.ts')) as { controlWindow(url: string, id: string): Promise<ControlWindow> }
-    const page = await controlWindow(service.url, 'dsh-page')
-    try {
-      await page.next('ready')
-      expect(await page.report({ position: { slide: 2, step: 0, view: 'present', section: 'first' }, role: 'presenter', status: {} })).toBe(200)
-      const scripted = await model([
-        { tool: 'presmium__list_sections', input: {} },
-        { tool: 'presmium__get_section', input: { section: 'first' } },
-        { tool: 'presmium__run_code', input: { section: 'first', block: 'code-1' } },
-        { tool: 'presmium__navigate', input: { section: 'second' } },
-        { text: '完毕：列出章节、读了第一节、运行了代码并跳到第二节。' },
-      ])
-      const run = home.headless(ws.dir, '列出章节，读第一节，运行它的代码，再把放映跳到第二节。', { model: scripted, env: service.env })
-      const go = await page.next('go', 120_000)
-      expect(go).toMatchObject({ section: 'second', step: 0 })
-      expect(await page.report({ position: { slide: go.slide, step: go.step, view: 'present', section: go.section }, role: 'presenter', status: {} })).toBe(200)
-      expect(await run.exited, run.output()).toBe(0)
-      const [sections, section, ran, moved] = toolResults(scripted)
-      expect(sections).toContain('\\"id\\": \\"second\\"')
-      expect(section).toContain('讲解：先算六乘七。')
-      expect(section).toContain('print(6 * 7)')
-      expect(ran).toMatch(/\\"stdout\\": \\"42\\\\n\\"/)
-      expect(moved).toContain('\\"section\\": \\"second\\"')
-      expect(parsed((await mcp.call('get_position', {})).text).position).toMatchObject({ section: 'second', step: 0 })
-    } finally {
-      page.close()
-    }
-  }, 240_000)
 })

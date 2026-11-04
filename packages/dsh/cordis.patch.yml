@@ -2,6 +2,7 @@
     - id: presmium-service
       name: '@lincyaw/dsh/service'
       config:
+        presmium: !!js process.env.PRESMIUM_COMMAND
         url: !!js process.env.PRESMIUM_SERVICE_URL
         token: !!js process.env.PRESMIUM_SERVICE_TOKEN
         root: !!js process.env.PRESMIUM_WORKSPACE || process.cwd()

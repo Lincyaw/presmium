@@ -214,3 +214,6 @@ export function describeOperation(tool: string, args: Record<string, unknown>, l
     default: return m.tool(tool)
   }
 }
+
+export { compactToolCatalog, queryToolCatalog, resolveCatalogCall } from './tool-catalog.ts'
+export type { CatalogCall } from './tool-catalog.ts'

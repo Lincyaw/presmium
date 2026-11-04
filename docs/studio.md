@@ -195,8 +195,8 @@ Studio 的 HTTP MCP 默认地址为 `http://127.0.0.1:4321/mcp`，使用 Streama
 客户端应在 Studio 重启后重新建立 HTTP 连接；无需修改已保存的地址或令牌。只支持 stdio 的客户端仍可使用 `presmium mcp`，由本地服务发现转接。
 
 - `@lincyaw/mcp` 导出一张工具表（名字、说明、JSON Schema、种类），按文稿列出时按策略筛选，加上插件的 `AgentTool`；作者事务（`plan_document_change`、`apply_document_change` 等）复用 Web 的 `DocumentEditor` 与历史，见 [作者动作](authoring-actions.md)。
-- 适配器一是 `/mcp` 与 `presmium mcp`（服务运行时转接 `/mcp`，否则在编译器上提供）。适配器二是 `presmium-tools`：作为 MCP 客户端用会话令牌连接回环 `/mcp`，把工具连同原样 schema 登记为 `presmium__<名字>`，调用时转成 `tools/call`，时限 10 分钟。结果中的图片（如 `capture_slides` 的截图）在会话最近一次请求所用的模型声明接受图片时存入 dsh 的附件，作为工具结果的图片交给模型；否则模型只得到文字（`capture_slides` 的文字列出每张图的文件），另有一行说明图片未附上。编译只在服务中做一次；每个会话只登记所属文稿的工具。
-- 同一文稿与设置下，MCP `tools/list` 等于会话中的 `presmium__*` 工具，`get_focus` 等于会话快照中的焦点。
+- 适配器一是 `/mcp` 与 `presmium mcp`（服务运行时转接 `/mcp`，否则在编译器上提供）。适配器二是 `presmium-tools`：作为 MCP 客户端用会话令牌连接回环 `/mcp`，在宿主保留完整工具元数据，模型只登记共用精简目录的 `presmium__*` 入口；按需查询参数，调用前解析并校验目标工具，按目标 workspace 路由，再转成 `tools/call`，时限 10 分钟。结果中的图片（如 `capture_slides` 的截图）在会话最近一次请求所用的模型声明接受图片时存入 dsh 的附件，作为工具结果的图片交给模型；否则模型只得到文字（`capture_slides` 的文字列出每张图的文件），另有一行说明图片未附上。候选服务复用启动 Studio 的确切 Presmium 命令及其自带的渲染端和插件，不切到裸 CLI 或另一份全局安装。编译只在服务中做一次；每个会话只登记所属文稿的工具。
+- MCP 默认目录与会话中的 `presmium__*` 使用同一精简目录生成器；会话完整元数据不传给模型。审批、展示文案、候选工作区路由与审阅检查点均按真实目标工具执行，模型侧参数保持原样，不改写 Harness 的冻结 execution。模型已登记的目标定义或文稿绑定变化时拒绝旧调用，下一步请求前或空闲后重装目录；`get_focus` 仍等于会话快照中的焦点。
 
 ## 10. 没有模型与没有 dsh 时
 

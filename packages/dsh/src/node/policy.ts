@@ -1,9 +1,11 @@
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { errorMessage } from '@lincyaw/kernel'
+import type { CatalogCall } from '@lincyaw/mcp/client'
 import { isInside } from '@lincyaw/kernel/node'
 import { describeOperation } from '@lincyaw/mcp/client'
 import type { DshContext, DshPreDecision, DshToolExecution } from './dsh-types.ts'
-import { PREFIX } from './tools.ts'
+import { PREFIX, resolvePresmiumCall } from './tools.ts'
 
 export const name = 'presmium-policy'
 export const inject = ['presmium', 'tools']
@@ -31,12 +33,14 @@ export function apply(ctx: DshContext): void {
     const { bindings } = ctx.presmium
     const binding = bindings.bindingOf(exec.agent)
     if (exec.name.startsWith(PREFIX)) {
-      const tool = binding?.tools.find(own => `${PREFIX}${own.name}` === exec.name)
+      let resolved: CatalogCall
+      try { resolved = await resolvePresmiumCall(binding, exec) } catch (error) { return { kind: 'deny', reason: `Presmium: ${errorMessage(error)}` } }
+      const tool = resolved.tool
       if (!binding || !tool) return { kind: 'deny', reason: `Presmium: ${exec.name} is no tool of this session's document` }
       if (tool.kind === 'read') return next()
       if (tool.approval === 'allow') return { kind: 'allow' }
       const lang = binding.document.lang
-      const title = describeOperation(tool.name, (exec.arguments ?? {}) as Record<string, unknown>, lang)
+      const title = describeOperation(tool.name, resolved.arguments, lang)
       return { kind: 'ask', reason: `presmium:${tool.kind} ${tool.name}`, displayReason: displayText(`Presmium · ${title}`, lang) }
     }
     const file = FILE_WRITE_TOOLS.has(exec.name) ? fileOf(exec) : undefined

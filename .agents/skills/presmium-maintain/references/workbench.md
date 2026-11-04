@@ -21,6 +21,17 @@ re-enable root HMR: a full reload loses session-only comment drafts. Do not patc
 draft store or add retries or fixed delays against connection starvation. `WorkspaceClient` keeps its
 subscription injection optional so standalone callers still use EventSource.
 
+## Agent tool catalogs
+
+External MCP and the Harness model surface share `@lincyaw/mcp/client`'s compact catalog,
+argument summaries and resolver. `DocumentBinding.tools` keeps full trusted metadata off the model;
+`registeredTools` pins what was installed until the next step boundary or the agent is idle. Resolve the real target before policy,
+review hooks and dispatch: its kind/approval govern confirmation, workspace governs candidate/author
+routing, and its schema validates the nested arguments. Never rewrite frozen Harness execution args.
+Refuse a changed target definition or document binding. Tool-list refresh must release old registrations;
+images and structured failures still use the original call result. Candidate services inherit the Studio launcher’s exact Presmium command, including its bundled renderers and plugins; do not fall back to the bare CLI from a different installation. Verify in the real Harness with a
+scripted local provider, including schema rejection, candidate publication, owner-state reads and approval.
+
 ## Who it is for
 
 The workbench serves teachers who are not technical (section 1): point at a problem, edit it or hand it to

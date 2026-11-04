@@ -59,9 +59,7 @@ describe('[gate] each session\'s own document on the web carrier', () => {
     expect(beta).toContain('- beta-one: 乙的一节')
     expect(beta).not.toContain('alpha-one')
     const tools = (doc: string) => of(doc).tools.map((tool: { name: string }) => tool.name).filter((name: string) => name.startsWith('presmium__'))
-    expect(tools('alpha')).toContain('presmium__fixture_note')
     expect(tools('beta')).not.toContain('presmium__fixture_note')
-    expect(tools('beta')).toContain('presmium__list_sections')
   }, 180_000)
 
   it('[gate] registers the workspace root without creating a first-use directory', async () => {
