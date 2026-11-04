@@ -202,7 +202,7 @@
 
 1. 选 dsh 端口：默认 4320，cookie 跨重启有效；占用时取空闲端口。
 2. 生成服务令牌，启动 `presmium serve <目录> --port 0 --preview-origin <dsh 的源>`。
-3. 启动 dsh：`--profile presmium-studio-<散列> --port <端口> --no-open`，加 6.6 节的补丁，环境中带服务地址与令牌。
+3. 启动 dsh：`--profile presmium-studio-<散列> --port <端口> --no-open`，加 6.6 节的补丁，环境中带服务地址与令牌。`--host 0.0.0.0` 时 dsh 在一次性的回环地址上监听，Studio 在全部 IPv4 网络接口上代转 HTTP 与 WebSocket 请求。
 4. 等标准输出的 `dsh web: <网址>`：启动令牌只从这里取得，它也是 dsh 的就绪信号；3 分钟等不到时报错并给出日志位置。
 5. 打印 `studio  <网址>`。
 
@@ -211,7 +211,7 @@
 ### 11.3 模型、局域网与代理
 
 - 只用 dsh 的模型设置。`DEEPSEEK_API_KEY` 与 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` 映射为 `DEEPSEEK_*`；界面中保存的密钥优先。
-- `--host` 只接受本机的一个具体 IP，启动时警告没有登录。
+- `--host` 接受本机的一个具体 IP，也接受 `0.0.0.0`。通配地址启动时打印每个局域网接口的访问地址，并警告没有登录。
 - `--public-url` 交给 dsh，`--preview-url` 交给工作区服务（可带路径前缀）。预览应与工作台不同源，代理不得注入 cookie 或改写 `Origin`。云端按此为每个用户运行一个 Studio，见 [云端](cloud.md)。
 
 ## 12. 升级闸门

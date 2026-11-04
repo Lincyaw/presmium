@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { applyDocumentComponentAction, effectiveComponentParameters, isRecord, validateDocumentParameters } from '@lincyaw/kernel'
+import { applyDocumentComponentAction, effectiveComponentParameters, isRecord, randomUUID, validateDocumentParameters } from '@lincyaw/kernel'
 import type { CanonicalSource, DocumentComponentAction, DocumentParameterValidation, JsonObject, TeachingDocument } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmNotice, PmSelect } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
@@ -17,7 +17,7 @@ function fresh(document: TeachingDocument, source: CanonicalSource, target: Comp
   const block = document.blocks[target.blockId]
   if (block?.type !== 'component') throw new Error('component-block-missing')
   const value = effectiveComponentParameters(document, block.id, target.stepId).parameters
-  return { format: 1, id: crypto.randomUUID(), revision: 0, target, source, definitionId: block.definitionId, baseline: value, value,
+  return { format: 1, id: randomUUID(), revision: 0, target, source, definitionId: block.definitionId, baseline: value, value,
     composing: false, reset: false, updatedAt: new Date().toISOString() }
 }
 function message(error: unknown, t: ComponentPropertyMessages): string {
@@ -164,7 +164,7 @@ export function ComponentPropertiesDialog({ identity, blockId, stepId, onClose }
   const submit = async (action: DocumentComponentAction, submitted?: ComponentPropertyDraft) => {
     if (!canonical || !source?.version || !clean || current.current.busy) return
     const expected = { identity, version: source.version, fingerprint: source.fingerprint! }, signature = JSON.stringify([canonical, action])
-    if (!intent.current || intent.current.signature !== signature || intent.current.draft !== submitted) intent.current = { signature, draft: submitted, id: crypto.randomUUID() }
+    if (!intent.current || intent.current.signature !== signature || intent.current.draft !== submitted) intent.current = { signature, draft: submitted, id: randomUUID() }
     const captured = intent.current, controller = new AbortController(), submittedKey = key
     flight.current = controller; current.current.busy = true; setBusy(true); setError(undefined)
     try {

@@ -3,13 +3,15 @@ import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, readdirSync, 
 import { createRequire } from 'node:module'
 import { createServer, isIP } from 'node:net'
 import type { AddressInfo } from 'node:net'
-import { homedir } from 'node:os'
+import { homedir, hostname, networkInterfaces } from 'node:os'
 import { delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { bracketIPv6, dshBin, inheritedEnv, isLauncherVariable, launchArgs, launchEnv, launchNode, launchWorkspaceServer, WEB_READY, writeProfile } from '@lincyaw/dsh/launch'
 import type { LaunchedProcess } from '@lincyaw/dsh/launch'
 import { STUDIO_MESSAGES, systemLocale } from './messages.ts'
 import { modelEnv } from './model-env.ts'
+import { startProxy } from './proxy.ts'
+import type { Proxy } from './proxy.ts'
 
 const PROFILE = 'presmium-studio'
 const DEFAULT_PORT = 4320
@@ -38,6 +40,7 @@ export interface StudioOptions {
 
 export interface Studio {
   url: string
+  networkUrls: string[]
   workspaceServerUrl: string
   root: string
   home: string
@@ -113,7 +116,27 @@ function nodeScript(command: string): string | undefined {
   }
 }
 
-const WILDCARD = /^(?:0\.0\.0\.0|::|(?:0+:){7}0+|::ffff:0\.0\.0\.0)$/i
+const WILDCARD = /^0\.0\.0\.0$/
+
+function networkHosts(): string[] {
+  return [...new Set(Object.values(networkInterfaces()).flatMap(entries => entries ?? []).filter(entry => entry.family === 'IPv4' && !entry.internal).map(entry => entry.address))]
+}
+
+function authority(host: string, port: number): string {
+  return `${bracketIPv6(host)}:${port}`
+}
+
+function httpOrigin(host: string, port: number): string {
+  return `http://${authority(host, port)}`
+}
+
+function studioUrl(backend: string, publicUrl: string | undefined, host: string, port: number): string {
+  const token = new URL(backend).searchParams.get('token')
+  if (!token) throw new Error('DeepSeek Harness printed an address without its launch token')
+  const url = new URL(publicUrl ?? `http://${authority(host, port)}/`)
+  url.searchParams.set('token', token)
+  return url.href
+}
 
 function freePort(listenAddress: string, port: number): Promise<number | undefined> {
   return new Promise((done) => {
@@ -174,11 +197,21 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
   const env = options.env ?? process.env
   const t = STUDIO_MESSAGES[systemLocale(env)]
   const { listenAddress } = options
-  if (listenAddress !== undefined && (isIP(listenAddress) === 0 || WILDCARD.test(listenAddress))) {
+  if (listenAddress !== undefined && isIP(listenAddress) === 0) {
     throw new Error(t.badHost(listenAddress))
   }
-  const port = await choosePort(listenAddress ?? '127.0.0.1', options.port)
-  const origins = options.publicUrl ? [new URL(options.publicUrl).origin] : [`http://${bracketIPv6(listenAddress ?? '127.0.0.1')}:${port}`, ...!listenAddress || listenAddress === '127.0.0.1' ? [`http://localhost:${port}`] : []]
+  const boundAddress = listenAddress ?? '127.0.0.1'
+  const wildcard = WILDCARD.test(boundAddress)
+  const port = await choosePort(boundAddress, options.port)
+  const dshAddress = wildcard ? '127.0.0.1' : boundAddress
+  const dshPort = wildcard ? await choosePort(dshAddress, undefined) : port
+  const hosts = wildcard ? networkHosts() : []
+  const primaryHost = hosts[0] ?? dshAddress
+  const origins = options.publicUrl
+    ? [new URL(options.publicUrl).origin, ...hosts.map(host => httpOrigin(host, port)), httpOrigin('127.0.0.1', port)]
+    : wildcard
+      ? [...hosts.map(host => httpOrigin(host, port)), httpOrigin('127.0.0.1', port), `http://localhost:${port}`]
+      : [httpOrigin(boundAddress, port), ...boundAddress === '127.0.0.1' ? [`http://localhost:${port}`] : []]
 
   const home = studioHome(env)
   mkdirSync(home, { recursive: true, mode: 0o700 })
@@ -188,7 +221,10 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
   const log = new Log(join(home, `${profile}.log`))
   const serviceToken = randomBytes(24).toString('base64url')
   const started: LaunchedProcess[] = []
+  let proxy: Proxy | undefined
   const stopAll = async () => {
+    await proxy?.close()
+    proxy = undefined
     for (const launched of started.reverse()) await launched.stop()
     started.length = 0
   }
@@ -210,9 +246,13 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
     started.push(server.process)
     const { url, root } = await server.ready
 
+    const trustedHosts = wildcard
+      ? [...hosts, hostname(), `${hostname()}.local`]
+      : listenAddress ? [listenAddress] : []
     const dsh = launchNode('DeepSeek Harness', [
-      dshBin(PACKAGE_DIR), ...launchArgs(profile, 'web'), '--port', String(port), '--no-open',
-      ...listenAddress ? ['--host', listenAddress, '--trusted-host', `${bracketIPv6(listenAddress)}:${port}`] : [],
+      dshBin(PACKAGE_DIR), ...launchArgs(profile, 'web'), '--port', String(dshPort), '--no-open',
+      ...wildcard || listenAddress ? ['--host', dshAddress] : [],
+      ...trustedHosts.flatMap(host => ['--trusted-host', authority(host, port)]),
       ...options.publicUrl ? ['--public-url', options.publicUrl, '--trusted-host', new URL(options.publicUrl).host] : [],
     ], {
       cwd: root,
@@ -227,8 +267,11 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
       onOutput: text => log.write('dsh', text),
     })
     started.push(dsh)
-    const address = (await dsh.ready(WEB_READY))[1]!
+    const backend = (await dsh.ready(WEB_READY))[1]!
+    if (wildcard) proxy = await startProxy({ host: boundAddress, port, target: `http://${authority(dshAddress, dshPort)}` })
     dsh.stopBuffering()
+    const address = studioUrl(backend, options.publicUrl, primaryHost, port)
+    const networkUrls = hosts.slice(1).map(host => studioUrl(backend, `http://${authority(host, port)}/`, host, port))
     // The address with its launch token, for a host that opens Studio for the user (0600, removed on close).
     const state = join(home, `${profile}.json`)
     writeFileSync(state, `${JSON.stringify({ url: address, workspace: root, workspaceServerUrl: url, pid: process.pid }, null, 2)}\n`, { mode: 0o600 })
@@ -240,6 +283,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
     ]).then(how => (closing ? new Promise<string>(() => {}) : how))
     return {
       url: address,
+      networkUrls,
       workspaceServerUrl: url,
       root,
       home,

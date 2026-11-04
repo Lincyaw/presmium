@@ -1,5 +1,6 @@
 import { forwardRef, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react'
+import { randomUUID } from '@lincyaw/kernel'
 import { filterSuggestionItems } from '@blocknote/core'
 import { BlockNoteView, components } from '@blocknote/mantine'
 import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ComponentsContext, CreateLinkButton, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, LinkToolbarController, NestBlockButton, RenderInPortalElement, SideMenuController, SuggestionMenuController, TableCellMergeButton, TableHandlesController, TextAlignButton, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
@@ -206,7 +207,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
           onItemClick: () => current.current.animationRequest?.request(editor),
         }] : []), {
           title: t.page, aliases: slashAliases('pageAliases'), group: t.document,
-          onItemClick: () => { const current = editor.getTextCursorPosition().block; editor.insertBlocks([{ type: 'presmiumPage', props: { sectionId: crypto.randomUUID() }, content: t.untitledPage }], current, 'after') },
+          onItemClick: () => { const current = editor.getTextCursorPosition().block; editor.insertBlocks([{ type: 'presmiumPage', props: { sectionId: randomUUID() }, content: t.untitledPage }], current, 'after') },
         }], query)} />
         {props.children}
         </NewCommentDraftProvider></BlockNoteViewEditor>

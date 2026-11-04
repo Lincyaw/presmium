@@ -1,4 +1,5 @@
 import type { InlineNode, JsonValue, ListItemNode, RichTextNode, TableNode } from '@lincyaw/kernel'
+import { randomUUID } from '@lincyaw/kernel'
 import type { TableCellProps } from '@blocknote/core'
 import { nativeInlineToProduct, nativeTextStyleToProduct, productInlineToNative, productTextStyleToNative } from './inline.ts'
 import type { InlineProjectionContext, NativeInline } from './inline.ts'
@@ -27,12 +28,12 @@ export interface RichProjection extends InlineProjectionContext {
   tables: Map<string, { id: string, cells: string[] }[]>
 }
 export function createRichProjection(): RichProjection {
-  return { rich: new Map(), baseline: new Map(), tables: new Map(), opaqueInline: new Map(), newInlineId: () => crypto.randomUUID() }
+  return { rich: new Map(), baseline: new Map(), tables: new Map(), opaqueInline: new Map(), newInlineId: () => randomUUID() }
 }
 export function captureRichBaseline(blocks: readonly DocumentEditorBlock[], context: RichProjection): void {
   for (const block of blocks) { context.baseline.set(block.id, JSON.stringify(block)); captureRichBaseline(block.children, context) }
 }
-const id = () => crypto.randomUUID()
+const id = () => randomUUID()
 const atom = (node: RichTextNode): DocumentEditorInput => ({ id: node.id, type: 'presmiumAtom', props: { entityId: node.id, kind: `rich:${node.type}`, label: node.type === 'extension' ? fallbackText(node.fallback) : fallbackText(node) } })
 
 /** The projection records structural identities; the saved document owns all content. */

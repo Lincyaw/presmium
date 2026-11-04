@@ -1,4 +1,4 @@
-import { hasRole, validateDocument } from '@lincyaw/kernel'
+import { hasRole, randomUUID, validateDocument } from '@lincyaw/kernel'
 import type { DocumentAnswer, DocumentChangeAnswer, DocumentImageImportAnswer, DocumentIssue, Member, TeachingDocument } from '@lincyaw/kernel'
 import { WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
@@ -288,7 +288,7 @@ export class DocumentSession {
     else if (slot.timer !== undefined) return
     if (this.#readOnly(slot) || slot.flight || slot.assetFlight || !slot.state.dirty || slot.state.composing || slot.state.restored || slot.state.error || !slot.state.content || !slot.state.version) return
     slot.read++
-    const flight = { id: crypto.randomUUID(), input: slot.input, content: structuredClone(slot.state.content), baseVersion: slot.state.version, hash: undefined as string | undefined }
+    const flight = { id: randomUUID(), input: slot.input, content: structuredClone(slot.state.content), baseVersion: slot.state.version, hash: undefined as string | undefined }
     slot.flight = flight
     slot.state = { ...slot.state, saving: true }; this.#emit(slot)
     try {
@@ -406,7 +406,7 @@ export class DocumentSession {
     const before = structuredClone(slot.state.content), input = slot.input, version = slot.state.version
     let request = this.#imageImports.get(file)
     if (!request || request.identity !== identity || request.version !== version) {
-      request = { identity, version, id: crypto.randomUUID() }
+      request = { identity, version, id: randomUUID() }
       this.#imageImports.set(file, request)
     }
     const read = ++slot.read

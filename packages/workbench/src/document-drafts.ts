@@ -1,4 +1,4 @@
-import { isRecord, validateDocument } from '@lincyaw/kernel'
+import { isRecord, randomUUID, validateDocument } from '@lincyaw/kernel'
 import type { TeachingDocument } from '@lincyaw/kernel'
 import { DocumentDraftStore } from './document-draft-store.ts'
 import type { DraftStoreCommit } from './document-draft-store.ts'
@@ -52,7 +52,7 @@ async function tokenOf(raw: string): Promise<string> {
 
 /** Strictly committed document backups, with old localStorage copies identified as unconfirmed rescue material. */
 export class DocumentDrafts {
-  readonly #owner = crypto.randomUUID()
+  readonly #owner = randomUUID()
   readonly #owned = new Map<string, { identity: string, revision: number, raw: string }>()
   #store?: DocumentDraftStore
   #identity?: string
@@ -113,7 +113,7 @@ export class DocumentDrafts {
     const owned = previous && this.#owned.get(previous.id)
     if (previous && (!owned || owned.identity !== identity || previous.owner !== this.#owner || previous.revision !== owned.revision)) return
     const changed = previous && store.conflicted(keyOf(identity, previous.id))
-    const record: StoredDocumentDraft = { ...draft, format: 2, identity, id: !changed && previous ? previous.id : crypto.randomUUID(), owner: this.#owner, revision: changed ? 1 : (owned?.revision ?? 0) + 1, updatedAt: Date.now() }
+    const record: StoredDocumentDraft = { ...draft, format: 2, identity, id: !changed && previous ? previous.id : randomUUID(), owner: this.#owner, revision: changed ? 1 : (owned?.revision ?? 0) + 1, updatedAt: Date.now() }
     if (!Number.isSafeInteger(record.revision)) return
     try { const raw = JSON.stringify(record); return raw.length <= MAX_CHARS ? { record, raw } : undefined }
     catch { return }

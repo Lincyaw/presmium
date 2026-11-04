@@ -1,4 +1,4 @@
-import { documentCommentTargets, isRecord, validateDocument, validateDocumentCommentAnchor } from '@lincyaw/kernel'
+import { documentCommentTargets, isRecord, randomUUID, validateDocument, validateDocumentCommentAnchor } from '@lincyaw/kernel'
 import type { DocumentComment, DocumentThread, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
 import { DocumentDraftStore } from '../document-draft-store.ts'
 import type { DraftStoreResult } from '../document-draft-store.ts'
@@ -77,7 +77,7 @@ function valid(value: unknown, scope: string): value is CommentDraftRecord {
 /** Native composer backups use the document backup owner's strict transactions, never the source writer. */
 export class CommentDrafts {
   readonly #scope: string
-  readonly #owner = crypto.randomUUID()
+  readonly #owner = randomUUID()
    #reader?: DocumentDraftStore
   readonly #listeners = new Set<() => void>()
   readonly #writing = new Map<string, Writing>()
@@ -240,7 +240,7 @@ export class CommentDrafts {
     const known = previous && this.#writing.get(previous.id)
     if (previous && (known && known.record.revision !== previous.revision || previous.owner !== this.#owner)) return
     const branched = known?.store.conflicted(keyOf(this.#scope, known.record.id))
-    const record: CommentDraftRecord = { format: 1, scope: this.#scope, id: !branched && known ? known.record.id : crypto.randomUUID(), owner: this.#owner,
+    const record: CommentDraftRecord = { format: 1, scope: this.#scope, id: !branched && known ? known.record.id : randomUUID(), owner: this.#owner,
       revision: !branched && known ? known.record.revision + 1 : 1, updatedAt: Date.now(), target: structuredClone(target), version, content: structuredClone(content), composing }
     return this.#put(record, !branched ? known : undefined)
   }
@@ -323,7 +323,7 @@ export class CommentDrafts {
       const value: unknown = JSON.parse(raw)
       if (!valid(value, this.#scope) || value.revision !== reference.revision || !sameCommentDraftTarget(value.target, target) || !this.#validContent(value) || this.#closed) return
       operation?.signal?.throwIfAborted(); operation?.guard?.()
-      const record: CommentDraftRecord = { ...value, target: isNewCommentDraft(target) ? structuredClone(target) : value.target, id: crypto.randomUUID(), owner: this.#owner, revision: 1, updatedAt: Date.now(), version, composing: false, pending: undefined }
+      const record: CommentDraftRecord = { ...value, target: isNewCommentDraft(target) ? structuredClone(target) : value.target, id: randomUUID(), owner: this.#owner, revision: 1, updatedAt: Date.now(), version, composing: false, pending: undefined }
       const store = new DocumentDraftStore(this.#scope, undefined, { family: 'comment', owner: this.#owner }), next = JSON.stringify(record)
       if (next.length > MAX_CHARS || !await store.create(keyOf(this.#scope, record.id), next) || this.#closed) { store.close(); if (!this.#closed) { this.#admissionFailure = true; this.#pending() }; return }
       try { operation?.signal?.throwIfAborted(); operation?.guard?.() } catch (error) { store.close(); throw error }

@@ -13,6 +13,7 @@ import type { DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, Docu
 import type { DocumentImageImport, DocumentImageImportAnswer } from '@lincyaw/kernel'
 import type { ProductionAssetAnswer, ProductionAssetQuery, ProductionMediaQuery, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
 import type { DocumentTranscriptionRequest, TranscriptionCapabilities, TranscriptionTask, TranscriptionListAnswer, TranscriptionRevision, TranscriptionCancellation, TranscriptionAdoptionDraft, TranscriptionAdoptionPlan, TranscriptionAdoptionApply, TranscriptionAdoptionAnswer } from '@lincyaw/kernel'
+import { randomUUID } from '@lincyaw/kernel'
 
 /** A change of the host's pending approvals that this author may answer. */
 export type ApprovalEvent =
@@ -341,7 +342,7 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
       if (operation.op === 'delete' && (!planned || JSON.stringify(planned.operation) !== JSON.stringify(operation))) throw new Error('project-deletion-plan-required')
       const key = JSON.stringify(operation)
       let intent = projectIntents.get(key)
-      if (!intent) { intent = { id: crypto.randomUUID() }; projectIntents.set(key, intent) }
+      if (!intent) { intent = { id: randomUUID() }; projectIntents.set(key, intent) }
       while (projectIntents.size > 64) projectIntents.delete(projectIntents.keys().next().value!)
       try {
         intent.plan ??= planned

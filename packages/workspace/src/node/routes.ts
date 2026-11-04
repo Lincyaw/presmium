@@ -257,7 +257,7 @@ function workbenchRoutes(workbench: WorkbenchApi): Record<string, Route> {
         const params = new URL(request.url).searchParams
         const renderer = params.get('view') ?? undefined
         if (renderer !== undefined && renderer !== 'web' && renderer !== 'slides') return problemResponse(400, 'view must be web or slides')
-        return jsonResponse(await workbench.preview(ctx.document, renderer, params.get('prefetch') === '1'))
+        return jsonResponse(await workbench.preview(ctx.document, renderer, params.get('prefetch') === '1', request.headers.get('x-presmium-preview-origin') ?? undefined))
       }),
     },
     'build': {

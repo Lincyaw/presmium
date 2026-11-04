@@ -1,4 +1,4 @@
-import { applyDocumentCaptionTiming } from '@lincyaw/kernel'
+import { applyDocumentCaptionTiming, randomUUID } from '@lincyaw/kernel'
 import type { DocumentCaptionTimingAction } from '@lincyaw/kernel'
 import { reconcileCaptionTiming } from './caption-timing.ts'
 import type { ProjectOperation, ProjectPlan } from '@lincyaw/kernel'
@@ -560,7 +560,7 @@ export class Workbench {
   }
 
   planDocumentOperation(operation: ProjectOperation): Promise<ProjectPlan> {
-    return this.client.planProjectChange({ id: crypto.randomUUID(), operation })
+    return this.client.planProjectChange({ id: randomUUID(), operation })
   }
 
   operateDocument(operation: ProjectOperation, planned?: ProjectPlan): Promise<OperationAnswer> {
@@ -1402,7 +1402,7 @@ export class Workbench {
     let request: { identity: string, version: string, id: string } | undefined
     const answer = await this.#writeDocumentMedia(expected, async directory => {
       const existing = this.#audioImports.get(file), first = !existing || existing.identity !== expected.identity
-      request = first ? { identity: expected.identity, version: expected.version, id: crypto.randomUUID() } : existing!
+      request = first ? { identity: expected.identity, version: expected.version, id: randomUUID() } : existing!
       this.#audioImports.set(file, request)
       try { return await this.client.importDocumentAudio(directory, file, { id: request.id, baseDocumentVersion: request.version }, signal) }
       catch (error) {
@@ -1471,13 +1471,13 @@ export class Workbench {
   async applyDocumentMediaClip(clip: MediaClip, expected: { identity: string, version: string, binding: ProductionBinding }, signal?: AbortSignal): Promise<DocumentChangeAnswer> {
     this.#mediaSource(expected)
     if (!this.#state.productionPlan || !sameProductionBinding(this.#state.productionPlan.binding, expected.binding) || !this.#productionSourceCurrent(expected.binding)) throw new Error('production-source-changed')
-    const id = crypto.randomUUID(), value = structuredClone(clip)
+    const id = randomUUID(), value = structuredClone(clip)
     const answer = await this.#writeDocumentMedia(expected, directory => this.client.changeDocumentMediaClip(directory, { id, baseDocumentVersion: expected.version, binding: expected.binding, clip: value }, signal), signal)
     if (answer.changeId !== id) throw new Error('production-source-changed')
     return answer
   }
   async removeDocumentMediaClip(clipId: string, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<DocumentChangeAnswer> {
-    const id = crypto.randomUUID()
+    const id = randomUUID()
     const answer = await this.#writeDocumentMedia(expected, directory => this.client.changeDocumentMediaClip(directory, { id, baseDocumentVersion: expected.version, removeClipId: clipId }, signal), signal)
     if (answer.changeId !== id) throw new Error('production-source-changed')
     return answer
@@ -1627,7 +1627,7 @@ export class Workbench {
     const existing = target !== undefined && Object.hasOwn(document.narrations, target) ? document.narrations[target] : undefined
     if (existing && !step.narrationIds.includes(existing.id)) throw new Error('document-narration-target')
     if (!existing && !meaningful) return undefined
-    const id = target ?? crypto.randomUUID()
+    const id = target ?? randomUUID()
     if (!id || id.length > 200 || /[\u0000-\u001f]/.test(id) || ['__proto__', 'constructor', 'prototype'].includes(id)) throw new Error('document-narration-target')
     if (!existing && (document.id === id || [document.sections, document.blocks, document.steps, document.assets, document.definitions].some(map => Object.hasOwn(map, id)))) throw new Error('document-narration-target')
     if (existing && JSON.stringify(existing.content) === JSON.stringify(content)) return id
@@ -1844,7 +1844,7 @@ export class Workbench {
       if (scope !== this.#documentScope || identity !== this.#state.authoring?.identity) throw new Error('page-context-changed')
       const page = document.sections[section]
       if (!page) throw new Error('page-boundary')
-      const copy = duplicateDocumentPage(document, section, contentText(document.metadata.lang).copyTitle(page.title), () => crypto.randomUUID())
+      const copy = duplicateDocumentPage(document, section, contentText(document.metadata.lang).copyTitle(page.title), () => randomUUID())
       copied = copy.section
       Object.assign(document, copy.document)
       if (generation === this.#documentSelectionGeneration) this.#pendingDocumentFocus = { documentId: document.id, nodeId: `page:${copied}`, generation, afterSave: true }
@@ -1880,8 +1880,8 @@ export class Workbench {
       if (this.#state.authoring?.version !== plan.source.version) throw new Error('revision-conflict')
       const current = pageDeletion(document, plan.document, plan.source.version, plan.section)
       if (!current.allowed) throw new Error(current.reason)
-      Object.assign(document, removeDocumentPage(document, plan.section, () => crypto.randomUUID()))
-      this.#set({ position: { section: document.sectionOrder[0]!, step: 0, trail: [], view: 'document' }, documentNavigation: { section: document.sectionOrder[0]!, request: crypto.randomUUID() } })
+      Object.assign(document, removeDocumentPage(document, plan.section, () => randomUUID()))
+      this.#set({ position: { section: document.sectionOrder[0]!, step: 0, trail: [], view: 'document' }, documentNavigation: { section: document.sectionOrder[0]!, request: randomUUID() } })
     })
   }
   createPage(after = this.#state.position?.section): boolean {
@@ -1893,7 +1893,7 @@ export class Workbench {
       this.#set({ pageEditFailure: undefined })
       const created = commands.insertPage(after, contentText(source.content.metadata.lang).newPage)
       this.#pendingDocumentField = undefined; this.#pendingDocumentSelection = undefined; this.#pendingDocumentFocus = undefined
-      this.#set({ position: { section: created.sectionId, step: 0, trail: [], view: 'document' }, documentNavigation: { section: created.sectionId, request: crypto.randomUUID() } })
+      this.#set({ position: { section: created.sectionId, step: 0, trail: [], view: 'document' }, documentNavigation: { section: created.sectionId, request: randomUUID() } })
       // The default title is selected: the author's first words name the page, and Enter goes on to its body.
       this.#focusDocumentNode(editor, `page:${created.sectionId}`, true)
       return true
@@ -2030,7 +2030,7 @@ export class Workbench {
   /** Shows a section in the preview: from the navigation pane, the section to read or the slide to show. */
   goToSection(section: string): void {
     if (this.#state.webView === 'document' && this.#state.authoring?.content?.sections[section]) {
-      this.#set({ position: { section, step: 0, trail: [], view: 'document' }, documentPositionFailure: undefined, documentNavigation: { section, request: crypto.randomUUID() } }); return
+      this.#set({ position: { section, step: 0, trail: [], view: 'document' }, documentPositionFailure: undefined, documentNavigation: { section, request: randomUUID() } }); return
     }
     this.goToStep(section, this.#selectedSteps.get(`${this.#state.document}\0${section}`) ?? 0)
   }
@@ -2044,7 +2044,7 @@ export class Workbench {
     const visible = (index: number) => Boolean(section.stepOrder[index] && effectiveComponentParameters(document, blockId, section.stepOrder[index]).visual?.visible)
     const step = visible(current) ? current : Math.max(0, section.stepOrder.findIndex((_, index) => visible(index)))
     this.#set({ position: { section: sectionId, step, trail: [], view: 'document' }, documentPositionFailure: undefined,
-      documentNavigation: { section: sectionId, block: blockId, request: crypto.randomUUID() } })
+      documentNavigation: { section: sectionId, block: blockId, request: randomUUID() } })
   }
 
   observeDocumentSection(section: string): void {

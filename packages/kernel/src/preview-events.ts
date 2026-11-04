@@ -1,6 +1,7 @@
 import { PREVIEW_EVENTS_PARAM, previewEnvelope } from './contracts/preview.ts'
 import type { PreviewCommand, PreviewEventSubscription, PreviewEventTarget, PreviewEventMessage } from './contracts/preview.ts'
 import { parentOrigins, previewNonce } from './preview-frame.ts'
+import { randomUUID } from './random-uuid.ts'
 
 /** Uses the existing preview-ready handshake, origin fence and nonce; never opens a network connection. */
 export interface PreviewEvents {
@@ -14,7 +15,7 @@ export function createPreviewEvents(origins: readonly string[], document: string
   if (typeof window === 'undefined' || window.parent === window || !origins.length || new URL(location.href).searchParams.get(PREVIEW_EVENTS_PARAM) !== 'shared') return
   const nonce = previewNonce()
   if (!nonce) return
-  const connection = crypto.randomUUID()
+  const connection = randomUUID()
   const readers = new Map<string, { target: PreviewEventTarget, received(message: PreviewEventMessage): void }>()
   let ready = false, stopped = false, parked = false
   const targets = parentOrigins(origins)
@@ -36,7 +37,7 @@ export function createPreviewEvents(origins: readonly string[], document: string
     connection,
     subscribe(target, received) {
       if (stopped || target.document !== document) return () => {}
-      const id = crypto.randomUUID()
+      const id = randomUUID()
       readers.set(id, { target, received })
       if (ready && !parked) subscribe(id, target)
       return () => { if (readers.delete(id)) post({ type: 'events-unsubscribe', connection, id }) }

@@ -13,7 +13,7 @@ presmium studio [dir] [--port <n>] [--host <addr>]
 
 Studio is included with Presmium. In a project with `pnpm add -D @lincyaw/presmium`, use `pnpm exec presmium studio`. The separate `presmium-studio` command remains available when this package is installed directly; it runs the `presmium` command on PATH (install it with `pnpm add -g @lincyaw/presmium`).
 
-`dir` is a workspace root (`presmium.workspace.yaml`) or a deck's directory, as for `presmium serve`. The workbench listens on 127.0.0.1, port 4320 by default (a free port when that one is in use); `--host <addr>` makes it listen on one address of the machine on the local network instead, with no login.
+`dir` is a workspace root (`presmium.workspace.yaml`) or a deck's directory, as for `presmium serve`. The workbench listens on 127.0.0.1, port 4320 by default (a free port when that one is in use); `--host <addr>` makes it listen on one local IP address, and `--host 0.0.0.0` makes it listen on all local IPv4 network interfaces, with no login. Network access prints one address for each local network interface.
 
 Sessions use the workspace root as their working directory and can read and write files throughout it. Opening another lecture changes document context, not the session or its directory.
 

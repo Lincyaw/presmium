@@ -4,7 +4,7 @@ import type { BlockNoteEditor } from '@blocknote/core'
 import type { CommentData, ThreadData } from '@blocknote/core/comments'
 import { AddMarkStep, RemoveMarkStep } from '@tiptap/pm/transform'
 import { Plugin } from '@tiptap/pm/state'
-import { applyDocumentCommentAction, hasRole, LOCAL_AUTHOR, validateDocumentCommentAnchor } from '@lincyaw/kernel'
+import { applyDocumentCommentAction, hasRole, LOCAL_AUTHOR, randomUUID, validateDocumentCommentAnchor } from '@lincyaw/kernel'
 import type { DocumentComment, DocumentCommentAction, DocumentThread, Member, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
 import { createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
 import type { RichProjection } from './rich-text.ts'
@@ -96,7 +96,7 @@ export class DocumentThreadStore extends ThreadStore {
     if (!thread || thread.deletedAt || thread.createdAt !== target.threadCreatedAt || target.commentId && (!comment || comment.deletedAt || comment.createdAt !== target.commentCreatedAt)) return 'unavailable'
     return comment && target.baseline !== commentDraftBaseline(comment) ? 'changed' : 'current'
   }
-  newDraftTarget(editor: NativeDocumentEditor, intentId = crypto.randomUUID()): NewCommentDraftTarget {
+  newDraftTarget(editor: NativeDocumentEditor, intentId = randomUUID()): NewCommentDraftTarget {
     this.beforeAction?.()
     const target: NewCommentDraftTarget = { kind: 'create', intentId, documentId: this.#document.id }
     const selection = editor.prosemirrorState.selection
@@ -162,7 +162,7 @@ export class DocumentThreadStore extends ThreadStore {
   #content(comment: NewComment): RichTextNode[] { return nativeRichTextToProduct(comment.body as DocumentEditorBlock[], this.#rich) }
   #act(action: DocumentCommentAction, nativeBody?: unknown) {
     this.beforeAction?.()
-    const answer = applyDocumentCommentAction(this.#canonical, action, { member: this.member, now: new Date().toISOString(), allocate: () => crypto.randomUUID() })
+    const answer = applyDocumentCommentAction(this.#canonical, action, { member: this.member, now: new Date().toISOString(), allocate: () => randomUUID() })
     if (answer.effect.changed) {
       this.#replace(answer.threads, answer.effect.commentId && nativeBody !== undefined ? { id: answer.effect.commentId, body: nativeBody } : undefined)
       this.#notify()

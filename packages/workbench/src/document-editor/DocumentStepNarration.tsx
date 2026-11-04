@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import type { NarrationNode, TeachingDocument } from '@lincyaw/kernel'
+import { randomUUID } from '@lincyaw/kernel'
 import { PmIconButton } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { isAgentChanging } from '../workbench.ts'
@@ -30,7 +31,7 @@ function NarrationField({ identity, reset, blockId, stepId, slot, narrationId, c
   // Reserving an identity does not create an entity. The first actual input commits it.
   const [reservedId] = useState(() => {
     const pending = workbench.pendingDocumentField(blockId, identity)
-    return narrationId ?? (pending?.stepId === stepId ? pending.narrationId : undefined) ?? crypto.randomUUID()
+    return narrationId ?? (pending?.stepId === stepId ? pending.narrationId : undefined) ?? randomUUID()
   })
   const id = narrationId ?? reservedId
   const target = () => narrationId ?? workbench.getDocument(identity)?.steps[stepId]?.narrationIds[slot] ?? id

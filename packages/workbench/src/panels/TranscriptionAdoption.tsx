@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { prepareTranscriptionAdoption } from '@lincyaw/kernel'
+import { prepareTranscriptionAdoption, randomUUID } from '@lincyaw/kernel'
 import type { CanonicalSource, NarrationNode, TeachingDocument, TranscriptionRevision, TranscriptionAdoptionDraft, TranscriptionAdoptionPart, TranscriptionAdoptionPlan } from '@lincyaw/kernel'
 import { PmBadge, PmButton, PmDialog, PmField, PmNotice, PmSelect, PmTextarea } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
@@ -14,7 +14,7 @@ const ordered = (value: unknown): unknown => Array.isArray(value) ? value.map(or
 const same = (a: unknown, b: unknown) => JSON.stringify(ordered(a)) === JSON.stringify(ordered(b))
 const displayed = (nodes: readonly NarrationNode[]) => nodes.map(node => node.type === 'text' ? node.text : node.type === 'pronunciation' ? node.display : '').join('')
 function restore(key: string): { draft: Draft, failed: boolean } {
-  const fallback = () => ({ draft: { id: crypto.randomUUID(), revision: 0, discarded: [], shared: 'fork' as const }, failed: false })
+  const fallback = () => ({ draft: { id: randomUUID(), revision: 0, discarded: [], shared: 'fork' as const }, failed: false })
   try {
     const raw = localStorage.getItem(key)
     if (!raw) return fallback()
@@ -83,7 +83,7 @@ function AdoptionTarget({ identity, candidate, document, sectionId, stepId, disa
     const now = workbench.getState().authoring
     if (disabled || reviewing || applying || composing || !sourceReady || !now?.version || !now.fingerprint || parsed.invalid) return
     pause()
-    if (latest.current.baseVersion && latest.current.baseVersion !== now.version) change({ id: crypto.randomUUID(), baseVersion: now.version })
+    if (latest.current.baseVersion && latest.current.baseVersion !== now.version) change({ id: randomUUID(), baseVersion: now.version })
     else if (!latest.current.baseVersion) change({ baseVersion: now.version })
     const value = latest.current, request = ++generation.current, normalized = content()
     const retainsOriginal = references.length > 1 && value.shared === 'fork'
@@ -104,7 +104,7 @@ function AdoptionTarget({ identity, candidate, document, sectionId, stepId, disa
     try {
       const answer = await workbench.adoptDocumentTranscription({ planId, source: sent.source, candidate: sent.candidate, draftRevision: sent.draftRevision }, { identity, version: sent.source.version })
       if (latest.current.id === sent.changeId && latest.current.revision === sent.draftRevision) {
-        const next: Draft = { ...latest.current, id: crypto.randomUUID(), revision: 0, discarded: [], baseVersion: answer.version, applied: true }
+        const next: Draft = { ...latest.current, id: randomUUID(), revision: 0, discarded: [], baseVersion: answer.version, applied: true }
         latest.current = next; setDraft(next)
         try { localStorage.setItem(key, JSON.stringify(next)); setStorageFailed(false) } catch { setStorageFailed(true) }
       }

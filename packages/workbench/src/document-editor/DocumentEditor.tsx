@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import type { Transaction } from '@tiptap/pm/state'
 import { closeHistory } from '@tiptap/pm/history'
-import { allocateDocumentPage } from '@lincyaw/kernel'
+import { allocateDocumentPage, randomUUID } from '@lincyaw/kernel'
 import type { Member, TeachingDocument } from '@lincyaw/kernel'
 import type { Locale } from '../messages.ts'
 import { BlockNoteSurface } from './BlockNoteSurface.tsx'
@@ -189,7 +189,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
         const next = after ? blocks.slice(index + 1).find(block => block.type === 'presmiumPage') : undefined
         const latest = current.current.getDocument ? current.current.getDocument() : current.current.document
         if (!latest) throw new Error('page-context-changed')
-        const creation = allocateDocumentPage(latest, () => crypto.randomUUID())
+        const creation = allocateDocumentPage(latest, () => randomUUID())
         projection.createdPages.set(creation.sectionId, creation)
         try {
           value.transact(transaction => {

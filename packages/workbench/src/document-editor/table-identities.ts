@@ -1,6 +1,7 @@
 import { createExtension, getBlockInfoNearPos, getNodeId } from '@blocknote/core'
 import { Extension } from '@tiptap/core'
 import { Plugin } from '@tiptap/pm/state'
+import { randomUUID } from '@lincyaw/kernel'
 import type { NativeDocumentEditor } from './schema.tsx'
 import type { RichProjection } from './rich-text.ts'
 
@@ -24,7 +25,7 @@ export const tableIdentityExtension = createExtension({
       after.doc.descendants((node, position) => {
         if (!TYPES.includes(node.type.name)) return
         let id = node.attrs[ATTR] as string | null
-        if (!id || used.has(id)) { id = crypto.randomUUID(); transaction.setNodeMarkup(position, undefined, { ...node.attrs, [ATTR]: id }) }
+        if (!id || used.has(id)) { id = randomUUID(); transaction.setNodeMarkup(position, undefined, { ...node.attrs, [ATTR]: id }) }
         used.add(id)
       })
       if (transaction.steps.length) return transaction.setMeta('addToHistory', false)

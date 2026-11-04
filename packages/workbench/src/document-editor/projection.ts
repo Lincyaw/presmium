@@ -1,4 +1,4 @@
-import { documentPageDefaults, DOCUMENT_PAGE_DEFAULT_TIMING } from '@lincyaw/kernel'
+import { documentPageDefaults, DOCUMENT_PAGE_DEFAULT_TIMING, randomUUID } from '@lincyaw/kernel'
 import type { DocumentBlock, DocumentPageIds, NarrationNode, RichTextNode, Section, TeachingDocument, TextBlock } from '@lincyaw/kernel'
 import { productInlineToNative } from './inline.ts'
 import { captureRichBaseline, createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
@@ -17,7 +17,7 @@ export interface DocumentProjection extends RichProjection {
   componentConfiguration: Map<string, string>
 }
 export type NativePageCreation = DocumentPageIds
-const newId = () => crypto.randomUUID()
+const newId = () => randomUUID()
 export const pageId = (sectionId: string) => `page:${sectionId}`
 function plain(nodes: readonly { type: string, text?: string, children?: readonly unknown[] }[]): string {
   return nodes.map(node => node.type === 'text' ? node.text ?? '' : node.type === 'break' ? '\n' : node.children ? plain(node.children as Parameters<typeof plain>[0]) : '').join('')

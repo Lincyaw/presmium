@@ -1,6 +1,6 @@
 import { createExtension, getBlockInfoNearPos, getNodeId } from '@blocknote/core'
 import { FileHandler } from '@tiptap/extension-file-handler'
-import { DOCUMENT_IMAGE_MEDIA_TYPES } from '@lincyaw/kernel'
+import { DOCUMENT_IMAGE_MEDIA_TYPES, randomUUID } from '@lincyaw/kernel'
 import { isObservedWorkspaceFailure, WorkspaceServerError } from '../workspace-client.ts'
 import type { NativeDocumentEditor } from './schema.tsx'
 
@@ -34,7 +34,7 @@ export const imageFileInput = createExtension(({ editor, options }: { editor: Na
       const state = editor.prosemirrorState, info = getBlockInfoNearPos(state, position)
       const anchor = editor.getBlock(getNodeId(info.block.node, state.doc))
       if (!anchor) throw new Error('document-file-position')
-      const blocks = accepted.map(file => ({ id: crypto.randomUUID(), type: 'image' as const, props: { name: file.name } }))
+      const blocks = accepted.map(file => ({ id: randomUUID(), type: 'image' as const, props: { name: file.name } }))
       const before = anchor.type !== 'presmiumPage' && position <= (info.contentStart ?? info.block.beforePos)
       const inserted = editor.insertBlocks(blocks, anchor, before ? 'before' : 'after')
       pending = inserted.map((block, index) => ({ file: accepted[index]!, id: block.id }))

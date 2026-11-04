@@ -5,6 +5,7 @@ import { components } from '@blocknote/mantine'
 import { ComponentsContext, FloatingComposer, PositionPopover, useBlockNoteEditor, useComponentsContext, useCreateBlockNote, useDictionary, useEditorState, useExtension, useExtensionState } from '@blocknote/react'
 import type { ComponentProps } from '@blocknote/react'
 import type { BlockNoteEditor } from '@blocknote/core'
+import { randomUUID } from '@lincyaw/kernel'
 import { TextSelection } from '@tiptap/pm/state'
 import { COMMENT_EDITOR_CONTEXT, DraftChoices } from './DocumentComments.tsx'
 import { isNewCommentDraft, sameCommentDraftTarget } from './comment-drafts.ts'
@@ -60,7 +61,7 @@ export function NewCommentDraftProvider({ children }: { children?: ReactNode }) 
         && editor.prosemirrorState.doc === native.doc && editor.prosemirrorState.selection === native.selection && comments.store.state === extensionState
         && (!binding || latest.current === binding && binding.input === input && binding.record === record && !binding.composing)
       if (record && !await drafts.confirm(record) || !owns()) return
-      const nextTarget = { ...target, intentId: crypto.randomUUID() }, next = await drafts.recover(candidate, nextTarget, version)
+      const nextTarget = { ...target, intentId: randomUUID() }, next = await drafts.recover(candidate, nextTarget, version)
       store.beforeAction?.()
       if (!next || !owns()) return
       const positions = store.newDraftPositions(nextTarget, editor)
@@ -185,7 +186,7 @@ function NewCommentEditor(props: ComponentProps['Comments']['Editor']) {
     })
     return () => { stop(); stopEnter(); if (original && guarded && !props.editor.prosemirrorView.isDestroyed && props.editor.getExtension(CommentEditorSubmitExtension) === guarded) props.editor.replaceExtension(guarded, original) }
   }, [binding, drafts, props.editor])
-  const composerId = useRef(crypto.randomUUID())
+  const composerId = useRef(randomUUID())
   useLayoutEffect(() => {
     if (!binding || !drafts || !context) return
     return drafts.registerComposer({ id: composerId.current, target: binding.target,

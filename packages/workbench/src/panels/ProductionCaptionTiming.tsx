@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { CAPTION_TIMING_MAX_SEGMENTS, captionSourceFingerprint, captionTimingProblem, stepCaptionText } from '@lincyaw/kernel'
+import { CAPTION_TIMING_MAX_SEGMENTS, captionSourceFingerprint, captionTimingProblem, randomUUID, stepCaptionText } from '@lincyaw/kernel'
 import type { CaptionTiming, CaptionTimingSource, DocumentCaptionTimingAction, ProductionPlan } from '@lincyaw/kernel'
 import { PmButton, PmCard, PmDialog, PmInput, PmNotice } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
@@ -23,7 +23,7 @@ function lineRows(text: string): Row[] {
     else if (ranges.length && !text.slice(ranges.at(-1)!.from, ranges.at(-1)!.to).trim()) ranges[ranges.length - 1]!.to = to
     else ranges.push({ from, to })
   }
-  return ranges.map(range => ({ ...range, id: crypto.randomUUID(), start: '', end: '' }))
+  return ranges.map(range => ({ ...range, id: randomUUID(), start: '', end: '' }))
 }
 function valueOf(draft: Draft): CaptionTiming | undefined {
   if (!draft.basis.available || !draft.basis.playbackFingerprint || draft.basis.durationMs === undefined) return
@@ -72,7 +72,7 @@ export function ProductionCaptionTiming({ identity, stepId, plan, current, loadi
     const action: DocumentCaptionTimingAction = automatic ? { type: 'caption.timing.reset', stepId } : { type: 'caption.timing.set', stepId, value: value! }
     request.current = controller; setBusy(true); setFailure(undefined)
     try {
-      const answer = await workbench.applyDocumentCaptionTiming(action, crypto.randomUUID(), expected, controller.signal)
+      const answer = await workbench.applyDocumentCaptionTiming(action, randomUUID(), expected, controller.signal)
       needsRefresh.current = true
       if (!alive.current || workbench.getState().authoring?.identity !== identity) return
       const ownsInput = drafts.current.get(target) === sent

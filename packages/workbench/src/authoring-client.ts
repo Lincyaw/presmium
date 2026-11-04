@@ -1,4 +1,4 @@
-import { authoringClientResultFits } from '@lincyaw/kernel'
+import { authoringClientResultFits, randomUUID } from '@lincyaw/kernel'
 import type { AuthoringClientActionResult, AuthoringClientEvent, AuthoringClientSnapshot, CanonicalSource } from '@lincyaw/kernel'
 import type { Workbench } from './workbench.ts'
 import type { AuthoringClientChannel } from './workspace-client.ts'
@@ -13,7 +13,7 @@ type Attachment = { directory: string, identity: string, epoch: string, channel:
 export function connectAuthoringClient(workbench: Workbench): () => void {
   const open = workbench.client.openAuthoringClient
   if (!open) return () => {}
-  const clientId = crypto.randomUUID()
+  const clientId = randomUUID()
   let closed = false, revision = 0, sequence = 0
   let attached: Attachment | undefined
   let lastSignature: string | undefined, lastContent: object | undefined
@@ -120,7 +120,7 @@ export function connectAuthoringClient(workbench: Workbench): () => void {
     if (!value) { detach(); return }
     if (attached && (attached.directory !== state.document || attached.identity !== source.identity)) detach()
     if (!attached) {
-      const epoch = crypto.randomUUID()
+      const epoch = randomUUID()
       // Callbacks run after the channel has been installed; the socket implementation is asynchronous.
       const owner = { directory: state.document, identity: source.identity, epoch } as Attachment
       owner.channel = open(state.document, { clientId, epoch, snapshot: value }, event => { void received(owner, event) }, () => {

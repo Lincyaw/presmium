@@ -37,6 +37,12 @@ export function apply(ctx: DshContext): void {
           const value = request.headers.get(name)
           if (value !== null) headers[name] = value
         }
+        if (path === 'preview') {
+          const browser = new URL(request.url)
+          const host = request.headers.get('host')
+          if (host) browser.host = host
+          headers['x-presmium-preview-origin'] = browser.origin
+        }
         const upstream = await ctx.presmium.server.request(`${target}${new URL(request.url).search}`, {
           method: request.method,
           headers,

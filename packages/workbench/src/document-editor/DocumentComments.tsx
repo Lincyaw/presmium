@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { FocusEvent, ReactNode } from 'react'
+import { randomUUID } from '@lincyaw/kernel'
 import { CommentEditorSubmitExtension, CommentsExtension } from '@blocknote/core/comments'
 import { components } from '@blocknote/mantine'
 import { FloatingThreadController, getReferenceText, Thread, useBlockNoteEditor, useCreateBlockNote, useEditorState, useExtension, useExtensionState, useThreads } from '@blocknote/react'
@@ -174,7 +175,7 @@ export function DocumentCommentEditor(props: ComponentProps['Comments']['Editor'
     return value
   }, [props.editor, drafts])
   const rich = useMemo(() => ({ current: record.rich }), [record])
-  const composerId = useRef(crypto.randomUUID())
+  const composerId = useRef(randomUUID())
   const state = useSyncExternalStore(drafts?.subscribe ?? emptySubscribe, drafts?.snapshot ?? (() => emptyState))
   useLayoutEffect(() => {
     if (!context || !threadId) return

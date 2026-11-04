@@ -6,6 +6,7 @@ import { Extension } from '@tiptap/core'
 import { Plugin } from '@tiptap/pm/state'
 import { Fragment, Slice } from '@tiptap/pm/model'
 import type { Node } from '@tiptap/pm/model'
+import { randomUUID } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmInput } from '../components.tsx'
 import type { Locale } from '../messages.ts'
 
@@ -56,7 +57,7 @@ const cueIdentities = createExtension({
       const copied = (fragment: Fragment): Fragment => {
         const nodes: Node[] = []
         fragment.forEach(node => nodes.push(node.type.name === 'narrationAtom' && node.attrs.kind === 'cue'
-          ? node.type.create({ ...node.attrs, cueId: crypto.randomUUID() }, node.content, node.marks)
+          ? node.type.create({ ...node.attrs, cueId: randomUUID() }, node.content, node.marks)
           : node.isLeaf ? node : node.copy(copied(node.content))))
         return Fragment.fromArray(nodes)
       }
@@ -67,7 +68,7 @@ const cueIdentities = createExtension({
       state.doc.descendants((node, position) => {
         if (node.type.name !== 'narrationAtom' || node.attrs.kind !== 'cue') return
         const id = node.attrs.cueId as string
-        if (!id || seen.has(id)) transaction.setNodeMarkup(position, undefined, { ...node.attrs, cueId: crypto.randomUUID() })
+        if (!id || seen.has(id)) transaction.setNodeMarkup(position, undefined, { ...node.attrs, cueId: randomUUID() })
         else seen.add(id)
       })
       return transaction.docChanged ? transaction : null

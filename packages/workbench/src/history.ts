@@ -1,4 +1,4 @@
-import { errorMessage } from '@lincyaw/kernel'
+import { errorMessage, randomUUID } from '@lincyaw/kernel'
 import type { RevertResult, ReviewChange, ReviewSnapshot, ReviewUpdate } from '@lincyaw/kernel'
 import type { WorkbenchStore } from './workbench.ts'
 import { WorkspaceServerError } from './workspace-client.ts'
@@ -129,7 +129,7 @@ export class DocumentHistory {
   #change(which: 'undo' | 'redo' | 'revertRevision', expect: string | undefined): Promise<boolean> {
     const binding = this.#store.state.history?.historyBinding
     if (!binding || !expect) return Promise.resolve(false)
-    const request = { id: crypto.randomUUID(), ...binding, expect }
+    const request = { id: randomUUID(), ...binding, expect }
     return this.#run(dir => this.#client[which](dir, request))
   }
 

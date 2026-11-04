@@ -61,9 +61,12 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
     return 2
   }
   process.stdout.write(`studio  ${studio.url}\n`)
+  for (const url of studio.networkUrls) process.stdout.write(`network  ${url}\n`)
   process.stderr.write(`${t.log(studio.log)}\n`)
   if (values.host && values.host !== '127.0.0.1' && values.host !== '::1' && !values['public-url']) {
-    process.stderr.write(`${t.openOnNetwork(values.host, new URL(studio.url).port, new URL(studio.workspaceServerUrl).port)}\n`)
+    process.stderr.write(`${studio.networkUrls.length
+      ? t.openOnAllNetworks(new URL(studio.url).port, new URL(studio.workspaceServerUrl).port)
+      : t.openOnNetwork(values.host, new URL(studio.url).port, new URL(studio.workspaceServerUrl).port)}\n`)
   }
 
   const signals = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const

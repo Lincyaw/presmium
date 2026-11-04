@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { DocumentChangeAnswer, MediaClip, ProductionAssetInspection, ProductionBinding, TeachingDocument } from '@lincyaw/kernel'
+import { randomUUID } from '@lincyaw/kernel'
 import { MediaClipEditor } from '../MediaClipEditor.tsx'
 import type { MediaClipDraft } from '../MediaClipEditor.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
@@ -18,7 +19,7 @@ interface Props {
   disabled: boolean
   onChanged(): void
 }
-const newDraft = (version: string, stepId: string): MediaClipDraft => ({ version, clip: { id: `clip_${crypto.randomUUID().replaceAll('-', '')}`, assetId: '', sourceRange: { startMs: 0, endMs: 0 }, attachment: { stepId, offsetMs: 0 }, volume: 1, muted: false } })
+const newDraft = (version: string, stepId: string): MediaClipDraft => ({ version, clip: { id: `clip_${randomUUID().replaceAll('-', '')}`, assetId: '', sourceRange: { startMs: 0, endMs: 0 }, attachment: { stepId, offsetMs: 0 }, volume: 1, muted: false } })
 const fromClip = (version: string, clip: MediaClip): MediaClipDraft => ({ version, clip: structuredClone(clip), baseClip: structuredClone(clip) })
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 const draftKey = (clipId?: string) => clipId === undefined ? 'new' : `clip:${clipId}`

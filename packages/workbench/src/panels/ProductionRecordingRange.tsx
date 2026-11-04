@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { recordingSourceRange } from '@lincyaw/kernel'
+import { randomUUID, recordingSourceRange } from '@lincyaw/kernel'
 import type { DocumentRecordingAdoption, ProductionAssetInspection, TimeRange, VoiceSource } from '@lincyaw/kernel'
 import { PmButton, PmInput, PmNotice } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
@@ -81,7 +81,7 @@ export function ProductionRecordingRange({ identity, sectionId, stepId, active, 
     const controller = new AbortController(), proposed = { startMs: start!, endMs: end! }
     const previous = sent.current?.request
     const change: DocumentRecordingAdoption = previous && previous.source.version === source.version && previous.stepId === stepId && previous.assetId === voice.assetId && previous.sha256 === inspected.sha256 && same(previous.sourceRange, proposed)
-      ? previous : { id: crypto.randomUUID(), source: { documentId: source.content.id, version: source.version, fingerprint: source.fingerprint }, stepId, assetId: voice.assetId, sha256: inspected.sha256, sourceRange: proposed }
+      ? previous : { id: randomUUID(), source: { documentId: source.content.id, version: source.version, fingerprint: source.fingerprint }, stepId, assetId: voice.assetId, sha256: inspected.sha256, sourceRange: proposed }
     const stored = drafts.current.get(key) ?? draft
     drafts.current.set(key, stored); sent.current = { key, draft: stored, request: change }; request.current = controller
     setBusy(true); setFailure(undefined)

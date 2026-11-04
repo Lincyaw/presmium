@@ -33,7 +33,7 @@ export interface WorkbenchApi {
    * `prefetch`: the workbench prepares the document ahead of the author's click, answered at once. A build still running
    * after the wait is answered with 503 `preview-preparing` and `Retry-After`.
    */
-  preview(document: string, renderer?: PreviewRenderer, prefetch?: boolean): Promise<PreviewAnswer>
+  preview(document: string, renderer?: PreviewRenderer, prefetch?: boolean, browserOrigin?: string): Promise<PreviewAnswer>
   build(document: string, to?: string[]): Promise<BuildAnswer>
   check(document: string): Promise<CheckAnswer>
 }
@@ -80,6 +80,17 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
   const { root, log } = options
   const irRevisions = new WeakMap<Compilation, string>()
   const relativeDocs = new WeakMap<Compilation, IRDocument>()
+  const previewBase = (base: string, browserOrigin: string | undefined): string => {
+    if (!browserOrigin) return base
+    try {
+      const preview = new URL(base), browser = new URL(browserOrigin)
+      if (preview.protocol !== browser.protocol || !['localhost', '127.0.0.1', '[::1]'].includes(preview.hostname)) return base
+      preview.hostname = browser.hostname
+      return base.endsWith('/') ? preview.href : preview.href.replace(/\/$/, '')
+    } catch {
+      return base
+    }
+  }
   const irRevisionOf = (compilation: Compilation) => {
     let known = irRevisions.get(compilation)
     if (!known) irRevisions.set(compilation, known = irRevision(compilation.doc))
@@ -119,7 +130,7 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
         return () => own.delete(listener)
       }, { signal })
     },
-    async preview(document, renderer, prefetch = false) {
+    async preview(document, renderer, prefetch = false, browserOrigin) {
       const request = ++previewRequest
       const started = Date.now()
       const label = `[preview ${request}] document=${JSON.stringify(document || '.')} renderer=${renderer ?? 'all'} prefetch=${prefetch}`
@@ -127,7 +138,7 @@ export function createWorkbenchBackend(options: WorkbenchBackendOptions): Workbe
       let outcome = 'failed'
       log.info(`${label} state=started`)
       try {
-        const base = options.url()
+        const base = previewBase(options.url(), browserOrigin)
         // The viewer app's page once it has what the document needs (an opened document waits for it a while), else the
         // document's page on the site.
         const page = await options.viewerPage?.(document, !prefetch).catch((error: unknown) => {

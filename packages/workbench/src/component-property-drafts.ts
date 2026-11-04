@@ -1,4 +1,4 @@
-import { isRecord } from '@lincyaw/kernel'
+import { isRecord, randomUUID } from '@lincyaw/kernel'
 import type { CanonicalSource, ClientComponentDraftReference, JsonObject } from '@lincyaw/kernel'
 import { DocumentDraftStore } from './document-draft-store.ts'
 import type { DraftStoreCommit } from './document-draft-store.ts'
@@ -50,7 +50,7 @@ export class ComponentPropertyDrafts {
   readonly #revisions = new Map<string, number>()
   readonly #settling = new Map<string, number>()
   #agentReader?: { identity: string, memberId: string, store: DocumentDraftStore }
-  readonly #writerOwner = crypto.randomUUID()
+  readonly #writerOwner = randomUUID()
   #revision = 0
   #closed = false
   readonly #leave = (event: BeforeUnloadEvent) => {
@@ -149,7 +149,7 @@ export class ComponentPropertyDrafts {
     if (this.#closed) throw new Error('component-draft-closed')
     const key = targetKey(target), previous = this.#entries.get(key)
     if (!previous && this.#entries.size >= 512) throw new Error('component-draft-limit')
-    const record: ComponentPropertyDraft = { format: 1, id: previous?.record.id ?? crypto.randomUUID(), revision: (previous?.record.revision ?? 0) + 1,
+    const record: ComponentPropertyDraft = { format: 1, id: previous?.record.id ?? randomUUID(), revision: (previous?.record.revision ?? 0) + 1,
       target: structuredClone(target), source: structuredClone(value.source), definitionId: value.definitionId, baseline: structuredClone(value.baseline), value: structuredClone(value.value),
       reset: Boolean(value.reset), composing: Boolean(value.composing), updatedAt: new Date().toISOString() }
     const entry: Entry = previous ?? { record, store: new DocumentDraftStore(scope(target), undefined, { owner: this.#writerOwner, family: 'component' }), failed: false, origins: [] }
@@ -213,7 +213,7 @@ export class ComponentPropertyDrafts {
       try { value = JSON.parse(raw) } catch { return false }
       if (!valid(value, target) || backup.key !== keyOf(value)) return false
       guard?.()
-      const record: ComponentPropertyDraft = { ...structuredClone(value), id: crypto.randomUUID(), revision: 1, composing: false, updatedAt: new Date().toISOString() }
+      const record: ComponentPropertyDraft = { ...structuredClone(value), id: randomUUID(), revision: 1, composing: false, updatedAt: new Date().toISOString() }
       const fork = JSON.stringify(record)
       if (fork.length > MAX_CHARS) return false
       const operation = store.put(keyOf(record), fork)

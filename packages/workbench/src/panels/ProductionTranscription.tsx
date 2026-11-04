@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { DocumentTranscriptionRequest, TeachingDocument, TranscriptionCapabilities, TranscriptionListAnswer, TranscriptionRevision, TranscriptionTask } from '@lincyaw/kernel'
+import { randomUUID } from '@lincyaw/kernel'
 import { PmBadge, PmButton, PmCard, PmDialog, PmField, PmIconButton, PmNotice, PmSelect } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { documentTranscriptionSession } from '../transcription-session.ts'
@@ -94,7 +95,7 @@ export function ProductionTranscription({ identity, directory, document, section
     try {
       const expected = { identity, version: now.version }, audio = await workbench.inspectDocumentAudio(assetId, expected, controller.signal)
       if (!current() || controller.signal.aborted) return
-      const request: DocumentTranscriptionRequest = { intent: `transcription_${crypto.randomUUID()}`, source: { documentId: now.content.id, version: now.version, fingerprint: now.fingerprint }, assetId, audioSha256: audio.inspection.sha256, engine, lang: now.content.metadata.lang, confirmed: true }
+      const request: DocumentTranscriptionRequest = { intent: `transcription_${randomUUID()}`, source: { documentId: now.content.id, version: now.version, fingerprint: now.fingerprint }, assetId, audioSha256: audio.inspection.sha256, engine, lang: now.content.metadata.lang, confirmed: true }
       await session.start(request, () => workbench.startDocumentTranscription(request, expected))
     } catch (error) { if (current() && !controller.signal.aborted) setFailure(transcriptionFailure(error, locale)) }
     finally { if (inspectionRequest.current === controller) { inspectionRequest.current = undefined; if (current()) setInspecting(false) } }

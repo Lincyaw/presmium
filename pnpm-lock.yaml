@@ -1321,6 +1321,9 @@ importers:
       '@lincyaw/dsh':
         specifier: workspace:*
         version: link:../dsh
+      http-proxy-3:
+        specifier: 2.0.1
+        version: 2.0.1(supports-color@9.4.0)
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
@@ -1678,9 +1681,6 @@ importers:
       '@lincyaw/web':
         specifier: workspace:*
         version: link:../packages/web
-      '@modelcontextprotocol/client':
-        specifier: 2.3.1
-        version: 2.3.1
 
   site:
     dependencies:
