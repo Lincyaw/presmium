@@ -1,9 +1,11 @@
 import type { NarrationNode, TeachingDocument } from '@lincyaw/kernel'
 
 // The narration of a document as one Markdown file to polish, and back; lecture.json stays the only source. Each step
-// is a heading; under it each narration is one paragraph after its marker line `<!-- n: <narration> -->`. A word shown
-// one way and spoken another is `{shown|spoken}`, a cue `⟦cue:<id>⟧`. A text line that would read as a heading, a
-// comment or an escape is written with a leading backslash.
+// is a heading; under it each narration follows its marker line `<!-- n: <narration> -->` up to the next marker or
+// heading. Each line break of a narration starts a new line of the file, and a blank line stands for a blank line
+// (`\n\n`; several read back as one).
+// A word shown one way and spoken another is `{shown|spoken}`, a cue `⟦cue:<id>⟧`; a backslash before `\`, `{`, `}`,
+// `|`, `⟦` or `⟧` keeps that character as text, and a line that would read as a heading or a comment starts with one.
 
 export class ScriptError extends Error {
   readonly code: 'script-duplicate' | 'script-stray' | 'script-unknown' | 'script-missing' | 'script-empty' | 'script-cue-unknown' | 'script-cue-repeated' | 'script-cue-removed' | 'script-node'
@@ -20,27 +22,25 @@ export class ScriptError extends Error {
 const MARKER = /^<!-- n: (\S+) -->$/
 const HEADING = /^#{1,6}(?:\s|$)/
 const COMMENT = /^<!--[\s\S]*-->$/
-const PARTS = /(\{[^{}|]+\|[^{}]+\}|⟦cue:[^⟧]+⟧)/
-// Lines of CJK text join without a space, as a soft line break in Chinese prose does.
-const WIDE = /[⺀-鿿豈-﫿　-〿＀-￯]/
+// An escaped character, a pronunciation (its parts may hold escaped characters) or a cue; anything else is text.
+const TOKEN = /\\([\\{}|⟦⟧#<])|\{((?:\\[\s\S]|[^\\{}|])+)\|((?:\\[\s\S]|[^\\{}])+)\}|⟦cue:([^⟧]+)⟧/g
 
-/** A narration's content as one paragraph of the file, before line escaping. */
-export function scriptText(content: NarrationNode[]): string {
+const escaped = (text: string, special: RegExp) => text.replace(special, '\\$&')
+const unescaped = (text: string) => text.replace(/\\([\\{}|⟦⟧#<])/g, '$1')
+
+/** A narration's content as the lines of the file: escaped, trimmed, a line that reads as a heading or comment marked. */
+export function scriptLines(content: NarrationNode[]): string[] {
   return content.map((node) => {
-    if (node.type === 'text') return node.text
-    if (node.type === 'pronunciation') return `{${node.display}|${node.spoken}}`
+    if (node.type === 'text') return escaped(node.text, /[\\{}⟦⟧]/g)
+    if (node.type === 'pronunciation') return `{${escaped(node.display, /[\\{}|⟦⟧]/g)}|${escaped(node.spoken, /[\\{}|⟦⟧]/g)}}`
     if (node.type === 'cue') return `⟦cue:${node.id}⟧`
     throw new ScriptError('script-node', [(node as { type: string }).type])
-  }).join('')
+  }).join('').split('\n').map(line => line.trim()).map(line => /^(?:#|<!--)/.test(line) ? `\\${line}` : line)
 }
 
-function joined(lines: string[]): string {
-  return lines.reduce((text, line) => !text ? line : WIDE.test(text.at(-1)!) || WIDE.test(line[0]!) ? text + line : `${text} ${line}`, '')
-}
-
-/** What an untouched paragraph reads back as: trimmed lines without the blank ones, joined. */
-function normalized(text: string): string {
-  return joined(text.split('\n').map(line => line.trim()).filter(Boolean))
+/** A narration's lines read back: joined by line breaks, a run of blank lines one blank line, none at either end. */
+function body(lines: readonly string[]): string {
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').replace(/^\n+|\n+$/g, '')
 }
 
 /** The narrated steps in reading order, each with the narrations it is the first to say (a shared one is listed once). */
@@ -65,18 +65,17 @@ export function exportScript(document: TeachingDocument, instructions: string): 
     if (step.section !== page) { parts.push(`## ${step.title}`, ''); page = step.section }
     parts.push(`### ${step.stepTitle}`, '')
     for (const id of step.narrations) {
-      const lines = scriptText(document.narrations[id]!.content).split('\n').map(line => line.trim()).map(line => /^(?:#|<!--|\\)/.test(line) ? `\\${line}` : line)
-      parts.push(`<!-- n: ${id} -->`, ...lines, '')
+      parts.push(`<!-- n: ${id} -->`, ...scriptLines(document.narrations[id]!.content), '')
     }
   }
   return { text: parts.join('\n'), steps: steps.length, narrations: steps.reduce((n, step) => n + step.narrations.length, 0) }
 }
 
-/** The paragraph of each marker; text outside a narration (under a heading, before the first marker) is refused. */
+/** The narration below each marker; text outside a narration (under a heading, before the first marker) is refused. */
 export function readScript(text: string): Map<string, { body: string, line: number }> {
   const found = new Map<string, { body: string, line: number }>()
   let current: { id: string, line: number, lines: string[] } | undefined
-  const close = () => { if (current) found.set(current.id, { body: joined(current.lines), line: current.line }); current = undefined }
+  const close = () => { if (current) found.set(current.id, { body: body(current.lines), line: current.line }); current = undefined }
   const lines = text.replace(/\r\n/g, '\n').split('\n')
   lines.forEach((raw, index) => {
     const line = raw.trim()
@@ -86,36 +85,42 @@ export function readScript(text: string): Map<string, { body: string, line: numb
       if (found.has(marker[1]!)) throw new ScriptError('script-duplicate', [marker[1]!], index + 1)
       current = { id: marker[1]!, line: index + 1, lines: [] }
     } else if (HEADING.test(line)) close()
-    else if (COMMENT.test(line) || !line) return
+    else if (COMMENT.test(line)) return
+    else if (!line) current?.lines.push(line)
     else if (!current) throw new ScriptError('script-stray', [line.slice(0, 40)], index + 1)
-    else current.lines.push(line.startsWith('\\') ? line.slice(1).trim() : line)
+    else current.lines.push(line)
   })
   close()
   return found
 }
 
-/** One edited paragraph back to narration content; cues are taken from the narration it came from. */
-function contentOf(id: string, body: string, before: NarrationNode[]): NarrationNode[] {
+/** One edited narration back to its content; cues are taken from the narration it came from. */
+function contentOf(id: string, text: string, before: NarrationNode[]): NarrationNode[] {
   const cues = new Map(before.flatMap(node => node.type === 'cue' ? [[node.id, node] as const] : []))
   const used = new Set<string>()
   const nodes: NarrationNode[] = []
-  for (const part of body.split(PARTS)) {
-    if (!part) continue
-    const said = /^\{([^{}|]+)\|([^{}]+)\}$/.exec(part)
-    const cue = /^⟦cue:([^⟧]+)⟧$/.exec(part)
-    if (said) nodes.push({ type: 'pronunciation', display: said[1]!, spoken: said[2]! })
+  const plain = (value: string) => {
+    if (!value) return
+    const last = nodes.at(-1)
+    if (last?.type === 'text') last.text += value
+    else nodes.push({ type: 'text', text: value })
+  }
+  let from = 0
+  for (const match of text.matchAll(TOKEN)) {
+    plain(text.slice(from, match.index))
+    from = match.index + match[0].length
+    const [, character, display, spoken, cue] = match
+    if (character) plain(character)
+    else if (display !== undefined && spoken !== undefined) nodes.push({ type: 'pronunciation', display: unescaped(display), spoken: unescaped(spoken) })
     else if (cue) {
-      if (used.has(cue[1]!)) throw new ScriptError('script-cue-repeated', [id, cue[1]!])
-      const known = cues.get(cue[1]!)
-      if (!known) throw new ScriptError('script-cue-unknown', [id, cue[1]!])
+      if (used.has(cue)) throw new ScriptError('script-cue-repeated', [id, cue])
+      const known = cues.get(cue)
+      if (!known) throw new ScriptError('script-cue-unknown', [id, cue])
       nodes.push(structuredClone(known))
-      used.add(cue[1]!)
-    } else {
-      const last = nodes.at(-1)
-      if (last?.type === 'text') last.text += part
-      else nodes.push({ type: 'text', text: part })
+      used.add(cue)
     }
   }
+  plain(text.slice(from))
   const removed = [...cues.keys()].filter(cue => !used.has(cue))
   if (removed.length) throw new ScriptError('script-cue-removed', [id, ...removed])
   return nodes
@@ -135,12 +140,12 @@ export function importScript(document: TeachingDocument, text: string): { docume
   const changed: string[] = []
   let narrations = document.narrations
   for (const id of expected) {
-    const { body, line } = found.get(id)!
+    const { body: text, line } = found.get(id)!
     const before = document.narrations[id]!
-    if (normalized(scriptText(before.content)) === body) continue
-    if (!body) throw new ScriptError('script-empty', [id], line)
+    if (body(scriptLines(before.content)) === text) continue
+    if (!text) throw new ScriptError('script-empty', [id], line)
     if (narrations === document.narrations) narrations = { ...narrations }
-    narrations[id] = { ...before, content: contentOf(id, body, before.content) }
+    narrations[id] = { ...before, content: contentOf(id, text, before.content) }
     changed.push(id)
   }
   return { document: changed.length ? { ...document, narrations } : document, changed }

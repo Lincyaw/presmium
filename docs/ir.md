@@ -174,7 +174,7 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 
 工作区配置是 `presmium.workspace.yaml`，文稿模式只匹配 `lecture.json`，通常为 `documents: ['*/lecture.json']`；只有一份 `lecture.json` 的目录也是工作区。`presmium import` 把 Markdown 笔记一次性转成文稿：每份笔记一个 `lecture.json`，一级与二级标题各开一页，每页一个显示全部内容块的步骤；没有对应富文本节点的内容（原始 HTML、脚注、提示框）保存为 `presmium.mdast` 扩展。Markdown 只是导入的来源，文稿中不保存 Markdown 字符串。
 
-`presmium script export` 把讲稿写成一份供润色的 Markdown 工作副本（默认 `<文稿>/dist/script.md`）：每页、每步一个标题，每段讲稿在标记行 `<!-- n: <讲稿 ID> -->` 之下，读音节点写作 `{显示|读音}`，cue 写作 `⟦cue:<id>⟧`。`presmium script import` 核对标记与 cue（不能缺、不能多、cue 不能删除或跨段），只替换文字有变化的讲稿的 `content`（`provenance` 与 cue 节点保留），经 `validateDocument` 后按文件原有的缩进原子写入；副本本身从不进入编译。`presmium voiceover` 生成配音（[作者动作](authoring-actions.md) 第 9 节），`presmium speech key` 读写运营者的语音服务密钥（[架构](architecture.md)）。
+`presmium script export` 把讲稿写成一份供润色的 Markdown 工作副本（默认 `<文稿>/dist/script.md`）：每页、每步一个标题，每段讲稿在标记行 `<!-- n: <讲稿 ID> -->` 之下，到下一个标记行或标题为止。讲稿中的换行在文件中另起一行，空行（`\n\n`）是一个空行；读回时每行去掉首尾空白，连续的空行算一个。读音节点写作 `{显示|读音}`，cue 写作 `⟦cue:<id>⟧`；文字中的 `\`、`{`、`}`、`⟦`、`⟧`（读音节点中另有 `|`）前面加 `\`，看起来像标题或注释的行以 `\` 开头，读回时去掉这些 `\`。`presmium script import` 核对标记与 cue（不能缺、不能多、cue 不能删除或跨段），只替换文字有变化的讲稿的 `content`（`provenance` 与 cue 节点保留），经 `validateDocument` 后按文件原有的缩进原子写入；副本本身从不进入编译。`presmium voiceover` 生成配音（[作者动作](authoring-actions.md) 第 9 节），`presmium speech key` 读写运营者的语音服务密钥（[架构](architecture.md)）。
 
 ```sh
 presmium new lesson --type lecture

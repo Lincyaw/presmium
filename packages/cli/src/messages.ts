@@ -160,8 +160,9 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
                           中的条目）
           --json          以 JSON 打印结果
   script  把讲稿导出为一份 Markdown 文件润色，再导回文稿
-          export <文稿>   写出每一步的讲稿：每段在它的标记行 <!-- n: … --> 之下，{显示|读法} 是显示
-                          与读法不同的词，⟦cue:…⟧ 是提示点
+          export <文稿>   写出每一步的讲稿：每段在它的标记行 <!-- n: … --> 之下，换行与空行照原样，
+                          {显示|读法} 是显示与读法不同的词，⟦cue:…⟧ 是提示点，\\ 使后面的 \\、{、}、|、
+                          ⟦、⟧ 作为文字
           import <文稿> [<文件>]  把改过的讲稿写回 lecture.json，只改动有变化的讲稿；标记缺失或未知、
                           提示点被删除或移到别的段落时不写入
           --out <文件>    export 写到这个文件（默认为 <文稿>/dist/script.md，也是 import 默认读的文件）
@@ -307,7 +308,7 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
       'speech-settings-unavailable': file => `无法读取或写入语音服务设置：${file}`,
     },
     scriptUsage: '用法：presmium script export <文稿> [--out <文件>]，或 presmium script import <文稿> [<文件>]。',
-    scriptInstructions: '讲稿：字幕与配音都由它生成。只改每段文字，不改每段上面的 n: 标记行。显示与读法不同的词写作 {显示|读法}，⟦cue:…⟧ 是提示点，留在原来的段落中。改完运行 presmium script import <文稿>。',
+    scriptInstructions: '讲稿：字幕与配音都由它生成。只改每段文字，不改每段上面的 n: 标记行；一段到下一个标记行或标题为止，其中的换行与空行原样写回。显示与读法不同的词写作 {显示|读法}，⟦cue:…⟧ 是提示点，留在原来的段落中；作为文字的 \\、{、}、|、⟦、⟧ 前面加 \\。改完运行 presmium script import <文稿>。',
     scriptExported: (file, narrations, steps) => `已写出 ${steps} 个步骤的 ${narrations} 段讲稿：${file}`,
     scriptUnchanged: '讲稿没有改动，文稿保持不变。',
     scriptImported: changed => `已更新 ${[changed].flat().length} 段讲稿：${list(changed, '、')}`,
@@ -385,8 +386,9 @@ Commands:
                           .presmium/speech/ and their speech.lock.json entries)
           --json          print the result as JSON
   script  the script as one Markdown file to polish, and back into the document
-          export <deck>   write each step’s script: each paragraph below its marker line <!-- n: … -->,
-                          {shown|spoken} for a word shown one way and said another, ⟦cue:…⟧ for a cue
+          export <deck>   write each step’s script: each paragraph below its marker line <!-- n: … --> with
+                          its line breaks and blank lines, {shown|spoken} for a word shown one way and said
+                          another, ⟦cue:…⟧ for a cue, and \\ before a \\, {, }, |, ⟦ or ⟧ meant as text
           import <deck> [<file>]  write the edited paragraphs back into lecture.json, changing only those;
                           nothing is written when a marker is missing or unknown, or a cue was removed
                           or moved to another paragraph
@@ -536,7 +538,7 @@ Exit Codes: 0 no errors, 1 error findings, 2 usage or internal error.`,
       'speech-settings-unavailable': file => `Couldn’t read or write the voice service settings: ${file}`,
     },
     scriptUsage: 'Usage: presmium script export <document> [--out <file>], or presmium script import <document> [<file>].',
-    scriptInstructions: 'Script: the captions and the voiceover are made from it. Edit only the paragraphs; keep the n: line above each. A word shown one way and said another is written {shown|spoken}; ⟦cue:…⟧ marks a cue and stays in its paragraph. Then run presmium script import <document>.',
+    scriptInstructions: 'Script: the captions and the voiceover are made from it. Edit only the paragraphs; keep the n: line above each. A paragraph runs to the next n: line or heading, and its line breaks and blank lines are kept. A word shown one way and said another is written {shown|spoken}; ⟦cue:…⟧ marks a cue and stays in its paragraph. Put \\ before a \\, {, }, |, ⟦ or ⟧ meant as text. Then run presmium script import <document>.',
     scriptExported: (file, narrations, steps) => `wrote the script of ${steps} steps (${narrations} paragraphs) to ${file}`,
     scriptUnchanged: 'The script has no changes; the document is unchanged.',
     scriptImported: changed => `updated ${[changed].flat().length} ${[changed].flat().length === 1 ? 'paragraph' : 'paragraphs'} of the script: ${list(changed, ', ')}`,
