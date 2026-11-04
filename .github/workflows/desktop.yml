@@ -1,0 +1,105 @@
+name: Desktop app
+
+on:
+  push:
+    branches: [main]
+    paths: ['packages/**', '.agents/skills/**', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.github/workflows/desktop.yml']
+  pull_request:
+    paths: ['packages/desktop/**', '.github/workflows/desktop.yml']
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing GitHub Release tag to build and attach installers to (leave empty for artifacts only)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Desktop (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04, target: linux-x64 }
+          - { os: ubuntu-24.04-arm, target: linux-arm64 }
+          - { os: macos-15, target: darwin-arm64 }
+          - { os: macos-15-intel, target: darwin-x64 }
+          - { os: windows-2025, target: win32-x64 }
+          - { os: windows-11-arm, target: win32-arm64 }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
+      - name: Linux libraries for the web view
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf xdg-utils
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/desktop/src-tauri
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm --filter . --filter presmium-desktop... install --frozen-lockfile
+      # Signing and notarization use Tauri's environment variables when the repository has them as secrets.
+      - run: pnpm --filter presmium-desktop build
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      - name: Collect installers
+        shell: bash
+        run: |
+          mkdir -p installers
+          cd packages/desktop/src-tauri/target/release/bundle
+          for file in deb/*.deb rpm/*.rpm appimage/*.AppImage dmg/*.dmg msi/*.msi nsis/*.exe; do
+            [ -f "$file" ] || continue
+            name=$(basename "$file")
+            cp "$file" "$GITHUB_WORKSPACE/installers/${name%.*}-${{ matrix.target }}.${name##*.}"
+          done
+          ls -la "$GITHUB_WORKSPACE/installers"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: presmium-desktop-${{ matrix.target }}
+          path: installers/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+  release:
+    name: Attach installers to the release
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: presmium-desktop-*
+          path: installers
+          merge-multiple: true
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+        run: gh release upload "$RELEASE_TAG" installers/* --clobber

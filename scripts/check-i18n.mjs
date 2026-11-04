@@ -33,7 +33,7 @@ export async function load(url, context, next) {
   return next(url, context)
 }`))
 
-const SCOPE = ['workbench', 'cloud', 'dsh', 'design', 'studio', 'host', 'viewer', 'web', 'mcp', 'cli', 'skills', 'presmium', 'create-presmium', 'vscode',
+const SCOPE = ['workbench', 'cloud', 'dsh', 'design', 'studio', 'host', 'viewer', 'web', 'mcp', 'cli', 'skills', 'presmium', 'create-presmium', 'vscode', 'desktop',
   ...readdirSync(join(root, 'packages')).filter(name => name.startsWith('addon-')).sort()]
 const CLI_PACKAGES = new Set(['cli', 'cloud', 'skills', 'studio', 'presmium', 'create-presmium'])
 const CJK = /[㐀-鿿豈-﫿]/

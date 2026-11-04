@@ -40,4 +40,5 @@
 - `pnpm verify`：全部
 - `pnpm changeset`（记录一次改动）、`pnpm release:check`（`pnpm -r publish --dry-run`，不实际发布）、`pnpm consumer [<目录>] [--studio]`（打包后在单仓之外用 pnpm 安装 `presmium`，得到一个消费者项目；默认包含 Studio，含其依赖约 865 MB；`--studio` 保留兼容，另将 Studio 声明为直接依赖）
 - 从源码使用命令：`pnpm add -g ./packages/presmium` 之后的全局 `presmium` 就是这份源码（`presmium new`、`studio`、`check`、`dev`、`build`、`serve`，默认包含 Studio）；命令始终使用自身安装，不自动转交项目版本，需项目版本时显式运行 `pnpm exec presmium`。面向使用者的命令只写 pnpm 与 `presmium`，不写 npm、npx 与单仓中的路径
+- 桌面版（`docs/studio.md` 11.4 节）：`pnpm --filter presmium-desktop dev` 打开未打包的应用，`pnpm --filter presmium-desktop build` 为本机平台生成安装包（Linux 需要 WebKitGTK 4.1 的开发包）；六个平台的安装包由 `.github/workflows/desktop.yml` 构建
 - 工作台（实验性，`docs/studio.md`）：`presmium studio [目录]` 启动 DeepSeek Harness 加 Presmium 的 bundle 与工作区服务，只打印一个网址；Studio 随主包安装，无需另外安装。独立安装 `@lincyaw/studio` 时仍提供 `presmium-studio`

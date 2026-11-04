@@ -26,7 +26,7 @@ runtime snapshot (`packages/kernel/src/ir.ts`).
 | Renderer or runtime view | `Renderer` in `packages/kernel/src/ir.ts`, `ViewerPluginContext` in `packages/viewer/src/client/viewer-plugins.ts` |
 | Editing, preview sync, agent behavior, dsh upgrade | `packages/workspace/src/node/routes.ts`, [workbench](references/workbench.md) |
 | Workbench look or a UI primitive | `docs/design-system.md`, `packages/design/src/tokens.css`, `packages/workbench/src/components.tsx` |
-| Loading, publishing, a new package, VS Code extension | [packaging](references/packaging.md), `.changeset/README.md` |
+| Loading, publishing, a new package, VS Code extension, desktop app | [packaging](references/packaging.md), `.changeset/README.md` |
 | Slow, stalled or blank preview; performance | [debugging](references/debugging.md), `docs/debugging.md` |
 | Hosted cloud | [cloud](references/cloud.md), `docs/cloud.md` |
 | Run existing tests (only when the owner asks) | [testing](references/testing.md) |
