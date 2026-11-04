@@ -197,7 +197,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       frame: (page, step, title, at) => `第 ${page} 页 · 第 ${step} 步${title ? ` · ${title}` : ''} · ${at}`,
       written: (file, frames) => `已写入 ${file}：${frames} 帧，每步起点后 0.3 秒与中点各一帧。`,
       needsFfmpeg: (file, install) => `无法写入 ${file}：从视频中截取画面需要 FFmpeg。请安装 FFmpeg（${install}）。`,
-      unlabelled: file => `${file} 中的画面没有标注页面与步骤：这个 FFmpeg 没有 drawtext 滤镜。`,
+      unlabelled: file => `${file} 中的画面没有标注页面与步骤：这个 FFmpeg 没有 libass（ass 滤镜）。`,
     },
     cue: {
       problem: (command, reason) => `提示“${command}”：${reason}`,
@@ -318,7 +318,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       frame: (page, step, title, at) => `Page ${page} · Step ${step}${title ? ` · ${title}` : ''} · ${at}`,
       written: (file, frames) => `Wrote ${file}: ${frames} frames, each step 0.3 s after it starts and at its middle.`,
       needsFfmpeg: (file, install) => `Couldn’t write ${file}: taking frames from the video needs FFmpeg. Install FFmpeg (${install}).`,
-      unlabelled: file => `The frames in ${file} have no page and step labels: this FFmpeg has no drawtext filter.`,
+      unlabelled: file => `The frames in ${file} have no page and step labels: this FFmpeg has no libass (ass filter).`,
     },
     cue: {
       problem: (command, reason) => `Cue “${command}”: ${reason}`,
