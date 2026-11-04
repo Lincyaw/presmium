@@ -46,10 +46,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf xdg-utils
-      # Spotlight indexing the mounted disk image makes `hdiutil detach` time out while the DMG is built.
-      - name: Turn off Spotlight
-        if: runner.os == 'macOS'
-        run: sudo mdutil -a -i off
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -68,7 +64,16 @@ jobs:
           if [ -z "$APPLE_CERTIFICATE" ]; then
             unset APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID
           fi
-          pnpm --filter presmium-desktop build
+          # On macOS Tauri's DMG step mounts the image to lay it out, and detaching that mount times out on
+          # the runners; the app is packed into a plain disk image below instead.
+          if [ "$RUNNER_OS" = macOS ]; then
+            pnpm --filter presmium-desktop build --bundles app
+            bundle=packages/desktop/src-tauri/target/release/bundle
+            mkdir -p "$bundle/dmg"
+            hdiutil create -volname "Presmium Studio" -srcfolder "$bundle/macos/Presmium Studio.app" -ov -format UDZO "$bundle/dmg/Presmium Studio.dmg"
+          else
+            pnpm --filter presmium-desktop build
+          fi
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
