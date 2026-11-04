@@ -1,5 +1,15 @@
 # @lincyaw/mcp
 
+## 1.0.0-rc.52
+
+### Patch Changes
+
+- fd8a1ea: Import audio and images with a path and adopt recordings with step and asset IDs. Keep source and file verification inside the host, fixed before both MCP and Harness approval, with compact default receipts and compatible advanced requests. Generate alternative input requirements from the original schemas.
+- Updated dependencies [fd8a1ea]
+  - @lincyaw/skills@1.0.0-rc.52
+  - @lincyaw/compiler@1.0.0-rc.52
+  - @lincyaw/kernel@1.0.0-rc.52
+
 ## 1.0.0-rc.51
 
 ### Patch Changes

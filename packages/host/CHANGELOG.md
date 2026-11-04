@@ -1,5 +1,12 @@
 # @lincyaw/host
 
+## 1.0.0-rc.52
+
+### Patch Changes
+
+- @lincyaw/design@1.0.0-rc.52
+  - @lincyaw/kernel@1.0.0-rc.52
+
 ## 1.0.0-rc.51
 
 ### Patch Changes
