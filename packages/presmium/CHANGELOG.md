@@ -1,5 +1,37 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.20
+
+### Patch Changes
+
+- 646fa65: The repository gains `papers/`, a workspace of three-minute narrated paper films (翰林院传达室): a shared kit for the brand opening, charts and cropped paper figures, a pipeline that fetches an arXiv source, crops figures, synthesizes the voiceover with a free Edge voice, retimes the scenes to it, checks the three-minute length and exports the video, and the first film, on Hinted Scaling Laws.
+- @lincyaw/addon-assistant@1.0.0-rc.20
+  - @lincyaw/addon-classroom@1.0.0-rc.20
+  - @lincyaw/addon-code@1.0.0-rc.20
+  - @lincyaw/addon-content@1.0.0-rc.20
+  - @lincyaw/addon-exec@1.0.0-rc.20
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.20
+  - @lincyaw/addon-exec-local@1.0.0-rc.20
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.20
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.20
+  - @lincyaw/addon-guide@1.0.0-rc.20
+  - @lincyaw/addon-lecture@1.0.0-rc.20
+  - @lincyaw/addon-motion@1.0.0-rc.20
+  - @lincyaw/addon-publish@1.0.0-rc.20
+  - @lincyaw/addon-session@1.0.0-rc.20
+  - @lincyaw/addon-speech@1.0.0-rc.20
+  - @lincyaw/addon-stage@1.0.0-rc.20
+  - @lincyaw/cli@1.0.0-rc.20
+  - create-presmium@1.0.0-rc.20
+  - @lincyaw/host@1.0.0-rc.20
+  - @lincyaw/kernel@1.0.0-rc.20
+  - @lincyaw/mcp@1.0.0-rc.20
+  - @lincyaw/render-notebook@1.0.0-rc.20
+  - @lincyaw/render-slides@1.0.0-rc.20
+  - @lincyaw/viewer@1.0.0-rc.20
+  - @lincyaw/web@1.0.0-rc.20
+  - @lincyaw/studio@0.2.0-rc.19
+
 ## 1.0.0-rc.19
 
 ### Patch Changes
