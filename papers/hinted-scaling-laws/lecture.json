@@ -1036,10 +1036,10 @@
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          18624,
-          15829,
-          11987,
-          11201
+          18639,
+          16761,
+          13993,
+          13012
         ],
         "fallback": {
           "type": "root",
@@ -1084,8 +1084,8 @@
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          18282,
-          14208,
+          17839,
+          15600,
           15025
         ],
         "fallback": {
@@ -1131,9 +1131,9 @@
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          15996,
+          16359,
           16610,
-          16380
+          20018
         ],
         "fallback": {
           "type": "root",
@@ -1230,8 +1230,8 @@
         "name": "PmScene",
         "durations": [
           19634,
-          14224,
-          15846
+          13619,
+          16221
         ],
         "fallback": {
           "type": "root",
@@ -1274,7 +1274,7 @@
         "name": "PmScene",
         "durations": [
           19626,
-          17043
+          16833
         ],
         "fallback": {
           "type": "root",
