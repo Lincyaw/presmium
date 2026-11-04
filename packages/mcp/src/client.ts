@@ -217,3 +217,5 @@ export function describeOperation(tool: string, args: Record<string, unknown>, l
 
 export { compactToolCatalog, queryToolCatalog, resolveCatalogCall } from './tool-catalog.ts'
 export type { CatalogCall } from './tool-catalog.ts'
+
+export { isOrdinaryMediaCall, prepareMediaArguments, mediaResult } from './media-input.ts'

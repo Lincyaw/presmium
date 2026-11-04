@@ -1,7 +1,7 @@
 import { fromJsonSchema } from '@modelcontextprotocol/server'
 import type { JsonSchemaType } from '@modelcontextprotocol/server'
 import type { ListedTool } from './client.ts'
-import { compactSchema, schemaArguments, selectSchemaVariant } from './schemas.ts'
+import { compactSchema, schemaArguments, schemaInputChoices, selectSchemaVariant } from './schemas.ts'
 
 const COMMON = new Set(['get_context', 'rename_page', 'edit_narration', 'list_documents'])
 const KINDS = ['read', 'operate', 'spend', 'write', 'agent'] as const
@@ -52,7 +52,8 @@ export function queryToolCatalog(tools: readonly ListedTool[], args: Record<stri
     const tool = tools.find(tool => tool.name === args.name)
     if (!tool) throw failure('operation-unavailable', 404)
     const schema = typeof args.variant === 'string' ? selectSchemaVariant(tool.inputSchema, args.variant) : compactSchema(tool.inputSchema)
-    return { name: tool.name, kind: tool.kind, description: description(tool), ...args.schema ? { inputSchema: schema } : { arguments: schemaArguments(schema) } }
+    const inputChoices = schemaInputChoices(schema)
+    return { name: tool.name, kind: tool.kind, description: description(tool), ...args.schema ? { inputSchema: schema } : { arguments: schemaArguments(schema), ...inputChoices ? { inputChoices } : {} } }
   }
   if (args.schema || args.variant !== undefined) throw failure('operation-name-required')
   const query = String(args.query ?? '').toLowerCase(), offset = Number(args.offset ?? 0), limit = Number(args.limit ?? 10)

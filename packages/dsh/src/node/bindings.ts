@@ -22,6 +22,8 @@ export interface DocumentBinding {
   readonly tools: ListedTool[]
   /** Complete metadata for the currently registered model surface; replaced only at tool installation. */
   registeredTools?: readonly ListedTool[]
+  /** Ephemeral fixed inputs between pre-execute approval and this exact invocation. */
+  preparedCalls?: Map<symbol, { signature: string, arguments: Record<string, unknown> }>
   toolChanges: BindingTools
   diagnostics: BindingDiagnostics
 }
@@ -158,6 +160,7 @@ export class BindingDiagnostics {
 }
 
 async function closeBinding(binding: DocumentBinding): Promise<void> {
+  binding.preparedCalls?.clear()
   try {
     await Promise.all([binding.diagnostics.close(), binding.toolChanges.close()])
   } finally {

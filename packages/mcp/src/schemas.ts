@@ -70,6 +70,29 @@ export function selectSchemaVariant(schema: Record<string, unknown>, variant: st
   return compactSchema(replace(schema, selected.path))
 }
 
+/** Summarize simple alternative input requirements without duplicating the execution contract. */
+export function schemaInputChoices(schema: Record<string, unknown>): { required: string[], forbidden: string[] }[] | undefined {
+  if (!Array.isArray(schema.oneOf) || !schema.oneOf.length || schema.oneOf.length > 8) return
+  const singleRequired = (value: unknown): string | undefined => isRecord(value) && Object.keys(value).length === 1 && Array.isArray(value.required) && value.required.length === 1 && typeof value.required[0] === 'string' ? value.required[0] : undefined
+  const choices: { required: string[], forbidden: string[] }[] = []
+  for (const branch of schema.oneOf) {
+    if (!isRecord(branch) || Object.keys(branch).some(key => !['required', 'not'].includes(key)) || !Array.isArray(branch.required) || !branch.required.length || !branch.required.every(key => typeof key === 'string')) return
+    let forbidden: string[] = []
+    if (branch.not !== undefined) {
+      const single = singleRequired(branch.not)
+      if (single !== undefined) forbidden = [single]
+      else {
+        if (!isRecord(branch.not) || Object.keys(branch.not).length !== 1 || !Array.isArray(branch.not.anyOf)) return
+        const names = branch.not.anyOf.map(singleRequired)
+        if (!names.every((name): name is string => name !== undefined)) return
+        forbidden = names
+      }
+    }
+    choices.push({ required: [...new Set([...(Array.isArray(schema.required) ? schema.required.filter(key => typeof key === 'string') : []), ...branch.required])], forbidden })
+  }
+  return choices
+}
+
 /** A small, generated argument overview; a complete schema remains explicitly discoverable. */
 export function schemaArguments(schema: Record<string, unknown>): Record<string, Record<string, unknown>> {
   const required = new Set(Array.isArray(schema.required) ? schema.required : [])

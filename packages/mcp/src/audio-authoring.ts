@@ -1,6 +1,7 @@
 import { DOCUMENT_RECORDING_ADOPTION_SCHEMA, DOCUMENT_AUDIO_INSPECTION_SCHEMA, DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA, DOCUMENT_WORKSPACE_AUDIO_INSPECTION_SCHEMA, DOCUMENT_MEDIA_CLIP_VALIDATION_SCHEMA, DOCUMENT_MEDIA_CLIP_CHANGE_SCHEMA, DOCUMENT_PRODUCTION_PLAN_SCHEMA } from '@lincyaw/kernel'
 import type { DocumentRecordingAdoption, DocumentAudioAuthoring, DocumentAudioInspect, DocumentWorkspaceAudioImport, DocumentWorkspaceAudioInspect, DocumentMediaClipValidation, DocumentMediaClipEdit, DocProductionPlanQuery } from '@lincyaw/kernel'
 import type { Call, ToolSpec } from './mcp.ts'
+import { checkMediaWrite, mediaInput, mediaResult, prepareMediaArguments } from './media-input.ts'
 
 const document = { type: 'string', description: 'The served document directory; file paths remain workspace-relative within this selected document.' }
 const input = (properties: Record<string, unknown>, required: string[]) => ({ type: 'object', properties: { document, ...properties }, required, additionalProperties: false })
@@ -12,15 +13,22 @@ const service = (call: Call): DocumentAudioAuthoring => {
 export const AUDIO_AUTHORING_TOOLS: ToolSpec[] = [
   {
     name: 'adopt_recording', kind: 'operate', structured: true,
-    description: 'Explicitly adopts one whole local audio asset as the narration source for one stable step. Optional sourceRange edits only an already adopted recording of this same asset in this step, against real inspected duration. Requires exact saved source and original SHA-256; preserves all narration, pronunciation, cues, ASR provenance and media clips. Trimmed narration keeps whole-step display captions with alignment:none and requires caption review; it does not align words or reuse whole-file ASR timing. Uses the shared Web canonical CAS/history/receipt boundary and cannot bypass required review. Unsupported cue timing is refused; no compilation, recognition, synthesis or implicit playback occurs. Read the real production plan after explicitly preparing IR to verify playback.',
-    inputSchema: input({ request: structuredClone(DOCUMENT_RECORDING_ADOPTION_SCHEMA) }, ['request']),
+    description: 'Adopts audio for a stable step using stepId and assetId. Optional sourceRange edits only an already adopted recording of this same asset in this step, against real inspected duration. Ordinary input is stepId and assetId; source and the asset SHA-256 are pinned internally before approval. Optional source pins an earlier read. Advanced request retains exact native fields. Preserves all narration, pronunciation, cues, ASR provenance and media clips. Trimmed narration keeps whole-step display captions with alignment:none and requires caption review; it does not align words or reuse whole-file ASR timing. Uses the shared Web canonical CAS/history/receipt boundary and cannot bypass required review. Unsupported cue timing is refused; no compilation, recognition, synthesis or implicit playback occurs. Read the real production plan after explicitly preparing IR to verify playback.',
+    inputSchema: mediaInput(DOCUMENT_RECORDING_ADOPTION_SCHEMA, { stepId: DOCUMENT_RECORDING_ADOPTION_SCHEMA.properties.stepId, assetId: DOCUMENT_RECORDING_ADOPTION_SCHEMA.properties.assetId, sourceRange: DOCUMENT_RECORDING_ADOPTION_SCHEMA.properties.sourceRange }, ['stepId', 'assetId']),
     run: async call => {
-      const selected = await call.document(), request = call.args.request as DocumentRecordingAdoption, authoring = call.host.authoring?.capabilities(selected, call.caller.member)
-      if (authoring && !authoring.actions.apply) throw Object.assign(new Error(authoring.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: authoring.applyUnavailableReason ? 409 : 403 })
+      const selected = await call.document()
+      if (call.args.request) checkMediaWrite(call, selected)
+      const prepared = (call.args.request ?? (await prepareMediaArguments('adopt_recording', call.args, async (name, args) => {
+        call.signal.throwIfAborted()
+        if (name === 'get_authoring_capabilities') return call.host.authoring?.capabilities(selected, call.caller.member)
+        if (name === 'get_document_outline') return call.host.authoring?.outline(selected, {}, call.caller.member)
+        return service(call).inspect(selected, args.request as DocumentAudioInspect, call.caller.member, call.signal)
+      })).request) as DocumentRecordingAdoption
       const target = (await call.host.documents()).find(document => document.dir === selected)
-      await call.approve('operate', messages => messages.adoptRecording(request.stepId), { lang: target?.lang ?? '', detail: target?.title ?? selected, check: () => service(call).checkRecordingAdoption(selected, request, call.caller.member, call.signal) })
+      await call.approve('operate', messages => messages.adoptRecording(prepared.stepId), { lang: target?.lang ?? '', detail: target?.title ?? selected, check: () => service(call).checkRecordingAdoption(selected, prepared, call.caller.member, call.signal) })
       call.signal.throwIfAborted()
-      return service(call).adoptRecording(selected, request, call.caller.member, call.signal)
+      const result = await service(call).adoptRecording(selected, prepared, call.caller.member, call.signal)
+      return mediaResult('adopt_recording', result, call.args)
     },
   },
   {
@@ -77,15 +85,22 @@ export const AUDIO_AUTHORING_TOOLS: ToolSpec[] = [
   },
   {
     name: 'import_workspace_audio', kind: 'operate', structured: true,
-    description: 'Imports one existing regular workspace audio file allowed by the selected document scope, after host authorization. Requires exact canonical source, expected original SHA-256 and byte length. Shares Web media validation, binary/document CAS, rollback and receipts; history origin is agent and required review cannot be bypassed. Returns saved-source and actual-file verification, without clips, narration, recognition, synthesis or playback.',
-    inputSchema: input({ request: structuredClone(DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA) }, ['request']),
+    description: 'Imports one existing regular workspace audio file allowed by the selected document scope, after host authorization. Ordinary input is path; no separate source or inspection call is needed. Source, SHA-256 and byte length are pinned internally before approval, then rechecked by the native transaction. Optional source pins an earlier read; request is the advanced native input. Shares Web media validation, binary/document CAS, rollback and receipts; history origin is agent and required review cannot be bypassed. Ordinary response is saved, assetId and durationMs; details:true or advanced request returns the native receipt. Does not attach narration, recognize, synthesize or play. After a lost response inspect saved assets instead of automatically repeating the import.',
+    inputSchema: mediaInput(DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA, { path: DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA.properties.file.properties.path }, ['path']),
     run: async call => {
-      const selected = await call.document(), request = call.args.request as DocumentWorkspaceAudioImport, authoring = call.host.authoring?.capabilities(selected, call.caller.member)
-      if (authoring && !authoring.actions.apply) throw Object.assign(new Error(authoring.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: authoring.applyUnavailableReason ? 409 : 403 })
+      const selected = await call.document()
+      if (call.args.request) checkMediaWrite(call, selected)
+      const prepared = (call.args.request ?? (await prepareMediaArguments('import_workspace_audio', call.args, async (name, args) => {
+        call.signal.throwIfAborted()
+        if (name === 'get_authoring_capabilities') return call.host.authoring?.capabilities(selected, call.caller.member)
+        if (name === 'get_document_outline') return call.host.authoring?.outline(selected, {}, call.caller.member)
+        return service(call).inspectWorkspace(selected, args.request as DocumentWorkspaceAudioInspect, call.caller.member, call.signal)
+      })).request) as DocumentWorkspaceAudioImport
       const target = (await call.host.documents()).find(document => document.dir === selected)
-      await call.approve('operate', messages => messages.importAudio(request.file.path.split('/').at(-1) ?? request.file.path), { lang: target?.lang ?? '', detail: `${target?.title ?? selected}\n${request.file.path}`, check: () => service(call).checkWorkspaceImport(selected, request, call.caller.member, call.signal) })
+      await call.approve('operate', messages => messages.importAudio(prepared.file.path.split('/').at(-1) ?? prepared.file.path), { lang: target?.lang ?? '', detail: `${target?.title ?? selected}\n${prepared.file.path}`, check: () => service(call).checkWorkspaceImport(selected, prepared, call.caller.member, call.signal) })
       call.signal.throwIfAborted()
-      return service(call).importWorkspace(selected, request, call.caller.member, call.signal)
+      const result = await service(call).importWorkspace(selected, prepared, call.caller.member, call.signal)
+      return mediaResult('import_workspace_audio', result, call.args)
     },
   },
 ]

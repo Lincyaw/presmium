@@ -76,6 +76,14 @@ independent snapshots and never take focus or mode while editing.
   compile step or tool adapter with its own queue. Unimplemented actions are not advertised. Tools, budgets
   and receipts: `docs/authoring-actions.md` sections 2 to 10.
 - `rename_page` and `edit_document` compose the existing read/plan/check/apply owner in one MCP call. Keep the operation schema derived from the kernel schema and CLI introspection derived from live tools/list. The owner's credential authorizes canonical editing only; execution, paid tools and browser control retain their policy. Return actual saved-source readback and bounded client-reported editor/preview state separately. Do not add automatic compilation or turn pending editor feedback into a failed save or another write. Simple edits use their receipt; checks and captures follow the task scope.
+- Ordinary audio/image imports and recording adoption reuse native request schemas and owners. Pin source
+  and actual file/asset hashes before approval, never repin after a conflict. External MCP and trusted dsh
+  share stateless preparation; dsh performs it before its own pre-execute approval and associates the fixed
+  payload with token, binding, original immutable arguments and definition in a bounded per-binding map. Never rewrite frozen exec arguments or
+  prepare a missing payload after approval. Consume once and clean up on the final result, including denial.
+  Keep default receipts compact and explicit native request mode compatible; derive alternative input
+  requirements from schema rather than maintaining another parameter table. Verify both actual MCP approval
+  and Harness ask, including file/source changes during the decision and native receipt replay.
 - Browser-only MCP actions (`preview.prepare`, `source.flush`, body, comment and component-property drafts)
   go over the shared workspace WebSocket to the `AuthoringClients` owner and need exact client
   epoch and input revision. Source-changing actions also pin the canonical source. Admission is not completion; only the browser acknowledges. No MCP ACK tool,

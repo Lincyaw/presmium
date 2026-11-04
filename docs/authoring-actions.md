@@ -39,7 +39,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 工具是否可用以 MCP 的工具表为准；已列出的简单编辑工具可直接调用。需要了解高级动作限制时，`get_authoring_capabilities` 与各服务的 `get_*_capabilities` 报告能否预检与提交、预算、`idempotency` 与 `review`，不编译文稿。状态区分 available、unavailable 与 unknown；`verification: configuration-only` 只看了配置，不证明鉴权或合成可用。能力响应不含凭据。工具的参数来自同一份 `inputSchema`，没有单独维护的参数清单。外部 MCP 默认只列出当前上下文、页标题、讲稿编辑、文稿目录、操作查询及按权限种类分开的调用入口。`operations` 按关键字分页查找动作，指定 `name` 时返回自动生成的参数摘要，`schema: true` 才返回完整 Schema。`read_operation`、`edit_operation`、`spend_operation`、`write_operation` 与 `agent_operation` 只调用同种权限的已授权动作，保留目标 Schema 校验、确认策略与错误和图片结果；没有相应动作的入口不提供。Schema 只携带实际引用到的定义。
 
-一个工具含多种动作时，参数摘要从原 Schema 生成 `variants`，包括判别字段和可选值。`operations` 同时指定 `name` 与 `variant`，只读取所选动作的参数，例如 `{name: "editor_action", variant: "body-drafts.read"}`；加 `schema: true` 读取该动作的完整约束。嵌套对象参数沿原路径保留，公共字段与必填约束不删除。未知或不能唯一定位的动作拒绝筛选；使用分支位置、锚点或独立资源引用的 Schema 也拒绝筛选，仍可省略 `variant` 读取原完整定义。筛选仅用于发现参数，执行始终校验工具的原完整 Schema，不改变可调用动作、权限或确认策略。
+一个工具含多种动作时，参数摘要从原 Schema 生成 `variants`，包括判别字段和可选值。`operations` 同时指定 `name` 与 `variant`，只读取所选动作的参数，例如 `{name: "editor_action", variant: "body-drafts.read"}`；加 `schema: true` 读取该动作的完整约束。嵌套对象参数沿原路径保留，公共字段与必填约束不删除。未知或不能唯一定位的动作拒绝筛选；使用分支位置、锚点或独立资源引用的 Schema 也拒绝筛选，仍可省略 `variant` 读取原完整定义。筛选仅用于发现参数，执行始终校验工具的原完整 Schema，不改变可调用动作、权限或确认策略。 对由 `required/not` 表达的简单互斥输入方式，摘要自动返回 `inputChoices`，列出每组 required 与 forbidden；它不代替完整 Schema。
 
 新增功能优先扩展既有语义动作与共享服务，不为同一保存结果增加平行入口。简单编辑与高级预检/应用共用事务；只在调用方需要先审阅固定影响时使用后者。默认保留少量高频快捷动作，其余按需发现。未提交文件、候选审阅与已提交历史分别处理工作文件、待接受的助手结果与版本撤销，不能互相代替。
 
@@ -134,11 +134,17 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 **音频导入**
 
-- Web 用 multipart `POST document/audio`。MCP 先 `inspect_workspace_audio` 取得 `file: { path, sha256, byteLength }`，再 `import_workspace_audio`，导入时重读核对。`path` 限当前文稿范围内的普通文件，拒绝绝对路径、URL 与符号链接。
+- Web 用 multipart `POST document/audio`。MCP 普通调用为 `import_workspace_audio({path})`，服务端在确认前读取当前 source、检查文件并固定 SHA-256 与字节数；原生事务在提交时重读核对，不需要模型先读取 source 或转交检查结果。`path` 限当前文稿范围内的普通文件，拒绝绝对路径、URL 与符号链接。
 - 媒体按真实字节识别，不信文件名与 MIME：Ogg、WAV、MP3、M4A、音频 WebM，单音轨，不超过 16 MiB 与十分钟。服务分配 Asset ID 与路径 `assets/audio/<id>.<格式>`，上传名只作 `Asset.title`。
 - 导入不创建片段、不识别、不选音色。`inspect_document_audio` 读已保存资产，包括未被引用的；运行快照的 `productionAssets` 只含被引用的。
 
-**图片导入**：`inspect_workspace_image` → `import_workspace_image`，核对规则同音频，只登记资产；放入正文另用 `insertBlock`。
+**图片导入**：普通调用为 `import_workspace_image({path})`，固定源与检查字节的规则同音频，只登记资产；放入正文另用 `insertBlock`。
+
+普通导入与采用的字段从内核原请求 Schema 派生。`source` 可显式固定此前读取的版本，`requestId` 可标识这次意图；省略时只在本次调用内部生成。默认仅返回 saved、素材或步骤 ID 和时长或尺寸；`details: true` 返回原生核验详情。高级 `request` 仍接受原完整结构，保留 source、id、file/hash 等约束及原回执；不能与普通业务字段混传。高级 inspect → import 流程继续可用。
+
+可信 dsh 在自身确认前用同一准备函数，经目标工作区的只读接口固定请求；源发现使用有界 outline。准备值在会话文稿绑定中按这一调用的 token 保存，并核对工具定义和原参数，执行时核对并只取一次，不修改日志参数，也不在确认后重新读取新源或新字节来替代。每个绑定最多保留 64 项；终态事件和绑定关闭清理准备值。外部 MCP 在服务端直接调用相同准备函数及原生事务。两条路径都不增加 writer、计划账本或模型工具。确认期间的源或文件变化返回冲突；要求审阅的工作区仍按原权限拒绝直接写入。
+
+普通模式收到过期源、重复意图或丢失应答时，不隐式重新固定版本或自动再导入；先读取已保存素材与步骤状态。完整 request 在同一进程且结果仍是当前源时可按原意图回放原回执。
 
 **片段**
 
@@ -147,7 +153,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 - 所选步骤必须 `timing=confirmed`。入点非负，出点不超过真实时长，偏移加区间不超过该步；越界整体拒绝，不静默裁切或改 hold 与 cue。
 - 移除片段保留原文件。保存成功不代表新计划就绪。
 
-**原音作为本步配音**：`adopt_recording` 核对 StepId、Asset ID 与原音 SHA-256，只把该步 `voiceSource` 改为 recording，不启动 ASR、TTS 或播放。
+**原音作为本步配音**：普通调用为 `adopt_recording({stepId, assetId})`，服务端在确认前固定 source 并读取真实资产的 SHA-256。原生入口复查步骤与字节，只把该步 `voiceSource` 改为 recording，不启动 ASR、TTS 或播放。
 
 - 不设 `sourceRange` 时完整播放一次，设置时只写本步覆盖。字幕取当前讲稿文字，`alignment=none`，不移用 ASR 词时码。
 

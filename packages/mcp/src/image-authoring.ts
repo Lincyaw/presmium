@@ -1,6 +1,7 @@
 import { DOCUMENT_WORKSPACE_IMAGE_IMPORT_SCHEMA, DOCUMENT_WORKSPACE_IMAGE_INSPECTION_SCHEMA } from '@lincyaw/kernel'
 import type { DocumentImageAuthoring, DocumentWorkspaceImageImport, DocumentWorkspaceImageInspect } from '@lincyaw/kernel'
 import type { Call, ToolSpec } from './mcp.ts'
+import { checkMediaWrite, mediaInput, mediaResult, prepareMediaArguments } from './media-input.ts'
 
 const document = { type: 'string', description: 'The served document directory; file paths are workspace-relative within that document.' }
 const input = (properties: Record<string, unknown>, required: string[]) => ({ type: 'object', properties: { document, ...properties }, required, additionalProperties: false })
@@ -27,15 +28,22 @@ export const IMAGE_AUTHORING_TOOLS: ToolSpec[] = [
   },
   {
     name: 'import_workspace_image', kind: 'operate', structured: true,
-    description: 'Imports one regular image from the selected document scope after authorization; a stale source or changed file is refused before authorization is asked. Uses the same Web image validation and canonical/binary transaction, exact source and original SHA-256/length, agent history origin, and process-local current-source receipt. Required review cannot be bypassed. Returns verified saved asset metadata; no remote upload, scene compilation or runtime verification is implied.',
-    inputSchema: input({ request: structuredClone(DOCUMENT_WORKSPACE_IMAGE_IMPORT_SCHEMA) }, ['request']),
+    description: 'Imports one regular image using only path. Source, original SHA-256 and length are pinned internally before approval; no separate inspection call is needed. Optional source pins an earlier read. request is advanced native input; details:true returns the existing verification receipt. Stale source and changed bytes are refused before approval and rechecked at commit. Uses the same Web image validation and canonical/binary transaction, exact source and original SHA-256/length, agent history origin, and process-local current-source receipt. Required review cannot be bypassed. Returns saved, assetId and dimensions; details:true or advanced request returns the existing verification receipt. No remote upload or scene compilation. After a lost response inspect saved assets instead of automatically repeating the import.',
+    inputSchema: mediaInput(DOCUMENT_WORKSPACE_IMAGE_IMPORT_SCHEMA, { path: DOCUMENT_WORKSPACE_IMAGE_IMPORT_SCHEMA.properties.file.properties.path }, ['path']),
     run: async call => {
-      const selected = await call.document(), request = call.args.request as DocumentWorkspaceImageImport, authoring = call.host.authoring?.capabilities(selected, call.caller.member)
-      if (authoring && !authoring.actions.apply) throw Object.assign(new Error(authoring.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: authoring.applyUnavailableReason ? 409 : 403 })
+      const selected = await call.document()
+      if (call.args.request) checkMediaWrite(call, selected)
+      const prepared = (call.args.request ?? (await prepareMediaArguments('import_workspace_image', call.args, async (name, args) => {
+        call.signal.throwIfAborted()
+        if (name === 'get_authoring_capabilities') return call.host.authoring?.capabilities(selected, call.caller.member)
+        if (name === 'get_document_outline') return call.host.authoring?.outline(selected, {}, call.caller.member)
+        return service(call).inspectWorkspace(selected, args.request as DocumentWorkspaceImageInspect, call.caller.member, call.signal)
+      })).request) as DocumentWorkspaceImageImport
       const target = (await call.host.documents()).find(document => document.dir === selected)
-      await call.approve('operate', messages => messages.importImage(request.file.path.split('/').at(-1) ?? request.file.path), { lang: target?.lang ?? '', detail: `${target?.title ?? selected}\n${request.file.path}`, check: () => service(call).checkWorkspaceImport(selected, request, call.caller.member, call.signal) })
+      await call.approve('operate', messages => messages.importImage(prepared.file.path.split('/').at(-1) ?? prepared.file.path), { lang: target?.lang ?? '', detail: `${target?.title ?? selected}\n${prepared.file.path}`, check: () => service(call).checkWorkspaceImport(selected, prepared, call.caller.member, call.signal) })
       call.signal.throwIfAborted()
-      const result = await service(call).importWorkspace(selected, request, call.caller.member, call.signal)
+      const result = await service(call).importWorkspace(selected, prepared, call.caller.member, call.signal)
+      if (!call.args.request && !call.args.details) return mediaResult('import_workspace_image', result, call.args)
       const { content: _content, issues: _issues, ...compact } = result
       return compact
     },

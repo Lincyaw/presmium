@@ -5,7 +5,7 @@ import type { CatalogCall } from '@lincyaw/mcp/client'
 import { isInside } from '@lincyaw/kernel/node'
 import { describeOperation } from '@lincyaw/mcp/client'
 import type { DshContext, DshPreDecision, DshToolExecution } from './dsh-types.ts'
-import { PREFIX, resolvePresmiumCall } from './tools.ts'
+import { PREFIX, preparePresmiumCall, resolvePresmiumCall } from './tools.ts'
 
 export const name = 'presmium-policy'
 export const inject = ['presmium', 'tools']
@@ -38,6 +38,7 @@ export function apply(ctx: DshContext): void {
       const tool = resolved.tool
       if (!binding || !tool) return { kind: 'deny', reason: `Presmium: ${exec.name} is no tool of this session's document` }
       if (tool.kind === 'read') return next()
+      try { await preparePresmiumCall(binding, exec, resolved) } catch (error) { return { kind: 'deny', reason: `Presmium: ${errorMessage(error)}` } }
       if (tool.approval === 'allow') return { kind: 'allow' }
       const lang = binding.document.lang
       const title = describeOperation(tool.name, resolved.arguments, lang)

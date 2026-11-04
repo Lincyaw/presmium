@@ -1,6 +1,6 @@
-import { errorMessage } from '@lincyaw/kernel'
-import { compactToolCatalog, queryToolCatalog, resolveCatalogCall } from '@lincyaw/mcp/client'
-import type { CalledImage, ListedTool } from '@lincyaw/mcp/client'
+import { errorMessage, isRecord } from '@lincyaw/kernel'
+import { compactToolCatalog, isOrdinaryMediaCall, mediaResult, prepareMediaArguments, queryToolCatalog, resolveCatalogCall } from '@lincyaw/mcp/client'
+import type { CalledImage, CatalogCall, ListedTool } from '@lincyaw/mcp/client'
 import type { DshAgent, DshAttachments, DshContentBlock, DshContext, DshImageMediaType, DshLlm, DshToolDefinition, DshToolExecution } from './dsh-types.ts'
 import type { DocumentBinding } from './bindings.ts'
 
@@ -24,6 +24,31 @@ export async function resolvePresmiumCall(binding: DocumentBinding | undefined, 
   const target = await resolveCatalogCall(binding.registeredTools ?? binding.tools, exec.name.slice(PREFIX.length), exec.arguments)
   if (!target.discovery && JSON.stringify(binding.tools.find(tool => tool.name === target.tool.name)) !== JSON.stringify(target.tool)) throw new Error('operation-definition-changed')
   return target
+}
+
+export async function preparePresmiumCall(binding: DocumentBinding, exec: DshToolExecution, target: CatalogCall) {
+  if (target.discovery || !isOrdinaryMediaCall(target.tool.name, target.arguments)) return
+  if (!isRecord(exec.arguments)) throw new Error('operation-arguments-invalid')
+  const preparedCalls = binding.preparedCalls ??= new Map()
+  const signature = JSON.stringify([target.tool, target.arguments]), previous = preparedCalls.get(exec.token)
+  if (previous) {
+    if (previous.signature !== signature) throw new Error('operation-definition-changed')
+    return
+  }
+  if (preparedCalls.size >= 64) throw new Error('operation-preparation-busy')
+  const client = isCandidateTool(target.tool) ? binding.client : binding.authorClient
+  const args = await prepareMediaArguments(target.tool.name, target.arguments, async (name, args) => {
+    exec.signal.throwIfAborted()
+    const result = await client.call(name, args, exec.signal)
+    exec.signal.throwIfAborted()
+    if (result.isError) throw new Error(result.text)
+    return result.structured ?? JSON.parse(result.text)
+  })
+  // Validate the fixed native request using the same definition; never rewrite logged arguments.
+  const prepared = await resolveCatalogCall(binding.tools, target.tool.name, args)
+  exec.signal.throwIfAborted()
+  if (preparedCalls.size >= 64) throw new Error('operation-preparation-busy')
+  preparedCalls.set(exec.token, { signature, arguments: prepared.arguments })
 }
 
 const IMAGE_TYPES = new Set<string>(['image/png', 'image/jpeg', 'image/webp', 'image/gif'])
@@ -62,8 +87,17 @@ function definition(ctx: DshContext, binding: DocumentBinding, tool: ListedTool)
       if (exec.agent && ctx.presmium.bindings.bindingOf(exec.agent) !== binding) throw new Error('operation-binding-changed')
       const target = await resolvePresmiumCall(binding, { name: PREFIX + tool.name, arguments: args })
       if (target.discovery) return JSON.stringify(queryToolCatalog(binding.registeredTools ?? binding.tools, target.arguments))
-      const result = await (isCandidateTool(target.tool) ? binding.client : binding.authorClient).call(target.tool.name, target.arguments, exec.signal)
+      const ordinaryMedia = isOrdinaryMediaCall(target.tool.name, target.arguments)
+      let argumentsToSend = target.arguments
+      if (ordinaryMedia) {
+        const fixed = binding.preparedCalls?.get(exec.token)
+        binding.preparedCalls?.delete(exec.token)
+        if (!fixed || fixed.signature !== JSON.stringify([target.tool, target.arguments])) throw new Error('operation-not-prepared')
+        argumentsToSend = fixed.arguments
+      }
+      const result = await (isCandidateTool(target.tool) ? binding.client : binding.authorClient).call(target.tool.name, argumentsToSend, exec.signal)
       if (result.isError) throw new Error(result.text)
+      if (ordinaryMedia) return JSON.stringify(mediaResult(target.tool.name, result.structured ?? JSON.parse(result.text), target.arguments))
       if (result.images.length > 0) prepared.set(exec.token, [...result.text ? [{ type: 'text' as const, text: result.text }] : [], ...await imageBlocks(ctx, tool.name, result.images, exec)])
       return result.text
     },
@@ -76,6 +110,7 @@ function definition(ctx: DshContext, binding: DocumentBinding, tool: ListedTool)
 }
 
 export function apply(ctx: DshContext): void {
+  ctx.on('tools/result', (exec: Readonly<DshToolExecution>) => { ctx.presmium.bindings.bindingOf(exec.agent)?.preparedCalls?.delete(exec.token) })
   const live = new WeakSet<DshAgent>()
   const selections = new WeakMap<DshAgent, () => void>()
   const registered = new WeakMap<DshAgent, { binding?: DocumentBinding, tools?: ListedTool[], stop?: () => void, dispose: (() => void)[] }>()
