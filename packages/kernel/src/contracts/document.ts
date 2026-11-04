@@ -199,6 +199,13 @@ export interface Production {
 
 /** A stable rich-text/code ID, or `page:${sectionId}` reserved for an existing section title. */
 export interface DocumentTextPoint { blockId: string, offset: number }
+export interface DocumentTextAnchor { from: DocumentTextPoint, to: DocumentTextPoint }
+/** A stable block, optionally at one step that renders it; the step belongs to the block's section. */
+export interface DocumentPlaceAnchor { blockId: BlockId, stepId?: StepId }
+export type DocumentThreadAnchor = DocumentTextAnchor | DocumentPlaceAnchor
+/** A text range and a place are disjoint shapes; read the shape instead of guessing from offsets. */
+export const isDocumentTextAnchor = (anchor: DocumentThreadAnchor | undefined): anchor is DocumentTextAnchor => Boolean(anchor && 'from' in anchor && 'to' in anchor)
+export const isDocumentPlaceAnchor = (anchor: DocumentThreadAnchor | undefined): anchor is DocumentPlaceAnchor => Boolean(anchor && 'blockId' in anchor && !('from' in anchor))
 export interface DocumentComment {
   id: string
   type: 'comment'
@@ -220,7 +227,7 @@ export interface DocumentThread {
   resolvedBy?: string
   metadata?: JsonObject
   deletedAt?: string
-  anchor?: { from: DocumentTextPoint, to: DocumentTextPoint }
+  anchor?: DocumentThreadAnchor
   comments: DocumentComment[]
 }
 

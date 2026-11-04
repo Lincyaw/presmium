@@ -1,4 +1,4 @@
-import { isRecord, validateDocument } from '@lincyaw/kernel'
+import { isDocumentPlaceAnchor, isRecord, validateDocument } from '@lincyaw/kernel'
 import type { TeachingDocument } from '@lincyaw/kernel'
 import { findNodeAtLocation, findNodeAtOffset, getNodePath, getNodeValue, parseTree } from 'jsonc-parser'
 import type { JSONPath, Node, ParseError } from 'jsonc-parser'
@@ -72,7 +72,11 @@ export function sectionAtPath(document: TeachingDocument, path: JSONPath): strin
     }
     if (id === 'mediaClips' && typeof field === 'number') return document.steps[document.production.mediaClips[field]?.attachment.stepId ?? '']?.sectionId
   }
-  if (map === 'comments' && typeof id === 'string') return owner.get(document.comments?.[id]?.anchor?.[key === 'to' ? 'to' : 'from'].blockId ?? '')
+  if (map === 'comments' && typeof id === 'string') {
+    const anchor = document.comments?.[id]?.anchor
+    if (!anchor) return undefined
+    return isDocumentPlaceAnchor(anchor) ? owner.get(anchor.blockId) : owner.get(anchor[key === 'to' ? 'to' : 'from'].blockId ?? '')
+  }
   return map === 'metadata' || !path.length ? document.sectionOrder[0] : undefined
 }
 

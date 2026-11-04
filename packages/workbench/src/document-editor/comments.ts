@@ -4,8 +4,8 @@ import type { BlockNoteEditor } from '@blocknote/core'
 import type { CommentData, ThreadData } from '@blocknote/core/comments'
 import { AddMarkStep, RemoveMarkStep } from '@tiptap/pm/transform'
 import { Plugin } from '@tiptap/pm/state'
-import { applyDocumentCommentAction, hasRole, LOCAL_AUTHOR, randomUUID, validateDocumentCommentAnchor } from '@lincyaw/kernel'
-import type { DocumentComment, DocumentCommentAction, DocumentThread, Member, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
+import { applyDocumentCommentAction, degradeDocumentCommentAnchor, hasRole, isDocumentPlaceAnchor, isDocumentTextAnchor, LOCAL_AUTHOR, randomUUID, validateDocumentCommentAnchor } from '@lincyaw/kernel'
+import type { DocumentComment, DocumentCommentAction, DocumentPlaceAnchor, DocumentThread, DocumentThreadAnchor, Member, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
 import { createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
 import type { RichProjection } from './rich-text.ts'
 import type { Transaction } from '@tiptap/pm/state'
@@ -84,7 +84,10 @@ export class DocumentThreadStore extends ThreadStore {
     if (drafts || identity && member?.id) { this.drafts = drafts ?? new CommentDrafts(identity!, member!.id) }
   }
   get version(): string | undefined { return this.#version }
+  get document(): TeachingDocument { return this.#document }
   threadSnapshot(threadId: string): DocumentThread | undefined { return this.#canonical[threadId] }
+  anchorOf(threadId: string): DocumentThreadAnchor | undefined { const anchor = this.#anchors.get(threadId); return anchor ? structuredClone(anchor) : undefined }
+  placeAnchorOf(threadId: string): DocumentPlaceAnchor | undefined { const anchor = this.#anchors.get(threadId); return anchor && isDocumentPlaceAnchor(anchor) ? structuredClone(anchor) : undefined }
   refreshEditorCallbacks(): void { this.#publishView() }
   draftTargetState(target: CommentComposerTarget): 'current' | 'changed' | 'unavailable' {
     if (isNewCommentDraft(target)) {
@@ -109,7 +112,7 @@ export class DocumentThreadStore extends ThreadStore {
   }
   /** Verify both the canonical range and the actual native projection before a selection command. */
   newDraftPositions(target: NewCommentDraftTarget, editor: NativeDocumentEditor): { from: number, to: number } | undefined {
-    if (editor.prosemirrorView.isDestroyed || this.draftTargetState(target) !== 'current' || !target.anchor || !target.signature) return
+    if (editor.prosemirrorView.isDestroyed || this.draftTargetState(target) !== 'current' || !target.anchor || !isDocumentTextAnchor(target.anchor) || !target.signature) return
     const positions = (point: { blockId: string, offset: number }) => {
       const value = nativeTextPosition(editor, point)
       if (value === undefined) return
@@ -171,6 +174,14 @@ export class DocumentThreadStore extends ThreadStore {
   }
   createThread = async ({ initialComment, metadata }: { initialComment: NewComment, metadata?: unknown }): Promise<ThreadData> => {
     const effect = this.#act({ type: 'comment.create', content: this.#content(initialComment), metadata: jsonObject(metadata), commentMetadata: jsonObject(initialComment.metadata) }, initialComment.body)
+    return this.getThread(effect.threadId)
+  }
+  /** A block, optionally at one step; the same canonical action as a text comment, with a place anchor. */
+  createPlaceThread = async ({ blockId, stepId, body }: { blockId: string, stepId?: string, body: unknown }): Promise<ThreadData> => {
+    this.beforeAction?.()
+    const anchor: DocumentPlaceAnchor = { blockId, ...stepId === undefined ? {} : { stepId } }
+    validateDocumentCommentAnchor(this.#document, anchor)
+    const effect = this.#act({ type: 'comment.create', content: this.#content({ body }), anchor }, body)
     return this.getThread(effect.threadId)
   }
   addComment = async ({ threadId, comment }: { threadId: string, comment: NewComment }): Promise<CommentData> => {
@@ -286,7 +297,7 @@ export class DocumentThreadStore extends ThreadStore {
   restoreAnchors(editor: NativeDocumentEditor, transaction?: Transaction): void {
     const extension = editor.getExtension(CommentsExtension)!, name = extension.tiptapExtensions[0].name
     const ranges = [...this.#anchors].flatMap(([threadId, anchor]) => {
-      if (!anchor) return []
+      if (!anchor || !isDocumentTextAnchor(anchor)) return []
       try { validateDocumentCommentAnchor(this.#document, anchor) } catch { return [] }
       const position = (point: { blockId: string, offset: number }, association: number) => {
         if (!transaction) return nativeTextPosition(editor, point)
@@ -303,12 +314,21 @@ export class DocumentThreadStore extends ThreadStore {
       transaction.setMeta('addToHistory', false)
     })
   }
-  snapshot(editor: NativeDocumentEditor): Threads {
+  snapshot(editor: NativeDocumentEditor, source: TeachingDocument = this.#document): Threads {
     const positions = editor.getExtension(CommentsExtension)!.store.state.threadPositions
     const result = Object.fromEntries([...this.#threads.values()].map(thread => {
-      const position = positions.get(thread.id)
-      const from = position ? nativeTextPoint(editor, position.from) : undefined, to = position ? nativeTextPoint(editor, position.to) : undefined
-      const anchor = from && to ? { from: { blockId: from.blockId, offset: from.offset }, to: { blockId: to.blockId, offset: to.offset } } : undefined
+      const stored = this.#anchors.get(thread.id)
+      let anchor: DocumentThreadAnchor | undefined
+      if (stored && isDocumentPlaceAnchor(stored)) {
+        const degraded = degradeDocumentCommentAnchor(source, stored)
+        anchor = degraded && isDocumentPlaceAnchor(degraded) ? degraded : undefined
+      } else {
+        const position = positions.get(thread.id)
+        const from = position ? nativeTextPoint(editor, position.from) : undefined, to = position ? nativeTextPoint(editor, position.to) : undefined
+        anchor = from && to ? { from: { blockId: from.blockId, offset: from.offset }, to: { blockId: to.blockId, offset: to.offset } } : undefined
+      }
+      if (anchor) this.#anchors.set(thread.id, structuredClone(anchor))
+      else this.#anchors.delete(thread.id)
       const value: DocumentThread = {
         id: thread.id, type: 'thread', createdAt: thread.createdAt.toISOString(), updatedAt: thread.updatedAt.toISOString(), resolved: thread.resolved,
         ...thread.resolvedUpdatedAt ? { resolvedUpdatedAt: thread.resolvedUpdatedAt.toISOString() } : {}, ...thread.resolvedBy ? { resolvedBy: thread.resolvedBy } : {},

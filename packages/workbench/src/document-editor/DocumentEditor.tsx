@@ -64,6 +64,7 @@ export interface DocumentEditorProps {
   onError?(error: Error): void
   commentsPortal?: HTMLElement | null
   onCommentDraftRestore?(): void
+  onOpenComments?(): void
 }
 
 /** A source version reset replaces the editor; its own save receipts never replace it. */
@@ -122,7 +123,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
       if (!latest || current.current.getDocumentVersion && current.current.getDocumentVersion() === undefined) return
       syncComments()
       const document = nativeDocumentToProduct(editor.current.document, projection, latest)
-      const threads = comments.snapshot(editor.current)
+      const threads = comments.snapshot(editor.current, document)
       if (Object.keys(threads).length) document.comments = threads
       else delete document.comments
       current.current.onChange(document)
@@ -134,7 +135,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
   }
   return <BlockNoteSurface identity={props.identity} reset={props.reset} initialContent={projection.content} locale={props.locale} contentLang={props.document.metadata.lang || 'zh-CN'} readOnly={props.readOnly}
     resolveAssetURL={props.resolveAssetURL} uploadImage={props.uploadImage}
-    comments={comments} commentsPortal={props.commentsPortal} onCommentDraftRestore={() => current.current.onCommentDraftRestore?.()} nodeViews={props.nodeViews} onComposition={props.onComposition} onSelection={props.onSelection}
+    comments={comments} commentsPortal={props.commentsPortal} onCommentDraftRestore={() => current.current.onCommentDraftRestore?.()} onOpenComments={() => current.current.onOpenComments?.()} nodeViews={props.nodeViews} onComposition={props.onComposition} onSelection={props.onSelection}
     animationRequest={{
       available: () => !current.current.readOnly && binding.current === projection && active.current === projection && Boolean(animationRequests.current?.available()),
       request: value => {

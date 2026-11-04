@@ -1,17 +1,19 @@
-import { documentCommentTargets, isRecord, randomUUID, validateDocument, validateDocumentCommentAnchor } from '@lincyaw/kernel'
-import type { DocumentComment, DocumentThread, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
+import { documentAnchorKey, documentCommentTargets, isDocumentPlaceAnchor, isRecord, randomUUID, validateDocument, validateDocumentCommentAnchor } from '@lincyaw/kernel'
+import type { DocumentComment, DocumentThread, DocumentThreadAnchor, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
 import { DocumentDraftStore } from '../document-draft-store.ts'
 import { sha256 as tokenOf } from '../sha256.ts'
 import type { DraftStoreResult } from '../document-draft-store.ts'
 
 export interface CommentDraftTarget { threadId: string, commentId?: string, threadCreatedAt: string, commentCreatedAt?: string, baseline?: string }
-export interface NewCommentDraftTarget { kind: 'create', intentId: string, documentId: string, anchor?: DocumentThread['anchor'], signature?: string }
+export interface NewCommentDraftTarget { kind: 'create', intentId: string, documentId: string, anchor?: DocumentThreadAnchor, signature?: string }
 export type CommentComposerTarget = CommentDraftTarget | NewCommentDraftTarget
 export const isNewCommentDraft = (target: CommentComposerTarget): target is NewCommentDraftTarget => 'kind' in target && target.kind === 'create'
-export function newCommentDraftSignature(document: TeachingDocument, anchor: DocumentThread['anchor']): string | undefined {
+export function newCommentDraftSignature(document: TeachingDocument, anchor: DocumentThreadAnchor | undefined): string | undefined {
   if (!anchor) return
   try {
     validateDocumentCommentAnchor(document, anchor)
+    // A place identity cannot drift like a text offset; its presence is the whole signature.
+    if (isDocumentPlaceAnchor(anchor)) return documentAnchorKey(anchor)
     const targets = documentCommentTargets(document), from = targets.get(anchor.from.blockId)!, to = targets.get(anchor.to.blockId)!
     return JSON.stringify([...targets].filter(([, value]) => value.order >= from.order && value.order <= to.order).map(([id, value]) => ({ id, text: value.text })))
   } catch { return }
@@ -51,14 +53,17 @@ const markerOf = (scope: string, value: CommentDraftReference) => `${SETTLED}${J
 export const commentDraftBaseline = (comment: DocumentComment) => JSON.stringify({ userId: comment.userId, content: comment.content })
 const committedValue = (comment: DocumentComment) => JSON.stringify({ id: comment.id, userId: comment.userId, createdAt: comment.createdAt, updatedAt: comment.updatedAt, content: comment.content })
 export const sameCommentDraftTarget = (a: CommentComposerTarget, b: CommentComposerTarget) => isNewCommentDraft(a) || isNewCommentDraft(b)
-  ? isNewCommentDraft(a) && isNewCommentDraft(b) && a.documentId === b.documentId && a.signature === b.signature && JSON.stringify(a.anchor) === JSON.stringify(b.anchor)
+  ? isNewCommentDraft(a) && isNewCommentDraft(b) && a.documentId === b.documentId && a.signature === b.signature && documentAnchorKey(a.anchor) === documentAnchorKey(b.anchor)
   : a.threadId === b.threadId && a.commentId === b.commentId && a.threadCreatedAt === b.threadCreatedAt && a.commentCreatedAt === b.commentCreatedAt
 const point = (value: unknown): boolean => isRecord(value) && typeof value.blockId === 'string' && value.blockId.length > 0 && value.blockId.length <= 205 && Number.isSafeInteger(value.offset) && Number(value.offset) >= 0
+const place = (value: unknown): boolean => isRecord(value) && typeof value.blockId === 'string' && value.blockId.length > 0 && value.blockId.length <= 205
+  && (value.stepId === undefined || typeof value.stepId === 'string' && value.stepId.length > 0 && value.stepId.length <= 205)
 function targetShape(value: unknown): boolean {
   if (!isRecord(value)) return false
   if (value.kind === 'create') return typeof value.intentId === 'string' && value.intentId.length > 0 && value.intentId.length <= 200
     && typeof value.documentId === 'string' && value.documentId.length > 0 && value.documentId.length <= 200
-    && (value.anchor === undefined && value.signature === undefined || isRecord(value.anchor) && point(value.anchor.from) && point(value.anchor.to) && typeof value.signature === 'string')
+    && (value.anchor === undefined && value.signature === undefined || isRecord(value.anchor) && typeof value.signature === 'string'
+      && (point(value.anchor.from) && point(value.anchor.to) || place(value.anchor)))
   return typeof value.threadId === 'string' && typeof value.threadCreatedAt === 'string'
     && (value.commentId === undefined || typeof value.commentId === 'string' && typeof value.commentCreatedAt === 'string' && typeof value.baseline === 'string')
 }
@@ -225,7 +230,7 @@ export class CommentDrafts {
     const thread = this.#document.comments?.[created ? record.pending.threadId ?? '' : target.threadId]
     const comment = thread?.comments.find(value => value.id === record.pending!.commentId)
     return Boolean(thread && !thread.deletedAt && thread.createdAt === (created ? record.pending.threadCreatedAt : target.threadCreatedAt)
-      && (!created || JSON.stringify(thread.anchor) === JSON.stringify(target.anchor)) && comment && !comment.deletedAt && committedValue(comment) === record.pending.value)
+      && (!created || documentAnchorKey(thread.anchor) === documentAnchorKey(target.anchor)) && comment && !comment.deletedAt && committedValue(comment) === record.pending.value)
   }
   synchronize(document: TeachingDocument, version: string | undefined, acknowledged = false): void {
     this.#document = document; this.#version = version; this.#acknowledged = acknowledged

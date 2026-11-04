@@ -82,6 +82,8 @@ export interface BlockNoteSurfaceProps {
   commentsPortal?: HTMLElement | null
   getPositionToken?(): string | undefined
   onCommentDraftRestore?(): void
+  /** The author asked to see the comments pane, e.g. after saving a place comment. */
+  onOpenComments?(): void
   onReady?(editor: NativeDocumentEditor | undefined): void
   onComposition?(composing: boolean): void
   /** Shows a page of this document from an in-document link; false when none matches. */
@@ -176,7 +178,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
       stopCommentHistory?.(); current.current.onReady?.(undefined)
     }
   }, [editor])
-  return <DOCUMENT_EDITOR_LOCALE.Provider value={props.locale}><DOCUMENT_LINKS.Provider value={links}><DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}><COMMENT_EDITOR_CONTEXT.Provider value={props.comments ? { store: props.comments, locale: props.locale, sidebar: Boolean(props.commentsPortal), getPositionToken: () => current.current.getPositionToken?.(), onDraftRestore: () => current.current.onCommentDraftRestore?.() } : undefined}>
+  return <DOCUMENT_EDITOR_LOCALE.Provider value={props.locale}><DOCUMENT_LINKS.Provider value={links}><DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}><COMMENT_EDITOR_CONTEXT.Provider value={props.comments ? { store: props.comments, locale: props.locale, sidebar: Boolean(props.commentsPortal), readOnly: Boolean(props.readOnly), getPositionToken: () => current.current.getPositionToken?.(), onDraftRestore: () => current.current.onCommentDraftRestore?.(), openComments: () => current.current.onOpenComments?.() } : undefined}>
     <div className="pm-document-editor pm-ui-block-editor pm-ui" data-document-editor={props.identity}
       onDragEnter={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
       onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}

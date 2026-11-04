@@ -74,7 +74,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 - **身份**：新实体 ID、批注作者与日期由服务在预检时固定，重试不生成第二组。复制时共享素材与定义保留引用。
 - **删除**：页面与批注删除的 apply 另需 `confirmDeletion: true`。保留讲稿中的 cue 指向被删内容时返回 `page-referenced`。删页清除独占的块、步骤、讲稿与片段，保留共享讲稿、素材、定义与批注线程；最后一页留一个空步骤。
-- **批注**：内容是 `RichTextNode[]`，不暴露 BlockNote JSON。锚点 `{ blockId, offset }` 按 UTF-16 计，非法返回 422；已有线程无法精确映射时保留内容并报告 `anchorDetached`。owner 可管理他人批注，editor 只改自己的。
+- **批注**：内容是 `RichTextNode[]`，不暴露 BlockNote JSON。锚点是文本范围（`from`/`to` 两个 `{ blockId, offset }`，按 UTF-16 计），或位置 `{ blockId, stepId }`（块在该步的呈现；省略 `stepId` 表示整块）。位置的步骤必须属于块所在的 section；步骤失效时锚点降为块级，块失效时线程保留内容并报告 `anchorDetached`。非法返回 422。owner 可管理他人批注，editor 只改自己的。
 - **音色**：`voice.set` 的 scope 为 document、page、step 或 steps，source 为 TTS、none 或 null（移除该槽位）。默认保留下层覆盖，`replaceOverrides` 明确替换。录音来源只经 `adopt_recording` 设置。
 - **组件参数**：`changes` 对路径 `set` 或 `remove`，只允许 Schema 声明的可编辑字段，未修改的字段保留。步骤参数是顶层浅覆盖，改子字段会物化整个顶层值，后继继承影响由 `read_authoring_action_impact` 分页读取。`component.definition.use` 只选择已有 Definition。
 - **字幕时间**：`caption.timing.set` 需要当前 IR 与确认时长，以 `read_production_plan` 的 `ProductionStep.captionTiming` 为基准提交步内起止时间，只改字幕映射。`reset` 不需编译。

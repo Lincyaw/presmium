@@ -107,7 +107,7 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 
 ### 2.15 批注
 
-`comments` 保存 `DocumentThread`，锚点是两个 `DocumentTextPoint { blockId, offset }`，`blockId` 是富文本或代码的稳定 ID，或 `page:<Section ID>`。
+`comments` 保存 `DocumentThread`。锚点有两种：文本范围的两个 `DocumentTextPoint { blockId, offset }`（`blockId` 是富文本或代码的稳定 ID，或 `page:<Section ID>`），或位置 `{ blockId, stepId }`（块在该步的呈现；省略 `stepId` 表示整块）。位置的步骤必须属于块所在的 section。块还在而步骤不在时，锚点降为 `{ blockId }`；块也不在时线程保留内容并变为无锚点。
 
 ### 2.16 未知数据与迁移
 

@@ -1,3 +1,4 @@
+import { isDocumentPlaceAnchor } from './contracts/document.ts'
 import type { ListItemNode, RichTextNode, TableCellNode, TableRowNode, TeachingDocument } from './contracts/document.ts'
 import type { DocumentPageDeletionImpact, DocumentPageIds } from './contracts/authoring.ts'
 import type { PageDeletePlan } from './contracts/workspace.ts'
@@ -89,7 +90,13 @@ export function pageDeletionImpact(document: TeachingDocument, section: string):
   for (const id of blocks) { const block = document.blocks[id]; if (block?.type === 'text') block.content.forEach(rich) }
   return { sectionId: section, retainedEmpty: document.sectionOrder.length === 1, blocks: [...blocks], steps: [...steps], narrations: [...removed], retainedNarrations: [...candidates].filter(id => !removed.has(id)), cues,
     clips: document.production.mediaClips.filter(clip => steps.has(clip.attachment.stepId)).map(clip => clip.id),
-    detachedComments: Object.values(document.comments ?? {}).filter(thread => thread.anchor && (targets.has(thread.anchor.from.blockId) || targets.has(thread.anchor.to.blockId))).map(thread => thread.id), references }
+    detachedComments: Object.values(document.comments ?? {}).filter(thread => {
+      const anchor = thread.anchor
+      if (!anchor) return false
+      return isDocumentPlaceAnchor(anchor)
+        ? targets.has(anchor.blockId) || Boolean(anchor.stepId && steps.has(anchor.stepId))
+        : targets.has(anchor.from.blockId) || targets.has(anchor.to.blockId)
+    }).map(thread => thread.id), references }
 }
 
 export function pageDeletion(document: TeachingDocument, directory: string, version: string, section: string): PageDeletePlan {

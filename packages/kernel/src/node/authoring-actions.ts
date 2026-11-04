@@ -24,7 +24,7 @@ export const DOCUMENT_AUTHORING_ACTION_SCHEMA: Schema = {
   ...object({ id, source: DOCUMENT_PAGE_DUPLICATION_SCHEMA.properties.source as unknown as Schema, action: { $ref: '#/$defs/AuthoringAction' } }),
   $defs: { ...(structuredClone(DOCUMENT_JSON_SCHEMA) as Exclude<Schema, boolean>).$defs,
     AuthoringAction: { oneOf: [
-      action('comment.create', { content, anchor: { oneOf: [{ type: 'null' }, object({ from: { $ref: '#/$defs/TextPoint' }, to: { $ref: '#/$defs/TextPoint' } })] }, metadata, commentMetadata: metadata }, ['content', 'anchor']),
+      action('comment.create', { content, anchor: { oneOf: [{ type: 'null' }, object({ from: { $ref: '#/$defs/TextPoint' }, to: { $ref: '#/$defs/TextPoint' } }), object({ blockId: id, stepId: id }, ['blockId'])] }, metadata, commentMetadata: metadata }, ['content', 'anchor']),
       action('comment.reply', { threadId: id, content, metadata }, ['threadId', 'content']),
       action('comment.update', { threadId: id, commentId: id, content, metadata }, ['threadId', 'commentId', 'content']),
       action('comment.react', { threadId: id, commentId: id, emoji: { type: 'string', minLength: 1, maxLength: 32 }, active: { type: 'boolean' } }),

@@ -1,6 +1,10 @@
 import { hasRole } from './access.ts'
 import type { DocumentCommentAction, DocumentCommentContext, DocumentCommentEffect } from './contracts/document-comments.ts'
-import type { DocumentComment, DocumentThread, InlineNode, JsonObject, ListItemNode, RichTextNode, TableCellNode, TableRowNode, TeachingDocument } from './contracts/document.ts'
+import { isDocumentPlaceAnchor, isDocumentTextAnchor } from './contracts/document.ts'
+import { documentBlockSection, documentCommentTargets } from './document-places.ts'
+import type { DocumentComment, DocumentThread, DocumentThreadAnchor, JsonObject, ListItemNode, RichTextNode, TableCellNode, TableRowNode, TeachingDocument } from './contracts/document.ts'
+
+export { documentCommentTargets, isDocumentTextLink } from './document-places.ts'
 
 export class DocumentCommentError extends Error {
   readonly status: number
@@ -8,45 +12,19 @@ export class DocumentCommentError extends Error {
 }
 function fail(status: number, code: string): never { throw new DocumentCommentError(status, code) }
 
-/** Canonical anchor v1 expands only nonempty styled-text links; other inline values are atoms. */
-export function isDocumentTextLink(node: InlineNode): node is Extract<InlineNode, { type: 'link' }> & { children: Extract<InlineNode, { type: 'text' | 'break' }>[] } {
-  return node.type === 'link' && node.children.length > 0 && node.children.every(child => child.type === 'text' || child.type === 'break')
-}
-function inlineText(nodes: readonly InlineNode[]): string {
-  return nodes.map(node => node.type === 'text' ? node.text : node.type === 'break' ? '\n' : isDocumentTextLink(node) ? inlineText(node.children) : '\uFFFC').join('')
-}
-
-/** Only addressable canonical text identities, in native document order; opaque data is never traversed. */
-export function documentCommentTargets(document: TeachingDocument): Map<string, { order: number, text: string }> {
-  const targets = new Map<string, { order: number, text: string }>()
-  const add = (id: string, text: string) => { targets.set(id, { order: targets.size, text }) }
-  const rich = (node: RichTextNode): void => {
-    if (node.type === 'paragraph' || node.type === 'heading') add(node.id, inlineText(node.children))
-    else if (node.type === 'code') add(node.id, node.value)
-    else if (node.type === 'list') for (const item of node.children) {
-      const [first, ...rest] = item.children
-      add(item.id, first?.type === 'paragraph' ? inlineText(first.children) : '')
-      ;(first?.type === 'paragraph' ? rest : item.children).forEach(rich)
-    }
-    else if (node.type === 'blockquote') {
-      const [first, ...rest] = node.children
-      if (first?.type === 'paragraph') { add(node.id, inlineText(first.children)); rest.forEach(rich) }
-      else node.children.forEach(rich)
-    } else if (node.type === 'table') for (const row of node.children) for (const cell of row.children) add(cell.id, inlineText(cell.children))
-  }
-  const block = (id: string): void => {
-    const value = document.blocks[id]
-    if (value?.type === 'text') value.content.forEach(rich)
-    else if (value?.type === 'code' && value.value !== undefined) add(id, value.value)
-    else if (value?.type === 'container' || value?.type === 'component') value.children?.forEach(block)
-  }
-  for (const id of document.sectionOrder) { const page = document.sections[id]!; add(`page:${id}`, page.title); page.children.forEach(block) }
-  return targets
-}
-
 /** No ordinal, offset clamping, surrogate splitting or guessed fallback identity. */
 export function validateDocumentCommentAnchor(document: TeachingDocument, anchor: DocumentThread['anchor']): void {
   if (!anchor) return
+  if (isDocumentPlaceAnchor(anchor)) {
+    if (!Object.hasOwn(document.blocks, anchor.blockId)) fail(422, 'comment-anchor-target-unavailable')
+    if (anchor.stepId !== undefined) {
+      const step = Object.hasOwn(document.steps, anchor.stepId) ? document.steps[anchor.stepId] : undefined
+      const section = step ? document.sections[step.sectionId] : undefined
+      if (!step || !section || !section.stepOrder.includes(anchor.stepId) || step.sectionId !== documentBlockSection(document, anchor.blockId)) fail(422, 'comment-anchor-target-unavailable')
+    }
+    return
+  }
+  if (!isDocumentTextAnchor(anchor)) fail(422, 'comment-anchor-target-unavailable')
   const targets = documentCommentTargets(document), a = targets.get(anchor.from.blockId), b = targets.get(anchor.to.blockId)
   if (!a || !b) fail(422, 'comment-anchor-target-unavailable')
   for (const [point, target] of [[anchor.from, a], [anchor.to, b]] as const) {
@@ -55,6 +33,21 @@ export function validateDocumentCommentAnchor(document: TeachingDocument, anchor
       || offset > 0 && offset < target.text.length && /[\uD800-\uDBFF]/.test(target.text[offset - 1]!) && /[\uDC00-\uDFFF]/.test(target.text[offset]!)) fail(422, 'comment-anchor-offset-invalid')
   }
   if (a.order > b.order || a.order === b.order && anchor.from.offset >= anchor.to.offset) fail(422, 'comment-anchor-range-invalid')
+}
+
+/**
+ * The strongest still-valid anchor. A place whose step no longer exists keeps the block; a missing block or an
+ * unmappable text range leaves the discussion explicitly unanchored rather than silently pointing elsewhere.
+ */
+export function degradeDocumentCommentAnchor(document: TeachingDocument, anchor: DocumentThreadAnchor | undefined): DocumentThreadAnchor | undefined {
+  if (!anchor) return undefined
+  try { validateDocumentCommentAnchor(document, anchor); return anchor }
+  catch (error) { if (!(error instanceof DocumentCommentError) || error.status !== 422) throw error }
+  if (isDocumentPlaceAnchor(anchor) && anchor.stepId !== undefined && Object.hasOwn(document.blocks, anchor.blockId)) {
+    const place: DocumentThreadAnchor = { blockId: anchor.blockId }
+    try { validateDocumentCommentAnchor(document, place); return place } catch { /* The block itself is not addressable. */ }
+  }
+  return undefined
 }
 
 /** Shared native/editor permissions: editors may delete any discussion, but edit their own comment; a document owner may manage earlier authors. */

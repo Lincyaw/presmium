@@ -5,7 +5,7 @@ import { components } from '@blocknote/mantine'
 import { ComponentsContext, FloatingComposer, PositionPopover, useBlockNoteEditor, useComponentsContext, useCreateBlockNote, useDictionary, useEditorState, useExtension, useExtensionState } from '@blocknote/react'
 import type { ComponentProps } from '@blocknote/react'
 import type { BlockNoteEditor } from '@blocknote/core'
-import { randomUUID } from '@lincyaw/kernel'
+import { isDocumentPlaceAnchor, randomUUID } from '@lincyaw/kernel'
 import { TextSelection } from '@tiptap/pm/state'
 import { COMMENT_EDITOR_CONTEXT, DraftChoices } from './DocumentComments.tsx'
 import { isNewCommentDraft, sameCommentDraftTarget } from './comment-drafts.ts'
@@ -212,7 +212,7 @@ export function DocumentNewCommentRecovery() {
   const active = useRef(true)
   useLayoutEffect(() => { active.current = true; return () => { active.current = false } }, [owner?.editor])
   const state = useSyncExternalStore(drafts?.subscribe ?? emptySubscribe, drafts?.snapshot ?? (() => emptyState)), t = DOCUMENT_EDITOR_MESSAGES[context?.locale ?? 'en']
-  const candidates = state.candidates.filter(value => isNewCommentDraft(value.target))
+  const candidates = state.candidates.filter(value => isNewCommentDraft(value.target) && !(value.target.anchor && isDocumentPlaceAnchor(value.target.anchor)))
   if (!drafts || !owner) return null
   return <>{owner.failure && <PmNotice tone="warn">{t.commentTargetUnavailable}</PmNotice>}<DraftChoices candidates={candidates} preview
     canRecover={candidate => isNewCommentDraft(candidate.target) && Boolean(context?.store.newDraftPositions(candidate.target, owner.editor))}

@@ -11,3 +11,10 @@
 .pm-document-editor__fallback { display: grid; gap: var(--pm-space-2); min-width: 0; }
 .pm-document-editor__fallback p { margin: 0; white-space: pre-wrap; }
 .pm-document-editor__comment-tools { position: sticky; top: var(--pm-space-2); z-index: var(--pm-z-site-header); width: fit-content; margin-inline-start: var(--pm-space-5); }
+
+/* A place comment's popover: the comment editor, a position picker and its actions. */
+.pm-document-place-comment { width: min(var(--pm-comment-width), calc(100vw - var(--pm-space-8))); }
+.pm-document-place-comment__body { display: grid; gap: var(--pm-space-2); min-width: 0; }
+.pm-document-place-comment__editor { min-width: 0; }
+.pm-document-place-comment__editor .bn-editor { max-height: min(var(--pm-comment-editor-max-height), 45vh); overflow-y: auto; overflow-wrap: anywhere; }
+.pm-document-place-comment__actions { display: flex; justify-content: end; gap: var(--pm-space-2); }

@@ -1,6 +1,7 @@
 import { applyDocumentCaptionTiming } from './document-caption-timings.ts'
 import { hasRole } from './access.ts'
-import { applyDocumentCommentAction, DocumentCommentError, validateDocumentCommentAnchor } from './document-comments.ts'
+import { applyDocumentCommentAction, degradeDocumentCommentAnchor, DocumentCommentError, validateDocumentCommentAnchor } from './document-comments.ts'
+import { documentAnchorKey } from './document-places.ts'
 import { changeDocumentVoice, documentVoiceStepIds, previewDocumentVoiceChange } from './document-voices.ts'
 import { applyDocumentComponentAction } from './document-components.ts'
 import type { DocumentAuthoringAction, DocumentAuthoringActionEffect } from './contracts/authoring-actions.ts'
@@ -29,17 +30,20 @@ export function applyDocumentAuthoringAction(document: TeachingDocument, action:
     return { content, effect: { kind: 'voice', scope: action.scope.kind, value: previewDocumentVoiceChange(document, action.scope, action.source, { replaceOverrides: action.replaceOverrides }), recordings } }
   }
   if (action.type === 'comment.create') validateDocumentCommentAnchor(document, action.anchor ?? undefined)
-  let source = document.comments ?? {}, detached = false
+  let source = document.comments ?? {}, detached = false, degraded = false
   if (action.type !== 'comment.create' && Object.hasOwn(source, action.threadId)) {
     const thread = source[action.threadId]!
-    try { validateDocumentCommentAnchor(document, thread.anchor) } catch (error) {
-      if (!(error instanceof DocumentCommentError) || error.status !== 422) throw error
+    const anchor = degradeDocumentCommentAnchor(document, thread.anchor)
+    if (thread.anchor && !anchor) {
       const { anchor: _anchor, ...unanchored } = thread
       source = { ...source, [thread.id]: unanchored }; detached = true
+    } else if (anchor && documentAnchorKey(anchor) !== documentAnchorKey(thread.anchor)) {
+      source = { ...source, [thread.id]: { ...thread, anchor } }; degraded = true
     }
   }
   const { threads, effect } = applyDocumentCommentAction(source, action, context)
   if (detached) { effect.anchorDetached = true; effect.changed = true }
+  else if (degraded) effect.changed = true
   const content = { ...document }
   if (Object.keys(threads).length) content.comments = threads
   else delete content.comments

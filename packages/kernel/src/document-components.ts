@@ -1,6 +1,7 @@
 import jsonPatch from 'fast-json-patch'
 import type { Operation } from 'fast-json-patch'
 import { validateDocument } from './document.ts'
+import { documentBlockSection } from './document-places.ts'
 import { documentParameterAccess } from './parameters.ts'
 import { DOCUMENT_PARAMETER_MAX_CHANGES, DOCUMENT_PARAMETER_MAX_PATH_DEPTH } from './contracts/authoring-actions.ts'
 import type { DocumentComponentAction, DocumentComponentEffect, DocumentParameterChange } from './contracts/authoring-actions.ts'
@@ -26,18 +27,9 @@ function component(document: TeachingDocument, id: string): ComponentBlock {
 }
 export function documentComponentSection(document: TeachingDocument, blockId: string): string {
   component(document, blockId)
-  for (const sectionId of document.sectionOrder) {
-    const pending = [...document.sections[sectionId]!.children], seen = new Set<string>()
-    while (pending.length) {
-      const id = pending.pop()!
-      if (id === blockId) return sectionId
-      if (seen.has(id)) continue
-      seen.add(id)
-      const block = document.blocks[id]
-      if (block?.type === 'container' || block?.type === 'component') pending.push(...block.children ?? [])
-    }
-  }
-  return fail(422, 'component-block-owner-missing', { blockId })
+  const section = documentBlockSection(document, blockId)
+  if (!section) return fail(422, 'component-block-owner-missing', { blockId })
+  return section
 }
 function stepOf(document: TeachingDocument, stepId: string, sectionId: string) {
   const step = own(document.steps, stepId) ? document.steps[stepId] : undefined

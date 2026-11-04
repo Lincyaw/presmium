@@ -37,7 +37,7 @@ const zh = {
   models: '设置模型',
   helpItems: [
     '直接在文稿中输入即可修改。修改自动保存，文稿上方显示“已保存”。',
-    '选中文字会出现格式工具栏：段落样式、加粗、对齐、颜色、“插入链接”与“新建批注”。“新建批注”在选中的文字上留下批注，“批注”窗格列出全部批注。',
+    '选中文字会出现格式工具栏：段落样式、加粗、对齐、颜色、“插入链接”与“新建批注”。“新建批注”在选中的文字上留下批注，“批注”窗格列出全部批注。动画、图表的预览工具栏里有“本步批注”，可以对整个内容块或其中一步批注。',
     '鼠标移到一段内容上，旁边的“插入内容块”可插入标题、列表、表格、图片等内容，“打开内容块菜单”可删除这一段或修改它的颜色。',
     '“导航窗格”列出全部页面：“新建页面”添加一页，页面旁的“更多”可以重命名、复制、上移、下移或删除这一页。',
     '“撤消”（{undo}）与“恢复”（{redo}）逐步撤消或恢复修改。“版本历史”列出保存过的每次修改，“撤消此更改”单独撤消其中一次。',
@@ -109,7 +109,7 @@ const en: ClientMessages = {
   models: 'Set Up a Model',
   helpItems: [
     'Type directly in the document to change it. Changes save automatically, and the top of the document shows Saved.',
-    'Select text to show the formatting toolbar: paragraph style, Bold, alignment, Colors, Insert Link, and New Comment. New Comment leaves a comment on the selected text; the Comments pane lists them all.',
+    'Select text to show the formatting toolbar: paragraph style, Bold, alignment, Colors, Insert Link, and New Comment. New Comment leaves a comment on the selected text; the Comments pane lists them all. An animation or chart preview also has Comment on step, for the whole content block or one step.',
     'Point at a paragraph: Insert Block, beside it, inserts a heading, list, table, picture, and more; Open Block Menu deletes the paragraph or changes its colors.',
     'The Navigation Pane lists the pages: New Page adds one, and More beside a page renames, duplicates, moves, or deletes it.',
     'Undo ({undo}) and Redo ({redo}) step back and forth through your changes. Version History lists every saved change; Undo This Change reverses one of them.',

@@ -1430,9 +1430,24 @@
   .pm-ui-block-editor .bn-code-block-source-popup-body > pre { font-size: var(--pm-text-lg); }
 }
 
-.pm-ui-block-editor .bn-comment-editor.bn-container {
+/* A standalone comment editor (a draft preview or a place composer) has no BlockNoteView theme prop. */
+.pm-ui-block-editor :is(.bn-comment-editor.bn-container, .bn-root.bn-container) {
+  color-scheme: inherit;
   --bn-colors-editor-text: var(--pm-color-ink);
   --bn-colors-editor-background: var(--pm-color-surface);
+  --bn-colors-menu-text: var(--pm-color-ink);
+  --bn-colors-menu-background: var(--pm-color-surface);
+  --bn-colors-tooltip-text: var(--pm-color-ink);
+  --bn-colors-tooltip-background: var(--pm-color-surface);
+  --bn-colors-hovered-text: var(--pm-color-ink);
+  --bn-colors-hovered-background: var(--pm-color-sunk);
+  --bn-colors-selected-text: var(--pm-color-accent);
+  --bn-colors-selected-background: var(--pm-color-accent-soft);
+  --bn-colors-disabled-text: var(--pm-color-muted);
+  --bn-colors-disabled-background: var(--pm-color-sunk);
+  --bn-colors-border: var(--pm-color-line);
+  --bn-colors-shadow: var(--pm-color-backdrop);
+  --bn-colors-side-menu: var(--pm-color-muted);
 }
 
 .pm-ui-block-editor .bn-comment-editor .bn-inline-content { color: inherit; }

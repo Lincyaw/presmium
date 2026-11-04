@@ -1,23 +1,26 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { FocusEvent, ReactNode } from 'react'
-import { randomUUID } from '@lincyaw/kernel'
+import { documentAnchorOrder, isDocumentPlaceAnchor, randomUUID } from '@lincyaw/kernel'
+import type { DocumentPlaceAnchor, TeachingDocument } from '@lincyaw/kernel'
 import { CommentEditorSubmitExtension, CommentsExtension } from '@blocknote/core/comments'
 import { components } from '@blocknote/mantine'
 import { FloatingThreadController, getReferenceText, Thread, useBlockNoteEditor, useCreateBlockNote, useEditorState, useExtension, useExtensionState, useThreads } from '@blocknote/react'
 import type { ComponentProps, ThreadProps } from '@blocknote/react'
 import type { Locale } from '../messages.ts'
 import { PmButton, PmEmpty, PmNotice, PmSelect } from '../components.tsx'
+import { useWorkbenchState } from '../context.tsx'
 import { enterSubmits } from './comments.ts'
 import type { DocumentCommentEditorHandle, DocumentThreadStore } from './comments.ts'
 import type { CommentDrafts, CommentDraftCandidate, CommentDraftRecord, CommentDraftReference, CommentDraftOperation } from './comment-drafts.ts'
 import { isNewCommentDraft, sameCommentDraftTarget } from './comment-drafts.ts'
-import { createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
+import { createRichProjection, fallbackText, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
 import { commentEditorSchema } from './schema.tsx'
 import type { DocumentEditorBlock } from './schema.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
+import { componentDefinitionLabel } from './component-label.ts'
 import { commentFloating } from './popover.tsx'
 
-export const COMMENT_EDITOR_CONTEXT = createContext<{ store: DocumentThreadStore, locale: Locale, sidebar: boolean, getPositionToken?(): string | undefined, onDraftRestore?(): void } | undefined>(undefined)
+export const COMMENT_EDITOR_CONTEXT = createContext<{ store: DocumentThreadStore, locale: Locale, sidebar: boolean, readOnly?: boolean, getPositionToken?(): string | undefined, onDraftRestore?(): void, openComments?(): void } | undefined>(undefined)
 const THREAD_CONTEXT = createContext<string | undefined>(undefined)
 const emptySubscribe = () => () => {}
 const emptyState = { candidates: [], pending: false, failed: false, reading: false } as const
@@ -33,12 +36,14 @@ export function DocumentCommentThread(props: ThreadProps) {
 
 /** Keep the native controller and reply editor while body selection owns the pointer. */
 export function DocumentFloatingThreadController() {
-  const editor = useBlockNoteEditor(), { selectedThreadId } = useExtensionState(CommentsExtension)
+  const editor = useBlockNoteEditor(), { selectedThreadId, threadPositions } = useExtensionState(CommentsExtension)
   const empty = useEditorState({ editor, on: 'selection', selector: ({ editor }) => editor.prosemirrorState.selection.empty })
   const [selecting, setSelecting] = useState(false)
   const blocked = selecting || !empty
+  // A place thread has no text mark; it belongs to the sidebar only and must not open a floating card.
+  const positioned = Boolean(selectedThreadId && threadPositions.has(selectedThreadId))
   const shown = useRef(false), thread = useRef(selectedThreadId)
-  shown.current = Boolean(selectedThreadId) && !blocked
+  shown.current = positioned && !blocked
   thread.current = selectedThreadId
   // The pointer that last pressed commented text, and the line of the thread chosen from it (the first line without one).
   const point = useRef<{ x: number, y: number }>(), line = useRef<{ thread: string, index: number }>()
@@ -102,16 +107,60 @@ export function DocumentFloatingThreadController() {
     return rects[Math.min(line.current.index, rects.length - 1)]
   }), [editor])
   return <FloatingThreadController floatingThread={DocumentCommentThread} floatingUIOptions={{
-    useFloatingOptions: { ...floating, open: Boolean(selectedThreadId) && !blocked },
+    useFloatingOptions: { ...floating, open: positioned && !blocked },
     elementProps: { className: blocked ? 'pm-ui-comment-hidden' : undefined },
   }} />
+}
+
+function placeReference(document: TeachingDocument | undefined, anchor: DocumentPlaceAnchor, t: typeof DOCUMENT_EDITOR_MESSAGES['zh-CN']): string {
+  if (!document) return ''
+  const block = document.blocks[anchor.blockId]
+  let label: string
+  if (block?.type === 'component') {
+    const definition = document.definitions[block.definitionId]
+    const author = typeof block.parameters.title === 'string' ? block.parameters.title.trim() : ''
+    const data = definition?.data && typeof definition.data.title === 'string' ? definition.data.title.trim() : ''
+    const schema = definition && typeof definition.parameterSchema === 'object' && typeof definition.parameterSchema.title === 'string' ? definition.parameterSchema.title.trim() : ''
+    const name = author || data || schema || (definition ? componentDefinitionLabel(definition) : block.definitionId)
+    label = definition?.kind === 'scene' ? t.animation(name) : t.component(name)
+  } else if (block?.type === 'code') label = t.codeReference(block.title ?? block.origin?.anchor ?? block.language)
+  else if (block?.type === 'image') label = block.alt || t.block
+  else if (block?.type === 'text') label = (block.content[0] ? Array.from(fallbackText(block.content[0]).replace(/\s+/g, ' ').trim()).slice(0, 40).join('') : '') || t.block
+  else if (block?.type === 'container') label = block.properties.title || t.block
+  else label = t.block
+  if (anchor.stepId === undefined) return t.placeCommentReference(label)
+  const step = document.steps[anchor.stepId], section = step ? document.sections[step.sectionId] : undefined
+  return t.placeCommentReference(label, step && section ? section.stepOrder.indexOf(step.id) + 1 : 0)
 }
 
 /** Native Thread composition, with the same public focus/blur and position ordering as the sidebar. */
 export function DocumentThreadsSidebar({ children }: { children?: ReactNode }) {
   const editor = useBlockNoteEditor(), comments = useExtension(CommentsExtension), threads = useThreads()
   const { selectedThreadId, threadPositions } = useExtensionState(CommentsExtension)
-  const ordered = [...threads.values()].sort((a, b) => (threadPositions.get(a.id)?.from ?? Number.MAX_VALUE) - (threadPositions.get(b.id)?.from ?? Number.MAX_VALUE))
+  const context = useContext(COMMENT_EDITOR_CONTEXT), t = DOCUMENT_EDITOR_MESSAGES[context?.locale ?? 'en']
+  const document = useWorkbenchState(state => state.authoring?.content) ?? context?.store.document
+  const places = useMemo(() => document ? documentAnchorOrder(document) : new Map<string, number>(), [document])
+  const place = (threadId: string): number => {
+    const anchor = context?.store.anchorOf(threadId)
+    if (!anchor) return Number.MAX_VALUE
+    if (isDocumentPlaceAnchor(anchor)) {
+      const order = places.get(anchor.blockId)
+      const step = anchor.stepId === undefined ? undefined : document?.steps[anchor.stepId]
+      const section = step && document ? document.sections[step.sectionId] : undefined
+      return order === undefined ? Number.MAX_VALUE : order * 1_000_000 + (step && section ? section.stepOrder.indexOf(step.id) : 0)
+    }
+    const order = places.get(anchor.from.blockId)
+    return order === undefined ? Number.MAX_VALUE : order * 1_000_000 + Math.min(999_999, anchor.from.offset)
+  }
+  const reference = (threadId: string): string | undefined => {
+    const anchor = context?.store.anchorOf(threadId)
+    return anchor && isDocumentPlaceAnchor(anchor) ? placeReference(document, anchor, t) : getReferenceText(editor, threadPositions.get(threadId))
+  }
+  const orphaned = (threadId: string): boolean => {
+    const anchor = context?.store.anchorOf(threadId)
+    return !(anchor && isDocumentPlaceAnchor(anchor)) && !threadPositions.has(threadId)
+  }
+  const ordered = [...threads.values()].sort((a, b) => place(a.id) - place(b.id) || a.createdAt.getTime() - b.createdAt.getTime())
   const focus = (id: string, event: FocusEvent) => { if (!(event.target as HTMLElement).closest('.bn-action-toolbar')) comments.selectThread(id) }
   const blur = (event: FocusEvent) => {
     const next = event.relatedTarget
@@ -119,9 +168,8 @@ export function DocumentThreadsSidebar({ children }: { children?: ReactNode }) {
     const parent = next.closest('.bn-thread')
     if (!parent || !(event.target instanceof Node) || !parent.contains(event.target)) comments.selectThread(undefined)
   }
-  const context = useContext(COMMENT_EDITOR_CONTEXT), t = DOCUMENT_EDITOR_MESSAGES[context?.locale ?? 'en']
   return <div className="bn-threads-sidebar">{children}<CommentDraftRetrieval />{!ordered.length && <PmEmpty icon="comment">{t.commentsEmpty}</PmEmpty>}{ordered.map(thread => <DocumentCommentThread key={thread.id} thread={thread}
-    selected={selectedThreadId === thread.id} orphaned={!threadPositions.has(thread.id)} referenceText={getReferenceText(editor, threadPositions.get(thread.id))}
+    selected={selectedThreadId === thread.id} orphaned={orphaned(thread.id)} referenceText={reference(thread.id)}
     onFocus={event => focus(thread.id, event)} onBlur={blur} tabIndex={0} />)}</div>
 }
 

@@ -1,17 +1,11 @@
 import { useMemo } from 'react'
 import { applyDocumentComponentAction } from '@lincyaw/kernel'
-import type { Definition, TeachingDocument } from '@lincyaw/kernel'
+import type { TeachingDocument } from '@lincyaw/kernel'
 import { PmButton, PmMenu, PmSearchList } from '../components.tsx'
 import type { ComponentPropertyMessages } from '../component-property-messages.ts'
+import { componentDefinitionLabel } from './component-label.ts'
 
-export function componentDefinitionLabel(definition: Definition): string {
-  const title = typeof definition.parameterSchema === 'object' && typeof definition.parameterSchema.title === 'string' ? definition.parameterSchema.title.trim() : ''
-  if (title) return Array.from(title).slice(0, 80).join('')
-  const implementation = definition.implementation
-  const name = implementation.type === 'file' ? implementation.path.split('/').at(-1)?.replace(/\.(tsx?|jsx?|mjs|cjs)$/, '')
-    : implementation.type === 'plugin' ? implementation.name : implementation.specifier.split('/').at(-1)
-  return Array.from(name || definition.kind).slice(0, 80).join('')
-}
+export { componentDefinitionLabel } from './component-label.ts'
 
 /** Selection is a proposal; only the caller's source-bound Apply changes a binding. */
 export function ComponentMaterials({ document, blockId, selected, onSelect, onLocate, disabled, messages: t }: {

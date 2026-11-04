@@ -3,6 +3,8 @@ import { DOCUMENT_JSON_SCHEMA } from './document-schema.ts'
 import { isRecord } from './errors.ts'
 import { captionSourceFingerprint, captionTimingProblem, stepCaptionText } from './document-caption-timings.ts'
 import { validateDocumentParameters } from './parameters.ts'
+import { isDocumentPlaceAnchor } from './contracts/document.ts'
+import { documentBlockSection } from './document-places.ts'
 import type { DocumentIssue, DocumentValidation, RichTextNode, TeachingDocument } from './contracts/document.ts'
 
 export { DOCUMENT_JSON_SCHEMA } from './document-schema.ts'
@@ -240,7 +242,17 @@ export function validateDocument(value: unknown): DocumentValidation {
     const path = at('/comments', id)
     if (id !== thread.id) issue(`${path}/id`, 'id.key', 'A thread ID must match its map key.')
     identify(thread.id, `${path}/id`)
-    for (const edge of ['from', 'to'] as const) if (thread.anchor && !textTargets.has(thread.anchor[edge].blockId)) issue(`${path}/anchor/${edge}/blockId`, 'comment.target', 'A comment anchor must name a stable rich-text node or section title.')
+    const anchor = thread.anchor
+    if (anchor && isDocumentPlaceAnchor(anchor)) {
+      if (!Object.hasOwn(doc.blocks, anchor.blockId)) issue(`${path}/anchor/blockId`, 'comment.target', 'A place comment must name an existing block.')
+      else if (anchor.stepId !== undefined) {
+        const step = Object.hasOwn(doc.steps, anchor.stepId) ? doc.steps[anchor.stepId] : undefined
+        const section = step ? doc.sections[step.sectionId] : undefined
+        if (!step || !section || !section.stepOrder.includes(anchor.stepId) || step.sectionId !== documentBlockSection(doc, anchor.blockId)) issue(`${path}/anchor/stepId`, 'comment.target', 'A place comment must name a step of the block\'s own section.')
+      }
+    } else if (anchor) {
+      for (const edge of ['from', 'to'] as const) if (!textTargets.has(anchor[edge].blockId)) issue(`${path}/anchor/${edge}/blockId`, 'comment.target', 'A comment anchor must name a stable rich-text node or section title.')
+    }
     for (const [index, comment] of thread.comments.entries()) {
       identify(comment.id, `${path}/comments/${index}/id`)
       comment.content?.forEach((node, child) => rich(node, `${path}/comments/${index}/content/${child}`, new Set()))

@@ -1,3 +1,5 @@
+import { isDocumentPlaceAnchor } from './contracts/document.ts'
+import { degradeDocumentCommentAnchor } from './document-comments.ts'
 import type { DocumentBlock, DocumentEditOperation, TeachingDocument } from './contracts/document.ts'
 
 /** Operations describe author intent; the caller validates the resulting complete document before committing it. */
@@ -69,6 +71,14 @@ export function applyDocumentOperations(source: TeachingDocument, operations: re
           if (!targetSteps.has(value.id)) value.visuals = value.visuals.filter(visual => !moved.has(visual.blockId))
           else for (const id of moved) if (!value.visuals.some(visual => visual.blockId === id)) value.visuals.push({ blockId: id, visible: true })
         }
+        // A step belongs to one section; a place comment stays on the block when that step no longer renders it.
+        for (const thread of Object.values(document.comments ?? {})) {
+          const anchor = thread.anchor
+          if (!anchor || !isDocumentPlaceAnchor(anchor) || anchor.stepId === undefined || !moved.has(anchor.blockId)) continue
+          const degraded = degradeDocumentCommentAnchor(document, anchor)
+          if (degraded) thread.anchor = degraded
+          else delete thread.anchor
+        }
         break
       }
       case 'deleteBlock': {
@@ -82,7 +92,11 @@ export function applyDocumentOperations(source: TeachingDocument, operations: re
         }
         for (const id of removed) visit(block(id))
         // A deleted range becomes an unanchored thread; its discussion survives.
-        for (const thread of Object.values(document.comments ?? {})) if (thread.anchor && (identities.has(thread.anchor.from.blockId) || identities.has(thread.anchor.to.blockId))) delete thread.anchor
+        for (const thread of Object.values(document.comments ?? {})) {
+          const anchor = thread.anchor
+          if (!anchor) continue
+          if (isDocumentPlaceAnchor(anchor) ? identities.has(anchor.blockId) : identities.has(anchor.from.blockId) || identities.has(anchor.to.blockId)) delete thread.anchor
+        }
         detach(operation.blockId)
         for (const id of removed) delete document.blocks[id]
         for (const value of Object.values(document.steps)) value.visuals = value.visuals.filter(visual => !removed.has(visual.blockId))
