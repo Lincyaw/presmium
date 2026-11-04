@@ -44,7 +44,8 @@ html.pm-lecture-exporting .pm-slide-fit__canvas {
 }
 /* Burned export captions stay separate from the interactive viewer caption surface; they scale with the video's frame.
    The layer in the selector outranks the document's paragraph rules (`.pm-document p`) around it; `max-content` keeps
-   the box from wrapping at the half width that `left: 50%` leaves it. */
+   the box from wrapping at the half width that `left: 50%` leaves it, and a run with no space (an identifier, a URL)
+   wraps inside the frame instead of running off it. */
 .pm-lecture-layer .pm-lecture-caption {
   position: absolute;
   left: 50%;
@@ -65,6 +66,7 @@ html.pm-lecture-exporting .pm-slide-fit__canvas {
   text-align: center;
   text-shadow: var(--pm-caption-burn-halo);
   text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 .pm-lecture-transcript,
 .pm-lecture-chapters {

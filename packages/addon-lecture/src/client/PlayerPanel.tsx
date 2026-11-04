@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
   burnedCaption,
+  captionBudget,
   captionChunkAt,
   captionLanguages,
   captionGroups,
@@ -45,15 +46,29 @@ const BURNED_FILL = 0.9
 /** The caption an export burns into the picture: never more than two lines, its room read from its own styles. */
 function BurnedCaption({ caption, time, lang }: { caption: TimedCaption, time: number, lang: string }) {
   const element = useRef<HTMLParagraphElement>(null)
-  const [budget, setBudget] = useState<number>()
-  // The frame and the document's caption size set the font and the width; the budget is how many em two lines hold.
+  const [fitted, setFitted] = useState<{ key: string, text: string, budget: number }>()
+  // The frame and the document's caption size set the font and the width. The budget starts at how many em two lines
+  // hold and shrinks while a piece, laid out in a hidden copy of the caption, takes more lines.
   useLayoutEffect(() => {
-    const style = element.current && getComputedStyle(element.current)
-    if (!style) return
+    const shown = element.current, style = shown && getComputedStyle(shown)
+    if (!shown || !style) return
     const size = parseFloat(style.fontSize), room = parseFloat(style.maxWidth) - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
-    if (size > 0 && room > 0) setBudget(BURNED_LINES * room / size * BURNED_FILL)
+    const line = parseFloat(style.lineHeight), padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+    const key = `${size} ${room} ${line} ${document.fonts.status}\u0000${caption.text}`
+    if (!(size > 0 && room > 0 && line > 0) || fitted?.key === key) return
+    const probe = shown.cloneNode() as HTMLParagraphElement
+    probe.style.visibility = 'hidden'
+    shown.after(probe)
+    try {
+      setFitted({ key, text: caption.text, budget: captionBudget(caption.text, BURNED_LINES * room / size * BURNED_FILL, piece => {
+        probe.textContent = piece
+        return Math.round((probe.clientHeight - padding) / line) <= BURNED_LINES
+      }) })
+    } finally {
+      probe.remove()
+    }
   })
-  return <p ref={element} className="pm-lecture-caption" lang={lang}>{budget ? captionChunkAt(caption, time, budget) : caption.text}</p>
+  return <p ref={element} className="pm-lecture-caption" lang={lang}>{fitted?.text === caption.text ? captionChunkAt(caption, time, fitted.budget) : caption.text}</p>
 }
 
 export default function PlayerPanel(_props: { view?: string }) {

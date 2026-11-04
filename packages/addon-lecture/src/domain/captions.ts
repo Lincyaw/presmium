@@ -170,6 +170,20 @@ export function captionChunks(text: string, budget: number): string[] {
   return fewest?.pieces ?? [...chars]
 }
 
+/** How much a budget shrinks each time one of its pieces measures too tall. */
+const BUDGET_STEP = 0.9
+
+/**
+ * The widest budget, from `budget` down by tenths, at which every piece of `text` passes `fits`: the player measures
+ * them on the frame, where a run with no space (an identifier, a URL) or wide letters take more lines than their width
+ * in em suggests. It depends on the text and the measure only, so the pieces stay a function of time.
+ */
+export function captionBudget(text: string, budget: number, fits: (piece: string) => boolean): number {
+  let fitted = budget
+  for (let tries = 0; tries < 12 && !captionChunks(text, fitted).every(fits); tries++) fitted *= BUDGET_STEP
+  return fitted
+}
+
 /** A caption with the time it spans. */
 export interface TimedCaption { text: string, t: number, d: number }
 
