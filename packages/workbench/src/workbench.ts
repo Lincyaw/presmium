@@ -15,6 +15,7 @@ import { mutateCommentDrafts } from './document-editor/comment-draft-actions.ts'
 import { inspectComponentDrafts } from './component-draft-inspection.ts'
 import { mutateComponentDrafts } from './component-draft-actions.ts'
 import { DocumentSession } from './document-session.ts'
+import { sha256 } from './sha256.ts'
 import { reconcileRecordingAdoption } from './recording-adoption.ts'
 import { disposeTranscriptionSessions } from './transcription-session.ts'
 import { documentRecordingActive, disposeDocumentRecordings } from './audio-recording.ts'
@@ -1420,7 +1421,7 @@ export class Workbench {
     if (!file.size || file.size > DOCUMENT_AUDIO_MAX_BYTES) throw new Error('production.asset-size')
     let pending = this.#audioFingerprints.get(file)
     if (!pending) {
-      pending = file.arrayBuffer().then(bytes => crypto.subtle.digest('SHA-256', bytes)).then(bytes => [...new Uint8Array(bytes)].map(value => value.toString(16).padStart(2, '0')).join(''))
+      pending = file.arrayBuffer().then(sha256)
       this.#audioFingerprints.set(file, pending)
     }
     const hash = await pending

@@ -1,6 +1,7 @@
 import { documentCommentTargets, isRecord, randomUUID, validateDocument, validateDocumentCommentAnchor } from '@lincyaw/kernel'
 import type { DocumentComment, DocumentThread, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
 import { DocumentDraftStore } from '../document-draft-store.ts'
+import { sha256 as tokenOf } from '../sha256.ts'
 import type { DraftStoreResult } from '../document-draft-store.ts'
 
 export interface CommentDraftTarget { threadId: string, commentId?: string, threadCreatedAt: string, commentCreatedAt?: string, baseline?: string }
@@ -52,10 +53,6 @@ const committedValue = (comment: DocumentComment) => JSON.stringify({ id: commen
 export const sameCommentDraftTarget = (a: CommentComposerTarget, b: CommentComposerTarget) => isNewCommentDraft(a) || isNewCommentDraft(b)
   ? isNewCommentDraft(a) && isNewCommentDraft(b) && a.documentId === b.documentId && a.signature === b.signature && JSON.stringify(a.anchor) === JSON.stringify(b.anchor)
   : a.threadId === b.threadId && a.commentId === b.commentId && a.threadCreatedAt === b.threadCreatedAt && a.commentCreatedAt === b.commentCreatedAt
-async function tokenOf(raw: string): Promise<string> {
-  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw))
-  return [...new Uint8Array(bytes)].map(value => value.toString(16).padStart(2, '0')).join('')
-}
 const point = (value: unknown): boolean => isRecord(value) && typeof value.blockId === 'string' && value.blockId.length > 0 && value.blockId.length <= 205 && Number.isSafeInteger(value.offset) && Number(value.offset) >= 0
 function targetShape(value: unknown): boolean {
   if (!isRecord(value)) return false

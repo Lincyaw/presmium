@@ -1,9 +1,11 @@
 import type { AuthoringClientActionResult } from '@lincyaw/kernel'
+import { sha256 as draftContentHash } from './sha256.ts'
+
+export { draftContentHash }
 
 type Fragment = Extract<AuthoringClientActionResult, { jsonText: string }>
 type Fields = 'offset' | 'endOffset' | 'totalUtf16' | 'totalUtf8' | 'sha256' | 'jsonText'
 type FragmentBase = Fragment extends infer Value ? Value extends Fragment ? Omit<Value, Fields> : never : never
-export const draftContentHash = async (text: string): Promise<string> => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].map(value => value.toString(16).padStart(2, '0')).join('')
 const boundary = (text: string, offset: number) => !(offset > 0 && offset < text.length && /[\uD800-\uDBFF]/.test(text[offset - 1]!) && /[\uDC00-\uDFFF]/.test(text[offset]!))
 
 /** Budget the complete client receipt and WS frame, preserving exact JSON text and Unicode progress. */

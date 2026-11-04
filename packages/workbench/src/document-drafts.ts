@@ -1,6 +1,7 @@
 import { isRecord, randomUUID, validateDocument } from '@lincyaw/kernel'
 import type { TeachingDocument } from '@lincyaw/kernel'
 import { DocumentDraftStore } from './document-draft-store.ts'
+import { sha256 as tokenOf } from './sha256.ts'
 import type { DraftStoreCommit } from './document-draft-store.ts'
 
 export interface DocumentDraftReference { id: string, revision: number, token: string }
@@ -44,10 +45,6 @@ function documentDraft(value: unknown, documentId: string): DocumentDraft | unde
   if (!checked.document || checked.document.id !== documentId || checked.issues.some(issue => issue.severity === 'error')) return
   return { content: checked.document, baseVersion: value.baseVersion, baseHash: value.baseHash, input: value.input,
     pendingHash: value.pendingHash, composing: value.composing, origins: value.origins }
-}
-async function tokenOf(raw: string): Promise<string> {
-  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw))
-  return [...new Uint8Array(bytes)].map(value => value.toString(16).padStart(2, '0')).join('')
 }
 
 /** Strictly committed document backups, with old localStorage copies identified as unconfirmed rescue material. */

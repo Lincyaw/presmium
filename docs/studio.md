@@ -212,6 +212,7 @@
 
 - 只用 dsh 的模型设置。`DEEPSEEK_API_KEY` 与 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` 映射为 `DEEPSEEK_*`；界面中保存的密钥优先。
 - `--host` 接受本机的一个具体 IP，也接受 `0.0.0.0`。通配地址启动时打印每个局域网接口的访问地址，并警告没有登录。
+- 局域网 HTTP 支持文稿编辑、自动保存、正文与批注及组件参数的本地草稿恢复、AI 草稿读取和已有音频的导入。内容指纹统一为 SHA-256；有 Web Crypto 时使用原生实现，否则使用浏览器内的等价实现。麦克风录音仍取决于浏览器提供的 `getUserMedia`。
 - `--public-url` 交给 dsh，`--preview-url` 交给工作区服务（可带路径前缀）。预览应与工作台不同源，代理不得注入 cookie 或改写 `Origin`。云端按此为每个用户运行一个 Studio，见 [云端](cloud.md)。
 
 ## 12. 升级闸门

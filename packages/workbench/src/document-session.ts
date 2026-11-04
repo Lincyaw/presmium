@@ -3,6 +3,7 @@ import type { DocumentAnswer, DocumentChangeAnswer, DocumentImageImportAnswer, D
 import { WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 import { DocumentDrafts } from './document-drafts.ts'
+import { sha256 } from './sha256.ts'
 import type { DocumentDraftChoice, DocumentDraftCommit, DocumentDraftReference, StoredDocumentDraft } from './document-drafts.ts'
 
 export interface DocumentSessionState {
@@ -88,10 +89,7 @@ function keepsEditorContent(before: TeachingDocument, after: TeachingDocument): 
 }
 
 async function digest(value: TeachingDocument): Promise<string> {
-  const text = serialize(value)
-  if (!globalThis.crypto?.subtle) return `json:${text}`
-  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
-  return [...new Uint8Array(bytes)].map(value => value.toString(16).padStart(2, '0')).join('')
+  return sha256(serialize(value))
 }
 
 /** One source actor per document. Runtime compilation and iframe lifecycle never own its input. */
@@ -609,7 +607,12 @@ export class DocumentSession {
       const answer = await this.#client.readDocument(slot.state.directory)
       if (!current()) return
       if (answer.document !== slot.state.directory || answer.content.id !== documentId) { slot.state = { ...slot.state, error: 'document-identity-changed' }; return }
-      const [localHash, remoteHash] = await Promise.all([digest(candidate.content), digest(answer.content)])
+      // Older LAN HTTP drafts stored canonical JSON in place of a SHA-256 fingerprint.
+      const [localHash, remoteHash, candidateBaseHash, pendingHash] = await Promise.all([
+        digest(candidate.content), digest(answer.content),
+        candidate.baseHash.startsWith('json:') ? sha256(candidate.baseHash.slice(5)) : candidate.baseHash,
+        candidate.pendingHash?.startsWith('json:') ? sha256(candidate.pendingHash.slice(5)) : candidate.pendingHash,
+      ])
       if (!current()) return
       const origins = [...new Map([...(candidate.origins ?? []), { id: candidate.id, revision: candidate.revision, token: candidate.token }].map(value => [JSON.stringify([value.id, value.revision, value.token]), value])).values()]
       if (localHash === remoteHash && !candidate.composing) {
@@ -618,16 +621,16 @@ export class DocumentSession {
         slot.persistFailure = !settled
         return
       }
-      const conflict = answer.version !== candidate.baseVersion && remoteHash !== candidate.baseHash && remoteHash !== candidate.pendingHash
-      const version = remoteHash === candidate.pendingHash || remoteHash === candidate.baseHash ? answer.version : candidate.baseVersion
-      const baseHash = remoteHash === candidate.pendingHash ? remoteHash : candidate.baseHash
+      const conflict = answer.version !== candidate.baseVersion && remoteHash !== candidateBaseHash && remoteHash !== pendingHash
+      const version = remoteHash === pendingHash || remoteHash === candidateBaseHash ? answer.version : candidate.baseVersion
+      const baseHash = remoteHash === pendingHash ? remoteHash : candidateBaseHash
       const record = await slot.drafts.fork(identity, { content: candidate.content, baseVersion: version, baseHash, input: input + 1,
-        pendingHash: candidate.pendingHash, composing: Boolean(candidate.composing), origins })
+        pendingHash, composing: Boolean(candidate.composing), origins })
       if (!current()) { if (record) slot.drafts.archive(record); return }
       if (!record) { slot.persistFailure = true; slot.state = { ...slot.state, storageFailure: true }; return }
       clearTimeout(slot.timer); slot.timer = undefined
       if (slot.draft) slot.drafts.archive(slot.draft)
-      slot.input = input + 1; slot.baseHash = baseHash; slot.pendingHash = candidate.pendingHash; slot.draft = record; slot.draftOrigins = origins
+      slot.input = input + 1; slot.baseHash = baseHash; slot.pendingHash = pendingHash; slot.draft = record; slot.draftOrigins = origins
       slot.backup = undefined; slot.persistFailure = false
       adopted = true
       slot.compositions.clear()

@@ -18,6 +18,9 @@ persistent log path (default `~/.local/state/presmium/studio/presmium-studio-<ha
   `presmium.workbench.request` in the diagnostic snapshot. Do not add a global fetch wrapper.
 - `EACCES` on `packages/dsh/build/dist/client.json` or `client.js` in a shared checkout is a permission
   problem of the generated client, not a browser cache issue.
+- LAN HTTP editing must work without `crypto.randomUUID` or `crypto.subtle`. Use the shared UUID and
+  workbench SHA-256 helpers for drafts, agent receipts and media fingerprints. Verify a committed draft
+  can be read and recovered on an actual non-loopback HTTP origin; shell startup alone does not cover it.
 - Requests stuck across tabs: compare with an independent same-cookie Node request; a browser
   request-created event does not prove the server received it (`docs/debugging.md` section 3). Never weaken
   the source actor guards to get past it.

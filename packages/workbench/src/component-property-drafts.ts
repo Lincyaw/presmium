@@ -1,6 +1,7 @@
 import { isRecord, randomUUID } from '@lincyaw/kernel'
 import type { CanonicalSource, ClientComponentDraftReference, JsonObject } from '@lincyaw/kernel'
 import { DocumentDraftStore } from './document-draft-store.ts'
+import { sha256 as tokenOf } from './sha256.ts'
 import type { DraftStoreCommit } from './document-draft-store.ts'
 
 export interface ComponentPropertyTarget { identity: string, memberId: string, blockId: string, stepId?: string }
@@ -32,7 +33,6 @@ const scopedPrefix = (kind: string, identity: string, memberId: string) => `${ki
 const markerOf = (target: ComponentPropertyTarget, reference: { id: string, revision: number, token: string }) => `${markerPrefix(target)}${JSON.stringify([reference.id, reference.revision, reference.token])}`
 const marker = (backup: ComponentPropertyBackup) => markerOf(backup.record.target, { id: backup.record.id, revision: backup.record.revision, token: backup.token })
 const keyOf = (record: ComponentPropertyDraft) => `${prefix(record.target)}${record.id}`
-const tokenOf = async (raw: string) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw)))].map(byte => byte.toString(16).padStart(2, '0')).join('')
 
 function valid(value: unknown, target: ComponentPropertyTarget): value is ComponentPropertyDraft {
   return isRecord(value) && value.format === 1 && typeof value.id === 'string' && value.id.length > 0
