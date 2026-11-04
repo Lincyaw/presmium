@@ -56,7 +56,7 @@ site:
 | `site.params.accent` | `blue`、`teal`、`violet`、`amber` | `blue` / `violet` |
 | `site.params.typography` | `reading`（衬线正文）、`sans` | `sans` / `sans` |
 | `site.params.contentWidth` | `comfortable`、`wide` | `comfortable` / `wide` |
-| `site.params.logo` | 工作区内的图片路径 | 不显示 |
+| `site.params.logo` | 工作区内的图片路径，相对 `presmium.workspace.yaml`（单独构建的文稿相对 `lecture.json`）；文稿的放映沿用这个路径 | 不显示 |
 | `site.params.logoAlt` | 替代文字，可为空字符串 | 空，按装饰图处理 |
 
 - 显式参数覆盖主题默认值；换主题时删掉旧参数即可用新主题的默认值。参数只接受上表的取值，不接受 CSS 或 HTML。
