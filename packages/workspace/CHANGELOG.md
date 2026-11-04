@@ -1,5 +1,13 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.48
+
+### Patch Changes
+
+- @lincyaw/server@1.0.0-rc.48
+  - @lincyaw/compiler@1.0.0-rc.48
+  - @lincyaw/kernel@1.0.0-rc.48
+
 ## 1.0.0-rc.47
 
 ### Patch Changes

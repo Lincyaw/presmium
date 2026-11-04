@@ -1,5 +1,13 @@
 # @lincyaw/studio
 
+## 0.2.0-rc.47
+
+### Patch Changes
+
+- 962b71d: Use the same compact operation catalog in Studio's built-in assistant and external MCP clients. Generate argument summaries from registered schemas, preserve target-specific approval, candidate routing and review checkpoints, and reject changed definitions. Candidate services reuse Studio's exact Presmium command so bundled renderers remain available.
+- Updated dependencies [962b71d]
+  - @lincyaw/dsh@0.2.0-rc.47
+
 ## 0.2.0-rc.46
 
 ### Patch Changes

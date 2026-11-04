@@ -1,5 +1,9 @@
 # @lincyaw/addon-publish
 
+## 1.0.0-rc.48
+
+No changes in this release.
+
 ## 1.0.0-rc.47
 
 No changes in this release.
