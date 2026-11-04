@@ -1,5 +1,16 @@
 # @lincyaw/host
 
+## 1.0.0-rc.30
+
+### Patch Changes
+
+- baeb4f3: Scene states follow the voice: while a narrated lecture plays (the presentation's lecture, the Video Production preview, the video export), each state of an animation scene lasts until the voice of the first step that shows it ends, never less than its authored duration, so beats placed as fractions of a state land with their words and `durations` no longer need rewriting after a voiceover. Steps whose narration starts after the animation, recorded lectures, the reading page, slides stepped by hand and captures keep the authored durations. Step clock drivers can give step lengths (`StepClockDriver.stepLength`, read with `useDrivenStepLength`).
+- Updated dependencies [fecb9ab]
+- Updated dependencies [0447441]
+- Updated dependencies [dcd90a0]
+  - @lincyaw/kernel@1.0.0-rc.30
+  - @lincyaw/design@1.0.0-rc.30
+
 ## 1.0.0-rc.29
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @lincyaw/addon-speech
 
+## 1.0.0-rc.30
+
+### Patch Changes
+
+- 0447441: Add `presmium voiceover` (report what generating a document's voiceover would do, generate the missing sentences in-process with `--yes`, set the default voice with `--voice`, delete unused speech cache with `--prune`), `presmium speech key set|clear|status` (the Volcengine speech key in the workspace's operator settings) and `presmium script export|import` (the narration as one Markdown file to polish and back).
+
 ## 1.0.0-rc.29
 
 No changes in this release.

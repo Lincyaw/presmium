@@ -1,5 +1,16 @@
 # @lincyaw/viewer
 
+## 1.0.0-rc.30
+
+### Patch Changes
+
+- fecb9ab: Captions have a size for the whole document: `production.captions.scale` (0.7 to 1.6, default 1) multiplies the presentation's caption overlay and the captions burned into an exported lecture video, and Video Production's Captions tab sets it with **Caption size** / “字幕大小” (70% to 160% in steps of 10%). Burned captions are now about 60 px on a 1080p frame at the default size.
+- Updated dependencies [fecb9ab]
+- Updated dependencies [0447441]
+- Updated dependencies [baeb4f3]
+  - @lincyaw/kernel@1.0.0-rc.30
+  - @lincyaw/host@1.0.0-rc.30
+
 ## 1.0.0-rc.29
 
 ### Patch Changes
