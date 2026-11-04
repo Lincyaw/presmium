@@ -83,11 +83,13 @@
   --pm-caption-safe-bottom: 3rem;
   --pm-caption-overlay-max-height: 35%;
   /* Captions burned into an exported video, measured on its frame (the export window is the frame): at the default
-     scale about 60 px text on a 1080p frame, across up to 89% of the width so that most sentences take one line (two at
-     most), its box about 30 px above the bottom edge. The box is a see-through light gray, so that it hides as little
-     of the picture as it can; near-black ink with a faint light halo stays readable over light and dark pictures alike.
-     Colours come from ink and page, so the dark appearance turns them into a see-through dark gray with light text. */
-  --pm-caption-burn-size: calc(5.6vh * var(--pm-caption-scale));
+     scale the text is 5.6% of the frame's height or 3.15% of its width, whichever is less (about 60 px on a 1080p frame,
+     34 px on a 1080x1920 one), across up to 89% of the width, its box about 30 px above the bottom edge on 1080p. The
+     lecture player shows a caption that two lines would not hold in pieces, one after another. The box is a see-through
+     light gray, so that it hides as little of the picture as it can; near-black ink with a faint light halo stays
+     readable over light and dark pictures alike. Colours come from ink and page, so the dark appearance turns them into
+     a see-through dark gray with light text. */
+  --pm-caption-burn-size: calc(min(5.6vh, 3.15vw) * var(--pm-caption-scale));
   --pm-caption-burn-leading: 1.35;
   --pm-caption-burn-width: 89vw;
   --pm-caption-burn-bottom: 2.8vh;
