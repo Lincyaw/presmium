@@ -85,3 +85,17 @@ requests, then preview, presentation, the visual editor (light/dark, desktop/nar
 VS Code window outside the repository; stop the services and confirm their ports close. Report a window you
 could not control separately. `.github/workflows/vscode.yml` packages six platforms but does no window
 acceptance. Details are in `packages/vscode/README.md`.
+
+## The desktop app
+
+`packages/desktop` (private, `presmium-desktop`) is Studio as a Tauri 2 app for Windows, macOS and Linux.
+`pnpm --filter presmium-desktop build` gathers the Node that runs the build as the sidecar `presmium-node`, a
+`pnpm deploy` of `@lincyaw/presmium` as the resource `runtime/`, and the launcher page, then runs `tauri build`
+for this machine's platform; `pnpm --filter presmium-desktop dev` opens it unbundled. The app starts
+`presmium studio <workspace>` itself and opens the address it prints; Studio and dsh are not changed for it.
+Linux needs the WebKitGTK 4.1 development packages to compile.
+
+Verify in the built app, not only `cargo check`: the launcher, opening a workspace (sign-in included), a
+document, its preview, closing the window and killing the app (no `presmium-node` left), and Studio ending on
+its own (the launcher shows the error). `.github/workflows/desktop.yml` builds the installers of six platforms
+and attaches them to a release; it does no window acceptance. Details are in `packages/desktop/README.md`.

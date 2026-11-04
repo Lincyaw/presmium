@@ -11,6 +11,7 @@ const SCOPE = ['examples/gallery/libraries/components', 'examples/gallery/bubble
 SCOPE.push('packages/cloud/src/client')
 SCOPE.push('deploy/cloud/keycloak/theme/presmium/login/resources/css/layout.css')
 SCOPE.push('examples/gallery/site')
+SCOPE.push('packages/desktop/ui')
 
 const root = new URL('..', import.meta.url).pathname
 const RAW = [

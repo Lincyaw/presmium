@@ -229,6 +229,17 @@ Studio 的 HTTP MCP 默认地址为 `http://127.0.0.1:4321/mcp`，使用 Streama
 - 局域网 HTTP 支持文稿编辑、自动保存、正文与批注及组件参数的本地草稿恢复、AI 草稿读取和已有音频的导入。内容指纹统一为 SHA-256；有 Web Crypto 时使用原生实现，否则使用浏览器内的等价实现。麦克风录音仍取决于浏览器提供的 `getUserMedia`。
 - `--public-url` 交给 dsh，`--preview-url` 交给工作区服务（可带路径前缀）。预览应与工作台不同源，代理不得注入 cookie 或改写 `Origin`。云端按此为每个用户运行一个 Studio，见 [云端](cloud.md)。
 
+### 11.4 桌面版
+
+`packages/desktop` 用 Tauri 2 把 Studio 做成 Windows、macOS 与 Linux 的桌面应用，不改 Studio 与 dsh。安装包带构建时的 Node（sidecar `presmium-node`）与 `pnpm deploy` 得到的 `@lincyaw/presmium`（资源 `runtime/`），用户不需要另装 Node 或 pnpm。
+
+1. 启动页列出最近打开的工作区，“打开工作区…”选择文件夹；应用启动时重新打开上次的工作区。菜单“工作区 → 打开工作区…”随时切换。
+2. 打开工作区时应用运行 `presmium-node runtime/…/presmium.mjs studio <目录>`，读到 `studio  <网址>` 后窗口转到该网址，3 分钟等不到时停止并报错。同一时间只有一个 Studio；切换工作区或退出应用时先停止它（Unix 上发 `SIGTERM`，宽限后强制结束），Linux 上应用被强制结束时内核同时停止 Studio。
+3. dsh 的登录 cookie 是 `SameSite=Strict`。窗口从启动页（另一个站点）转到启动网址时，跳转可能不带 cookie；首次加载得到 dsh 的纯文本登录错误时，应用从 Studio 自己的页面重新加载一次。
+4. Studio 意外结束时窗口回到启动页，说明原因并提供“详细信息”（这次启动的输出）。
+5. 启动页只能调用应用自己的命令；Studio 的页面（回环地址上的 http）没有应用的任何权限。指向本机的新窗口留在应用中，其他链接在系统浏览器中打开；下载存入“下载”文件夹并在文件管理器中显示。
+6. 菜单与启动页的语言按系统语言（zh-CN 或 en）；Studio 页面的语言由 Studio 自己决定。
+
 ## 12. 升级闸门
 
 dsh 发版频繁、没有 CHANGELOG，所以升级 dsh 是单独的一次改动，先通过五组集成用例（Vitest 名带 `[gate]`，Playwright 标签 `@gate`）：

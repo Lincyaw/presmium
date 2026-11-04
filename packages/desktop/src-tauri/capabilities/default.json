@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "launcher",
+  "description": "The launcher page: its own commands only. Studio's pages (loopback http) get no access to the app.",
+  "windows": ["main"],
+  "local": true,
+  "permissions": ["core:default"]
+}
