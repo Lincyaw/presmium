@@ -29,7 +29,7 @@ workspace 为每项能力创建一个实例，HTTP 与 MCP 共用实例与回执
 
 契约在 `packages/kernel/src/contracts/` 的同名文件，工具表在 `packages/mcp/src/mcp.ts`，每个工具的 `kind` 为 `read`、`operate` 或 `spend`。Web 经 `packages/workbench/src/workspace-client.ts` 调用同一组路由。
 
-Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页面、音色继承、批注、组件参数、字幕时间），语义动作分派在 `document-authoring-actions.ts`。不带工作区的 stdio 宿主（`compilerMcpHost`）没有这些服务，能力响应报告 unavailable。
+Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页面、音色继承、批注、组件参数、字幕时间、字幕大小），语义动作分派在 `document-authoring-actions.ts`。不带工作区的 stdio 宿主（`compilerMcpHost`）没有这些服务，能力响应报告 unavailable。
 
 ## 3. 能力与版本
 
@@ -172,6 +172,14 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 - ASR 词时属于原录音，永远不作为新 TTS 的字幕时间。新 TTS 有真实 words 时按 display 与 spoken 映射字幕，否则只显示分段或标明的比例估时。可能调用 ASR 的对齐只在明确的生成或对齐意图内发生。
 - 产物只在 source、revision、planId 与缓存键全部匹配时进入当前计划，旧 TTS 不与新字幕混播。
 
+**命令行**（`packages/cli/src/voiceover.ts`）：`presmium voiceover <文稿>` 不经工作区服务，在自己的进程中编译文稿，用文稿插件的同一个 `VOICEOVER_EXECUTION`。运营者目录、语音服务与密钥按 `presmium serve` 的方式取得（`PRESMIUM_OPERATOR_DIR`、运营者的语音设置、`PRESMIUM_SPEECH_*`）。
+
+- 预检是 `VoiceoverExecution.sentences`：按阅读顺序列出整份文稿生成时处理的每一句，带精确的 `SynthesisRequest`、精确缓存是否命中、不能生成的原因与步骤绑定；只查缓存与音色目录，不合成。`defaultVoice` 按“文稿默认音色换成它”回答，继承文稿默认或未设置音色的语句改用它。
+- 不加 `--yes` 时只报告：每个语音服务（本机或云端）、音色、缺少精确缓存的语句数与字符数（云端服务按字符计费）、不能生成的语句及原因；不合成、不写文件。`--yes` 是作者对这次收费生成的同意，与 MCP 的 `spend` 批准相当；不加它不会开始任何收费操作。
+- `--yes` 时以缺失语句所在步骤的 `steps` 范围（有跨步语句时为 `document`）调用 `prepare` 与 `run`，只合成缺失的语句，之后再读一遍 `sentences` 核验；仍有应配音的语句没有音频、被取消或文稿已变化时退出码为 1。CLI 不经 `DOCUMENT_VOICE_TASKS` 与 `createVoiceoverOwner`，生成锁只在本进程有效，不与运行中的工作台同时生成同一文稿。
+- `--voice <服务>:<音色>` 先按 `voice.set` 的文稿范围规则（`changeDocumentVoice`，保留页面与步骤的设置）改 `production.defaults.voiceSource`，经 `validateDocument` 后按文件原有的缩进原子写入 `lecture.json`；新音色下有语句因音色或服务不可用而不能生成时不写入。
+- `--prune` 经 `SpeechService.pruneCache` 删除当前语句都不用的缓存条目（`.presmium/speech/` 的音频、记录与对齐文件，以及 `speech.lock.json` 的条目）。条目按请求键（服务、音色、语言、语速、风格、文字与读音，与配置档无关）判断是否在用，同一句在另一配置下生成的音频保留；请求没有服务且没有默认服务、或文稿有错误诊断时拒绝。
+
 ## 10. 任务反馈
 
 构建、配音与转写各自保留执行器。共同规则：
@@ -206,6 +214,8 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 **历史**（`kernel/src/contracts/document-history.ts`）
 
+- 每次保存（作者动作、Studio 中的保存、AI 的修改与撤消）是当前分支上的一个 git 提交，带 `Presmium-Origin` 等尾注与 `Co-authored-by`。本机服务的作者（`LOCAL_AUTHOR`）以仓库配置的 `user.name` 与 `user.email` 为作者，git 没有配置时为 `local author <local@presmium.invalid>`；多人服务中的成员以自己的名字与邮箱为作者。提交者是 git 配置的身份，没有时为 `Presmium <presmium@presmium.invalid>`。
+- 版本历史、撤消、恢复与读取历史文件都只从这些提交得到，保存本身也在提交事务内完成（没有 git 时不能编辑），所以没有不提交的设置。不想把逐次保存的提交原样推送时，在单独的分支上工作，推送前合并成一个提交。
 - `get_document_history` 每页最多 20 条原修改，`undone` 与 `revertTarget` 由完整历史链派生。`historyBinding` 含已保存原文的 version、fingerprint 与 git HEAD `snapshot`。
 - `read_history_file` 读可达提交中的文本文件，默认 `lecture.json`；不恢复当前文稿。
 - `undo_document_change`、`redo_document_change`、`revert_document_change` 传 `{ id, source, snapshot, expect }`，expect 是读取得到的完整提交 ID。执行时复核原文、HEAD 与目标，产生新的 revert 提交；不 checkout、不 reset、不 discard。

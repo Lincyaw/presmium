@@ -80,8 +80,13 @@ Every save is a commit. Undo and redo use the routes `history/undo` and `history
 (`packages/workspace/src/node/routes.ts`); `expect` names the commit the client believes comes next and a
 mismatch answers 409. Undone changes are marked from `reverts` and `revertedBy`
 (`packages/workspace/src/node/revisions.ts`). External projections and saved acknowledgements are
-baselines, not undoable edits. Verify undo, redo, a new change clearing redo, and an AI turn becoming one
-version.
+baselines, not undoable edits. Verify undo, redo, a new change clearing redo, and each completed AI writing tool
+getting its own version.
+
+AI file and source-writing tools edit a private candidate workspace. Publish all changed files with their original
+versions in one short transaction; stale input returns to the AI for a fresh read and retry. The author's editor
+stays available during AI work and required review. Reject and checkpoint restoration touch only candidates;
+history and browser control still use the original service.
 
 ## Drafts and positions
 

@@ -19,7 +19,7 @@ const MAP = fig3 as unknown as FigureMap
 const mask = D.delphi.methods.mask
 const rungs = D.delphi.rungs
 const b = mask.law
-const HX = scale(0, 1, 20, 100), AY = scale(0, 1, 64, 16)
+const HX = scale(0, 1, 20, 100), AY = scale(0, 1, 61, 16)
 
 // The figure's box in the frame and its axes, read off the crop's tick labels.
 const BOX = { x: 5, y: 11, w: 57 }

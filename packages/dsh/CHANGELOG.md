@@ -1,5 +1,31 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.29
+
+### Patch Changes
+
+- Updated dependencies [fecb9ab]
+- Updated dependencies [0447441]
+- Updated dependencies [dcd90a0]
+- Updated dependencies [3bd7c86]
+- Updated dependencies [636206f]
+- Updated dependencies [baeb4f3]
+- Updated dependencies [4be7244]
+  - @lincyaw/kernel@1.0.0-rc.30
+  - @lincyaw/skills@1.0.0-rc.30
+  - @lincyaw/cli@1.0.0-rc.30
+  - @lincyaw/mcp@1.0.0-rc.30
+
+## 0.2.0-rc.28
+
+### Patch Changes
+
+- fb84105: Keep editing and saving while AI works, publish AI changes with source version checks, and preserve local drafts on network HTTP addresses.
+- @lincyaw/cli@1.0.0-rc.29
+  - @lincyaw/kernel@1.0.0-rc.29
+  - @lincyaw/mcp@1.0.0-rc.29
+  - @lincyaw/skills@1.0.0-rc.29
+
 ## 0.2.0-rc.27
 
 ### Patch Changes

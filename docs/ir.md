@@ -87,6 +87,7 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 | `narrationOverrides` | 迁移保留的讲稿开始时机，位于页面与步骤之间 |
 | `cueTimings` | cue 的停顿时长 |
 | `captionTimings` | 作者设定的本步字幕时间（2.12） |
+| `captions` | 整个文稿的字幕大小 `{ scale }`：默认大小的倍数，0.7 到 1.6（Studio 以 0.1 为一档），缺省为 1；放映中显示的字幕与导出视频中烧录的字幕都按它缩放（页面上的 `--pm-caption-scale`） |
 | `mediaClips` | 挂在步骤上的音频片段 |
 
 - `VoiceSource` 是 `none`、`tts` 或 `recording`（可选 `sourceRange`）。
@@ -162,14 +163,20 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 
 - 绑定 `ProductionBinding { source, irRevision, planId }`。`planId` 覆盖讲授轨、词时码、事件、字幕、时机与音频的缓存键、摘要和时长，只补缓存也得到新计划。
 - 页面、步骤、讲稿按稳定 ID 给出范围，时间是同一讲授时钟的毫秒。跨步 cue 的音频与字幕各一段，列出覆盖的 `stepIds`。
+- 有真实词时码且显示文字能逐词对上时，一句的字幕分成可读的组，网页播放、VTT 与烧录字幕共用：句末结束一组；一组最多 42 个字符，下一个词会使它超出时，在组内最后一个分句标点处结束（这部分至少约 12 个字符，否则在超出前的词后结束）；组从不在半角词（数字、标识符、网址）内部断开。句末与分句的标点与烧录字幕的切分相同（`design-system.md`）：全角标点在哪里都算，半角的 `. ! ? ;` 与 `, :` 后面是空格或全文结尾时才算。
 - `timing` 为 `confirmed`、`estimated`、`unknown`；只有完整确认的计划 `canPreview`、`canExport`。`voiceSource: none` 用实际动画、停留与停顿，不按字数估时。
+- 动画场景定义的 `durations` 是计划中每步的最短停留，也是阅读页与手动步进时状态的长度。播放计划的讲授轨时，状态延长到第一个显示它的步骤的配音结束（`architecture.md` 5.3 节），配音等动画结束才开始的步骤除外；配音之后不改写 `durations`。
 - 合成语音是 `audio`，导入音频是 `media`（`ProductionAssetInspection`）。预览与导出共用同一放置、裁切与混音计算。
+- 一个步骤显示的内容块都限定在其他媒介（`only` 不含 `lecture`，如只给网页的来源说明），又没有讲稿、录音与挂在它上的音频片段，也不是前面讲稿中的 `{cue}next` 转入的步骤时，讲授中没有这一步：讲授轨没有转到它的事件，计划的页面没有它，字幕与章节（`chapters.vtt`）也不含它；一页的步骤都是这样时整页不在讲授中。放映与网页照常显示它。
+- 渲染端选项 `metadata.renderers.lecture.maximumDurationMs` 是讲授视频的最长时长（毫秒，大于 0）。计划时长已确认且超过它时，`presmium check` 报告错误，给出超出的秒数，以及按配音的实测语速（讲稿字数除以配音秒数，字数只计字母与数字）约需删去的讲稿字数。计划未确认（配音不全、没有选择音色、有步骤时长未知）或读取配音与音频文件失败时不比较，报告一条警告说明没有检查及原因。`presmium-lecture timing` 读同一份计划逐步列出这些数。
 
 `GET production-plan`（`ProductionPlanQuery`）、`GET tracks/script`（`planId`）、`GET production-media`（绑定加 `clipId`，只给计划白名单中的字节）、`GET production-asset`（`ProductionAssetQuery`）都只读缓存，不生成语音。
 
 ## 7. 工作区与命令
 
 工作区配置是 `presmium.workspace.yaml`，文稿模式只匹配 `lecture.json`，通常为 `documents: ['*/lecture.json']`；只有一份 `lecture.json` 的目录也是工作区。`presmium import` 把 Markdown 笔记一次性转成文稿：每份笔记一个 `lecture.json`，一级与二级标题各开一页，每页一个显示全部内容块的步骤；没有对应富文本节点的内容（原始 HTML、脚注、提示框）保存为 `presmium.mdast` 扩展。Markdown 只是导入的来源，文稿中不保存 Markdown 字符串。
+
+`presmium script export` 把讲稿写成一份供润色的 Markdown 工作副本（默认 `<文稿>/dist/script.md`）：每页、每步一个标题，每段讲稿在标记行 `<!-- n: <讲稿 ID> -->` 之下，到下一个标记行或标题为止。讲稿中的换行在文件中另起一行，空行（`\n\n`）是一个空行；读回时每行去掉首尾空白，连续的空行算一个。读音节点写作 `{显示|读音}`，cue 写作 `⟦cue:<id>⟧`；文字中的 `\`、`{`、`}`、`⟦`、`⟧`（读音节点中另有 `|`）前面加 `\`，看起来像标题或注释的行以 `\` 开头，读回时去掉这些 `\`。`presmium script import` 核对标记与 cue（不能缺、不能多、cue 不能删除或跨段），只替换文字有变化的讲稿的 `content`（`provenance` 与 cue 节点保留），经 `validateDocument` 后按文件原有的缩进原子写入；副本本身从不进入编译。`presmium voiceover` 生成配音（[作者动作](authoring-actions.md) 第 9 节），`presmium speech key` 读写运营者的语音服务密钥（[架构](architecture.md)）。
 
 ```sh
 presmium new lesson --type lecture
@@ -178,5 +185,10 @@ presmium check lesson --json
 presmium build lesson --to web
 presmium ir lesson --out runtime-snapshot.json
 presmium import notes --out . --exclude raw
+presmium script export lesson
+presmium script import lesson
+presmium voiceover lesson
+presmium voiceover lesson --yes --prune
+presmium speech key status .
 presmium serve .
 ```

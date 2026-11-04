@@ -1,5 +1,25 @@
 # @lincyaw/server
 
+## 1.0.0-rc.30
+
+### Patch Changes
+
+- Updated dependencies [fecb9ab]
+- Updated dependencies [0447441]
+- Updated dependencies [dcd90a0]
+- Updated dependencies [636206f]
+  - @lincyaw/kernel@1.0.0-rc.30
+  - @lincyaw/compiler@1.0.0-rc.30
+  - @lincyaw/mcp@1.0.0-rc.30
+
+## 1.0.0-rc.29
+
+### Patch Changes
+
+- @lincyaw/compiler@1.0.0-rc.29
+  - @lincyaw/kernel@1.0.0-rc.29
+  - @lincyaw/mcp@1.0.0-rc.29
+
 ## 1.0.0-rc.28
 
 ### Patch Changes

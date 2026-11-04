@@ -93,6 +93,8 @@ export class DocumentDrafts {
           || typeof value.owner !== 'string' || !value.owner || value.owner.length > 200 || typeof value.updatedAt !== 'number' || !Number.isSafeInteger(value.updatedAt) || value.updatedAt < 0 || Number.isNaN(new Date(value.updatedAt).getTime())) throw new Error('document-draft-data')
         const draft = documentDraft(value, documentId)
         if (!draft) throw new Error('document-draft-document')
+        if (draft.baseHash.startsWith('json:')) draft.baseHash = await tokenOf(draft.baseHash.slice(5))
+        if (draft.pendingHash?.startsWith('json:')) draft.pendingHash = await tokenOf(draft.pendingHash.slice(5))
         const token = await tokenOf(raw), marker = settledKey(identity, { id: value.id, revision: value.revision, token })
         if (durable.get(marker) === token) continue
         if (source === 'rescue' && localStorage.getItem(marker) === token) continue

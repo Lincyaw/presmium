@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { workspaceDirs } from './lib/workspace-packages.mjs'
 
 const root = new URL('..', import.meta.url).pathname
 const REPOSITORY = 'git+https://github.com/Lincyaw/presmium.git'
@@ -16,14 +17,7 @@ const rows = new Map([...table.matchAll(/^\| `([^`]+)` \| ([^|]+) \|/gm)].map(([
 
 const problems = []
 const versions = new Set()
-const globs = []
-for (const line of readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8').split('packages:\n')[1]?.split('\n') ?? []) {
-  const listed = /^\s+-\s+['"]?([^'"\s]+)['"]?\s*$/.exec(line)
-  if (!listed) break
-  globs.push(listed[1])
-}
-const workspaces = globs.flatMap(glob => (glob.endsWith('/*') ? readdirSync(join(root, glob.slice(0, -2))).sort().map(name => `${glob.slice(0, -2)}/${name}`) : [glob]))
-  .filter(dir => existsSync(join(root, dir, 'package.json')))
+const workspaces = workspaceDirs(root)
 
 function targets(value) {
   if (typeof value === 'string') return [value.replace(/^\.\//, '').replace(/\/?\*.*$/, '')]

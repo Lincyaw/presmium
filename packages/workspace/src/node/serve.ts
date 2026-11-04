@@ -88,6 +88,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   const env = options.env ?? process.env
   const log = options.log ?? pluginLogger('presmium serve')
   const config = readWorkspaceConfig(options.dir)
+  if (env.PRESMIUM_AGENT_CANDIDATE === '1') config.settings['presmium.assistant'] = { ...config.settings['presmium.assistant'], review: 'auto' }
   const { root } = config
   const operatorDirectory = resolveOperatorDir(root, options.operatorDir ?? env.PRESMIUM_OPERATOR_DIR)
   const stateDir = makeStateDir(root, env)
@@ -252,7 +253,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       revisions,
       operations: new DocumentOperations({ config, git, revisions, writer, changed: documentsChanged, locks }),
       git,
-      agentSessionReviews: new AgentSessionReviews({ config, revisions, locks, files: writer, log }),
+      agentSessionReviews: new AgentSessionReviews({ config, revisions, locks, files: writer, log, flush: (documents, member) => authoringClients?.flush(documents, member) ?? Promise.resolve() }),
       taskReviews: createTaskReviewService({ config, locks, files: writer, log }),
     }
   }

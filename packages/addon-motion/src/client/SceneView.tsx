@@ -6,6 +6,7 @@ import {
   STEP_CLOCK,
   useAppearance,
   useCursor,
+  useDrivenStepLength,
   useMessages,
   useService,
   useStep,
@@ -24,6 +25,7 @@ import {
   MOTION_MESSAGES,
   stepStarts,
   timelinePosition,
+  voicedDurations,
 } from '../domain/index.ts'
 import { loadScene, preloadScenes } from './deck-scenes.ts'
 import type { Scene } from './scene.ts'
@@ -68,12 +70,22 @@ const idle = (work: () => void) => {
 
 export default function SceneView(props: SceneProps) {
   const t = useMessages(MOTION_MESSAGES)
-  const durations = props.durations?.length ? props.durations : [0]
-  const starts = stepStarts(durations)
-  const total = starts.at(-1)!
+  const authored = props.durations?.length ? props.durations : [0]
   const scope = useStepScope()
   const hostStep = useStep()
   const cursor = useCursor()
+  const expanded = scope.localPreview === true || !Number.isFinite(hostStep)
+  // While a narrated lecture plays the slide, a state lasts until the voice of the first step that shows it ends, so
+  // that beats placed as fractions of a state follow the voice; elsewhere the scene keeps its authored durations.
+  const stepLength = useDrivenStepLength()
+  const durations = stepLength && !expanded
+    ? voicedDurations(authored, (k) => {
+        const step = scope.step(k)
+        return step < 0 ? undefined : stepLength(cursor.slide, step)
+      })
+    : authored
+  const starts = stepStarts(durations)
+  const total = starts.at(-1)!
   const viewRole = useViewRole()
   const navigation = useService(NAVIGATION)
   const navigated = useStore(navigation?.position, undefined)
@@ -82,7 +94,6 @@ export default function SceneView(props: SceneProps) {
   const printed = useStaticRender()
   const stepTime = useStepTime({ until: Math.max(...durations) })
   const { dark } = useAppearance()
-  const expanded = scope.localPreview === true || !Number.isFinite(hostStep)
   // On a reading page every scene is made as it comes near the window, so a long page opens without making them all;
   // slides make theirs at once, and a printed page all of them.
   const eager = printed || (!expanded && viewRole !== 'reader')
@@ -107,10 +118,16 @@ export default function SceneView(props: SceneProps) {
   const activePlayback = useRef<number>()
   const localNavigation = useRef<{ slide: number, step: number }>()
   const followedNavigation = useRef({ source: navigation, position: navigated })
-  const shown =
+  // The durations the shown scene was made with: until one made with other durations replaces it, it is shown on its own
+  // timeline, so that no frame shows a place of the new timeline on the old one.
+  const [madeWith, setMadeWith] = useState<readonly number[]>()
+  const place = (timeline: readonly number[]) =>
     expanded && local !== undefined
       ? local
-      : timelinePosition(durations, scope.localStepAt(hostStep), stepTime)
+      : timelinePosition(timeline, scope.localStepAt(hostStep), stepTime)
+  const placeNow = useRef(place)
+  placeNow.current = place
+  const shown = place(madeWith ?? durations)
   const shownNow = useRef(shown)
   shownNow.current = shown
   const activeLocalStep = scope.localStepAt(hostStep)
@@ -341,7 +358,8 @@ export default function SceneView(props: SceneProps) {
       delete layer.dataset.pending
       instance.current = made
       builtFrom.current = read
-      made.seek(shownNow.current)
+      made.seek(placeNow.current(durations))
+      setMadeWith(durations)
       setStatus('ready')
     }
     const rebuild = () => {

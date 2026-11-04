@@ -12,6 +12,7 @@ import { DocumentVoiceField } from './DocumentVoiceField.tsx'
 import { ExportPanel } from './ExportPanel.tsx'
 import { PreviewPanel } from './PreviewPanel.tsx'
 import { VoiceoverDialog } from './VoiceoverDialog.tsx'
+import { ProductionCaptionSize } from './ProductionCaptionSize.tsx'
 import { ProductionCaptionTiming } from './ProductionCaptionTiming.tsx'
 import { ProductionTimeline } from './ProductionTimeline.tsx'
 import { ProductionMediaClips } from './ProductionMediaClips.tsx'
@@ -254,7 +255,10 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
                   selectedAsset={transcriptionAsset?.identity === source.identity ? transcriptionAsset : undefined}
                   onSelectAsset={() => { transcriptionSelection.current++; setTranscriptionAsset(undefined) }} />
               </div></PmTabPanel>
-              <PmTabPanel value="captions" keepMounted><ProductionCaptionTiming key={source.identity} identity={source.identity} stepId={stepId} plan={plan} current={planCurrent} loading={preparing || planBusy} disabled={blocked || closing} onChanged={() => setMediaRefresh(true)} /></PmTabPanel>
+              <PmTabPanel value="captions" keepMounted><div className="pmw-production__fields">
+                <ProductionCaptionSize identity={source.identity} document={document} disabled={blocked || closing} onChanged={() => setMediaRefresh(true)} />
+                <ProductionCaptionTiming key={source.identity} identity={source.identity} stepId={stepId} plan={plan} current={planCurrent} loading={preparing || planBusy} disabled={blocked || closing} onChanged={() => setMediaRefresh(true)} />
+              </div></PmTabPanel>
             </PmTabs>
           </PmSplitPanel>
         </PmSplitGroup>

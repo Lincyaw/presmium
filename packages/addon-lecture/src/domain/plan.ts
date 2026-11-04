@@ -4,7 +4,7 @@ import { narrationVoice } from './config.ts'
 import { blockKey, codeLineCount, lastNamedLine } from './drift.ts'
 import type { CueCommand, CueMark, SpokenText } from './narration.ts'
 import { cueProblem, parseCue, spokenText, TARGETED } from './narration.ts'
-import { LECTURE_RENDERER, PLAYER_RENDERER } from './track.ts'
+import { LECTURE_ID, LECTURE_RENDERER, PLAYER_RENDERER } from './track.ts'
 
 export interface PlannedCue {
   name: CueCommand
@@ -55,6 +55,11 @@ export interface PlannedSection {
   recordings?: PlannedRecording[]
   holds: number[]
   trailingPauseMs?: number[]
+  /**
+   * Steps the lecture leaves out: their visible blocks are all limited to other forms, they have nothing to say or
+   * play, and no `{cue}next` moves into them. A page whose every step is left out is not in the lecture.
+   */
+  leftOut?: number[]
   webStep(step: number): number
 }
 
@@ -86,6 +91,19 @@ function named(doc: IRDocument, section: IRSection, to: string): { section: IRSe
     if (block) return { section: other, block }
   }
   return undefined
+}
+
+/**
+ * The steps (by stable ID) whose visible blocks are all limited to forms other than the lecture (`only` without
+ * `lecture`): the lecture would show an empty page there. Read from the whole document, before the lecture's view
+ * removes those blocks; the plan leaves such a step out when it has nothing to say or play either.
+ */
+export function otherFormSteps(section: IRSection): string[] {
+  const blocks = [...irBlocks(section.blocks)].filter(block => block.role === 'visual')
+  return (section.stepIds ?? []).filter((_, step) => {
+    const visible = blocks.filter(block => block.stepStates ? block.stepStates[step]?.visible : block.at <= step)
+    return visible.length > 0 && visible.every(block => block.only && !block.only.includes(LECTURE_RENDERER))
+  })
 }
 
 function webSteps(section: IRSection): (step: number) => number {
@@ -255,6 +273,22 @@ function stepHolds(section: IRSection, doc: IRDocument): number[] {
   return holds
 }
 
+/**
+ * The steps a `{cue}next` moves into, walked as `scriptTrack` says the page: a step's own narration starts where the
+ * lecture is (or at that step when the lecture is behind it), and each cue moves to the step after. A step with a
+ * recording plays the recording, not its narration's cues.
+ */
+function nextEntered(steps: number, paragraphs: readonly PlannedParagraph[], recorded: ReadonlySet<number>): Set<number> {
+  const entered = new Set<number>()
+  let current = 0
+  for (let step = 0; step <= steps; step++) {
+    current = Math.max(current, step)
+    if (recorded.has(step)) continue
+    for (const paragraph of paragraphs) if (paragraph.step === step) for (const piece of paragraph.pieces) for (const cue of piece.cues) if (cue.name === 'next' && current < steps) entered.add(++current)
+  }
+  return entered
+}
+
 export function lecturePlan(doc: IRDocument): LecturePlan {
   const problems: PlanProblem[] = []
   const sections: PlannedSection[] = doc.sections.map((section) => {
@@ -289,7 +323,12 @@ export function lecturePlan(doc: IRDocument): LecturePlan {
       const stepId = section.stepIds![step]!
       return [{ id: `recording:${stepId}`, step, stepId, assetId: setting.voiceSource.assetId, ...setting.voiceSource.sourceRange ? { sourceRange: { ...setting.voiceSource.sourceRange } } : {}, mode, text: own.flatMap(paragraph => paragraph.pieces.map(piece => piece.text)).filter(Boolean).join('\n\n'), narrationIds: [...new Set(own.flatMap(paragraph => paragraph.narrationId ?? []))], cues, ...issue ? { issue } : {} }]
     })
-    return { id: section.id, title: section.title, steps: section.steps, from: 'narration', paragraphs, recordings, holds: stepHolds(section, doc), ...trailingPauseMs ? { trailingPauseMs } : {}, webStep: webSteps(section) }
+    const marked = section.config?.[LECTURE_ID]?.otherFormSteps
+    const otherForms = new Set(Array.isArray(marked) ? marked : [])
+    // A step a `{cue}next` enters is voiced by the narration before it, so it stays in the lecture like a step with its own.
+    const entered = otherForms.size ? nextEntered(section.steps, paragraphs, new Set(recordings.map(recording => recording.step))) : new Set<number>()
+    const leftOut = (section.stepIds ?? []).flatMap((id, step) => otherForms.has(id) && !entered.has(step) && !paragraphs.some(paragraph => paragraph.step === step) && !recordings.some(recording => recording.step === step) && !doc.production?.mediaClips.some(clip => clip.attachment.stepId === id) ? [step] : [])
+    return { id: section.id, title: section.title, steps: section.steps, from: 'narration', paragraphs, recordings, holds: stepHolds(section, doc), ...trailingPauseMs ? { trailingPauseMs } : {}, ...leftOut.length ? { leftOut } : {}, webStep: webSteps(section) }
   })
   let n = 0
   for (const section of sections) {

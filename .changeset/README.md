@@ -71,10 +71,10 @@ pnpm changeset          # 选包与升级类型（patch、minor、major），写
 1. `pnpm changeset version`：按累积的变更记录升级全部公开包的版本（预发布模式中为 `1.0.0-rc.<n>`），写各包的 `CHANGELOG.md`；然后 `pnpm install` 更新锁文件，提交。
 2. `pnpm release:check`：`pnpm -r publish --dry-run --no-git-checks`，按发布的样子打包每个公开的包而不上传。消费者安装测试用同样的压缩包在单仓之外的项目中安装、检查、构建与运行：`pnpm test` 中的 `packages/cli/test/consumer.test.ts`，`pnpm e2e` 中的 `e2e/consumer.spec.ts`；`pnpm consumer [<目录>]` 单独做一个这样的项目。
 3. `pnpm changeset publish`：发布版本尚不在 npm 上的包（预发布模式中带 `rc` 标签），然后 `git push --follow-tags`。
-4. 让 `pnpm add -g @lincyaw/presmium` 与新项目装到这一版：对每个公开包运行 `pnpm dist-tag add <包>@<版本> latest`。预发布期间 `latest` 也指向最新的预发布版。
+4. 让 `pnpm add -g @lincyaw/presmium` 与新项目装到这一版：`node scripts/release-latest.mjs`。npm 有时过几分钟才列出刚发布的版本，在那之前设置的 `latest` 指向安装不到的版本。脚本对每个公开包（`scripts/check-packages.mjs` 检查的那些）的当前版本轮询 npm，直到按安装时读取的元数据全部列出（默认最多等 30 分钟，`--timeout <分钟>`；包之间依赖确切版本，所以全部列出后才设置任何一个），再对每个包运行 `pnpm dist-tag add <包>@<版本> latest`，预发布期间同时设置 `rc`（`pre.json` 的标签），最后打印 npm 确认的 dist-tag。超时、某个标签已指向更新的版本（本地检出落后于发布，不会把标签往回移）、设置失败或未得到确认时退出码为 1，并列出是哪些包。`--dry-run` 只轮询与报告，不改任何标签。预发布期间 `latest` 也指向最新的预发布版。
 5. 正式的 1.0.0：`pnpm changeset pre exit`，再走一遍 1 至 4。
 
-确认目标包版本已出现在 npm，`rc`（预发布期间）与 `latest` 指向本次版本，版本提交与标签已推送后，才算发版完成。发布预检不代替实际发布；失败时报告已完成步骤、阻塞原因与未完成步骤。
+确认目标包版本已出现在 npm，`rc`（预发布期间）与 `latest` 指向本次版本（第 4 步最后打印的 dist-tag），版本提交与标签已推送后，才算发版完成。发布预检不代替实际发布；失败时报告已完成步骤、阻塞原因与未完成步骤。
 
 ## 仓库与账号
 

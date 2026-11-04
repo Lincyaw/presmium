@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { setImmediate } from 'node:timers/promises'
 import { deckLocale, errorMessage, isRecord, resolvedVoice, speechEngineId, speechFailureCode, speechVoice, voiceTarget } from '@lincyaw/kernel'
 import { irRevision, VoiceoverOperationError } from '@lincyaw/kernel/node'
-import type { CanonicalSource, IRDocument, NodeServiceContext, SpeechService, SpeechVoice, Synthesis, SynthesisRequest, VoiceoverExecution, VoiceoverProgress, VoiceoverRunResult, VoiceoverSnapshot, VoiceoverStatusQuery, VoicePreviewQuery, VoicePreviewQuote, VoiceScope, VoiceTarget } from '@lincyaw/kernel'
+import type { CanonicalSource, IRDocument, NodeServiceContext, SpeechService, SpeechVoice, Synthesis, SynthesisRequest, VoiceoverExecution, VoiceoverProgress, VoiceoverRunResult, VoiceoverSentence, VoiceoverSentences, VoiceoverSentencesQuery, VoiceoverSnapshot, VoiceoverStatusQuery, VoicePreviewQuery, VoicePreviewQuote, VoiceScope, VoiceTarget } from '@lincyaw/kernel'
 import { plannedUtterances } from '../domain/index.ts'
 import { latestDoc, lectureView } from './latest-ir.ts'
 import { deckPlan } from './plan.ts'
@@ -122,6 +122,37 @@ export function voiceoverExecution(ctx: NodeServiceContext): VoiceoverExecution 
     return { source: now.source, revision: now.revision, capability: { available: Boolean(speech && usable.size), providers, ...defaultEngine ? { defaultEngine } : {}, ...!speech ? { reason: 'speech-unavailable' as const } : !usable.size && unavailable.size ? { reason: [...unavailable.values()].some(reason => reason === 'voice-not-configured') ? 'not-configured' as const : [...unavailable.values()].some(reason => reason === 'voice-catalog-unavailable') ? 'catalog-unavailable' as const : 'voice-unavailable' as const } : !usable.size ? { reason: 'voice-unset' as const } : {} }, steps, unboundByPage }
   }
 
+  /** The units a document-scope generation processes; with `defaultVoice`, those inheriting the default (or unset) use it. */
+  const sentences = async (query: VoiceoverSentencesQuery, signal: AbortSignal): Promise<VoiceoverSentences> => {
+    const now = await context(query.source)
+    if (query.revision !== undefined && query.revision !== now.revision) throw new RouteRefusal(409, 'voice-revision-changed')
+    const override = query.defaultVoice === undefined ? undefined : speechVoice(query.defaultVoice)
+    if (query.defaultVoice !== undefined && !override) throw new RouteRefusal(400, 'voice-invalid')
+    let speech: SpeechService | undefined
+    try { speech = served.speech() } catch { /* Without speech every sentence is listed as unavailable. */ }
+    const listed = await Promise.all(now.units.map(async (unit): Promise<VoiceoverSentence> => {
+      const section = now.doc.sections.find(section => section.id === unit.section)
+      const step = unit.voiceTarget?.step ?? unit.step, stepId = section?.stepIds?.[step]
+      const inherits = Boolean(override && unit.voiceTarget && section && ['document', 'unset'].includes(resolvedVoice(now.doc, section, unit.voiceTarget.step).inheritedFrom))
+      const voice = inherits ? override : unit.voice
+      const issue = inherits ? (unit.voiceIssue === 'voice-unset' ? undefined : unit.voiceIssue) : unit.sourceKind === 'none' ? 'voice-none' : unit.voiceIssue ?? (voice ? undefined : 'voice-unset')
+      const base = { section: unit.section, step, ...stepId ? { stepId } : {}, ...unit.voiceTarget ? { target: { ...unit.voiceTarget } } : {}, text: unit.spoken }
+      if (issue || !voice) return { ...base, cached: false, reason: issue ?? 'voice-unset' }
+      const request: SynthesisRequest = { ...voice, text: unit.spoken, lang: now.lang, ...now.lexicon ? { lexicon: now.lexicon } : {} }
+      if (!speech) return { ...base, request, cached: false, reason: 'speech-unavailable' }
+      try {
+        if (await speech.lookup?.(request, signal)) return { ...base, request, cached: true }
+        await providerFor(speech, voice, now, signal)
+        return { ...base, request, cached: false }
+      } catch (error) {
+        signal.throwIfAborted()
+        return { ...base, request, cached: false, reason: errorMessage(error) }
+      }
+    }))
+    await assertCurrent(now)
+    return { source: now.source, revision: now.revision, sentences: listed }
+  }
+
   const quote = async (query: VoicePreviewQuery, signal: AbortSignal, expected?: CanonicalSource): Promise<{ quote: VoicePreviewQuote, request: SynthesisRequest, hit?: Synthesis, context: Context }> => {
     const now = await assertRevision(query.revision, expected), voice = speechVoice(query.voice)
     if (!voice) throw new RouteRefusal(400, 'voice-preview-invalid')
@@ -155,6 +186,7 @@ export function voiceoverExecution(ctx: NodeServiceContext): VoiceoverExecution 
   }
   return {
     status: (query, signal) => guarded(() => snapshot(query, signal)),
+    sentences: (query, signal) => guarded(() => sentences(query, signal)),
     prepare: (request, signal) => guarded(async () => {
       signal.throwIfAborted()
       const now = await assertRevision(request.revision, request.source), units = scoped(now, request.scope)

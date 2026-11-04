@@ -24,6 +24,8 @@ const displayText = (text: string, lang?: string) => ({ en: text, ...lang ? { [l
 
 export function apply(ctx: DshContext): void {
   const operatorDir = operatorRoot()
+  let authorRoot: string | undefined
+  void ctx.presmium.server.ready.then(endpoint => { authorRoot = endpoint.root })
 
   ctx.on('tools/pre-execute', async (exec: DshToolExecution, next: () => Promise<DshPreDecision>): Promise<DshPreDecision> => {
     const { bindings } = ctx.presmium
@@ -48,8 +50,11 @@ export function apply(ctx: DshContext): void {
   ctx.tools.guard((exec) => {
     const file = FILE_WRITE_TOOLS.has(exec.name) ? fileOf(exec) : undefined
     const dir = exec.agent ? ctx.presmium.bindings.workingDirectoryOf(exec.agent) : process.cwd()
+    const candidate = ctx.presmium.bindings.candidateRootOf(exec.agent)
+    if (candidate && authorRoot && file && isInside(resolve(dir, file), authorRoot) && !isInside(resolve(dir, file), candidate)) return 'Presmium: write in your current candidate workspace using relative paths. The author workspace changed independently; read the current candidate file and retry.'
     if (file && isInside(resolve(dir, file), operatorDir)) return `Presmium: the operator directory (${operatorDir}) is not the agent's to write`
     const command = exec.name === 'bash' ? (exec.arguments as { command?: unknown } | undefined)?.command : undefined
+    if (candidate && authorRoot && typeof command === 'string' && command.replaceAll(candidate, '').includes(authorRoot)) return 'Presmium: use your current candidate workspace instead of the author workspace absolute path. Read the file there and retry.'
     if (typeof command === 'string' && command.includes(operatorDir)) return `Presmium: the operator directory (${operatorDir}) is not the agent's to touch`
     return undefined
   })

@@ -1,5 +1,18 @@
 # @lincyaw/studio
 
+## 0.2.0-rc.29
+
+### Patch Changes
+
+- @lincyaw/dsh@0.2.0-rc.29
+
+## 0.2.0-rc.28
+
+### Patch Changes
+
+- Updated dependencies [fb84105]
+  - @lincyaw/dsh@0.2.0-rc.28
+
 ## 0.2.0-rc.27
 
 ### Patch Changes

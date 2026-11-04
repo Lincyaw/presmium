@@ -1,5 +1,74 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.30
+
+### Patch Changes
+
+- d68274c: The papers workspace (三分钟读完一篇论文) ends every film on the series' closing card: a one-sentence summary of the paper, an invitation to suggest the next paper in the comments, and the series' mark. Its pipeline now uses Presmium's own commands (`presmium voiceover`, `presmium script`, `presmium mcp call`, `presmium-lecture timing`, `presmium-lecture export --burn --contact-sheet`) in place of its private scripts, and its sources page no longer needs a production override to stay out of the video.
+- Updated dependencies [fecb9ab]
+- Updated dependencies [0447441]
+- Updated dependencies [dcd90a0]
+- Updated dependencies [3bd7c86]
+- Updated dependencies [636206f]
+- Updated dependencies [baeb4f3]
+  - @lincyaw/kernel@1.0.0-rc.30
+  - @lincyaw/viewer@1.0.0-rc.30
+  - @lincyaw/cli@1.0.0-rc.30
+  - @lincyaw/addon-lecture@1.0.0-rc.30
+  - @lincyaw/addon-speech@1.0.0-rc.30
+  - @lincyaw/mcp@1.0.0-rc.30
+  - @lincyaw/web@1.0.0-rc.30
+  - @lincyaw/host@1.0.0-rc.30
+  - @lincyaw/addon-motion@1.0.0-rc.30
+  - @lincyaw/addon-assistant@1.0.0-rc.30
+  - @lincyaw/addon-classroom@1.0.0-rc.30
+  - @lincyaw/addon-code@1.0.0-rc.30
+  - @lincyaw/addon-content@1.0.0-rc.30
+  - @lincyaw/addon-exec@1.0.0-rc.30
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.30
+  - @lincyaw/addon-exec-local@1.0.0-rc.30
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.30
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.30
+  - @lincyaw/addon-guide@1.0.0-rc.30
+  - @lincyaw/addon-publish@1.0.0-rc.30
+  - @lincyaw/addon-session@1.0.0-rc.30
+  - @lincyaw/addon-stage@1.0.0-rc.30
+  - create-presmium@1.0.0-rc.30
+  - @lincyaw/render-notebook@1.0.0-rc.30
+  - @lincyaw/render-slides@1.0.0-rc.30
+  - @lincyaw/studio@0.2.0-rc.29
+
+## 1.0.0-rc.29
+
+### Patch Changes
+
+- @lincyaw/cli@1.0.0-rc.29
+  - @lincyaw/studio@0.2.0-rc.28
+  - @lincyaw/addon-classroom@1.0.0-rc.29
+  - @lincyaw/addon-code@1.0.0-rc.29
+  - @lincyaw/addon-content@1.0.0-rc.29
+  - @lincyaw/addon-exec@1.0.0-rc.29
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.29
+  - @lincyaw/addon-exec-local@1.0.0-rc.29
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.29
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.29
+  - @lincyaw/addon-lecture@1.0.0-rc.29
+  - @lincyaw/addon-motion@1.0.0-rc.29
+  - @lincyaw/addon-publish@1.0.0-rc.29
+  - @lincyaw/addon-session@1.0.0-rc.29
+  - @lincyaw/addon-speech@1.0.0-rc.29
+  - @lincyaw/addon-stage@1.0.0-rc.29
+  - create-presmium@1.0.0-rc.29
+  - @lincyaw/render-notebook@1.0.0-rc.29
+  - @lincyaw/web@1.0.0-rc.29
+  - @lincyaw/addon-assistant@1.0.0-rc.29
+  - @lincyaw/addon-guide@1.0.0-rc.29
+  - @lincyaw/host@1.0.0-rc.29
+  - @lincyaw/kernel@1.0.0-rc.29
+  - @lincyaw/mcp@1.0.0-rc.29
+  - @lincyaw/render-slides@1.0.0-rc.29
+  - @lincyaw/viewer@1.0.0-rc.29
+
 ## 1.0.0-rc.28
 
 ### Patch Changes

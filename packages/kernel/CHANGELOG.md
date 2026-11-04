@@ -1,5 +1,16 @@
 # @lincyaw/kernel
 
+## 1.0.0-rc.30
+
+### Patch Changes
+
+- fecb9ab: Captions have a size for the whole document: `production.captions.scale` (0.7 to 1.6, default 1) multiplies the presentation's caption overlay and the captions burned into an exported lecture video, and Video Production's Captions tab sets it with **Caption size** / “字幕大小” (70% to 160% in steps of 10%). Burned captions are now about 60 px on a 1080p frame at the default size.
+- 0447441: Add `presmium voiceover` (report what generating a document's voiceover would do, generate the missing sentences in-process with `--yes`, set the default voice with `--voice`, delete unused speech cache with `--prune`), `presmium speech key set|clear|status` (the Volcengine speech key in the workspace's operator settings) and `presmium script export|import` (the narration as one Markdown file to polish and back).
+
+## 1.0.0-rc.29
+
+No changes in this release.
+
 ## 1.0.0-rc.28
 
 ### Patch Changes

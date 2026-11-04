@@ -1,9 +1,10 @@
 import { cpSync, existsSync, readdirSync, rmSync } from 'node:fs'
 import { isAbsolute, join, resolve } from 'node:path'
-import { build, Compiler } from '@lincyaw/compiler'
+import { build, Compiler, WORKSPACE_CONFIG } from '@lincyaw/compiler'
 import type { Compilation, RunStats } from '@lincyaw/compiler'
 import { APP_DIR, errorMessage, isRecord, SLIDES_DIR } from '@lincyaw/kernel'
 import type { Finding, IRDocument, SiteSpec } from '@lincyaw/kernel'
+import { relativePath } from '../domain/paths.ts'
 import { listDocuments, readWorkspaceConfig } from './config.ts'
 import { siteContext, siteDocument, siteIR, siteSpec, siteTranslations, webRenderer } from './site.ts'
 
@@ -25,7 +26,7 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
   for (const document of found) {
     const compilation = await new Compiler(join(config.root, document.entry), { bundled: options.bundled, settings: config.settings }).compile({ pruneCache: true })
     compilations.push(compilation)
-    const to = presentations(compilation, base, `${base}${urlPath(document.dir)}/`, siteLook(config.site, config.root))
+    const to = presentations(compilation, base, `${base}${urlPath(document.dir)}/`, siteLook(config.site, config.root, document.dir))
     if (to.length > 0) forms.push({ dir: document.dir, compilation, to })
     const translated = await siteTranslations(compilation)
     findings.push(...compilation.doc.diagnostics, ...translated.findings)
@@ -82,10 +83,14 @@ function pluginsByName(site: SiteSpec, compilations: readonly Compilation[]): Re
 
 const PRESENTATIONS = ['slides', 'lecture']
 
-/** The site's theme and its parameters, for its presentations to look like its pages; a theme directory made absolute. */
-function siteLook(site: Record<string, unknown>, root: string): Record<string, unknown> {
+/**
+ * The site's theme and its parameters, for the presentations of the document in `dir` to look like its pages: a theme
+ * directory made absolute, and the parameters with the file they are written in (`siteFile`, relative to the document),
+ * for their paths (`logo`) to resolve against it.
+ */
+function siteLook(site: Record<string, unknown>, root: string, dir: string): Record<string, unknown> {
   const theme = typeof site.theme === 'string' && (site.theme.startsWith('.') || isAbsolute(site.theme)) ? resolve(root, site.theme) : site.theme
-  return { ...theme !== undefined ? { theme } : {}, ...isRecord(site.params) ? { params: site.params } : {} }
+  return { ...theme !== undefined ? { theme } : {}, ...isRecord(site.params) ? { params: site.params, siteFile: relativePath(dir, WORKSPACE_CONFIG) } : {} }
 }
 
 const urlPath = (dir: string) => dir.split('/').map(encodeURIComponent).join('/')
@@ -106,7 +111,12 @@ function presentations(compilation: Compilation, base: string, prefix: string, l
   const { renderers } = compilation.doc.config
   const to = PRESENTATIONS.filter(form => renderers[form] !== undefined)
   if (to.length === 0) return to
-  if (to.includes('slides')) renderers.slides = { ...look, ...isRecord(renderers.slides) ? renderers.slides : {}, base: `${prefix}${SLIDES_DIR}/`, appBase: base }
+  if (to.includes('slides')) {
+    const own = isRecord(renderers.slides) ? renderers.slides : {}
+    // Parameters the document sets for its slides are written in its lecture.json, not in the workspace's file.
+    const { siteFile, ...shared } = look
+    renderers.slides = { ...shared, ...own.params === undefined && siteFile !== undefined ? { siteFile } : {}, ...own, base: `${prefix}${SLIDES_DIR}/`, appBase: base }
+  }
   const settings = compilation.doc.config.presmium ??= {}
   const web = isRecord(settings['presmium.web']) ? settings['presmium.web'] : {}
   settings['presmium.web'] = { ...web, webUrl: prefix, ...to.includes('slides') ? { slidesUrl: `${prefix}${SLIDES_DIR}/` } : {} }

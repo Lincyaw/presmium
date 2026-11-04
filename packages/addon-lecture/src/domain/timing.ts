@@ -1,4 +1,5 @@
 import type { LectureTrack, Utterance } from './track.ts'
+import { SCRIPT_TRACK } from './track.ts'
 
 export interface TimedEvent {
   t: number
@@ -104,4 +105,65 @@ export function stepStops(events: readonly TimedEvent[]): StepStop[] {
     if (!last || last.section !== section || last.step !== at) list.push({ t: event.t, section, step: at })
   }
   return list
+}
+
+/**
+ * Where the lecture first plays `position` (a page ID and a step), until the next step starts (`until`; none for the
+ * last); undefined when it never goes there.
+ */
+export function playsStep(events: readonly TimedEvent[], position: { section: string, step: number }): (StepStop & { until?: number }) | undefined {
+  const stops = stepStops(events), index = stops.findIndex(stop => stop.section === position.section && stop.step === position.step)
+  return index < 0 ? undefined : { ...stops[index]!, ...stops[index + 1] ? { until: stops[index + 1]!.t } : {} }
+}
+
+/**
+ * Where the lecture plays `position` (`sections`: the page IDs in the document's order): the first time it reaches that
+ * step; for a step it leaves out, the first step it plays after it in the document's order, else the last one before.
+ */
+export function playedStop(events: readonly TimedEvent[], sections: readonly string[], position: { section: string, step: number }): StepStop | undefined {
+  if (!sections.includes(position.section)) return undefined
+  const order = (a: { section: string, step: number }, b: { section: string, step: number }) => sections.indexOf(a.section) - sections.indexOf(b.section) || a.step - b.step
+  let after: StepStop | undefined, before: StepStop | undefined
+  for (const stop of stepStops(events)) {
+    if (!sections.includes(stop.section)) continue
+    const at = order(stop, position)
+    if (at === 0) return stop
+    if (at > 0 && (!after || order(stop, after) < 0)) after = stop
+    if (at < 0 && (!before || order(stop, before) > 0)) before = stop
+  }
+  return after ?? before
+}
+
+/**
+ * Where a lecture starts for the preview's `position`. The synthesized lecture (`script`) plays every step it keeps, so
+ * a step it leaves out starts at the nearest played one (`playedStop`); a recorded lecture holds only the steps it was
+ * recorded on, and starts at the position only where it went there.
+ */
+export function startingStop(trackId: string, events: readonly TimedEvent[], sections: readonly string[], position: { section: string, step: number }): StepStop | undefined {
+  if (trackId === SCRIPT_TRACK) return playedStop(events, sections, position)
+  return playsStep(events, position)
+}
+
+/**
+ * How long each step's voice lasts from the step's start (ms), by `section\u0000step`: until the last sentence heard in
+ * the step ends, at most until the next step. Pauses and holds after the voice do not count. A step where no sentence is
+ * heard has no length, nor one whose voice waits for its animation (`after-animation`: a hold at the step's start). A
+ * step reached again keeps what it had the first time.
+ */
+export function voicedLengths(events: readonly TimedEvent[], utterances: readonly Utterance[], end: number): Map<string, number> {
+  const stops = stepStops(events)
+  const waits = new Set(events.flatMap(event => event.type === 'pause' && event.data.hold === true ? [event.t] : []))
+  const seen = new Set<string>()
+  const lengths = new Map<string, number>()
+  for (const [i, stop] of stops.entries()) {
+    const key = `${stop.section}\u0000${stop.step}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    if (waits.has(stop.t)) continue
+    const until = stops[i + 1]?.t ?? end
+    let voiced = stop.t
+    for (const u of utterances) if (!u.silent && u.d > 0 && u.t < until && u.t + u.d > stop.t) voiced = Math.max(voiced, Math.min(until, u.t + u.d))
+    if (voiced > stop.t) lengths.set(key, voiced - stop.t)
+  }
+  return lengths
 }

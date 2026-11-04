@@ -1,5 +1,29 @@
 # @lincyaw/mcp
 
+## 1.0.0-rc.30
+
+### Patch Changes
+
+- dcd90a0: Video Production loads while the author is on a page or step the lecture leaves out: the preview goes to the first step of the lecture after it (the last one before it at the end of the document), and the timeline of such a page says it is not in the lecture. A step that a `{cue}next` of an earlier narration moves into stays in the lecture, so the cues after it no longer land one step late. `presmium script` keeps an edited narration's line breaks and blank lines, and writes a `\`, `{`, `}`, `⟦` or `⟧` that is text (and a `|` inside a pronunciation) with a `\` before it, so that braces written in a narration are no longer read back as a pronunciation. `presmium check` reports, as a warning, when it could not check the lecture video's length against `maximumDurationMs`, and an animation on a step the lecture leaves out no longer makes the whole plan's timing unknown. Captions burned into an exported video scale with the frame, near its bottom edge, in near-black ink on a see-through light gray, and never take more than two lines, as laid out on the frame (an identifier or a URL wraps inside the box and no longer takes a third line): a longer caption is shown in as few pieces of about equal length as fit, one after another, cut after a sentence or a clause where there is one; an ASCII `.`, `,`, `:`, `;`, `!` or `?` ends one only before a space or at the end, so 1,024, 3.14 and 10:30 stay whole and an English sentence ends at its period. A word-timed caption group that would pass 42 characters ends at its last comma or other clause mark instead of between two characters (“…后者要预判模型规模达” | “到多大时…” becomes “…训练方案，” | “后者要预判…”), in the video, its WebVTT captions and the web player alike. `presmium-lecture export --contact-sheet` reads the video once for all its frames, labels them with libass (FFmpeg's `ass` filter) and works with FFmpeg before 5.1; when every step is shorter than 0.6 s it writes no image and says why, where it failed with “Maximum call stack size exceeded” after encoding the video. `presmium mcp` documents `./tools` and `./call` for a document directory with those names.
+- 636206f: `presmium mcp tools` and `presmium mcp call <tool> [<JSON arguments>] [--out <dir>]` use the MCP tools of the Presmium service running for the current directory from the command line: the result is written to stdout as JSON, and the pictures of `capture_slides`, `capture_reading` and `capture_overview` are saved as PNG files with `--out`. The saves of a local `presmium serve` or Presmium Studio are now committed with the repository's configured git `user.name` and `user.email` as their author (still `local author <local@presmium.invalid>` when git has none). A workspace document's slides publish the workspace's `site.params.logo` relative to `presmium.workspace.yaml` instead of warning that the file does not exist. Releases set `latest` with `node scripts/release-latest.mjs`, which waits until npm lists every public package's new version.
+- Updated dependencies [fecb9ab]
+- Updated dependencies [0447441]
+- Updated dependencies [dcd90a0]
+- Updated dependencies [3bd7c86]
+- Updated dependencies [baeb4f3]
+- Updated dependencies [4be7244]
+  - @lincyaw/kernel@1.0.0-rc.30
+  - @lincyaw/skills@1.0.0-rc.30
+  - @lincyaw/compiler@1.0.0-rc.30
+
+## 1.0.0-rc.29
+
+### Patch Changes
+
+- @lincyaw/compiler@1.0.0-rc.29
+  - @lincyaw/kernel@1.0.0-rc.29
+  - @lincyaw/skills@1.0.0-rc.29
+
 ## 1.0.0-rc.28
 
 ### Patch Changes

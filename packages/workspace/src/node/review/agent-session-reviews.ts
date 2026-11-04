@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { DOCUMENT_ENTRY, errorMessage, pushStream } from '@lincyaw/kernel'
+import { errorMessage, pushStream } from '@lincyaw/kernel'
 import type { DocumentFiles, Logger, Member, ReviewEnd, ReviewSnapshot, ReviewUpdate } from '@lincyaw/kernel'
 import { trailers } from '../../domain/commit-message.ts'
 import type { WorkspaceConfig } from '../config.ts'
@@ -11,12 +11,12 @@ import { lockedError } from '../locks.ts'
 import type { DocumentLocks } from '../locks.ts'
 import type { Revisions } from '../revisions.ts'
 import { writeChanges } from '../writer.ts'
-import { GIT_ENGINE, openGitReview, pendingAgentSessionReview, resumeGitReview } from './git-review.ts'
+import { openGitReview, pendingAgentSessionReview, resumeGitReview } from './git-review.ts'
 import type { GitReview } from './git-review.ts'
 import { readRecord } from './record.ts'
 import type { ReviewRecord } from './record.ts'
 import { rollBackLeftTaskReview } from './task-reviews.ts'
-import { validateDocumentSource } from '../source-editor.ts'
+import { AgentWorkspace } from './agent-workspace.ts'
 
 export const AGENT_SESSION_TRAILER = 'Presmium-Session'
 export const TURN_TRAILER = 'Presmium-Turn'
@@ -32,6 +32,7 @@ export interface AgentSessionReviewsOptions {
   /** How a plugin's task writes, for rolling back the tasks a process left. */
   files?: DocumentFiles
   log: Logger
+  flush?(documents: string[], member: Member): Promise<void>
 }
 
 interface OpenReview {
@@ -42,7 +43,7 @@ interface OpenReview {
   turns: { from: number, to: number }
   running: boolean
   opened: string
-  release: () => void
+  workspace?: AgentWorkspace
   timer?: ReturnType<typeof setTimeout>
 }
 
@@ -69,21 +70,21 @@ function commitSummary(files: string[], lang: string | undefined): string {
 }
 
 /**
- * The review of a dsh agent session's changes to the whole workspace: one at a time, under the workspace's lock,
- * across the session's turns. A review that no page watches rolls back after the configured time.
+ * A dsh session reviews its private candidate; only publication briefly locks the author's workspace.
+ * A review that no page watches drops its candidate changes after the configured time.
  */
 export class AgentSessionReviews {
   readonly #options: AgentSessionReviewsOptions
   #open?: OpenReview
   #queue: Promise<unknown> = Promise.resolve()
-  readonly #workspaceFiles: DocumentFiles
   readonly #watchers = new Set<(update: ReviewUpdate) => void>()
   readonly #listeners = new Set<(event: ReviewEvent) => void>()
   #closed = false
+  readonly #workspaces = new Map<string, AgentWorkspace>()
+  readonly #retired = new Set<string>()
 
   constructor(options: AgentSessionReviewsOptions) {
     this.#options = options
-    this.#workspaceFiles = { write: async changes => writeChanges(options.config, changes, true) }
   }
 
   /** Takes up the reviews a process that has ended left: resumes its agent session's review, rolls back its tasks' reviews. */
@@ -102,6 +103,7 @@ export class AgentSessionReviews {
         }
         await rollBackLeftTaskReview(this.#options, document)
       } catch (error) {
+        if (readRecord(scopeDir)?.session) throw error
         log.warn(`the review left in ${document || '.'} was not taken up: ${errorMessage(error)}`)
       }
     }
@@ -110,18 +112,41 @@ export class AgentSessionReviews {
   async #resume(pending: ReviewRecord): Promise<void> {
     const { config, log } = this.#options
     const session = pending.session!
-    const release = this.#options.locks.claim('', lockHolder(session.session))
-    if (!release) throw new Error(`its lock is ${this.#options.locks.holder('')}'s`)
-    try {
-      const review = await resumeGitReview(pending, { workspaceRoot: config.root, files: this.#workspaceFiles, onRestore: paths => log.warn(`session ${session.session}: the agent changed the git directory, put back: ${paths.join(', ')}`) })
-      const open: OpenReview = { review, document: session.document, session: session.session, member: session.member, turns: session.turns, running: false, opened: session.opened, release }
-      this.#open = open
-      log.info(`the review of session ${session.session} in ${session.document || '.'} (turns ${session.turns.from}-${session.turns.to}) waits for its author again`)
-      this.#scheduleRollback(open)
-    } catch (error) {
-      release()
-      throw error
-    }
+    const workspace = pending.workspace ? AgentWorkspace.resume(config, pending.workspace) : undefined
+    const root = workspace?.root ?? config.root
+    const review = await resumeGitReview(pending, { workspaceRoot: root, files: { write: async changes => writeChanges({ ...config, root }, changes, true) }, onRestore: paths => log.warn(`session ${session.session}: the agent changed the git directory, put back: ${paths.join(', ')}`) })
+    if ((await review.diff()).length === 0) { await review.close(); workspace?.dispose(); return }
+    if (!workspace) { review.suspend(); throw new Error('A legacy review needs to be accepted or rejected with the version that created it before concurrent editing can start.') }
+    this.#workspaces.set(session.session, workspace)
+    const open: OpenReview = { review, document: session.document, session: session.session, member: session.member, turns: session.turns, running: false, opened: session.opened, workspace }
+    this.#open = open
+    log.info(`the review of session ${session.session} in ${session.document || '.'} (turns ${session.turns.from}-${session.turns.to}) waits for its author again`)
+    this.#scheduleRollback(open)
+  }
+
+  workspace(session: string): Promise<{ root: string }> {
+    return this.#serial(async () => {
+      this.#retired.delete(session)
+      let workspace = this.#workspaces.get(session)
+      if (!workspace) { workspace = await AgentWorkspace.create(this.#options.config); this.#workspaces.set(session, workspace) }
+      return { root: workspace.root }
+    })
+  }
+
+  refreshWorkspace(session: string): Promise<void> {
+    return this.#serial(async () => {
+      const workspace = this.#workspaces.get(session)
+      if (workspace && this.#open?.session !== session) await workspace.refresh()
+    })
+  }
+
+  closeWorkspace(session: string): Promise<void> {
+    return this.#serial(async () => {
+      if (this.#open?.session === session) { this.#retired.add(session); return }
+      const workspace = this.#workspaces.get(session)
+      this.#workspaces.delete(session)
+      workspace?.dispose()
+    })
   }
 
   async snapshot(): Promise<ReviewSnapshot | undefined> {
@@ -133,7 +158,7 @@ export class AgentSessionReviews {
     return {
       id: open.review.task,
       document: open.document,
-      engine: GIT_ENGINE,
+      engine: 'git-candidate',
       session: open.session,
       holder: lockHolder(open.session),
       turns: { ...open.turns },
@@ -173,24 +198,26 @@ export class AgentSessionReviews {
       let open = this.#open
       if (open && open.session !== body.session) throw lockedError(document, lockHolder(open.session))
       if (!open) {
-        const release = this.#options.locks.claim('', lockHolder(body.session))
-        if (!release) throw lockedError(document, this.#options.locks.holder('')!)
         const { config, log } = this.#options
         const turn = body.turn ?? 0
         const opened = new Date().toISOString()
+        let workspace = this.#workspaces.get(body.session)
+        if (!workspace) { workspace = await AgentWorkspace.create(config); this.#workspaces.set(body.session, workspace) }
+        const root = workspace.root
         try {
           const review = await openGitReview({
-            workspaceRoot: config.root,
-            scopeDir: config.root,
+            workspaceRoot: root,
+            scopeDir: root,
+            recordRoot: config.root,
+            workspace: workspace.record,
             task: randomUUID(),
-            files: this.#workspaceFiles,
+            files: { write: async changes => writeChanges({ ...config, root }, changes, true) },
             onRestore: paths => log.warn(`session ${body.session}: the agent changed the git directory, put back: ${paths.join(', ')}`),
             warn: message => log.warn(`session ${body.session}: ${message}`),
             session: { session: body.session, document, member, turns: { from: turn, to: turn }, opened },
           })
-          open = { review, document, session: body.session, member, turns: { from: turn, to: turn }, running: true, opened, release }
+          open = { review, document, session: body.session, member, turns: { from: turn, to: turn }, running: true, opened, workspace }
         } catch (error) {
-          release()
           throw new RequestError(409, `the review of ${document || '.'} did not open: ${errorMessage(error)}`)
         }
         this.#open = open
@@ -204,11 +231,24 @@ export class AgentSessionReviews {
 
   step(document: string, body: { session: string, turn?: number, label?: string, tool?: string, end?: boolean }): Promise<ReviewSnapshot | undefined> {
     return this.#serial(async () => {
+      if (!this.#open && body.end) return undefined
       const open = this.#requireSession(document, body.session)
       this.#noteTurn(open, body.turn)
       if (body.label) await open.review.step(body.label, body.tool)
       if (!body.end) {
-        open.running = true
+        open.running = false
+        if (reviewSettings(this.#options.config).mode === 'auto') {
+          try { await this.#accept(open, [], undefined) }
+          catch (error) {
+            if (error instanceof RequestError && error.message === 'agent-source-changed') {
+              await open.review.close()
+              await this.#end(open, { outcome: 'rejected', files: [] })
+              if (this.#workspaces.has(open.session)) await open.workspace!.refresh()
+            }
+            throw error
+          }
+          return undefined
+        }
         return await this.#publish(open)
       }
       open.running = false
@@ -228,29 +268,43 @@ export class AgentSessionReviews {
   }
 
   accept(document: string, body: { reject?: string[], message?: string }): Promise<ReviewEnd> {
-    return this.#serial(() => this.#accept(this.#requireOpen(document), body.reject ?? [], body.message))
+    return this.#serial(async () => {
+      const open = this.#requireOpen(document)
+      try { return await this.#accept(open, body.reject ?? [], body.message) }
+      catch (error) {
+        if (error instanceof RequestError && error.message === 'agent-source-changed') {
+          await open.review.close()
+          await this.#end(open, { outcome: 'rejected', files: [] })
+          if (this.#workspaces.has(open.session)) await open.workspace!.refresh()
+        }
+        throw error
+      }
+    })
   }
 
   async #accept(open: OpenReview, reject: string[], message: string | undefined): Promise<ReviewEnd> {
     const rejected = new Set(reject)
     for (const change of await open.review.diff()) if (isInGitDir(change.path)) rejected.add(change.path)
     const files = await open.review.prepareAccept([...rejected])
-    for (const path of files) {
-      if (path !== DOCUMENT_ENTRY && !path.endsWith(`/${DOCUMENT_ENTRY}`)) continue
-      const file = join(this.#options.config.root, path)
-      if (existsSync(file)) validateDocumentSource(path, readFileSync(file, 'utf8'))
-    }
+    if (!open.workspace) throw new RequestError(409, 'agent-workspace-unavailable')
     const lang = listDocuments(this.#options.config).find(doc => doc.dir === open.document)?.lang
     const steps = open.review.steps().map(step => `- ${step.label}`).slice(0, 20)
-    const revision = await this.#options.revisions.commit({
-      files,
-      message: `${message?.trim() || commitSummary(files, lang)}${steps.length ? `\n\n${steps.join('\n')}` : ''}`,
-      origin: { kind: 'agent', task: open.review.task, member: open.member },
-      trailers: [[AGENT_SESSION_TRAILER, open.session], [TURN_TRAILER, `${open.turns.from}-${open.turns.to}`]],
-    })
+    if (files.length) await this.#options.flush?.(listDocuments(this.#options.config).map(document => document.dir), open.member)
+    const release = await this.#options.locks.acquire('', lockHolder(open.session))
+    let revision
+    try {
+      revision = await this.#options.revisions.transaction(async () => {
+        const prepared = open.workspace!.prepare(files)
+        try {
+          open.workspace!.write(prepared.changes)
+          return await this.#options.revisions.commitWhileLocked({ paths: files, summary: message?.trim() || commitSummary(files, lang), body: steps.join('\n'), origin: { kind: 'agent', task: open.review.task, member: open.member }, trailers: [[AGENT_SESSION_TRAILER, open.session], [TURN_TRAILER, `${open.turns.from}-${open.turns.to}`]] })
+        } catch (error) { open.workspace!.write(prepared.restore); throw error }
+      })
+    } finally { release() }
     open.review.finish()
     const ended: ReviewEnd = { outcome: 'accepted', ...revision ? { revision } : {}, files }
     await this.#end(open, ended)
+    if (this.#workspaces.has(open.session)) await open.workspace.refresh()
     return ended
   }
 
@@ -298,9 +352,10 @@ export class AgentSessionReviews {
     if (open) {
       clearTimeout(open.timer)
       open.review.suspend()
-      open.release()
     }
     this.#open = undefined
+    for (const [session, workspace] of this.#workspaces) if (session !== open?.session) workspace.dispose()
+    this.#workspaces.clear()
   }
 
   #requireSession(document: string, session: string): OpenReview {
@@ -331,7 +386,10 @@ export class AgentSessionReviews {
   async #end(open: OpenReview, ended: ReviewEnd): Promise<void> {
     clearTimeout(open.timer)
     this.#open = undefined
-    open.release()
+    if (this.#retired.delete(open.session)) {
+      this.#workspaces.delete(open.session)
+      open.workspace?.dispose()
+    }
     this.#sendToWatchers({ document: open.document, ended })
     this.#emit({ type: 'review', document: open.document, session: open.session, ended })
   }

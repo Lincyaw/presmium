@@ -1,6 +1,7 @@
 // A cropped figure of the paper inside a scene, with a camera that frames one region of it at a time and marks laid
-// over it in the figure's own coordinates. The crop and its word map come from `tools/figure.py`: the map gives the
-// box of every word as fractions of the crop, so a mark can sit on a tick label or a legend entry exactly.
+// over it in the figure's own coordinates. The crop and its word map come from `figure.py` (in the presmium-animate
+// skill's gallery/catalog/paper-figure/tools/): the map gives the box of every word as fractions of the crop, so a mark
+// can sit on a tick label or a legend entry exactly.
 
 export interface FigureWord { text: string, x: number, y: number, w: number, h: number }
 export interface FigureMap { source: string, size: [number, number], aspect: number, words: FigureWord[] }

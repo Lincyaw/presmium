@@ -185,6 +185,7 @@ packages/addon-<ctx>/
 
 - `useStepState`、`StepScope`：块内步骤状态。
 - `useStepTime`：步内时间；现场按页面时间，回放与导出由 `STEP_CLOCK` 驱动，停定、后退与减少动态效果时为 `Infinity`。
+- `useDrivenStepLength`：驱动 `STEP_CLOCK` 的播放给每步的长度（`StepClockDriver.stepLength`，按幻灯片序号与步骤，毫秒）。只有讲授计划派生的讲授轨（`script`）在播放或停在某一步时给出，为该步从开始到配音结束的时间；配音等动画结束才开始的步骤（`after-animation`）、没有配音的步骤、录制的讲授、截图、读者试看与手动步进都没有。
 - `useActions`：具名动作，报告 `click`，讲授经它重放。
 - `useSharedState` 的 `scope`：`view`、`local`（本机窗口，BroadcastChannel）、`remote`（经同步传输跨设备）。
 - `useServer`、`useLocale`、`useMessages`、`siteBase`、`PmBoundary`、`registerPresmiumPlugin`、`startHost`、`stopHost`。
@@ -226,9 +227,9 @@ packages/addon-<ctx>/
 
 ### 4.8 语音、智能体与历史
 
-工作台“语音服务”保存火山引擎语音 API Key 至运营者目录的 `speech/credentials.json`（`0600`），经文件锁、修订比较及原子替换写入。所有者路由只返回状态。共享 Node secret 解析器优先使用保存值，再回退启动环境；保存的 Key 不继承环境 App ID。配置变化刷新目录与适配器，不隐式合成或验证服务权限。
+工作台“语音服务”保存火山引擎语音 API Key 至运营者目录的 `speech/credentials.json`（`0600`），经文件锁、修订比较及原子替换写入。所有者路由只返回状态。`presmium speech key set|clear|status [<目录>]` 经同一个 `OperatorSpeechSettings` 读写这个文件（运营者目录按 `presmium voiceover` 编译文稿时的方式取得：目录所在的工作区，`PRESMIUM_OPERATOR_DIR` 可另指定），密钥只从标准输入读入、不回显，`status` 只说明是否配置及来源。共享 Node secret 解析器优先使用保存值，再回退启动环境；保存的 Key 不继承环境 App ID。配置变化刷新目录与适配器，不隐式合成或验证服务权限。
 
-- `SPEECH` 提供合成、转写、音色；引擎由运营者以 `PRESMIUM_SPEECH_<ID>_URL`、`_KEY`、`_PROVIDER` 定义。语音 `lang` 是 BCP 47。
+- `SPEECH` 提供合成、转写、音色与配音缓存的清理（`pruneCache`）；引擎由运营者以 `PRESMIUM_SPEECH_<ID>_URL`、`_KEY`、`_PROVIDER` 定义。语音 `lang` 是 BCP 47。
 - 读者问答在浏览器中经读者自己的服务，不经站点服务端。
 - agent 工具的元数据标明种类（读取、操作、计费），确认按种类。
 - 每次接受的修改是一个 git 提交，尾注 `Presmium-Origin`，会话修改另有 `Presmium-Session`、`Presmium-Turn`。
@@ -258,6 +259,8 @@ packages/addon-<ctx>/
 
 视觉状态是步骤的纯函数；动画是（步骤，步内时间）的纯函数，时间只取 `useStepTime()`。读者的本地步进不写回宿主。
 
+动画场景的状态 k 按定义的 `durations[k]` 播放。有 `useDrivenStepLength` 时（讲授的播放与导出、视频制作的预览），状态 k 持续到第一个显示它的步骤的配音结束，不短于 `durations[k]`，其后的停顿与停留中保持终态；场景的 `durations`、`at`、`total` 都是这条时间线。场景在得到步长时重建一次，新场景换上之前，旧场景仍按自己的时间线显示，按帧导出等 `STEP_CLOCK.settled()` 时也等到新场景建好，所以没有一帧取自旧时间线。场景把节拍放在状态长度的比例处（`at(k) + f · durations[k]`），节拍就随配音移动，配音之后不必改写 `durations`；阅读页、手动步进的幻灯片、静态渲染与截图仍按定义的时长。
+
 ### 5.4 错误隔离
 
 IR 运行时给每个插件组件包 `PmBoundary`，抛错只影响自己；`resetKey` 变化时恢复。
@@ -268,7 +271,7 @@ IR 运行时给每个插件组件包 `PmBoundary`，抛错只影响自己；`res
 
 ### 5.6 媒介限定
 
-块的 `only` 限定媒介；排版提示在页面 `layout.renderers`。
+块的 `only` 限定媒介，讲授视频的媒介是 `lecture`；排版提示在页面 `layout.renderers`。一个步骤显示的内容块都限定在其他媒介、又没有讲稿、录音与音频片段，也不是 `{cue}next` 转入的步骤时，讲授中没有这一步（讲授计划第 6 节）。
 
 ### 5.7 界面语言
 
@@ -321,10 +324,12 @@ PDF、图片与 PowerPoint 中组件显示 IR 的 `fallback`（`useStaticRender(
 |---|---|---|
 | `presmium-export` | `addon-publish` | 幻灯片导出 PDF、PNG、PowerPoint |
 | `presmium-diff` | `addon-publish` | 两个提交的视觉差异 |
-| `presmium-lecture export` | `addon-lecture` | 逐帧导出讲授视频 |
+| `presmium-lecture export` | `addon-lecture` | 逐帧导出讲授视频；`--contact-sheet` 另写一张 PNG，由 FFmpeg 从视频截取每步起点后 0.3 秒与中点的画面并标注页面与步骤 |
+| `presmium-lecture timing` | `addon-lecture` | 按导出所放的讲授计划（只读已生成的配音）逐步列出讲稿字数、配音秒数、每秒字数、动画与步骤时长，再给出合计与视频时长；`--json` 输出 JSON |
 | `presmium-speech fake`、`clone`、`consent` | `addon-speech` | 假引擎；训练克隆音色；登记同意 |
 | `presmium-classroom-server` | `classroom-server` | 课堂同步 |
 | `presmium mcp`、`presmium-mcp` | `mcp` | stdio MCP：转接这个目录正在运行的 `presmium studio`、`serve`（或 `dev`）的 `/mcp`，没有时自己编译文稿，`--allow operate` 才有操作类工具 |
+| `presmium mcp tools`、`call` | `mcp` | 在命令行中列出、调用当前目录正在运行的服务的 MCP 工具：结果以 JSON 写到标准输出，图片用 `--out` 存为 PNG 文件；工具失败时退出码为 1，没有服务时为 2；名为 `tools` 或 `call` 的文稿目录写作 `presmium mcp ./tools` |
 | `presmium-language-server` | `language-server` | 语言服务 |
 
 ## 9. 已知风险
@@ -398,7 +403,9 @@ presmium serve: 浏览器 → 服务端 ─┬ /__presmium/<插件 ID>/…、/__
 
 ### 10.7 修改审阅
 
-`packages/workspace/src/node/review/`：会话审阅覆盖整个工作区并持锁；git 树记录开始时与每次工具调用后的检查点，不动 `HEAD` 与真实索引；拒绝时经 `DOCUMENT_FILES` 恢复，不跟随符号链接；接受时先恢复被拒文件再经 `REVISIONS` 提交，成功后释放锁；git 关闭钩子、fsmonitor 与外部 diff；记录在 `presmium/reviews/`，重启后恢复。
+`packages/workspace/src/node/review/`：会话的候选目录位于工作区 `.presmium/agent-workspaces/`，有独立 git 与来源文件版本。AI 文件工具、新进程与正文 MCP 工具操作候选目录，原工作区持续接受作者保存。候选 git 树记录检查点；拒绝与恢复只写候选目录。发布先确认作者输入已保存，再在原工作区短事务中执行全部文件的版本检查、写入与 `REVISIONS` 提交；任一来源过期时不发布，AI 重新读取后重试。审阅记录在 `presmium/reviews/`，包含候选地址与来源版本，重启后恢复。插件的单次修改任务仍使用文稿锁。
+
+候选服务由 bundle 设置 `PRESMIUM_AGENT_CANDIDATE=1`，在自己的目录中允许正文动作提交，是否需要作者确认由原服务发布时的审阅设置决定。作者历史、运行任务和浏览器状态由原服务负责。
 
 ## 11. 安全
 

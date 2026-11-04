@@ -1,5 +1,20 @@
 # @lincyaw/compiler
 
+## 1.0.0-rc.30
+
+### Patch Changes
+
+- 0447441: Add `presmium voiceover` (report what generating a document's voiceover would do, generate the missing sentences in-process with `--yes`, set the default voice with `--voice`, delete unused speech cache with `--prune`), `presmium speech key set|clear|status` (the Volcengine speech key in the workspace's operator settings) and `presmium script export|import` (the narration as one Markdown file to polish and back).
+- Updated dependencies [fecb9ab]
+- Updated dependencies [0447441]
+  - @lincyaw/kernel@1.0.0-rc.30
+
+## 1.0.0-rc.29
+
+### Patch Changes
+
+- @lincyaw/kernel@1.0.0-rc.29
+
 ## 1.0.0-rc.28
 
 ### Patch Changes

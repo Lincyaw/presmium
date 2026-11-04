@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import type { Transaction } from '@tiptap/pm/state'
+import { TextSelection } from '@tiptap/pm/state'
 import { closeHistory } from '@tiptap/pm/history'
 import { allocateDocumentPage, randomUUID } from '@lincyaw/kernel'
 import type { Member, TeachingDocument } from '@lincyaw/kernel'
@@ -12,8 +13,8 @@ import type { NativePageCreation } from './projection.ts'
 import { captureRichBaseline } from './rich-text.ts'
 import { captureTableIdentities, seedTableIdentities } from './table-identities.ts'
 import type { DocumentNodeViews, NativeDocumentEditor } from './schema.tsx'
-import { nativeEditingCursor } from './selection.ts'
-import type { NativeDocumentSelection } from './selection.ts'
+import { nativeEditingCursor, nativeTextPoint, nativeTextPosition } from './selection.ts'
+import type { NativeDocumentSelection, NativeTextPoint } from './selection.ts'
 import { documentInsertionPlace } from './insertion-place.ts'
 import type { DocumentInsertionPlace } from './insertion-place.ts'
 
@@ -88,6 +89,13 @@ export function DocumentEditor(props: DocumentEditorProps) {
   const focusFrame = useRef<number>()
   const binding = useRef(projection)
   const active = useRef(projection)
+  const editorIdentity = useRef(props.identity)
+  const retainedSelection = useRef<{ from: NativeTextPoint, to: NativeTextPoint }>()
+  const previous = editor.current
+  if (binding.current !== projection && editorIdentity.current === props.identity && previous?.isFocused() && !previous.prosemirrorView.composing) {
+    const from = nativeTextPoint(previous, previous.prosemirrorState.selection.anchor), to = nativeTextPoint(previous, previous.prosemirrorState.selection.head)
+    if (from && to) retainedSelection.current = { from, to }
+  }
   active.current = projection
   current.current = props
   const cancelFocus = () => { if (focusFrame.current !== undefined) cancelAnimationFrame(focusFrame.current); focusFrame.current = undefined }
@@ -166,7 +174,17 @@ export function DocumentEditor(props: DocumentEditorProps) {
         comments.restoreAnchors(value)
         binding.current = projection
         editor.current = value
+        editorIdentity.current = props.identity
         projectedDocument.current = value.prosemirrorState.doc
+        const selection = retainedSelection.current
+        retainedSelection.current = undefined
+        if (selection) {
+          const from = nativeTextPosition(value, selection.from), to = nativeTextPosition(value, selection.to)
+          if (from !== undefined && to !== undefined) {
+            value.transact(transaction => transaction.setSelection(TextSelection.create(transaction.doc, from, to)).setMeta('addToHistory', false))
+            value.focus()
+          }
+        }
         const stopBefore = value.onBeforeChange(({ tr }) => { if (!comments.synchronizing && tr.docChanged) pendingTransaction.current = tr })
         const stopComments = comments.subscribe(emit)
         const stopSelection = value.onSelectionChange(() => { cancelFocus(); reportPosition() })

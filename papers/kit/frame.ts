@@ -2,7 +2,8 @@
 // of its height), so a scene looks the same in the reading column, on a slide and in the video; an SVG layer whose
 // units are square (160 × 90 across the frame); the type scale; and the colours, used the same way in every film.
 //
-// The whole frame is usable: captions are an overlay the presenter can switch off, so no band is kept free for them.
+// The whole frame is usable, but what must be read stays above 77% of the height: a burned two-line caption takes the
+// bottom of the frame from about 78%. Charts put their x axis at 61 of the layer's 90 units, so the axis title clears it.
 
 import { BRAND, MARK } from './brand.ts'
 
@@ -66,7 +67,7 @@ export const LAYER = 'viewBox="0 0 160 90"'
 
 /**
  * Times inside a scene. `at(k)` is where state k starts; a beat is placed at a fraction of its state's length, so that
- * retiming the states to the real voiceover (`tools/film.mjs retime`) moves every beat with its sentence.
+ * when a lecture gives each state the length of its step's voiceover, every beat moves with its sentence.
  */
 export function clock(at: (k: number) => number, durations: readonly number[]) {
   const S = (k: number) => at(k) / 1000

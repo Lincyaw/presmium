@@ -59,7 +59,10 @@ metadata, `references/` links, the document contract and that every `presmium <c
 
 Every repository update adds a changeset (`pnpm changeset`, one sentence for users), including changes to
 tests, docs, skills, examples and configuration. Follow `.changeset/README.md` for package selection and
-the release procedure. `pnpm release:check` packs without uploading. `pnpm consumer [<directory>]` installs
+the release procedure. `pnpm release:check` packs without uploading. After `pnpm changeset publish`,
+`node scripts/release-latest.mjs` waits until npm lists the current version of every public package, then
+sets `latest` (and `rc` in prerelease mode) and prints the dist-tags npm confirms; it never moves a tag
+back, and `--dry-run` only polls and reports. `pnpm consumer [<directory>]` installs
 `presmium` outside the monorepo, including Studio by default (about 865 MB with its dependencies); `--studio` also lists Studio as a direct dependency for compatibility. Studio uses `@lincyaw/presmium` as its peer host; the host includes Studio as a dependency, so one install provides `presmium studio` without a hard dependency cycle. A global `presmium` always runs its own installation; it does not forward to a project installation. Use `pnpm exec presmium` explicitly to run a project version. Publishing follows
 `.changeset/README.md` under the standing authorization in the root `AGENTS.md`: after scoped
 verification, commit, push and release every completed update without asking again. Publish from a

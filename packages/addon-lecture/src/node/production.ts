@@ -1,13 +1,13 @@
 import { createHash } from 'node:crypto'
 import { stat } from 'node:fs/promises'
-import type { CanonicalSource, IRDocument, ProductionAssetAnswer, ProductionAssetQuery, ProductionAudio, ProductionMediaQuery, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
+import type { CanonicalSource, IRDocument, ProductionAssetAnswer, ProductionAssetQuery, ProductionAudio, ProductionMediaQuery, ProductionPlan, ProductionPlanQuery, SpeechService } from '@lincyaw/kernel'
 import { irRevision } from '@lincyaw/kernel/node'
 import type { LectureTrack } from '../domain/index.ts'
 import { projectProductionPlan } from '../domain/production.ts'
 import { latestDoc, lectureView } from './latest-ir.ts'
 import { assertVoiceSource } from './voice-source.ts'
 import { synthesizeLecture } from './synthesize.ts'
-import type { SynthesizedClip } from './synthesize.ts'
+import type { SynthesizedClip, SynthesizedLecture } from './synthesize.ts'
 import type { ServedDeck } from './routes/served-deck.ts'
 import { RouteRefusal } from './routes/served-deck.ts'
 import { assertProductionAssetFile, inspectProductionAsset } from './production-assets.ts'
@@ -33,6 +33,27 @@ async function current(served: ServedDeck, expected?: ProductionPlanQuery): Prom
   return { doc, source, revision }
 }
 
+/**
+ * The cache-only lecture of a compiled document and its production plan: what the plan route serves, the existing
+ * lecture player and the video export play, and `presmium-lecture timing` reports. No provider generation occurs.
+ */
+export async function cachedProduction(doc: IRDocument, deckDir: string, speech: SpeechService | undefined, signal?: AbortSignal): Promise<{ projected: Omit<ProductionPlan, 'binding'>, track: LectureTrack, clips: Map<string, ClipFile>, made: SynthesizedLecture }> {
+  const made = await synthesizeLecture(lectureView(doc), deckDir, speech, signal, { cacheOnly: true }), track = made.preview
+  if (!track) throw new RouteRefusal(409, 'production-plan-unavailable')
+  const clips = new Map<string, ClipFile>(), unique = [...new Map([...made.clips.values()].map(clip => [clip.key, clip])).values()].sort((a, b) => a.key.localeCompare(b.key))
+  for (let offset = 0; offset < unique.length; offset += 4) for (const file of await Promise.all(unique.slice(offset, offset + 4).map(clip => clipFile(clip, signal)))) clips.set(file.audio!.clipId, file)
+  for (const file of [...made.assets?.values() ?? []].sort((a, b) => a.asset.mediaId.localeCompare(b.asset.mediaId))) {
+    assertProductionAssetFile(file, deckDir)
+    clips.set(file.asset.mediaId, { asset: file, path: file.path, stamp: file.stamp })
+  }
+  for (const utterance of track.utterances) {
+    const clip = made.clips.get(utterance.id)
+    if (clip) utterance.clipId = clip.key
+  }
+  const projected = projectProductionPlan(doc, made.deck.plan, track, new Map([...clips].flatMap(([key, file]) => file.audio ? [[key, file.audio] as const] : [])), made.failures, [...made.mediaDiagnostics ?? [], ...made.captionDiagnostics ?? []], new Map([...made.assets ?? []].map(([id, file]) => [id, file.asset])))
+  return { projected, track, clips, made }
+}
+
 /** Cache-only derivation shared by the public plan and the existing lecture player. No provider generation occurs. */
 export async function productionSnapshot(served: ServedDeck, query?: ProductionPlanQuery & { planId?: string }, signal?: AbortSignal): Promise<ProductionSnapshot> {
   signal?.throwIfAborted()
@@ -54,19 +75,7 @@ export async function productionSnapshot(served: ServedDeck, query?: ProductionP
   }
   let speech
   try { speech = served.speech() } catch { /* Explicit silence requires no speech service. */ }
-  const made = await synthesizeLecture(lectureView(now.doc), served.deckDir, speech, signal, { cacheOnly: true }), track = made.preview
-  if (!track) throw new RouteRefusal(409, 'production-plan-unavailable')
-  const clips = new Map<string, ClipFile>(), unique = [...new Map([...made.clips.values()].map(clip => [clip.key, clip])).values()].sort((a, b) => a.key.localeCompare(b.key))
-  for (let offset = 0; offset < unique.length; offset += 4) for (const file of await Promise.all(unique.slice(offset, offset + 4).map(clip => clipFile(clip, signal)))) clips.set(file.audio!.clipId, file)
-  for (const file of [...made.assets?.values() ?? []].sort((a, b) => a.asset.mediaId.localeCompare(b.asset.mediaId))) {
-    assertProductionAssetFile(file, served.deckDir)
-    clips.set(file.asset.mediaId, { asset: file, path: file.path, stamp: file.stamp })
-  }
-  for (const utterance of track.utterances) {
-    const clip = made.clips.get(utterance.id)
-    if (clip) utterance.clipId = clip.key
-  }
-  const projected = projectProductionPlan(now.doc, made.deck.plan, track, new Map([...clips].flatMap(([key, file]) => file.audio ? [[key, file.audio] as const] : [])), made.failures, [...made.mediaDiagnostics ?? [], ...made.captionDiagnostics ?? []], new Map([...made.assets ?? []].map(([id, file]) => [id, file.asset])))
+  const { projected, track, clips } = await cachedProduction(now.doc, served.deckDir, speech, signal)
   const planId = createHash('sha256').update(JSON.stringify({ source: now.source, irRevision: now.revision, projected, track, audio: [...clips.values()].map(file => file.audio ?? file.asset!.asset) })).digest('hex').slice(0, 32)
   const binding = { source: now.source, irRevision: now.revision, planId }, plan: ProductionPlan = { binding, ...projected }
   track.binding = binding

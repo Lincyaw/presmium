@@ -1,4 +1,4 @@
-import { applyDocumentCaptionTiming, randomUUID, replaceStepNarrations, validateDocument } from '@lincyaw/kernel'
+import { applyDocumentCaptionTiming, changeDocumentCaptionScale, randomUUID, replaceStepNarrations, validateDocument } from '@lincyaw/kernel'
 import type { DocumentCaptionTimingAction } from '@lincyaw/kernel'
 import { reconcileCaptionTiming } from './caption-timing.ts'
 import type { ProjectOperation, ProjectPlan } from '@lincyaw/kernel'
@@ -217,7 +217,7 @@ export function selectedDocument(state: WorkbenchState): string | null {
 
 /** Whether the AI is changing the workspace now, or its change waits for the author. */
 export function isAgentChanging(state: WorkbenchState): boolean {
-  return Boolean(state.review && (state.review.running || state.review.changes.length > 0))
+  return Boolean(state.review?.engine === 'git' && (state.review.running || state.review.changes.length > 0))
 }
 
 /** Whether the document has a slides form (no renderers listed: every form). */
@@ -1586,6 +1586,14 @@ export class Workbench {
     const next = changeStepTiming(document, stepId, patch)
     if (next === document) return
     this.stopAuditions()
+    this.#documentSession.record(next)
+  }
+  /** The whole document's caption size (`production.captions.scale`), recorded like a step's timing. */
+  setDocumentCaptionScale(scale: number, identity?: string): void {
+    const document = this.getDocument(identity)
+    if (!document || isAgentChanging(this.#state)) return
+    const next = changeDocumentCaptionScale(document, scale)
+    if (next === document) return
     this.#documentSession.record(next)
   }
   documentTimingDraft(stepId: string, key: StepDurationKey, identity: string, reset: number): StepDurationDraft | undefined {

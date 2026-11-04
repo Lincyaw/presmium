@@ -14,7 +14,7 @@ const mask = D.delphi.methods.mask
 const rungs = D.delphi.rungs
 const small = rungs.map((r, i) => ({ r, i })).filter(({ r }) => r.c <= 19.96)
 const ctrl = D.answer_mix.rows.find(row => row.t === 7)!
-const AX = scale(0, 1, 16, 66), BX = scale(0, 1, 88, 138), Y = scale(0, 1, 62, 22)
+const AX = scale(0, 1, 16, 66), BX = scale(0, 1, 88, 138), Y = scale(0, 1, 60, 22)
 
 export default gsapScene(({ root, gsap, at, durations }) => {
   const { T } = clock(at, durations)

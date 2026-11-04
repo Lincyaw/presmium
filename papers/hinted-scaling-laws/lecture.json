@@ -1404,13 +1404,6 @@
       "trailingPauseMs": 350
     },
     "stepOverrides": {
-      "notes--step-0": {
-        "voiceSource": {
-          "type": "none"
-        },
-        "minimumHoldMs": 0,
-        "trailingPauseMs": 0
-      },
       "ending--step-0": {
         "minimumHoldMs": 0,
         "trailingPauseMs": 1200

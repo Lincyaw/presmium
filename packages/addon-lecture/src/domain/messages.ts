@@ -14,6 +14,35 @@ export interface LectureMessages {
     reasons: Record<string, string>
     reasonGeneric: string
   }
+  /** The lecture's length: the check against `maximumDurationMs` and the report of `presmium-lecture timing`. */
+  timing: {
+    /** The planned video is longer than the limit; `cut` is about how much script to remove at the measured rate. */
+    tooLong(length: string, limit: string, overSeconds: string, cut?: { rate: string, characters: number }): string
+    limitInvalid: string
+    /** The length could not be checked against the limit; `reason` is a sentence of this catalog. */
+    unchecked(reason: string): string
+    uncheckedReason: string
+    uncheckedEstimated: string
+    uncheckedUnknown: string
+    columns: { page: string, step: string, characters: string, voice: string, rate: string, animation: string, length: string }
+    totals(steps: number, characters: number, voiceSeconds: string, rate?: string): string
+    /** The video's length, then `verdict` (`within` or `over`) when the document sets a limit. */
+    video(length: string, seconds: string, verdict?: string): string
+    within(limit: string): string
+    over(limit: string, overSeconds: string, characters?: number): string
+    estimated: string
+    unknown: string
+  }
+  /** The image `presmium-lecture export --contact-sheet` writes: a frame of every step, taken from the video. */
+  sheet: {
+    /** A frame's label, written into the image in the document's language. */
+    frame(page: number, step: number, title: string | undefined, at: string): string
+    written(file: string, frames: number): string
+    needsFfmpeg(file: string, install: string): string
+    /** Every step of the video is shorter than `seconds`, the shortest step the sheet takes frames of. */
+    noFrames(file: string, seconds: number): string
+    unlabelled(file: string): string
+  }
   /** The problems of a {cue} mark, written into the document's diagnostics. */
   cue: {
     problem(command: string, reason: string): string
@@ -155,6 +184,28 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       },
       reasonGeneric: '无法读取这句讲稿的配音。',
     },
+    timing: {
+      tooLong: (length, limit, over, cut) => `讲授视频长 ${length}，比上限 ${limit} 长 ${over} 秒。${cut ? `按配音的实测语速（每秒 ${cut.rate} 字），约需删去讲稿 ${cut.characters} 字。` : ''}`,
+      limitInvalid: 'metadata.renderers.lecture.maximumDurationMs 须为大于 0 的毫秒数。',
+      unchecked: reason => `无法检查讲授视频是否超过时长上限。${reason}`,
+      uncheckedReason: '读取配音或音频文件失败。请重新运行 presmium check。',
+      uncheckedEstimated: '部分讲稿还没有配音或没有选择音色，视频时长只是估算；生成配音后再检查。',
+      uncheckedUnknown: '有步骤的时长无法确定，原因见这次检查的其他问题。',
+      columns: { page: '页面', step: '步骤', characters: '字数', voice: '配音（秒）', rate: '每秒字数', animation: '动画（秒）', length: '时长（秒）' },
+      totals: (steps, characters, voice, rate) => `共 ${steps} 步，讲稿 ${characters} 字，配音 ${voice} 秒${rate ? `（每秒 ${rate} 字）` : ''}。`,
+      video: (length, seconds, verdict) => `视频长 ${length}（${seconds} 秒）。${verdict ?? ''}`,
+      within: limit => `未超过上限 ${limit}。`,
+      over: (limit, over, characters) => `比上限 ${limit} 长 ${over} 秒${characters ? `，约需删去讲稿 ${characters} 字` : ''}。`,
+      estimated: '部分讲稿还没有配音，以下时长含估算。请先生成配音。',
+      unknown: '有步骤的时长无法确定。请运行 presmium check 查看原因。',
+    },
+    sheet: {
+      frame: (page, step, title, at) => `第 ${page} 页 · 第 ${step} 步${title ? ` · ${title}` : ''} · ${at}`,
+      written: (file, frames) => `已写入 ${file}：${frames} 帧，每步起点后 0.3 秒与中点各一帧。`,
+      needsFfmpeg: (file, install) => `无法写入 ${file}：从视频中截取画面需要 FFmpeg。请安装 FFmpeg（${install}）。`,
+      noFrames: (file, seconds) => `无法写入 ${file}：视频中每一步都短于 ${seconds} 秒，没有可截取的画面。`,
+      unlabelled: file => `${file} 中的画面没有标注页面与步骤：这个 FFmpeg 没有 libass（ass 滤镜）。`,
+    },
     cue: {
       problem: (command, reason) => `提示“${command}”：${reason}`,
       unknown: (name, commands) => `没有“${name}”这种提示。可用的提示：${commands.join('、')}。`,
@@ -256,6 +307,28 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
         'production-media-changed': 'The voiceover file changed while it was read. Try again.',
       },
       reasonGeneric: 'Couldn’t read the voiceover of this sentence.',
+    },
+    timing: {
+      tooLong: (length, limit, over, cut) => `The lecture video is ${length} long, ${over} s over its limit of ${limit}.${cut ? ` At the voiceover’s measured rate of ${cut.rate} characters a second, cut about ${cut.characters} characters of the script.` : ''}`,
+      limitInvalid: 'metadata.renderers.lecture.maximumDurationMs must be a number of milliseconds greater than 0.',
+      unchecked: reason => `Couldn’t check the lecture video’s length against its limit. ${reason}`,
+      uncheckedReason: 'Reading the voiceover or audio files failed. Run presmium check again.',
+      uncheckedEstimated: 'Some of the script has no voiceover or no voice is chosen, so the video’s length is only an estimate. Check again once the voiceover is generated.',
+      uncheckedUnknown: 'Some steps have no known length; the other problems of this check say why.',
+      columns: { page: 'Page', step: 'Step', characters: 'Characters', voice: 'Voiceover (s)', rate: 'Characters/s', animation: 'Animation (s)', length: 'Length (s)' },
+      totals: (steps, characters, voice, rate) => `${steps} step${steps === 1 ? '' : 's'}, ${characters} character${characters === 1 ? '' : 's'} of script, ${voice} s of voiceover${rate ? ` (${rate} characters a second)` : ''}.`,
+      video: (length, seconds, verdict) => `The video is ${length} long (${seconds} s).${verdict ? ` ${verdict}` : ''}`,
+      within: limit => `It is within the limit of ${limit}.`,
+      over: (limit, over, characters) => `It is ${over} s over the limit of ${limit}${characters ? `; cut about ${characters} characters of the script` : ''}.`,
+      estimated: 'Some of the script has no voiceover yet, so these lengths are partly estimated. Generate the voiceover first.',
+      unknown: 'Some steps have no known length. Run presmium check to see why.',
+    },
+    sheet: {
+      frame: (page, step, title, at) => `Page ${page} · Step ${step}${title ? ` · ${title}` : ''} · ${at}`,
+      written: (file, frames) => `Wrote ${file}: ${frames} frames, each step 0.3 s after it starts and at its middle.`,
+      needsFfmpeg: (file, install) => `Couldn’t write ${file}: taking frames from the video needs FFmpeg. Install FFmpeg (${install}).`,
+      noFrames: (file, seconds) => `Couldn’t write ${file}: every step of the video is shorter than ${seconds} s, so there are no frames to take.`,
+      unlabelled: file => `The frames in ${file} have no page and step labels: this FFmpeg has no libass (ass filter).`,
     },
     cue: {
       problem: (command, reason) => `Cue “${command}”: ${reason}`,

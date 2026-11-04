@@ -24,11 +24,11 @@ ABT：缩放定律用小模型预测大模型的准确率，而且开发者真�
 ## C. 画面约定
 
 - 16:9 画面用容器单位（cqw、cqh），SVG 层的坐标是 160 × 90（`kit/frame.ts` 的 `LAYER`、`vx`、`vy`）。
-- **字幕带**：讲授视频的字幕叠在画面底部（约 83% 到 92% 高度）。图的坐标轴、刻度、关键数字都放在 78cqh 以上；整个画面仍然可用，只是不把要读的东西放进字幕带。
+- **字幕带**：讲授视频烧入的字幕叠在画面底部，两行时约占 78% 到 97% 高度。图的坐标轴、横轴标题、刻度、关键数字都放在 77cqh 以上（坐标图的底边在 61 个 SVG 单位）；整个画面仍然可用，只是不把要读的东西放进字幕带。
 - 左边是图，右边（约 66cqw 起）是关键词和读数；关键词放在它描述的部分旁边，每项只写一个短句。
 - 横轴“训练算力（FLOPs，对数刻度）”在第一页和预测页位置完全相同（`scale(18.25, 23.35, 16, 98)`），两页可以对照。
 - 左上角固定是品牌角标 `brand(PAPER.short)`（开场页除外）。
-- 论文原图只出现两次：图 1 上半（三种提示方法，提示页第二步）和图 3 的遮盖面板（定律页第二、三步）。裁切由 `tools/figure.py` 生成，标注放在图自己的坐标里（`kit/figure.ts`），镜头一次只框一个区域。
+- 论文原图只出现两次：图 1 上半（三种提示方法，提示页第二步）和图 3 的遮盖面板（定律页第二、三步）。裁切由 `figure.py`（`presmium-animate` 技能的 `gallery/catalog/paper-figure/tools/`）生成，标注放在图自己的坐标里（`kit/figure.ts`），镜头一次只框一个区域。
 
 ## D. 颜色（一种颜色一个意思，和论文图一致）
 
@@ -106,11 +106,11 @@ ABT：缩放定律用小模型预测大模型的准确率，而且开发者真�
 ## I. 制作规则
 
 - 场景的样子只由时间决定：只用补间（tween）和 `set`，不用 `onUpdate`、`call` 之类的回调。预览与导出按时间定位（seek）时 GSAP 会跳过回调，靠回调画出来的帧会停在旧状态。屏幕上的数值用 `textContent` 补间加 `modifiers` 格式化。
-- 节拍用 `clock` 的 `T(k, f)`：状态 k 的比例 f 处；`tools/film.mjs retime` 把状态时长换成真实配音后，节拍跟着句子走。按讲稿里关键词的位置（字数比例）放节拍。
+- 节拍用 `clock` 的 `T(k, f)`：状态 k 的比例 f 处；讲授时每个状态的时长就是这一步配音的长度，节拍跟着句子走。按讲稿里关键词的位置（字数比例）放节拍。
 - 不用 SVG 的 `id` 和 `url(#…)`（同一页面上多个场景会互相冲突），箭头画成路径。
 - 颜色变化不能补间 `var()` 或 `color-mix()`：用 `isDark`、`color()` 取实际颜色或预先算好 `rgb()`。
 - 只有协调者改 `lecture.json`、`kit/`、`hsl.ts` 和 `data/`；每个 agent 只改分给自己的场景文件。保存前确认它能编译（`pnpm exec presmium check hinted-scaling-laws --json`，忽略“没有配音”那一条），一个编译不过的场景会让整份文稿的预览失败。
-- 看结果用 `node tools/mcp.mjs capture_slides '{"document":"hinted-scaling-laws","section":"p-<页>"}' --out <目录>`，再用 `tools/sheet.py` 拼成一张看；亮色与暗色都要看（暗色：`capture_slides` 的参数见 `node tools/mcp.mjs list`）。
+- 看结果用 `pnpm exec presmium mcp call capture_slides '{"document":"hinted-scaling-laws","section":"p-<页>"}' --out <目录>`；亮色与暗色都要看（暗色加 `"appearance":"dark"`，其余参数见 `pnpm exec presmium mcp tools`）。
 
 ## J. 评审记录
 

@@ -101,7 +101,7 @@ export function MediaClipEditor(props: MediaClipEditorProps) {
       {rangeError && <span id={rangeErrorId} className="pm-ui-field__error" role="alert">{rangeError}</span>}
       <PmInput label={t.offset} density={density} width="number" inputMode="decimal" maxLength={32} value={draft.offsetText ?? (clip.attachment.offsetMs / 1000).toFixed(3)}
         readOnly={disabled || !inspected} error={offsetMs === undefined ? t.invalidOffset : undefined} onChange={event => change({ offsetText: event.target.value })} {...composition('offset')} />
-      <PmField label={t.volume} density={density} group><div className="pm-ui-media-clip-editor__volume">
+      <PmField label={t.volume} density={density} group><div className="pm-ui-range-row">
         <PmRange label={t.volume} density={density} value={clip.volume * 100} max={100} disabled={disabled || !inspected} valueText={value => `${Math.round(value)}%`} onPreviewChange={setVolumePreview}
           onValueCommit={value => change({ clip: { ...clip, volume: value / 100 } })} />
         <output>{Math.round(volumePreview ?? clip.volume * 100)}%</output><PmButton density={density} aria-pressed={Boolean(clip.muted)} disabled={disabled || !inspected} onClick={() => change({ clip: { ...clip, muted: !clip.muted } })}>{clip.muted ? t.unmute : t.mute}</PmButton>

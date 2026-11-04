@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
+import { isRecord } from '@lincyaw/kernel'
 import { applyDocumentOperations, AUTHORING_API_VERSION, createDocumentPage, DOCUMENT_ENTRY, DOCUMENT_OPERATION_TYPES, DOCUMENT_READ_MAX_REQUEST_CHARS, DOCUMENT_READ_MAX_RESPONSE_CHARS, DOCUMENT_SCHEMA_VERSION, documentOutline, documentPart, DocumentReadError, duplicateDocumentPage, fnv1a64, hasRole, moveDocumentPage, pageDeletionImpact, removeDocumentPage, renameDocumentPage, validateDocument } from '@lincyaw/kernel'
 import { validateDocumentChange, validateDocumentPageChange, validateDocumentPageChangeApply, validateDocumentPageDuplication, validateDocumentPageDuplicationApply, validateDocumentOutlineQuery, validateDocumentPartQuery } from '@lincyaw/kernel/node'
 import type { AppliedDocumentChange, ApplyDocumentChange, CanonicalSource, DocumentAnswer, DocumentAuthoring, DocumentChange, DocumentChangeAnswer, DocumentChangePlan, DocumentIssue, DocumentPageAction, DocumentPageChangePlan, DocumentPageDuplicationPlan, Member, RequestContext, SourceTransactionChange, TeachingDocument } from '@lincyaw/kernel'
@@ -133,7 +134,12 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
     if (receipt) return { ...current, changeId: change.id, files: receipt.files, ...receipt.commit ? { commit: receipt.commit } : {} }
     const candidate = await filesOf(document, current, change)
     const ownHistory: SourceTransactionHistory | undefined = revisions ? { run: work => revisions.transaction(work), commit: (paths, lang) => revisions.commitWhileLocked({ paths, summary: lang?.startsWith('en') ? 'Edit document' : '编辑文稿', body: '', origin: { kind: origin, member } }) } : undefined
-    const saved = await editor.transaction(editor.scope(document), candidate.changes, member, ownHistory)
+    const saved = await editor.transaction(editor.scope(document), candidate.changes, member, ownHistory).catch((error: unknown) => {
+      if (error instanceof RequestError && error.status === 409 && isRecord(error.detail?.conflict) && error.detail.conflict.path === entryOf(document)) {
+        throw new RequestError(409, 'document-version-changed', { version: error.detail.conflict.version })
+      }
+      throw error
+    })
     const version = saved.versions.find(file => file.path === entryOf(document))!.version
     remember(receipts, key, { signature, version, files: saved.versions, ...saved.revision ? { commit: saved.revision } : {} })
     const verified = await read(document, member)

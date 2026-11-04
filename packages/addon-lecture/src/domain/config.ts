@@ -59,6 +59,13 @@ export function lectureGap(config: Record<string, unknown> | undefined): number 
   return (typeof gap === 'string' ? parseDuration(gap) : undefined) ?? 500
 }
 
+/** The renderer option `maximumDurationMs`: the longest the lecture video may be; `invalid` when it is not a positive number. */
+export function maximumDuration(config: Record<string, unknown> | undefined): number | 'invalid' | undefined {
+  const value = config?.maximumDurationMs
+  if (value === undefined) return undefined
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 'invalid'
+}
+
 export function lexiconOf(config: Record<string, unknown> | undefined): Record<string, string> | undefined {
   const lexicon = isRecord(config?.lexicon) ? config.lexicon : undefined
   if (!lexicon) return undefined
