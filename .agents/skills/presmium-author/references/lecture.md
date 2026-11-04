@@ -44,6 +44,8 @@ Put lecture renderer options in `metadata.renderers.lecture`. Put timing and voi
 
 In Studio, use Settings → Voice Service (also linked from Video Production → Voiceover). The page defaults to Volcengine speech synthesis 2.0 and accepts a speech-console API Key, or an access token with its matching optional App ID. No Secret Key or console-version choice is needed. Empty inputs keep saved credentials; a new key without an App ID switches to API-key authentication. Save applies immediately; it does not select a voice or generate audio. Credentials stay in the local operator directory outside the workspace and are never returned by reads. Check Configuration only checks the saved local configuration; real provider permissions are checked by explicit playback, a confirmed sample, or batch generation after the service is enabled. Clearing the saved key restores any launch-environment fallback.
 
+Without the studio, `presmium speech key set [<dir>]` saves the Volcengine speech API key in the same file: it reads the key from standard input (typed without echo, or piped: `presmium speech key set . < key.txt`), never from an argument. `presmium speech key status [<dir>]` says whether a key is configured and whether it is saved on this machine or comes from `PRESMIUM_SPEECH_VOLCENGINE_KEY`, never showing it; `presmium speech key clear [<dir>]` removes the saved one. `<dir>` is the workspace or a document in it (default `.`); `PRESMIUM_OPERATOR_DIR` names another operator directory, as for `presmium serve`.
+
 TTS providers, credentials and endpoints are operator configuration. Check the speech service's real engines and voice catalogue. `unavailable` differs from an empty available list. Unknown parameter capability stays unknown; do not imply unsupported style/rate options work.
 
 ## Generate explicitly
@@ -51,6 +53,18 @@ TTS providers, credentials and endpoints are operator configuration. Check the s
 A cache-only preview can play existing exact-text/exact-voice audio; missing audio is generated on the explicit Video Play intent, or through batch generation before export. Use the installed lecture/speech generation action or documented API to synthesize an explicit revision-bound scope. Show provider, count and target before a paid operation. Never synthesize merely by opening the document, editing text, auditioning another voice or refreshing preview.
 
 Checks, lecture builds and video exports read only exact cached voiceover. A configured engine does not make missing audio ready: generate it explicitly before exporting; these read/output actions never synthesize it.
+
+On the command line, `presmium voiceover <document>` is the explicit generation:
+
+- Without `--yes` it changes nothing and reports the voice service of each missing sentence (on this machine or cloud), the voice, how many sentences lack exact cached audio and about how many characters they hold (a cloud service charges by the character), and which sentences can't be generated and why. Relay that to the author; `--yes` is their consent to the paid generation.
+- With `--yes` it generates exactly the missing sentences, in its own process, through the voiceover execution the studio uses (no studio or `presmium serve` needs to run, but don't generate the same document in both at once), shows progress, then reads the cache again: it exits 1 when a sentence that should be voiced still has no audio, after a cancel (Ctrl+C keeps the audio made so far) or when the document changed meanwhile.
+- `--voice <service>:<voice>` (e.g. `volcengine:zh_female_tianmeitaozi_uranus_bigtts`) makes that the document's default voice first, as **Choose a voice** for the document does: page and step settings stay. The report counts the sentences as they would be with it; only `--yes` writes `lecture.json`, and a voice the service doesn't have is refused before writing.
+- `--prune` deletes the cache entries in `<document>/.presmium/speech/` and `speech.lock.json` that no current sentence uses: an entry stays when it was made for a sentence's exact text, voice, language, rate and style, under any configuration of the voice service. It runs with `--yes` after generating; without it, it reports how many entries and megabytes would go. It refuses while the document has errors. Commit the cache and lock afterwards.
+- `--json` prints the report (and with `--yes` the outcome) as one JSON object.
+
+## Polish the script as one file
+
+`presmium script export <document> [--out <file>]` writes the narration of every step as one Markdown file (default `<document>/dist/script.md`): a heading per page and step, and each narration as a paragraph below its marker line `<!-- n: <narration id> -->`. A word shown one way and spoken another is `{shown|spoken}`; a cue is `⟦cue:<id>⟧`. Edit only the paragraphs (a cue may move within its paragraph), then `presmium script import <document> [<file>]` validates the document and writes only the narrations whose text changed back into `lecture.json`, in its own formatting. It refuses, writing nothing, when a marker is missing, unknown or repeated, text stands outside a marker, a paragraph is emptied, or a cue is removed, repeated, added or moved to another paragraph. Narration is not deleted or added this way. After an import, `presmium voiceover <document>` shows what to regenerate.
 
 The video export encodes with FFmpeg when it is installed (`ffmpeg` on the path, or `PRESMIUM_FFMPEG` naming the program) and then writes MP4 (H.264, AAC) at full quality. Without it the export falls back to a WebM encoded in the browser, which is softer, and its warning gives the install command. Before exporting a video for others, make sure FFmpeg is installed: `brew install ffmpeg` (macOS), `sudo apt install ffmpeg` (Debian, Ubuntu), `winget install --id Gyan.FFmpeg` (Windows).
 
@@ -69,6 +83,7 @@ In Video production, use **Audio clip → Import audio**, then select the asset 
 The workspace authoring API imports original audio through `document/audio`: multipart fields are `change` (JSON with `id` and `baseDocumentVersion`) and `file`. Original bytes and the canonical asset declaration share one version-checked transaction and history entry. The same route's GET uses `assetId` and `baseDocumentVersion` to inspect even an unused declared asset, without requesting compilation. Explicit `document/media-clip` changes carry the source version and full production binding; they save trim, offset, gain and mute only when the real range fits a confirmed step.
 
 ```sh
+presmium voiceover lesson
 presmium check lesson --json
 presmium build lesson --to lecture
 ```

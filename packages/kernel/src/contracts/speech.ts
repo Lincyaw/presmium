@@ -103,6 +103,15 @@ export interface VoiceCloneStatus {
   message?: string
 }
 
+export interface SpeechCachePrune {
+  /** Entries some request uses. */
+  kept: number
+  /** Entries no request uses, with the bytes of their files. */
+  unused: { key: string, bytes: number }[]
+  /** Whether the unused entries were deleted. */
+  removed: boolean
+}
+
 export interface TranscriptionRequest {
   engine?: string
   audio: Blob
@@ -124,6 +133,13 @@ export interface SpeechService {
   cached?(key: string, signal?: AbortSignal): Promise<Synthesis | undefined>
   alignWords?(key: string, options: { lang: string, transcribe?: boolean }, signal?: AbortSignal): Promise<SpeechWord[] | undefined>
   pruneLock?(keep: ReadonlySet<string>): Promise<number>
+  /**
+   * The document's cached audio that no request of `keep` (every sentence the document says) uses: kept is any entry
+   * made for the same request under any configuration of the voice service. With `remove`, deletes the unused entries
+   * with their alignments and speech lock entries. Throws `speech-prune-engine-unknown` when a request names no engine
+   * and no default engine is configured, since its entries cannot be told apart then.
+   */
+  pruneCache?(keep: readonly SynthesisRequest[], options?: { remove?: boolean, signal?: AbortSignal }): Promise<SpeechCachePrune>
   transcribe(request: TranscriptionRequest, signal?: AbortSignal): Promise<Transcript>
   /** Registers the consent, then starts training; only for the document's owner. Absent: the service cannot clone. */
   cloneVoice?(request: VoiceCloneRequest, signal?: AbortSignal): Promise<VoiceCloneStatus>
