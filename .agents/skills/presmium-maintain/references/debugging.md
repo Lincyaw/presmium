@@ -24,6 +24,9 @@ persistent log path (default `~/.local/state/presmium/studio/presmium-studio-<ha
 - Requests stuck across tabs: compare with an independent same-cookie Node request; a browser
   request-created event does not prove the server received it (`docs/debugging.md` section 3). Never weaken
   the source actor guards to get past it.
+- For a missing import, verify recovery after creating its file or installing an already-declared dependency,
+  without editing the importing source. Also check directory entries and package subpaths. Failed code bundles
+  recheck missing imports with Vite's public resolver under the same build conditions; they never scan package trees.
 
 ## Collect evidence with `pnpm debug:studio`
 

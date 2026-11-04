@@ -30,8 +30,8 @@ const CHECK_DIR = '.presmium/web/check'
 /** The findings of a document's code that does not bundle, the same in `presmium check`, a build and the preview. */
 export const CODE_CHECK = 'presmium.preview.code'
 const KEEP = 3
-// Changes when a bundle built before would differ now from one built of the same code: 2 imports images as WebP.
-const FORMAT = 2
+// Failed imports are rechecked with the bundler resolver before reusing their diagnostics.
+const FORMAT = 3
 
 export interface DocumentBundleInput {
   deckDir: string
@@ -95,7 +95,7 @@ export interface CodeFailure {
 
 interface OutputFile { type: string, fileName: string, isEntry?: boolean, imports?: string[], dynamicImports?: string[], moduleIds?: string[] }
 
-interface BundlerError { message?: string, id?: string, loc?: { file?: string, line?: number }, errors?: BundlerError[] }
+interface BundlerError { message?: string, code?: string, exporter?: string, id?: string, loc?: { file?: string, line?: number }, errors?: BundlerError[] }
 
 /** The line of `file` that imports `specifier`, if there is one. */
 function importLine(file: string, specifier: string): { line?: number } {
@@ -122,7 +122,8 @@ function bundlerFailures(error: unknown, module: string): CodeFailure[] {
     const file = one?.id ?? one?.loc?.file ?? (framed ? resolve(framed[1]!) : undefined)
     const line = one?.loc?.line ?? (framed ? Number(framed[2]) : undefined)
     const reason = text.split('\n').map(part => part.replace(/^(?:Error:\s*|\[[^\]\s]+\]\s*)+/, '').trim()).find(part => part && !part.startsWith('Build failed')) ?? text
-    return { module, ...file && existsSync(file) ? { file } : {}, ...line ? { line } : {}, reason }
+    const missing = one?.code === 'UNRESOLVED_IMPORT' && typeof one.exporter === 'string' ? one.exporter : undefined
+    return { module, ...file && existsSync(file) ? { file } : {}, ...line ? { line } : {}, reason, ...missing ? { missing } : {} }
   })
 }
 
@@ -245,7 +246,8 @@ function readBundle(dir: string): DocumentBundle | undefined {
 }
 
 /** The newest bundle of the document's code (`key`) built from its files as they are now. */
-function freshBundle(outDir: string, key: string): DocumentBundle | undefined {
+async function freshBundle(input: DocumentBundleInput, key: string): Promise<DocumentBundle | undefined> {
+  const { outDir } = input
   let entries: string[]
   try {
     entries = readdirSync(outDir).filter(entry => entry.startsWith(`${key}-`))
@@ -255,7 +257,22 @@ function freshBundle(outDir: string, key: string): DocumentBundle | undefined {
   const builds = entries.map(entry => ({ dir: join(outDir, entry), time: statSync(join(outDir, entry)).mtimeMs })).sort((a, b) => b.time - a.time)
   for (const { dir } of builds) {
     const bundle = readBundle(dir)
-    if (bundle) return bundle
+    if (!bundle) continue
+    const missing = bundle.failures.filter((failure): failure is CodeFailure & { file: string, missing: string } => Boolean(failure.file && failure.missing))
+    if (missing.length) {
+      // A file or package may have appeared without changing any source the failed build read.
+      const { BuildEnvironment, createIdResolver, resolveConfig } = await import('vite')
+      const config = await resolveConfig({ configFile: false, root: input.deckDir, mode: 'production', logLevel: 'silent', resolve: { dedupe: ['react', 'react-dom'] } }, 'build')
+      const environment = new BuildEnvironment('client', config)
+      const resolve = createIdResolver(config)
+      let recovered = false
+      for (const failure of missing) if (await resolve(environment, failure.missing, failure.file).catch(() => undefined)) {
+        recovered = true
+        break
+      }
+      if (recovered) continue
+    }
+    return bundle
   }
   return undefined
 }
@@ -264,7 +281,7 @@ function freshBundle(outDir: string, key: string): DocumentBundle | undefined {
 export async function findDocumentBundle(input: DocumentBundleInput): Promise<DocumentBundle | null | undefined> {
   const code = await documentCode(input)
   if (!code) return null
-  return freshBundle(input.outDir, code.key)
+  return freshBundle(input, code.key)
 }
 
 /**
@@ -274,7 +291,7 @@ export async function findDocumentBundle(input: DocumentBundleInput): Promise<Do
 export async function buildDocumentBundle(input: DocumentBundleInput): Promise<DocumentBundle | null> {
   const code = await documentCode(input)
   if (!code) return null
-  const known = freshBundle(input.outDir, code.key)
+  const known = await freshBundle(input, code.key)
   if (known) return known
   const work = join(input.outDir, `.build-${code.key}-${process.pid}`)
   rmSync(work, { recursive: true, force: true })
@@ -383,10 +400,7 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
         failed.set(part, failures)
         // Bundled again when a file it loaded changes, or when a file it imports appears.
         for (const file of loaded) if (existsSync(file)) keep(file)
-        for (const { file, missing } of failures) {
-          if (file) keep(file)
-          if (file && missing && /^\.\.?\//.test(missing)) keep(dirname(resolve(dirname(file), missing)))
-        }
+        for (const { file } of failures) if (file) keep(file)
       }
     }
     if (failed.size === 0) throw error

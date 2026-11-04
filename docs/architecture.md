@@ -40,6 +40,7 @@ lecture.json + 引用的代码与媒体
 
 - Vite 构建，组件按需分块，共享模块经导入映射给出；缓存在 `$XDG_CACHE_HOME/presmium/viewer-app/`，按源码与插件指纹命名。`PRESMIUM_VIEWER_SEED` 指定只读预打包目录。
 - **文稿代码包**（`document-bundle.ts`）：文稿组件与插件的 `documentModules`，代码变了才重建，只改文字不重载。一个文件打包失败只影响载入它的部分：整体打包失败时，入口与文稿模块载入的每个部分（组件、场景、插件模块）各自单独打包，失败的部分改为以失败原因（文件、行与原因）拒绝的载入，像运行时出错的组件一样显示失败，其余照常。失败记在代码包中，预览、构建与检查都报告为 `presmium.preview.code` 错误，每个出错的文件一条。
+- 复用失败代码包前，用 Vite 的公开解析器按构建条件重新解析其中的缺失导入。补齐文件、目录入口、包内子路径或安装已声明的依赖后会重新打包；仍无法解析时复用原诊断，不扫描依赖目录树。
 - **站点**：查看器在 `_app/<键>/`；每份文稿有 `ir.json`、`search.json`（MiniSearch）、`_code/<键>/document.js`。每页先 SSR，浏览器再 hydrate。
 - **站点服务**（`site-server.ts`）：`<base>__app/` 下有 `view`、`ir`（`ETag`）、`events`（SSE）、`search`、`source`。`dev` 中把 `/__presmium/` 代理到服务端。
 - **预览**：`preview` 等查看器与当前代码包就绪才答复，不以旧版本冒充当前版本；`prefetch=1` 只开始准备。每个面板最多两个 iframe。只有声明 `presmium.preview.restartable: true` 的包组成的预览可暂停复用。
