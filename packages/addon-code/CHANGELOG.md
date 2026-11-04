@@ -1,5 +1,11 @@
 # @lincyaw/addon-code
 
+## 1.0.0-rc.34
+
+### Patch Changes
+
+- 02a24d7: 统一编译器与查看器的条件导出解析，修复分步执行超时后的重试；移除旧 Markdown 指令与角色适配接口，将动画定义规则归入动画插件，并将工作台的编辑器生命周期与制作动作分离为独立控制器。
+
 ## 1.0.0-rc.33
 
 No changes in this release.

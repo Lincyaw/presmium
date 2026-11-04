@@ -1,5 +1,17 @@
 # @lincyaw/workbench
 
+## 0.2.0-rc.34
+
+### Minor Changes
+
+- 02a24d7: 统一编译器与查看器的条件导出解析，修复分步执行超时后的重试；移除旧 Markdown 指令与角色适配接口，将动画定义规则归入动画插件，并将工作台的编辑器生命周期与制作动作分离为独立控制器。
+
+### Patch Changes
+
+- Updated dependencies [02a24d7]
+  - @lincyaw/kernel@1.0.0-rc.34
+  - @lincyaw/design@1.0.0-rc.34
+
 ## 0.2.0-rc.33
 
 ### Patch Changes
