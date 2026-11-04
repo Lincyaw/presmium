@@ -1,5 +1,13 @@
 # @lincyaw/workbench
 
+## 0.2.0-rc.28
+
+### Patch Changes
+
+- fb84105: Keep editing and saving while AI works, publish AI changes with source version checks, and preserve local drafts on network HTTP addresses.
+- @lincyaw/design@1.0.0-rc.29
+  - @lincyaw/kernel@1.0.0-rc.29
+
 ## 0.2.0-rc.27
 
 ### Patch Changes

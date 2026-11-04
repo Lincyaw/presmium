@@ -1,5 +1,16 @@
 # @lincyaw/cli
 
+## 1.0.0-rc.29
+
+### Patch Changes
+
+- Updated dependencies [fb84105]
+  - @lincyaw/workspace@1.0.0-rc.29
+  - @lincyaw/compiler@1.0.0-rc.29
+  - @lincyaw/kernel@1.0.0-rc.29
+  - @lincyaw/server@1.0.0-rc.29
+  - @lincyaw/skills@1.0.0-rc.29
+
 ## 1.0.0-rc.28
 
 ### Patch Changes

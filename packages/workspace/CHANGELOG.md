@@ -1,5 +1,14 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.29
+
+### Patch Changes
+
+- fb84105: Keep editing and saving while AI works, publish AI changes with source version checks, and preserve local drafts on network HTTP addresses.
+- @lincyaw/compiler@1.0.0-rc.29
+  - @lincyaw/kernel@1.0.0-rc.29
+  - @lincyaw/server@1.0.0-rc.29
+
 ## 1.0.0-rc.28
 
 ### Patch Changes
