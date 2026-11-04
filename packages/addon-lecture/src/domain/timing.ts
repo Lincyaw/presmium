@@ -107,6 +107,24 @@ export function stepStops(events: readonly TimedEvent[]): StepStop[] {
 }
 
 /**
+ * Where the lecture plays `position` (`sections`: the page IDs in the document's order): the first time it reaches that
+ * step; for a step it leaves out, the first step it plays after it in the document's order, else the last one before.
+ */
+export function playedStop(events: readonly TimedEvent[], sections: readonly string[], position: { section: string, step: number }): StepStop | undefined {
+  if (!sections.includes(position.section)) return undefined
+  const order = (a: { section: string, step: number }, b: { section: string, step: number }) => sections.indexOf(a.section) - sections.indexOf(b.section) || a.step - b.step
+  let after: StepStop | undefined, before: StepStop | undefined
+  for (const stop of stepStops(events)) {
+    if (!sections.includes(stop.section)) continue
+    const at = order(stop, position)
+    if (at === 0) return stop
+    if (at > 0 && (!after || order(stop, after) < 0)) after = stop
+    if (at < 0 && (!before || order(stop, before) > 0)) before = stop
+  }
+  return after ?? before
+}
+
+/**
  * How long each step's voice lasts from the step's start (ms), by `section\u0000step`: until the last sentence heard in
  * the step ends, at most until the next step. Pauses and holds after the voice do not count. A step where no sentence is
  * heard has no length, nor one whose voice waits for its animation (`after-animation`: a hold at the step's start). A

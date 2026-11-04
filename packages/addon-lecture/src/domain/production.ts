@@ -43,8 +43,9 @@ export function productionDiagnostics(doc: IRDocument, plan: LecturePlan): Produ
     if (doc.productionAssets?.[clip.assetId]?.kind !== 'audio') result.push({ code: 'production.media-unsupported', severity: 'error', message: text.media, ...section ? { sectionId: section.id } : {}, stepId: clip.attachment.stepId })
   }
   for (const section of doc.sections) {
-    for (const animation of plannedAnimations(section)) if (animation.durationMs === undefined) result.push({ code: 'production.animation-duration-unknown', severity: 'error', message: text.animation, sectionId: section.id, stepId: section.stepIds?.[animation.step], blockId: animation.blockId })
     const own = plan.sections.find(own => own.id === section.id)
+    // A step the lecture leaves out never plays, so its animations do not time the lecture.
+    for (const animation of plannedAnimations(section)) if (animation.durationMs === undefined && !own?.leftOut?.includes(animation.step)) result.push({ code: 'production.animation-duration-unknown', severity: 'error', message: text.animation, sectionId: section.id, stepId: section.stepIds?.[animation.step], blockId: animation.blockId })
     if (!own) continue
     if (own.trailingPauseMs && own.paragraphs.some(paragraph => paragraph.pieces.some(piece => piece.cues.some(cue => cue.name === 'next')))) result.push({ code: 'production.next-pause-unsupported', severity: 'error', message: text.next, sectionId: section.id })
     for (const [index, stepId] of (section.stepIds ?? []).entries()) {
