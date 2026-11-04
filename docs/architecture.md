@@ -271,7 +271,7 @@ IR 运行时给每个插件组件包 `PmBoundary`，抛错只影响自己；`res
 
 ### 5.6 媒介限定
 
-块的 `only` 限定媒介；排版提示在页面 `layout.renderers`。
+块的 `only` 限定媒介，讲授视频的媒介是 `lecture`；排版提示在页面 `layout.renderers`。一个步骤显示的内容块都限定在其他媒介、又没有讲稿、录音与音频片段时，讲授中没有这一步（讲授计划第 6 节）。
 
 ### 5.7 界面语言
 
@@ -324,7 +324,8 @@ PDF、图片与 PowerPoint 中组件显示 IR 的 `fallback`（`useStaticRender(
 |---|---|---|
 | `presmium-export` | `addon-publish` | 幻灯片导出 PDF、PNG、PowerPoint |
 | `presmium-diff` | `addon-publish` | 两个提交的视觉差异 |
-| `presmium-lecture export` | `addon-lecture` | 逐帧导出讲授视频 |
+| `presmium-lecture export` | `addon-lecture` | 逐帧导出讲授视频；`--contact-sheet` 另写一张 PNG，由 FFmpeg 从视频截取每步起点后 0.3 秒与中点的画面并标注页面与步骤 |
+| `presmium-lecture timing` | `addon-lecture` | 按导出所放的讲授计划（只读已生成的配音）逐步列出讲稿字数、配音秒数、每秒字数、动画与步骤时长，再给出合计与视频时长；`--json` 输出 JSON |
 | `presmium-speech fake`、`clone`、`consent` | `addon-speech` | 假引擎；训练克隆音色；登记同意 |
 | `presmium-classroom-server` | `classroom-server` | 课堂同步 |
 | `presmium mcp`、`presmium-mcp` | `mcp` | stdio MCP：转接这个目录正在运行的 `presmium studio`、`serve`（或 `dev`）的 `/mcp`，没有时自己编译文稿，`--allow operate` 才有操作类工具 |

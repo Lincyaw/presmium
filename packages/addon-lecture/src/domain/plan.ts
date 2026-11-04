@@ -4,7 +4,7 @@ import { narrationVoice } from './config.ts'
 import { blockKey, codeLineCount, lastNamedLine } from './drift.ts'
 import type { CueCommand, CueMark, SpokenText } from './narration.ts'
 import { cueProblem, parseCue, spokenText, TARGETED } from './narration.ts'
-import { LECTURE_RENDERER, PLAYER_RENDERER } from './track.ts'
+import { LECTURE_ID, LECTURE_RENDERER, PLAYER_RENDERER } from './track.ts'
 
 export interface PlannedCue {
   name: CueCommand
@@ -55,6 +55,11 @@ export interface PlannedSection {
   recordings?: PlannedRecording[]
   holds: number[]
   trailingPauseMs?: number[]
+  /**
+   * Steps the lecture leaves out: their visible blocks are all limited to other forms and they have nothing to say or
+   * play. A page whose every step is left out is not in the lecture.
+   */
+  leftOut?: number[]
   webStep(step: number): number
 }
 
@@ -86,6 +91,19 @@ function named(doc: IRDocument, section: IRSection, to: string): { section: IRSe
     if (block) return { section: other, block }
   }
   return undefined
+}
+
+/**
+ * The steps (by stable ID) whose visible blocks are all limited to forms other than the lecture (`only` without
+ * `lecture`): the lecture would show an empty page there. Read from the whole document, before the lecture's view
+ * removes those blocks; the plan leaves such a step out when it has nothing to say or play either.
+ */
+export function otherFormSteps(section: IRSection): string[] {
+  const blocks = [...irBlocks(section.blocks)].filter(block => block.role === 'visual')
+  return (section.stepIds ?? []).filter((_, step) => {
+    const visible = blocks.filter(block => block.stepStates ? block.stepStates[step]?.visible : block.at <= step)
+    return visible.length > 0 && visible.every(block => block.only && !block.only.includes(LECTURE_RENDERER))
+  })
 }
 
 function webSteps(section: IRSection): (step: number) => number {
@@ -289,7 +307,10 @@ export function lecturePlan(doc: IRDocument): LecturePlan {
       const stepId = section.stepIds![step]!
       return [{ id: `recording:${stepId}`, step, stepId, assetId: setting.voiceSource.assetId, ...setting.voiceSource.sourceRange ? { sourceRange: { ...setting.voiceSource.sourceRange } } : {}, mode, text: own.flatMap(paragraph => paragraph.pieces.map(piece => piece.text)).filter(Boolean).join('\n\n'), narrationIds: [...new Set(own.flatMap(paragraph => paragraph.narrationId ?? []))], cues, ...issue ? { issue } : {} }]
     })
-    return { id: section.id, title: section.title, steps: section.steps, from: 'narration', paragraphs, recordings, holds: stepHolds(section, doc), ...trailingPauseMs ? { trailingPauseMs } : {}, webStep: webSteps(section) }
+    const marked = section.config?.[LECTURE_ID]?.otherFormSteps
+    const otherForms = new Set(Array.isArray(marked) ? marked : [])
+    const leftOut = (section.stepIds ?? []).flatMap((id, step) => otherForms.has(id) && !paragraphs.some(paragraph => paragraph.step === step) && !recordings.some(recording => recording.step === step) && !doc.production?.mediaClips.some(clip => clip.attachment.stepId === id) ? [step] : [])
+    return { id: section.id, title: section.title, steps: section.steps, from: 'narration', paragraphs, recordings, holds: stepHolds(section, doc), ...trailingPauseMs ? { trailingPauseMs } : {}, ...leftOut.length ? { leftOut } : {}, webStep: webSteps(section) }
   })
   let n = 0
   for (const section of sections) {

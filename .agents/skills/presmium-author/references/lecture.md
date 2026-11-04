@@ -74,3 +74,18 @@ presmium build lesson --to lecture
 ```
 
 Build only when the required speech cache and provider capability actually exist. Inspect missing/stale diagnostics, caption text, pronunciation, cue timing, arbitrary step navigation and the exported video. A prior successful snapshot must be visibly identified when current compilation failed.
+
+## Time the video and review its frames
+
+```sh
+presmium-lecture timing lesson
+presmium-lecture export lesson --size 640x360 --fps 10 --contact-sheet
+```
+
+`presmium-lecture timing` reads the production plan the video export plays (only voiceover already generated; nothing is synthesized) and prints, per step, its page, step, characters of script (letters and digits), seconds of voiceover, characters a second, the declared animation and the step's length, then the totals and the video's length; `--json` prints the same as JSON. Missing voiceover leaves the lengths partly estimated: generate it first.
+
+Set the longest the video may be in the lecture renderer options: `metadata.renderers.lecture.maximumDurationMs` (milliseconds). When the confirmed plan is longer, `presmium check` reports an error that says how far it runs over and about how many characters of script to cut at the measured rate. Cut what a viewer does not need, or shorten animations and holds that outlast their voiceover; do not cut content a viewer needs only to meet the number.
+
+`--contact-sheet [<file.png>]` makes the export also write one PNG (default beside the video, `<video>.contact-sheet.png`): two frames of every step, 0.3 s after it starts and at its middle, each labelled with its page, step, step title and time, taken from the exported video with FFmpeg. Steps shorter than 0.6 s are passed over. Review the whole video from that one image; a small export is enough for it. Without FFmpeg the export says so and writes no image; an FFmpeg without the `drawtext` filter writes the frames unlabelled.
+
+A step whose visible blocks are all limited to other forms (`only` without `lecture`, such as a sources page whose text has `only: ["web"]`) and that has no narration, recording or audio clip is not in the lecture: the video, the plan, the captions and the chapters leave it out, and a page whose steps are all like that is left out whole. It needs no production override to hide it.
