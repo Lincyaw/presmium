@@ -1,5 +1,9 @@
 # @lincyaw/kernel
 
+## 1.0.0-rc.27
+
+No changes in this release.
+
 ## 1.0.0-rc.26
 
 ### Patch Changes

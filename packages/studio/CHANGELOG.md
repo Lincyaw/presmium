@@ -1,5 +1,12 @@
 # @lincyaw/studio
 
+## 0.2.0-rc.26
+
+### Patch Changes
+
+- Updated dependencies [b12d9f7]
+  - @lincyaw/dsh@0.2.0-rc.26
+
 ## 0.2.0-rc.25
 
 ### Patch Changes

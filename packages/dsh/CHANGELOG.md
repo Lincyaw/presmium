@@ -1,5 +1,15 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.26
+
+### Patch Changes
+
+- b12d9f7: Support editing over LAN HTTP without Web Crypto: restore document, comment and component parameter drafts, read drafts through the AI assistant, and fingerprint imported audio with the same SHA-256 values as HTTPS.
+- @lincyaw/cli@1.0.0-rc.27
+  - @lincyaw/kernel@1.0.0-rc.27
+  - @lincyaw/mcp@1.0.0-rc.27
+  - @lincyaw/skills@1.0.0-rc.27
+
 ## 0.2.0-rc.25
 
 ### Patch Changes
