@@ -1,5 +1,14 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.36
+
+### Patch Changes
+
+- Updated dependencies [e5557f5]
+  - @lincyaw/server@1.0.0-rc.36
+  - @lincyaw/compiler@1.0.0-rc.36
+  - @lincyaw/kernel@1.0.0-rc.36
+
 ## 1.0.0-rc.35
 
 ### Patch Changes

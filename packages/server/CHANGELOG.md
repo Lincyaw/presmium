@@ -1,5 +1,14 @@
 # @lincyaw/server
 
+## 1.0.0-rc.36
+
+### Patch Changes
+
+- e5557f5: Keep Studio HTTP MCP on fixed port 4321 and preserve per-workspace external credentials across restarts and upgrades. Print the MCP address and credential-file location, and report port conflicts instead of silently changing the address.
+- @lincyaw/mcp@1.0.0-rc.36
+  - @lincyaw/compiler@1.0.0-rc.36
+  - @lincyaw/kernel@1.0.0-rc.36
+
 ## 1.0.0-rc.35
 
 ### Patch Changes
