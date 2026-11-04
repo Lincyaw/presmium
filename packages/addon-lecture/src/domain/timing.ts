@@ -139,7 +139,7 @@ export function playedStop(events: readonly TimedEvent[], sections: readonly str
  * a step it leaves out starts at the nearest played one (`playedStop`); a recorded lecture holds only the steps it was
  * recorded on, and starts at the position only where it went there.
  */
-export function startStop(trackId: string, events: readonly TimedEvent[], sections: readonly string[], position: { section: string, step: number }): StepStop | undefined {
+export function startingStop(trackId: string, events: readonly TimedEvent[], sections: readonly string[], position: { section: string, step: number }): StepStop | undefined {
   if (trackId === SCRIPT_TRACK) return playedStop(events, sections, position)
   return playsStep(events, position)
 }
