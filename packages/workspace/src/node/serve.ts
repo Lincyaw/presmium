@@ -24,6 +24,7 @@ import { createJobs, OUTPUTS_PATH } from './jobs.ts'
 import { DocumentLocks } from './locks.ts'
 import { AgentSessionReviews } from './review/agent-session-reviews.ts'
 import { createWorkspaceReview } from './review/workspace-review.ts'
+import { createWorkspaceSource } from './workspace-source.ts'
 import { createTaskReviewService } from './review/task-reviews.ts'
 import { Revisions } from './revisions.ts'
 import { WORKSPACE_ID, authorizeWorkspaceRoutes, workspaceRoutes, workspaceRoutesPlugin } from './routes.ts'
@@ -118,6 +119,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   let documentEditor: DocumentEditor | undefined
   let documentHistory: ReturnType<typeof createDocumentHistory> | undefined
   let workspaceReview: ReturnType<typeof createWorkspaceReview> | undefined
+  let workspaceSource: ReturnType<typeof createWorkspaceSource> | undefined
   let projectAuthoring: ReturnType<typeof createProjectAuthoring> | undefined
   let authoringClients: ReturnType<typeof createAuthoringClients> | undefined
   let transcriptions: ReturnType<typeof createDocumentTranscriptions> | undefined
@@ -275,6 +277,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     get voiceAuthoring() { return voiceAuthoring?.service },
     speechSettings,
     get workspaceReview() { return workspaceReview },
+    get workspaceSource() { return workspaceSource },
     get transcriptions() { return transcriptions },
     get transcriptionAdoption() { return transcriptionAdoption?.service },
     get capture() { return capture?.service },
@@ -387,6 +390,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   voiceAuthoring = createDocumentVoiceAuthoring({ editor, services: authoringServices, revision: document => { const latest = compileSessions.get(document)?.latest; return latest ? irRevision(latest.doc) : undefined } })
   workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, voices: voiceAuthoring.service, diagnostics: running.diagnostics, url: () => options.publicUrl ? new URL(options.publicUrl).origin : running.url, basePath, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
   history = openHistory()
+  workspaceSource = createWorkspaceSource({ config, editor, revisions: history?.revisions })
   workspaceReview = history && createWorkspaceReview(history.agentSessionReviews)
   documentEditor = createDocumentEditor({ productionPlan: async (document, source) => { const audio = (await authoringServices(document, source)).audio; if (!audio) throw new RequestError(503, 'caption-production-unavailable'); return audio.readPlan({ source }) }, editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   projectAuthoring = createProjectAuthoring({ config, documentEditor, operations: history?.operations, revisions: history?.revisions, git: history?.git })

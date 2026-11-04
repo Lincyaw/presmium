@@ -30,3 +30,4 @@ export { OperatorSpeechSettings, operatorSpeechSecrets, SpeechSettingsError, val
 export { devStateFile, readServiceState, removeServiceState, serveStateDir } from './service-state.ts'
 export type { ServiceState } from './service-state.ts'
 export { validateWorkspaceReviewQuery, validateWorkspaceReviewChange } from './workspace-review.ts'
+export { validateSourceList, validateSourceRead, validateSourceEdit } from './workspace-source.ts'

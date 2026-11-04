@@ -6,7 +6,7 @@ Web 工作台、内置助手与外部 MCP agent 用同一套作者动作修改�
 
 - 唯一内容入口是 `lecture.json`。运行快照、`ProductionPlan`、字幕和时间线是派生结果，动作不写回它们。
 - 动作语义只有一份：纯规则在 kernel，事务与外部服务在 workspace 的共享服务。HTTP 与 MCP 是适配器，React、BlockNote 与 dsh 不另持一份。
-- 动作接收稳定实体 ID 与公开参数，返回实际影响、保存版本与验证依据。agent 不模拟鼠标，也不直接改 `lecture.json`；工程代码文件可原生编辑。
+- 动作接收稳定实体 ID 与公开参数，返回实际影响、保存版本与验证依据。agent 不模拟鼠标；有效文稿经文稿动作修改，无效 IR 可经受保护的文件入口修复。工程代码文件可原生编辑。
 - 完成依据按类别区分：保存决定看保存回执与读后核验；生成、转写、构建看任务终态与来源绑定；播放、定位、草稿看指定客户端的真实应答。
 - 缺服务、设备或权限时返回明确状态，不虚构成功。读取、探测与预检不调用 ASR、TTS 或模型，也不隐式编译。录音、转写、采用讲稿、生成配音是四个独立决定，不自动串联收费服务。
 
@@ -17,6 +17,7 @@ workspace 为每项能力创建一个实例，HTTP 与 MCP 共用实例与回执
 | 服务（`packages/workspace/src/node/`） | HTTP 路由 | MCP 适配（`packages/mcp/src/`） |
 | --- | --- | --- |
 | `createDocumentEditor`（`document-authoring.ts`） | `document`、`document/{change,outline,part,capabilities}`、`document/page/*`、`document/action/*` | `editing.ts`、`authoring.ts`、`authoring-actions.ts` |
+| `SourceEditor`、`createWorkspaceSource`（`source-editor.ts`、`workspace-source.ts`） | `files`、`source`、`source/create`、`source/transaction` | `workspace-source.ts` |
 | `createProjectAuthoring`（`projects.ts`） | `project/*` | `projects.ts` |
 | `createDocumentHistory`（`document-history.ts`） | `history/*` | `history.ts` |
 | `createDocumentAudioAuthoring`（`document-audio.ts`） | `document/audio`、`document/media-clip*`、`document/recording/adopt` | `audio-authoring.ts` |
@@ -66,6 +67,18 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 请求上限为 2048 或 4096 个 `JSON.stringify` UTF-16 字符，回复上限 7168 个缩进 JSON 字符，低于 dsh 的剪裁阈值 8192。放不下时分片前进或返回 413，不静默截断。
 
+### 当前文件与修复
+
+`list_files` 复用文件编辑器的目录范围，默认每页最多 20 项，可按文稿或文件名片段筛选。文稿绑定（包括空目录绑定）不会转换成工作区首页；访问范围沿用 `SourceEditor` 的原策略。原目录扫描超过 2000 项时明确返回 `truncated`，不伪装成完整列表。继续读取时固定 snapshot，文件名或目录范围变化即拒绝旧分页。
+
+`read_source` 读取当前 UTF-8 文本，包括无效 `lecture.json`。按 UTF-16 偏移分片，继续页固定版本，不编译；拼接完整文本后再解析。文件上限为编辑器的 2 MiB；打开文件时拒绝符号链接、非普通文件、超限和读取期间的变化。MCP 响应最多 7168 字符，冲突只返回短版本信息，不回传完整冲突文件；校验问题同样限量。
+
+`edit_source` 接受完整 content，或唯一匹配的 find/replace；`create: true` 排他地创建普通文本文件。也可用 `edits` 批量修改最多 16 个文件，全部在同一文稿内，或全部属于工作区所有者的根目录文件。服务端固定原版本、预检、请求 `write/workspace` 确认，再经原事务提交与读回；普通调用不需要模型传版本，显式 version 可固定此前读取的意图。
+
+文件写入只向外部、未绑定文稿的所有者开放，要求审阅时拒绝 agent 原文写入。有效文稿使用文稿动作；修复入口只允许已有、已登记的无效 canonical entry，不能用它新建文稿，能解析旧 ID 时保留 ID。取得锁和 Git 队列后，事务基于最终 preimage 再检查访问范围、归属、修复条件和取消；根目录创建、写入与回滚使用相同 outside 模式，不混入文稿文件。批次任一失败回滚全部文件。
+
+成功回执只有 saved、changed、路径或文件数及实际提交 ID；`saved: true, current: false` 表示事务成功后读回已变化或失败，不能因此自动重试。丢失应答时先读取当前文件与历史。
+
 ## 5. 文稿修改
 
 普通编辑通过一次 MCP 调用完成。`get_context` 返回当前编辑器页、步骤、标题、讲稿与实际报告的选中文字；读取保存内容，不读取未提交草稿。多文稿时从当前成员的已连接编辑器定位，多个文稿或不同位置不能确定时要求明确目标。`edit_narration` 按唯一原文替换或删除一句，默认使用当前页与步骤，保留读音和 cue；原文缺失、重复、编辑器尚未保存或版本已过期时拒绝修改。`rename_page` 接收页码（从 1 开始）或稳定 ID 与标题；`edit_document` 接收最多 32 个标准内容操作。适配器在服务端串联现有 `read/plan/checkApply/apply`，沿用 CAS、验证、锁、修改历史与保存后读取，不持有第二套事务或计划表。请求最多 32768 个 JSON 字符；标准操作的参数格式直接复用内核 `DocumentChange` 的定义。可选 `source` 将意图绑定到先前读取的版本；省略时以本次调用读取的版本为基础，期间发生并发写入仍返回 409，不自动重试。请求回执丢失时先读取当前状态，不盲目重新写入。
@@ -100,6 +113,8 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 提交成功后重读权威文稿与参与文件。回执带真实 source、commit（id 与 origin）、effect 与 `verification`：`saved` 已核验，`compiled/runtime: not-requested`。
 
 ## 6. 原子性与幂等
+
+项目能力读取同时提供可选模板名，默认最多 20 项，按 `nextTemplatesOffset` 继续；不返回安装路径或模板内容。目录只列出 `findTemplate` 能实际选择的普通模板目录，排除隐藏项与符号链接。选择模板仍使用原 `plan_project_change/apply_project_change` 创建动作。
 
 - 同一文稿的 `lecture.json`、实现文件、原始媒体与引用文件在一个 `SourceEditor.transaction` 内提交：文稿锁、CAS、一次 git 提交；失败恢复原 JSON 并删除新建文件。
 - 通用修改最多 16 个文件、文本合计 2 MiB，每个已有文件带 base，新文件 `base: null`。二进制只走导入接口。

@@ -10,6 +10,8 @@ export type ProjectOperation = DocumentOperation | { op: 'retitle', dir: string,
 export interface ProjectCaller { member: Member, origin: 'editor' | 'agent', boundDocument?: string }
 export interface ProjectObservation { snapshot?: string, configuration: string }
 export interface ProjectCapabilities {
+  templates?: string[]
+  nextTemplatesOffset?: number
   available: boolean
   actions: Record<ProjectOperation['op'], { available: boolean, reasons: string[] }>
   reasons: string[]
@@ -45,7 +47,7 @@ export interface ProjectApplied extends OperationAnswer {
 }
 /** Directory management borrows the Web writer; metadata retitle borrows canonical document CAS. */
 export interface ProjectAuthoring {
-  capabilities(caller: ProjectCaller): Promise<ProjectCapabilities>
+  capabilities(caller: ProjectCaller, query?: { templatesOffset?: number }): Promise<ProjectCapabilities>
   plan(request: ProjectPlanRequest, caller: ProjectCaller): Promise<ProjectPlan>
   readPlan(request: ProjectApply, caller: ProjectCaller): Promise<ProjectPlan>
   apply(request: ProjectApply, caller: ProjectCaller, signal?: AbortSignal): Promise<ProjectApplied>
@@ -57,3 +59,4 @@ export const PROJECT_PLAN_SCHEMA = { type: 'object', additionalProperties: false
   id: text, operation: { oneOf: [operation('create', { title: text, template: text }, []), operation('copy', { to: text, title: text }, ['to']), operation('rename', { to: text }, ['to']), operation('delete', {}, []), operation('retitle', { title: text }, ['title'])] },
 } } as const
 export const PROJECT_APPLY_SCHEMA = { type: 'object', additionalProperties: false, required: ['planId', 'digest'], properties: { planId: text, digest: { type: 'string', pattern: '^[a-f0-9]{64}$' }, confirmDeletion: { const: true } } } as const
+export const PROJECT_CAPABILITIES_SCHEMA = { type: 'object', additionalProperties: false, properties: { templatesOffset: { type: 'integer', minimum: 0 } } } as const

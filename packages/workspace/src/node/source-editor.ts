@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto'
-import { lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
+import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, readdirSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 import { WORKSPACE_CONFIG } from '@lincyaw/compiler'
-import { DOCUMENT_ENTRY, validateDocument } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, SOURCE_MAX_BYTES, SOURCE_MAX_FILES, validateDocument } from '@lincyaw/kernel'
 import type { ConflictAnswer, DocumentFileChange, FilesAnswer, Member, Revision, SavedAnswer, SourceAnswer, SourceFile, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
 import { isWithin } from '../domain/paths.ts'
 import { listDocumentEntries, readDocumentSummary } from './config.ts'
@@ -12,8 +12,8 @@ import type { DocumentLocks } from './locks.ts'
 import { documentDirOf, FilesError, writeChanges } from './writer.ts'
 import type { DocumentWriter } from './writer.ts'
 
-export const MAX_SOURCE = 2 << 20
-export const MAX_SOURCE_CHANGES = 16
+export const MAX_SOURCE = SOURCE_MAX_BYTES
+export const MAX_SOURCE_CHANGES = SOURCE_MAX_FILES
 const MAX_FILES = 2000
 const HIDDEN_FROM_EDITOR = new Set(['node_modules', 'dist', '.git', '.presmium'])
 const BINARY = /\.(?:png|jpe?g|gif|webp|avif|ico|bmp|pdf|wasm|zip|gz|tgz|bz2|xz|7z|woff2?|ttf|otf|eot|mp3|mp4|m4a|wav|ogg|oga|webm|mov|avi|mkv|bin|so|dylib|dll|exe|pyc|xlsx?|docx?|pptx?|parquet|npy|npz|pkl|db|sqlite)$/i
@@ -48,6 +48,8 @@ interface Scope {
 }
 
 export interface SourceTransactionHistory {
+  /** Runs on final locked preimages, before any file is created or changed. */
+  check?(files: readonly { path: string, before?: Uint8Array }[]): void
   run<T>(work: () => Promise<T>): Promise<T>
   commit(paths: string[], lang: string | undefined): Promise<Revision | undefined>
 }
@@ -153,9 +155,20 @@ export class SourceEditor {
 
   #readBytes(scope: Scope, path: string, member: Member, documents?: readonly DocumentEntry[]): Buffer {
     const file = this.#readableFile(scope, path, member, documents)
-    const bytes = readFileSync(file)
-    if (bytes.byteLength > MAX_SOURCE) throw new RequestError(413, `${path} is larger than the editor opens (${MAX_SOURCE} bytes)`)
-    return bytes
+    const before = lstatSync(file)
+    const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK)
+    try {
+      const opened = fstatSync(fd)
+      if (!opened.isFile() || opened.dev !== before.dev || opened.ino !== before.ino) throw new RequestError(409, 'source-file-changed')
+      if (opened.size > MAX_SOURCE) throw new RequestError(413, `${path} is larger than the editor opens (${MAX_SOURCE} bytes)`)
+      const bytes = Buffer.alloc(opened.size + 1)
+      let length = 0, count = 0
+      while (length < bytes.length && (count = readSync(fd, bytes, length, bytes.length - length, null)) > 0) length += count
+      const after = fstatSync(fd), current = lstatSync(file)
+      if (length !== opened.size || after.size !== opened.size || after.mtimeMs !== opened.mtimeMs || after.ctimeMs !== opened.ctimeMs
+        || current.dev !== opened.dev || current.ino !== opened.ino || realpathSync(file) !== file) throw new RequestError(409, 'source-file-changed')
+      return bytes.subarray(0, length)
+    } finally { closeSync(fd) }
   }
 
   read(scope: Scope, path: string, member: Member): SourceAnswer {
@@ -225,10 +238,16 @@ export class SourceEditor {
     if (bytes > MAX_SOURCE) throw new RequestError(413, `the transaction is larger than the editor saves (${MAX_SOURCE} bytes)`)
     for (const path of paths) if ([...paths].some(other => path !== other && path.startsWith(`${other}/`))) throw new RequestError(400, `a source file cannot also be a parent directory: ${path}`)
     const document = documents[0]
-    if (!document || documents.some(found => found?.dir !== document.dir)) throw new RequestError(400, 'a source transaction must stay in one document')
-    const scopeDir = document.dir
+    if ((!document && !(scope.home && member.roles.includes('owner'))) || documents.some(found => found?.dir !== document?.dir)) throw new RequestError(400, 'a source transaction must stay in one document or the owner workspace scope')
+    if (!document && changes.some(change => change.path === DOCUMENT_ENTRY || change.path.endsWith(`/${DOCUMENT_ENTRY}`))) throw new RequestError(422, 'create-a-document-with-valid-content')
+    const scopeDir = document?.dir ?? ''
     const release = this.#locks ? await this.#locks.acquire(scopeDir, 'editor:transaction') : () => {}
     const work = async (): Promise<SourceTransactionAnswer> => {
+      const current = listDocumentEntries(this.#config)
+      for (const [index, change] of changes.entries()) {
+        this.#assertEditable(scope, change.path, member, current)
+        if (this.#documentHolding(change.path, current)?.dir !== documents[index]?.dir) throw new RequestError(409, 'source-scope-changed')
+      }
       // Read every preimage before creating directories or writing any file.
       const snapshots = changes.map(change => {
         const written = typeof change.content === 'string' ? Buffer.from(change.content, 'utf8') : Buffer.from(change.content)
@@ -253,16 +272,17 @@ export class SourceEditor {
         return { path: change.path, before: undefined, written, executable: false }
       })
       for (const snapshot of snapshots) if (snapshot.path !== binaryPath) validateDocumentSource(snapshot.path, snapshot.written.toString('utf8'), snapshot.before)
+      history?.check?.(snapshots)
       if (dryRun) return { versions: snapshots.map(snapshot => ({ path: snapshot.path, version: versionOf(snapshot.written) })) }
       const created: string[] = []
       const edited = snapshots.filter(snapshot => snapshot.before && !snapshot.written.equals(snapshot.before))
       const touched = snapshots.filter(snapshot => !snapshot.before || !snapshot.written.equals(snapshot.before)).map(snapshot => snapshot.path)
-      const lang = history && touched.length ? readDocumentSummary(this.#config, document).lang : undefined
-      const write = (next: DocumentFileChange[]) => this.#writer.write(next)
+      const lang = history && touched.length && document ? readDocumentSummary(this.#config, document).lang : undefined
+      const write = async (next: DocumentFileChange[]) => document ? await this.#writer.write(next) : writeChanges(this.#config, next, true)
       try {
         // Exclusive creation prevents replacing a file created outside serve after validation.
         for (const snapshot of snapshots) if (!snapshot.before) {
-          await this.#writer.create(snapshot.path, snapshot.written)
+          await this.#writer.create(snapshot.path, snapshot.written, document === undefined)
           created.push(snapshot.path)
         }
         if (edited.length) await write(edited.map(snapshot => ({ path: snapshot.path, content: snapshot.written, ...snapshot.executable ? { executable: true } : {} })))

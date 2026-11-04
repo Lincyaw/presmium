@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, lstatSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { WorkspaceConfig } from './config.ts'
@@ -14,7 +14,7 @@ function templatesDir(config: WorkspaceConfig): string {
 export function listTemplates(config: WorkspaceConfig): string[] {
   const dir = templatesDir(config)
   try {
-    return readdirSync(dir).filter(name => statSync(join(dir, name)).isDirectory()).sort()
+    return readdirSync(dir).filter(name => findTemplate(config, name) !== undefined).sort()
   } catch {
     return []
   }

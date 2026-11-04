@@ -1,4 +1,4 @@
-import { PROJECT_APPLY_SCHEMA, PROJECT_MAX_REQUEST_CHARS, PROJECT_PLAN_SCHEMA } from '@lincyaw/kernel'
+import { PROJECT_APPLY_SCHEMA, PROJECT_CAPABILITIES_SCHEMA, PROJECT_MAX_REQUEST_CHARS, PROJECT_PLAN_SCHEMA } from '@lincyaw/kernel'
 import type { ProjectCaller, ProjectAuthoring } from '@lincyaw/kernel'
 import { validateProjectApply, validateProjectPlan } from '@lincyaw/kernel/node'
 import type { Call, ToolSpec } from './mcp.ts'
@@ -6,9 +6,9 @@ const service = (call: Call): ProjectAuthoring => { if (!call.host.projectAuthor
 const caller = (call: Call): ProjectCaller => ({ member: call.caller.member, origin: 'agent', ...call.caller.document !== undefined ? { boundDocument: call.caller.document } : {} })
 const budget = (call: Call) => { if (JSON.stringify(call.args).length > PROJECT_MAX_REQUEST_CHARS) throw Object.assign(new Error('project-request-too-large'), { status: 413 }) }
 export const PROJECT_TOOLS: ToolSpec[] = [
-  { name: 'get_project_capabilities', kind: 'read', structured: true, inputSchema: { type: 'object', additionalProperties: false, properties: {} },
-    description: 'Workspace project-management availability, actual HEAD/configuration observation and limits. This cheap read does not validate file trees, compile or write. Root-directory copy/move/delete remain unavailable. Action availability is separate: retitle uses canonical source CAS and can work without git or a multi-document workspace. A document-bound token may only retitle its bound document; it has no directory-management grant.',
-    run: call => service(call).capabilities(caller(call)) },
+  { name: 'get_project_capabilities', kind: 'read', structured: true, inputSchema: PROJECT_CAPABILITIES_SCHEMA,
+    description: 'Workspace project-management availability, configured template names (20 per page, templatesOffset for more), actual HEAD/configuration observation and limits. This cheap read does not validate file trees, compile or write. Root-directory copy/move/delete remain unavailable. Action availability is separate: retitle uses canonical source CAS and can work without git or a multi-document workspace. A document-bound token may only retitle its bound document; it has no directory-management grant.',
+    run: call => service(call).capabilities(caller(call), call.args) },
   { name: 'plan_project_change', kind: 'read', structured: true, inputSchema: PROJECT_PLAN_SCHEMA,
     description: 'Preflights create/copy/rename/delete of an ordinary document directory, or retitle of canonical metadata. Directory operations bind actual git HEAD, source/template bytes, workspace configuration and classified references. Retitle binds canonical document source/version and uses the existing document plan. Fixes a new document UUID at planning. Returns compact impact, digest and expiry. No writes or compilation. Retain the same id for identical retries; 64 process-local plans, five minutes. Refuses unsupported references, root-directory operations and uncommitted destructive targets.',
     run: async call => { budget(call); if (!validateProjectPlan(call.args)) throw Object.assign(new Error('project-plan-invalid'), { status: 400 }); return service(call).plan(call.args, caller(call)) } },

@@ -13,6 +13,7 @@ import type { Revisions } from './revisions.ts'
 import { DOCUMENT_OPERATION_MAX_BACKUP_BYTES, DOCUMENT_OPERATION_MAX_BACKUP_ENTRIES, documentDirOf } from './writer.ts'
 import { catchRequestErrors, RequestError } from './errors.ts'
 import { projectConfiguration, projectDigest, projectMaterial } from './project-files.ts'
+import { listTemplates } from './templates.ts'
 
 type Admission = { signature: string, admission: Promise<ProjectPlan> }
 type Stored = { member: string, origin: ProjectCaller['origin'], signature: string, plan: ProjectPlan, material?: ReturnType<typeof projectMaterial>, canonical?: { change: DocumentChange, planId: string, source: CanonicalSource }, receipt?: ProjectApplied, work?: Promise<ProjectApplied> }
@@ -59,14 +60,28 @@ export function createProjectAuthoring(options: { config: WorkspaceConfig, opera
   }
   const key = (request: ProjectPlanRequest, caller: ProjectCaller) => JSON.stringify([caller.member.id, caller.origin, request.id])
   const service: ProjectAuthoring = {
-    async capabilities(caller) {
+    async capabilities(caller, query = {}) {
       if (closed) throw new RequestError(503, 'project-owner-closed')
+      const offset = query.templatesOffset ?? 0
+      if (!Number.isSafeInteger(offset) || offset < 0 || Object.keys(query).some(key => key !== 'templatesOffset')) throw new RequestError(400, 'project-request-invalid')
       const observed = await observation(), directory = reasons(caller), metadata = reasons(caller, { op: 'retitle', dir: caller.boundDocument ?? '', title: 'capability' })
       if (!observed.snapshot && !directory.includes('project-git-unavailable')) directory.push('project-head-unavailable')
       const actions = Object.fromEntries(['create', 'copy', 'rename', 'delete', 'retitle'].map(op => { const unavailable = op === 'retitle' ? metadata : directory; return [op, { available: unavailable.length === 0, reasons: unavailable }] })) as import('@lincyaw/kernel').ProjectCapabilities['actions']
       const available = Object.values(actions).some(action => action.available)
-      return bounded({ available, actions, reasons: available ? [] : [...new Set([...directory, ...metadata])], observation: observed, verification: 'configuration-only', rootDirectoryOperations: false,
-        limits: { requestChars: PROJECT_MAX_REQUEST_CHARS, responseChars: PROJECT_MAX_RESPONSE_CHARS, backupEntries: DOCUMENT_OPERATION_MAX_BACKUP_ENTRIES, backupBytes: DOCUMENT_OPERATION_MAX_BACKUP_BYTES, plans: PROJECT_MAX_PLANS, ttlMs: PROJECT_PLAN_TTL_MS } })
+      const answer: import('@lincyaw/kernel').ProjectCapabilities = { available, actions, reasons: available ? [] : [...new Set([...directory, ...metadata])], observation: observed, verification: 'configuration-only', rootDirectoryOperations: false,
+        limits: { requestChars: PROJECT_MAX_REQUEST_CHARS, responseChars: PROJECT_MAX_RESPONSE_CHARS, backupEntries: DOCUMENT_OPERATION_MAX_BACKUP_ENTRIES, backupBytes: DOCUMENT_OPERATION_MAX_BACKUP_BYTES, plans: PROJECT_MAX_PLANS, ttlMs: PROJECT_PLAN_TTL_MS } }
+      if (caller.boundDocument === undefined) {
+        const templates = listTemplates(config)
+        if (offset > templates.length) throw new RequestError(400, 'project-request-invalid')
+        answer.templates = []
+        for (const template of templates.slice(offset, offset + 20)) {
+          if (JSON.stringify({ ...answer, templates: [...answer.templates, template], nextTemplatesOffset: offset + answer.templates.length + 1 }).length > PROJECT_MAX_RESPONSE_CHARS) break
+          answer.templates.push(template)
+        }
+        if (!answer.templates.length && offset < templates.length) throw new RequestError(413, 'project-response-too-large')
+        if (offset + answer.templates.length < templates.length) answer.nextTemplatesOffset = offset + answer.templates.length
+      } else if (offset) throw new RequestError(403, 'project-workspace-scope-required')
+      return bounded(answer)
     },
     async plan(request, caller) {
       budget(request)
