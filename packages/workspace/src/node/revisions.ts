@@ -2,6 +2,7 @@ import { existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, rmdirSyn
 import { tmpdir } from 'node:os'
 import { join, relative, resolve, sep } from 'node:path'
 import type { DocumentFileChange, HistoryRevision, Member, RevertResult, Revision, RevisionsAnswer, RevisionService, UncommittedFile } from '@lincyaw/kernel'
+import { LOCAL_AUTHOR } from '@lincyaw/kernel'
 import { leavesRoot } from '../domain/paths.ts'
 import { commitMessage, memberAddress, originOf } from '../domain/commit-message.ts'
 import type { CommitOrigin } from '../domain/commit-message.ts'
@@ -208,14 +209,16 @@ export class Revisions implements RevisionService {
 
   /** Commits the paths; the caller holds the git lock (`Git.exclusive`). */
   async commitWhileLocked(commit: LockedCommit): Promise<Revision | undefined> {
-    const { summary, body, origin } = commit
+    const { summary, body } = commit
     const unique = [...new Set(commit.paths.map(path => path.replace(/^\.?\/+|\/+$/g, '')).filter(path => path && !leavesRoot(path)))]
     if (unique.length === 0) return undefined
     await this.#git.output(['add', '-A', '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })
     const staged = (await this.#git.output(['diff', '--cached', '--name-only', '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })).trim()
     if (!staged) return undefined
+    const member = await this.#author(commit.origin.member)
+    const origin = { ...commit.origin, ...member ? { member } : {} }
     const message = withTrailers(commitMessage(summary, body, origin, commit.revert), commit.trailers ?? [])
-    await this.#git.output([...await this.#identity(), 'commit', '-q', '--no-verify', '-m', message, ...this.#author(origin.member), '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })
+    await this.#git.output([...await this.#identity(), 'commit', '-q', '--no-verify', '-m', message, ...member ? [`--author=${memberAddress(member)}`] : [], '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })
     return this.#revision('HEAD')
   }
 
@@ -545,8 +548,15 @@ export class Revisions implements RevisionService {
     return entry && revision(entry)
   }
 
-  #author(member: Member | undefined): string[] {
-    return member ? [`--author=${memberAddress(member)}`] : []
+  /**
+   * The member a commit names as its author. The local author (the one person a local service serves) is the
+   * repository's configured git user when git has one, so that their saves are theirs; members of a shared service
+   * have their own name and email.
+   */
+  async #author(member: Member | undefined): Promise<Member | undefined> {
+    if (!member || member.email || member.id !== LOCAL_AUTHOR.id || member.name !== LOCAL_AUTHOR.name) return member
+    const [name, email] = await Promise.all([this.#git.tryOutput(['config', 'user.name']), this.#git.tryOutput(['config', 'user.email'])])
+    return name.ok && email.ok && name.output.trim() && email.output.trim() ? { ...member, name: name.output.trim(), email: email.output.trim() } : member
   }
 
   async #identity(): Promise<string[]> {
