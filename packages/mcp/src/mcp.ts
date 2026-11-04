@@ -22,6 +22,7 @@ import { VOICE_AUTHORING_TOOLS } from './voice-authoring.ts'
 import { SPEECH_SETTINGS_TOOLS } from './speech-settings.ts'
 import { WORKSPACE_REVIEW_TOOLS } from './workspace-review.ts'
 import { SOURCE_TOOLS } from './workspace-source.ts'
+import { WORKSPACE_CHANGES_TOOLS } from './workspace-changes.ts'
 import { DIAGNOSTIC_TOOLS, diagnosticSnapshot } from './diagnostics.ts'
 import { registerSkillResources, SKILL_INSTRUCTIONS, SKILL_TOOLS } from './skills.ts'
 import { CAPTURE_TOOLS, ToolContent } from './capture.ts'
@@ -149,6 +150,7 @@ const TOOLS: ToolSpec[] = [
   ...SPEECH_SETTINGS_TOOLS,
   ...WORKSPACE_REVIEW_TOOLS,
   ...SOURCE_TOOLS,
+  ...WORKSPACE_CHANGES_TOOLS,
   ...TRANSCRIPTION_TOOLS,
   ...CAPTURE_TOOLS,
   {
@@ -444,6 +446,7 @@ function runPlan(doc: IRDocument, node: CodeNode): string {
 }
 
 function hostSupports(host: McpHost, name: string): boolean {
+  if (WORKSPACE_CHANGES_TOOLS.some(tool => tool.name === name)) return Boolean(host.workspaceChanges)
   if (SOURCE_TOOLS.some(tool => tool.name === name)) return Boolean(host.workspaceSource)
   if (WORKSPACE_REVIEW_TOOLS.some(tool => tool.name === name)) return Boolean(host.workspaceReview)
   if (SPEECH_SETTINGS_TOOLS.some(tool => tool.name === name)) return Boolean(host.speechSettings)

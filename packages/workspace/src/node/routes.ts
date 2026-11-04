@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, problemResponse, PRODUCTION_AUDIO_AUTHORING, pushStream, SPEECH, sseResponse } from '@lincyaw/kernel'
-import type { ChangesAnswer, CommitAnswer, CompileJob, DocumentsAnswer, JobsAnswer, Member, PresmiumNodePlugin, RequestContext, Route, SavedAnswer, ServerContribution, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
+import type { CompileJob, DocumentsAnswer, JobsAnswer, PresmiumNodePlugin, RequestContext, Route, SavedAnswer, ServerContribution, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
 import { hasBearerToken } from '@lincyaw/server'
 import { saveSummary } from '../domain/commit-message.ts'
 import { documentSummaries, listDocuments } from './config.ts'
@@ -9,12 +9,11 @@ import type { WorkspaceConfig } from './config.ts'
 import { documentsDiff } from './document-operations.ts'
 import type { DocumentOperations, DocumentsChange } from './document-operations.ts'
 import { catchRequestErrors, RequestError } from './errors.ts'
-import { lockedError } from './locks.ts'
 import type { DocumentLocks } from './locks.ts'
 import type { Revisions } from './revisions.ts'
 import { reviewRoutes } from './review/routes.ts'
 import type { AgentSessionReviews } from './review/agent-session-reviews.ts'
-import { MAX_SOURCE, MAX_SOURCE_CHANGES, validateDocumentSource } from './source-editor.ts'
+import { MAX_SOURCE, MAX_SOURCE_CHANGES } from './source-editor.ts'
 import type { SourceEditor } from './source-editor.ts'
 import { listTemplates } from './templates.ts'
 import type { Jobs } from './jobs.ts'
@@ -25,8 +24,8 @@ import { createDocumentAudioAuthoring } from './document-audio.ts'
 import { createDocumentImageAuthoring } from './document-images.ts'
 import { createDocumentTranscriptions, documentTranscriptionRoutes } from './document-transcription.ts'
 import type { DocumentTranscriptions, ProductionAudioAuthoring, SpeechService } from '@lincyaw/kernel'
-import { documentDirOf } from './writer.ts'
 import { createDocumentHistory } from './document-history.ts'
+import { createWorkspaceChanges } from './workspace-changes.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
@@ -62,6 +61,7 @@ export interface WorkspaceRoutesOptions {
   authoringClientRoutes?: Record<string, Route>
   projectRoutes?: Record<string, Route>
   speechSettings?: Route
+  changesRoutes?: Record<string, Route>
 }
 
 function toRendererIds(body: unknown): string[] | undefined {
@@ -70,13 +70,6 @@ function toRendererIds(body: unknown): string[] | undefined {
   return ids.length > 0 ? ids : undefined
 }
 
-const NO_GIT = 'the workspace is not a git repository: run git init in it to use the document operations and the history'
-
-
-function toChosenPaths(body: unknown, uncommitted: string[]): string[] {
-  const asked = isRecord(body) && Array.isArray(body.paths) ? body.paths.filter((path): path is string => typeof path === 'string') : undefined
-  return asked ? uncommitted.filter(path => asked.includes(path)) : uncommitted
-}
 
 function toSaveMessage(value: unknown): string {
   return typeof value === 'string' ? [...(value.trim().split(/\r?\n/)[0] ?? '').trim()].slice(0, 200).join('') : ''
@@ -87,21 +80,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
   const { config, editor, locks, revisions, operations, reviews, workbench } = options
   const listed = () => listDocuments(config).map(doc => doc.dir)
   const scopeOf = (ctx: RequestContext) => editor.scope(ctx.document)
-  const uncommitted = async (ctx: RequestContext) => (revisions ? await revisions.uncommittedFiles(editor.roots(scopeOf(ctx))) : [])
-  const withChosenChanges = async (request: Request, ctx: RequestContext, holder: string, work: (revisions: Revisions, paths: string[], member: Member, body: Record<string, unknown>) => Promise<Response>) => {
-    if (request.method !== 'POST') return problemResponse(405, 'POST')
-    if (!revisions) return problemResponse(409, NO_GIT)
-    const body: unknown = await request.json().catch(() => ({}))
-    const paths = toChosenPaths(body, (await uncommitted(ctx)).map(file => file.path))
-    if (paths.length === 0) return problemResponse(409, 'no changes to take: every file is as committed')
-    const claimed = locks.claimAll(paths.map(path => documentDirOf(config, path) ?? ''), holder)
-    if ('holder' in claimed) throw lockedError(claimed.document, claimed.holder)
-    try {
-      return await work(revisions, paths, ctx.member, isRecord(body) ? body : {})
-    } finally {
-      claimed.release()
-    }
-  }
+  const changes = options.changesRoutes ?? createWorkspaceChanges({ config, editor, locks, revisions, changed: options.documentsChanged }).routes
   const ownedHistory = options.historyRoutes ? undefined : createDocumentHistory({ config, editor, locks, revisions, changed: (before, after) => options.documentsChanged(documentsDiff(before, after)), reverted: (target, revision) => reviews?.reverted(target, revision) })
   const ownedTranscriptions = options.transcriptions ? undefined : createDocumentTranscriptions({ root: config.root, editor, audio: options.audio, speech: options.speech })
   const transcriptions = options.transcriptions ?? ownedTranscriptions!
@@ -178,39 +157,11 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
         return jsonResponse(await editor.transaction(scopeOf(ctx), changes, ctx.member, history) satisfies SourceTransactionAnswer)
       }),
     },
-    'changes': {
-      role: 'editor',
-      handle: (request, ctx) => catchRequestErrors(async () => {
-        if (request.method !== 'GET') return problemResponse(405, 'GET')
-        return jsonResponse({ files: await uncommitted(ctx) } satisfies ChangesAnswer)
-      }),
-    },
-    'changes/commit': {
-      role: 'editor',
-      handle: (request, ctx) => catchRequestErrors(() => withChosenChanges(request, ctx, 'editor:commit', async (history, paths, member, body) => {
-        const message = typeof body.message === 'string' ? body.message.trim().slice(0, 4000) : ''
-        if (!message) return problemResponse(400, '{ message: what the change is, paths? }')
-        for (const path of paths) {
-          if (!path.endsWith(`/${DOCUMENT_ENTRY}`) && path !== DOCUMENT_ENTRY) continue
-          const source = editor.read(scopeOf(ctx), path, member)
-          validateDocumentSource(path, source.content)
-        }
-        const revision = await history.commit({ files: paths, message, origin: { kind: 'editor', member } })
-        return jsonResponse({ ...revision ? { revision } : {}, paths } satisfies CommitAnswer)
-      })),
-    },
+    ...changes,
     ...workbench ? workbenchRoutes(workbench) : {},
     ...options.jobs ? jobRoutes(options.jobs, editor) : {},
     ...reviews ? reviewRoutes(reviews) : {},
-    'changes/discard': {
-      role: 'editor',
-      handle: (request, ctx) => catchRequestErrors(() => withChosenChanges(request, ctx, 'editor:discard', async (history, paths) => {
-        const before = listed()
-        await history.discard(paths)
-        await options.documentsChanged(documentsDiff(before, listed()))
-        return jsonResponse({ paths } satisfies CommitAnswer)
-      })),
-    },
+
   }
   return { routes: authorizeWorkspaceRoutes(routes, options.launcherToken), close: async () => { await Promise.all([ownedTranscriptions?.close(), ownedAudio?.close(), ownedHistory?.close()]) } }
 }

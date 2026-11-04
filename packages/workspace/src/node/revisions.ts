@@ -1,8 +1,9 @@
-import { existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, rmdirSync, rmSync, writeFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import { closeSync, constants, existsSync, fstatSync, lstatSync, mkdirSync, mkdtempSync, openSync, readdirSync, readFileSync, renameSync, rmdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, relative, resolve, sep } from 'node:path'
+import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import type { DocumentFileChange, HistoryRevision, Member, RevertResult, Revision, RevisionsAnswer, RevisionService, UncommittedFile } from '@lincyaw/kernel'
-import { LOCAL_AUTHOR } from '@lincyaw/kernel'
+import { CHANGES_MAX_BYTES, LOCAL_AUTHOR, SOURCE_MAX_BYTES } from '@lincyaw/kernel'
 import { leavesRoot } from '../domain/paths.ts'
 import { commitMessage, memberAddress, originOf } from '../domain/commit-message.ts'
 import type { CommitOrigin } from '../domain/commit-message.ts'
@@ -12,6 +13,8 @@ import { RequestError } from './errors.ts'
 import type { Git } from './git.ts'
 import { documentDirOf, isGeneratedPath, makeDocumentDir, writeChanges } from './writer.ts'
 import type { DocumentWriter } from './writer.ts'
+import { revisionDigest, revisionFiles } from './revision-files.ts'
+import type { RevisionFile } from './revision-files.ts'
 
 const FIELD = '\x00'
 const RECORD = '\x1e'
@@ -178,6 +181,18 @@ export interface LockedCommit {
   trailers?: [string, string][]
 }
 
+export interface RevisionChanges {
+  head?: string
+  ref?: string
+  index?: Buffer
+  indexPath: string
+  indexStamp: string
+  snapshot: string
+  files: UncommittedFile[]
+  encoded?: TreeFile[]
+  raw: RevisionFile[]
+}
+
 export class Revisions implements RevisionService {
   readonly #git: Git
   readonly #files: RevisionFiles
@@ -187,19 +202,9 @@ export class Revisions implements RevisionService {
     this.#files = files
   }
 
-  /** One authoring transaction holds the git queue and restores its index if file saving or committing fails. */
+  /** Serialize authoring work; commitWhileLocked owns its index changes and rollback. */
   transaction<T>(work: () => Promise<T>): Promise<T> {
-    return this.#git.exclusive(async () => {
-      const index = resolve(this.#git.root, (await this.#git.output(['rev-parse', '--git-path', 'index'])).trim())
-      const before = existsSync(index) ? readFileSync(index) : undefined
-      try {
-        return await work()
-      } catch (error) {
-        if (before) writeFileSync(index, before)
-        else rmSync(index, { force: true })
-        throw error
-      }
-    })
+    return this.#git.exclusive(work)
   }
 
   commit(change: { files: string[], message: string, origin: CommitOrigin, trailers?: [string, string][] }): Promise<Revision | undefined> {
@@ -209,17 +214,174 @@ export class Revisions implements RevisionService {
 
   /** Commits the paths; the caller holds the git lock (`Git.exclusive`). */
   async commitWhileLocked(commit: LockedCommit): Promise<Revision | undefined> {
-    const { summary, body } = commit
     const unique = [...new Set(commit.paths.map(path => path.replace(/^\.?\/+|\/+$/g, '')).filter(path => path && !leavesRoot(path)))]
     if (unique.length === 0) return undefined
-    await this.#git.output(['add', '-A', '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })
-    const staged = (await this.#git.output(['diff', '--cached', '--name-only', '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })).trim()
-    if (!staged) return undefined
-    const member = await this.#author(commit.origin.member)
-    const origin = { ...commit.origin, ...member ? { member } : {} }
-    const message = withTrailers(commitMessage(summary, body, origin, commit.revert), commit.trailers ?? [])
-    await this.#git.output([...await this.#identity(), 'commit', '-q', '--no-verify', '-m', message, ...member ? [`--author=${memberAddress(member)}`] : [], '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })
-    return this.#revision('HEAD')
+    const captured = await this.observeChanges(unique)
+    if (!captured.raw.length) return undefined
+    return this.#applyFrozen('commit', await this.freezeCommit(captured), commit)
+  }
+
+  /** Exact current raw bytes, HEAD/ref and index observation; never compiles or stages the real index. */
+  async observeChanges(roots: string[] = ['']): Promise<RevisionChanges> {
+    const before = await this.#changeState(), files = await this.uncommittedFiles(roots)
+    const raw = revisionFiles(this.#files.config.root, files.map(file => file.path))
+    const after = await this.#changeState()
+    if (!this.#sameState(before, after)) throw new RequestError(409, 'changes-state-changed')
+    return { ...before, files, raw, snapshot: revisionDigest(JSON.stringify([before.head, before.ref, before.indexStamp, raw.map(file => [file.path, file.mode, file.stamp])])) }
+  }
+
+  /** Encode approved raw bytes before an external confirmation; later filters cannot change these blobs. */
+  async freezeCommit(captured: RevisionChanges): Promise<RevisionChanges> {
+    await this.#verifyChanges(captured)
+    const encoded: TreeFile[] = []
+    for (const file of captured.raw) {
+      const data = file.change
+      if (!data) throw new RequestError(409, 'changes-file-unsupported')
+      if ('remove' in data) { encoded.push({ path: file.path, mode: '000000', oid: '' }); continue }
+      const bytes = 'link' in data ? Buffer.from(data.link) : Buffer.from(data.content)
+      const blob = await this.#git.run(['hash-object', '-w', ...'link' in data ? ['--no-filters'] : [`--path=${file.path}`], '--stdin'], {}, bytes)
+      if (blob.code !== 0) throw new RequestError(409, 'changes-encoding-failed')
+      encoded.push({ path: file.path, mode: file.mode, oid: blob.stdout.toString('utf8').trim() })
+    }
+    await this.#verifyChanges(captured)
+    return { ...captured, encoded }
+  }
+
+  /** Caller holds document locks; this is the only Git queue entry for a reviewed changes operation. */
+  applyChanges(which: 'commit' | 'discard', captured: RevisionChanges, commit?: LockedCommit, check?: () => void): Promise<Revision | undefined> {
+    return this.#git.exclusive(async () => this.#applyFrozen(which, which === 'commit' && !captured.encoded ? await this.freezeCommit(captured) : captured, commit, check))
+  }
+
+  async #changeState() {
+    const [head, ref, indexName] = await Promise.all([
+      this.#git.run(['rev-parse', '--verify', '--quiet', 'HEAD']),
+      this.#git.run(['symbolic-ref', '--quiet', 'HEAD']),
+      this.#git.output(['rev-parse', '--git-path', 'index']),
+    ])
+    if (ref.code !== 0 && ref.code !== 1 || head.code !== 0 && !(head.code === 1 && ref.code === 0)) throw new RequestError(409, 'changes-repository-unavailable')
+    const indexPath = resolve(this.#git.root, indexName.trim()), index = existsSync(indexPath) ? readFileSync(indexPath) : undefined
+    return { ...head.code === 0 ? { head: head.stdout.toString('utf8').trim() } : {}, ...ref.code === 0 ? { ref: ref.stdout.toString('utf8').trim() } : {}, indexPath, index, indexStamp: index ? revisionDigest(index) : 'absent' }
+  }
+
+  #sameState(a: Pick<RevisionChanges, 'head' | 'ref' | 'indexStamp'>, b: Pick<RevisionChanges, 'head' | 'ref' | 'indexStamp'>): boolean {
+    return a.head === b.head && a.ref === b.ref && a.indexStamp === b.indexStamp
+  }
+
+  async #verifyChanges(captured: RevisionChanges, files = true): Promise<void> {
+    if (!this.#sameState(captured, await this.#changeState())) throw new RequestError(409, 'changes-state-changed')
+    if (files) {
+      const current = revisionFiles(this.#files.config.root, captured.raw.map(file => file.path))
+      if (JSON.stringify(current.map(file => [file.path, file.mode, file.stamp])) !== JSON.stringify(captured.raw.map(file => [file.path, file.mode, file.stamp]))) throw new RequestError(409, 'changes-state-changed')
+    }
+  }
+
+  async #applyFrozen(which: 'commit' | 'discard', captured: RevisionChanges, commit?: LockedCommit, check?: () => void): Promise<Revision | undefined> {
+    if (!captured.raw.length || captured.raw.some(file => !file.change)) throw new RequestError(409, 'changes-file-unsupported')
+    const gitDir = resolve(this.#git.root, (await this.#git.output(['rev-parse', '--git-dir'])).trim())
+    if (['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply', 'sequencer'].some(name => existsSync(join(gitDir, name)))
+      || (await this.#git.output(['ls-files', '--unmerged', '-z'])).length) throw new RequestError(409, 'changes-repository-busy')
+    const lock = `${captured.indexPath}.lock`
+    let fd: number
+    try { fd = openSync(lock, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600) }
+    catch { throw new RequestError(409, 'changes-index-busy') }
+    // The review Git guard already excludes *.lock entries; active private indexes must share that lifetime.
+    let identity: ReturnType<typeof fstatSync> | undefined
+    const work = join(dirname(captured.indexPath), `presmium-index-${randomUUID()}.lock`)
+    let installed = false, published = false, wrote = false, created = false, recovery = false
+    const restoreIndex = () => {
+      if (captured.index) { const previous = join(work, 'previous'); writeFileSync(previous, captured.index, { mode: 0o600 }); renameSync(previous, captured.indexPath) }
+      else rmSync(captured.indexPath, { force: true })
+    }
+    try {
+      identity = fstatSync(fd)
+      mkdirSync(work, { mode: 0o700 }); created = true
+      await this.#verifyChanges(captured); check?.()
+      const env = (name: string) => ({ GIT_INDEX_FILE: join(work, name), GIT_LITERAL_PATHSPECS: '1', GIT_OPTIONAL_LOCKS: '0' })
+      const next = env('next'), selected = env('selected')
+      if (captured.index) writeFileSync(next.GIT_INDEX_FILE, captured.index)
+      else await this.#git.output(['read-tree', '--empty'], next)
+      await this.#git.output(['read-tree', captured.head ?? '--empty'], selected)
+      const base = (await this.#git.output(['write-tree'], selected)).trim()
+      const files: TreeFile[] = []
+      const targets: DocumentFileChange[] = []
+      const encoded = new Map(captured.encoded?.map(file => [file.path, file]))
+      let targetBytes = 0
+      for (const file of captured.raw) {
+        if (which === 'discard') {
+          const item = await this.#atTree(captured.head, file.path)
+          files.push(item)
+          const target = await this.#treeChange(item, CHANGES_MAX_BYTES - targetBytes)
+          targetBytes += 'content' in target ? Buffer.byteLength(target.content) : 'link' in target ? Buffer.byteLength(target.link) : 0
+          targets.push(target)
+        } else {
+          const frozen = encoded.get(file.path)
+          if (!frozen) throw new RequestError(409, 'changes-encoding-failed')
+          files.push(frozen)
+        }
+      }
+      const zero = '0'.repeat(base.length)
+      const input = Buffer.from(files.map(file => `${/^0+$/.test(file.mode) ? '0' : file.mode} ${file.oid || zero}\t${relative(this.#git.top, join(this.#files.config.root, file.path)).split(sep).join('/')}\0`).join(''))
+      for (const index of [next, selected]) {
+        const updated = await this.#git.run(['-C', this.#git.top, 'update-index', '-z', '--index-info'], index, input)
+        if (updated.code !== 0) throw new RequestError(409, 'changes-index-update-failed')
+      }
+      let revision: Revision | undefined
+      if (which === 'commit') {
+        if (!commit) throw new RequestError(400, 'changes-request-invalid')
+        const tree = (await this.#git.output(['write-tree'], selected)).trim()
+        if (tree !== base) {
+          const member = await this.#author(commit.origin.member), origin = { ...commit.origin, ...member ? { member } : {} }
+          const message = withTrailers(commitMessage(commit.summary, commit.body, origin, commit.revert), commit.trailers ?? [])
+          const author = member && /^(.*) <([^>]*)>$/.exec(memberAddress(member))
+          const hash = (await this.#git.output([...await this.#identity(), 'commit-tree', tree, ...captured.head ? ['-p', captured.head] : [], '-m', message], { ...selected, ...author ? { GIT_AUTHOR_NAME: author[1]!, GIT_AUTHOR_EMAIL: author[2]! } : {} })).trim()
+          revision = await this.#revision(hash)
+          if (!revision) throw new RequestError(409, 'changes-revision-unavailable')
+        }
+      }
+      // Blobs are already fixed; preserve late working edits while verifying the real index and branch.
+      await this.#verifyChanges(captured, which === 'discard'); check?.()
+      if (which === 'discard') { wrote = true; await this.#writeChanges(targets) }
+      renameSync(next.GIT_INDEX_FILE, captured.indexPath); installed = true
+      if (revision) {
+        const result = await this.#git.run(['update-ref', captured.ref ?? 'HEAD', revision.id, captured.head ?? zero])
+        if (result.code !== 0) throw new RequestError(409, 'changes-state-changed')
+        published = true
+      }
+      return revision
+    } catch (error) {
+      if (!published) {
+        try { if (wrote) await this.#writeChanges(captured.raw.map(file => file.change!)) } catch { recovery = true }
+        try { if (installed) restoreIndex() } catch { recovery = true }
+        if (recovery) throw new RequestError(500, 'changes-recovery-required')
+      }
+      throw error
+    } finally {
+      // Cleanup cannot turn an already published commit into a reported failure.
+      try { closeSync(fd) } catch {}
+      try {
+        const current = lstatSync(lock, { throwIfNoEntry: false })
+        if (identity && current?.ino === identity.ino && current.dev === identity.dev) rmSync(lock, { force: true })
+      } catch {}
+      try { if (created && !recovery) rmSync(work, { recursive: true, force: true }) } catch {}
+    }
+  }
+
+  async #atTree(head: string | undefined, path: string): Promise<TreeFile> {
+    if (!head) return { path, mode: '000000', oid: '' }
+    const raw = await this.#git.output(['ls-tree', '-z', head, '--', path], { GIT_LITERAL_PATHSPECS: '1' })
+    const entry = raw.split('\0')[0] ?? '', at = entry.indexOf('\t'), meta = entry.slice(0, at).split(' ')
+    if (at < 0) return { path, mode: '000000', oid: '' }
+    if (!['100644', '100755', '120000'].includes(meta[0] ?? '')) throw new RequestError(409, 'changes-file-unsupported')
+    return { path, mode: meta[0]!, oid: meta[2]! }
+  }
+
+  async #treeChange(file: TreeFile, maxBytes = CHANGES_MAX_BYTES): Promise<DocumentFileChange> {
+    if (/^0+$/.test(file.mode)) return { path: file.path, remove: true }
+    const size = Number((await this.#git.output(['cat-file', '-s', file.oid])).trim())
+    if (!Number.isSafeInteger(size) || size > maxBytes) throw new RequestError(413, 'changes-selection-too-large')
+    const blob = await this.#git.run(['cat-file', 'blob', file.oid])
+    if (blob.code !== 0) throw new RequestError(409, 'changes-object-unavailable')
+    return file.mode === '120000' ? { path: file.path, link: blob.stdout.toString('utf8') } : { path: file.path, content: blob.stdout, executable: file.mode === '100755' }
   }
 
   async status(paths: string[] = ['']): Promise<{ branch?: string, uncommitted: number }> {
@@ -231,10 +393,10 @@ export class Revisions implements RevisionService {
     const specs = paths.map(path => path || '.')
     const status = await this.#statusOf(paths)
     const counts = new Map<string, [number, number]>()
-    const numstat = await this.#git.tryOutput(['diff', '--numstat', '-z', '--no-renames', 'HEAD', '--', ...specs], { GIT_LITERAL_PATHSPECS: '1' })
+    const numstat = await this.#git.tryOutput(['-c', 'diff.autoRefreshIndex=false', 'diff', '--numstat', '-z', '--no-renames', '--no-ext-diff', '--no-textconv', 'HEAD', '--', ...specs], { GIT_LITERAL_PATHSPECS: '1', GIT_OPTIONAL_LOCKS: '0' })
     if (numstat.ok) {
       for (const entry of numstat.output.split('\0').filter(Boolean)) {
-        const [added = '-', removed = '-', path = ''] = entry.split('\t')
+        const [added = '-', removed = '-', ...named] = entry.split('\t'), path = named.join('\t')
         if (added !== '-') counts.set(this.#fromTop(path), [Number(added), Number(removed)])
       }
     }
@@ -247,14 +409,8 @@ export class Revisions implements RevisionService {
 
   discard(paths: string[]): Promise<void> {
     return this.#git.exclusive(async () => {
-      const files: TreeFile[] = []
-      for (const path of paths) {
-        const listed = await this.#git.tryOutput(['ls-tree', '-z', 'HEAD', '--', path], { GIT_LITERAL_PATHSPECS: '1' })
-        const [meta = '', named] = (listed.ok ? listed.output.split('\0')[0] ?? '' : '').split('\t')
-        const [mode = '', , oid = ''] = meta.split(' ')
-        files.push(named && mode ? { path, mode, oid } : { path, mode: '000000', oid: '' })
-      }
-      await this.#write(files)
+      const captured = await this.observeChanges(paths)
+      if (captured.raw.length) await this.#applyFrozen('discard', captured)
     })
   }
 
@@ -284,7 +440,7 @@ export class Revisions implements RevisionService {
     if (!(await this.#git.tryOutput(['merge-base', '--is-ancestor', id, 'HEAD'])).ok) throw new RequestError(404, 'history-revision-not-found')
     const topPath = relative(this.#git.top, resolve(this.#files.config.root, path)).split(sep).join('/')
     const listed = await this.#git.output(['-C', this.#git.top, 'ls-tree', '-z', id, '--', topPath], { GIT_LITERAL_PATHSPECS: '1' })
-    const [meta = '', named] = (listed.split('\0')[0] ?? '').split('\t')
+    const record = listed.split('\0')[0] ?? '', at = record.indexOf('\t'), meta = record.slice(0, at), named = record.slice(at + 1)
     const [mode, type, oid] = meta.split(' ')
     if (named !== topPath || !oid) throw new RequestError(404, 'history-file-not-found')
     if (type !== 'blob' || !['100644', '100755'].includes(mode!)) throw new RequestError(422, 'history-file-not-regular-text')
@@ -395,8 +551,6 @@ export class Revisions implements RevisionService {
       const { target, tree, changes } = planned
       const originalHead = await this.head()
       const restore = await this.#changes(tree, 'HEAD')
-      const indexPath = resolve(this.#git.root, (await this.#git.output(['rev-parse', '--git-path', 'index'])).trim())
-      const oldIndex = existsSync(indexPath) ? readFileSync(indexPath) : undefined
       try {
       await this.#write(changes)
       const subject = target.message.split('\n')[0] ?? target.id
@@ -409,8 +563,6 @@ export class Revisions implements RevisionService {
         const afterHead = await this.head()
         if (afterHead !== originalHead) throw new RequestError(409, 'history-readback-changed', { committed: true, snapshot: afterHead })
         await this.#write(restore)
-        if (oldIndex) writeFileSync(indexPath, oldIndex)
-        else rmSync(indexPath, { force: true })
         throw error
       }
     })
@@ -457,8 +609,8 @@ export class Revisions implements RevisionService {
   }
 
   async #statusOf(paths: string[]): Promise<{ code: string, path: string }[]> {
-    const status = await this.#git.tryOutput(['status', '--porcelain=v1', '-z', '--no-renames', '--untracked-files=all', '--', ...paths.map(path => path || '.')], { GIT_LITERAL_PATHSPECS: '1' })
-    if (!status.ok) return []
+    const status = await this.#git.tryOutput(['status', '--porcelain=v1', '-z', '--no-renames', '--untracked-files=all', '--', ...paths.map(path => path || '.')], { GIT_LITERAL_PATHSPECS: '1', GIT_OPTIONAL_LOCKS: '0' })
+    if (!status.ok) throw new RequestError(409, 'changes-repository-unavailable')
     return status.output.split('\0').filter(Boolean)
       .map(entry => ({ code: entry.slice(0, 2), path: this.#fromTop(entry.slice(3)) }))
       .filter(({ path }) => !isGeneratedPath(path))
@@ -505,29 +657,24 @@ export class Revisions implements RevisionService {
   }
 
   async #write(files: TreeFile[]): Promise<void> {
+    const changes = await Promise.all(files.map(file => this.#treeChange(file)))
+    return this.#writeChanges(changes)
+  }
+
+  async #writeChanges(files: DocumentFileChange[]): Promise<void> {
     const { config, writer } = this.#files
     const changes: { change: DocumentFileChange, dir?: string }[] = []
-    for (const file of files) {
-      if (file.mode === '160000') throw new Error(`${file.path} is a submodule: not reverted`)
-      const dir = documentDirOf(config, file.path)
-      if (/^0+$/.test(file.mode)) {
-        changes.push({ change: { path: file.path, remove: true }, dir })
-        continue
-      }
-      const blob = (await this.#git.run(['cat-file', 'blob', file.oid])).stdout
-      const change: DocumentFileChange = file.mode === '120000' ? { path: file.path, link: blob.toString('utf8') } : { path: file.path, content: blob, ...file.mode === '100755' ? { executable: true } : {} }
-      changes.push({ change, dir })
+    for (const change of files) changes.push({ change, dir: documentDirOf(config, change.path) })
+    const outside = changes.filter(({ dir }) => dir === undefined).map(({ change }) => change)
+    for (const { path } of outside) {
+      const open = writableByOthers(config.root, path)
+      if (open) throw new Error(`the revert would write ${path}, in ${open}, which more than serve may write`)
     }
     const inDocuments = changes.filter(({ dir }) => dir !== undefined)
     for (const dir of new Set(inDocuments.filter(({ change }) => !('remove' in change)).map(({ dir }) => dir!))) {
       if (!exists(join(config.root, dir))) makeDocumentDir(config.root, dir)
     }
     if (inDocuments.length > 0) await writer.write(inDocuments.map(({ change }) => change))
-    const outside = changes.filter(({ dir }) => dir === undefined).map(({ change }) => change)
-    for (const { path } of outside) {
-      const open = writableByOthers(config.root, path)
-      if (open) throw new Error(`the revert would write ${path}, in ${open}, which more than serve may write`)
-    }
     if (outside.length > 0) writeChanges(config, outside, true)
     for (const dir of new Set(inDocuments.map(({ dir }) => dir!))) {
       if (!dir) continue
@@ -590,7 +737,11 @@ function writableByOthers(root: string, path: string): string | undefined {
 
 function lineCount(path: string): [number, number] | undefined {
   try {
-    const bytes = readFileSync(path)
+    const stat = lstatSync(path)
+    if (!stat.isFile() || stat.size > SOURCE_MAX_BYTES) return
+    const file = revisionFiles(dirname(path), [basename(path)])[0], change = file?.change
+    if (!change || !('content' in change)) return
+    const bytes = Buffer.from(change.content)
     if (bytes.includes(0)) return undefined
     const text = bytes.toString('utf8')
     return [text === '' ? 0 : text.split('\n').length - (text.endsWith('\n') ? 1 : 0), 0]

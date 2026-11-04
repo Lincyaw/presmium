@@ -3,7 +3,7 @@ import { closeSync, constants, cpSync, fstatSync, lstatSync, mkdirSync, mkdtempS
 import type { Stats } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { DOCUMENT_ENTRY, validateDocument } from '@lincyaw/kernel'
+import { CHANGES_MAX_BYTES, CHANGES_MAX_FILES, DOCUMENT_ENTRY, validateDocument } from '@lincyaw/kernel'
 import type { DocumentFileChange, DocumentFiles } from '@lincyaw/kernel'
 import { isWithin, rewriteLinks } from '../domain/paths.ts'
 import { isDocumentDir, listDocuments } from './config.ts'
@@ -11,8 +11,8 @@ import type { WorkspaceConfig } from './config.ts'
 import { findTemplate } from './templates.ts'
 
 const NOT_COPIED = new Set(['node_modules', 'dist', '.git'])
-export const DOCUMENT_OPERATION_MAX_BACKUP_ENTRIES = 16_384
-export const DOCUMENT_OPERATION_MAX_BACKUP_BYTES = 512 << 20
+export const DOCUMENT_OPERATION_MAX_BACKUP_ENTRIES = CHANGES_MAX_FILES
+export const DOCUMENT_OPERATION_MAX_BACKUP_BYTES = CHANGES_MAX_BYTES
 
 export class FilesError extends Error {}
 export class DocumentCheckpointRefusal extends FilesError {

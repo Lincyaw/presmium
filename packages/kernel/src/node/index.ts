@@ -31,3 +31,4 @@ export { devStateFile, readServiceState, removeServiceState, serveStateDir } fro
 export type { ServiceState } from './service-state.ts'
 export { validateWorkspaceReviewQuery, validateWorkspaceReviewChange } from './workspace-review.ts'
 export { validateSourceList, validateSourceRead, validateSourceEdit } from './workspace-source.ts'
+export { validateChangesQuery, validateWorkspaceChangesRequest } from './workspace-changes.ts'

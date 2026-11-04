@@ -1,4 +1,4 @@
-import type { DocumentCapture, ProjectAuthoring, DocumentHistory, SpeechSettings, WorkspaceReview, WorkspaceSource } from '@lincyaw/kernel'
+import type { DocumentCapture, ProjectAuthoring, DocumentHistory, SpeechSettings, WorkspaceReview, WorkspaceSource, WorkspaceChanges } from '@lincyaw/kernel'
 import type { Compilation } from '@lincyaw/compiler'
 import { pluginId } from '@lincyaw/compiler'
 import type { DocumentSummary, Finding, IRDocument, Member, OutputJobs, PresmiumNodePlugin, RunResult, ServiceToken } from '@lincyaw/kernel'
@@ -58,6 +58,7 @@ export interface ServerHost {
   speechSettings?: SpeechSettings
   workspaceReview?: WorkspaceReview
   workspaceSource?: WorkspaceSource
+  workspaceChanges?: WorkspaceChanges
   transcriptions?: DocumentTranscriptions
   transcriptionAdoption?: DocumentTranscriptionAdoption
   /** Pictures of the documents' slides, for agents (`capture_slides`). */

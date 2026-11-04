@@ -20,6 +20,7 @@ workspace 为每项能力创建一个实例，HTTP 与 MCP 共用实例与回执
 | `SourceEditor`、`createWorkspaceSource`（`source-editor.ts`、`workspace-source.ts`） | `files`、`source`、`source/create`、`source/transaction` | `workspace-source.ts` |
 | `createProjectAuthoring`（`projects.ts`） | `project/*` | `projects.ts` |
 | `createDocumentHistory`（`document-history.ts`） | `history/*` | `history.ts` |
+| `Revisions`、`createWorkspaceChanges`（`revisions.ts`、`workspace-changes.ts`） | `changes`、`changes/commit`、`changes/discard` | `workspace-changes.ts` |
 | `createDocumentAudioAuthoring`（`document-audio.ts`） | `document/audio`、`document/media-clip*`、`document/recording/adopt` | `audio-authoring.ts` |
 | `createDocumentImageAuthoring`（`document-images.ts`） | `document/image`、`document/asset` | `image-authoring.ts` |
 | `createDocumentTranscriptions`、`createTranscriptionAdoption` | `document/transcription*` | `transcription.ts` |
@@ -37,6 +38,8 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 ## 3. 能力与版本
 
 工具是否可用以 MCP 的工具表为准；已列出的简单编辑工具可直接调用。需要了解高级动作限制时，`get_authoring_capabilities` 与各服务的 `get_*_capabilities` 报告能否预检与提交、预算、`idempotency` 与 `review`，不编译文稿。状态区分 available、unavailable 与 unknown；`verification: configuration-only` 只看了配置，不证明鉴权或合成可用。能力响应不含凭据。工具的参数来自同一份 `inputSchema`，没有单独维护的参数清单。外部 MCP 默认只列出当前上下文、页标题、讲稿编辑、文稿目录、操作查询及按权限种类分开的调用入口。`operations` 按关键字分页查找动作，指定 `name` 时返回自动生成的参数摘要，`schema: true` 才返回完整 Schema。`read_operation`、`edit_operation`、`spend_operation`、`write_operation` 与 `agent_operation` 只调用同种权限的已授权动作，保留目标 Schema 校验、确认策略与错误和图片结果；没有相应动作的入口不提供。Schema 只携带实际引用到的定义。
+
+新增功能优先扩展既有语义动作与共享服务，不为同一保存结果增加平行入口。简单编辑与高级预检/应用共用事务；只在调用方需要先审阅固定影响时使用后者。默认保留少量高频快捷动作，其余按需发现。未提交文件、候选审阅与已提交历史分别处理工作文件、待接受的助手结果与版本撤销，不能互相代替。
 
 `presmium mcp` 的 stdio 连接也使用精简目录。已有客户端重新连接后按新目录查询动作；需要原有命名工具的 SDK 可显式连接 `/mcp?tools=all`。CLI `presmium mcp tools <工具>` 返回参数摘要，`--schema` 返回完整格式，`tools --all` 列出完整目录，`--json` 输出 JSON；`mcp call` 保留原命名工具调用。可信 dsh 宿主保持命名工具目录，按工具的 `presmium/workspace` 元数据路由作者与候选工作区，保留按目标工具执行的审批与审阅钩子。两种目录共享调用方权限，查询参数不会提升授权。
 
@@ -262,6 +265,14 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 - `change_review` 接受、拒绝所选文件或整份候选、恢复检查点。拒绝和恢复需 `confirm: true`。普通调用的 snapshot 由服务端读取；可显式固定此前读取的 snapshot。运行中、候选树或审阅身份变化、未知文件与检查点都拒绝，不自动换成新的材料继续。
 - 接受固定原 Git 树的字节，等待编辑器 flush、工作区根锁与 Git 队列后重新核对候选，再经原文件 CAS 与提交事务发布。最终写入不重新读取候选文件，二进制、链接与可执行模式都由同一 Git 树绑定。回执只返回真实 outcome、提交 ID 和处理或剩余文件数；丢失应答后先读取审阅与历史，不自动重复接受或丢弃。
 
+**未提交修改**（`kernel/src/contracts/workspace-changes.ts`）
+
+- Web 的“更改”面板与 MCP 的 `get_workspace_changes/change_workspace_changes` 共用 `Revisions`。列表每页最多 20 项、响应不超过 7168 字符；后续页须固定 snapshot。snapshot 绑定 HEAD、分支、真实索引与工作文件的原始字节和执行模式。没有版本库时返回 `available: false`。
+- 提交只需 `action: commit` 与 `message`；放弃需 `action: discard` 与 `confirm: true`。`paths` 可选，省略时固定请求开始时的文件集合，审批期间新增的文件不加入。`snapshot` 可选，用于固定此前读到的状态。外部入口仅允许未绑定文稿、未预先确认的所有者，经 `write/workspace` 审批，遵守 required review。
+- 服务端在审批前冻结选中文件及经仓库规则编码的 blob；提交在独立索引中构造树、复核真实分支与索引后用 expected-old 更新引用。无关暂存保留，提交回执只带实际版本标识。放弃恢复选中文件的 HEAD 内容与选中索引条目，无关工作文件和暂存不变。失败时同时尝试恢复原始文件与索引，不以规范化后的 blob 充当原始文件备份。
+- 拒绝活动的合并、变基、冲突索引、目录替换与不支持的文件类型；列表标注 unsupported，不使一个不支持的文件堵住独立选择。文稿文件提交须为有效 UTF-8 regular 文件并通过 IR 校验；删除文稿走项目动作。读取差异不刷新真实索引，但仓库自身的 clean filter 仍可能运行。
+- 处理上限为 16384 文件、512 MiB 原始内容；请求不超过 1 Mi 字符。提交与放弃都不自动重试。丢失应答后读取更改与历史；`refreshed: false` 表示放弃已完成但客户端文稿目录通知未完成，不重复放弃。
+
 **历史**（`kernel/src/contracts/document-history.ts`）
 
 - 每次保存（作者动作、Studio 中的保存、AI 的修改与撤消）是当前分支上的一个 git 提交，带 `Presmium-Origin` 等尾注与 `Co-authored-by`。本机服务的作者（`LOCAL_AUTHOR`）以仓库配置的 `user.name` 与 `user.email` 为作者，git 没有配置时为 `local author <local@presmium.invalid>`；多人服务中的成员以自己的名字与邮箱为作者。提交者是 git 配置的身份，没有时为 `Presmium <presmium@presmium.invalid>`。
@@ -271,7 +282,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 - `undo_document_change`、`redo_document_change`、`revert_document_change` 传 `{ id, source, snapshot, expect }`，expect 是读取得到的完整提交 ID。执行时复核原文、HEAD 与目标，产生新的 revert 提交；不 checkout、不 reset、不 discard。
 - 越界提交、目标文件有未提交改动、首个基线都拒绝；没有 git 时 `available: false`。浏览器原生 Undo 不归这些工具管。
 
-**审阅**：workspace 的 `review/*` 由 dsh 桥接，核心 MCP 没有审阅工具。配置 required review 时，agent 来源的写入返回 409 `authoring-review-required`，能力响应 `review: 'required-unsupported'`。
+**审阅权限**：required review 下，文稿内 agent 不能自行接受或丢弃候选修改；外部未绑定的所有者经上述审阅入口处理。直接 agent 来源的写入返回 409 `authoring-review-required`。
 
 **权限**
 
