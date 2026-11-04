@@ -1,5 +1,15 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.32
+
+### Patch Changes
+
+- 12912a6: Replace the previous step's caption editor when switching steps, keeping one editor instead of accumulating old captions in the sidebar.
+- @lincyaw/cli@1.0.0-rc.33
+  - @lincyaw/kernel@1.0.0-rc.33
+  - @lincyaw/mcp@1.0.0-rc.33
+  - @lincyaw/skills@1.0.0-rc.33
+
 ## 0.2.0-rc.31
 
 ### Patch Changes
