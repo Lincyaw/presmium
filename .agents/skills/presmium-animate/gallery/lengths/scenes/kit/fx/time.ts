@@ -76,6 +76,18 @@ export function shake(t: number, a: number, duration: number, seed = 1): [number
 export const mix = (a: number, b: number, p: number) => a + (b - a) * p
 
 /**
+ * Beats placed as fractions of their state, for a GSAP scene (seconds): `T(k, f)` is `f` of the way through state k,
+ * `S(k)` its start and `D(k)` its length. When the states are retimed to the real voiceover, every beat moves with
+ * its sentence; a beat at `S(k) + 1.2` would not.
+ */
+export function clock(at: (k: number) => number, durations: readonly number[]) {
+  const S = (k: number) => at(k) / 1000
+  const D = (k: number) => (durations[k] ?? 0) / 1000
+  const T = (k: number, f = 0) => S(k) + f * D(k)
+  return { S, D, T }
+}
+
+/**
  * Eases as plain functions of p in [0, 1], named by their exponent: `out3` is GSAP's `power2.out` (GSAP's powerN is a
  * power of N + 1). A scene that draws every frame from the time (`defineScene`) needs no library for them.
  */
