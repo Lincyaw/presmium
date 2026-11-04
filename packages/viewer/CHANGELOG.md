@@ -1,5 +1,13 @@
 # @lincyaw/viewer
 
+## 1.0.0-rc.41
+
+### Patch Changes
+
+- Updated dependencies [5940bf2]
+  - @lincyaw/kernel@1.0.0-rc.41
+  - @lincyaw/host@1.0.0-rc.41
+
 ## 1.0.0-rc.40
 
 ### Patch Changes

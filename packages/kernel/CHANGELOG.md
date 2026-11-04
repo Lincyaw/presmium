@@ -1,5 +1,11 @@
 # @lincyaw/kernel
 
+## 1.0.0-rc.41
+
+### Patch Changes
+
+- 5940bf2: Reduce the default external MCP catalog to common editing tools and permission-specific operation dispatchers. Generate argument discovery from canonical schemas, omit unreachable definitions, and return concise save receipts with opt-in details. Add current editor context, exact narration editing, single-call semantic actions and browser action acknowledgements while preserving authorization and DeepSeek Harness candidate review routing.
+
 ## 1.0.0-rc.40
 
 No changes in this release.

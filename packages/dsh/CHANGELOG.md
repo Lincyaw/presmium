@@ -1,5 +1,16 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.40
+
+### Patch Changes
+
+- 5940bf2: Reduce the default external MCP catalog to common editing tools and permission-specific operation dispatchers. Generate argument discovery from canonical schemas, omit unreachable definitions, and return concise save receipts with opt-in details. Add current editor context, exact narration editing, single-call semantic actions and browser action acknowledgements while preserving authorization and DeepSeek Harness candidate review routing.
+- Updated dependencies [5940bf2]
+  - @lincyaw/mcp@1.0.0-rc.41
+  - @lincyaw/kernel@1.0.0-rc.41
+  - @lincyaw/skills@1.0.0-rc.41
+  - @lincyaw/cli@1.0.0-rc.41
+
 ## 0.2.0-rc.39
 
 ### Patch Changes
