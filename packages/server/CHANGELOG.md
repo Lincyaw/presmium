@@ -1,5 +1,15 @@
 # @lincyaw/server
 
+## 1.0.0-rc.46
+
+### Patch Changes
+
+- 910362b: Expose bounded current-file discovery and raw text reads through MCP, with owner-authorized text transactions and invalid-document repair. Keep file versions, approval checks and source readback on the server, preserve native scope/review rules, bound error responses, and expose usable document templates through existing project capabilities.
+- Updated dependencies [910362b]
+  - @lincyaw/kernel@1.0.0-rc.46
+  - @lincyaw/mcp@1.0.0-rc.46
+  - @lincyaw/compiler@1.0.0-rc.46
+
 ## 1.0.0-rc.45
 
 ### Patch Changes
