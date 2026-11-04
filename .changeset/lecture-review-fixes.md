@@ -1,0 +1,10 @@
+---
+"@lincyaw/addon-lecture": patch
+"@lincyaw/cli": patch
+"@lincyaw/workbench": patch
+"@lincyaw/design": patch
+"@lincyaw/mcp": patch
+"@lincyaw/skills": patch
+---
+
+Video Production loads while the author is on a page or step the lecture leaves out: the preview goes to the first step of the lecture after it (the last one before it at the end of the document), and the timeline of such a page says it is not in the lecture. A step that a `{cue}next` of an earlier narration moves into stays in the lecture, so the cues after it no longer land one step late. `presmium script` keeps an edited narration's line breaks and blank lines, and writes `\`, `{`, `}`, `|`, `⟦` and `⟧` that are text with a `\` before them, so that braces written in a narration are no longer read back as a pronunciation. `presmium check` reports, as a warning, when it could not check the lecture video's length against `maximumDurationMs`, and an animation on a step the lecture leaves out no longer makes the whole plan's timing unknown. Captions burned into an exported video scale with the frame: about 48 px on a 1080p frame, up to 89% of its width and at most two lines, near the bottom edge, in near-black ink on a see-through light gray. `presmium-lecture export --contact-sheet` reads the video once for all its frames. `presmium mcp` documents `./tools` and `./call` for a document directory with those names.
