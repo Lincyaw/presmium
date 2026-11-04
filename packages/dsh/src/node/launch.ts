@@ -51,7 +51,7 @@ export function launchEnv(dshHome: string, env: NodeJS.ProcessEnv = process.env)
 
 /** The variables a launcher sets for the processes it starts; they are never inherited from its own environment. */
 export function isLauncherVariable(name: string): boolean {
-  return /^(?:DSH_|PRESMIUM_MODEL_|PRESMIUM_SERVICE_)/.test(name) || ['PRESMIUM_WORKSPACE', 'NODE_ENV', 'PORT'].includes(name)
+  return /^(?:DSH_|PRESMIUM_MODEL_|PRESMIUM_SERVICE_|PRESMIUM_MCP_)/.test(name) || ['PRESMIUM_WORKSPACE', 'NODE_ENV', 'PORT'].includes(name)
 }
 
 export function inheritedEnv(env: NodeJS.ProcessEnv, drop: (name: string) => boolean): Record<string, string> {
@@ -147,10 +147,10 @@ export interface LaunchedWorkspaceServer {
 }
 
 /** Starts `presmium serve <dir> --port <port, default 0: a free one> [args]` with `launchNode`, in `workspaceServerEnv`. */
-export function launchWorkspaceServer(options: { presmium: string, dir: string, serviceToken: string, port?: number, args?: string[], env?: NodeJS.ProcessEnv, onOutput?(text: string): void }): LaunchedWorkspaceServer {
+export function launchWorkspaceServer(options: { presmium: string, dir: string, serviceToken: string, mcpToken?: string, port?: number, args?: string[], env?: NodeJS.ProcessEnv, onOutput?(text: string): void }): LaunchedWorkspaceServer {
   const server = launchNode('presmium serve', [options.presmium, 'serve', options.dir, '--port', String(options.port ?? 0), ...options.args ?? []], {
     cwd: options.dir,
-    env: workspaceServerEnv(options.env ?? process.env, options.serviceToken),
+    env: { ...workspaceServerEnv(options.env ?? process.env, options.serviceToken), ...options.mcpToken ? { PRESMIUM_MCP_TOKEN: options.mcpToken } : {} },
     ...options.onOutput ? { onOutput: options.onOutput } : {},
   })
   const ready = (async () => {

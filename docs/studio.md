@@ -91,6 +91,7 @@
 ### 5.2 令牌
 
 - **服务令牌**：启动器经 `PRESMIUM_SERVICE_TOKEN` 交给服务与 dsh（不在命令行）。设置后工作区与服务端路由要求 Bearer，预览中的脚本因此不能改源码；产物插件路由只查 `Host` 与 `Origin`。它只是纵深防御。
+- **外部 MCP 令牌**：Studio 为每个启动目录的真实路径保存一个令牌，经 `PRESMIUM_MCP_TOKEN` 交给工作区服务。文件在 `$XDG_STATE_HOME/presmium/studio/mcp/<目录散列>.token`（未设置时用 `~/.local/state`），权限为 `0600`，独立于安装版本与临时服务状态。它沿用外部作者的确认策略，与每次启动生成的服务令牌、每个会话签发的令牌分开。
 - **会话令牌**：bundle 为每个 dsh 会话 `POST tokens { document, session }`，模式“主机已确认”（`MCP_ENDPOINT.issue` 的 `{ confirmed: true }`）：操作类工具不再向页面请求确认，dsh 已按策略决定。没有服务令牌时 `tokens` 一律 403。
 
 ### 5.3 当前诊断
@@ -187,6 +188,12 @@
 
 ## 9. MCP 与 dsh 的工具一致
 
+Studio 的 HTTP MCP 默认地址为 `http://127.0.0.1:4321/mcp`，使用 Streamable HTTP。客户端配置该地址与 `Authorization: Bearer <令牌>`；令牌读取启动时打印的文件路径。同一启动目录重启或升级后，地址和令牌保持不变。启动器不在日志中打印令牌本身。
+
+`presmium studio --host 0.0.0.0` 允许其他机器连接，启动输出的 `mcp` 地址使用本机局域网地址；客户端也可将默认地址中的 `127.0.0.1` 换成服务器的固定 IP 或域名。端口被占用时启动失败并提示 `--preview-port`，不自动换地址。同时启动多个工作区时，每个工作区显式指定不同的固定端口；`--preview-port 0` 明确选择临时端口。带反向代理时，MCP 使用 `--preview-url` 下的 `mcp` 路径。
+
+客户端应在 Studio 重启后重新建立 HTTP 连接；无需修改已保存的地址或令牌。只支持 stdio 的客户端仍可使用 `presmium mcp`，由本地服务发现转接。
+
 - `@lincyaw/mcp` 导出一张工具表（名字、说明、JSON Schema、种类），按文稿列出时按策略筛选，加上插件的 `AgentTool`；作者事务（`plan_document_change`、`apply_document_change` 等）复用 Web 的 `DocumentEditor` 与历史，见 [作者动作](authoring-actions.md)。
 - 适配器一是 `/mcp` 与 `presmium mcp`（服务运行时转接 `/mcp`，否则在编译器上提供）。适配器二是 `presmium-tools`：作为 MCP 客户端用会话令牌连接回环 `/mcp`，把工具连同原样 schema 登记为 `presmium__<名字>`，调用时转成 `tools/call`，时限 10 分钟。结果中的图片（如 `capture_slides` 的截图）在会话最近一次请求所用的模型声明接受图片时存入 dsh 的附件，作为工具结果的图片交给模型；否则模型只得到文字（`capture_slides` 的文字列出每张图的文件），另有一行说明图片未附上。编译只在服务中做一次；每个会话只登记所属文稿的工具。
 - 同一文稿与设置下，MCP `tools/list` 等于会话中的 `presmium__*` 工具，`get_focus` 等于会话快照中的焦点。
@@ -204,10 +211,10 @@
 ### 11.2 启动与监管
 
 1. 选 dsh 端口：默认 4320，cookie 跨重启有效；占用时取空闲端口。
-2. 生成服务令牌，启动 `presmium serve <目录> --port 0 --preview-origin <dsh 的源>`。
+2. 生成服务令牌，读取或创建持久的外部 MCP 令牌，启动 `presmium serve <目录> --port 4321 --preview-origin <dsh 的源>`；`--preview-port` 可覆盖此端口。启动前检查固定端口是否可用。
 3. 启动 dsh：`--profile presmium-studio-<散列> --port <端口> --no-open`，加 6.6 节的补丁，环境中带服务地址与令牌。`--host 0.0.0.0` 时 dsh 在一次性的回环地址上监听，Studio 在全部 IPv4 网络接口上代转 HTTP 与 WebSocket 请求。
 4. 等标准输出的 `dsh web: <网址>`：启动令牌只从这里取得，它也是 dsh 的就绪信号；3 分钟等不到时报错并给出日志位置。
-5. 打印 `studio  <网址>`。
+5. 打印 `studio  <网址>`、`mcp  <固定网址>` 与 MCP 令牌文件的位置。
 
 输出写进 `$DSH_HOME/presmium-studio-<散列>.log`，标准错误转发工作区服务的阶段与耗时。三个进程各有父进程退出的看门狗，`kill -9` 启动器后不留进程。
 

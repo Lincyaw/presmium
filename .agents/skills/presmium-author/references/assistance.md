@@ -1,5 +1,7 @@
 # Editing with the studio and an agent
 
+For an external HTTP MCP client, start Studio and configure `http://127.0.0.1:4321/mcp` (Streamable HTTP) with `Authorization: Bearer <token>` from the token file printed at startup. Studio preserves both for the same launch directory across restarts and upgrades. With `--host 0.0.0.0`, use the printed network MCP URL from other machines. A second Studio needs a different fixed `--preview-port`; an occupied port fails instead of silently changing the URL.
+
 Install Presmium once with `pnpm add -g @lincyaw/presmium`; Studio is included. Run `presmium studio <workspace-or-document>`; open the complete address it prints. Editing and preview need no model. The document editor uses one native BlockNote editing surface across the whole document, including cross-block selection and native history/comments. An animation or chart preview's toolbar has Comment on step for the whole content block or one step.
 
 In Studio, AI source edits use a private candidate workspace while the author keeps editing. A stale publication returns the current author source to the candidate; read it again and retry the intended change. Required review keeps candidate edits separate until acceptance; rejecting them preserves the author's saved content. Each published writing tool has its own version.

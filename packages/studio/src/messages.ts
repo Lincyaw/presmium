@@ -13,6 +13,9 @@ export interface StudioMessages {
   openOnAllNetworks(port: string, previewPort: string): string
   ended(how: string, log: string): string
   portInUse(port: number, address: string): string
+  previewPortInUse(port: number, address: string): string
+  mcpToken(file: string): string
+  badMcpToken(file: string): string
   noFreePort(address: string): string
   badHost(address: string): string
   wholeLog(message: string, file: string): string
@@ -40,7 +43,7 @@ presmium-studio-<散列>.log（每个安装一个）保存在 $XDG_STATE_HOME/pr
                  它的主机受信任，打印的网址用它。代理需保留 Host 并转发 WebSocket
   --preview-url <网址>  同样情况下预览所在的地址，由代理转发到工作区服务；可以带路径，
                  此时它必须与 Studio 不同源，否则预览中文稿的代码能读到 Studio 的会话
-  --preview-port <端口>  工作区服务的端口（默认为空闲端口），供需要事先知道端口的代理使用
+  --preview-port <端口>  工作区服务与 HTTP MCP 的固定端口（默认 4321）；0 为随机端口
   -h, --help     显示本说明`,
     badPort: value => `--port 需要 0 到 65535 之间的端口号，而不是“${value}”。`,
     badUrl: (option, value) => `${option} 需要一个完整的网址，例如 https://studio.example.com/，而不是“${value}”。`,
@@ -52,6 +55,9 @@ presmium-studio-<散列>.log（每个安装一个）保存在 $XDG_STATE_HOME/pr
     openOnAllNetworks: (port, previewPort) => `presmium studio: 正在全部局域网网络接口上监听，且没有登录：任何能用上面的网址访问端口 ${port}（以及预览的端口 ${previewPort}）的人都以你的身份使用这个工作区（编辑、运行代码、使用你的模型）。请只在可信的网络中使用；不加 --host 时只在本机监听。`,
     ended: (how, log) => `presmium studio: ${how}。日志在 ${log}`,
     portInUse: (port, address) => `${address} 的端口 ${port} 已被占用。请用 --port 指定另一个端口。`,
+    previewPortInUse: (port, address) => `${address} 的工作区与 MCP 端口 ${port} 已被占用。请停止占用它的服务，或用 --preview-port 指定另一个固定端口。`,
+    mcpToken: file => `presmium studio: MCP 客户端使用 HTTP（Streamable HTTP），从 ${file} 读取访问令牌，设置 Authorization: Bearer <访问令牌>；同一目录重启与升级后保持不变。`,
+    badMcpToken: file => `MCP 访问令牌文件 ${file} 无效。请移走该文件后重试，并在客户端更新访问令牌。`,
     noFreePort: address => `${address} 上没有空闲的端口。请停止占用端口的服务后重试。`,
     badHost: address => `--host 需要本机的一个 IP 地址，例如 192.168.0.21，也可以使用 0.0.0.0，而不是“${address}”。`,
     wholeLog: (message, file) => `${message}${message.endsWith('\n') ? '' : '。'}完整的日志在 ${file}`,
@@ -79,7 +85,7 @@ Options:
   --preview-url <url>  in that case, the address of the previews, forwarded to the workspace service; it
                  may have a path, and should be another origin than Studio’s, or the documents’ code in
                  previews can read Studio’s session
-  --preview-port <n>  the workspace service’s port (default: a free one), for a proxy that needs it in advance
+  --preview-port <n>  fixed workspace-service and HTTP MCP port (default: 4321); 0 requests a random port
   -h, --help     show this help`,
     badPort: value => `--port takes a port number from 0 to 65535, not “${value}”.`,
     badUrl: (option, value) => `${option} takes a full address, such as https://studio.example.com/, not “${value}”.`,
@@ -91,6 +97,9 @@ Options:
     openOnAllNetworks: (port, previewPort) => `presmium studio: listening on all local network interfaces, with no login: anyone who reaches port ${port} (and the previews’ port ${previewPort}) with the addresses above works in this workspace as you (edits, runs code, uses your model). Use it on a network you trust; without --host it listens on this machine only.`,
     ended: (how, log) => `presmium studio: ${how}; the log is ${log}`,
     portInUse: (port, address) => `Port ${port} of ${address} is in use. Give another with --port.`,
+    previewPortInUse: (port, address) => `Workspace and MCP port ${port} of ${address} is in use. Stop the service using it, or choose another fixed port with --preview-port.`,
+    mcpToken: file => `presmium studio: MCP clients use HTTP (Streamable HTTP); read the access token from ${file} and set Authorization: Bearer <value>. It stays the same for this directory across restarts and upgrades.`,
+    badMcpToken: file => `MCP access token file ${file} is invalid. Move it aside and retry, then update the access token in your clients.`,
     noFreePort: address => `There is no free port on ${address}. Stop a service that uses one, then retry.`,
     badHost: address => `--host takes one local IP address, such as 192.168.0.21, or 0.0.0.0 to listen on all IPv4 network interfaces, not “${address}”.`,
     wholeLog: (message, file) => `${message.endsWith('\n') ? message : `${message}; `}the whole log is ${file}`,

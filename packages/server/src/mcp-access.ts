@@ -20,13 +20,14 @@ function endedBy(response: Response, signal: AbortSignal, done: () => void): Res
  * and the grants the launcher asks for its agent sessions. Revoking a grant ends the event streams it opened.
  */
 export class McpTokens {
-  readonly processMcpToken = randomBytes(24).toString('base64url')
+  readonly processMcpToken: string
   readonly endpoint: McpEndpoint
   readonly #callers = new Map<string, McpCaller>()
   readonly #streams = new Map<string, Set<AbortController>>()
   readonly #agentSessionGrants = new Map<string, McpGrant>()
 
-  constructor(serverUrl: () => string) {
+  constructor(serverUrl: () => string, processMcpToken = randomBytes(24).toString('base64url')) {
+    this.processMcpToken = processMcpToken
     this.endpoint = {
       issue: (member, mode, issued = {}) => {
         const mcpToken = randomBytes(24).toString('base64url')

@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync, writeSync } from 'node:fs'
+import { chmodSync, closeSync, copyFileSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync, writeSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { createServer, isIP } from 'node:net'
 import type { AddressInfo } from 'node:net'
@@ -15,6 +15,7 @@ import type { Proxy } from './proxy.ts'
 
 const PROFILE = 'presmium-studio'
 const DEFAULT_PORT = 4320
+const DEFAULT_PREVIEW_PORT = 4321
 const LOG_BYTES = 16 << 20
 
 const PACKAGE_DIR = fileURLToPath(new URL('..', import.meta.url))
@@ -30,7 +31,7 @@ export interface StudioOptions {
    */
   publicUrl?: string
   previewUrl?: string
-  /** The workspace service's port (default: a free one), for a proxy that needs it in advance. */
+  /** The workspace service and HTTP MCP port (default: 4321). Zero explicitly requests a free port. */
   previewPort?: number
   env?: NodeJS.ProcessEnv
   presmium?: string
@@ -42,6 +43,7 @@ export interface Studio {
   url: string
   networkUrls: string[]
   workspaceServerUrl: string
+  mcp: { url: string, tokenFile: string }
   root: string
   home: string
   log: string
@@ -53,6 +55,23 @@ export interface Studio {
 
 function studioHome(env: NodeJS.ProcessEnv = process.env): string {
   return join(env.XDG_STATE_HOME || join(env.HOME || homedir(), '.local', 'state'), 'presmium', 'studio')
+}
+
+/** Independent of the installation/profile so upgrades and restarts preserve external MCP access. */
+function workspaceCredential(home: string, dir: string): { token: string, file: string } {
+  const directory = join(home, 'mcp')
+  mkdirSync(directory, { recursive: true, mode: 0o700 })
+  const id = createHash('sha256').update(realpathSync(dir)).digest('hex').slice(0, 32)
+  const file = join(directory, `${id}.token`)
+  try {
+    writeFileSync(file, `${randomBytes(24).toString('base64url')}\n`, { flag: 'wx', mode: 0o600 })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+  }
+  chmodSync(file, 0o600)
+  const token = readFileSync(file, 'utf8').trim()
+  if (!/^[A-Za-z0-9_-]{32}$/.test(token)) throw new Error(STUDIO_MESSAGES[systemLocale()].badMcpToken(file))
+  return { token, file }
 }
 
 /** The bundle `@lincyaw/dsh` this package depends on: the directory the profile links to. */
@@ -202,6 +221,8 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
   }
   const boundAddress = listenAddress ?? '127.0.0.1'
   const wildcard = WILDCARD.test(boundAddress)
+  const previewPort = options.previewPort ?? DEFAULT_PREVIEW_PORT
+  if (previewPort !== 0 && await freePort(boundAddress, previewPort) === undefined) throw new Error(t.previewPortInUse(previewPort, boundAddress))
   const port = await choosePort(boundAddress, options.port)
   const dshAddress = wildcard ? '127.0.0.1' : boundAddress
   const dshPort = wildcard ? await choosePort(dshAddress, undefined) : port
@@ -218,6 +239,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
   const bundle = bundleDir()
   const profile = installProfile(home, bundle)
   writeProfile(home, profile, 'web', bundle)
+  const { token: mcpToken, file: tokenFile } = workspaceCredential(home, options.dir)
   const log = new Log(join(home, `${profile}.log`))
   const serviceToken = randomBytes(24).toString('base64url')
   const started: LaunchedProcess[] = []
@@ -234,7 +256,8 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
       presmium: options.presmium ?? presmiumBin(env, t.presmiumMissing),
       dir: resolve(options.dir),
       serviceToken,
-      ...options.previewPort ? { port: options.previewPort } : {},
+      mcpToken,
+      port: previewPort,
       args: [
         ...listenAddress ? ['--host', listenAddress] : [],
         ...origins.flatMap(origin => ['--preview-origin', origin]),
@@ -245,6 +268,8 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
     })
     started.push(server.process)
     const { url, root } = await server.ready
+    const mcpUrl = new URL(`${(options.previewUrl ?? url).replace(/\/+$/, '')}/mcp`)
+    if (!options.previewUrl && listenAddress) mcpUrl.hostname = bracketIPv6(primaryHost)
 
     const trustedHosts = wildcard
       ? [...hosts, hostname(), `${hostname()}.local`]
@@ -285,6 +310,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
       url: address,
       networkUrls,
       workspaceServerUrl: url,
+      mcp: { url: mcpUrl.href, tokenFile },
       root,
       home,
       log: log.file,

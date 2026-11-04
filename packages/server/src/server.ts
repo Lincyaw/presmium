@@ -133,7 +133,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     timeoutMs: options.approvalTimeoutMs,
   })
   let url = ''
-  const mcpTokens = new McpTokens(() => url)
+  const mcpTokens = new McpTokens(() => url, env.PRESMIUM_MCP_TOKEN || undefined)
   const services: [ServiceToken<unknown>, unknown][] = [[APPROVALS, control.approvals], [MCP_ENDPOINT, mcpTokens.endpoint]]
   const ownServices = new Map(services.map(([token, implementation]) => [token.id, implementation]))
   const ownService = <T>(token: ServiceToken<T>) => ownServices.get(token.id) as T | undefined
