@@ -110,6 +110,8 @@ return scroll is not author reading.
   audio and pauses there. Selecting a voice never starts synthesis.
 - Voice, pronunciation, hold and pause belong to video production; the document caption sidebar shows only
   captions and narration start.
+- The caption editor and timing controls have distinct sibling keys bound to the source and step.
+  Switching steps leaves one caption editor in the sidebar and releases the previous step's editor.
 
 Verify time advancing after Play, pause and seek, first/last and reverse jumps, the return position after
 Present, the same iframe `window`, a changed sentence with current captions and a silent placeholder, and

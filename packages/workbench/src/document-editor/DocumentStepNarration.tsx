@@ -83,10 +83,10 @@ export function DocumentStepNarration({ blockId, sectionId, stepId, expanded, ad
     {!expanded && text && <p className="pm-ui-block-preview__caption" data-step-caption={stepId}>{text}</p>}
     {expanded && <div id={panelId} className="pm-ui-block-preview__narration-fields">
       {showLabel && <span className="pm-ui-block-preview__step-label">{fieldLabel}</span>}
-      <NarrationField key={`${source.identity}:${source.reset}:${stepId}`}
+      <NarrationField key={`narration:${source.identity}:${source.reset}:${stepId}`}
         identity={source.identity!} reset={source.reset} blockId={blockId} stepId={stepId}
         content={ids.map(id => ({ id, content: document.narrations[id]!.content }))} readOnly={readOnly} advanced={advanced} onPause={onPause} />
-      <StepProductionEditor key={`${source.identity}:${source.reset}:${stepId}`} document={document} stepId={stepId} locale={locale} readOnly={readOnly} advanced={advanced}
+      <StepProductionEditor key={`timing:${source.identity}:${source.reset}:${stepId}`} document={document} stepId={stepId} locale={locale} readOnly={readOnly} advanced={advanced}
         onPause={onPause} onInteraction={() => workbench.documentInteraction()}
         onChange={patch => workbench.setDocumentStepProduction(stepId, patch, source.identity)}
         drafts={{ minimumHoldMs: workbench.documentTimingDraft(stepId, 'minimumHoldMs', source.identity, source.reset), trailingPauseMs: workbench.documentTimingDraft(stepId, 'trailingPauseMs', source.identity, source.reset) }}
