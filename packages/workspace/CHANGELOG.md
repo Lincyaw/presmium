@@ -1,5 +1,14 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.39
+
+### Patch Changes
+
+- Updated dependencies [ddae828]
+  - @lincyaw/server@1.0.0-rc.39
+  - @lincyaw/compiler@1.0.0-rc.39
+  - @lincyaw/kernel@1.0.0-rc.39
+
 ## 1.0.0-rc.38
 
 ### Patch Changes

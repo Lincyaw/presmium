@@ -1,5 +1,15 @@
 # @lincyaw/mcp
 
+## 1.0.0-rc.39
+
+### Patch Changes
+
+- ddae828: Simplify canonical editing with one-call page renaming and content changes, saved-source verification and reported editor synchronization. Owner credentials authorize document editing without another Studio prompt; execution and paid operations retain confirmation. Expose live tool input schemas through CLI introspection without separate parameter documentation.
+- Updated dependencies [ddae828]
+  - @lincyaw/skills@1.0.0-rc.39
+  - @lincyaw/compiler@1.0.0-rc.39
+  - @lincyaw/kernel@1.0.0-rc.39
+
 ## 1.0.0-rc.38
 
 ### Patch Changes
