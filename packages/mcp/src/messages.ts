@@ -135,27 +135,51 @@ export interface McpCliMessages {
   notFound(entry: string): string
   bridging(url: string): string
   unreachable: string
+  missingTool: string
+  unexpectedToolArgument(argument: string): string
+  badToolArguments(value: string): string
+  noService: string
+  saved(file: string): string
+  notSaved(count: number): string
 }
 
 export const MCP_CLI_MESSAGES: Record<Locale, McpCliMessages> = {
   'zh-CN': {
     usage: `用法：presmium mcp [<目录>] [--allow <种类>]
+      presmium mcp tools
+      presmium mcp call <工具> [<JSON 参数>] [--out <目录>]
 
 经标准输入输出向 Claude Code、Codex 等 AI 工具提供 MCP 服务（<目录> 是工作区的根目录、
 含有 ${DOCUMENT_ENTRY} 的目录或这个文件本身；默认为 .）。这个目录（或它所在的工作区）的
 Presmium Studio 或 presmium serve 正在运行时转接到它，AI 可以修改文稿、查看版本历史和生成配音，
 它重新启动后自动跟上；没有运行时只编译这份文稿，提供阅读、检查、运行代码与导出。
 
+tools 与 call 在命令行中使用当前目录正在运行的 Presmium 服务的工具，与 AI 经 presmium mcp
+得到的相同：tools 列出每个工具的名称、种类与说明；call 调用一个工具，参数是一个 JSON 对象
+（默认为 {}），结果以 JSON 写到标准输出。工具返回的图片（capture_slides、capture_reading、
+capture_overview）用 --out 保存为 PNG 文件，路径写到标准错误。读取以外的操作与 AI 的请求一样，
+要等作者在 Presmium 窗口中允许（或 presmium serve --allow）。工具失败时退出码为 1，用法错误
+或服务不可达时为 2。
+
   --allow <种类>  只编译时提供并允许这些操作：operate（run_code、build）、spend
+  --out <目录>    call：把工具返回的图片保存到这个目录
   -h, --help      显示本说明`,
     unexpectedArgument: argument => `多余的参数“${argument}”。presmium mcp 只接受一个目录。`,
     badAllow: (kinds, value) => `--allow 不接受“${value}”。可用的种类：${kinds.join('、')}。`,
     notFound: entry => `找不到 ${entry}。请检查路径，或用 presmium new 新建文稿。`,
     bridging: url => `presmium mcp: 转接到正在运行的 Presmium 服务 ${url}`,
     unreachable: 'Presmium 服务已停止。请重新启动 presmium studio 或 presmium serve，然后重试。',
+    missingTool: '缺少工具名。请在 presmium mcp call 之后给出工具名；presmium mcp tools 列出全部工具。',
+    unexpectedToolArgument: argument => `多余的参数“${argument}”。presmium mcp call 只接受工具名与一个 JSON 对象，presmium mcp tools 不接受参数。`,
+    badToolArguments: value => `参数“${value}”不是 JSON 对象。请把参数写成一个 JSON 对象，用单引号括起。`,
+    noService: '无法使用工具：当前目录（或它所在的工作区）没有正在运行的 Presmium Studio 或 presmium serve。请先启动其中一个，然后重试。',
+    saved: file => `已保存 ${file}`,
+    notSaved: count => `结果中有 ${count} 张图片，没有保存：加 --out <目录> 保存为 PNG 文件。`,
   },
   'en': {
     usage: `Usage: presmium mcp [directory] [--allow <kinds>]
+       presmium mcp tools
+       presmium mcp call <tool> [<JSON arguments>] [--out <dir>]
 
 Serves MCP on stdio for AI tools such as Claude Code and Codex (the directory is a workspace root,
 a directory holding ${DOCUMENT_ENTRY}, or that entry file; default: .). When the Presmium Studio or
@@ -163,13 +187,29 @@ presmium serve of the directory (or of its workspace) runs, it relays to it: the
 read their history and generate voiceover, and it follows the service when it starts again. Otherwise
 it compiles the document itself, for reading, checking, running code and exporting.
 
+tools and call use the tools of the Presmium service running for the current directory from the
+command line, the same tools an AI gets through presmium mcp: tools lists each tool’s name, kind and
+description; call calls one tool with a JSON object of arguments (default: {}) and writes its result
+as JSON to standard output. The pictures a tool returns (capture_slides, capture_reading,
+capture_overview) are saved as PNG files with --out, and their paths written to standard error.
+Operations other than reading wait for the author to allow them in a Presmium window (or for
+presmium serve --allow), as an AI’s requests do. The exit code is 1 when the tool fails, and 2 on a
+usage error or when the service can’t be reached.
+
   --allow <kinds>  when compiling itself, offer and allow these operations: operate (run_code, build), spend
+  --out <dir>      call: save the pictures the tool returns in this directory
   -h, --help       show this help`,
     unexpectedArgument: argument => `Unexpected argument “${argument}”. presmium mcp takes one directory.`,
     badAllow: (kinds, value) => `--allow does not take “${value}”. The kinds are ${kinds.join(', ')}.`,
     notFound: entry => `Couldn’t find ${entry}. Check the path, or make a document with presmium new.`,
     bridging: url => `presmium mcp: relaying to the running Presmium service at ${url}`,
     unreachable: 'The Presmium service stopped. Start presmium studio or presmium serve again, then retry.',
+    missingTool: 'No tool given. Name the tool after presmium mcp call; presmium mcp tools lists them all.',
+    unexpectedToolArgument: argument => `Unexpected argument “${argument}”. presmium mcp call takes a tool name and one JSON object, and presmium mcp tools takes none.`,
+    badToolArguments: value => `The arguments “${value}” are not a JSON object. Write them as one JSON object, in single quotes.`,
+    noService: 'Couldn’t use the tools: no Presmium Studio or presmium serve is running for this directory (or its workspace). Start one, then retry.',
+    saved: file => `Saved ${file}`,
+    notSaved: count => `The result has ${count} ${count === 1 ? 'picture' : 'pictures'}, not saved: add --out <dir> to save them as PNG files.`,
   },
 }
 

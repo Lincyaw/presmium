@@ -214,6 +214,8 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 **历史**（`kernel/src/contracts/document-history.ts`）
 
+- 每次保存（作者动作、Studio 中的保存、AI 的修改与撤消）是当前分支上的一个 git 提交，带 `Presmium-Origin` 等尾注与 `Co-authored-by`。本机服务的作者（`LOCAL_AUTHOR`）以仓库配置的 `user.name` 与 `user.email` 为作者，git 没有配置时为 `local author <local@presmium.invalid>`；多人服务中的成员以自己的名字与邮箱为作者。提交者是 git 配置的身份，没有时为 `Presmium <presmium@presmium.invalid>`。
+- 版本历史、撤消、恢复与读取历史文件都只从这些提交得到，保存本身也在提交事务内完成（没有 git 时不能编辑），所以没有不提交的设置。不想把逐次保存的提交原样推送时，在单独的分支上工作，推送前合并成一个提交。
 - `get_document_history` 每页最多 20 条原修改，`undone` 与 `revertTarget` 由完整历史链派生。`historyBinding` 含已保存原文的 version、fingerprint 与 git HEAD `snapshot`。
 - `read_history_file` 读可达提交中的文本文件，默认 `lecture.json`；不恢复当前文稿。
 - `undo_document_change`、`redo_document_change`、`revert_document_change` 传 `{ id, source, snapshot, expect }`，expect 是读取得到的完整提交 ID。执行时复核原文、HEAD 与目标，产生新的 revert 提交；不 checkout、不 reset、不 discard。
