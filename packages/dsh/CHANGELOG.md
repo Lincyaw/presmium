@@ -1,5 +1,16 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.50
+
+### Patch Changes
+
+- 0f6dfc8: Control Studio home and document navigation through the existing editor action, with compact request handles and window observations. Preserve native body saves and recording range drafts across navigation; reject interrupted, stale or unauthorized requests without replay.
+- Updated dependencies [0f6dfc8]
+  - @lincyaw/kernel@1.0.0-rc.51
+  - @lincyaw/mcp@1.0.0-rc.51
+  - @lincyaw/skills@1.0.0-rc.51
+  - @lincyaw/cli@1.0.0-rc.51
+
 ## 0.2.0-rc.49
 
 ### Patch Changes
