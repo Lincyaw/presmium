@@ -1,0 +1,133 @@
+{
+  "key": "1d1ba9b556571d8a757bde2f0104af9c",
+  "audio": "1d1ba9b556571d8a757bde2f0104af9c.ogg",
+  "mime": "audio/ogg",
+  "duration": 7.392,
+  "words": [
+    {
+      "text": "这",
+      "start": 0.1,
+      "end": 0.287
+    },
+    {
+      "text": "篇",
+      "start": 0.287,
+      "end": 0.487
+    },
+    {
+      "text": "论文",
+      "start": 0.5,
+      "end": 0.825
+    },
+    {
+      "text": "的",
+      "start": 0.825,
+      "end": 0.912
+    },
+    {
+      "text": "办法",
+      "start": 0.925,
+      "end": 1.388
+    },
+    {
+      "text": "给",
+      "start": 1.675,
+      "end": 1.825
+    },
+    {
+      "text": "小",
+      "start": 1.837,
+      "end": 2.038
+    },
+    {
+      "text": "模型",
+      "start": 2.038,
+      "end": 2.55
+    },
+    {
+      "text": "看",
+      "start": 2.575,
+      "end": 2.788
+    },
+    {
+      "text": "一部分",
+      "start": 2.8,
+      "end": 3.212
+    },
+    {
+      "text": "参考",
+      "start": 3.237,
+      "end": 3.575
+    },
+    {
+      "text": "解答",
+      "start": 3.587,
+      "end": 4.075
+    },
+    {
+      "text": "把",
+      "start": 4.388,
+      "end": 4.525
+    },
+    {
+      "text": "零分",
+      "start": 4.537,
+      "end": 4.975
+    },
+    {
+      "text": "变成",
+      "start": 5,
+      "end": 5.3
+    },
+    {
+      "text": "一条",
+      "start": 5.312,
+      "end": 5.675
+    },
+    {
+      "text": "能",
+      "start": 5.7,
+      "end": 5.862
+    },
+    {
+      "text": "拟合",
+      "start": 5.862,
+      "end": 6.2
+    },
+    {
+      "text": "的",
+      "start": 6.2,
+      "end": 6.288
+    },
+    {
+      "text": "曲线",
+      "start": 6.3,
+      "end": 6.812
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-tts",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "Microsoft Edge",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "这篇论文的办法：给小模型看一部分参考解答，把零分变成一条能拟合的曲线。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "Microsoft Edge",
+    "ProduceID": "1d1ba9b556571d8a757bde2f0104af9c",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "6e11a4b26a6f400c7bb63a7bd40e94e9dc910b969e8c776e1e93afe31989f9e1",
+  "profile": "c3e5b6bb05f6e9a2d58b22757d7309d19344993c21a1a64da8eb695af093d2c8",
+  "requestKey": "411dfdf8823e57cfa25bf44eb4d50b44",
+  "request": {
+    "spoken": "这篇论文的办法：给小模型看一部分参考解答，把零分变成一条能拟合的曲线。",
+    "rate": 1,
+    "style": ""
+  }
+}

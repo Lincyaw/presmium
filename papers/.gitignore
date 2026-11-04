@@ -1,0 +1,2 @@
+# The arXiv sources and code clones the pipeline downloads (tools/fetch.sh); only the crops a film uses are kept.
+.cache/

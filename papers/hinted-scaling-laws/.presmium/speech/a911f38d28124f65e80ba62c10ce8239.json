@@ -1,0 +1,138 @@
+{
+  "key": "a911f38d28124f65e80ba62c10ce8239",
+  "audio": "a911f38d28124f65e80ba62c10ce8239.ogg",
+  "mime": "audio/ogg",
+  "duration": 8.784,
+  "words": [
+    {
+      "text": "训练",
+      "start": 0.1,
+      "end": 0.537
+    },
+    {
+      "text": "一个",
+      "start": 0.55,
+      "end": 0.95
+    },
+    {
+      "text": "十",
+      "start": 1.238,
+      "end": 1.438
+    },
+    {
+      "text": "的",
+      "start": 1.438,
+      "end": 1.587
+    },
+    {
+      "text": "二十三",
+      "start": 1.613,
+      "end": 2.087
+    },
+    {
+      "text": "次",
+      "start": 2.087,
+      "end": 2.237
+    },
+    {
+      "text": "方",
+      "start": 2.25,
+      "end": 2.525
+    },
+    {
+      "text": "FLOPs",
+      "start": 2.525,
+      "end": 3
+    },
+    {
+      "text": "的",
+      "start": 3,
+      "end": 3.1
+    },
+    {
+      "text": "模型",
+      "start": 3.112,
+      "end": 3.475
+    },
+    {
+      "text": "很",
+      "start": 3.5,
+      "end": 3.725
+    },
+    {
+      "text": "贵",
+      "start": 3.725,
+      "end": 4.013
+    },
+    {
+      "text": "缩放",
+      "start": 4.575,
+      "end": 5
+    },
+    {
+      "text": "定律",
+      "start": 5.013,
+      "end": 5.475
+    },
+    {
+      "text": "先",
+      "start": 5.562,
+      "end": 5.8
+    },
+    {
+      "text": "训",
+      "start": 5.8,
+      "end": 5.987
+    },
+    {
+      "text": "小",
+      "start": 6.013,
+      "end": 6.2
+    },
+    {
+      "text": "模型",
+      "start": 6.2,
+      "end": 6.713
+    },
+    {
+      "text": "再沿",
+      "start": 6.938,
+      "end": 7.35
+    },
+    {
+      "text": "趋势",
+      "start": 7.375,
+      "end": 7.688
+    },
+    {
+      "text": "外推",
+      "start": 7.7,
+      "end": 8.188
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-tts",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "Microsoft Edge",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "训练一个 十的二十三次方 FLOPs 的模型很贵。缩放定律先训小模型，再沿趋势外推。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "Microsoft Edge",
+    "ProduceID": "a911f38d28124f65e80ba62c10ce8239",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "fae377c67233d61a56681a9c0430340d7ffcab12a371dee4f48d670e0d199371",
+  "profile": "c3e5b6bb05f6e9a2d58b22757d7309d19344993c21a1a64da8eb695af093d2c8",
+  "requestKey": "2e67029b31cacfa81a99eefd9c47ee15",
+  "request": {
+    "spoken": "训练一个 十的二十三次方 FLOPs 的模型很贵。缩放定律先训小模型，再沿趋势外推。",
+    "rate": 1,
+    "style": ""
+  }
+}

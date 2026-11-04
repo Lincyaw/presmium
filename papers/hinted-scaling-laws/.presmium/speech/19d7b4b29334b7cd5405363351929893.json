@@ -1,0 +1,148 @@
+{
+  "key": "19d7b4b29334b7cd5405363351929893",
+  "audio": "19d7b4b29334b7cd5405363351929893.ogg",
+  "mime": "audio/ogg",
+  "duration": 12.504,
+  "words": [
+    {
+      "text": "联合",
+      "start": 0.1,
+      "end": 0.512
+    },
+    {
+      "text": "定律",
+      "start": 0.525,
+      "end": 0.9
+    },
+    {
+      "text": "预测",
+      "start": 0.925,
+      "end": 1.337
+    },
+    {
+      "text": "大",
+      "start": 1.363,
+      "end": 1.538
+    },
+    {
+      "text": "模型",
+      "start": 1.538,
+      "end": 1.863
+    },
+    {
+      "text": "的",
+      "start": 1.863,
+      "end": 1.95
+    },
+    {
+      "text": "准确率",
+      "start": 1.962,
+      "end": 2.662
+    },
+    {
+      "text": "是",
+      "start": 2.75,
+      "end": 2.913
+    },
+    {
+      "text": "28.7%",
+      "start": 2.925,
+      "end": 4.45
+    },
+    {
+      "text": "实际",
+      "start": 4.8,
+      "end": 5.138
+    },
+    {
+      "text": "是",
+      "start": 5.15,
+      "end": 5.35
+    },
+    {
+      "text": "25.9%",
+      "start": 5.375,
+      "end": 6.938
+    },
+    {
+      "text": "只",
+      "start": 7.125,
+      "end": 7.312
+    },
+    {
+      "text": "看",
+      "start": 7.312,
+      "end": 7.588
+    },
+    {
+      "text": "原题",
+      "start": 7.612,
+      "end": 7.975
+    },
+    {
+      "text": "分数",
+      "start": 7.975,
+      "end": 8.35
+    },
+    {
+      "text": "的",
+      "start": 8.35,
+      "end": 8.475
+    },
+    {
+      "text": "标准",
+      "start": 8.5,
+      "end": 8.875
+    },
+    {
+      "text": "缩放",
+      "start": 8.887,
+      "end": 9.262
+    },
+    {
+      "text": "定律",
+      "start": 9.275,
+      "end": 9.738
+    },
+    {
+      "text": "只",
+      "start": 9.838,
+      "end": 10.025
+    },
+    {
+      "text": "给出",
+      "start": 10.025,
+      "end": 10.5
+    },
+    {
+      "text": "13.2%",
+      "start": 10.525,
+      "end": 11.925
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-tts",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "Microsoft Edge",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "联合定律预测大模型的准确率是 28.7%，实际是 25.9%；只看原题分数的标准缩放定律只给出 13.2%。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "Microsoft Edge",
+    "ProduceID": "19d7b4b29334b7cd5405363351929893",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "8083f50e605fa4a5231829f5b572bb9a7e679d317c7b2da3e1ef22dfa32df3aa",
+  "profile": "c3e5b6bb05f6e9a2d58b22757d7309d19344993c21a1a64da8eb695af093d2c8",
+  "requestKey": "892d78d1678b4a07a6e56e1db5013151",
+  "request": {
+    "spoken": "联合定律预测大模型的准确率是 28.7%，实际是 25.9%；只看原题分数的标准缩放定律只给出 13.2%。",
+    "rate": 1,
+    "style": ""
+  }
+}

@@ -1,0 +1,1179 @@
+{
+  "schemaVersion": 1,
+  "id": "hinted-scaling-laws",
+  "metadata": {
+    "title": "带提示的缩放定律：小模型零分时怎样预测大模型",
+    "lang": "zh-CN",
+    "description": "三分钟读完 Hinted Scaling Laws（斯坦福大学，2026）：小模型在难题上都是零分时，给它们看一部分参考解答，把零分变成随提示量平滑上升的曲线，再用算力与提示量的联合定律预测大模型的准确率。",
+    "tags": [
+      "缩放定律",
+      "评测",
+      "论文"
+    ],
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-speech"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "lecture": {}
+    }
+  },
+  "sectionOrder": [
+    "p-opening",
+    "p-problem",
+    "p-hint",
+    "p-law",
+    "p-forecast",
+    "p-ranking",
+    "p-close",
+    "p-notes"
+  ],
+  "sections": {
+    "p-opening": {
+      "id": "p-opening",
+      "title": "三分钟读完一篇论文：带提示的缩放定律",
+      "level": 2,
+      "children": [
+        "opening--scene"
+      ],
+      "stepOrder": [
+        "opening--step-0"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-problem": {
+      "id": "p-problem",
+      "title": "小模型全是零分，缩放定律无从外推",
+      "level": 2,
+      "children": [
+        "problem--scene"
+      ],
+      "stepOrder": [
+        "problem--step-0",
+        "problem--step-1",
+        "problem--step-2",
+        "problem--step-3"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-hint": {
+      "id": "p-hint",
+      "title": "提示量 H：把一道题变成一串由易到难的题",
+      "level": 2,
+      "children": [
+        "hint--scene"
+      ],
+      "stepOrder": [
+        "hint--step-0",
+        "hint--step-1",
+        "hint--step-2"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-law": {
+      "id": "p-law",
+      "title": "提示量与算力可以互换",
+      "level": 2,
+      "children": [
+        "law--scene"
+      ],
+      "stepOrder": [
+        "law--step-0",
+        "law--step-1",
+        "law--step-2"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-forecast": {
+      "id": "p-forecast",
+      "title": "只用小模型，预测大模型的分数",
+      "level": 2,
+      "children": [
+        "forecast--scene"
+      ],
+      "stepOrder": [
+        "forecast--step-0",
+        "forecast--step-1",
+        "forecast--step-2"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-ranking": {
+      "id": "p-ranking",
+      "title": "分数都接近零时，少采样也能排对顺序",
+      "level": 2,
+      "children": [
+        "ranking--scene"
+      ],
+      "stepOrder": [
+        "ranking--step-0",
+        "ranking--step-1"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-close": {
+      "id": "p-close",
+      "title": "提示要让能力显出差别",
+      "level": 2,
+      "children": [
+        "close--scene"
+      ],
+      "stepOrder": [
+        "close--step-0",
+        "close--step-1"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-notes": {
+      "id": "p-notes",
+      "title": "来源与说明",
+      "level": 2,
+      "children": [
+        "notes--text"
+      ],
+      "stepOrder": [
+        "notes--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "opening--scene": {
+      "id": "opening--scene",
+      "type": "component",
+      "definitionId": "opening--scene--definition",
+      "parameters": {
+        "scene": "opening",
+        "alt": "翰林院传达室的信使猫标志，旁边是“三分钟读完一篇论文”和“翰林院传达室”；下方是今天的论文：斯坦福大学，Hinted Scaling Laws（带提示的缩放定律），arXiv 2611.02270。",
+        "institution": "斯坦福大学",
+        "title": "Hinted Scaling Laws",
+        "titleZh": "带提示的缩放定律",
+        "authors": "Suze van Adrichem, Luke Bailey, Rohith Kuditipudi 等",
+        "venue": "arXiv 2611.02270 · 2026"
+      }
+    },
+    "problem--scene": {
+      "id": "problem--scene",
+      "type": "component",
+      "definitionId": "problem--scene--definition",
+      "parameters": {
+        "scene": "problem",
+        "alt": "横轴为训练算力（对数刻度）的图：Delphi 系列十个小模型的 GSM8K 准确率都贴近零，每个点上方是一列按提示量着色的点，提示越多准确率越高；右侧依次写着“缩放定律：小模型的趋势 → 大模型”“预训练损失：有趋势”“下游准确率：一排零分”，以及“提示：给小模型看一部分参考解答”。"
+      }
+    },
+    "hint--scene": {
+      "id": "hint--scene",
+      "type": "component",
+      "definitionId": "hint--scene--definition",
+      "parameters": {
+        "scene": "hint",
+        "alt": "左侧是 GSM8K 的 256 道题排成的 16×16 方格，一个 10²¹ FLOPs 的模型在提示量 H = 1 时做对的题亮成橙色；右侧是它的准确率随提示量从 1.8% 平滑上升到 80.9% 的曲线。"
+      }
+    },
+    "law--scene": {
+      "id": "law--scene",
+      "type": "component",
+      "definitionId": "law--scene--definition",
+      "parameters": {
+        "scene": "law",
+        "alt": "论文图 3 的遮盖面板：横轴训练算力，纵轴提示量，等准确率线大致平行；上方是联合定律的公式 L(C, H) = max(F, L + (A − L)·σ(β₁C + β₂H + β₃))，H = 0 的底边标为“对原题的预测”。"
+      }
+    },
+    "forecast--scene": {
+      "id": "forecast--scene",
+      "type": "component",
+      "definitionId": "forecast--scene--definition",
+      "parameters": {
+        "scene": "forecast",
+        "alt": "19 组预测的误差对比：每一行一组模型家族与基准，黑点是标准缩放定律对最大模型的预测误差，红点是带提示的预测误差，17 组红点更小，中位误差从 21 个百分点降到 4.3。"
+      }
+    },
+    "ranking--scene": {
+      "id": "ranking--scene",
+      "type": "component",
+      "definitionId": "ranking--scene--definition",
+      "parameters": {
+        "scene": "ranking",
+        "alt": "左侧：七个模型在 AIME 上的原题准确率（都不到 1%）与加提示后的准确率（H = 0.7）用连线相连，顺序基本不变；右侧：排序与真值的一致性（Kendall τ）随每题采样次数增加，带提示的排序在一次采样时为 0.51，普通采样要约五次才追上。"
+      }
+    },
+    "close--scene": {
+      "id": "close--scene",
+      "type": "component",
+      "definitionId": "close--scene--definition",
+      "parameters": {
+        "scene": "close",
+        "alt": "结论：提示量是衡量能力的第二把尺子；前提是每道题有可靠的参考解答。下方是论文信息：Hinted Scaling Laws，斯坦福大学，arXiv 2611.02270，代码 github.com/tatsu-lab/hinted-scaling-laws。"
+      }
+    },
+    "notes--text": {
+      "id": "notes--text",
+      "type": "text",
+      "content": [
+        {
+          "id": "notes--t0",
+          "type": "heading",
+          "level": 3,
+          "children": [
+            {
+              "type": "text",
+              "text": "论文"
+            }
+          ]
+        },
+        {
+          "id": "notes--t1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Suze van Adrichem, Luke Bailey, Rohith Kuditipudi, Christine Ye, Neil Band, Ahmed Ahmed, John Duchi, Percy Liang, Tatsunori Hashimoto. Hinted Scaling Laws. arXiv 2611.02270, 2026. 代码与数据：github.com/tatsu-lab/hinted-scaling-laws。"
+            }
+          ]
+        },
+        {
+          "id": "notes--t2",
+          "type": "heading",
+          "level": 3,
+          "children": [
+            {
+              "type": "text",
+              "text": "画面里的数字从哪里来"
+            }
+          ]
+        },
+        {
+          "id": "notes--t3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "动画中的每个数字都由论文公开的逐次采样结果重新计算（scenes/data/derive.py，按论文式 (2) 与它的多起点最小二乘拟合），与论文报告的数值一致。Delphi 系列 10²³ FLOPs 模型在 GSM8K 上的准确率为 25.87%。只用不超过 9×10¹⁹ FLOPs 的六个模型、以 logit 混合加提示时（教师是上下文里放着完整参考解答的 Llama-3.1-8B-Instruct，H 是它的 logits 的权重，取 0 到 16），联合定律预测 28.73%，误差 2.86 个百分点；在留出的 10²² FLOPs 模型上它预测 13.3%，实际 7.4%，高估 5.9 个百分点。标准缩放定律（同样六个模型的原题准确率对算力拟合的 S 形曲线）预测 13.17%，误差 12.70。五组模型与三个基准的 19 组预测用截断与遮盖两种只需参考解答的提示，取两者预测的平均（Delphi 一组从 7 个模型起拟合，与论文图 5 相同），17 组好于标准缩放定律，中位误差从 20.8 降到 4.3 个百分点。AIME 上每题一次采样时，带提示的排序与真值（每题 4,096 次原题采样）的 Kendall τ 为 0.51，普通采样为 0.18。"
+            }
+          ]
+        },
+        {
+          "id": "notes--t4",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "“多给 0.1 的提示约等于三倍算力”由遮盖在 Delphi 上拟合的联合定律计算（β₂/β₁ ≈ 4.7，即每 0.1 的提示约合 0.47 个数量级的算力），是估算；联合定律那一页的拟合用了全部 12 个模型，只用来看形状，论文图 3 的实测等准确率线在接近噪声底时偏离直线。第一页中“与零分相容”的几条 S 形曲线是示意。"
+            }
+          ]
+        },
+        {
+          "id": "notes--t5",
+          "type": "heading",
+          "level": 3,
+          "children": [
+            {
+              "type": "text",
+              "text": "条件"
+            }
+          ]
+        },
+        {
+          "id": "notes--t6",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "截断与遮盖需要每道题有一份正确、推理清楚并去掉最终答案的参考解答；logit 混合还需要一个与被测模型共用分词器、明显更强的教师模型。论文的预测实验中只有 Delphi 是严格按一个配方训练的规模系列，其余家族是公开发布的模型。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    }
+  },
+  "steps": {
+    "opening--step-0": {
+      "id": "opening--step-0",
+      "sectionId": "p-opening",
+      "title": "开场",
+      "visuals": [
+        {
+          "blockId": "opening--scene",
+          "visible": true,
+          "state": "s0"
+        }
+      ],
+      "narrationIds": [
+        "opening--step-0--n0"
+      ]
+    },
+    "problem--step-0": {
+      "id": "problem--step-0",
+      "sectionId": "p-problem",
+      "title": "大模型之前先看小模型",
+      "visuals": [
+        {
+          "blockId": "problem--scene",
+          "visible": true,
+          "state": "s0"
+        }
+      ],
+      "narrationIds": [
+        "problem--step-0--n0"
+      ]
+    },
+    "problem--step-1": {
+      "id": "problem--step-1",
+      "sectionId": "p-problem",
+      "title": "损失有趋势",
+      "visuals": [
+        {
+          "blockId": "problem--scene",
+          "visible": true,
+          "state": "s1"
+        }
+      ],
+      "narrationIds": [
+        "problem--step-1--n0"
+      ]
+    },
+    "problem--step-2": {
+      "id": "problem--step-2",
+      "sectionId": "p-problem",
+      "title": "准确率是一排零",
+      "visuals": [
+        {
+          "blockId": "problem--scene",
+          "visible": true,
+          "state": "s2"
+        }
+      ],
+      "narrationIds": [
+        "problem--step-2--n0"
+      ]
+    },
+    "problem--step-3": {
+      "id": "problem--step-3",
+      "sectionId": "p-problem",
+      "title": "论文的办法",
+      "visuals": [
+        {
+          "blockId": "problem--scene",
+          "visible": true,
+          "state": "s3"
+        }
+      ],
+      "narrationIds": [
+        "problem--step-3--n0"
+      ]
+    },
+    "hint--step-0": {
+      "id": "hint--step-0",
+      "sectionId": "p-hint",
+      "title": "提示量",
+      "visuals": [
+        {
+          "blockId": "hint--scene",
+          "visible": true,
+          "state": "s0"
+        }
+      ],
+      "narrationIds": [
+        "hint--step-0--n0"
+      ]
+    },
+    "hint--step-1": {
+      "id": "hint--step-1",
+      "sectionId": "p-hint",
+      "title": "三种提示",
+      "visuals": [
+        {
+          "blockId": "hint--scene",
+          "visible": true,
+          "state": "s1"
+        }
+      ],
+      "narrationIds": [
+        "hint--step-1--n0"
+      ]
+    },
+    "hint--step-2": {
+      "id": "hint--step-2",
+      "sectionId": "p-hint",
+      "title": "零分变成曲线",
+      "visuals": [
+        {
+          "blockId": "hint--scene",
+          "visible": true,
+          "state": "s2"
+        }
+      ],
+      "narrationIds": [
+        "hint--step-2--n0"
+      ]
+    },
+    "law--step-0": {
+      "id": "law--step-0",
+      "sectionId": "p-law",
+      "title": "每个规模一条曲线",
+      "visuals": [
+        {
+          "blockId": "law--scene",
+          "visible": true,
+          "state": "s0"
+        }
+      ],
+      "narrationIds": [
+        "law--step-0--n0"
+      ]
+    },
+    "law--step-1": {
+      "id": "law--step-1",
+      "sectionId": "p-law",
+      "title": "等准确率线平行",
+      "visuals": [
+        {
+          "blockId": "law--scene",
+          "visible": true,
+          "state": "s1"
+        }
+      ],
+      "narrationIds": [
+        "law--step-1--n0"
+      ]
+    },
+    "law--step-2": {
+      "id": "law--step-2",
+      "sectionId": "p-law",
+      "title": "联合定律",
+      "visuals": [
+        {
+          "blockId": "law--scene",
+          "visible": true,
+          "state": "s2"
+        }
+      ],
+      "narrationIds": [
+        "law--step-2--n0"
+      ]
+    },
+    "forecast--step-0": {
+      "id": "forecast--step-0",
+      "sectionId": "p-forecast",
+      "title": "只用六个小模型",
+      "visuals": [
+        {
+          "blockId": "forecast--scene",
+          "visible": true,
+          "state": "s0"
+        }
+      ],
+      "narrationIds": [
+        "forecast--step-0--n0"
+      ]
+    },
+    "forecast--step-1": {
+      "id": "forecast--step-1",
+      "sectionId": "p-forecast",
+      "title": "预测与真值",
+      "visuals": [
+        {
+          "blockId": "forecast--scene",
+          "visible": true,
+          "state": "s1"
+        }
+      ],
+      "narrationIds": [
+        "forecast--step-1--n0"
+      ]
+    },
+    "forecast--step-2": {
+      "id": "forecast--step-2",
+      "sectionId": "p-forecast",
+      "title": "19 组预测",
+      "visuals": [
+        {
+          "blockId": "forecast--scene",
+          "visible": true,
+          "state": "s2"
+        }
+      ],
+      "narrationIds": [
+        "forecast--step-2--n0"
+      ]
+    },
+    "ranking--step-0": {
+      "id": "ranking--step-0",
+      "sectionId": "p-ranking",
+      "title": "分数拉开",
+      "visuals": [
+        {
+          "blockId": "ranking--scene",
+          "visible": true,
+          "state": "s0"
+        }
+      ],
+      "narrationIds": [
+        "ranking--step-0--n0"
+      ]
+    },
+    "ranking--step-1": {
+      "id": "ranking--step-1",
+      "sectionId": "p-ranking",
+      "title": "一次抵五次",
+      "visuals": [
+        {
+          "blockId": "ranking--scene",
+          "visible": true,
+          "state": "s1"
+        }
+      ],
+      "narrationIds": [
+        "ranking--step-1--n0"
+      ]
+    },
+    "close--step-0": {
+      "id": "close--step-0",
+      "sectionId": "p-close",
+      "title": "直接给答案不行",
+      "visuals": [
+        {
+          "blockId": "close--scene",
+          "visible": true,
+          "state": "s0"
+        }
+      ],
+      "narrationIds": [
+        "close--step-0--n0"
+      ]
+    },
+    "close--step-1": {
+      "id": "close--step-1",
+      "sectionId": "p-close",
+      "title": "第二把尺子",
+      "visuals": [
+        {
+          "blockId": "close--scene",
+          "visible": true,
+          "state": "s1"
+        }
+      ],
+      "narrationIds": [
+        "close--step-1--n0"
+      ]
+    },
+    "notes--step-0": {
+      "id": "notes--step-0",
+      "sectionId": "p-notes",
+      "visuals": [
+        {
+          "blockId": "notes--text",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "opening--step-0--n0": {
+      "id": "opening--step-0--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "三分钟读完一篇论文。大家好，这里是翰林院传达室，今天给大家带来斯坦福大学的《带提示的缩放定律》。"
+        }
+      ]
+    },
+    "problem--step-0--n0": {
+      "id": "problem--step-0--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "训练一个 "
+        },
+        {
+          "type": "pronunciation",
+          "display": "10²³",
+          "spoken": "十的二十三次方"
+        },
+        {
+          "type": "text",
+          "text": " FLOPs 的模型很贵。缩放定律先训小模型，再沿趋势外推。"
+        }
+      ]
+    },
+    "problem--step-1--n0": {
+      "id": "problem--step-1--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "预训练损失随算力平滑下降。可开发者和安全团队关心的是下游准确率。"
+        }
+      ]
+    },
+    "problem--step-2--n0": {
+      "id": "problem--step-2--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "在 GSM8K 数学题上，小模型都在 2% 左右，等于一排零分，曲线往哪里拐都说得通。"
+        }
+      ]
+    },
+    "problem--step-3--n0": {
+      "id": "problem--step-3--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "这篇论文的办法：给小模型看一部分参考解答，把零分变成一条能拟合的曲线。"
+        }
+      ]
+    },
+    "hint--step-0--n0": {
+      "id": "hint--step-0--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "每道题有一份去掉答案的参考解答，放进题目的比例叫提示量 H，按词计；H 为 0 就是原题。"
+        }
+      ]
+    },
+    "hint--step-1--n0": {
+      "id": "hint--step-1--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "三种给法：截断，给出解答的前 H；遮盖，随机保留比例为 H 的词；logit 混合，按权重 H 混入教师模型的 logits。"
+        }
+      ]
+    },
+    "hint--step-2--n0": {
+      "id": "hint--step-2--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "一个 "
+        },
+        {
+          "type": "pronunciation",
+          "display": "10²¹",
+          "spoken": "十的二十一次方"
+        },
+        {
+          "type": "text",
+          "text": " FLOPs 的模型原题几乎全错；提示量加大，做对的题一道道亮起，准确率平滑上升。"
+        }
+      ]
+    },
+    "law--step-0--n0": {
+      "id": "law--step-0--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "每个规模都是一条平滑的曲线，算力越大，曲线大体越高。"
+        }
+      ]
+    },
+    "law--step-1--n0": {
+      "id": "law--step-1--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "摊在一张图上：横轴算力，纵轴提示量。等准确率线几乎平行：多给 0.1 的提示，约等于三倍算力。"
+        }
+      ]
+    },
+    "law--step-2--n0": {
+      "id": "law--step-2--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "于是用一条联合定律拟合整张图：算力和提示量一起进入 S 形函数，共六个参数；H 为 0 的那条线，就是对原题的预测。"
+        }
+      ]
+    },
+    "forecast--step-0--n0": {
+      "id": "forecast--step-0--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "只用六个小模型，算力不到目标的千分之一。它们原题几乎零分；改用 logit 混合，教师是看着解答的 Llama 3.1 8B，H 是它的权重。"
+        }
+      ]
+    },
+    "forecast--step-1--n0": {
+      "id": "forecast--step-1--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "联合定律预测大模型的准确率是 28.7%，实际是 25.9%；只看原题分数的标准缩放定律只给出 13.2%。"
+        }
+      ]
+    },
+    "forecast--step-2--n0": {
+      "id": "forecast--step-2--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "换成截断和遮盖两种提示，在五组模型、三个基准上做了 19 组预测，17 组更准，中位误差从 20.8 个百分点降到 4.3。"
+        }
+      ]
+    },
+    "ranking--step-0--n0": {
+      "id": "ranking--step-0--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "提示也能帮助排序。七个模型在 AIME 上都不到 1%，加了提示，分数拉开，顺序基本不变。"
+        }
+      ]
+    },
+    "ranking--step-1--n0": {
+      "id": "ranking--step-1--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "每题一次带提示的采样，排出的顺序相当于约五次普通采样。"
+        }
+      ]
+    },
+    "close--step-0--n0": {
+      "id": "close--step-0--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "提示必须让能力不同的模型拉开差别：若以概率 H 直接给出答案，零分模型的曲线完全重合，误差仍有 20.5 个百分点。"
+        }
+      ]
+    },
+    "close--step-1--n0": {
+      "id": "close--step-1--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "提示量是衡量能力的第二把尺子：小模型还是零分时，就能读出大模型的分数。前提是每道题都有可靠的参考解答。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "opening--scene--definition": {
+      "id": "opening--scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/opening.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "s0"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          10032
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "翰林院传达室的信使猫标志，旁边是“三分钟读完一篇论文”和“翰林院传达室”；下方是今天的论文：斯坦福大学，Hinted Scaling Laws（带提示的缩放定律），arXiv 2611.02270。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "problem--scene--definition": {
+      "id": "problem--scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/problem.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "s0"
+        },
+        {
+          "id": "s1"
+        },
+        {
+          "id": "s2"
+        },
+        {
+          "id": "s3"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          8784,
+          7824,
+          9096,
+          7392
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "横轴为训练算力（对数刻度）的图：Delphi 系列十个小模型的 GSM8K 准确率都贴近零，每个点上方是一列按提示量着色的点，提示越多准确率越高；右侧依次写着“缩放定律：小模型的趋势 → 大模型”“预训练损失：有趋势”“下游准确率：一排零分”，以及“提示：给小模型看一部分参考解答”。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "hint--scene--definition": {
+      "id": "hint--scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/hint.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "s0"
+        },
+        {
+          "id": "s1"
+        },
+        {
+          "id": "s2"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          9264,
+          11832,
+          10176
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "左侧是 GSM8K 的 256 道题排成的 16×16 方格，一个 10²¹ FLOPs 的模型在提示量 H = 1 时做对的题亮成橙色；右侧是它的准确率随提示量从 1.8% 平滑上升到 80.9% 的曲线。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "law--scene--definition": {
+      "id": "law--scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/law.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "s0"
+        },
+        {
+          "id": "s1"
+        },
+        {
+          "id": "s2"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          5688,
+          10152,
+          11568
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "论文图 3 的遮盖面板：横轴训练算力，纵轴提示量，等准确率线大致平行；上方是联合定律的公式 L(C, H) = max(F, L + (A − L)·σ(β₁C + β₂H + β₃))，H = 0 的底边标为“对原题的预测”。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "forecast--scene--definition": {
+      "id": "forecast--scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/forecast.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "s0"
+        },
+        {
+          "id": "s1"
+        },
+        {
+          "id": "s2"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          13104,
+          12504,
+          12024
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "19 组预测的误差对比：每一行一组模型家族与基准，黑点是标准缩放定律对最大模型的预测误差，红点是带提示的预测误差，17 组红点更小，中位误差从 21 个百分点降到 4.3。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "ranking--scene--definition": {
+      "id": "ranking--scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/ranking.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "s0"
+        },
+        {
+          "id": "s1"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          9456,
+          6000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "左侧：七个模型在 AIME 上的原题准确率（都不到 1%）与加提示后的准确率（H = 0.7）用连线相连，顺序基本不变；右侧：排序与真值的一致性（Kendall τ）随每题采样次数增加，带提示的排序在一次采样时为 0.51，普通采样要约五次才追上。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "close--scene--definition": {
+      "id": "close--scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/close.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "s0"
+        },
+        {
+          "id": "s1"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          11736,
+          11352
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "结论：提示量是衡量能力的第二把尺子；前提是每道题有可靠的参考解答。下方是论文信息：Hinted Scaling Laws，斯坦福大学，arXiv 2611.02270，代码 github.com/tatsu-lab/hinted-scaling-laws。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "tts",
+        "voice": {
+          "engine": "edge",
+          "voice": "zh-CN-XiaoxiaoNeural"
+        }
+      },
+      "narrationStart": "with-animation",
+      "trailingPauseMs": 350
+    },
+    "stepOverrides": {
+      "close--step-1": {
+        "minimumHoldMs": 0,
+        "trailingPauseMs": 3000
+      },
+      "notes--step-0": {
+        "voiceSource": {
+          "type": "none"
+        },
+        "minimumHoldMs": 0,
+        "trailingPauseMs": 0
+      }
+    },
+    "mediaClips": []
+  }
+}

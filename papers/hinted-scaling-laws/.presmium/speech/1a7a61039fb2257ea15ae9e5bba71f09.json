@@ -1,0 +1,163 @@
+{
+  "key": "1a7a61039fb2257ea15ae9e5bba71f09",
+  "audio": "1a7a61039fb2257ea15ae9e5bba71f09.ogg",
+  "mime": "audio/ogg",
+  "duration": 9.264,
+  "words": [
+    {
+      "text": "每",
+      "start": 0.1,
+      "end": 0.287
+    },
+    {
+      "text": "道",
+      "start": 0.287,
+      "end": 0.462
+    },
+    {
+      "text": "题",
+      "start": 0.463,
+      "end": 0.75
+    },
+    {
+      "text": "有",
+      "start": 0.775,
+      "end": 0.913
+    },
+    {
+      "text": "一",
+      "start": 0.912,
+      "end": 1.025
+    },
+    {
+      "text": "份",
+      "start": 1.025,
+      "end": 1.25
+    },
+    {
+      "text": "去掉",
+      "start": 1.275,
+      "end": 1.6
+    },
+    {
+      "text": "答案",
+      "start": 1.613,
+      "end": 1.938
+    },
+    {
+      "text": "的",
+      "start": 1.938,
+      "end": 2.025
+    },
+    {
+      "text": "参考",
+      "start": 2.05,
+      "end": 2.387
+    },
+    {
+      "text": "解答",
+      "start": 2.4,
+      "end": 2.887
+    },
+    {
+      "text": "放进",
+      "start": 3.225,
+      "end": 3.587
+    },
+    {
+      "text": "题目",
+      "start": 3.6,
+      "end": 3.938
+    },
+    {
+      "text": "的",
+      "start": 3.938,
+      "end": 4.037
+    },
+    {
+      "text": "比例",
+      "start": 4.05,
+      "end": 4.5
+    },
+    {
+      "text": "叫",
+      "start": 4.6,
+      "end": 4.8
+    },
+    {
+      "text": "提示量",
+      "start": 4.812,
+      "end": 5.438
+    },
+    {
+      "text": "H",
+      "start": 5.438,
+      "end": 5.838
+    },
+    {
+      "text": "按",
+      "start": 6.062,
+      "end": 6.25
+    },
+    {
+      "text": "词计",
+      "start": 6.263,
+      "end": 6.775
+    },
+    {
+      "text": "H",
+      "start": 6.987,
+      "end": 7.3
+    },
+    {
+      "text": "为",
+      "start": 7.312,
+      "end": 7.525
+    },
+    {
+      "text": "0",
+      "start": 7.525,
+      "end": 7.8
+    },
+    {
+      "text": "就",
+      "start": 7.825,
+      "end": 7.975
+    },
+    {
+      "text": "是",
+      "start": 7.975,
+      "end": 8.075
+    },
+    {
+      "text": "原题",
+      "start": 8.088,
+      "end": 8.688
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-tts",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "Microsoft Edge",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "每道题有一份去掉答案的参考解答，放进题目的比例叫提示量 H，按词计；H 为 0 就是原题。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "Microsoft Edge",
+    "ProduceID": "1a7a61039fb2257ea15ae9e5bba71f09",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "93bc581a094678a2374075c0c23bcf1f5446cc0ea3fa879e62886c59254feb58",
+  "profile": "c3e5b6bb05f6e9a2d58b22757d7309d19344993c21a1a64da8eb695af093d2c8",
+  "requestKey": "6aaf0f47646ee78ee28298041d65ee80",
+  "request": {
+    "spoken": "每道题有一份去掉答案的参考解答，放进题目的比例叫提示量 H，按词计；H 为 0 就是原题。",
+    "rate": 1,
+    "style": ""
+  }
+}

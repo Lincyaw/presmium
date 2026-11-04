@@ -1,0 +1,19 @@
+# 三分钟读完一篇论文（翰林院传达室）：每篇论文是一份文稿（<slug>/lecture.json），配一段三分钟的配音动画。
+# 在本目录运行 pnpm serve 预览整个网站；制作流程见 CLAUDE.md。
+title: 翰林院传达室
+documents: ['*/lecture.json']
+site:
+  lang: zh-CN
+  theme: showcase
+  params:
+    accent: teal
+    typography: sans
+    contentWidth: wide
+    logo: ./site/assets/logo.svg
+    logoAlt: 翰林院传达室
+  landing:
+    source: ./site/home.json
+  head:
+    description: 三分钟读完一篇论文：用配音动画讲清一篇论文要解决什么问题、为什么重要、怎样做到、证据是什么。
+  footer:
+    message: 翰林院传达室 · 三分钟读完一篇论文

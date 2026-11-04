@@ -1,0 +1,24 @@
+{
+  "name": "presmium-papers",
+  "private": true,
+  "type": "module",
+  "description": "三分钟读完一篇论文（翰林院传达室）：每篇论文一份文稿与一段三分钟的配音动画",
+  "scripts": {
+    "serve": "presmium serve .",
+    "check": "node tools/film.mjs check",
+    "build": "presmium build .",
+    "speech": "uv run --no-project --with edge-tts python -I tools/edge-speech.py",
+    "voiceover": "node tools/voiceover.mjs",
+    "film": "node tools/film.mjs"
+  },
+  "dependencies": {
+    "@lincyaw/addon-lecture": "workspace:*",
+    "@lincyaw/addon-motion": "workspace:*",
+    "@lincyaw/addon-speech": "workspace:*",
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/presmium": "workspace:*",
+    "@lincyaw/render-slides": "workspace:*",
+    "@lincyaw/web": "workspace:*",
+    "@modelcontextprotocol/client": "2.3.1"
+  }
+}

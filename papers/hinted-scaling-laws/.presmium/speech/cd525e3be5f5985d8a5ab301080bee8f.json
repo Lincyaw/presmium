@@ -1,0 +1,153 @@
+{
+  "key": "cd525e3be5f5985d8a5ab301080bee8f",
+  "audio": "cd525e3be5f5985d8a5ab301080bee8f.ogg",
+  "mime": "audio/ogg",
+  "duration": 9.456,
+  "words": [
+    {
+      "text": "提示",
+      "start": 0.1,
+      "end": 0.637
+    },
+    {
+      "text": "也",
+      "start": 0.662,
+      "end": 0.8
+    },
+    {
+      "text": "能",
+      "start": 0.8,
+      "end": 0.925
+    },
+    {
+      "text": "帮助",
+      "start": 0.938,
+      "end": 1.25
+    },
+    {
+      "text": "排序",
+      "start": 1.262,
+      "end": 1.837
+    },
+    {
+      "text": "七",
+      "start": 2.413,
+      "end": 2.638
+    },
+    {
+      "text": "个",
+      "start": 2.638,
+      "end": 2.738
+    },
+    {
+      "text": "模型",
+      "start": 2.75,
+      "end": 3.138
+    },
+    {
+      "text": "在",
+      "start": 3.15,
+      "end": 3.438
+    },
+    {
+      "text": "AIME",
+      "start": 3.538,
+      "end": 3.775
+    },
+    {
+      "text": "上",
+      "start": 3.775,
+      "end": 4.088
+    },
+    {
+      "text": "都",
+      "start": 4.1,
+      "end": 4.237
+    },
+    {
+      "text": "不",
+      "start": 4.237,
+      "end": 4.337
+    },
+    {
+      "text": "到",
+      "start": 4.338,
+      "end": 4.5
+    },
+    {
+      "text": "1%",
+      "start": 4.525,
+      "end": 5.25
+    },
+    {
+      "text": "加",
+      "start": 5.537,
+      "end": 5.737
+    },
+    {
+      "text": "了",
+      "start": 5.737,
+      "end": 5.812
+    },
+    {
+      "text": "提示",
+      "start": 5.825,
+      "end": 6.35
+    },
+    {
+      "text": "分数",
+      "start": 6.6,
+      "end": 6.95
+    },
+    {
+      "text": "拉开",
+      "start": 6.963,
+      "end": 7.45
+    },
+    {
+      "text": "顺序",
+      "start": 7.7,
+      "end": 8.125
+    },
+    {
+      "text": "基本",
+      "start": 8.15,
+      "end": 8.425
+    },
+    {
+      "text": "不",
+      "start": 8.438,
+      "end": 8.6
+    },
+    {
+      "text": "变",
+      "start": 8.6,
+      "end": 8.875
+    }
+  ],
+  "engine": "edge",
+  "model": "edge-tts",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "provider": "Microsoft Edge",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "提示也能帮助排序。七个模型在 AIME 上都不到 1%，加了提示，分数拉开，顺序基本不变。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "Microsoft Edge",
+    "ProduceID": "cd525e3be5f5985d8a5ab301080bee8f",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "e048c4fb43bb8c61b2c26b5463532444fea29932e1c278df204e57531aeff098",
+  "profile": "c3e5b6bb05f6e9a2d58b22757d7309d19344993c21a1a64da8eb695af093d2c8",
+  "requestKey": "c066b022f1cee01ea4cdee6c6a2fa158",
+  "request": {
+    "spoken": "提示也能帮助排序。七个模型在 AIME 上都不到 1%，加了提示，分数拉开，顺序基本不变。",
+    "rate": 1,
+    "style": ""
+  }
+}
