@@ -110,7 +110,7 @@ export default gsapScene(({ root, gsap, at, durations, color }) => {
     </svg>
     <div class="win"><b>用于拟合的 6 个模型</b><span class="muted">≤ ${flops(W.boundary)} FLOPs</span></div>
     <div class="meth"><b>logit 混合</b> · 教师模型 Llama-3.1 8B · H 可大于 1</div>
-    <div class="zfan-lab" style="left:66cqw;top:30cqh"><b>只看原题</b><br>曲线定不下来<span class="note">　示意</span></div>
+    <div class="zfan-lab" style="left:66cqw;top:30cqh"><b>只看原题</b><br>曲线位置不确定<span class="note">　示意</span></div>
     <div class="hleg">${HS.map(h => `<div><i style="background:${hc(h)}"></i>提示量 H = ${h}</div>`).join('')}<div><i style="background:var(--c-ours)"></i>H = 0（原题）</div></div>
     <div class="read r-ours"><div class="k">联合定律 · ${flops(TOP)}</div><div class="v n-ours">${pct(W.pred)}</div><div class="e">差 ${gap(W.pred, truth)}</div></div>
     <div class="over over22" style="right:${100 - X(22) / 1.6 + 0.6}cqw;top:${yAcc(0.19) / 0.9}cqh">10²²：高估 ${gap(at22, R22.acc)}</div>

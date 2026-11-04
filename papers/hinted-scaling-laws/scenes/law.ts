@@ -47,7 +47,7 @@ const TRI = `<svg class="tri" viewBox="0 0 ${VW} ${VH}" style="left:0;top:0;widt
   <circle cx="${FU(A.c)}" cy="${FV(A.h)}" r="7" fill="var(--c-ours)" stroke="#fff" stroke-width="2"/>
   <circle class="tri-end" cx="${FU(A.c + DC)}" cy="${FV(A.h - DH)}" r="7" fill="var(--c-ours)" stroke="#fff" stroke-width="2"/>
   <g class="tri-tx" font-weight="800" fill="#16191d" stroke="#fff" stroke-width="7" paint-order="stroke" style="font-family: var(--pm-font-sans)">
-    <text x="${(FU(A.c) + FU(A.c + DC)) / 2}" y="${FV(A.h) - 16}" font-size="30" text-anchor="middle">×3 算力</text>
+    <text x="${(FU(A.c) + FU(A.c + DC)) / 2}" y="${FV(A.h) - 16}" font-size="30" text-anchor="middle">算力 ×3</text>
     <text x="${FU(A.c + DC) + 14}" y="${(FV(A.h) + FV(A.h - DH)) / 2 + 10}" font-size="30">提示量 +0.1</text>
   </g></svg>`
 const contour = (a: number): Pt[] => {
@@ -100,7 +100,7 @@ export default gsapScene(({ root, gsap, at, durations }) => {
     <div class="card fml">
       <div class="fml__k">联合定律</div>
       <div class="fml__f">Acc(<span class="c">C</span>, <span class="h">H</span>) = max( F,<br>&nbsp;&nbsp;L + (A − L)·σ(<u>β₁<span class="c">C</span> + β₂<span class="h">H</span></u> + β₃) )</div>
-      <div class="fml__n"><b>C</b> 算力（对数）　<b style="color:#1f9e89">H</b> 提示量<br><b>F</b> 噪声水平　<b>L</b>、<b>A</b> 下限、上限<br><b>6 个参数</b></div>
+      <div class="fml__n"><b>C</b> 算力（对数）　<b style="color:#1f9e89">H</b> 提示量<br><b>F</b> 随机作答水平　<b>L</b>、<b>A</b> 下限、上限<br><b>6 个参数</b></div>
     </div>
   `)
 

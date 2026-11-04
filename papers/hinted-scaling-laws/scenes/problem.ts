@@ -56,7 +56,7 @@ export default gsapScene(({ root, gsap, at, durations, color }) => {
       ${axes({ x: X, y: yAcc, yTicks: [0, 0.1, 0.2, 0.3, 0.4].map(v => ({ v, label: `${v * 100}%` })), yTitle: 'GSM8K 准确率', grid: true, cls: 'ax-acc' })}
       ${axes({ x: X, y: yAll, yTicks: [0, 0.25, 0.5, 0.75, 1].map(v => ({ v, label: `${v * 100}%` })), yTitle: 'GSM8K 准确率', grid: true, cls: 'ax-all' })}
       <rect class="floor" x="${X.r0}" y="${yAcc(0.025)}" width="${X.r1 - X.r0}" height="${yAcc(0) - yAcc(0.025)}" fill="var(--c-ours-soft)"/>
-      <text class="floor-lab" x="${X(18.4)}" y="${yAcc(0.025) - 1}" font-size="2.4" fill="var(--c-ours)">噪声水平 2.5%</text>
+      <text class="floor-lab" x="${X(18.4)}" y="${yAcc(0.025) - 1}" font-size="2.4" fill="var(--c-ours)">随机作答 2.5%</text>
       <path class="trend" d="${path(place(sample(trend, rungs[0]!.c, 21), X, yLoss))}" fill="none" stroke="var(--c-fit)" stroke-width="0.45"/>
       ${FAN.map((f, i) => `<path class="fan fan${i}" d="${path(place(sample(f, 18.3, 23.3, 120), X, yAcc))}" fill="none" stroke="var(--c-muted)" stroke-width="0.35" stroke-dasharray="1.2 0.8"/>`).join('')}
       <g class="target">
@@ -75,7 +75,7 @@ export default gsapScene(({ root, gsap, at, durations, color }) => {
     <div class="lab lab-ladder" style="left:${X(18.4) / 1.6}cqw;top:${ROW / 0.9 + 5}cqh">Delphi 小模型 · ${flops(rungs[0]!.c)}–${flops(21)} FLOPs</div>
     <div class="lab lab-target" style="left:${X(TARGET) / 1.6 - 6}cqw;top:${ROW / 0.9 - 13}cqh"><b>目标</b> ${flops(TARGET)} FLOPs</div>
     <div class="lab lab-trend" style="left:${X(19.6) / 1.6}cqw;top:${yLoss(trend(19.6)) / 0.9 - 9}cqh">平滑下降<span class="note">　8 个模型</span></div>
-    <div class="lab lab-fan" style="left:${X(18.5) / 1.6}cqw;top:24cqh"><span class="muted">示意：</span>都能拟合这些低准确率</div>
+    <div class="lab lab-fan" style="left:${X(18.5) / 1.6}cqw;top:24cqh"><span class="muted">示意：</span>均可拟合低准确率</div>
     <div class="hbar"><span>提示</span><span class="muted">少</span><i></i><span class="muted">多</span></div>
     <div class="panel">
       <div class="row r0"><b>缩放定律</b><span class="muted">小模型 → 大模型</span></div>

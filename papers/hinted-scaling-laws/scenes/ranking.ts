@@ -102,7 +102,7 @@ export default gsapScene(({ root, gsap, at, durations, color }) => {
           <text class="eq-tx" x="${kx(cross) + 1.4}" y="${KY(target) + 3.6}" font-size="2.7" font-weight="800">≈ ${Math.round(cross)} 次</text></g>
       </g>
     </svg>
-    <div class="side k0"><b>区分度提高，顺序基本不变</b><span>AIME · 7 个模型<br>${range(R.truth)} → ${range(hinted)}<br>只有一对换位</span></div>
+    <div class="side k0"><b>区分度提高 · 顺序稳定</b><span>AIME · 7 个模型<br>${range(R.truth)} → ${range(hinted)}<br>只有一对换位</span></div>
     <div class="side k1"><b>1 次提示 ≈ ${Math.round(cross)} 次原题</b><span>k = 1：${target.toFixed(2)} 对 ${R.avg[0]!.toFixed(2)}</span></div>
     <div class="leg"><div class="leg-a"><i style="background:var(--c-base)"></i><span>原题采样</span></div>
       <div class="leg-b"><i style="background:${purple}"></i><span>提示辅助排序</span></div></div>
@@ -125,7 +125,7 @@ export default gsapScene(({ root, gsap, at, durations, color }) => {
     { autoAlpha: 1, scale: 1, duration: 0.3, ease: 'back.out(2)', immediateRender: false }, T(0, 0.58) + i * 0.12 + 0.6))
   tl.to('.k0', { autoAlpha: 1, duration: 0.4 }, T(0, 0.8))
 
-  // State 1. 怎样衡量排得对不对: the τ axis and what τ means; 原题采样: the unhinted line, 0.18 at one rollout a problem.
+  // State 1. 怎样衡量排序是否准确: the τ axis and what τ means; 原题采样: the unhinted line, 0.18 at one rollout a problem.
   tl.to(['.slope', '.m', '.k0'], { autoAlpha: 0, duration: 0.35 }, T(1))
   tl.to(['.tau', '.src'], { autoAlpha: 1, duration: 0.4 }, T(1, 0.02))
   tl.to('.ktau', { autoAlpha: 1, duration: 0.4 }, T(1, 0.1))

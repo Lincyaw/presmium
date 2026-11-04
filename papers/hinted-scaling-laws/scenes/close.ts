@@ -47,17 +47,17 @@ export default gsapScene(({ root, gsap, at, durations }) => {
   `, `
     ${brand(PAPER.short)}
     <div class="pt pa" style="color:${METHOD.mask}">遮盖<span>6 个小模型</span></div>
-    <div class="pt pb">直接给最终答案（对照）<span>每题以 H 的概率给出</span></div>
+    <div class="pt pb">直接给最终答案（对照）<span>按概率 H 给出</span></div>
     <svg class="layer" ${LAYER}>
       <g class="panel-a">${axes({ x: AX, y: Y, ...ticks })}</g>
       <g class="panel-b">${axes({ x: BX, y: Y, ...ticks })}</g>
       ${small.map(({ i }, k) => `<path class="ma ma${k}" d="${maskPath(i)}" fill="none" stroke="${shade(i)}" stroke-width="0.55"/>`).join('')}
       ${small.map(({ i }, k) => `<path class="gb gb${k}" d="${givePath(i)}" fill="none" stroke="${shade(i)}" stroke-width="0.55"/>`).join('')}
     </svg>
-    <div class="ca">曲线分开：模型能力差异清楚可见</div>
+    <div class="ca">曲线分离 · 能力差异可见</div>
     <div class="cb"><span>曲线重合 · 误差</span><b>${(ctrl.err * 100).toFixed(1)} 个百分点</b></div>
     <div class="take">
-      <div class="take__1">提示量：衡量能力的<em>第二把尺子</em></div>
+      <div class="take__1">提示量：另一项<em>能力指标</em></div>
       <div class="take__2">小模型接近零 → 大模型准确率</div>
       <div class="take__3">前提：可靠的参考解答</div> <div class="take__3 take__4">logit 混合：教师须共用分词器</div>
     </div>
@@ -76,7 +76,7 @@ export default gsapScene(({ root, gsap, at, durations }) => {
   gsap.set(['.pt', '.panel-a', '.panel-b', '.ma', '.gb', '.ca', '.cb', '.take__1', '.take__2', '.take__3', '.take__4', '.paper'], { autoAlpha: 0 })
   gsap.set(['.ma', '.gb'], { drawSVG: '0%' })
 
-  // State 0. 提示应清楚反映模型能力差异: masking, the curves spread. 若以概率 H 直接给出答案……完全重合: the
+  // State 0. 提示应反映模型能力差异: masking, the curves spread. 若以概率 H 直接给出答案……完全重合: the
   // control's lines are drawn one by one onto the same diagonal. 误差仍有 20 个百分点: the readout.
   tl.to(['.pa', '.panel-a'], { autoAlpha: 1, duration: 0.4 }, T(0, 0.03))
   tl.to('.ma', { autoAlpha: 1, duration: 0.01 }, T(0, 0.08))
