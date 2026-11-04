@@ -39,8 +39,9 @@ async function nodeRuntime() {
   }
   const unpacked = join(cache, name)
   rmSync(unpacked, { recursive: true, force: true })
-  // bsdtar (Windows 10 and later, macOS) reads zip as well; GNU tar on Linux reads the tarball.
-  run('tar', ['-xf', file, '-C', cache], cache)
+  // Windows' own tar is bsdtar, which reads zip; Git's GNU tar, often first on PATH, takes `D:` for a host.
+  const tar = windows ? join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe') : 'tar'
+  run(tar, ['-xf', file, '-C', cache], cache)
   mkdirSync(join(pkg, 'src-tauri', 'binaries'), { recursive: true })
   copyFileSync(join(unpacked, windows ? 'node.exe' : 'bin/node'), sidecar)
   if (!windows) chmodSync(sidecar, 0o755)
