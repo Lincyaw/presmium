@@ -121,10 +121,13 @@ function cutRank(chars: readonly string[], at: number): number {
 /** A piece may be this much shorter or longer than an equal share of the caption; within that it ends where it reads best. */
 const SHARE_SLACK = 0.3
 
-/** `chars` cut into `count` pieces of about equal width; `reach[i]` is the width of the first `i` characters. */
-function cutInto(chars: readonly string[], reach: readonly number[], budget: number, count: number): string[] {
+/**
+ * `chars` cut into `count` pieces of about equal width (`reach[i]` is the width of the first `i` characters), with the
+ * worst place it cuts at (`cutRank`).
+ */
+function cutInto(chars: readonly string[], reach: readonly number[], budget: number, count: number): { pieces: string[], worst: number } {
   const pieces: string[] = []
-  let start = 0
+  let start = 0, worst = Infinity
   for (let left = count; left > 1 && start < chars.length; left--) {
     const rest = reach[chars.length]! - reach[start]!, share = rest / left
     // No wider than the budget, and wide enough that the pieces after it can hold the rest.
@@ -136,28 +139,35 @@ function cutInto(chars: readonly string[], reach: readonly number[], budget: num
       const score = width < shortest ? width - 1000 : cutRank(chars, at) * 100 - Math.abs(width - share)
       if (score > best) { best = score; cut = at }
     }
+    worst = Math.min(worst, cutRank(chars, cut))
     pieces.push(chars.slice(start, cut).join('').trim())
     start = cut
     while (start < chars.length && /\s/u.test(chars[start]!)) start++
   }
   pieces.push(chars.slice(start).join('').trim())
-  return pieces.filter(Boolean)
+  return { pieces: pieces.filter(Boolean), worst }
 }
 
 /**
  * A caption cut into pieces no wider than `budget` em: as few as fit, of about equal width (each within 30% of an equal
  * share), each ending where it reads best: after a sentence, else after a clause, else at a space, else between two
- * characters. A caption that fits stays whole.
+ * characters. Pieces packed so full that one ends inside a word take one piece more when that avoids it. A caption that
+ * fits stays whole.
  */
 export function captionChunks(text: string, budget: number): string[] {
   const chars = [...text.trim()], reach = [0]
   for (const char of chars) reach.push(reach.at(-1)! + charWidth(char))
   const total = reach.at(-1)!
   if (total <= budget || !(budget > 0)) return [text.trim()]
-  for (let count = Math.ceil(total / budget); ; count++) {
-    const pieces = cutInto(chars, reach, budget, count)
-    if (count >= chars.length || pieces.every(piece => captionWidth(piece) <= budget)) return pieces
+  let fewest: { pieces: string[], worst: number } | undefined
+  for (let count = Math.ceil(total / budget); count <= chars.length; count++) {
+    const cut = cutInto(chars, reach, budget, count)
+    if (!cut.pieces.every(piece => captionWidth(piece) <= budget)) continue
+    if (fewest) return (cut.worst > fewest.worst ? cut : fewest).pieces
+    if (cut.worst >= 0) return cut.pieces
+    fewest = cut
   }
+  return fewest?.pieces ?? [...chars]
 }
 
 /** A caption with the time it spans. */
