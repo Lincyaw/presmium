@@ -1,5 +1,11 @@
 # @lincyaw/kernel
 
+## 1.0.0-rc.26
+
+### Patch Changes
+
+- 2658af1: Allow `presmium studio --host 0.0.0.0` to listen on all local IPv4 network interfaces, with HTTP and WebSocket forwarding, reachable preview addresses, and browser-safe UUID generation on LAN HTTP pages.
+
 ## 1.0.0-rc.25
 
 ### Patch Changes

@@ -1,5 +1,9 @@
 # @lincyaw/addon-exec
 
+## 1.0.0-rc.26
+
+No changes in this release.
+
 ## 1.0.0-rc.25
 
 No changes in this release.
