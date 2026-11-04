@@ -4,8 +4,35 @@ import { isWide, locate } from './words.ts'
 export interface CaptionGroup { id: string, text: string, t: number, d: number, alignment: 'words' | 'proportional' | 'none' | 'manual' }
 
 const MAX_CHARACTERS = 42
-const sentenceEnd = /[。！？!?；;]\s*[”’"'）)\]]*\s*$/u
 const hasText = /[\p{L}\p{N}]/u
+
+/** Where a caption reads best when cut: after a sentence, else after a clause. */
+type Mark = 'sentence' | 'clause'
+const SENTENCE_MARK = /[。！？；….!?;]/u
+const CLAUSE_MARK = /[，、：,:]/u
+const ASCII_MARK = /[.!?;,:]/
+const CLOSING = /[”’"'）)\]」』]/u
+
+/**
+ * What the mark at `text[at]` ends, if it is one. A full-width mark ends a sentence or clause wherever it stands; an
+ * ASCII one only before a space or at the end of the text (past closing quotes and brackets), so "1,024", "10:30" and
+ * "3.14" stay whole.
+ */
+function markAt(text: ArrayLike<string>, at: number): Mark | undefined {
+  const char = text[at] ?? ''
+  const mark = SENTENCE_MARK.test(char) ? 'sentence' : CLAUSE_MARK.test(char) ? 'clause' : undefined
+  if (!mark || !ASCII_MARK.test(char)) return mark
+  let next = at + 1
+  while (next < text.length && CLOSING.test(text[next]!)) next++
+  return next >= text.length || /\s/u.test(text[next]!) ? mark : undefined
+}
+
+/** What a cut before `text[at]` ends: the mark before it, past spaces and closing quotes and brackets (none before `from`). */
+function markBefore(text: ArrayLike<string>, at: number, from = 0): Mark | undefined {
+  let last = at - 1
+  while (last >= from && (/\s/u.test(text[last]!) || CLOSING.test(text[last]!))) last--
+  return last >= from ? markAt(text, last) : undefined
+}
 
 /** Readable display groups; every internal time boundary belongs to an actual word. */
 export function captionGroups(utterance: Utterance): CaptionGroup[] {
@@ -37,11 +64,10 @@ export function captionGroups(utterance: Utterance): CaptionGroup[] {
   }
   for (let index = 0; index < words.length; index++) {
     const to = places[index + 1]?.start ?? utterance.text.length
-    const text = utterance.text.slice(from, to)
     while (asciiTokens[token] && asciiTokens[token]!.end <= to) token++
     const insideToken = asciiTokens[token] && asciiTokens[token]!.start < to && to < asciiTokens[token]!.end
     const next = places[index + 2]?.start ?? utterance.text.length
-    if (!insideToken && (index + 1 === words.length || sentenceEnd.test(text) || [...utterance.text.slice(from, next)].length > MAX_CHARACTERS)) {
+    if (!insideToken && (index + 1 === words.length || markBefore(utterance.text, to, from) === 'sentence' || [...utterance.text.slice(from, next)].length > MAX_CHARACTERS)) {
       if (!append(index, to)) return [full]
     }
   }
@@ -65,10 +91,6 @@ export function captionWidth(text: string): number {
   return width
 }
 
-const SENTENCE_END = /[。！？!?；;…]/u
-const CLAUSE_END = /[，、,：:]/u
-const CLOSING = /[”’"'）)\]」』]/u
-
 /**
  * A caption cut into pieces no wider than `budget` em, about equally long, each ending where it reads best: after a
  * sentence, else after a clause, else at a space, else between two characters. A caption that fits stays whole.
@@ -86,9 +108,9 @@ export function captionChunks(text: string, budget: number): string[] {
     if (end >= chars.length) { chunks.push(chars.slice(start).join('').trim()); break }
     // A break too early would leave a short piece; below 40% of the window take a weaker one.
     const earliest = start + Math.ceil((end - start) * 0.4)
-    const after = (mark: RegExp) => { for (let at = end; at > earliest; at--) if (mark.test(chars[at - 1]!)) return at; return -1 }
-    let cut = after(SENTENCE_END)
-    if (cut < 0) cut = after(CLAUSE_END)
+    const after = (mark: Mark) => { for (let at = end; at > earliest; at--) if (markAt(chars, at - 1) === mark) return at; return -1 }
+    let cut = after('sentence')
+    if (cut < 0) cut = after('clause')
     if (cut < 0) for (let at = end; at > earliest; at--) if (/\s/u.test(chars[at]!)) { cut = at; break }
     if (cut < 0) cut = Math.max(end, start + 1)
     while (cut < chars.length && CLOSING.test(chars[cut]!)) cut++
