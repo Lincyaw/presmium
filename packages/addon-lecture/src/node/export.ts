@@ -219,10 +219,10 @@ function sheetFrames(track: LectureTrack, doc: IRDocument, titles: ReadonlyMap<s
   })
 }
 
-function contactSheet(ffmpeg: Ffmpeg | undefined, video: string, frames: SheetFrame[], file: string, lang: string, width: number): NonNullable<ExportResult['contactSheet']> {
+function contactSheet(ffmpeg: Ffmpeg | undefined, video: string, frames: SheetFrame[], file: string, lang: string, width: number, fps: number): NonNullable<ExportResult['contactSheet']> {
   if (!ffmpeg) return { file, unavailable: 'ffmpeg' }
   mkdirSync(dirname(file), { recursive: true })
-  const { labelled } = writeContactSheet(ffmpeg, video, frames, file, { lang, width: Math.min(480, width), columns: 4 })
+  const { labelled } = writeContactSheet(ffmpeg, video, frames, file, { lang, width: Math.min(480, width), columns: 4, fps })
   return { file, frames: frames.length, labelled }
 }
 
@@ -354,7 +354,7 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
           if (options.contactSheet) {
             const sheetFile = resolve(options.contactSheet === true ? `${file.replace(/\.(webm|mp4)$/i, '')}.contact-sheet.png` : options.contactSheet)
             // Any FFmpeg that runs reads the video back, also one that could not encode it.
-            sheet = contactSheet(found, file, sheetFrames(track, compilation.doc, stepTitles(compilation.entry), frames * 1000 / fps), sheetFile, compilation.doc.meta.lang ?? 'zh-CN', width)
+            sheet = contactSheet(found, file, sheetFrames(track, compilation.doc, stepTitles(compilation.entry), frames * 1000 / fps), sheetFile, compilation.doc.meta.lang ?? 'zh-CN', width, fps)
           }
           return { file, track: id, frames, duration: frames * 1000 / fps, captions: sidecars, ...sheet ? { contactSheet: sheet } : {}, warnings }
         } finally {
