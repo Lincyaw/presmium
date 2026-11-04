@@ -1,5 +1,16 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.27
+
+### Patch Changes
+
+- 4edc156: 批注锚点支持稳定的位置 `{ blockId, stepId }`（省略 `stepId` 表示整块）。工作台的动画、图表预览工具栏可对整个内容块或某一步新建批注，批注栏按文档顺序标注步骤；位置批注与文本批注共用同一套草稿备份、回复、解决与权限。块或步骤变化时，步骤失效的锚点降为块级，块失效才变为无锚点线程。MCP 的作者动作、语言服务器的页面归属与 JSON Schema 同步支持两种锚点。独立的批注编辑器（草稿预览与位置批注）改用设计令牌，暗色下不再显示成亮色输入框。
+- Updated dependencies [4edc156]
+  - @lincyaw/kernel@1.0.0-rc.28
+  - @lincyaw/mcp@1.0.0-rc.28
+  - @lincyaw/cli@1.0.0-rc.28
+  - @lincyaw/skills@1.0.0-rc.28
+
 ## 0.2.0-rc.26
 
 ### Patch Changes
