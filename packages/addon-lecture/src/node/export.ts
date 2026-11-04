@@ -4,12 +4,16 @@ import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { build, Compiler, playwrightChromium, serveDirectory } from '@lincyaw/compiler'
 import { ABSOLUTE_URL, aigcLabel, aigcString, deckLocale, errorMessage } from '@lincyaw/kernel'
-import type { CanonicalSource } from '@lincyaw/kernel'
+import type { CanonicalSource, IRDocument } from '@lincyaw/kernel'
 import { ffmpegInstallCommand, findFfmpeg } from '@lincyaw/kernel/node'
-import { audioSegments, clockText, defaultTrack, LECTURE_MESSAGES, parseTrack, trackDuration } from '../domain/index.ts'
+import type { Ffmpeg } from '@lincyaw/kernel/node'
+import { audioSegments, clockText, defaultTrack, LECTURE_MESSAGES, parseTrack, stepStops, timedEvents, trackDuration } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
+import { writeContactSheet } from './contact-sheet.ts'
+import type { SheetFrame } from './contact-sheet.ts'
 import { ffmpegEncodes, startFfmpeg, videoFormat } from './ffmpeg.ts'
 import type { FfmpegEncoder, VideoFormat } from './ffmpeg.ts'
+import { stepTitles } from './timing.ts'
 
 export interface ExportOptions {
   deckDir: string
@@ -23,6 +27,11 @@ export interface ExportOptions {
   fps?: number
   /** Draws the captions in this language on the frames (the soft subtitle tracks are always there). */
   burn?: string
+  /**
+   * Also writes one PNG of two frames of every step the video holds, 0.3 s after it starts and at its middle, labelled
+   * with its page and step and taken from the video with FFmpeg; `true` puts it beside the video (`<file>.contact-sheet.png`).
+   */
+  contactSheet?: string | true
   log?: (line: string) => void
   /** How many of the video's frames are drawn. */
   progress?: (done: number, total: number) => void
@@ -37,6 +46,8 @@ export interface ExportResult {
   duration: number
   /** The captions written next to the video, a WebVTT file a language. */
   captions: { lang: string, file: string }[]
+  /** The image `contactSheet` asked for, or why it is not written. */
+  contactSheet?: { file: string, frames: number, labelled: boolean } | { file: string, unavailable: 'ffmpeg' }
   warnings: string[]
 }
 
@@ -190,6 +201,31 @@ function localAudio(track: LectureTrack, base: string): { url: string, start: nu
   return audioSegments(track).filter(segment => !ABSOLUTE_URL.test(segment.src)).map(({ src, ...segment }) => ({ url: `${base}${src}`, ...segment }))
 }
 
+/** A step shorter than this is passed over by the contact sheet: the video barely holds it. */
+const SHEET_STEP_MS = 600
+
+/** Two frames of every step the video holds, 0.3 s after it starts and at its middle, labelled in the document's language. */
+function sheetFrames(track: LectureTrack, doc: IRDocument, titles: ReadonlyMap<string, string>, duration: number): SheetFrame[] {
+  const t = LECTURE_MESSAGES[deckLocale(doc.meta.lang)].sheet
+  const at = (ms: number) => `${clockText(ms)}.${Math.floor(ms % 1000 / 100)}`
+  const stops = stepStops(timedEvents(track))
+  return stops.flatMap((stop, index) => {
+    const end = stops[index + 1]?.t ?? duration
+    if (end - stop.t < SHEET_STEP_MS) return []
+    const section = doc.sections.find(section => section.id === stop.section)
+    const title = [...titles.get(section?.stepIds?.[stop.step] ?? '') ?? '']
+    const label = title.length > 16 ? `${title.slice(0, 15).join('')}…` : title.join('')
+    return [stop.t + 300, (stop.t + end) / 2].map(ms => ({ atMs: ms, label: t.frame(section?.index ?? 0, stop.step + 1, label || undefined, at(ms)) }))
+  })
+}
+
+function contactSheet(ffmpeg: Ffmpeg | undefined, video: string, frames: SheetFrame[], file: string, lang: string, width: number): NonNullable<ExportResult['contactSheet']> {
+  if (!ffmpeg) return { file, unavailable: 'ffmpeg' }
+  mkdirSync(dirname(file), { recursive: true })
+  const { labelled } = writeContactSheet(ffmpeg, video, frames, file, { lang, width: Math.min(480, width), columns: 4 })
+  return { file, frames: frames.length, labelled }
+}
+
 /** The format of a lecture video whose file is not named: MP4 when FFmpeg can write it, else WebM from the browser. */
 export function defaultVideoFormat(): VideoFormat {
   const ffmpeg = findFfmpeg()
@@ -314,7 +350,13 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
             writeFileSync(sidecar, vtt)
             return { lang, file: sidecar }
           })
-          return { file, track: id, frames, duration: frames * 1000 / fps, captions: sidecars, warnings }
+          let sheet: ExportResult['contactSheet']
+          if (options.contactSheet) {
+            const sheetFile = resolve(options.contactSheet === true ? `${file.replace(/\.(webm|mp4)$/i, '')}.contact-sheet.png` : options.contactSheet)
+            // Any FFmpeg that runs reads the video back, also one that could not encode it.
+            sheet = contactSheet(found, file, sheetFrames(track, compilation.doc, stepTitles(compilation.entry), frames * 1000 / fps), sheetFile, compilation.doc.meta.lang ?? 'zh-CN', width)
+          }
+          return { file, track: id, frames, duration: frames * 1000 / fps, captions: sidecars, ...sheet ? { contactSheet: sheet } : {}, warnings }
         } finally {
           native?.kill()
           await handle.close()

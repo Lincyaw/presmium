@@ -164,6 +164,8 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 - 页面、步骤、讲稿按稳定 ID 给出范围，时间是同一讲授时钟的毫秒。跨步 cue 的音频与字幕各一段，列出覆盖的 `stepIds`。
 - `timing` 为 `confirmed`、`estimated`、`unknown`；只有完整确认的计划 `canPreview`、`canExport`。`voiceSource: none` 用实际动画、停留与停顿，不按字数估时。
 - 合成语音是 `audio`，导入音频是 `media`（`ProductionAssetInspection`）。预览与导出共用同一放置、裁切与混音计算。
+- 一个步骤显示的内容块都限定在其他媒介（`only` 不含 `lecture`，如只给网页的来源说明），又没有讲稿、录音与挂在它上的音频片段时，讲授中没有这一步：讲授轨没有转到它的事件，计划的页面没有它，字幕与章节（`chapters.vtt`）也不含它；一页的步骤都是这样时整页不在讲授中。放映与网页照常显示它。
+- 渲染端选项 `metadata.renderers.lecture.maximumDurationMs` 是讲授视频的最长时长（毫秒，大于 0）。计划时长已确认且超过它时，`presmium check` 报告错误，给出超出的秒数，以及按配音的实测语速（讲稿字数除以配音秒数，字数只计字母与数字）约需删去的讲稿字数；配音不全时不比较。`presmium-lecture timing` 读同一份计划逐步列出这些数。
 
 `GET production-plan`（`ProductionPlanQuery`）、`GET tracks/script`（`planId`）、`GET production-media`（绑定加 `clipId`，只给计划白名单中的字节）、`GET production-asset`（`ProductionAssetQuery`）都只读缓存，不生成语音。
 

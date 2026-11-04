@@ -81,16 +81,18 @@ export function projectProductionPlan(doc: IRDocument, plan: LecturePlan, track:
     if (start >= unknownAt || end > unknownAt) return { ...start < unknownAt ? { startMs: start } : {}, timing: 'unknown' }
     return { startMs: start, endMs: end, timing: end > estimatedAt || start >= estimatedAt ? 'estimated' : 'confirmed' }
   }
-  const pages: ProductionPage[] = doc.sections.map(section => {
+  const pages: ProductionPage[] = doc.sections.flatMap(section => {
     const planned = plan.sections.find(planned => planned.id === section.id), animations = plannedAnimations(section)
-    const steps = (section.stepIds ?? []).map((stepId, index) => {
+    const steps = (section.stepIds ?? []).flatMap((stepId, index) => {
+      if (planned?.leftOut?.includes(index)) return []
       const start = startFor(section.id, index), at = starts.findIndex(at => at.section === section.id && at.step === index)
       const end = at < 0 ? start : starts[at + 1]?.at ?? duration
       const own = animations.filter(animation => animation.step === index)
-      return { stepId, index, ...range(start, end), holdMs: planned?.holds[index] ?? 0, ...own.every(animation => animation.durationMs !== undefined) ? { animationMs: Math.max(0, ...own.map(animation => animation.durationMs!)) } : {} }
+      return [{ stepId, index, ...range(start, end), holdMs: planned?.holds[index] ?? 0, ...own.every(animation => animation.durationMs !== undefined) ? { animationMs: Math.max(0, ...own.map(animation => animation.durationMs!)) } : {} }]
     })
-    const start = startFor(section.id, 0), last = steps.at(-1)
-    return { sectionId: section.id, title: section.title, ...range(start, last?.endMs ?? duration), ...last?.endMs === undefined && last?.timing === 'unknown' ? { endMs: undefined, timing: 'unknown' as const } : {}, steps }
+    if (planned?.leftOut?.length && steps.length === 0) return []
+    const start = startFor(section.id, steps[0]?.index ?? 0), last = steps.at(-1)
+    return [{ sectionId: section.id, title: section.title, ...range(start, last?.endMs ?? duration), ...last?.endMs === undefined && last?.timing === 'unknown' ? { endMs: undefined, timing: 'unknown' as const } : {}, steps }]
   })
   const captionSources = captionTimingSources(doc, track, pages)
   for (const page of pages) for (const step of page.steps) step.captionTiming = captionSources.get(step.stepId)
