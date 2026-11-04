@@ -40,6 +40,7 @@ const numbered = (prefix: string, index: number) => `${prefix}${String(index).pa
 
 /** `select`'s test for the frames numbered `numbers`, summed as a balanced tree: FFmpeg's expressions nest only so deep. */
 function anyFrame(numbers: readonly number[]): string {
+  if (numbers.length === 0) throw new Error('a contact sheet needs at least one frame')
   if (numbers.length === 1) return `eq(n,${numbers[0]})`
   const half = numbers.length >> 1
   return `(${anyFrame(numbers.slice(0, half))})+(${anyFrame(numbers.slice(half))})`

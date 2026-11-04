@@ -39,6 +39,8 @@ export interface LectureMessages {
     frame(page: number, step: number, title: string | undefined, at: string): string
     written(file: string, frames: number): string
     needsFfmpeg(file: string, install: string): string
+    /** Every step of the video is shorter than `seconds`, the shortest step the sheet takes frames of. */
+    noFrames(file: string, seconds: number): string
     unlabelled(file: string): string
   }
   /** The problems of a {cue} mark, written into the document's diagnostics. */
@@ -201,6 +203,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       frame: (page, step, title, at) => `第 ${page} 页 · 第 ${step} 步${title ? ` · ${title}` : ''} · ${at}`,
       written: (file, frames) => `已写入 ${file}：${frames} 帧，每步起点后 0.3 秒与中点各一帧。`,
       needsFfmpeg: (file, install) => `无法写入 ${file}：从视频中截取画面需要 FFmpeg。请安装 FFmpeg（${install}）。`,
+      noFrames: (file, seconds) => `无法写入 ${file}：视频中每一步都短于 ${seconds} 秒，没有可截取的画面。`,
       unlabelled: file => `${file} 中的画面没有标注页面与步骤：这个 FFmpeg 没有 libass（ass 滤镜）。`,
     },
     cue: {
@@ -324,6 +327,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       frame: (page, step, title, at) => `Page ${page} · Step ${step}${title ? ` · ${title}` : ''} · ${at}`,
       written: (file, frames) => `Wrote ${file}: ${frames} frames, each step 0.3 s after it starts and at its middle.`,
       needsFfmpeg: (file, install) => `Couldn’t write ${file}: taking frames from the video needs FFmpeg. Install FFmpeg (${install}).`,
+      noFrames: (file, seconds) => `Couldn’t write ${file}: every step of the video is shorter than ${seconds} s, so there are no frames to take.`,
       unlabelled: file => `The frames in ${file} have no page and step labels: this FFmpeg has no libass (ass filter).`,
     },
     cue: {

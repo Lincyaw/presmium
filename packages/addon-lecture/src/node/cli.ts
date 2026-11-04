@@ -25,7 +25,8 @@ file (default <deckDir>/dist/<track>.mp4, .webm without FFmpeg); --size the wind
 in that language on the picture; --contact-sheet also writes one PNG image of
 two frames of every step (0.3 s after it starts and at its middle), labelled
 with its page and step and taken from the video with FFmpeg (default
-<file>.contact-sheet.png).
+<file>.contact-sheet.png); it passes over steps shorter than 0.6 s, and writes
+no image when every step is.
 
 timing reads the lecture's production plan, the one export plays (the voiceover
 already generated, nothing synthesized), and prints per step its page, step,
@@ -168,7 +169,7 @@ export async function main(argv: string[]): Promise<number> {
     console.log(`exported ${shown(result.file)} (lecture ${result.track}, ${clockText(result.duration)}, ${result.frames} frames)`)
     for (const { file } of result.captions) console.log(`captions ${shown(file)}`)
     const t = LECTURE_MESSAGES[systemLocale()].sheet, made = result.contactSheet
-    if (made && 'unavailable' in made) console.error(`presmium-lecture: ${t.needsFfmpeg(shown(made.file), ffmpegInstallCommand())}`)
+    if (made && 'unavailable' in made) console.error(`presmium-lecture: ${made.unavailable === 'frames' ? t.noFrames(shown(made.file), made.minimumStepMs / 1000) : t.needsFfmpeg(shown(made.file), ffmpegInstallCommand())}`)
     else if (made) {
       if (!made.labelled) console.error(`presmium-lecture: ${t.unlabelled(shown(made.file))}`)
       console.log(t.written(shown(made.file), made.frames))

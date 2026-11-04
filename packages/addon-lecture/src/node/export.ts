@@ -46,8 +46,11 @@ export interface ExportResult {
   duration: number
   /** The captions written next to the video, a WebVTT file a language. */
   captions: { lang: string, file: string }[]
-  /** The image `contactSheet` asked for, or why it is not written. */
-  contactSheet?: { file: string, frames: number, labelled: boolean } | { file: string, unavailable: 'ffmpeg' }
+  /**
+   * The image `contactSheet` asked for, or why it is not written: no FFmpeg, or no step of the video lasts
+   * `minimumStepMs`, so there is no frame to take.
+   */
+  contactSheet?: { file: string, frames: number, labelled: boolean } | { file: string, unavailable: 'ffmpeg' } | { file: string, unavailable: 'frames', minimumStepMs: number }
   warnings: string[]
 }
 
@@ -220,6 +223,7 @@ function sheetFrames(track: LectureTrack, doc: IRDocument, titles: ReadonlyMap<s
 }
 
 function contactSheet(ffmpeg: Ffmpeg | undefined, video: string, frames: SheetFrame[], file: string, options: SheetOptions): NonNullable<ExportResult['contactSheet']> {
+  if (!frames.length) return { file, unavailable: 'frames', minimumStepMs: SHEET_STEP_MS }
   if (!ffmpeg) return { file, unavailable: 'ffmpeg' }
   mkdirSync(dirname(file), { recursive: true })
   const { labelled } = writeContactSheet(ffmpeg, video, frames, file, options)
