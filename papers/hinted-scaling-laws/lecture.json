@@ -29,6 +29,7 @@
     "p-forecast",
     "p-ranking",
     "p-close",
+    "p-ending",
     "p-notes"
   ],
   "sections": {
@@ -213,6 +214,28 @@
       "layout": {
         "type": "stack"
       }
+    },
+    "p-ending": {
+      "id": "p-ending",
+      "title": "一句话总结",
+      "level": 2,
+      "children": [
+        "ending--scene"
+      ],
+      "stepOrder": [
+        "ending--step-0"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
     }
   },
   "blocks": {
@@ -384,6 +407,17 @@
           ]
         }
       ]
+    },
+    "ending--scene": {
+      "id": "ending--scene",
+      "type": "component",
+      "definitionId": "ending--scene--definition",
+      "parameters": {
+        "scene": "ending",
+        "alt": "结尾：一句话总结“小模型准确率接近零时，给它看部分参考解答，就能预测大模型的准确率”（Hinted Scaling Laws · 斯坦福大学）；下方是对话气泡和“想看哪篇论文？评论区告诉我们”，右侧是翰林院传达室的标志与“为您分享最新论文 · 下期见”。",
+        "summary": "小模型准确率接近零时，给它看部分参考解答，就能预测大模型的准确率",
+        "paper": "Hinted Scaling Laws · 斯坦福大学"
+      }
     }
   },
   "steps": {
@@ -701,6 +735,21 @@
       "narrationIds": [
         "ranking--hinted--n0"
       ]
+    },
+    "ending--step-0": {
+      "id": "ending--step-0",
+      "sectionId": "p-ending",
+      "title": "一句话总结",
+      "visuals": [
+        {
+          "blockId": "ending--scene",
+          "visible": true,
+          "state": "s0"
+        }
+      ],
+      "narrationIds": [
+        "ending--step-0--n0"
+      ]
     }
   },
   "narrations": {
@@ -962,6 +1011,15 @@
         {
           "type": "text",
           "text": " 是 0.51，原题采样约五次才追平。"
+        }
+      ]
+    },
+    "ending--step-0--n0": {
+      "id": "ending--step-0--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "一句话总结：小模型准确率接近零时，加上部分参考解答，就能预测大模型的准确率。想看哪篇论文，欢迎在评论区留言。翰林院传达室为您分享最新论文，我们下期见。"
         }
       ]
     }
@@ -1292,6 +1350,45 @@
         },
         "language": "typescript"
       }
+    },
+    "ending--scene--definition": {
+      "id": "ending--scene--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/ending.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "s0"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          15009
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "结尾：一句话总结“小模型准确率接近零时，给它看部分参考解答，就能预测大模型的准确率”（Hinted Scaling Laws · 斯坦福大学）；下方是对话气泡和“想看哪篇论文？评论区告诉我们”，右侧是翰林院传达室的标志与“为您分享最新论文 · 下期见”。"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
     }
   },
   "production": {
@@ -1307,16 +1404,16 @@
       "trailingPauseMs": 350
     },
     "stepOverrides": {
-      "close--step-1": {
-        "minimumHoldMs": 0,
-        "trailingPauseMs": 3000
-      },
       "notes--step-0": {
         "voiceSource": {
           "type": "none"
         },
         "minimumHoldMs": 0,
         "trailingPauseMs": 0
+      },
+      "ending--step-0": {
+        "minimumHoldMs": 0,
+        "trailingPauseMs": 1200
       }
     },
     "mediaClips": []
