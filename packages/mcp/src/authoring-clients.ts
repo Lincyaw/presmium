@@ -1,6 +1,7 @@
-import { AUTHORING_CLIENT_MAX_REQUEST_CHARS, AUTHORING_CLIENT_MAX_RESPONSE_CHARS, AUTHORING_CLIENT_QUERY_SCHEMA, AUTHORING_CLIENT_REQUEST_QUERY_SCHEMA, AUTHORING_CLIENT_REQUEST_SCHEMA } from '@lincyaw/kernel'
+import { AUTHORING_CLIENT_MAX_CLIENTS, AUTHORING_CLIENT_MAX_REQUEST_CHARS, AUTHORING_CLIENT_MAX_RESPONSE_CHARS, AUTHORING_CLIENT_ACTION_SCHEMA, AUTHORING_CLIENT_QUERY_SCHEMA, AUTHORING_CLIENT_REQUEST_QUERY_SCHEMA, AUTHORING_CLIENT_REQUEST_SCHEMA } from '@lincyaw/kernel'
+import { randomUUID } from 'node:crypto'
 import { validateAuthoringClientRequest } from '@lincyaw/kernel/node'
-import type { AuthoringClients } from '@lincyaw/kernel'
+import type { AuthoringClients, AuthoringClientDescriptor, AuthoringClientAction, AuthoringClientRequestResult } from '@lincyaw/kernel'
 import type { Call, ToolSpec } from './mcp.ts'
 
 const documentProperty = { type: 'string', maxLength: 200, description: 'Served document directory; empty string means the root document.' }
@@ -14,6 +15,36 @@ async function bounded(call: Call, run: () => Promise<unknown>) {
   return answer
 }
 export const AUTHORING_CLIENT_TOOLS: ToolSpec[] = [
+  { name: 'editor_action', kind: 'operate', structured: true, audience: 'external', workspace: 'author',
+    description: 'Requests one advertised browser action and waits briefly for its acknowledgement. Client source, connection, revision and playback binding are supplied internally. Omit clientId only when exactly one connected editor exists. A pending result is not completion; inspect its returned request reference without resending.',
+    inputSchema: { type: 'object', additionalProperties: false, properties: { document: documentProperty, clientId: { type: 'string', maxLength: 80 }, action: businessActionSchema(), details: { type: 'boolean' } }, required: ['action'] },
+    run: call => bounded(call, async () => {
+      const document = await call.document(), own = service(call)
+      const clients: AuthoringClientDescriptor[] = []
+      let after: string | undefined
+      for (let page = 0; page < AUTHORING_CLIENT_MAX_CLIENTS; page++) {
+        const report = await own.list(document, { ...typeof call.args.clientId === 'string' ? { clientId: call.args.clientId } : {}, ...after ? { after } : {} }, call.caller.member)
+        clients.push(...report.clients.filter(client => client.connected))
+        after = report.nextAfter
+        if (!after) break
+      }
+      if (clients.length !== 1 || after) throw Object.assign(new Error('editor-context-unavailable'), { status: 409 })
+      const client = clients[0]!, values = call.args.action as AuthoringClientAction
+      const action = { ...values, ...['playback.play', 'playback.seek', 'playback.rate'].includes(values.type) ? { binding: client.snapshot.binding } : {} } as AuthoringClientAction
+      const request = { clientId: client.clientId, epoch: client.epoch, requestId: randomUUID(), source: client.snapshot.source, expectedClientState: { connectionId: client.connectionId, revision: client.snapshot.revision }, action }
+      if (!validateAuthoringClientRequest(request) || !client.snapshot.actions.includes(action.type)) throw Object.assign(new Error('client-action-unavailable'), { status: 409 })
+      const lang = (await call.host.documents()).find(item => item.dir === document)?.lang ?? 'zh-CN'
+      await call.approve('operate', messages => messages.authoringClientAction(action.type), { lang })
+      call.signal.throwIfAborted()
+      let result = await own.request(document, request, call.caller.member)
+      const query = { clientId: client.clientId, epoch: client.epoch, requestId: request.requestId }, deadline = Date.now() + 1500
+      while (['sent', 'executing'].includes(result.state) && Date.now() < deadline && !call.signal.aborted) {
+        await new Promise(resolve => setTimeout(resolve, 40))
+        result = await own.get(document, query, call.caller.member)
+      }
+      if (call.args.details) return result
+      return editorResult(result, { document, ...query })
+    }) },
   { name: 'get_authoring_clients', kind: 'read', structured: true, inputSchema: readSchema(AUTHORING_CLIENT_QUERY_SCHEMA),
     description: 'Reads bounded last reported state of actual Studio document clients, scoped to this document and member. No editor text, drafts, credentials or server-estimated playhead. Inspect connected, epoch, connectionId, snapshot.source/revision and actual actions; offline reports are observations, never current capability. Use nextAfter for additional clients. No clients means unavailable. No compilation, open-document or UI mode change. Request<=4096 JSON chars; result<=7168 pretty UTF16 chars.',
     run: call => bounded(call, async () => service(call).list(await call.document(), query(call), call.caller.member)) },
@@ -32,3 +63,19 @@ export const AUTHORING_CLIENT_TOOLS: ToolSpec[] = [
     description: 'Reads this exact retained browser request receipt: sent/executing/done/refused/failed/expired. HTTP admission is not success. browser-acknowledged means an actual client observation; current additionally checks that client epoch/connection/state still matches. A stale completed receipt never describes a newly opened document. No action is re-dispatched by reading. Read the client again for subsequent commands; recording, new-comment restore, active-comment discard and other unwired draft families cannot be inferred from these explicit comment/component reads or playback.',
     run: call => bounded(call, async () => service(call).get(await call.document(), query(call) as { clientId: string, epoch: string, requestId: string }, call.caller.member)) },
 ]
+
+/** The browser owns the action schema. Only transport-owned playback bindings are omitted. */
+function businessActionSchema() {
+  const schema = structuredClone(AUTHORING_CLIENT_ACTION_SCHEMA)
+  for (const variant of schema.oneOf ?? []) {
+    if (variant.properties) delete variant.properties.binding
+    if (Array.isArray(variant.required)) variant.required = variant.required.filter(key => key !== 'binding')
+  }
+  return schema
+}
+function editorResult(result: AuthoringClientRequestResult, request: { document: string, clientId: string, epoch: string, requestId: string }) {
+  return { state: result.state, acknowledged: result.verification === 'browser-acknowledged', current: result.current,
+    ...result.snapshot?.position ? { position: result.snapshot.position } : {},
+    ...result.result ? { result: result.result } : {}, ...result.error ? { error: result.error } : {},
+    ...['sent', 'executing'].includes(result.state) ? { request } : {} }
+}

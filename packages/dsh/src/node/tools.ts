@@ -15,6 +15,9 @@ export const CANDIDATE_TOOLS = new Set([
   'run_code', 'capture_slides', 'capture_reading', 'capture_overview',
 ])
 
+/** New tools carry their routing with their schema; the names retain compatibility with older servers. */
+export const isCandidateTool = (tool: ListedTool): boolean => tool.workspace ? tool.workspace === 'candidate' : CANDIDATE_TOOLS.has(tool.name)
+
 const IMAGE_TYPES = new Set<string>(['image/png', 'image/jpeg', 'image/webp', 'image/gif'])
 
 /**
@@ -48,7 +51,7 @@ function definition(ctx: DshContext, binding: DocumentBinding, tool: ListedTool)
     parameters: tool.inputSchema,
     output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: String(value) }] },
     async execute(args, exec) {
-      const result = await (CANDIDATE_TOOLS.has(tool.name) ? binding.client : binding.authorClient).call(tool.name, (args ?? {}) as Record<string, unknown>, exec.signal)
+      const result = await (isCandidateTool(tool) ? binding.client : binding.authorClient).call(tool.name, (args ?? {}) as Record<string, unknown>, exec.signal)
       if (result.isError) throw new Error(result.text)
       if (result.images.length > 0) prepared.set(exec.token, [...result.text ? [{ type: 'text' as const, text: result.text }] : [], ...await imageBlocks(ctx, tool.name, result.images, exec)])
       return result.text

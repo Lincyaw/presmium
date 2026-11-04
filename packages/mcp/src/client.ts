@@ -2,7 +2,7 @@ import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/cli
 import { APPROVAL_KINDS, deckLocale, errorMessage, isRecord } from '@lincyaw/kernel'
 import type { ApprovalKind } from '@lincyaw/kernel'
 import { MCP_MESSAGES } from './messages.ts'
-import { TOOL_APPROVAL_META, TOOL_KIND_META } from './tool-meta.ts'
+import { TOOL_APPROVAL_META, TOOL_KIND_META, TOOL_WORKSPACE_META } from './tool-meta.ts'
 
 export interface ListedTool {
   name: string
@@ -10,6 +10,7 @@ export interface ListedTool {
   inputSchema: Record<string, unknown>
   kind: 'read' | ApprovalKind
   approval?: 'ask' | 'allow'
+  workspace?: 'author' | 'candidate'
 }
 
 export interface CalledImage {
@@ -141,7 +142,8 @@ export async function connectPresmiumMcp(url: string, token: string, name = 'pre
           const meta = isRecord(tool._meta) ? tool._meta : {}
           const kind = typeof meta[TOOL_KIND_META] === 'string' && KINDS.has(meta[TOOL_KIND_META]) ? meta[TOOL_KIND_META] as ListedTool['kind'] : (tool.annotations?.readOnlyHint ? 'read' : 'operate')
           const approval = meta[TOOL_APPROVAL_META] === 'allow' ? 'allow' : meta[TOOL_APPROVAL_META] === 'ask' ? 'ask' : undefined
-          listed.push({ name: tool.name, description: tool.description ?? tool.name, inputSchema: tool.inputSchema as Record<string, unknown>, kind, ...approval ? { approval } : {} })
+          const workspace = meta[TOOL_WORKSPACE_META] === 'candidate' ? 'candidate' : meta[TOOL_WORKSPACE_META] === 'author' ? 'author' : undefined
+          listed.push({ name: tool.name, description: tool.description ?? tool.name, inputSchema: tool.inputSchema as Record<string, unknown>, kind, ...approval ? { approval } : {}, ...workspace ? { workspace } : {} })
         }
         cursor = page.nextCursor
       } while (cursor)

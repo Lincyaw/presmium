@@ -3,13 +3,13 @@ import { createRequire } from 'node:module'
 import { createMcpHandler, fromJsonSchema, McpServer, ResourceTemplate, UriTemplate } from '@modelcontextprotocol/server'
 import type { AuthInfo, CallToolResult, JsonSchemaType, Variables } from '@modelcontextprotocol/server'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
-import { deckLocale, docBlocks, errorMessage, hasRole, isPresentingRole, isRecord, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
-import type { AgentTool, ApprovalKind, ApprovalRequest, ApprovalScope, CodeNode, CompileJob, DocumentSummary, Finding, IRDocument } from '@lincyaw/kernel'
+import { AUTHORING_CLIENT_MAX_CLIENTS, deckLocale, docBlocks, errorMessage, hasRole, isPresentingRole, isRecord, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
+import type { AgentTool, ApprovalKind, ApprovalRequest, ApprovalScope, CodeNode, CompileJob, DocumentSummary, Finding, IRDocument, Member } from '@lincyaw/kernel'
 import { codeRef, deckInfo, diagnosticsOf, findBlock, findSection, locate, outputsOf, relativeToDeck, runInfo, search, sectionDetail, sectionSummary, stepDetail } from './deck.ts'
 import type { McpCaller, McpHost, McpProcess } from './host.ts'
 import { MCP_ERROR_TEXT, MCP_MESSAGES } from './messages.ts'
 import type { McpMessages } from './messages.ts'
-import { TOOL_APPROVAL_META, TOOL_KIND_META } from './tool-meta.ts'
+import { TOOL_APPROVAL_META, TOOL_KIND_META, TOOL_WORKSPACE_META } from './tool-meta.ts'
 import { AUTHORING_TOOLS } from './authoring.ts'
 import { EDITING_TOOLS } from './editing.ts'
 import { AUTHORING_ACTION_TOOLS } from './authoring-actions.ts'
@@ -22,6 +22,7 @@ import { VOICE_AUTHORING_TOOLS } from './voice-authoring.ts'
 import { DIAGNOSTIC_TOOLS, diagnosticSnapshot } from './diagnostics.ts'
 import { registerSkillResources, SKILL_INSTRUCTIONS, SKILL_TOOLS } from './skills.ts'
 import { CAPTURE_TOOLS, ToolContent } from './capture.ts'
+import { compactSchema, schemaArguments } from './schemas.ts'
 
 const MCP_VERSION: string = (createRequire(import.meta.url)('../package.json') as { version: string }).version
 const POSITION_URI = 'presmium://position'
@@ -49,6 +50,8 @@ export interface ToolSpec {
   inputSchema?: Record<string, unknown>
   structured?: boolean
   kind: 'read' | ApprovalKind
+  workspace?: 'author' | 'candidate'
+  audience?: 'external'
   run(call: Call): Promise<unknown>
 }
 
@@ -427,12 +430,14 @@ function runPlan(doc: IRDocument, node: CodeNode): string {
 }
 
 function hostSupports(host: McpHost, name: string): boolean {
+  if (name !== 'get_authoring_capabilities' && [...AUTHORING_TOOLS, ...AUTHORING_ACTION_TOOLS, ...EDITING_TOOLS].some(tool => tool.name === name)) return Boolean(host.authoring)
   if (PROJECT_TOOLS.some(tool => tool.name === name)) return Boolean(host.projectAuthoring)
   switch (name) {
     case 'capture_slides':
     case 'capture_reading':
     case 'capture_overview': return Boolean(host.capture)
     case 'get_authoring_clients':
+    case 'editor_action':
     case 'request_authoring_client':
     case 'get_authoring_client_request': return Boolean(host.authoringClients)
     case 'get_document_history':
@@ -464,20 +469,6 @@ function hostSupports(host: McpHost, name: string): boolean {
     case 'cancel_transcription': return Boolean(host.transcriptions)
     case 'plan_transcription_adoption': return Boolean(host.transcriptionAdoption)
     case 'apply_transcription_adoption': return Boolean(host.transcriptionAdoption && host.authoring)
-    case 'get_document':
-    case 'rename_page':
-    case 'edit_document':
-    case 'get_document_outline':
-    case 'read_document_part':
-    case 'plan_page_duplication':
-    case 'apply_page_duplication':
-    case 'plan_page_change':
-    case 'apply_page_change':
-    case 'plan_authoring_action':
-    case 'apply_authoring_action':
-    case 'read_authoring_action_impact':
-    case 'plan_document_change':
-    case 'apply_document_change': return Boolean(host.authoring)
     case 'get_position': return Boolean(host.positions)
     case 'get_classroom': return Boolean(host.classroomStatus)
     case 'get_builds':
@@ -490,7 +481,7 @@ function hostSupports(host: McpHost, name: string): boolean {
 }
 
 function toText(data: unknown): string {
-  return typeof data === 'string' ? data : JSON.stringify(data, null, 2)
+  return typeof data === 'string' ? data : JSON.stringify(data)
 }
 
 async function toolResult(run: () => Promise<unknown>, structured = false, lang?: () => Promise<string | undefined>, codes?: AgentTool['errors']): Promise<CallToolResult> {
@@ -533,7 +524,7 @@ async function offer(host: McpHost, caller: McpCaller): Promise<Offered> {
   const documents = await host.documents().catch(() => [])
   const only = caller.document ?? (documents.length === 1 ? documents[0]!.dir : undefined)
   const offered = (kind: 'read' | ApprovalKind) => kind === 'read' || (canOperate(caller) && host.offers(kind))
-  const builtIn = TOOLS.filter(tool => offered(tool.kind) && hostSupports(host, tool.name))
+  const builtIn = TOOLS.filter(tool => offered(tool.kind) && hostSupports(host, tool.name) && !(caller.confirmed && tool.audience === 'external'))
   const plugins: AgentTool[] = []
   const names = new Set(TOOLS.map(tool => tool.name))
   const own = host.authoring ? host.readyTools?.(only) : await host.tools?.(only).catch(() => undefined)
@@ -574,6 +565,14 @@ function workflow(host: McpHost, offered: ReadonlySet<string>): string {
 }
 
 function instructions(host: McpHost, caller: McpCaller, tools: { name: string, kind: 'read' | ApprovalKind }[], title?: string): string {
+  if (!caller.confirmed && caller.toolset !== 'all') return [
+    `Presmium${title ? `: ${title}` : ''}. The default catalog contains common editing tools and permission-scoped operation dispatchers.`,
+    'Use get_context for the current editor page/step and narration. An explicit title or exact narration edit needs only its editing tool. Read only the content the task needs.',
+    'Use operations to discover another action; argument summaries and requested schemas come directly from its registered definition. Call the matching read/edit/spend/write/agent dispatcher. Advanced plans and runtime reads remain available this way.',
+    'The server handles versions, planning, validation, saving and saved-source verification. Ordinary edits return a short result. Request details only for diagnosis. Do not repeat a write after losing its response; read current state first. A conflict requires a fresh decision.',
+    'Owner credentials authorize ordinary document edits. Execution, paid operations, credentials, file writes and browser control retain their policies. A saved source, an editor report and a prepared preview are distinct observations.',
+    'Read the matching skill for writing, layout, animation or plugin development. Simple wording changes need no skill discovery, full-document checks or captures. Voice generation is an explicit paid action.',
+  ].join('\n')
   const pages = Boolean(host.positions)
   const reads = tools.filter(tool => tool.kind === 'read').map(tool => tool.name)
   const operations = tools.filter(tool => tool.kind !== 'read').map(tool => tool.name)
@@ -629,6 +628,7 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
   const directAuthoring = (tool: ToolSpec, args?: Args) => caller.authoringConfirmed === true && tool.kind === 'operate'
     && (AUTHORING_TOOLS.includes(tool) || AUTHORING_ACTION_TOOLS.includes(tool) || EDITING_TOOLS.includes(tool))
     && (tool.name !== 'apply_document_change' || Boolean(args && isRecord(args.change) && !('fileChanges' in args.change) && !('replacement' in args.change)))
+  const workspaceOf = (tool: ToolSpec) => tool.workspace ?? (AUTHORING_TOOLS.includes(tool) || AUTHORING_ACTION_TOOLS.includes(tool) || EDITING_TOOLS.includes(tool) || CAPTURE_TOOLS.includes(tool) ? 'candidate' : undefined)
   const meta = (kind: 'read' | ApprovalKind, authoring = false) => ({
     [TOOL_KIND_META]: kind,
     ...authoring ? { [TOOL_APPROVAL_META]: 'allow' } : caller.confirmed && kind !== 'read' ? { [TOOL_APPROVAL_META]: host.approval?.(kind) ?? 'ask' } : {},
@@ -640,7 +640,55 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
   })
   registerSkillResources(server)
 
-  const call = (args: Args, signal: AbortSignal, authoring = false): Call => {
+  const execute = async (tool: ToolSpec | AgentTool, args: Args, signal: AbortSignal): Promise<CallToolResult> => {
+    const spec = builtIn.find(known => known === tool)
+    const contextual = ['get_context', 'edit_narration', 'editor_action'].includes(tool.name)
+    const own = call(args, signal, spec ? directAuthoring(spec, args) : false, contextual)
+    const lang = spec && SKILL_TOOLS.includes(spec) ? undefined : async () => { const dir = await own.document(); return (await host.documents()).find(doc => doc.dir === dir)?.lang }
+    return toolResult(() => spec ? spec.run(own) : pluginTool(own, tool as AgentTool), spec?.structured ?? false, lang, spec ? undefined : (tool as AgentTool).errors)
+  }
+  const toolSchema = (tool: ToolSpec | AgentTool) => compactSchema(builtIn.includes(tool as ToolSpec)
+    ? (tool as ToolSpec).inputSchema ?? schemaOf((tool as ToolSpec).properties, (tool as ToolSpec).required) : pluginSchema(tool as AgentTool))
+  const all = [...builtIn, ...plugins]
+  const full = caller.confirmed === true || caller.toolset === 'all'
+  const common = new Set(['get_context', 'rename_page', 'edit_narration', 'list_documents'])
+  if (!full) {
+    server.registerTool('operations', {
+      description: 'Find available operations by query, or inspect one operation. Argument summaries are automatic; request schema:true only when the full input definition is needed.',
+      inputSchema: fromJsonSchema<Args>({ type: 'object', additionalProperties: false, properties: { name: { type: 'string' }, query: { type: 'string' }, schema: { type: 'boolean' }, offset: { type: 'integer', minimum: 0 }, limit: { type: 'integer', minimum: 1, maximum: 20 } } }),
+      annotations: { readOnlyHint: true }, _meta: meta('read'),
+    }, async args => toolResult(async () => {
+      const description = (tool: ToolSpec | AgentTool) => tool.description.slice(0, 180)
+      if (typeof args.name === 'string') {
+        const tool = all.find(tool => tool.name === args.name)
+        if (!tool) throw Object.assign(new Error('operation-unavailable'), { status: 404 })
+        const schema = toolSchema(tool)
+        return { name: tool.name, kind: tool.kind, description: description(tool), ...args.schema ? { inputSchema: schema } : { arguments: schemaArguments(schema) } }
+      }
+      if (args.schema) throw Object.assign(new Error('operation-name-required'), { status: 400 })
+      const query = String(args.query ?? '').toLowerCase(), offset = Number(args.offset ?? 0), limit = Number(args.limit ?? 10)
+      const found = all.filter(tool => `${tool.name} ${tool.description}`.toLowerCase().includes(query))
+      return { operations: found.slice(offset, offset + limit).map(tool => ({ name: tool.name, kind: tool.kind, description: description(tool) })),
+        ...offset + limit < found.length ? { next: offset + limit } : {} }
+    }, true))
+    for (const kind of ['read', 'operate', 'spend', 'write', 'agent'] as const) {
+      if (!all.some(tool => tool.kind === kind)) continue
+      const name = kind === 'operate' ? 'edit_operation' : `${kind}_operation`
+      server.registerTool(name, {
+        description: `Calls one discovered ${kind} operation using its original schema, permissions and confirmation policy. Supply operation and its business arguments; use operations(name,schema:true) if needed.`,
+        inputSchema: fromJsonSchema<Args>({ type: 'object', additionalProperties: false, properties: { operation: { type: 'string', minLength: 1 }, arguments: { type: 'object', additionalProperties: true } }, required: ['operation'] }),
+        annotations: { readOnlyHint: kind === 'read' }, _meta: meta(kind),
+      }, async (args, context) => {
+        const tool = all.find(tool => tool.name === args.operation && tool.kind === kind)
+        if (!tool) return toolResult(async () => { throw Object.assign(new Error('operation-unavailable'), { status: 404 }) }, true)
+        const parsed = await fromJsonSchema<Args>(toolSchema(tool) as JsonSchemaType)['~standard'].validate(args.arguments ?? {})
+        if (parsed.issues) return { isError: true, content: [{ type: 'text', text: parsed.issues.slice(0, 3).map(issue => issue.message.slice(0, 160)).join('; ') }] }
+        return execute(tool, parsed.value, context.mcpReq.signal)
+      })
+    }
+  }
+
+  const call = (args: Args, signal: AbortSignal, authoring = false, contextual = false): Call => {
     let document: Promise<string> | undefined
     let compiled: Promise<{ doc: IRDocument, diagnostics: Finding[] }> | undefined
     const self: Call = {
@@ -648,7 +696,7 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
       caller,
       args,
       signal,
-      document: () => document ??= resolveDocument(host, args.document === '' ? '' : str(args.document), caller.document),
+      document: () => document ??= resolveDocument(host, args.document === '' ? '' : str(args.document), caller.document, contextual ? caller.member : undefined),
       compiled: () => compiled ??= self.document().then(dir => host.compile(dir)),
       async approve(kind, title, options = {}) {
         if (caller.confirmed) return
@@ -676,27 +724,22 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
   }
 
   for (const tool of builtIn) {
+    if (!full && !common.has(tool.name)) continue
     server.registerTool(tool.name, {
       description: tool.description,
-      inputSchema: fromJsonSchema<Args>((tool.inputSchema ?? schemaOf(tool.properties, tool.required)) as JsonSchemaType),
+      inputSchema: fromJsonSchema<Args>(compactSchema(tool.inputSchema ?? schemaOf(tool.properties, tool.required)) as JsonSchemaType),
       annotations: { readOnlyHint: tool.kind === 'read' },
-      _meta: meta(tool.kind, directAuthoring(tool)),
-    }, (args, ctx) => {
-      const own = call(args, ctx.mcpReq.signal, directAuthoring(tool, args))
-      const lang = SKILL_TOOLS.includes(tool) ? undefined : async () => { const dir = await own.document(); return (await host.documents()).find(doc => doc.dir === dir)?.lang }
-      return toolResult(() => tool.run(own), tool.structured, lang)
-    })
+      _meta: { ...meta(tool.kind, directAuthoring(tool)), ...workspaceOf(tool) ? { [TOOL_WORKSPACE_META]: workspaceOf(tool) } : {} },
+    }, (args, ctx) => execute(tool, args, ctx.mcpReq.signal))
   }
   for (const tool of plugins) {
+    if (!full) continue
     server.registerTool(tool.name, {
       description: tool.description,
-      inputSchema: fromJsonSchema<Args>(pluginSchema(tool) as JsonSchemaType),
+      inputSchema: fromJsonSchema<Args>(compactSchema(pluginSchema(tool)) as JsonSchemaType),
       annotations: { readOnlyHint: tool.kind === 'read' },
       _meta: meta(tool.kind),
-    }, (args, ctx) => {
-      const own = call(args, ctx.mcpReq.signal)
-      return toolResult(() => pluginTool(own, tool), false, async () => { const dir = await own.document(); return (await host.documents()).find(doc => doc.dir === dir)?.lang }, tool.errors)
-    })
+    }, (args, ctx) => execute(tool, args, ctx.mcpReq.signal))
   }
 
   type Read = (call: Call) => Promise<unknown>
@@ -765,7 +808,7 @@ async function pluginTool(call: Call, tool: AgentTool): Promise<unknown> {
   return found.run(input, { document, member: call.caller.member, service: own.service, signal: call.signal })
 }
 
-async function resolveDocument(host: McpHost, named: string | undefined, bound?: string): Promise<string> {
+async function resolveDocument(host: McpHost, named: string | undefined, bound?: string, editorMember?: Member): Promise<string> {
   if (bound !== undefined) {
     if (named !== undefined && named !== bound) throw Object.assign(new Error(`this token is for the document ${JSON.stringify(bound)}, not ${JSON.stringify(named)}`), { status: 403 })
     return bound
@@ -776,6 +819,21 @@ async function resolveDocument(host: McpHost, named: string | undefined, bound?:
     return named
   }
   if (documents.length === 1) return documents[0]!.dir
+  if (editorMember && host.authoringClients) {
+    const observed = await Promise.allSettled(documents.map(async document => {
+      let after: string | undefined
+      for (let page = 0; page < AUTHORING_CLIENT_MAX_CLIENTS; page++) {
+        const report = await host.authoringClients!.list(document.dir, after ? { after } : {}, editorMember)
+        if (report.clients.some(client => client.connected && client.snapshot.view === 'document' && client.snapshot.position)) return document.dir
+        after = report.nextAfter
+        if (!after) break
+      }
+      return undefined
+    }))
+    const current = observed.flatMap(result => result.status === 'fulfilled' && result.value !== undefined ? [result.value] : [])
+    if (current.length === 1) return current[0]!
+    throw Object.assign(new Error('editor-context-unavailable'), { status: 409 })
+  }
   throw Object.assign(new Error(documents.length === 0 ? 'no document yet (the deck may still be compiling)' : 'several documents: name one with `document` (list_documents), or a resource\'s with ?document=<dir>'), { status: documents.length === 0 ? 409 : 400 })
 }
 
@@ -785,43 +843,52 @@ export interface PresmiumMcp {
 }
 
 export function createPresmiumMcp(host: McpHost): PresmiumMcp {
-  const handlers = new Map<string | undefined, ReturnType<typeof createMcpHandler>>()
+  const handlers = new Map<string | undefined, Map<boolean, ReturnType<typeof createMcpHandler>>>()
+  const everyHandler = () => [...handlers.values()].flatMap(group => [...group.values()])
   let closed = false
-  const handlerOf = (document: string | undefined) => {
-    let handler = handlers.get(document)
+  const handlerOf = (document: string | undefined, full: boolean) => {
+    let group = handlers.get(document)
+    if (!group) { group = new Map(); handlers.set(document, group) }
+    let handler = group.get(full)
     if (!handler) {
       handler = createMcpHandler(({ authInfo }) => createMcpServer(host, callerOf(authInfo)))
-      handlers.set(document, handler)
+      group.set(full, handler)
     }
     return handler
   }
   const stops = [
     host.watchTools?.((document) => {
-      for (const [bound, handler] of handlers) if (bound === undefined || bound === document) handler.notify.toolsChanged()
+      for (const [bound, group] of handlers) if (bound === undefined || bound === document) for (const handler of group.values()) handler.notify.toolsChanged()
     }),
-    host.watchPositions?.(() => { for (const handler of handlers.values()) handler.notify.resourceUpdated(POSITION_URI) }),
-    host.watchFocus?.(() => { for (const handler of handlers.values()) handler.notify.resourceUpdated(FOCUS_URI) }),
+    host.watchPositions?.(() => { for (const handler of everyHandler()) handler.notify.resourceUpdated(POSITION_URI) }),
+    host.watchFocus?.(() => { for (const handler of everyHandler()) handler.notify.resourceUpdated(FOCUS_URI) }),
     host.watchDiagnostics?.((document) => {
       const uri = `${DIAGNOSTICS_URI}?document=${encodeURIComponent(document)}`
-      for (const [bound, handler] of handlers) {
+      for (const [bound, group] of handlers) {
         if (bound !== undefined && bound !== document) continue
-        handler.notify.resourceUpdated(uri)
-        if (bound !== undefined) handler.notify.resourceUpdated(DIAGNOSTICS_URI)
+        for (const handler of group.values()) {
+          handler.notify.resourceUpdated(uri)
+          if (bound !== undefined) handler.notify.resourceUpdated(DIAGNOSTICS_URI)
+        }
       }
       const unbound = handlers.get(undefined)
       if (unbound) void host.documents().then((documents) => {
-        if (!closed && documents.length === 1 && documents[0]!.dir === document) unbound.notify.resourceUpdated(DIAGNOSTICS_URI)
+        if (!closed && documents.length === 1 && documents[0]!.dir === document) for (const handler of unbound.values()) handler.notify.resourceUpdated(DIAGNOSTICS_URI)
       }, (error: unknown) => {
         console.error(`[presmium] the default diagnostics resource could not resolve its document: ${errorMessage(error)}`)
       })
     }),
   ]
   return {
-    fetch: (request, caller) => handlerOf(caller.document).fetch(request, { authInfo: { token: '', clientId: caller.member.id, scopes: [caller.mode], extra: { caller } } }),
+    fetch: (request, caller) => {
+      const full = caller.confirmed === true || new URL(request.url).searchParams.get('tools') === 'all' || caller.toolset === 'all'
+      const own = { ...caller, toolset: full ? 'all' : 'compact' } satisfies McpCaller
+      return handlerOf(caller.document, full).fetch(request, { authInfo: { token: '', clientId: caller.member.id, scopes: [caller.mode], extra: { caller: own } } })
+    },
     async close() {
       closed = true
       for (const stop of stops) stop?.()
-      await Promise.all([...handlers.values()].map(handler => handler.close()))
+      await Promise.all(everyHandler().map(handler => handler.close()))
       handlers.clear()
     },
   }

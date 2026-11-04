@@ -1,5 +1,6 @@
 import { DOCUMENT_ACTION_MAX_REQUEST_CHARS, DOCUMENT_ACTION_MAX_RESPONSE_CHARS } from '@lincyaw/kernel'
-import type { DocumentAuthoringActionEffect, DocumentAuthoringActionPlan, DocumentAuthoringActionRequest, DocumentAuthoringActionReference, DocumentComponentImpactQuery } from '@lincyaw/kernel'
+import { randomUUID } from 'node:crypto'
+import type { DocumentAuthoringAction, DocumentAuthoringActionEffect, DocumentAuthoringActionPlan, DocumentAuthoringActionRequest, DocumentAuthoringActionReference, DocumentComponentImpactQuery } from '@lincyaw/kernel'
 import { DOCUMENT_AUTHORING_ACTION_SCHEMA, DOCUMENT_AUTHORING_ACTION_APPLY_SCHEMA, DOCUMENT_AUTHORING_ACTION_IMPACT_SCHEMA } from '@lincyaw/kernel/node'
 import type { Call, ToolSpec } from './mcp.ts'
 
@@ -27,7 +28,7 @@ function effectSummary(effect: DocumentAuthoringActionEffect) {
   if (effect.kind !== 'component') return effect
   const { paths, affected, overrides, references, ...target } = effect.value
   const counts = (value: Record<string, string[]>) => Object.fromEntries(Object.entries(value).map(([name, values]) => [name, values.length]))
-  return { kind: 'component', value: { ...target, paths: paths.length, affected: counts(affected), overrides: counts(overrides), references: counts(references) } }
+  return { kind: 'component' as const, value: { ...target, paths: paths.length, affected: counts(affected), overrides: counts(overrides), references: counts(references) } }
 }
 function summary(plan: DocumentAuthoringActionPlan, document: string) {
   const resource = (part: string) => `presmium://authoring-action/${encodeURIComponent(plan.planId)}/${plan.digest}/${part}?document=${encodeURIComponent(document)}`
@@ -40,6 +41,7 @@ function summary(plan: DocumentAuthoringActionPlan, document: string) {
     next: plan.action.type === 'comment.delete' ? 'Review this exact deletion and apply the unchanged reference with confirmDeletion:true.' : plan.effect.kind === 'component' ? 'Read the actual inherited-step and Definition-reference impact, apply this unchanged reference, then read the target with the returned saved source.' : 'Apply this unchanged plan reference, then read the target with the returned saved source. Voice settings are not synthesis or recording adoption.' }
 }
 export const AUTHORING_ACTION_TOOLS: readonly ToolSpec[] = [
+  ...semanticTools(),
   {
     name: 'plan_authoring_action', kind: 'read', structured: true,
     description: 'Preflights canonical comments, voice.set, manual caption timing or component actions through shared pure Web rules. Use exact source and a fresh intent id. Components support component.parameters.patch for base values, component.step-parameters.patch/reset for a stable step and component.definition.use for an existing Definition. Parameter changes are bounded set/remove path arrays for schema-declared editable fields; read-only ancestors/descendants and undeclared changes are refused. Whole-object edits preserve unknown fields. Exact whole-array reorders or item deletion are supported; ambiguous mixed reorder/edit must be split. This is not a whole-document or whole-parameters echo; arrays/objects are valid values and existing array items may be changed or removed. Preserve unknown parameters and revalidate the complete inherited graph. Step edits can affect descendants; read the returned actual impact, never claim only this step. Independent implementation copies are unavailable. Comment content is canonical RichTextNode[]; the service fixes IDs, trusted authors and dates. A comment anchor is either a text range (from/to TextPoints, UTF-16) or a block place (blockId plus an optional stepId); a stale step keeps the block, a missing block leaves the thread unanchored. Voice accepts tts/none/null; recording requires adopt_recording. caption.timing.set uses the current stable Step and its read_production_plan captionTiming basis; from/to partition the entire ordered canonical narration display in UTF16 grapheme boundaries, and startMs/endMs are non-overlapping author times relative to that confirmed step. Real audio is required; cross-step speech is unavailable. This creates manual segment times, never word alignment. caption.timing.reset returns to the automatic projection. The service rechecks real cache-only timing at preflight/apply; stale bases cannot rebind implicitly. Returns compact counts/reference and a bounded impact resource, no scene compile or provider. Request<=4096 JSON chars, result<=7168 pretty JSON UTF16 chars.',
@@ -67,3 +69,41 @@ export const AUTHORING_ACTION_TOOLS: readonly ToolSpec[] = [
     run: call => bounded(call, async () => service(call).readActionImpact(await call.document(), call.args.request as DocumentComponentImpactQuery, call.caller.member)),
   },
 ]
+
+/** Business arguments are projected from the canonical action schema, never maintained in a second table. */
+function semanticTools(): ToolSpec[] {
+  const root = DOCUMENT_AUTHORING_ACTION_SCHEMA as Record<string, unknown>
+  const definitions = root.$defs as Record<string, unknown>
+  const variants = (definitions.AuthoringAction as { oneOf: Record<string, unknown>[] }).oneOf
+  return variants.map(variant => {
+    const fields = variant.properties as Record<string, Record<string, unknown>>
+    const type = String(fields.type!.const) as DocumentAuthoringAction['type']
+    const properties: Record<string, unknown> = Object.fromEntries(Object.entries(fields).filter(([key]) => !['type', 'metadata', 'commentMetadata', 'content'].includes(key)))
+    const required = (variant.required as string[]).filter(key => !['type', 'content'].includes(key))
+    const plainText = 'content' in fields
+    if (plainText) { properties.text = { type: 'string', minLength: 1, maxLength: 4000 }; required.push('text') }
+    if (type === 'comment.delete') { properties.confirm = { const: true }; required.push('confirm') }
+    const inputSchema = { type: 'object', additionalProperties: false, properties: { document: { type: 'string', maxLength: 200 }, ...properties, details: { type: 'boolean' } }, required, $defs: definitions }
+    return {
+      name: type.replace(/[.-]/g, '_'), kind: 'operate', structured: true, audience: 'external',
+      description: `Performs ${type} through the shared authoring action in one call. Versions, preflight and saved-source checks stay on the server. Recording and generation remain separate.`,
+      inputSchema,
+      run: async call => {
+        const document = await call.document(), own = service(call)
+        const capability = own.capabilities(document, call.caller.member)
+        if (!capability.actions.applyAction) throw Object.assign(new Error(capability.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: capability.applyUnavailableReason ? 409 : 403 })
+        const current = await own.read(document, call.caller.member)
+        const { document: _document, details, confirm, text, ...values } = call.args
+        const action = { ...values, type, ...plainText ? { content: [{ id: randomUUID(), type: 'paragraph', children: [{ type: 'text', text: String(text) }] }] } : {} } as DocumentAuthoringAction
+        const plan = await own.planAction(document, { id: randomUUID(), source: { documentId: current.content.id, version: current.version, fingerprint: current.fingerprint }, action }, call.caller.member)
+        const reference = { planId: plan.planId, digest: plan.digest, source: plan.source, ...confirm === true ? { confirmDeletion: true as const } : {} }
+        await call.approve('operate', messages => messages.applyAuthoringAction, { lang: current.content.metadata.lang ?? 'zh-CN', check: () => own.checkAction(document, reference, call.caller.member) })
+        call.signal.throwIfAborted()
+        const answer = await own.applyAction(document, reference, call.caller.member)
+        if (details) return answer
+        const effect = effectSummary(answer.effect)
+        return { saved: true, action: type, ...effect.kind === 'comment' ? { thread: effect.value.threadId, comment: effect.value.commentId } : effect.kind === 'caption-scale' ? { scale: effect.value.scale } : { result: effect.value } }
+      },
+    } satisfies ToolSpec
+  })
+}

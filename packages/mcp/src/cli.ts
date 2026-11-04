@@ -15,6 +15,7 @@ import type { PresmiumMcpClient } from './client.ts'
 import type { McpHost } from './host.ts'
 import { serveMcpStdio } from './mcp.ts'
 import { MCP_CLI_MESSAGES, systemLocale } from './messages.ts'
+import { schemaArguments } from './schemas.ts'
 
 const OWN_DIR = fileURLToPath(new URL('..', import.meta.url))
 const CLI_PACKAGE = '@lincyaw/cli'
@@ -127,8 +128,10 @@ async function toolCommand(command: 'call' | 'tools', argv: string[]): Promise<n
   let args: Record<string, unknown> = {}
   let out: string | undefined
   let json = false
+  let full = false
+  let schemas = false
   try {
-    const { values, positionals } = parseArgs({ args: argv, allowPositionals: true, options: { out: { type: 'string' }, json: { type: 'boolean' }, help: { type: 'boolean', short: 'h' } } })
+    const { values, positionals } = parseArgs({ args: argv, allowPositionals: true, options: { out: { type: 'string' }, json: { type: 'boolean' }, all: { type: 'boolean' }, schema: { type: 'boolean' }, help: { type: 'boolean', short: 'h' } } })
     if (values.help) {
       process.stdout.write(`${t.usage}\n`)
       return 0
@@ -137,9 +140,13 @@ async function toolCommand(command: 'call' | 'tools', argv: string[]): Promise<n
       if (positionals.length > 1) throw new Error(t.unexpectedToolArgument(positionals[1]!))
       if (values.out !== undefined) throw new Error(t.unexpectedToolArgument('--out'))
       tool = positionals[0] ?? ''
-      json = values.json === true || tool !== ''
+      json = values.json === true || values.schema === true || tool !== ''
+      full = values.all === true || tool !== ''
+      schemas = values.schema === true
     } else {
       if (values.json !== undefined) throw new Error(t.unexpectedToolArgument('--json'))
+      if (values.all !== undefined) throw new Error(t.unexpectedToolArgument('--all'))
+      if (values.schema !== undefined) throw new Error(t.unexpectedToolArgument('--schema'))
       if (!positionals[0]) throw new Error(t.missingTool)
       if (positionals.length > 2) throw new Error(t.unexpectedToolArgument(positionals[2]!))
       tool = positionals[0]
@@ -157,7 +164,9 @@ async function toolCommand(command: 'call' | 'tools', argv: string[]): Promise<n
   }
   let client: PresmiumMcpClient
   try {
-    client = await connectPresmiumMcp(target.mcp, target.token, 'presmium-cli')
+    const url = new URL(target.mcp)
+    if (full || command === 'call') url.searchParams.set('tools', 'all')
+    client = await connectPresmiumMcp(url.href, target.token, 'presmium-cli')
   } catch (error) {
     process.stderr.write(`presmium mcp: ${t.unreachable} (${errorMessage(error)})\n`)
     return 2
@@ -170,7 +179,8 @@ async function toolCommand(command: 'call' | 'tools', argv: string[]): Promise<n
         process.stderr.write(`presmium mcp: ${t.unknownTool(tool)}\n`)
         return 2
       }
-      if (json) process.stdout.write(`${JSON.stringify(selected ?? tools, null, 2)}\n`)
+      const overview = (listed: typeof tools[number]) => ({ name: listed.name, kind: listed.kind, description: listed.description.slice(0, 180), arguments: schemaArguments(listed.inputSchema) })
+      if (json) process.stdout.write(`${JSON.stringify(schemas ? selected ?? tools : selected ? overview(selected) : tools.map(overview))}\n`)
       else for (const listed of tools) process.stdout.write(`${listed.name}\t${listed.kind}\t${listed.description.replace(/\s+/g, ' ').split(/(?<=\.) /)[0]}\n`)
       return 0
     }

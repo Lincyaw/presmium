@@ -28,6 +28,8 @@ export interface McpCaller {
   /** The workspace owner's credential authorizes document edits; execution and paid tools keep their policy. */
   authoringConfirmed?: boolean
   document?: string
+  /** Catalog shape only; both profiles enforce the same caller permissions. */
+  toolset?: 'compact' | 'all'
 }
 
 export interface McpFocus {

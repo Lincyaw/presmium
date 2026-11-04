@@ -3,7 +3,7 @@ import { errorMessage } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
 import type { DshAgent, DshContext, DshToolExecution } from './dsh-types.ts'
 import { WORKSPACE_ROUTES } from './server-routes.ts'
-import { CANDIDATE_TOOLS, PREFIX } from './tools.ts'
+import { isCandidateTool, PREFIX } from './tools.ts'
 
 // What a writing tool answers when the change cannot be recorded. The AI reads it and tells the author in their own
 // language, so it names what the author sees (Version History) and none of the internals behind it.
@@ -108,7 +108,7 @@ export function apply(ctx: DshContext): void {
     await ctx.presmium.bindings.candidateOf(exec.agent)
     const binding = ctx.presmium.bindings.bindingOf(exec.agent)
     const tool = exec.name.startsWith(PREFIX) ? binding?.tools.find(tool => `${PREFIX}${tool.name}` === exec.name) : undefined
-    if (!WRITING_TOOLS.has(exec.name) && (!tool || tool.kind === 'read' || !CANDIDATE_TOOLS.has(tool.name))) return next()
+    if (!WRITING_TOOLS.has(exec.name) && (!tool || tool.kind === 'read' || !isCandidateTool(tool))) return next()
     const document = ctx.presmium.bindings.bindingOf(exec.agent)?.document.dir ?? ''
     const agentSessionId = rootAgentSessionOf(exec.agent.session.id)
     const state = turnStateOf(agentSessionId)

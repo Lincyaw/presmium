@@ -31,3 +31,27 @@ export function replaceStepNarrations(source: TeachingDocument, stepId: string, 
   for (const id of Object.keys(content.production.cueTimings ?? {})) if (!cues.has(id)) delete content.production.cueTimings![id]
   return content
 }
+
+/** An exact, unique text edit keeps the existing pronunciation and cue atoms intact. */
+export function replaceStepNarrationText(source: TeachingDocument, stepId: string, find: string, replacement: string): TeachingDocument {
+  const step = source.steps[stepId]
+  if (!step || !find) throw new Error('document-narration-target')
+  const narrations = step.narrationIds.map(id => source.narrations[id]!)
+  const matches: { narration: string, node: number, offset: number }[] = []
+  for (const narration of narrations) for (const [node, value] of narration.content.entries()) {
+    if (value.type !== 'text') continue
+    for (let at = value.text.indexOf(find); at !== -1; at = value.text.indexOf(find, at + 1)) {
+      matches.push({ narration: narration.id, node, offset: at })
+      if (matches.length > 1) throw new Error('document-narration-text-ambiguous')
+    }
+  }
+  const found = matches[0]
+  if (!found) throw new Error('document-narration-text-missing')
+  return replaceStepNarrations(source, stepId, narrations.map(narration => narration.id !== found.narration ? narration : {
+    ...narration, content: narration.content.flatMap((node, index) => {
+      if (index !== found.node || node.type !== 'text') return [node]
+      const text = node.text.slice(0, found.offset) + replacement + node.text.slice(found.offset + find.length)
+      return text ? [{ ...node, text }] : []
+    }),
+  }).filter(narration => narration.content.length > 0))
+}

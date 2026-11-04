@@ -147,7 +147,7 @@ export interface McpCliMessages {
 export const MCP_CLI_MESSAGES: Record<Locale, McpCliMessages> = {
   'zh-CN': {
     usage: `用法：presmium mcp [<目录>] [--allow <种类>]
-      presmium mcp tools [<工具>] [--json]
+      presmium mcp tools [<工具>] [--json] [--all] [--schema]
       presmium mcp call <工具> [<JSON 参数>] [--out <目录>]
 
 经标准输入输出向 Claude Code、Codex 等 AI 工具提供 MCP 服务（<目录> 是工作区的根目录、
@@ -157,8 +157,8 @@ AI 可以修改文稿、查看版本历史和生成配音，它重新启动后�
 阅读、检查、运行代码与导出。
 
 tools 与 call 在命令行中使用当前目录正在运行的 Presmium 服务的工具，与 AI 经 presmium mcp
-得到的相同：tools 列出每个工具的名称、种类与说明；tools <工具> 返回该工具的完整定义和参数格式，
-tools --json 返回全部工具的完整定义，均直接来自服务端；call 调用一个工具，参数是一个 JSON 对象
+得到的相同：tools 默认列出常用工具，--all 列出完整目录；tools <工具> 返回自动生成的参数摘要，
+--schema 返回完整参数格式，--json 输出 JSON。定义均直接来自服务端；call 调用一个工具，参数是一个 JSON 对象
 （默认为 {}），结果以 JSON 写到标准输出。工具返回的图片（capture_slides、capture_reading、
 capture_overview）用 --out 保存为 PNG 文件，路径写到标准错误。读取以外的操作与 AI 的请求一样，
 由服务端按访问权限决定是否确认；本地作者的访问令牌已经允许文稿编辑。工具失败时退出码为 1，用法错误
@@ -166,7 +166,9 @@ capture_overview）用 --out 保存为 PNG 文件，路径写到标准错误。�
 
   --allow <种类>  只编译时提供并允许这些操作：operate（run_code、build）、spend
   --out <目录>    call：把工具返回的图片保存到这个目录
-  --json          tools：输出服务端工具定义，包含参数格式
+  --json          tools：以 JSON 输出工具与参数摘要
+  --all           tools：列出完整工具目录
+  --schema        tools：输出完整参数格式
   -h, --help      显示本说明`,
     unexpectedArgument: argument => `多余的参数“${argument}”。presmium mcp 只接受一个目录。`,
     badAllow: (kinds, value) => `--allow 不接受“${value}”。可用的种类：${kinds.join('、')}。`,
@@ -174,7 +176,7 @@ capture_overview）用 --out 保存为 PNG 文件，路径写到标准错误。�
     bridging: url => `presmium mcp: 转接到正在运行的 Presmium 服务 ${url}`,
     unreachable: 'Presmium 服务已停止。请重新启动 presmium studio 或 presmium serve，然后重试。',
     missingTool: '缺少工具名。请在 presmium mcp call 之后给出工具名；presmium mcp tools 列出全部工具。',
-    unexpectedToolArgument: argument => `多余的参数“${argument}”。presmium mcp call 接受工具名与一个 JSON 对象，presmium mcp tools 接受一个工具名与 --json。`,
+    unexpectedToolArgument: argument => `多余的参数“${argument}”。presmium mcp call 接受工具名与一个 JSON 对象，presmium mcp tools 接受一个工具名与 --json、--all、--schema。`,
     unknownTool: tool => `当前服务没有工具“${tool}”。用 presmium mcp tools 查看可用工具。`,
     badToolArguments: value => `参数“${value}”不是 JSON 对象。请把参数写成一个 JSON 对象，用单引号括起。`,
     noService: '无法使用工具：当前目录（或它所在的工作区）没有正在运行的 Presmium Studio 或 presmium serve。请先启动其中一个，然后重试。',
@@ -183,7 +185,7 @@ capture_overview）用 --out 保存为 PNG 文件，路径写到标准错误。�
   },
   'en': {
     usage: `Usage: presmium mcp [directory] [--allow <kinds>]
-       presmium mcp tools [tool] [--json]
+       presmium mcp tools [tool] [--json] [--all] [--schema]
        presmium mcp call <tool> [<JSON arguments>] [--out <dir>]
 
 Serves MCP on stdio for AI tools such as Claude Code and Codex (the directory is a workspace root,
@@ -194,9 +196,9 @@ voiceover, and it follows the service when it starts again. Otherwise it compile
 itself, for reading, checking, running code and exporting.
 
 tools and call use the tools of the Presmium service running for the current directory from the
-command line, the same tools an AI gets through presmium mcp: tools lists each tool’s name, kind and
-description; tools <tool> returns its complete definition and input schema, and tools --json returns
-all complete definitions directly from the server. call calls one tool with a JSON object of arguments (default: {}) and writes its result
+command line. tools lists the common tools; --all lists the complete catalog. tools <tool> returns
+automatically generated argument summaries; --schema returns complete input schemas, and --json
+outputs JSON. Definitions come directly from the server. call calls one tool with a JSON object of arguments (default: {}) and writes its result
 as JSON to standard output. The pictures a tool returns (capture_slides, capture_reading,
 capture_overview) are saved as PNG files with --out, and their paths written to standard error.
 The server decides confirmation from access rights; the local author's access token already authorizes
@@ -205,7 +207,9 @@ usage error or when the service can’t be reached.
 
   --allow <kinds>  when compiling itself, offer and allow these operations: operate (run_code, build), spend
   --out <dir>      call: save the pictures the tool returns in this directory
-  --json          tools: output server tool definitions, including input schemas
+  --json          tools: output tool and argument summaries as JSON
+  --all           tools: list the complete tool catalog
+  --schema        tools: output complete input schemas
   -h, --help       show this help`,
     unexpectedArgument: argument => `Unexpected argument “${argument}”. presmium mcp takes one directory.`,
     badAllow: (kinds, value) => `--allow does not take “${value}”. The kinds are ${kinds.join(', ')}.`,
@@ -213,7 +217,7 @@ usage error or when the service can’t be reached.
     bridging: url => `presmium mcp: relaying to the running Presmium service at ${url}`,
     unreachable: 'The Presmium service stopped. Start presmium studio or presmium serve again, then retry.',
     missingTool: 'No tool given. Name the tool after presmium mcp call; presmium mcp tools lists them all.',
-    unexpectedToolArgument: argument => `Unexpected argument “${argument}”. presmium mcp call takes a tool name and one JSON object; presmium mcp tools takes one tool name and --json.`,
+    unexpectedToolArgument: argument => `Unexpected argument “${argument}”. presmium mcp call takes a tool name and one JSON object; presmium mcp tools takes one tool name and --json, --all, --schema.`,
     unknownTool: tool => `This service has no tool named “${tool}”. Use presmium mcp tools to list available tools.`,
     badToolArguments: value => `The arguments “${value}” are not a JSON object. Write them as one JSON object, in single quotes.`,
     noService: 'Couldn’t use the tools: no Presmium Studio or presmium serve is running for this directory (or its workspace). Start one, then retry.',
@@ -236,6 +240,11 @@ const kind = (detail: Detail) => typeof detail.kind === 'string' ? detail.kind :
  */
 export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => string>> = {
   'zh-CN': {
+    'operation-unavailable': () => '当前连接没有这项操作。请搜索可用操作。',
+    'operation-name-required': () => '读取完整参数格式需要指定操作名称。',
+    'editor-context-unavailable': () => '没有收到编辑器的当前页面。请指定页面和步骤，或在 Studio 中打开文稿。',
+    'document-narration-text-missing': () => '讲稿中没有找到这段原文。请读取当前讲稿后重试。',
+    'document-narration-text-ambiguous': () => '讲稿中有多处相同的文字。请提供更完整的原文。',
     'document-edit-request-too-large': () => '修改内容过长。请减少本次修改的内容后重试。',
     'no-such-section': () => '找不到这页。请重新读取页面列表后重试。',
     'workspace-file-missing': detail => `找不到文件“${path(detail)}”。请检查路径，或先把文件放进工作区。`,
@@ -273,6 +282,11 @@ export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => s
     'authoring-permission-denied': () => '无法应用这项修改：你没有编辑这份文稿的权限。',
   },
   'en': {
+    'operation-unavailable': () => 'This connection does not offer that operation. Read the available operations.',
+    'operation-name-required': () => 'Name an operation to read its complete input schema.',
+    'editor-context-unavailable': () => 'No current editor page was reported. Specify a page and step, or open the document in Studio.',
+    'document-narration-text-missing': () => 'The original text was not found in this script. Read the current script and retry.',
+    'document-narration-text-ambiguous': () => 'The text appears more than once. Provide a longer exact phrase.',
     'document-edit-request-too-large': () => 'This edit is too large. Reduce its content and retry.',
     'no-such-section': () => 'This page could not be found. Read the page list again and retry.',
     'workspace-file-missing': detail => `There is no file “${path(detail)}”. Check the path, or put the file in the workspace first.`,

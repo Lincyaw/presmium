@@ -1,4 +1,5 @@
 import { applyDocumentCaptionTiming } from './document-caption-timings.ts'
+import { captionScale, changeDocumentCaptionScale } from './document-caption-scale.ts'
 import { hasRole } from './access.ts'
 import { applyDocumentCommentAction, degradeDocumentCommentAnchor, DocumentCommentError, validateDocumentCommentAnchor } from './document-comments.ts'
 import { documentAnchorKey } from './document-places.ts'
@@ -11,6 +12,10 @@ import type { TeachingDocument } from './contracts/document.ts'
 /** Fixed context is supplied by the owning adapter exactly once per semantic plan. */
 export function applyDocumentAuthoringAction(document: TeachingDocument, action: DocumentAuthoringAction, context: DocumentCommentContext): { content: TeachingDocument, effect: DocumentAuthoringActionEffect } {
   if (!context.member || !hasRole(context.member, 'editor')) throw new DocumentCommentError(403, 'authoring-permission-denied')
+  if (action.type === 'caption.scale.set') {
+    const content = changeDocumentCaptionScale(document, action.scale)
+    return { content, effect: { kind: 'caption-scale', value: { scale: captionScale(content.production), changed: content !== document } } }
+  }
   if (action.type === 'component.parameters.patch' || action.type === 'component.step-parameters.patch' || action.type === 'component.step-parameters.reset' || action.type === 'component.definition.use') {
     const { content, effect } = applyDocumentComponentAction(document, action)
     return { content, effect: { kind: 'component', value: effect } }

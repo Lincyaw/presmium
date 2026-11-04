@@ -27,13 +27,17 @@ workspace 为每项能力创建一个实例，HTTP 与 MCP 共用实例与回执
 | `OutputJobs`（`jobs.ts`） | `jobs*` | `mcp.ts` 的 `build/get_builds/cancel_build` |
 | `createDocumentCapture`（`capture.ts`） | 无 | `capture.ts` 的 `capture_slides` |
 
-契约在 `packages/kernel/src/contracts/` 的同名文件，工具表在 `packages/mcp/src/mcp.ts`，每个工具的 `kind` 为 `read`、`operate` 或 `spend`。Web 经 `packages/workbench/src/workspace-client.ts` 调用同一组路由。
+契约在 `packages/kernel/src/contracts/` 的同名文件，工具表在 `packages/mcp/src/mcp.ts`，每个工具的 `kind` 为 `read`、`operate`、`spend`、`write` 或 `agent`。Web 经 `packages/workbench/src/workspace-client.ts` 调用同一组路由。
 
 Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页面、音色继承、批注、组件参数、字幕时间、字幕大小），语义动作分派在 `document-authoring-actions.ts`。不带工作区的 stdio 宿主（`compilerMcpHost`）没有这些服务，能力响应报告 unavailable。
 
 ## 3. 能力与版本
 
-工具是否可用以 MCP 的工具表为准；已列出的简单编辑工具可直接调用。需要了解高级动作限制时，`get_authoring_capabilities` 与各服务的 `get_*_capabilities` 报告能否预检与提交、预算、`idempotency` 与 `review`，不编译文稿。状态区分 available、unavailable 与 unknown；`verification: configuration-only` 只看了配置，不证明鉴权或合成可用。能力响应不含凭据。工具的参数来自同一份 `inputSchema`：MCP `tools/list` 与 CLI `presmium mcp tools <工具>`、`tools --json` 共用服务端返回的定义，没有单独维护的参数清单。
+工具是否可用以 MCP 的工具表为准；已列出的简单编辑工具可直接调用。需要了解高级动作限制时，`get_authoring_capabilities` 与各服务的 `get_*_capabilities` 报告能否预检与提交、预算、`idempotency` 与 `review`，不编译文稿。状态区分 available、unavailable 与 unknown；`verification: configuration-only` 只看了配置，不证明鉴权或合成可用。能力响应不含凭据。工具的参数来自同一份 `inputSchema`，没有单独维护的参数清单。外部 MCP 默认只列出当前上下文、页标题、讲稿编辑、文稿目录、操作查询及按权限种类分开的调用入口。`operations` 按关键字分页查找动作，指定 `name` 时返回自动生成的参数摘要，`schema: true` 才返回完整 Schema。`read_operation`、`edit_operation`、`spend_operation`、`write_operation` 与 `agent_operation` 只调用同种权限的已授权动作，保留目标 Schema 校验、确认策略与错误和图片结果；没有相应动作的入口不提供。Schema 只携带实际引用到的定义。
+
+`presmium mcp` 的 stdio 连接也使用精简目录。已有客户端重新连接后按新目录查询动作；需要原有命名工具的 SDK 可显式连接 `/mcp?tools=all`。CLI `presmium mcp tools <工具>` 返回参数摘要，`--schema` 返回完整格式，`tools --all` 列出完整目录，`--json` 输出 JSON；`mcp call` 保留原命名工具调用。可信 dsh 宿主保持命名工具目录，按工具的 `presmium/workspace` 元数据路由作者与候选工作区，保留按目标工具执行的审批与审阅钩子。两种目录共享调用方权限，查询参数不会提升授权。
+
+`editor_action` 封装已接入的浏览器动作：只有一个已连接客户端时省略 `clientId`，服务端提供 source、连接版本与播放绑定，并短暂等待真实应答。多客户端要求明确选择；丢失应答不会自动重发。回执为 pending 时带现有请求引用，使用 `get_authoring_client_request` 查询，不把请求已接收当作执行完成。草稿的确切引用与恢复前提仍由调用方明确选择。
 
 | 标识 | 来源 | 用途 |
 | --- | --- | --- |
@@ -59,9 +63,9 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 ## 5. 文稿修改
 
-普通编辑通过一次 MCP 调用完成。`rename_page` 接收页码（从 1 开始）或稳定 ID 与标题；`edit_document` 接收最多 32 个标准内容操作。适配器在服务端串联现有 `read/plan/checkApply/apply`，沿用 CAS、验证、锁、修改历史与保存后读取，不持有第二套事务或计划表。请求最多 32768 个 JSON 字符；标准操作的参数格式直接复用内核 `DocumentChange` 的定义。可选 `source` 将意图绑定到先前读取的版本；省略时以本次调用读取的版本为基础，期间发生并发写入仍返回 409，不自动重试。请求回执丢失时先读取当前状态，不盲目重新写入。
+普通编辑通过一次 MCP 调用完成。`get_context` 返回当前编辑器页、步骤、标题、讲稿与实际报告的选中文字；读取保存内容，不读取未提交草稿。多文稿时从当前成员的已连接编辑器定位，多个文稿或不同位置不能确定时要求明确目标。`edit_narration` 按唯一原文替换或删除一句，默认使用当前页与步骤，保留读音和 cue；原文缺失、重复、编辑器尚未保存或版本已过期时拒绝修改。`rename_page` 接收页码（从 1 开始）或稳定 ID 与标题；`edit_document` 接收最多 32 个标准内容操作。适配器在服务端串联现有 `read/plan/checkApply/apply`，沿用 CAS、验证、锁、修改历史与保存后读取，不持有第二套事务或计划表。请求最多 32768 个 JSON 字符；标准操作的参数格式直接复用内核 `DocumentChange` 的定义。可选 `source` 将意图绑定到先前读取的版本；省略时以本次调用读取的版本为基础，期间发生并发写入仍返回 409，不自动重试。请求回执丢失时先读取当前状态，不盲目重新写入。
 
-回执给出保存版本、修改摘要、修改历史 ID，以及 `rename_page` 实际保存的标题。编辑器反馈最多等待 750 毫秒，使用 `AuthoringClients` 的真实报告，分别列出保存版本是否已被编辑器采用、预览是否准备为同一版本。`current/pending/unavailable` 描述编辑器报告，不代表视觉检查；反馈失败也保留成功的保存状态。普通编辑按回执报告结果，不默认编译整份文稿、截图或生成配音。
+普通回执只给出 `saved`、`changed`、实际修改值和编辑器状态；`details: true` 才给出保存版本、修改摘要、修改历史 ID 与校验详情。编辑器反馈最多等待 750 毫秒，使用 `AuthoringClients` 的真实报告，分别列出保存版本是否已被编辑器采用、预览是否准备为同一版本。`current/pending/unavailable` 描述编辑器报告，不代表视觉检查；反馈失败也保留成功的保存状态。普通编辑按回执报告结果，不默认编译整份文稿、截图或生成配音。
 
 服务自身的作者访问令牌授权普通规范内容编辑，无需再次在 Studio 确认。通用接口携带 `fileChanges` 或 `replacement` 时保留原确认；代码执行、收费服务和浏览器控制也保持各自策略。经接口签发的其他令牌维持原有授权方式。
 
@@ -72,9 +76,11 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 | 通用修改 | `plan_document_change` → `apply_document_change` | `DocumentChange`：`DOCUMENT_OPERATION_TYPES` 的九种操作、整份 replacement、同文稿文本 `fileChanges` |
 | 页面 | `plan_page_change` → `apply_page_change` | `create`、`rename`、`move`、`delete` |
 | 页面复制 | `plan_page_duplication` → `apply_page_duplication` | 复制一页 |
-| 语义动作 | `plan_authoring_action` → `apply_authoring_action` | `DOCUMENT_AUTHORING_ACTION_TYPES`：`comment.*` 七种、`voice.set`、`component.*` 四种、`caption.timing.set/reset` |
+| 语义动作 | `plan_authoring_action` → `apply_authoring_action` | `DOCUMENT_AUTHORING_ACTION_TYPES`：`comment.*` 七种、`voice.set`、`component.*` 四种、`caption.timing.set/reset`、`caption.scale.set` |
 | 项目 | `plan_project_change` → `apply_project_change` | 新建、复制、目录改名、删除、标题 retitle |
 | 转写采用 | `plan_transcription_adoption` → `apply_transcription_adoption` | 第 8.3 节 |
+
+普通批注、音色、字幕与组件动作另有一步调用入口，名称由动作类型中的点与连字符换成下划线生成，例如 `comment_create`、`voice_set`、`caption_scale_set`。参数从同一个规范动作 Schema 投影，服务端内部读取版本并预检、提交；批注纯文本参数为 `text`，富文本沿用高级语义动作接口。删除另需 `confirm: true`。默认只返回动作结果，`details: true` 返回完整回执；响应丢失后读取当前内容，不盲目重发。
 
 类型清单在 `packages/kernel/src/contracts/authoring.ts` 与 `authoring-actions.ts`。计划按族隔离，一个族的候选不能交给另一个族的 apply。预检只做 Schema 校验、纯领域变换、元数据与精确缓存查询，不执行工程代码、转写或合成；需要实际运行才知道的结果标为未知。影响列出增删改的实体、共享定义与讲稿的使用者、失锚批注与失效的配音、字幕和计划。
 
