@@ -49,7 +49,7 @@ import { DocumentJobs } from './jobs.ts'
 import { VoiceoverJobs } from './voiceover-jobs.ts'
 import { contentText, localeOf, MESSAGES } from './messages.ts'
 import type { AgentPlace, Locale } from './messages.ts'
-import { changedBlocks, changedPlaces, findPlaceAtLine, findPlaceSource } from './places.ts'
+import { changedPlaces, findPlaceAtLine, findPlaceSource } from './places.ts'
 import { OperationLog } from './telemetry.ts'
 import type { OperationValue } from './telemetry.ts'
 import { PreviewPlayback } from './preview-playback.ts'
@@ -169,10 +169,6 @@ export interface WorkbenchState {
   isRepairingDiagnostics: boolean
   diagnosticsRepairFailure?: string
   pointer?: Pointer
-  /** Where the blocks the AI just changed are in the preview, for the kitten to walk to; `id` is new for each change. */
-  changeTrail?: { id: number, rects: PreviewRect[] }
-  /** The places the AI just changed, for the kitten in the editor to walk to; `id` is new for each change. */
-  changedPlaces?: { id: number, targets: PreviewAnchor[] }
   save: SaveState
   /** What the conversation's agent is told the author points at. */
   focus: FocusReport[]
@@ -337,7 +333,6 @@ export class Workbench {
   #pendingReveal?: PreviewAnchor
   /** The AI's changes to show on the document once the preview has them. */
   #pendingFlash?: ReviewChange[]
-  #trail = 0
   #lastPosition?: string
   #awaitingView?: WebView
   /** The forms asked for ahead of the author (`web:<dir>`, `slides:<dir>`), and the wait before asking for the slides. */
@@ -424,12 +419,6 @@ export class Workbench {
         && previous?.identity === authoring.identity && Boolean(previous?.version && authoring.version)
         && (previous?.version !== authoring.version || previous?.fingerprint !== authoring.fingerprint)
       if (!authoring.dirty && previous?.dirty || acknowledgedSourceChanged) { void this.#history.read(authoring.directory); void this.loadDocuments() }
-      // The source changed under an author with nothing unsaved while the AI holds a review: the AI changed it. The
-      // editor's kitten walks to the blocks whose content differs.
-      if (acknowledgedSourceChanged && !previous?.dirty && !previous?.saving && this.#state.review && previous?.content && authoring.content) {
-        const targets = changedBlocks(previous.content, authoring.content)
-        if (targets.length) this.#set({ changedPlaces: { id: ++this.#trail, targets } })
-      }
     })
     this.#diagnostics = new DocumentDiagnostics(this.client, store)
     this.#jobs = new DocumentJobs(this.client, store)
@@ -804,7 +793,6 @@ export class Workbench {
     this.#pendingFlash = undefined
     const targets = changedPlaces(ir.doc, changes)
     if (targets.length === 0) return
-    this.#trail++
     this.#broadcast({ type: 'flash', targets })
     this.#record('ai.change.shown', { 'presmium.places': targets.map(target => [target.section, target.block].filter(Boolean).join(':')).join('\n') })
   }
@@ -2289,9 +2277,6 @@ export class Workbench {
         } else if (this.#state.pointer?.quote) this.point(undefined)
         break
       }
-      case 'flashed':
-        if (this.#trail) this.#set({ changeTrail: { id: this.#trail, rects: report.rects } })
-        break
       case 'rect':
         if (this.#state.pointer) this.#set({ pointer: { ...this.#state.pointer, rect: report.rect ?? undefined, obstacles: report.obstacles } })
         break

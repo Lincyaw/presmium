@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode, RefObject } from 'react'
-import { PmButton, PmDialog, PmIconButton, PmMascot, PmMenu, PmNotice, PmSkeleton, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
+import { PmButton, PmDialog, PmIconButton, PmMenu, PmNotice, PmSkeleton, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { failureReason, timeAgo } from '../messages.ts'
 import { SHORTCUTS } from '../shortcuts.ts'
@@ -409,10 +409,8 @@ function DocumentNotices() {
   const askFailure = useWorkbenchState(state => (state.pointer ? undefined : state.askFailure))
   return (
     <div className="pmw-notices">
-      {review?.running && <PmNotice tone="accent"><PmMascot size="small" action={review.changes.length > 0 ? 'write' : 'read'} />{t.agentWorking}</PmNotice>}
       {review && !review.running && review.changes.length > 0 && (
         <PmNotice tone="accent">
-          <PmMascot size="small" action="ask" />
           <span>{t.agentWaiting(review.changes.length)}</span>
           <span className="pmw-notice__actions">
             <PmButton small onClick={() => void workbench.rejectReview()}>{t.reject}</PmButton>

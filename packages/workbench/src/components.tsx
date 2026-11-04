@@ -1,6 +1,4 @@
 import type { IconName } from '@lincyaw/design'
-import { mountMascot } from '@lincyaw/design/mascot'
-import type { MascotAction } from '@lincyaw/design/mascot'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import * as Popover from '@radix-ui/react-popover'
@@ -11,7 +9,6 @@ import { forwardRef, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { ComponentProps, CSSProperties, InputHTMLAttributes, ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
 import { Group as ResizableGroup, Panel as ResizablePanel, Separator as ResizableSeparator } from 'react-resizable-panels'
 import { PmButton, PmIcon, PmIconButton, PmTooltip } from './base-controls.tsx'
-import { useMascotEnabled } from './mascot-preference.ts'
 import type { ControlDensity } from './base-controls.tsx'
 export { PmButton, PmIcon, PmIconButton, PmTooltip } from './base-controls.tsx'
 export type { ButtonVariant, ControlDensity } from './base-controls.tsx'
@@ -411,26 +408,6 @@ export function PmSkeleton({ label, shape = 'document' }: { label: string, shape
 
 export function PmNotice({ tone = 'neutral', children }: { tone?: 'neutral' | 'accent' | 'ok' | 'warn' | 'danger', children?: ReactNode }) {
   return <div className={cls('pm-ui-notice', tone !== 'neutral' && `pm-ui-notice--${tone}`)} role={tone === 'danger' ? 'alert' : 'status'}>{children}</div>
-}
-
-/** The Presmium kitten acting out what the assistant or a long task is doing. It is decoration: the text beside it
- * says the same thing for everyone, so it is hidden from assistive technology. Nothing shows when the author turned
- * the kitten off in Settings. */
-export function PmMascot(props: { action: MascotAction, size?: 'small' | 'regular' }) {
-  return useMascotEnabled() ? <MascotPlayer {...props} /> : null
-}
-
-function MascotPlayer({ action, size = 'regular' }: { action: MascotAction, size?: 'small' | 'regular' }) {
-  const ref = useRef<HTMLSpanElement>(null)
-  const player = useRef<ReturnType<typeof mountMascot>>(undefined)
-  const first = useRef(action)
-  useEffect(() => {
-    const mounted = mountMascot(ref.current!, first.current)
-    player.current = mounted
-    return () => mounted.stop()
-  }, [])
-  useEffect(() => { player.current?.set(action) }, [action])
-  return <span ref={ref} className={cls('pm-ui-mascot', size === 'small' && 'pm-ui-mascot--sm')} data-pm-mascot={action} aria-hidden="true" />
 }
 
 export interface RangeProps {

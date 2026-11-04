@@ -14,7 +14,7 @@
 | `packages/design/src/typography.css` | 标题与正文的换行规则（第 5.4 节） |
 | `packages/design/src/fonts.css` | 随包字体的加载入口 |
 | `packages/design/src/icons.ts` | Lucide 图标的语义名 |
-| `packages/design/src/assets/` | 品牌标志 `brandMarkup()`、小猫精灵图 `mountMascot`，来源登记在 `manifest.json` |
+| `packages/design/src/assets/` | 品牌标志 `brandMarkup()`，来源登记在 `manifest.json` |
 | `packages/design/src/design.css` | 字体、令牌与控件样式的装配入口 |
 | `packages/workbench/src/components.tsx` | 工作台的公共 React 控件 |
 | `packages/host/src/design/components.ts`（菜单在 `menu.ts`、分段控件在 `segmented.ts`，页面不用时不加载） | 产物与插件使用的公共 React 控件 |
@@ -92,7 +92,6 @@
 | SortableList | `PmSortableList`（workbench，dnd kit） | 按稳定 ID 提交一次移动；禁用排序不禁止选择 |
 | SchemaForm | `PmSchemaForm`（workbench，RJSF） | 用公共控件渲染组件参数；只显示声明的字段，未声明数据原样保留 |
 | Caption | `PmCaption`、`PmCaptionProvider`（host），`caption.css` | 放映字幕浮层，超长在安全区内滚动，不改变画布布局 |
-| Mascot | `PmMascot`（workbench）、`mountMascot`（design） | 装饰，读屏忽略；尺寸 `--pm-size-mascot`；减少动态效果时停在首帧；作者可在设置中隐藏 |
 | 领域控件 | workbench 的 `NarrationEditor`、`MediaClipEditor`、`DocumentBlockPreview` | 组合以上控件；领域数据只决定内容，边界、焦点与热区遵循本规范 |
 | 编辑器适配 | `pm-ui-block-editor` | 通过 BlockNote 的公开类（`.bn-side-menu`、`.bn-formatting-toolbar`、`.bn-suggestion-menu`、`.bn-thread`）适配热区与令牌 |
 

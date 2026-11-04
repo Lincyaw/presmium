@@ -5,7 +5,6 @@ import { registerAuthorSettings } from './author-settings.ts'
 import { registerSpeechSettings } from './speech-settings.tsx'
 import { openSpeechSettings } from './settings-opener.ts'
 import { registerBrand } from './brand.tsx'
-import { registerMascot } from './mascot.tsx'
 import { CLIENT_ID, isBootEntryLoaded, ROOT_CHILDREN, UI_LAYOUT, UI_SIDEBAR } from './contract.ts'
 import { syncDocumentContext } from './document-context.ts'
 import { FALLBACK_PANEL, registerFallbackLayout } from './fallback.tsx'
@@ -148,7 +147,6 @@ export function apply(ctx: DshClientContext): void {
     }, 'presmium: the root layout and ctx.layout')
   }
   registerBrand(ctx, workbench)
-  registerMascot(ctx, workbench)
   registerAuthorSettings(ctx)
   registerSpeechSettings(ctx, workbench)
   ctx.inject(['layout'], inner => inner.effect(() => connectLaunchTarget(workbench,
