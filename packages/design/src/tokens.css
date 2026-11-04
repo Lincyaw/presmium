@@ -78,6 +78,21 @@
   --pm-caption-max-height: 28vh;
   --pm-caption-safe-bottom: 3rem;
   --pm-caption-overlay-max-height: 35%;
+  /* Captions burned into an exported video, measured on its frame (the export window is the frame): about 48 px text on
+     a 1080p frame, the size of a slide's body text, across up to 89% of the width so that most sentences take one line
+     (two at most), its box about 30 px above the bottom edge; one line takes the bottom tenth of the frame. The box is a
+     see-through light gray, so that it hides as little of the picture as it can; near-black ink with a faint light halo
+     stays readable over light and dark pictures alike. Colours come from ink and page, so the dark appearance turns
+     them into a see-through dark gray with light text. */
+  --pm-caption-burn-size: 4.5vh;
+  --pm-caption-burn-leading: 1.35;
+  --pm-caption-burn-width: 89vw;
+  --pm-caption-burn-bottom: 2.8vh;
+  --pm-caption-burn-padding: 0.35em 0.7em;
+  --pm-caption-burn-radius: 0.45em;
+  --pm-caption-burn-bg: color-mix(in srgb, color-mix(in srgb, var(--pm-color-ink) 12%, var(--pm-color-bg)) 62%, transparent);
+  --pm-caption-burn-fg: var(--pm-color-ink);
+  --pm-caption-burn-halo: 0 0 0.03em color-mix(in srgb, var(--pm-color-bg) 85%, transparent);
   --pm-text-reading: 1.0625rem;
   --pm-text-title: 1.25rem;
   --pm-text-page-title: 1.75rem;
@@ -336,6 +351,8 @@
   --pm-color-syntax-key: #d3a3e3;
   --pm-color-syntax-string: #9ccb8f;
   --pm-color-syntax-keyword: #e59a6b;
+  /* Light text over a light picture needs a denser box than dark text over a dark one for the same contrast. */
+  --pm-caption-burn-bg: color-mix(in srgb, color-mix(in srgb, var(--pm-color-ink) 12%, var(--pm-color-bg)) 70%, transparent);
   /* The same hues stepped for the dark page; the colour on its own fill stays above 3:1 as an edge. */
   --pm-color-category-1: #5c86f4;
   --pm-color-category-1-soft: #29395f;

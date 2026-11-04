@@ -92,6 +92,7 @@
 | SortableList | `PmSortableList`（workbench，dnd kit） | 按稳定 ID 提交一次移动；禁用排序不禁止选择 |
 | SchemaForm | `PmSchemaForm`（workbench，RJSF） | 用公共控件渲染组件参数；只显示声明的字段，未声明数据原样保留 |
 | Caption | `PmCaption`、`PmCaptionProvider`（host），`caption.css` | 放映字幕浮层，超长在安全区内滚动，不改变画布布局 |
+| 烧录字幕 | `.pm-lecture-caption`（addon-lecture） | 导出视频画面上的字幕，与放映字幕浮层分开；字号、宽度、底边距、内边距与颜色取 `--pm-caption-burn-*` 令牌，按画面比例：1080p 画面上约 48 px（与幻灯片正文相当），最宽为画面宽度的 89%，框底距底边约 30 px，一行字幕只占画面底部约十分之一；字幕分段至多 42 字，至多两行，两行时行长平衡。底色是半透明的浅灰，尽量少遮挡画面，近黑色半粗字带一圈很淡的浅色描边，在浅色与深色画面上都可读；颜色由墨色与页面色混合，暗色外观下是半透明深灰与浅色字 |
 | Mascot | `PmMascot`（workbench）、`mountMascot`（design） | 装饰，读屏忽略；尺寸 `--pm-size-mascot`；减少动态效果时停在首帧；作者可在设置中隐藏 |
 | 领域控件 | workbench 的 `NarrationEditor`、`MediaClipEditor`、`DocumentBlockPreview` | 组合以上控件；领域数据只决定内容，边界、焦点与热区遵循本规范 |
 | 编辑器适配 | `pm-ui-block-editor` | 通过 BlockNote 的公开类（`.bn-side-menu`、`.bn-formatting-toolbar`、`.bn-suggestion-menu`、`.bn-thread`）适配热区与令牌 |
