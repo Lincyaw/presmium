@@ -45,6 +45,7 @@ export function nodeSpeech(ctx: NodeServiceContext): SpeechService {
     },
     alignWords: (key, options, signal) => speech.alignWords(key, options, signal),
     pruneLock: keep => speech.cache.pruneLock(keep),
+    pruneCache: (keep, options) => speech.pruneCache(keep, options),
     transcribe: (request, signal) => speech.transcribe(request, signal),
     async cloneVoice(request, signal) {
       const bytes = async (blob: Blob) => new Uint8Array(await blob.arrayBuffer())

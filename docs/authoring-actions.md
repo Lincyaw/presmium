@@ -172,6 +172,14 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 - ASR 词时属于原录音，永远不作为新 TTS 的字幕时间。新 TTS 有真实 words 时按 display 与 spoken 映射字幕，否则只显示分段或标明的比例估时。可能调用 ASR 的对齐只在明确的生成或对齐意图内发生。
 - 产物只在 source、revision、planId 与缓存键全部匹配时进入当前计划，旧 TTS 不与新字幕混播。
 
+**命令行**（`packages/cli/src/voiceover.ts`）：`presmium voiceover <文稿>` 不经工作区服务，在自己的进程中编译文稿，用文稿插件的同一个 `VOICEOVER_EXECUTION`。运营者目录、语音服务与密钥按 `presmium serve` 的方式取得（`PRESMIUM_OPERATOR_DIR`、运营者的语音设置、`PRESMIUM_SPEECH_*`）。
+
+- 预检是 `VoiceoverExecution.sentences`：按阅读顺序列出整份文稿生成时处理的每一句，带精确的 `SynthesisRequest`、精确缓存是否命中、不能生成的原因与步骤绑定；只查缓存与音色目录，不合成。`defaultVoice` 按“文稿默认音色换成它”回答，继承文稿默认或未设置音色的语句改用它。
+- 不加 `--yes` 时只报告：每个语音服务（本机或云端）、音色、缺少精确缓存的语句数与字符数（云端服务按字符计费）、不能生成的语句及原因；不合成、不写文件。`--yes` 是作者对这次收费生成的同意，与 MCP 的 `spend` 批准相当；不加它不会开始任何收费操作。
+- `--yes` 时以缺失语句所在步骤的 `steps` 范围（有跨步语句时为 `document`）调用 `prepare` 与 `run`，只合成缺失的语句，之后再读一遍 `sentences` 核验；仍有应配音的语句没有音频、被取消或文稿已变化时退出码为 1。CLI 不经 `DOCUMENT_VOICE_TASKS` 与 `createVoiceoverOwner`，生成锁只在本进程有效，不与运行中的工作台同时生成同一文稿。
+- `--voice <服务>:<音色>` 先按 `voice.set` 的文稿范围规则（`changeDocumentVoice`，保留页面与步骤的设置）改 `production.defaults.voiceSource`，经 `validateDocument` 后按文件原有的缩进原子写入 `lecture.json`；新音色下有语句因音色或服务不可用而不能生成时不写入。
+- `--prune` 经 `SpeechService.pruneCache` 删除当前语句都不用的缓存条目（`.presmium/speech/` 的音频、记录与对齐文件，以及 `speech.lock.json` 的条目）。条目按请求键（服务、音色、语言、语速、风格、文字与读音，与配置档无关）判断是否在用，同一句在另一配置下生成的音频保留；请求没有服务且没有默认服务、或文稿有错误诊断时拒绝。
+
 ## 10. 任务反馈
 
 构建、配音与转写各自保留执行器。共同规则：

@@ -226,9 +226,9 @@ packages/addon-<ctx>/
 
 ### 4.8 语音、智能体与历史
 
-工作台“语音服务”保存火山引擎语音 API Key 至运营者目录的 `speech/credentials.json`（`0600`），经文件锁、修订比较及原子替换写入。所有者路由只返回状态。共享 Node secret 解析器优先使用保存值，再回退启动环境；保存的 Key 不继承环境 App ID。配置变化刷新目录与适配器，不隐式合成或验证服务权限。
+工作台“语音服务”保存火山引擎语音 API Key 至运营者目录的 `speech/credentials.json`（`0600`），经文件锁、修订比较及原子替换写入。所有者路由只返回状态。`presmium speech key set|clear|status [<目录>]` 经同一个 `OperatorSpeechSettings` 读写这个文件（运营者目录按 `presmium voiceover` 编译文稿时的方式取得：目录所在的工作区，`PRESMIUM_OPERATOR_DIR` 可另指定），密钥只从标准输入读入、不回显，`status` 只说明是否配置及来源。共享 Node secret 解析器优先使用保存值，再回退启动环境；保存的 Key 不继承环境 App ID。配置变化刷新目录与适配器，不隐式合成或验证服务权限。
 
-- `SPEECH` 提供合成、转写、音色；引擎由运营者以 `PRESMIUM_SPEECH_<ID>_URL`、`_KEY`、`_PROVIDER` 定义。语音 `lang` 是 BCP 47。
+- `SPEECH` 提供合成、转写、音色与配音缓存的清理（`pruneCache`）；引擎由运营者以 `PRESMIUM_SPEECH_<ID>_URL`、`_KEY`、`_PROVIDER` 定义。语音 `lang` 是 BCP 47。
 - 读者问答在浏览器中经读者自己的服务，不经站点服务端。
 - agent 工具的元数据标明种类（读取、操作、计费），确认按种类。
 - 每次接受的修改是一个 git 提交，尾注 `Presmium-Origin`，会话修改另有 `Presmium-Session`、`Presmium-Turn`。

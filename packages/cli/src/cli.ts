@@ -1,13 +1,13 @@
 import { existsSync, statSync } from 'node:fs'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { createJiti } from 'jiti'
-import { APPROVAL_KINDS, errorMessage } from '@lincyaw/kernel'
+import { APPROVAL_KINDS, deckLocale, errorMessage } from '@lincyaw/kernel'
 import { bracketIPv6, irRevision, lanAddresses } from '@lincyaw/kernel/node'
-import type { ApprovalKind, Finding, Severity } from '@lincyaw/kernel'
+import type { ApprovalKind, Finding, Severity, SpeechVoice } from '@lincyaw/kernel'
 import { build, Compiler, dev, resolveEntry } from '@lincyaw/compiler'
 import type { BuildReport, Compilation, RunStats } from '@lincyaw/compiler'
 import { isAnyAddress, isLoopback, serverConfigKey, servedDocument, startServer } from '@lincyaw/server'
@@ -18,7 +18,11 @@ import { runCheck } from './check.ts'
 import { documentPatterns, importMarkdown } from './import.ts'
 import type { CheckResult } from './check.ts'
 import { devHost } from './dev-host.ts'
+import { DocumentFileError, readDocumentFile, saveDocumentFile } from './document-file.ts'
 import { CLI_MESSAGES, systemLocale } from './messages.ts'
+import { exportScript, importScript, ScriptError } from './script.ts'
+import { runSpeechKey, SpeechKeyFailure } from './speech-key.ts'
+import { runVoiceover, VoiceoverFailure } from './voiceover.ts'
 
 const BUNDLED = fileURLToPath(new URL('..', import.meta.url))
 const PRESMIUM_BIN = fileURLToPath(new URL('../bin/presmium.mjs', import.meta.url))
@@ -69,6 +73,9 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
   if (argv[0] === 'studio') return runStudioCommand(argv.slice(1), bundled, options.bin ?? PRESMIUM_BIN)
   if (argv[0] === 'mcp') return runMcpCommand(argv.slice(1), bundled)
   if (argv[0] === 'import') return runImportCommand(argv.slice(1))
+  if (argv[0] === 'voiceover') return runVoiceoverCommand(argv.slice(1), bundled)
+  if (argv[0] === 'speech') return runSpeechCommand(argv.slice(1))
+  if (argv[0] === 'script') return runScriptCommand(argv.slice(1))
   let command: Command | 'help'
   try {
     command = parseCommand(argv)
@@ -366,6 +373,143 @@ function runImportCommand(argv: string[]): number {
   process.stdout.write(`${t.imported(report.documents.length, report.files, relative(process.cwd(), out) || '.')}\n`)
   if (report.documents.length > 0) process.stdout.write(`${t.importPatterns(documentPatterns(report.documents))}\n`)
   return 0
+}
+
+const HELP = { type: 'boolean', short: 'h', default: false } as const
+
+function usageError(error: unknown): number {
+  process.stderr.write(`presmium: ${errorMessage(error)}\n\n${t.usage}\n`)
+  return 2
+}
+
+function fail(message: string, code: number): number {
+  process.stderr.write(`presmium: ${message}\n`)
+  return code
+}
+
+/** A path as typed from here: relative below the working directory, absolute elsewhere. */
+function shownPath(path: string): string {
+  const shown = relative(process.cwd(), path)
+  return !shown ? '.' : shown.startsWith('..') ? path : shown
+}
+
+function documentFileMessage(error: DocumentFileError): string {
+  return error.code === 'document-changed' ? t.documentChanged : t.documentInvalid(error.detail)
+}
+
+/** The deck's entry, or a usage error already printed. */
+function deckEntry(deck: string): string | undefined {
+  try {
+    const entry = resolveEntry(deck)
+    if (existsSync(entry)) return entry
+    fail(t.notFound(entry), 2)
+  } catch (error) {
+    fail(errorMessage(error), 2)
+  }
+  return undefined
+}
+
+async function runVoiceoverCommand(argv: string[], bundled: string): Promise<number> {
+  let parsed
+  try {
+    parsed = parseArgs({ args: argv, allowPositionals: true, options: { voice: { type: 'string' }, yes: { type: 'boolean', default: false }, prune: { type: 'boolean', default: false }, json: { type: 'boolean', default: false }, help: HELP } })
+  } catch (error) {
+    return usageError(error)
+  }
+  const { values, positionals } = parsed
+  if (values.help) {
+    process.stdout.write(`${t.usage}\n`)
+    return 0
+  }
+  const [deck = '.', ...extra] = positionals
+  if (extra.length > 0) return fail(t.unexpectedArgument(extra[0]!), 2)
+  let voice: SpeechVoice | undefined
+  if (values.voice !== undefined) {
+    const at = values.voice.indexOf(':'), engine = values.voice.slice(0, Math.max(at, 0)).trim(), id = values.voice.slice(at + 1).trim()
+    if (at < 0 || !engine || !id) return fail(t.badVoice(values.voice), 2)
+    voice = { engine, voice: id }
+  }
+  const entry = deckEntry(deck)
+  if (!entry) return 2
+  try {
+    return await runVoiceover({ entry, ...voice ? { voice } : {}, yes: values.yes, prune: values.prune, json: values.json, bundled }, t)
+  } catch (error) {
+    if (error instanceof VoiceoverFailure) return fail(error.message, 1)
+    if (error instanceof DocumentFileError) return fail(documentFileMessage(error), 1)
+    return fail(errorMessage(error), 2)
+  }
+}
+
+async function runSpeechCommand(argv: string[]): Promise<number> {
+  let parsed
+  try {
+    parsed = parseArgs({ args: argv, allowPositionals: true, options: { help: HELP } })
+  } catch (error) {
+    return usageError(error)
+  }
+  const { values, positionals } = parsed
+  if (values.help) {
+    process.stdout.write(`${t.usage}\n`)
+    return 0
+  }
+  const [group, action, dir = '.', ...extra] = positionals
+  if (group !== 'key' || (action !== 'set' && action !== 'clear' && action !== 'status')) return fail(t.speechUsage, 2)
+  if (extra.length > 0) return fail(t.unexpectedArgument(extra[0]!), 2)
+  if (!existsSync(dir) || !statSync(dir).isDirectory()) return fail(t.notFound(resolve(dir)), 2)
+  try {
+    return await runSpeechKey(action, resolve(dir), t)
+  } catch (error) {
+    return fail(errorMessage(error), error instanceof SpeechKeyFailure ? 1 : 2)
+  }
+}
+
+/** The narration as one Markdown file to polish (`export`), and the polished file back into lecture.json (`import`). */
+async function runScriptCommand(argv: string[]): Promise<number> {
+  let parsed
+  try {
+    parsed = parseArgs({ args: argv, allowPositionals: true, options: { out: { type: 'string' }, help: HELP } })
+  } catch (error) {
+    return usageError(error)
+  }
+  const { values, positionals } = parsed
+  if (values.help) {
+    process.stdout.write(`${t.usage}\n`)
+    return 0
+  }
+  const [action, deck, file, ...extra] = positionals
+  if (action !== 'export' && action !== 'import') return fail(t.scriptUsage, 2)
+  if (!deck) return fail(t.scriptUsage, 2)
+  const unexpected = action === 'export' ? file ?? extra[0] : extra[0]
+  if (unexpected !== undefined) return fail(t.unexpectedArgument(unexpected), 2)
+  if (action === 'import' && values.out !== undefined) return fail(t.optionNotFor('out', 'script import'), 2)
+  const entry = deckEntry(deck)
+  if (!entry) return 2
+  const fallback = join(dirname(entry), 'dist', 'script.md')
+  try {
+    const source = readDocumentFile(entry)
+    if (action === 'export') {
+      const out = resolve(values.out ?? fallback)
+      const written = exportScript(source.document, CLI_MESSAGES[deckLocale(source.document.metadata.lang)].scriptInstructions)
+      await mkdir(dirname(out), { recursive: true })
+      await writeFile(out, written.text)
+      process.stdout.write(`${t.scriptExported(shownPath(out), written.narrations, written.steps)}\n`)
+      return 0
+    }
+    const input = resolve(file ?? fallback)
+    if (!existsSync(input)) return fail(t.notFound(input), 2)
+    const { document, changed } = importScript(source.document, await readFile(input, 'utf8'))
+    if (changed.length === 0) {
+      process.stdout.write(`${t.scriptUnchanged}\n`)
+      return 0
+    }
+    saveDocumentFile(source, document)
+    process.stdout.write(`${t.scriptImported(changed)}\n${t.scriptNext(shownPath(dirname(entry)))}\n`)
+    return 0
+  } catch (error) {
+    if (error instanceof ScriptError) return fail(t.scriptErrors[error.code](error.detail, error.line), 1)
+    if (error instanceof DocumentFileError) return fail(documentFileMessage(error), 1)
+    return fail(errorMessage(error), 2)
+  }
 }
 
 async function runStudioCommand(argv: string[], bundled: string, presmiumBin: string): Promise<number> {
