@@ -23,6 +23,7 @@ workspace 为每项能力创建一个实例，HTTP 与 MCP 共用实例与回执
 | `createDocumentImageAuthoring`（`document-images.ts`） | `document/image`、`document/asset` | `image-authoring.ts` |
 | `createDocumentTranscriptions`、`createTranscriptionAdoption` | `document/transcription*` | `transcription.ts` |
 | `createDocumentVoiceAuthoring`（`document-voice.ts`） | `voice-*` | `voice-authoring.ts` |
+| `AgentSessionReviews`、`createWorkspaceReview`（`review/`） | `review`、`review/accept`、`review/reject`、`review/restore` | `workspace-review.ts` |
 | `OperatorSpeechSettings`（kernel 的 `node/operator-speech.ts`） | `speech-settings` | `speech-settings.ts` |
 | `createAuthoringClients`（`authoring-clients.ts`） | 共享 WebSocket 的 `authoring-client` 通道 | `authoring-clients.ts` |
 | `OutputJobs`（`jobs.ts`） | `jobs*` | `mcp.ts` 的 `build/get_builds/cancel_build` |
@@ -239,6 +240,13 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 ## 12. 历史、审阅与权限
 
+工作区审阅由同一个 `AgentSessionReviews` 管理，`get_review/change_review` 是它的有界 MCP 入口。工具目录与执行入口都要求未绑定文稿、未预先确认的工作区所有者凭据；文稿内助手不获得这些工具。修改请求走 `write/workspace` 确认。
+
+- `get_review` 默认只返回审阅身份、运行状态、文件数、步骤数和 snapshot；没有审阅时为 `review: null`。`part: files/steps` 分页读取元数据，`part: diff` 指定确切文件和可选检查点，按 UTF-16 偏移分片并携带完整 diff 的 SHA-256。后续页须固定 snapshot。二进制或过大的 diff 明确报告不可用，不当作空差异。
+- 默认读取在 Git owner 层不生成文本 diff；详细读取只生成所选文件的 diff，不注册 watcher、不改变自动超时。请求最多 8192 字符，响应最多 7168 字符。
+- `change_review` 接受、拒绝所选文件或整份候选、恢复检查点。拒绝和恢复需 `confirm: true`。普通调用的 snapshot 由服务端读取；可显式固定此前读取的 snapshot。运行中、候选树或审阅身份变化、未知文件与检查点都拒绝，不自动换成新的材料继续。
+- 接受固定原 Git 树的字节，等待编辑器 flush、工作区根锁与 Git 队列后重新核对候选，再经原文件 CAS 与提交事务发布。最终写入不重新读取候选文件，二进制、链接与可执行模式都由同一 Git 树绑定。回执只返回真实 outcome、提交 ID 和处理或剩余文件数；丢失应答后先读取审阅与历史，不自动重复接受或丢弃。
+
 **历史**（`kernel/src/contracts/document-history.ts`）
 
 - 每次保存（作者动作、Studio 中的保存、AI 的修改与撤消）是当前分支上的一个 git 提交，带 `Presmium-Origin` 等尾注与 `Co-authored-by`。本机服务的作者（`LOCAL_AUTHOR`）以仓库配置的 `user.name` 与 `user.email` 为作者，git 没有配置时为 `local author <local@presmium.invalid>`；多人服务中的成员以自己的名字与邮箱为作者。提交者是 git 配置的身份，没有时为 `Presmium <presmium@presmium.invalid>`。
@@ -290,7 +298,7 @@ agent 的循环：探测能力 → 读源 → 预检 → 提交或开始任务 �
 - 统一任务接口、事件游标与跨重启的意图账本。
 - 远程上传素材；MCP 只导入工作区内已有文件。
 - 步骤的新建、重排与删除动作，共享讲稿的分离编辑，独立组件实现副本。
-- 审阅的 MCP 动作、项目恢复、任意 checkout 或 discard。
+- 项目恢复、任意 checkout 或 discard；未提交文件的提交与丢弃尚未接入 MCP。
 - 新建批注 composer 的草稿恢复，其它未接入表单的草稿。
 - 原音与新讲稿的自动词对齐、跨步连续分配原音、只转写所选区间。
 - 通用 `plan_document_change`、`apply_document_change` 的大文稿输入没有预算（它们的结果不带文稿，用 `read_document_part` 读取）；agent 优先用页面与语义动作。

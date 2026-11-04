@@ -85,16 +85,17 @@ export class AgentWorkspace {
   }
 
   /** Caller holds the original workspace's mutation lock and history transaction. */
-  prepare(paths: string[]): { changes: DocumentFileChange[], restore: DocumentFileChange[] } {
+  prepare(paths: string[], fixed?: DocumentFileChange[]): { changes: DocumentFileChange[], restore: DocumentFileChange[] } {
+    if (fixed && (fixed.length !== paths.length || fixed.some((change, index) => change.path !== paths[index]))) throw new RequestError(409, 'workspace-review-changed')
     const conflicts = paths.filter(path => !same(stamp(join(this.#config.root, path)), this.record.base[path]))
     if (conflicts.length) throw new RequestError(409, 'agent-source-changed', { paths: conflicts, next: 'The author changed these files. Read the current author files again and retry your change. Nothing was published.' })
     const changes: DocumentFileChange[] = [], restore: DocumentFileChange[] = []
-    for (const path of paths) {
+    for (const [index, path] of paths.entries()) {
       if (!path || path.split('/').some(part => !part || part === '.' || part === '..' || part === '.git') || path.startsWith('.presmium/agent-workspaces/')) throw new RequestError(403, 'agent-source-path-invalid')
-      const before = stamp(join(this.#config.root, path)), after = stamp(join(this.root, path))
+      const before = stamp(join(this.#config.root, path)), after = fixed ? undefined : stamp(join(this.root, path))
       const read = (root: string, value: FileStamp | undefined): DocumentFileChange => !value ? { path, remove: true }
         : value.link ? { path, link: readlinkSync(join(root, path)) } : { path, content: readFileSync(join(root, path)), ...value.executable ? { executable: true } : {} }
-      const change = read(this.root, after)
+      const change = fixed?.[index] ?? read(this.root, after)
       if ('content' in change) validateDocumentSource(path, Buffer.from(change.content).toString('utf8'), before && !before.link ? readFileSync(join(this.#config.root, path)) : undefined)
       changes.push(change); restore.push(read(this.#config.root, before))
     }

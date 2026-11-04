@@ -1,8 +1,8 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { errorMessage, pushStream } from '@lincyaw/kernel'
-import type { DocumentFiles, Logger, Member, ReviewEnd, ReviewSnapshot, ReviewUpdate } from '@lincyaw/kernel'
+import type { DocumentFiles, Logger, Member, ReviewChange, ReviewEnd, ReviewSnapshot, ReviewUpdate } from '@lincyaw/kernel'
 import { trailers } from '../../domain/commit-message.ts'
 import type { WorkspaceConfig } from '../config.ts'
 import { listDocuments } from '../config.ts'
@@ -149,12 +149,47 @@ export class AgentSessionReviews {
     })
   }
 
-  async snapshot(): Promise<ReviewSnapshot | undefined> {
-    const open = this.#open
-    return open && await this.#snapshotOf(open)
+  snapshot(): Promise<ReviewSnapshot | undefined> {
+    return this.#serial(async () => this.#open && await this.#snapshotOf(this.#open))
   }
 
-  async #snapshotOf(open: OpenReview): Promise<ReviewSnapshot> {
+  inspect(): Promise<{ snapshot: string, review: ReviewSnapshot } | undefined> {
+    return this.#serial(async () => { if (!this.#open) return; const { snapshot, review } = await this.#inspect(this.#open); return { snapshot, review } })
+  }
+
+  async #inspect(open: OpenReview) {
+    const { tree, version, changes } = await open.review.inspect()
+    const review = await this.#snapshotOf(open, changes)
+    review.steps = review.steps.map(step => ({ ...step, changes: step.changes.map(({ diff: _diff, ...change }) => change) }))
+    return { tree, review, snapshot: createHash('sha256').update(JSON.stringify([version, review])).digest('hex') }
+  }
+
+  async #expected(open: OpenReview, expected: string | undefined, signal?: AbortSignal): Promise<void> {
+    signal?.throwIfAborted()
+    if (expected === undefined) return
+    if (open.running) throw new RequestError(409, 'workspace-review-running')
+    if ((await this.#inspect(open)).snapshot !== expected) throw new RequestError(409, 'workspace-review-changed')
+    signal?.throwIfAborted()
+  }
+
+  check(expected: string): Promise<void> {
+    return this.#serial(async () => this.#expected(this.#requireOpen('', expected), expected))
+  }
+
+  readDiff(expected: string, path: string, step?: string): Promise<ReviewChange | undefined> {
+    return this.#serial(async () => {
+      const open = this.#requireOpen('', expected)
+      const current = await this.#inspect(open)
+      if (current.snapshot !== expected) throw new RequestError(409, 'workspace-review-changed')
+      const files = step === undefined ? current.review.changes : current.review.steps.find(value => value.id === step)?.changes
+      if (!files?.some(file => file.path === path)) return
+      const value = await open.review.diffFile(path, step)
+      if ((await this.#inspect(open)).snapshot !== expected) throw new RequestError(409, 'workspace-review-changed')
+      return value
+    })
+  }
+
+  async #snapshotOf(open: OpenReview, changes?: ReviewChange[]): Promise<ReviewSnapshot> {
     return {
       id: open.review.task,
       document: open.document,
@@ -166,7 +201,7 @@ export class AgentSessionReviews {
       mode: reviewSettings(this.#options.config).mode,
       opened: open.opened,
       steps: [...open.review.steps()],
-      changes: await open.review.diff(),
+      changes: changes ?? await open.review.diff(),
     }
   }
 
@@ -267,10 +302,11 @@ export class AgentSessionReviews {
     })
   }
 
-  accept(document: string, body: { reject?: string[], message?: string }): Promise<ReviewEnd> {
+  accept(document: string, body: { reject?: string[], message?: string, expected?: string }, signal?: AbortSignal): Promise<ReviewEnd> {
     return this.#serial(async () => {
-      const open = this.#requireOpen(document)
-      try { return await this.#accept(open, body.reject ?? [], body.message) }
+      const open = this.#requireOpen(document, body.expected)
+      await this.#expected(open, body.expected, signal)
+      try { return await this.#accept(open, body.reject ?? [], body.message, signal, body.expected) }
       catch (error) {
         if (error instanceof RequestError && error.message === 'agent-source-changed') {
           await open.review.close()
@@ -282,10 +318,13 @@ export class AgentSessionReviews {
     })
   }
 
-  async #accept(open: OpenReview, reject: string[], message: string | undefined): Promise<ReviewEnd> {
+  async #accept(open: OpenReview, reject: string[], message: string | undefined, signal?: AbortSignal, expected?: string): Promise<ReviewEnd> {
+    const captured = await this.#inspect(open)
+    if (expected !== undefined && captured.snapshot !== expected) throw new RequestError(409, 'workspace-review-changed')
     const rejected = new Set(reject)
-    for (const change of await open.review.diff()) if (isInGitDir(change.path)) rejected.add(change.path)
-    const files = await open.review.prepareAccept([...rejected])
+    for (const change of captured.review.changes) if (isInGitDir(change.path)) rejected.add(change.path)
+    const files = captured.review.changes.filter(change => !rejected.has(change.path)).map(change => change.path)
+    const material = await open.review.readTree(captured.tree, files)
     if (!open.workspace) throw new RequestError(409, 'agent-workspace-unavailable')
     const lang = listDocuments(this.#options.config).find(doc => doc.dir === open.document)?.lang
     const steps = open.review.steps().map(step => `- ${step.label}`).slice(0, 20)
@@ -294,7 +333,14 @@ export class AgentSessionReviews {
     let revision
     try {
       revision = await this.#options.revisions.transaction(async () => {
-        const prepared = open.workspace!.prepare(files)
+        signal?.throwIfAborted()
+        if ((await this.#inspect(open)).snapshot !== captured.snapshot) throw new RequestError(409, 'workspace-review-changed')
+        const selected = await open.review.prepareAccept([...rejected])
+        if (JSON.stringify(selected) !== JSON.stringify(files)) throw new RequestError(409, 'workspace-review-changed')
+        try { await open.review.assertTree(captured.tree, [...rejected]) }
+        catch { throw new RequestError(409, 'workspace-review-changed') }
+        signal?.throwIfAborted()
+        const prepared = open.workspace!.prepare(files, material)
         try {
           open.workspace!.write(prepared.changes)
           return await this.#options.revisions.commitWhileLocked({ paths: files, summary: message?.trim() || commitSummary(files, lang), body: steps.join('\n'), origin: { kind: 'agent', task: open.review.task, member: open.member }, trailers: [[AGENT_SESSION_TRAILER, open.session], [TURN_TRAILER, `${open.turns.from}-${open.turns.to}`]] })
@@ -308,9 +354,10 @@ export class AgentSessionReviews {
     return ended
   }
 
-  reject(document: string, body: { paths?: string[] }): Promise<ReviewUpdate> {
+  reject(document: string, body: { paths?: string[], expected?: string }, signal?: AbortSignal): Promise<ReviewUpdate> {
     return this.#serial(async () => {
-      const open = this.#requireOpen(document)
+      const open = this.#requireOpen(document, body.expected)
+      await this.#expected(open, body.expected, signal)
       if (body.paths) {
         await open.review.restoreFiles(body.paths)
         if ((await open.review.diff()).length > 0) return { document, review: await this.#publish(open) }
@@ -323,9 +370,10 @@ export class AgentSessionReviews {
     })
   }
 
-  restore(document: string, body: { step: string }): Promise<ReviewSnapshot> {
+  restore(document: string, body: { step: string, expected?: string }, signal?: AbortSignal): Promise<ReviewSnapshot> {
     return this.#serial(async () => {
-      const open = this.#requireOpen(document)
+      const open = this.#requireOpen(document, body.expected)
+      await this.#expected(open, body.expected, signal)
       try {
         await open.review.restoreTo!(body.step)
       } catch (error) {
@@ -364,8 +412,9 @@ export class AgentSessionReviews {
     return open
   }
 
-  #requireOpen(document: string): OpenReview {
+  #requireOpen(document: string, expected?: string): OpenReview {
     const open = this.#open
+    if (!open && expected !== undefined) throw new RequestError(409, 'workspace-review-changed')
     if (!open) throw new RequestError(404, `no review of ${document || '.'} is open`)
     return open
   }

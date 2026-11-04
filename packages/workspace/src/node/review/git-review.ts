@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve, sep } from 'node:path'
@@ -12,6 +13,10 @@ import type { AgentSessionRecord, ReviewRecord } from './record.ts'
 
 export interface GitReview extends ChangeReview {
   readonly task: string
+  inspect(details?: boolean): Promise<{ tree: string, version: string, changes: ReviewChange[] }>
+  diffFile(path: string, step?: string): Promise<ReviewChange | undefined>
+  readTree(tree: string, paths: string[]): Promise<DocumentFileChange[]>
+  assertTree(tree: string, except: string[]): Promise<void>
   restoreFiles(paths: string[]): Promise<void>
   noteSession(session: Omit<AgentSessionRecord, 'checkpoints' | 'steps'>): void
   suspend(): void
@@ -137,13 +142,14 @@ class ReviewTrees {
       .map(this.fromGit).sort((a, b) => a.localeCompare(b))
   }
 
-  async compare(from: string, to: string): Promise<ReviewChange[]> {
+  async compare(from: string, to: string, details = true, only?: string): Promise<ReviewChange[]> {
     if (from === to) return []
-    const status = (await this.#text([...DIFF, '--name-status', '-z', from, to])).split('\0').filter(Boolean)
+    const paths = only === undefined ? [] : ['--', this.toGit(only)]
+    const status = (await this.#text([...DIFF, '--name-status', '-z', from, to, ...paths])).split('\0').filter(Boolean)
     const kinds = new Map<string, ReviewChangeKind>()
     for (let i = 0; i + 1 < status.length; i += 2) kinds.set(status[i + 1]!, status[i]!.startsWith('A') ? 'added' : status[i]!.startsWith('D') ? 'deleted' : 'modified')
     const counts = new Map<string, { added: number, removed: number, binary: boolean }>()
-    for (const entry of (await this.#text([...DIFF, '--numstat', '-z', from, to])).split('\0').filter(Boolean)) {
+    for (const entry of (await this.#text([...DIFF, '--numstat', '-z', from, to, ...paths])).split('\0').filter(Boolean)) {
       const [added = '0', removed = '0', ...path] = entry.split('\t')
       const binary = added === '-'
       counts.set(path.join('\t'), { added: binary ? 0 : Number(added), removed: binary ? 0 : Number(removed), binary })
@@ -152,7 +158,7 @@ class ReviewTrees {
     for (const [path, kind] of kinds) {
       const count = counts.get(path) ?? { added: 0, removed: 0, binary: false }
       const change: ReviewChange = { path: this.fromGit(path), kind, ...count }
-      if (!count.binary && changes.filter(c => c.diff).length < MAX_DIFFS) {
+      if (details && !count.binary && changes.filter(c => c.diff).length < MAX_DIFFS) {
         const diff = await this.#text([...DIFF, from, to, '--', path])
         if (diff.length <= MAX_DIFF) change.diff = diff
       }
@@ -190,10 +196,11 @@ class ReviewTrees {
     }
   }
 
-  async #write(tree: string, paths: string[]): Promise<void> {
+  async read(tree: string, paths: string[]): Promise<DocumentFileChange[]> {
     const entries = new Map<string, { mode: string, oid: string }>()
     for (const entry of (await this.#text(['ls-tree', '-r', '-z', tree, '--', ...paths])).split('\0').filter(Boolean)) {
-      const [meta = '', path = ''] = entry.split('\t')
+      const separator = entry.indexOf('\t')
+      const meta = entry.slice(0, separator), path = entry.slice(separator + 1)
       const [mode = '', , oid = ''] = meta.split(' ')
       entries.set(path, { mode, oid })
     }
@@ -208,7 +215,11 @@ class ReviewTrees {
       const blob = await this.#git(['cat-file', 'blob', entry.oid])
       changes.push(entry.mode === '120000' ? { path: this.fromGit(path), link: blob.toString('utf8') } : { path: this.fromGit(path), content: blob, ...entry.mode === '100755' ? { executable: true } : {} })
     }
-    await this.#files!.write(changes)
+    return changes
+  }
+
+  async #write(tree: string, paths: string[]): Promise<void> {
+    await this.#files!.write(await this.read(tree, paths))
   }
 
   async reset(tree: string): Promise<void> {
@@ -351,6 +362,12 @@ function createGitReview(open: { scopeDir: string, trees: ReviewTrees, restoreGi
     await trees.restore(snapshot, [...rejected])
     return changes.filter(path => !rejected.has(path))
   }
+  const inspect = async (details = false) => {
+    live()
+    restoreGitDir()
+    const tree = await trees.tree()
+    return { tree, version: createHash('sha256').update(JSON.stringify([snapshot, tree, checkpoints])).digest('hex'), changes: await trees.compare(snapshot, tree, details) }
+  }
 
   return {
     root: scopeDir,
@@ -374,10 +391,21 @@ function createGitReview(open: { scopeDir: string, trees: ReviewTrees, restoreGi
       return step
     },
     steps: () => steps,
-    async diff() {
+    inspect,
+    readTree: (tree, paths) => { live(); return trees.read(tree, paths.map(trees.toGit)) },
+    async assertTree(tree, except) {
+      live()
+      if ((await trees.changedPaths(tree, await trees.tree())).some(path => !except.includes(path))) throw new Error('workspace-review-changed')
+    },
+    diff: async () => (await inspect(true)).changes,
+    async diffFile(path, step) {
       live()
       restoreGitDir()
-      return trees.compare(snapshot, await trees.tree())
+      const at = step === undefined ? -1 : steps.findIndex(value => value.id === step)
+      if (step !== undefined && at < 0) return
+      const from = at < 0 ? snapshot : checkpoints[at]!, to = at < 0 ? await trees.tree() : checkpoints[at + 1]!
+      if (!(await trees.compare(from, to, false, path)).some(change => change.path === path)) return
+      return (await trees.compare(from, to, true, path)).find(change => change.path === path)
     },
     async restoreTo(stepId) {
       live()

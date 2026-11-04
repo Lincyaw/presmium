@@ -15,6 +15,7 @@ export interface McpMessages {
   previewVoice(voice: string): string
   cloneVoice(voice: string): string
   changeSpeechSettings: string
+  changeReview(action: 'accept' | 'reject' | 'restore'): string
   changeMediaClip(action: 'add' | 'update' | 'remove', clipId: string): string
   historyChange(which: 'undo' | 'redo' | 'revert', revision: string): string
   authoringClientAction(action: string): string
@@ -61,6 +62,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     previewVoice: voice => `试听音色“${voice}”`,
     cloneVoice: voice => `训练音色“${voice}”`,
     changeSpeechSettings: '修改语音服务设置',
+    changeReview: action => action === 'accept' ? '接受工作区修改' : action === 'reject' ? '拒绝工作区修改' : '恢复审阅步骤',
     changeMediaClip: action => action === 'add' ? '添加音频片段' : action === 'update' ? '调整音频片段' : '删除音频片段',
     historyChange: which => which === 'undo' ? '撤消上一次修改' : which === 'redo' ? '恢复上一次撤消的修改' : '撤消版本历史中的一项修改',
     authoringClientAction: () => '在编辑器中执行操作',
@@ -103,6 +105,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     previewVoice: voice => `Preview Voice “${voice}”`,
     cloneVoice: voice => `Train Cloned Voice “${voice}”`,
     changeSpeechSettings: 'Change Speech Settings',
+    changeReview: action => action === 'accept' ? 'Accept Workspace Changes' : action === 'reject' ? 'Reject Workspace Changes' : 'Restore Review Step',
     changeMediaClip: action => action === 'add' ? 'Add Audio Clip' : action === 'update' ? 'Adjust Audio Clip' : 'Delete Audio Clip',
     historyChange: which => which === 'undo' ? 'Undo Last Change' : which === 'redo' ? 'Redo Last Change' : 'Undo a Change from Version History',
     authoringClientAction: () => 'Perform Editor Action',
@@ -253,6 +256,19 @@ export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => s
     'voice-clone-unavailable': () => '当前语音服务没有可用的音色训练功能。请检查服务配置。',
     'voice-clone-audio-type': () => '请选择支持的音频文件作为样本和授权声明。',
     'voice-clone-expired': () => '这次音色训练请求已过期，请重新选择样本后再开始。',
+    'workspace-review-permission-denied': () => '审阅工作区修改需要未绑定文稿的所有者凭据。',
+    'workspace-review-unavailable': () => '当前工作区没有可用的审阅服务。',
+    'workspace-review-changed': () => '审阅内容已变化，请重新读取后决定如何处理。',
+    'workspace-review-running': () => 'AI 仍在修改候选内容，请等待本轮结束后再审阅。',
+    'workspace-review-not-found': () => '当前没有待审阅的修改。',
+    'workspace-review-step-not-found': () => '找不到所选审阅步骤，请重新读取步骤列表。',
+    'workspace-review-file-not-found': () => '所选文件没有可读取的审阅差异。',
+    'workspace-review-path-changed': () => '所选文件已不在当前审阅中，请重新读取文件列表。',
+    'workspace-review-diff-unavailable': () => '该文件是二进制文件或差异过大，无法返回文本差异。',
+    'workspace-review-query-invalid': () => '审阅读取参数无效，请检查读取范围与分页引用。',
+    'workspace-review-change-invalid': () => '审阅操作参数无效，请检查动作、步骤和确认选项。',
+    'workspace-review-request-too-large': () => '审阅请求过大，请缩小所选范围。',
+    'workspace-review-response-too-large': () => '所选审阅条目过大，无法在读取限额内返回。',
     'speech-settings-permission-denied': () => '修改语音服务设置需要工作区所有者的权限。',
     'speech-settings-invalid': () => '语音服务设置不完整或格式不正确。请检查后重试。',
     'speech-settings-conflict': () => '语音服务设置已经变化。请重新读取后再修改。',
@@ -306,6 +322,19 @@ export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => s
     'voice-clone-unavailable': () => 'The current speech service has no available voice cloning capability. Check its configuration.',
     'voice-clone-audio-type': () => 'Select supported audio files for the sample and consent statement.',
     'voice-clone-expired': () => 'This voice training request expired. Select the sample again before starting.',
+    'workspace-review-permission-denied': () => 'Workspace reviews require an owner credential that is not bound to a document.',
+    'workspace-review-unavailable': () => 'Workspace review is unavailable.',
+    'workspace-review-changed': () => 'The review changed. Read it again before deciding what to do.',
+    'workspace-review-running': () => 'The AI Assistant is still changing the candidate. Wait for the turn to finish.',
+    'workspace-review-not-found': () => 'There is no active review.',
+    'workspace-review-step-not-found': () => 'The review step was not found. Read the steps again.',
+    'workspace-review-file-not-found': () => 'The selected file has no review diff.',
+    'workspace-review-path-changed': () => 'A selected file is no longer in this review. Read the file list again.',
+    'workspace-review-diff-unavailable': () => 'The file is binary or its diff is too large to return as text.',
+    'workspace-review-query-invalid': () => 'The review query is invalid. Check its scope and pagination reference.',
+    'workspace-review-change-invalid': () => 'The review action is invalid. Check the action, step and confirmation.',
+    'workspace-review-request-too-large': () => 'The review request is too large. Select a smaller scope.',
+    'workspace-review-response-too-large': () => 'The selected review item exceeds the response limit.',
     'speech-settings-permission-denied': () => 'Changing speech settings requires a workspace owner credential.',
     'speech-settings-invalid': () => 'Speech settings are incomplete or invalid. Check the values and retry.',
     'speech-settings-conflict': () => 'Speech settings changed. Read the current settings before editing again.',
