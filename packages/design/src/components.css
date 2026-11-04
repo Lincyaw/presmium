@@ -1917,6 +1917,7 @@
   font-size: var(--pm-text-sm);
 }
 .pm-ui-narration-editor .bn-block-content { font-size: inherit; }
+.pm-ui-narration-editor[data-block-menu] .bn-editor { padding-inline-start: calc(var(--pm-size-tool) * 2 + var(--pm-space-4)); }
 .pm-ui-narration-editor__actions { display: flex; padding: 0 var(--pm-space-2) var(--pm-space-2); }
 .pm-ui-narration-editor__cue {
   display: inline-block;
@@ -1929,6 +1930,10 @@
 }
 @media (pointer: coarse) {
   .pm-ui-narration-editor .bn-editor { font-size: var(--pm-text-lg); }
+  .pm-ui-narration-editor[data-block-menu] .bn-editor { padding-inline-start: calc(var(--pm-control-hit-area) + var(--pm-space-4)); }
+}
+@media (max-width: 767px) {
+  .pm-ui-narration-editor[data-block-menu] .bn-editor { padding-inline-start: calc(var(--pm-control-hit-area) + var(--pm-space-4)); }
 }
 
 /* Controlled native range; keyboard behavior and pointer capture remain browser-owned. */

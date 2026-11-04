@@ -50,36 +50,41 @@ const atom = createReactInlineContentSpec({
   },
 })
 
-const cueIdentities = createExtension({
+export function createNarrationExtensions(owners: () => ReadonlyMap<string, string>, copied: (from: string, to: string) => void) {
+  const copyId = (id: string) => { const next = randomUUID(); copied(id, next); return next }
+  return [createExtension({
   key: 'presmium-narration-cue-identities',
   tiptapExtensions: [Extension.create({ name: 'presmiumNarrationCueIdentities', addProseMirrorPlugins: () => [new Plugin({
     props: { transformPasted: slice => {
       const copied = (fragment: Fragment): Fragment => {
         const nodes: Node[] = []
         fragment.forEach(node => nodes.push(node.type.name === 'narrationAtom' && node.attrs.kind === 'cue'
-          ? node.type.create({ ...node.attrs, cueId: randomUUID() }, node.content, node.marks)
+          ? node.type.create({ ...node.attrs, cueId: copyId(node.attrs.cueId as string) }, node.content, node.marks)
           : node.isLeaf ? node : node.copy(copied(node.content))))
         return Fragment.fromArray(nodes)
       }
       return new Slice(copied(slice.content), slice.openStart, slice.openEnd)
     } },
     appendTransaction: (_transactions, _old, state) => {
-      const seen = new Set<string>(), transaction = state.tr
+      const seen = new Set<string>(), transaction = state.tr, external = owners()
       state.doc.descendants((node, position) => {
         if (node.type.name !== 'narrationAtom' || node.attrs.kind !== 'cue') return
         const id = node.attrs.cueId as string
-        if (!id || seen.has(id)) transaction.setNodeMarkup(position, undefined, { ...node.attrs, cueId: randomUUID() })
+        const location = state.doc.resolve(position)
+        let blockId: string | undefined
+        for (let depth = location.depth; depth > 0; depth--) if (location.node(depth).type.name === 'blockContainer') { blockId = location.node(depth).attrs.id as string; break }
+        if (!id || seen.has(id) || external.has(id) && external.get(id) !== blockId) transaction.setNodeMarkup(position, undefined, { ...node.attrs, cueId: copyId(id) })
         else seen.add(id)
       })
       return transaction.docChanged ? transaction : null
     },
   })] })],
-})
+  })]
+}
 export const narrationSchema = BlockNoteSchema.create({
   blockSpecs: { paragraph: defaultBlockSpecs.paragraph },
   inlineContentSpecs: { ...defaultInlineContentSpecs, narrationAtom: atom }, styleSpecs: {},
 })
-export const narrationExtensions = [cueIdentities]
 export type NativeNarrationEditor = BlockNoteEditor<typeof narrationSchema.blockSchema, typeof narrationSchema.inlineContentSchema, typeof narrationSchema.styleSchema>
 export type NativeNarrationBlock = Block<typeof narrationSchema.blockSchema, typeof narrationSchema.inlineContentSchema, typeof narrationSchema.styleSchema>
 export type NativeNarrationInput = PartialBlock<typeof narrationSchema.blockSchema, typeof narrationSchema.inlineContentSchema, typeof narrationSchema.styleSchema>

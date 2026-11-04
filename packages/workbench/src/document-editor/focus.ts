@@ -25,8 +25,6 @@ export interface DocumentFieldRegistration {
   reset: number
   blockId?: string
   stepId: string
-  narrationId: string
-  slot: number
   focus: DocumentFieldFocus
   editor?: DocumentHistoryEditor
 }

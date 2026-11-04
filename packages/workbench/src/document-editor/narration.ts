@@ -1,17 +1,33 @@
-import type { NarrationNode } from '@lincyaw/kernel'
+import type { Narration, NarrationNode } from '@lincyaw/kernel'
 import type { NativeNarrationBlock, NativeNarrationInput, NativeNarrationInline } from './narration-schema.tsx'
 import type { NativeNarrationEditor } from './narration-schema.tsx'
 import { nativeFieldFocus } from './focus.ts'
 
-export const narrationFieldFocus = (editor: NativeNarrationEditor) => nativeFieldFocus(editor, () => JSON.stringify(nativeToNarration(editor.document)))
+export const narrationFieldFocus = (editor: NativeNarrationEditor) => nativeFieldFocus(editor, () => JSON.stringify(nativeToNarrations(editor.document)))
 
 export function narrationToNative(id: string, content: readonly NarrationNode[]): NativeNarrationInput[] {
-  return [{ id: `narration:${id}`, type: 'paragraph', content: content.map((node): NativeNarrationInline => {
+  return [{ id, type: 'paragraph', content: content.map((node): NativeNarrationInline => {
     if (node.type === 'text') return { type: 'text', text: node.text, styles: {} }
     return { type: 'narrationAtom', content: undefined, props: node.type === 'pronunciation'
       ? { kind: 'pronunciation', display: node.display, spoken: node.spoken, cueId: '', payload: '' }
       : { kind: 'cue', cueId: node.id, payload: JSON.stringify(node), display: '', spoken: '' } }
   }) }]
+}
+
+export function narrationsToNative(narrations: readonly Narration[], emptyId: string): NativeNarrationInput[] {
+  return narrations.length ? narrations.flatMap(narration => narrationToNative(narration.id, narration.content)) : narrationToNative(emptyId, [])
+}
+
+export function nativeToNarrations(blocks: readonly NativeNarrationBlock[]): Narration[] {
+  const narrations: Narration[] = []
+  const visit = (blocks: readonly NativeNarrationBlock[]) => {
+    for (const block of blocks) {
+      narrations.push({ id: block.id, content: nativeToNarration([{ ...block, children: [] }]) })
+      visit(block.children)
+    }
+  }
+  visit(blocks)
+  return narrations.length === 1 && !narrations[0]!.content.length ? [] : narrations
 }
 export function nativeToNarration(blocks: readonly NativeNarrationBlock[]): NarrationNode[] {
   const content: NarrationNode[] = []

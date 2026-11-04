@@ -4,7 +4,7 @@ import type { CanonicalSource, NarrationNode, TeachingDocument, TranscriptionRev
 import { PmBadge, PmButton, PmDialog, PmField, PmNotice, PmSelect, PmTextarea } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { NarrationEditor } from '../document-editor/NarrationEditor.tsx'
-import { narrationToNative } from '../document-editor/narration.ts'
+import { narrationToNative, nativeToNarration } from '../document-editor/narration.ts'
 import type { NativeNarrationEditor } from '../document-editor/narration-schema.tsx'
 import { TRANSCRIPTION_MESSAGES } from '../transcription-messages.ts'
 
@@ -114,7 +114,8 @@ function AdoptionTarget({ identity, candidate, document, sectionId, stepId, disa
   }
   if (!displayed(nodes).trim() && !atoms.length) return <span>{t.empty}</span>
   return <>
-    <PmField label={t.text} group><NarrationEditor identity={key} narrationId={original?.outputNarrationId ?? draft.id} content={nodes} getContent={() => latest.current.nodes ?? nodes} locale={locale} advanced={false} readOnly={disabled || applying}
+    <PmField label={t.text} group><NarrationEditor identity={key} fieldId={original?.outputNarrationId ?? draft.id} content={nodes} getContent={() => latest.current.nodes ?? nodes} locale={locale} advanced={false} readOnly={disabled || applying}
+      toNative={value => narrationToNative(original?.outputNarrationId ?? draft.id, value)} fromNative={nativeToNarration}
       onReady={value => { editor.current = value }} onComposition={setComposing} onFocus={pause} onChange={value => {
         const used = new Set<string>()
         for (const node of value) { const atom = atoms.find(atom => !used.has(atom.key) && same(atom.node, node)); if (atom) used.add(atom.key) }

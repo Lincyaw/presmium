@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react'
-import type { NarrationNode, TeachingDocument } from '@lincyaw/kernel'
+import type { Narration, NarrationNode, TeachingDocument } from '@lincyaw/kernel'
 import { randomUUID } from '@lincyaw/kernel'
 import { PmIconButton } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { isAgentChanging } from '../workbench.ts'
 import { NarrationEditor } from './NarrationEditor.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
-import { narrationFieldFocus } from './narration.ts'
+import { narrationFieldFocus, narrationsToNative, nativeToNarrations } from './narration.ts'
 import type { NativeNarrationEditor } from './narration-schema.tsx'
 import { StepProductionEditor } from '../StepProductionEditor.tsx'
 
@@ -24,28 +24,32 @@ export function narrationDisplay(content: readonly NarrationNode[]): string {
   return content.map(node => node.type === 'text' ? node.text : node.type === 'pronunciation' ? node.display : '').join('')
 }
 
-function NarrationField({ identity, reset, blockId, stepId, slot, narrationId, content, readOnly, advanced, onPause }: {
-  identity: string, reset: number, blockId?: string, stepId: string, slot: number, narrationId?: string, content: NarrationNode[], readOnly: boolean, advanced: boolean, onPause(): void,
+function NarrationField({ identity, reset, blockId, stepId, content, readOnly, advanced, onPause }: {
+  identity: string, reset: number, blockId?: string, stepId: string, content: Narration[], readOnly: boolean, advanced: boolean, onPause(): void,
 }) {
   const workbench = useWorkbench(), locale = useWorkbenchState(state => state.locale)
-  // Reserving an identity does not create an entity. The first actual input commits it.
-  const [reservedId] = useState(() => {
-    const pending = workbench.pendingDocumentField(blockId, identity)
-    return narrationId ?? (pending?.stepId === stepId ? pending.narrationId : undefined) ?? randomUUID()
-  })
-  const id = narrationId ?? reservedId
-  const target = () => narrationId ?? workbench.getDocument(identity)?.steps[stepId]?.narrationIds[slot] ?? id
+  const [emptyId] = useState(() => randomUUID())
+  const read = () => {
+    const document = workbench.getDocument(identity), step = document?.steps[stepId]
+    return step ? step.narrationIds.map(id => ({ id, content: document!.narrations[id]!.content })) : undefined
+  }
   const registration = useRef<() => void>()
   const fieldEditor = useRef<NativeNarrationEditor>()
-  const owner = `narration:${identity}:${reset}:${JSON.stringify(blockId ?? null)}:${stepId}:${slot}:${id}`
-  return <NarrationEditor identity={identity} reset={reset} narrationId={id} content={content} locale={locale} readOnly={readOnly} advanced={advanced}
-    getContent={() => { const document = workbench.getDocument(identity); return document ? document.narrations[target()]?.content ?? [] : undefined }}
+  const owner = `narration:${identity}:${reset}:${JSON.stringify(blockId ?? null)}:${stepId}`
+  return <NarrationEditor identity={identity} reset={reset} fieldId={stepId} content={content} locale={locale} readOnly={readOnly} advanced={advanced} blockMenu
+    getContent={read} toNative={value => narrationsToNative(value, emptyId)} fromNative={nativeToNarrations}
+    cueOwners={() => {
+      const document = workbench.getDocument(identity)
+      const retained = new Set(Object.values(document?.steps ?? {}).filter(step => step.id !== stepId).flatMap(step => step.narrationIds))
+      return new Map([...retained].flatMap(id => document!.narrations[id]!.content.flatMap(node => node.type === 'cue' ? [[node.id, id] as const] : [])))
+    }}
+    onCueCopy={(from, to) => workbench.copyNarrationCueTiming(from, to, identity)}
     onReady={editor => {
       registration.current?.()
       fieldEditor.current = editor
-      registration.current = editor ? workbench.registerDocumentField({ identity, reset, blockId, stepId, narrationId: id, slot, focus: narrationFieldFocus(editor), editor }) : undefined
+      registration.current = editor ? workbench.registerDocumentField({ identity, reset, blockId, stepId, focus: narrationFieldFocus(editor), editor }) : undefined
     }}
-    onFocus={() => { workbench.documentInteraction(); if (fieldEditor.current) workbench.activateDocumentHistory(fieldEditor.current); onPause() }} onChange={value => workbench.setDocumentNarration(stepId, target(), value, identity)}
+    onFocus={() => { workbench.documentInteraction(); if (fieldEditor.current) workbench.activateDocumentHistory(fieldEditor.current); onPause() }} onChange={value => workbench.setDocumentNarrations(stepId, value, identity)}
     onComposition={composing => workbench.documentComposition(composing, owner, identity)}
     onError={error => workbench.documentError(error)} />
 }
@@ -79,9 +83,9 @@ export function DocumentStepNarration({ blockId, sectionId, stepId, expanded, ad
     {!expanded && text && <p className="pm-ui-block-preview__caption" data-step-caption={stepId}>{text}</p>}
     {expanded && <div id={panelId} className="pm-ui-block-preview__narration-fields">
       {showLabel && <span className="pm-ui-block-preview__step-label">{fieldLabel}</span>}
-      {(ids.length ? ids : [undefined]).map((id, slot) => <NarrationField key={`${source.identity}:${source.reset}:${stepId}:${slot}`}
-        identity={source.identity!} reset={source.reset} blockId={blockId} stepId={stepId} slot={slot} narrationId={id}
-        content={id ? document.narrations[id]?.content ?? [] : []} readOnly={readOnly} advanced={advanced} onPause={onPause} />)}
+      <NarrationField key={`${source.identity}:${source.reset}:${stepId}`}
+        identity={source.identity!} reset={source.reset} blockId={blockId} stepId={stepId}
+        content={ids.map(id => ({ id, content: document.narrations[id]!.content }))} readOnly={readOnly} advanced={advanced} onPause={onPause} />
       <StepProductionEditor key={`${source.identity}:${source.reset}:${stepId}`} document={document} stepId={stepId} locale={locale} readOnly={readOnly} advanced={advanced}
         onPause={onPause} onInteraction={() => workbench.documentInteraction()}
         onChange={patch => workbench.setDocumentStepProduction(stepId, patch, source.identity)}

@@ -1,4 +1,4 @@
-import { applyDocumentCaptionTiming, randomUUID } from '@lincyaw/kernel'
+import { applyDocumentCaptionTiming, randomUUID, replaceStepNarrations, validateDocument } from '@lincyaw/kernel'
 import type { DocumentCaptionTimingAction } from '@lincyaw/kernel'
 import { reconcileCaptionTiming } from './caption-timing.ts'
 import type { ProjectOperation, ProjectPlan } from '@lincyaw/kernel'
@@ -24,7 +24,7 @@ import type { DocumentSessionState } from './document-session.ts'
 import type { DocumentDraftReference } from './document-drafts.ts'
 import { DocumentReturnPoints, documentReturnStep, documentViewportOffset, restoreDocumentViewport } from './document-return-point.ts'
 import type { DocumentReturnPoint } from './document-return-point.ts'
-import type { DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentChangeAnswer, MediaClip, NarrationNode, TeachingDocument, DocumentTranscriptionRequest, TranscriptionTask, TranscriptionAdoptionDraft, TranscriptionAdoptionApply, TranscriptionAdoptionPlan, TranscriptionAdoptionAnswer } from '@lincyaw/kernel'
+import type { DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentChangeAnswer, MediaClip, Narration, TeachingDocument, DocumentTranscriptionRequest, TranscriptionTask, TranscriptionAdoptionDraft, TranscriptionAdoptionApply, TranscriptionAdoptionPlan, TranscriptionAdoptionAnswer } from '@lincyaw/kernel'
 import type { NativeDocumentEditor } from './document-editor/schema.tsx'
 import type { DocumentEditorCommands } from './document-editor/DocumentEditor.tsx'
 import type { DocumentInsertionPlace } from './document-editor/insertion-place.ts'
@@ -279,6 +279,7 @@ export class Workbench {
   readonly #documentTimingDrafts = new DocumentTimingDrafts()
   readonly #captionTimingDrafts = new CaptionTimingDrafts()
   readonly #removedCueTimings = new Map<string, { pauseMs: number }>()
+  readonly #removedNarrations = new Map<string, { narration: Narration, override?: { narrationStart: 'with-animation' | 'after-animation' } }>()
   #cueTimingScope?: string
   #documentEditor?: NativeDocumentEditor
   #documentEditorCommands?: DocumentEditorCommands
@@ -378,7 +379,7 @@ export class Workbench {
         || pendingField.field.blockId !== undefined && !authoring.content?.blocks[pendingField.field.blockId]
         || !authoring.content?.steps[pendingField.field.stepId])) this.#pendingDocumentField = undefined
       const cueTimingScope = JSON.stringify([authoring.identity, authoring.reset])
-      if (this.#cueTimingScope !== cueTimingScope) { this.#removedCueTimings.clear(); this.#cueTimingScope = cueTimingScope }
+      if (this.#cueTimingScope !== cueTimingScope) { this.#removedCueTimings.clear(); this.#removedNarrations.clear(); this.#cueTimingScope = cueTimingScope }
       const previous = this.#state.authoring
       // A saved timestamp belongs to this client's acknowledged source version.
       // Remote adoption has no server modification time to display in its place.
@@ -1609,59 +1610,48 @@ export class Workbench {
     this.#captionTimingDrafts.set(scope, stepId, draft)
     this.#set({ captionTimingDraftSteps: this.#captionTimingDrafts.steps(scope, document), captionTimingDraftStorageFailure: this.#captionTimingDrafts.failed(scope) })
   }
-  /** Changes one stable narration target without replacing the body editor or derived captions. */
-  setDocumentNarration(stepId: string, narrationId: string | undefined, content: NarrationNode[], identity?: string): string | undefined {
+  copyNarrationCueTiming(from: string, to: string, identity: string): void {
     const document = this.getDocument(identity)
-    if (!document || isAgentChanging(this.#state) || !Object.hasOwn(document.steps, stepId)) return undefined
+    if (!document || isAgentChanging(this.#state)) return
+    const timing = document.production.cueTimings?.[from] ?? this.#removedCueTimings.get(from)
+    if (timing) this.#removedCueTimings.set(to, { ...timing })
+  }
+  /** Native block identity and order own the current step's complete script. */
+  setDocumentNarrations(stepId: string, narrations: Narration[], identity?: string): void {
+    const document = this.getDocument(identity)
+    if (!document || isAgentChanging(this.#state) || !Object.hasOwn(document.steps, stepId)) return
     const step = document.steps[stepId]!
-    if (!document.sections[step.sectionId]?.stepOrder.includes(stepId)) return undefined
-    if (!Array.isArray(content)) throw new Error('document-narration-content')
-    let meaningful = false
-    for (const node of content) {
-      if (!node || typeof node !== 'object') throw new Error('document-narration-content')
-      if (node.type === 'text' && typeof node.text === 'string') meaningful ||= Boolean(node.text.trim())
-      else if (node.type === 'pronunciation' && typeof node.display === 'string' && typeof node.spoken === 'string') meaningful ||= Boolean(node.display.trim() || node.spoken.trim())
-      else if (node.type === 'cue' && typeof node.id === 'string' && node.id && typeof node.action === 'string' && node.action) meaningful = true
-      else throw new Error('document-narration-content')
+    if (!document.sections[step.sectionId]?.stepOrder.includes(stepId)) return
+    const values = narrations.map(narration => {
+      const previous = document.narrations[narration.id] ?? this.#removedNarrations.get(narration.id)?.narration
+      return { ...previous, ...narration }
+    })
+    if (JSON.stringify(step.narrationIds.map(id => document.narrations[id])) === JSON.stringify(values)) return
+    const next = replaceStepNarrations(document, stepId, values)
+    for (const narration of values) {
+      const override = this.#removedNarrations.get(narration.id)?.override
+      if (override && !document.narrations[narration.id]) next.production.narrationOverrides = { ...next.production.narrationOverrides, [narration.id]: { ...override } }
     }
-    const target = narrationId ?? step.narrationIds[0]
-    const existing = target !== undefined && Object.hasOwn(document.narrations, target) ? document.narrations[target] : undefined
-    if (existing && !step.narrationIds.includes(existing.id)) throw new Error('document-narration-target')
-    if (!existing && !meaningful) return undefined
-    const id = target ?? randomUUID()
-    if (!id || id.length > 200 || /[\u0000-\u001f]/.test(id) || ['__proto__', 'constructor', 'prototype'].includes(id)) throw new Error('document-narration-target')
-    if (!existing && (document.id === id || [document.sections, document.blocks, document.steps, document.assets, document.definitions].some(map => Object.hasOwn(map, id)))) throw new Error('document-narration-target')
-    if (existing && JSON.stringify(existing.content) === JSON.stringify(content)) return id
-    const next: TeachingDocument = { ...document,
-      narrations: { ...document.narrations, [id]: { ...existing, id, content: structuredClone(content) } },
-      ...step.narrationIds.includes(id) ? {} : { steps: { ...document.steps, [stepId]: { ...step, narrationIds: [...step.narrationIds, id] } } },
-    }
-    const cueIds = new Set(content.flatMap(node => node.type === 'cue' ? [node.id] : []))
-    const previousCues = new Set(existing?.content.flatMap(node => node.type === 'cue' ? [node.id] : []) ?? [])
-    if (document.production.cueTimings) {
-      const removed = [...previousCues].filter(cue => !cueIds.has(cue) && Object.hasOwn(document.production.cueTimings!, cue)
-        && !Object.values(next.narrations).some(narration => narration.content.some(node => node.type === 'cue' && node.id === cue)))
-      if (removed.length) {
-        const cueTimings = { ...document.production.cueTimings }
-        for (const cue of removed) {
-          this.#removedCueTimings.delete(cue)
-          this.#removedCueTimings.set(cue, { ...cueTimings[cue]! })
-          delete cueTimings[cue]
-        }
-        while (this.#removedCueTimings.size > 512) this.#removedCueTimings.delete(this.#removedCueTimings.keys().next().value!)
-        next.production = { ...document.production, cueTimings }
-      }
-    }
+    const cueIds = new Set(values.flatMap(narration => narration.content.flatMap(node => node.type === 'cue' ? [node.id] : [])))
     for (const cue of cueIds) {
       const timing = this.#removedCueTimings.get(cue)
-      if (!previousCues.has(cue) && timing && !Object.hasOwn(next.production.cueTimings ?? {}, cue)) {
-        next.production = { ...next.production, cueTimings: { ...next.production.cueTimings, [cue]: { ...timing } } }
-        this.#removedCueTimings.delete(cue)
-      }
+      if (timing && !Object.hasOwn(next.production.cueTimings ?? {}, cue)) next.production.cueTimings = { ...next.production.cueTimings, [cue]: { ...timing } }
     }
+    const references = (values: Narration[]) => JSON.stringify(values.map(narration => [narration.id, narration.provenance, narration.content.filter(node => node.type === 'cue')]))
+    if (references(step.narrationIds.map(id => document.narrations[id]!)) !== references(values)
+      && validateDocument(next).issues.some(issue => issue.severity === 'error')) throw new Error('document-narration-content')
+    for (const id of step.narrationIds) if (!next.steps[stepId]!.narrationIds.includes(id)) {
+      this.#removedNarrations.delete(id)
+      this.#removedNarrations.set(id, { narration: document.narrations[id]!, override: document.production.narrationOverrides?.[id] })
+    }
+    for (const [id, timing] of Object.entries(document.production.cueTimings ?? {})) if (!Object.hasOwn(next.production.cueTimings ?? {}, id)) {
+      this.#removedCueTimings.delete(id)
+      this.#removedCueTimings.set(id, { ...timing })
+    }
+    while (this.#removedNarrations.size > 512) this.#removedNarrations.delete(this.#removedNarrations.keys().next().value!)
+    while (this.#removedCueTimings.size > 512) this.#removedCueTimings.delete(this.#removedCueTimings.keys().next().value!)
     this.stopAuditions()
     this.#documentSession.record(next)
-    return id
   }
   recordDocument(content: TeachingDocument): void { if (!isAgentChanging(this.#state)) this.#documentSession.record(content) }
   documentComposition(composing: boolean, owner = 'body', identity?: string): void { this.#documentSession.composition(composing, owner, identity) }
@@ -1678,31 +1668,30 @@ export class Workbench {
     this.#documentSelectionGeneration++; this.#cancelOpeningDocument(); this.#stopDocumentReturnScroll?.()
     if (this.#state.documentPositionFailure) this.#set({ documentPositionFailure: undefined })
   }
-  pendingDocumentField(blockId: string | undefined, identity?: string): Pick<DocumentFieldRegistration, 'stepId' | 'narrationId' | 'slot'> | undefined {
+  pendingDocumentField(blockId: string | undefined, identity?: string): Pick<DocumentFieldRegistration, 'stepId'> | undefined {
     const pending = this.#pendingDocumentField, source = this.#state.authoring
     return pending && pending.generation === this.#documentSelectionGeneration && pending.field.blockId === blockId
       && pending.field.identity === (identity ?? source?.identity) && pending.reset === source?.reset ? pending.field : undefined
   }
   /** A live native field owns its target only while it still has focus in this source. */
-  focusedDocumentField(): Readonly<Pick<DocumentFieldRegistration, 'identity' | 'reset' | 'blockId' | 'stepId' | 'narrationId' | 'slot'>> & { readonly editor: DocumentHistoryEditor } | undefined {
+  focusedDocumentField(): Readonly<Pick<DocumentFieldRegistration, 'identity' | 'reset' | 'blockId' | 'stepId'>> & { readonly editor: DocumentHistoryEditor } | undefined {
     const source = this.#state.authoring, editor = this.#activeDocumentHistory
     if (!source?.identity || !source.content || !editor || editor === this.#documentEditor || editor.prosemirrorView.isDestroyed || !editor.prosemirrorView.hasFocus()) return
     for (const field of this.#documentFields.values()) {
       if (field.editor !== editor || field.identity !== source.identity || field.reset !== source.reset) continue
       const step = source.content.steps[field.stepId], section = step && source.content.sections[step.sectionId]
-      if (!step || !section?.stepOrder.includes(field.stepId) || field.slot < 0 || field.slot >= Math.max(1, step.narrationIds.length)
-        || step.narrationIds[field.slot] !== undefined && step.narrationIds[field.slot] !== field.narrationId) return
-      const { identity, reset, blockId, stepId, narrationId, slot } = field
-      return { identity, reset, blockId, stepId, narrationId, slot, editor }
+      if (!step || !section?.stepOrder.includes(field.stepId)) return
+      const { identity, reset, blockId, stepId } = field
+      return { identity, reset, blockId, stepId, editor }
     }
     return undefined
   }
   registerDocumentField(field: DocumentFieldRegistration): () => void {
     if (field.identity !== this.#state.authoring?.identity || field.reset !== this.#state.authoring.reset) return () => {}
-    const key = JSON.stringify([field.identity, field.blockId, field.stepId, field.slot, field.narrationId])
+    const key = JSON.stringify([field.identity, field.blockId, field.stepId])
     this.#documentFields.set(key, field)
     const pending = this.#pendingDocumentField
-    if (pending && pending.reset === field.reset && JSON.stringify([pending.field.identity, pending.field.blockId, pending.field.stepId, pending.field.slot, pending.field.narrationId]) === key) {
+    if (pending && pending.reset === field.reset && JSON.stringify([pending.field.identity, pending.field.blockId, pending.field.stepId]) === key) {
       this.#pendingDocumentField = undefined
       if (pending.generation === this.#documentSelectionGeneration && field.identity === this.#state.authoring?.identity && field.reset === this.#state.authoring.reset) field.focus.restore(pending.bookmark)
     }
@@ -2332,7 +2321,7 @@ export class Workbench {
     this.#voiceover.stop()
     this.#production.reset()
     this.#set({ isPreparingPresentation: false, presentationFailure: undefined, presentationSnapshot: undefined, productionPlan: undefined, productionFailure: undefined })
-    this.#removedCueTimings.clear(); this.#cueTimingScope = undefined
+    this.#removedCueTimings.clear(); this.#removedNarrations.clear(); this.#cueTimingScope = undefined
     this.#documentSession.close()
     this.#unsubscribeDocumentHistory?.(); this.#unsubscribeDocumentHistory = undefined; this.#activeDocumentHistory = undefined; this.#documentEditor = undefined
     this.#unsubscribeDocumentSelection?.(); this.#unsubscribeDocumentSelection = undefined
