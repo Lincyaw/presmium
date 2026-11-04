@@ -7,6 +7,13 @@ export const name = 'presmium-tools'
 export const inject = ['presmium', 'tools']
 
 export const PREFIX = 'presmium__'
+export const CANDIDATE_TOOLS = new Set([
+  'get_authoring_capabilities', 'get_document', 'get_document_outline', 'read_document_part',
+  'plan_document_change', 'apply_document_change', 'plan_page_change', 'apply_page_change',
+  'plan_page_duplication', 'apply_page_duplication', 'plan_authoring_action', 'apply_authoring_action', 'read_authoring_action_impact',
+  'check_document', 'get_section', 'get_step', 'list_sections', 'deck_info', 'list_documents',
+  'run_code', 'capture_slides', 'capture_reading', 'capture_overview',
+])
 
 const IMAGE_TYPES = new Set<string>(['image/png', 'image/jpeg', 'image/webp', 'image/gif'])
 
@@ -41,7 +48,7 @@ function definition(ctx: DshContext, binding: DocumentBinding, tool: ListedTool)
     parameters: tool.inputSchema,
     output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: String(value) }] },
     async execute(args, exec) {
-      const result = await binding.client.call(tool.name, (args ?? {}) as Record<string, unknown>, exec.signal)
+      const result = await (CANDIDATE_TOOLS.has(tool.name) ? binding.client : binding.authorClient).call(tool.name, (args ?? {}) as Record<string, unknown>, exec.signal)
       if (result.isError) throw new Error(result.text)
       if (result.images.length > 0) prepared.set(exec.token, [...result.text ? [{ type: 'text' as const, text: result.text }] : [], ...await imageBlocks(ctx, tool.name, result.images, exec)])
       return result.text
@@ -90,6 +97,7 @@ export function apply(ctx: DshContext): void {
     for (const dispose of previous?.dispose ?? []) dispose()
   })
   ctx.on('agent/pre-step', async ({ agent }: { agent: DshAgent }, next: () => Promise<unknown>) => {
+    await ctx.presmium.bindings.refreshCandidate(agent)
     await sync(agent)
     return next()
   })

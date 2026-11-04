@@ -1,5 +1,6 @@
 import { realpathSync } from 'node:fs'
 import { relative, resolve, sep } from 'node:path'
+import { isInside } from '@lincyaw/kernel/node'
 import { connectPresmiumMcp } from '@lincyaw/mcp/client'
 import { errorMessage, isRecord } from '@lincyaw/kernel'
 import type { DiagnosticSnapshot, DocumentSummary } from '@lincyaw/kernel'
@@ -7,6 +8,8 @@ import type { ListedTool, PresmiumMcpClient } from '@lincyaw/mcp/client'
 import type { DshAgent, DshContext, DshLogger } from './dsh-types.ts'
 import { SERVER_ROUTES } from './server-routes.ts'
 import type { WorkspaceServerClient } from './service.ts'
+import { WorkspaceServerClient as CandidateServer } from './service.ts'
+import { WORKSPACE_ROUTES } from './server-routes.ts'
 
 /** The document an agent session works on: an MCP client with a session token for it, its tools and its diagnostics. */
 export interface DocumentBinding {
@@ -14,6 +17,8 @@ export interface DocumentBinding {
   document: DocumentSummary
   dir: string
   client: PresmiumMcpClient
+  authorClient: PresmiumMcpClient
+  workspaceRoot: string
   readonly tools: ListedTool[]
   toolChanges: BindingTools
   diagnostics: BindingDiagnostics
@@ -154,7 +159,7 @@ async function closeBinding(binding: DocumentBinding): Promise<void> {
   try {
     await Promise.all([binding.diagnostics.close(), binding.toolChanges.close()])
   } finally {
-    await binding.client.close()
+    await Promise.all([binding.client.close(), binding.authorClient.close()])
   }
 }
 
@@ -189,6 +194,54 @@ export class DocumentBindings {
   readonly #selectionListeners = new Map<string, SelectionListener>()
   readonly #selected = new Map<string, string | null>()
   #closed = false
+  readonly #candidates = new Map<string, Promise<WorkspaceServerClient>>()
+  readonly #parents = new Map<string, string>()
+  readonly #candidateRoots = new Map<string, string>()
+  readonly #candidateOwners = new Map<string, Set<string>>()
+
+  rootSessionOf(agent: DshAgent): string {
+    const header = agent.session.header as { origin?: string, parentSession?: string } | undefined
+    if (header?.origin === 'subagent' && header.parentSession) this.#parents.set(agent.session.id, header.parentSession)
+    let id = agent.session.id
+    for (let depth = 0; depth < 32 && this.#parents.has(id); depth++) id = this.#parents.get(id)!
+    return id
+  }
+
+  async candidateOf(agent: DshAgent): Promise<WorkspaceServerClient> {
+    const id = this.rootSessionOf(agent)
+    let owners = this.#candidateOwners.get(id)
+    if (!owners) this.#candidateOwners.set(id, owners = new Set())
+    owners.add(agent.session.id)
+    let pending = this.#candidates.get(id)
+    if (!pending) {
+      pending = (async () => {
+        const { root } = await this.#server.requestJson<{ root: string }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id } })
+        const candidate = new CandidateServer({ root, candidate: true }, this.#log)
+        await candidate.ready
+        return candidate
+      })()
+      this.#candidates.set(id, pending)
+      void pending.catch(() => { if (this.#candidates.get(id) === pending) this.#candidates.delete(id) })
+    }
+    const candidate = await pending
+    const directory = await candidate.ready
+    this.#candidateRoots.set(id, directory.root)
+    const workingDirectory = this.#ctx.get('workingDirectory') as { set(agent: DshAgent, path: string): Promise<string> } | undefined
+    if (!workingDirectory) throw new Error('Presmium needs the workingDirectory service for concurrent authoring')
+    if (!isInside(this.workingDirectoryOf(agent), directory.root)) await workingDirectory.set(agent, directory.root)
+    return candidate
+  }
+
+  candidateRootOf(agent: DshAgent | undefined): string | undefined {
+    return agent ? this.#candidateRoots.get(this.rootSessionOf(agent)) : undefined
+  }
+
+  async refreshCandidate(agent: DshAgent): Promise<void> {
+    const { root } = await this.#server.ready
+    if (!isInside(this.workingDirectoryOf(agent), root)) return
+    await this.candidateOf(agent)
+    await this.#server.requestJson(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: this.rootSessionOf(agent), refresh: true } })
+  }
 
   constructor(ctx: DshContext, server: WorkspaceServerClient, log: DshLogger) {
     this.#ctx = ctx
@@ -228,18 +281,26 @@ export class DocumentBindings {
     const id = agent.session.id
     const documents = await this.#server.readDocuments()
     const selected = this.#selected.get(id)
-    const document = selected === undefined ? documentAt(root, this.workingDirectoryOf(agent), documents) : documents.find(doc => doc.dir === selected)
+    const cwd = this.workingDirectoryOf(agent)
+    if (!isInside(cwd, root)) return undefined
+    const document = selected === undefined ? documentAt(root, agent.session.header?.cwd ?? root, documents) ?? (documents.length === 1 ? documents[0] : undefined) : documents.find(doc => doc.dir === selected)
     if (!current()) return undefined
     if (!document) {
       this.#failures.delete(id)
       return undefined
     }
-    const grant = await this.#server.requestJson<{ url: string, token: string }>(`${SERVER_ROUTES}tokens`, { body: { document: document.dir, session: id } })
+    const candidate = await this.candidateOf(agent)
+    const [grant, authorGrant] = await Promise.all([
+      candidate.requestJson<{ url: string, token: string }>(`${SERVER_ROUTES}tokens`, { body: { document: document.dir, session: id } }),
+      this.#server.requestJson<{ url: string, token: string }>(`${SERVER_ROUTES}tokens`, { body: { document: document.dir, session: id } }),
+    ])
     const client = await connectPresmiumMcp(grant.url, grant.token)
-    const diagnostics = new BindingDiagnostics(client, document.dir)
+    const authorClient = await connectPresmiumMcp(authorGrant.url, authorGrant.token)
+    const diagnostics = new BindingDiagnostics(authorClient, document.dir)
     const toolChanges = new BindingTools(client, this.#log)
     try {
-      const binding: DocumentBinding = { agentSessionId: id, document, dir: resolve(root, document.dir), client, get tools() { return toolChanges.snapshot }, toolChanges, diagnostics }
+      const workspaceRoot = (await candidate.ready).root
+      const binding: DocumentBinding = { agentSessionId: id, document, dir: resolve(workspaceRoot, document.dir), workspaceRoot, client, authorClient, get tools() { return toolChanges.snapshot }, toolChanges, diagnostics }
       await toolChanges.start()
       await diagnostics.start()
       if (current()) {
@@ -250,9 +311,10 @@ export class DocumentBindings {
     } catch (error) {
       await Promise.all([diagnostics.close(), toolChanges.close()]).catch(() => undefined)
       await client.close().catch(() => undefined)
+      await authorClient.close().catch(() => undefined)
       throw error
     }
-    await Promise.all([diagnostics.close(), toolChanges.close()]).finally(() => client.close())
+    await Promise.all([diagnostics.close(), toolChanges.close()]).finally(() => Promise.all([client.close(), authorClient.close()]))
     return undefined
   }
 
@@ -315,6 +377,8 @@ export class DocumentBindings {
 
   /** Closes the session's binding and revokes its session token; `forget` drops its selection too. */
   async unbind(agentSessionId: string, forget = true): Promise<void> {
+    let ownerId = agentSessionId
+    for (let depth = 0; depth < 32 && this.#parents.has(ownerId); depth++) ownerId = this.#parents.get(ownerId)!
     if (forget) {
       this.#selectionVersions.delete(agentSessionId)
       this.#selected.delete(agentSessionId)
@@ -327,6 +391,19 @@ export class DocumentBindings {
     this.#failures.delete(agentSessionId)
     if (binding) await closeBinding(binding).catch(error => this.#log.warn(`presmium-service: closing session ${agentSessionId}: ${errorMessage(error)}`))
     else await request
+    if (forget) {
+      this.#parents.delete(agentSessionId)
+      const owners = this.#candidateOwners.get(ownerId)
+      owners?.delete(agentSessionId)
+      if (owners?.size === 0) {
+        this.#candidateOwners.delete(ownerId)
+        this.#candidateRoots.delete(ownerId)
+        const candidate = this.#candidates.get(ownerId)
+        this.#candidates.delete(ownerId)
+        if (candidate) await (await candidate).close()
+        await this.#server.requestJson(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: ownerId, close: true } })
+      }
+    }
     if (!binding && !request) return
     await this.#server.request(`${SERVER_ROUTES}tokens`, { method: 'DELETE', body: { session: agentSessionId } }).then(r => r.body?.cancel(), () => undefined)
   }
@@ -341,5 +418,10 @@ export class DocumentBindings {
     this.#selected.clear()
     this.#selectionVersions.clear()
     this.#selectionListeners.clear()
+    await Promise.all([...this.#candidates.values()].map(async candidate => (await candidate).close()))
+    this.#candidates.clear()
+    this.#candidateRoots.clear()
+    this.#candidateOwners.clear()
+    this.#parents.clear()
   }
 }

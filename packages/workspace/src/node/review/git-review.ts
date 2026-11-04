@@ -227,6 +227,8 @@ export interface GitReviewOptions {
   onRestore?: (paths: string[]) => void
   warn?: (message: string) => void
   files?: DocumentFiles
+  recordRoot?: string
+  workspace?: ReviewRecord['workspace']
 }
 
 const recovering = new Map<string, Promise<{ task: string, paths: string[] } | undefined>>()
@@ -298,7 +300,7 @@ export async function openGitReview(options: GitReviewOptions & { session?: Omit
     throw error
   }
   const saved = guard.saved()
-  const record: ReviewRecord = { scopeDir, dirs, snapshot, task: options.task, ...THIS_PROCESS, ...saved ? { guard: saved } : {}, ...options.session ? { session: { ...options.session, checkpoints: [], steps: [] } } : {} }
+  const record: ReviewRecord = { scopeDir, dirs, snapshot, task: options.task, ...THIS_PROCESS, ...options.recordRoot ? { recordRoot: options.recordRoot } : {}, ...options.workspace ? { workspace: options.workspace } : {}, ...saved ? { guard: saved } : {}, ...options.session ? { session: { ...options.session, checkpoints: [], steps: [] } } : {} }
   return createGitReview({ scopeDir, trees, restoreGitDir: guard.restore, record, warn: options.warn })
 }
 
@@ -335,7 +337,7 @@ function createGitReview(open: { scopeDir: string, trees: ReviewTrees, restoreGi
     if (settled) return
     settled = true
     openScopes.delete(scopeDir)
-    if (!suspended) removeRecord(scopeDir)
+    if (!suspended) removeRecord(record.recordRoot ?? scopeDir)
     trees.dispose()
   }
   const live = () => {

@@ -4,6 +4,15 @@ import { RequestError } from './errors.ts'
 
 export class DocumentLocks implements DocumentLockService {
   readonly #held = new Map<string, string>()
+  readonly #waiters = new Set<() => void>()
+
+  async acquire(document: string, holder: string): Promise<() => void> {
+    for (;;) {
+      const release = this.claim(document, holder)
+      if (release) return release
+      await new Promise<void>(done => this.#waiters.add(done))
+    }
+  }
 
   claim(document: string, holder: string): (() => void) | undefined {
     if (this.holder(document) !== undefined) return undefined
@@ -13,6 +22,9 @@ export class DocumentLocks implements DocumentLockService {
       if (released) return
       released = true
       this.#held.delete(document)
+      const waiting = [...this.#waiters]
+      this.#waiters.clear()
+      for (const ready of waiting) ready()
     }
   }
 

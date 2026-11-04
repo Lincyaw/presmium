@@ -1,4 +1,4 @@
-import { hasRole, randomUUID, validateDocument } from '@lincyaw/kernel'
+import { hasRole, isRecord, randomUUID, validateDocument } from '@lincyaw/kernel'
 import type { DocumentAnswer, DocumentChangeAnswer, DocumentImageImportAnswer, DocumentIssue, Member, TeachingDocument } from '@lincyaw/kernel'
 import { WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
@@ -35,6 +35,7 @@ interface Slot {
   compositions: Set<string>
   input: number
   baseHash: string
+  baseContent: TeachingDocument
   storage: string
   drafts: DocumentDrafts
   backup?: DocumentDraftCommit
@@ -92,6 +93,20 @@ async function digest(value: TeachingDocument): Promise<string> {
   return sha256(serialize(value))
 }
 
+/** Replay pending author input on a newer saved document; an overlapping value belongs to the author. */
+function rebaseDocument(base: TeachingDocument, local: TeachingDocument, remote: TeachingDocument): TeachingDocument {
+  const merge = (before: unknown, author: unknown, saved: unknown): unknown => {
+    if (serialize(author) === serialize(before)) return structuredClone(saved)
+    if (serialize(saved) === serialize(before) || serialize(author) === serialize(saved)) return structuredClone(author)
+    if (isRecord(before) && isRecord(author) && isRecord(saved)) return Object.fromEntries([...new Set([...Object.keys(before), ...Object.keys(author), ...Object.keys(saved)])]
+      .map(key => [key, merge(before[key], author[key], saved[key])] as const).filter(([, value]) => value !== undefined))
+    return structuredClone(author)
+  }
+  const merged = validateDocument(merge(base, local, remote))
+  // A structural conflict is one document operation: preserve the author's valid complete document.
+  return merged.document && !merged.issues.some(issue => issue.severity === 'error') ? merged.document : structuredClone(local)
+}
+
 /** One source actor per document. Runtime compilation and iframe lifecycle never own its input. */
 export class DocumentSession {
   readonly #client: WorkspaceClient
@@ -140,7 +155,7 @@ export class DocumentSession {
         const baseHash = await digest(answer.content)
         if (this.#disposed || this.#active !== directory || opening !== this.#opening) return
         const drafts = new DocumentDrafts(() => { if (slot && !this.#disposed) void this.#readDrafts(slot) })
-        slot = { input: 0, read: 0, compositions: new Set(), drafts, baseHash, storage: `presmium.document.v1:${JSON.stringify([info.root, answer.content.id])}`, state: { directory, member: info.member, identity: JSON.stringify([info.root, answer.content.id]), content: answer.content, version: answer.version, fingerprint: answer.fingerprint, loading: true, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: answer.issues } }
+        slot = { input: 0, read: 0, compositions: new Set(), drafts, baseHash, baseContent: structuredClone(answer.content), storage: `presmium.document.v1:${JSON.stringify([info.root, answer.content.id])}`, state: { directory, member: info.member, identity: JSON.stringify([info.root, answer.content.id]), content: answer.content, version: answer.version, fingerprint: answer.fingerprint, loading: true, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: answer.issues } }
         this.#slots.set(directory, slot)
         await this.#restore(slot, answer)
       } else {
@@ -233,11 +248,19 @@ export class DocumentSession {
         slot.baseHash = remoteHash; slot.pendingHash = undefined
         slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, error: undefined, issues: answer.issues }
       } else if (remoteHash === slot.baseHash) slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, issues: answer.issues }
-      else slot.state = { ...slot.state, error: 'document-version-changed', issues: answer.issues }
+      else if (!slot.state.composing) {
+        const content = rebaseDocument(slot.baseContent, slot.state.content!, answer.content)
+        const reset = slot.state.reset + (keepsEditorContent(slot.state.content!, content) ? 0 : 1)
+        slot.baseHash = remoteHash
+        slot.pendingHash = undefined
+        slot.state = { ...slot.state, content, reset, version: answer.version, fingerprint: answer.fingerprint, error: undefined, dirty: true, issues: answer.issues }
+      }
+      if (slot.state.version === answer.version) slot.baseContent = structuredClone(answer.content)
       return
     }
     const reset = slot.state.reset + (keepsEditorContent(slot.state.content!, answer.content) ? 0 : 1)
     slot.baseHash = remoteHash
+    slot.baseContent = structuredClone(answer.content)
     slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, content: answer.content, reset, error: undefined, issues: answer.issues }
   }
 
@@ -297,7 +320,12 @@ export class DocumentSession {
       if (answer.changeId !== flight.id || answer.document !== slot.state.directory || answer.content.id !== flight.content.id) throw new Error('document-confirmation')
       this.#ack(slot, flight, answer)
     } catch (error) {
-      slot.state = { ...slot.state, saving: false, error: this.#error(error), issues: this.#issues(error) }
+      if (this.#error(error) === 'document-version-changed' && !slot.state.composing) {
+        try {
+          await this.#adopt(slot, await this.#client.readDocument(slot.state.directory))
+          slot.state = { ...slot.state, saving: false }
+        } catch (refreshError) { slot.state = { ...slot.state, saving: false, error: this.#error(refreshError), issues: this.#issues(refreshError) } }
+      } else slot.state = { ...slot.state, saving: false, error: this.#error(error), issues: this.#issues(error) }
     } finally {
       if (slot.flight === flight) slot.flight = undefined
       this.#persist(slot); this.#emit(slot)
@@ -308,6 +336,7 @@ export class DocumentSession {
   }
   #ack(slot: Slot, flight: NonNullable<Slot['flight']>, answer: DocumentChangeAnswer): void {
     slot.baseHash = flight.hash!
+    slot.baseContent = structuredClone(answer.content)
     slot.pendingHash = undefined
     const same = slot.input === flight.input
     slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, ...(same ? { content: answer.content } : {}), dirty: !same, saving: false, error: undefined, issues: answer.issues }
@@ -326,6 +355,7 @@ export class DocumentSession {
     const same = slot.input === input, content = same ? answer.content : structuredClone(current)
     if (!same) for (const [id, asset] of added) content.assets[id] = structuredClone(asset)
     slot.baseHash = baseHash
+    slot.baseContent = structuredClone(answer.content)
     slot.state = { ...slot.state, content, version: answer.version, fingerprint: answer.fingerprint, dirty: !same, error: undefined, issues: answer.issues }
     return true
   }
@@ -340,6 +370,7 @@ export class DocumentSession {
     const checked = validateDocument(content)
     if (!checked.document || checked.issues.some(issue => issue.severity === 'error')) return false
     slot.baseHash = baseHash
+    slot.baseContent = structuredClone(answer.content)
     slot.pendingHash = undefined
     slot.state = { ...slot.state, content: structuredClone(checked.document), version: answer.version, fingerprint: answer.fingerprint,
       dirty: slot.input !== input || slot.state.composing || serialize(content) !== serialize(answer.content), error: undefined, issues: answer.issues }

@@ -8,7 +8,6 @@ import { isWithin } from '../domain/paths.ts'
 import { listDocumentEntries, readDocumentSummary } from './config.ts'
 import type { DocumentEntry, WorkspaceConfig } from './config.ts'
 import { RequestError } from './errors.ts'
-import { lockedError } from './locks.ts'
 import type { DocumentLocks } from './locks.ts'
 import { documentDirOf, FilesError, writeChanges } from './writer.ts'
 import type { DocumentWriter } from './writer.ts'
@@ -178,8 +177,7 @@ export class SourceEditor {
     if (BINARY.test(path)) throw new RequestError(415, `${path} is not a text file`)
     const document = this.#documentHolding(path, documents)?.dir
     const scopeDir = document ?? ''
-    const release = this.#locks ? this.#locks.claim(scopeDir, 'editor:create') : () => {}
-    if (!release) throw lockedError(scopeDir, this.#locks!.holder(scopeDir)!)
+    const release = this.#locks ? await this.#locks.acquire(scopeDir, 'editor:create') : () => {}
     try {
       await this.#writer.create(path, Buffer.alloc(0), document === undefined)
       return { path, content: '', version: versionOf('') }
@@ -229,8 +227,7 @@ export class SourceEditor {
     const document = documents[0]
     if (!document || documents.some(found => found?.dir !== document.dir)) throw new RequestError(400, 'a source transaction must stay in one document')
     const scopeDir = document.dir
-    const release = this.#locks ? this.#locks.claim(scopeDir, 'editor:transaction') : () => {}
-    if (!release) throw lockedError(scopeDir, this.#locks!.holder(scopeDir)!)
+    const release = this.#locks ? await this.#locks.acquire(scopeDir, 'editor:transaction') : () => {}
     const work = async (): Promise<SourceTransactionAnswer> => {
       // Read every preimage before creating directories or writing any file.
       const snapshots = changes.map(change => {
@@ -299,8 +296,7 @@ export class SourceEditor {
     const document = this.#documentHolding(path, documents)
     const outside = document === undefined
     const scopeDir = document?.dir ?? ''
-    const release = this.#locks ? this.#locks.claim(scopeDir, 'editor:save') : () => {}
-    if (!release) throw lockedError(scopeDir, this.#locks!.holder(scopeDir)!)
+    const release = this.#locks ? await this.#locks.acquire(scopeDir, 'editor:save') : () => {}
     try {
       const bytes = this.#readBytes(scope, path, member, documents)
       const now = versionOf(bytes)

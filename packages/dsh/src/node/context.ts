@@ -18,7 +18,7 @@ export const GUIDE = [
   '',
   'What you answer for:',
   '- Do what the author asks, and no more. A question is answered, with no change to files. A change is made where it is asked for, and the rest is kept. When a request is unclear, or would change more than it names, ask first.',
-  '- Your file changes are reviewed by the author: by the workspace\'s settings they are accepted when your turn ends, or wait for the author to accept or reject them, and the author can undo them. Do not commit them.',
+  '- Your file tools and source-changing Presmium tools use a private candidate workspace. The author keeps editing the original while you work. Completed writing tools publish their changes with original-file version checks, or keep them for required review. A conflict means the author changed the source: read the refreshed files and retry your intended change. Never overwrite the author workspace through an old absolute path. Do not commit your files.',
   '',
   'What tells you what:',
   '- A valid document save is acknowledged by its document version independently of snapshot compilation. Read back the canonical JSON to confirm authoring changes and preserve input on conflicts. Diagnostics and presmium__get_section or presmium__get_step describe compiled output; an older snapshot is not confirmation of a newer edit. Preview compilation can fail while the saved document remains valid.',
@@ -36,7 +36,8 @@ const NOT_SOURCES = new Set(['dist', '.presmium', 'node_modules', '.git'])
 const FILES_SHOWN = 60
 
 async function callJsonTool(binding: DocumentBinding, tool: string): Promise<any> {
-  const result = await binding.client.call(tool, {}).catch(() => undefined)
+  const client = ['get_position', 'get_focus', 'get_runtime'].includes(tool) ? binding.authorClient : binding.client
+  const result = await client.call(tool, {}).catch(() => undefined)
   if (!result || result.isError) return undefined
   try {
     return JSON.parse(result.text)
@@ -141,7 +142,7 @@ export function apply(ctx: DshContext): void {
         document = failure ? `<presmium-document>Presmium document context and diagnostics are unavailable: ${JSON.stringify(failure)}. This does not establish that the document is healthy.</presmium-document>`
           : '<presmium-document>No document selected. Document diagnostics are not observed. Work from the workspace root.</presmium-document>'
       }
-      latest.set(id, `Workspace root: ${JSON.stringify((await server.ready).root)}.\n${document}`)
+      latest.set(id, `Workspace root: ${JSON.stringify(bindings.candidateRootOf(agent) ?? (await server.ready).root)}.\n${document}`)
     } catch (error) {
       latest.set(id, `<presmium-document>Presmium document context and diagnostics are unavailable: ${JSON.stringify(errorMessage(error))}. This does not establish that the document is healthy.</presmium-document>`)
     }

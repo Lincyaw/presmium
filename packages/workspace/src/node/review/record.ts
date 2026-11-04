@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import type { Member, ReviewStep } from '@lincyaw/kernel'
 import type { SavedGitDir } from './git-guard.ts'
 import type { GitDirs } from './git-review.ts'
+import type { AgentWorkspaceRecord } from './agent-workspace.ts'
 
 export interface AgentSessionRecord {
   session: string
@@ -18,6 +19,8 @@ export interface AgentSessionRecord {
 
 /** A review in progress, kept in the user's state directory so that another process can roll it back or resume it. */
 export interface ReviewRecord {
+  recordRoot?: string
+  workspace?: AgentWorkspaceRecord
   /** The directory the review covers: a document's for a plugin's task, the workspace root for an agent session. */
   scopeDir: string
   dirs: GitDirs
@@ -66,7 +69,7 @@ export function readRecord(scopeDir: string): ReviewRecord | undefined {
 }
 
 export function writeRecord(record: ReviewRecord): void {
-  const file = recordFile(record.scopeDir)
+  const file = recordFile(record.recordRoot ?? record.scopeDir)
   mkdirSync(recordsDir(), { recursive: true, mode: 0o700 })
   writeFileSync(`${file}.${process.pid}`, JSON.stringify(record), { mode: 0o600 })
   renameSync(`${file}.${process.pid}`, file)

@@ -18,6 +18,13 @@ export function reviewRoutes(reviews: AgentSessionReviews): Record<string, Route
     handle: (request, ctx) => catchRequestErrors(async () => (request.method === 'POST' ? handle(await readBody(request), ctx.document) : problemResponse(405, 'POST'))),
   })
   return {
+    'review/workspace': post(async body => {
+      const session = toText(body.session, 200)
+      if (!session) return problemResponse(400, '{ session }')
+      if (body.close === true) { await reviews.closeWorkspace(session); return jsonResponse({ closed: true }) }
+      if (body.refresh === true) await reviews.refreshWorkspace(session)
+      return jsonResponse(await reviews.workspace(session))
+    }),
     'review': {
       role: 'editor',
       handle: (request, ctx) => catchRequestErrors(async () => {

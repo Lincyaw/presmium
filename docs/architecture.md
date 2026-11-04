@@ -398,7 +398,9 @@ presmium serve: 浏览器 → 服务端 ─┬ /__presmium/<插件 ID>/…、/__
 
 ### 10.7 修改审阅
 
-`packages/workspace/src/node/review/`：会话审阅覆盖整个工作区并持锁；git 树记录开始时与每次工具调用后的检查点，不动 `HEAD` 与真实索引；拒绝时经 `DOCUMENT_FILES` 恢复，不跟随符号链接；接受时先恢复被拒文件再经 `REVISIONS` 提交，成功后释放锁；git 关闭钩子、fsmonitor 与外部 diff；记录在 `presmium/reviews/`，重启后恢复。
+`packages/workspace/src/node/review/`：会话的候选目录位于工作区 `.presmium/agent-workspaces/`，有独立 git 与来源文件版本。AI 文件工具、新进程与正文 MCP 工具操作候选目录，原工作区持续接受作者保存。候选 git 树记录检查点；拒绝与恢复只写候选目录。发布先确认作者输入已保存，再在原工作区短事务中执行全部文件的版本检查、写入与 `REVISIONS` 提交；任一来源过期时不发布，AI 重新读取后重试。审阅记录在 `presmium/reviews/`，包含候选地址与来源版本，重启后恢复。插件的单次修改任务仍使用文稿锁。
+
+候选服务由 bundle 设置 `PRESMIUM_AGENT_CANDIDATE=1`，在自己的目录中允许正文动作提交，是否需要作者确认由原服务发布时的审阅设置决定。作者历史、运行任务和浏览器状态由原服务负责。
 
 ## 11. 安全
 

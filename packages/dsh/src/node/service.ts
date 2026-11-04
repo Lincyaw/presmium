@@ -15,6 +15,7 @@ export interface Config {
   url?: string
   token?: string
   root?: string
+  candidate?: boolean
 }
 
 export interface Endpoint {
@@ -54,6 +55,7 @@ export class WorkspaceServerClient {
         presmium: cliBin(),
         dir: root,
         serviceToken,
+        env: { ...process.env, ...config.candidate ? { PRESMIUM_AGENT_CANDIDATE: '1' } : {} },
         onOutput: (text) => {
           for (const line of text.split('\n').filter(Boolean)) log.debug(`presmium serve: ${line}`)
         },
@@ -104,6 +106,7 @@ export class WorkspaceServerClient {
     this.#closed = true
     if (this.#launched) {
       this.#launched.child.kill('SIGTERM')
+      await this.#launched.exited
       return
     }
     await this.request(`${SERVER_ROUTES}tokens`, { method: 'DELETE', body: {} }).then(r => r.body?.cancel(), () => undefined)

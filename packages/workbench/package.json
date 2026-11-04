@@ -31,6 +31,7 @@
     "src"
   ],
   "dependencies": {
+    "@noble/hashes": "2.4.0",
     "@blocknote/core": "0.56.0",
     "@blocknote/mantine": "0.56.0",
     "@blocknote/react": "0.56.0",

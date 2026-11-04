@@ -217,7 +217,7 @@ export function selectedDocument(state: WorkbenchState): string | null {
 
 /** Whether the AI is changing the workspace now, or its change waits for the author. */
 export function isAgentChanging(state: WorkbenchState): boolean {
-  return Boolean(state.review && (state.review.running || state.review.changes.length > 0))
+  return Boolean(state.review?.engine === 'git' && (state.review.running || state.review.changes.length > 0))
 }
 
 /** Whether the document has a slides form (no renderers listed: every form). */

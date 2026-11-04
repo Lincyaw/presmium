@@ -7,7 +7,7 @@ import { catchRequestErrors, RequestError } from './errors.ts'
 import type { SourceEditor } from './source-editor.ts'
 
 type Client = { member: string, credential: string, value: AuthoringClientDescriptor, sequence: number, lastSignature?: string, send?(value: AuthoringClientEvent): void, close?(): void }
-type Pending = { member: string, signature: string, request: AuthoringClientRequest, value: AuthoringClientRequestResult, timer?: ReturnType<typeof setTimeout> }
+type Pending = { member: string, signature: string, request: AuthoringClientRequest, value: AuthoringClientRequestResult, timer?: ReturnType<typeof setTimeout>, done: Promise<void>, resolve(): void }
 const sameSource = (a: CanonicalSource, b: CanonicalSource) => a.documentId === b.documentId && a.version === b.version && a.fingerprint === b.fingerprint
 const size = (value: unknown) => JSON.stringify(value, null, 2).length
 const budget = (value: unknown, maximum = AUTHORING_CLIENT_MAX_REQUEST_CHARS) => { const text = JSON.stringify(value); if (text === undefined) throw new RequestError(400, 'client-request-invalid'); if (text.length > maximum) throw new RequestError(413, 'client-request-too-large') }
@@ -41,6 +41,7 @@ export function createAuthoringClients(editor: SourceEditor) {
     if (terminal(pending)) return
     clearTimeout(pending.timer); pending.timer = undefined
     pending.value = { ...pending.value, state, ...code ? { error: { code } } : {} }
+    pending.resolve()
     if (state === 'expired') clients.get(clientKey(pending.member, pending.request.clientId))?.send?.({ type: 'cancel', requestId: pending.request.requestId, connectionId: pending.request.expectedClientState.connectionId })
   }
   const disconnect = (client: Client, connectionId: string) => {
@@ -95,7 +96,9 @@ export function createAuthoringClients(editor: SourceEditor) {
       }
       const now = Date.now(), value: AuthoringClientRequestResult = { document, clientId: state.clientId, epoch: state.epoch, connectionId: state.connectionId, requestId: request.requestId, action: request.action.type, source: request.source,
         state: 'sent', admittedAt: new Date(now).toISOString(), expiresAt: new Date(now + AUTHORING_CLIENT_REQUEST_TIMEOUT_MS).toISOString(), verification: 'not-acknowledged', current: false }
-      const pending: Pending = { member: member.id, signature, request: structuredClone(request), value }
+      let resolve!: () => void
+      const done = new Promise<void>(finish => resolve = finish)
+      const pending: Pending = { member: member.id, signature, request: structuredClone(request), value, done, resolve }
       pending.timer = setTimeout(() => finish(pending, 'expired', 'client-request-timeout'), AUTHORING_CLIENT_REQUEST_TIMEOUT_MS)
       requests.set(key, pending)
       client.send?.({ type: 'request', request: pending.request, expiresAt: value.expiresAt })
@@ -194,7 +197,23 @@ export function createAuthoringClients(editor: SourceEditor) {
     if (!validateAuthoringClientReport(value.report)) throw new RequestError(400, 'client-report-invalid')
     report(connection(ctx.document, value.connection, ctx.member), value.report, digest(value.report)); return jsonResponse({ accepted: true })
   }) })
-  return { service, routes: {
+  return { service,
+    async flush(documents: string[], member: Member): Promise<void> {
+      const active = [...clients.values()].filter(client => client.member === member.id && client.value.connected && documents.includes(client.value.document))
+      await Promise.all(active.map(async client => {
+        const state = client.value
+        if (!state.snapshot.actions.includes('source.flush')) {
+          if (state.snapshot.editing.dirty || state.snapshot.editing.saving || state.snapshot.editing.composing || state.snapshot.editing.conflicted) throw new RequestError(409, 'agent-author-editing', { next: 'The author has unconfirmed input. Read the current author files and retry after that input is saved. Nothing was published.' })
+          return
+        }
+        const request: AuthoringClientRequest = { clientId: state.clientId, epoch: state.epoch, requestId: randomUUID(), source: state.snapshot.source,
+          expectedClientState: { connectionId: state.connectionId, revision: state.snapshot.revision }, action: { type: 'source.flush' } }
+        await service.request(state.document, request, member)
+        const pending = requests.get(requestKey(member.id, state.document, request))!
+        await pending.done
+        if (pending.value.state !== 'done') throw new RequestError(409, 'agent-author-editing', { next: 'The author client could not confirm its saved input. Read the current author files and retry. Nothing was published.' })
+      }))
+    }, routes: {
     'authoring-clients/register': post('register'), 'authoring-clients/report': post('report'), 'authoring-clients/ack': post('ack'),
     'authoring-clients/events': { role: 'editor', handle: (request, ctx) => catchRequestErrors(async () => {
       if (request.method !== 'GET') return problemResponse(405, 'GET')
@@ -202,5 +221,5 @@ export function createAuthoringClients(editor: SourceEditor) {
       if (!validateAuthoringClientLease(lease)) throw new RequestError(400, 'client-connection-invalid')
       return sseResponse(open(ctx.document, lease, ctx.member, request.signal), request.signal)
     }) } satisfies Route,
-  }, async close() { closed = true; for (const client of clients.values()) client.close?.(); for (const pending of requests.values()) clearTimeout(pending.timer); requests.clear(); clients.clear() } }
+  }, async close() { closed = true; for (const client of clients.values()) client.close?.(); for (const pending of requests.values()) finish(pending, 'expired', 'client-owner-closed'); requests.clear(); clients.clear() } }
 }
