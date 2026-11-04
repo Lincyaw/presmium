@@ -52,6 +52,8 @@ When the MCP server `presmium` offers author actions (the studio's assistant; or
 
 Discover `undo_document_change` for saved history and `get_document_history` for its entries. `editor_action` controls advertised browser actions, supplying connection/revision/source metadata internally and waiting briefly for a real acknowledgement. Pending returns a request reference to inspect; never resend an action merely because its acknowledgement was lost. Native unsaved editor history remains a separate browser capability.
 
+Skill discovery returns short summaries; use `list_skills` with a name and `details:true` only when the complete resource file list is needed. `build` reads the current saved source internally; pass its optional source only to pin an earlier decision.
+
 To connect an AI tool: a project made by `presmium new` has `.mcp.json` for Claude Code; otherwise run `claude mcp add presmium -- presmium mcp` or `codex mcp add presmium -- presmium mcp` in the project. `presmium mcp` relays to the Presmium Studio or `presmium serve` running for the project and follows it when it starts again (a `presmium dev` only previews: it has no author actions and takes no pictures); with neither running it only reads, checks and exports, and the author starts `presmium studio` then reconnects the server. A script or pipeline without an MCP client calls the same tools of the running service from the project's directory: `presmium mcp tools` lists them, `presmium mcp call <tool> '<JSON arguments>'` prints the result as JSON, and `--out <dir>` saves the pictures a capture returns as PNG files.
 
 Without an MCP host that has author actions (working on files in a project), edit `lecture.json` directly and use the command line:

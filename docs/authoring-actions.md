@@ -50,6 +50,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 ## 4. 读取与预算
 
+- `list_skills` 默认只返回技能摘要与入口；指定 `name` 可筛选一个技能，`details: true` 才展开完整文件列表与版本。技能正文与引用文件仍经 `read_skill` 分片读取。
 - `get_document_outline` 按集合（默认 `sections`，另有 `blocks/steps/narrations/assets/definitions/comments`）列出稳定 ID、类型与计数。
 - `read_document_part({ source, target, offset? })` 读一个实体或根字段，`path` 逐层选字段或数组索引，不是文件路径。
 - 全量 `get_document` 留给 SDK，可能超出 agent 预算。`get_section/get_step/deck_info` 读运行快照，不是可编辑内容。
@@ -199,7 +200,8 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 - 任务带 `id`、`intent`、文稿、source、单调 `sequence`（状态拥有者分配，Web 与 MCP 看到同一序号）、范围、状态、提供方、错误与产物。状态为 queued、running、cancelling、cancelled、done、failed；来源变化后 `current: false`。
 - 断开连接不取消任务。丢失应答时先按 intent 查询，已接纳就跟踪，未接纳才重发同一意图。按 intent 的取消可早于接纳。
 - 取消已结束或已在取消中的任务直接返回当前状态，不请求批准。
-- `build` 的每个目标先经 `OutputJobs.check` 接纳；未知目标返回 422 `job-target-unknown`；同 source 与输入已有作业时返回 `reused: true`。
+- `build` 省略 source 时在服务端读取当前保存版本；显式 source 绑定先前读取。每个目标先经 `OutputJobs.check` 接纳，提交时仍核对同一 source 与输入；未知目标返回 422 `job-target-unknown`；同 source 与输入已有作业时返回 `reused: true`。
+- 外部精简目录的 `build/get_builds` 默认只返回作业状态、进度与产物入口；`get_builds` 指定 `jobId` 才展开源绑定、文件详情与日志。完整兼容目录和 dsh 保持完整作业回执。
 - 指定不支持或未配置的引擎返回不可重试的 422；503 只表示语音服务未解析或没有可用引擎。
 
 ## 11. 作者客户端

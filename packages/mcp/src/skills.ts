@@ -31,8 +31,10 @@ function readSafely<T>(read: () => T): T {
   try { return read() } catch (error) { throw exposedError(error) }
 }
 
-function catalogue() {
-  return readSafely(() => ({ skills: listBundledSkills().map(({ name, description, files, version, hash }) => ({ name, description, files, version, hash, uri: skillUri(name) })) }))
+function catalogue(args: Record<string, unknown> = {}) {
+  return readSafely(() => ({ skills: listBundledSkills().filter(skill => args.name === undefined || skill.name === args.name).map(({ name, description, files, version, hash }) => (
+    args.details ? { name, description, files, version, hash, uri: skillUri(name) } : { name, description: description.slice(0, 240), uri: skillUri(name) }
+  )) }))
 }
 
 function skillFile(args: Record<string, unknown>) {
@@ -49,20 +51,20 @@ export const SKILL_INSTRUCTIONS = 'For composition, layout, animation, presentat
 export const SKILL_TOOLS: ToolSpec[] = [
   {
     name: 'list_skills',
-    description: 'Lists the four bundled Presmium skills, their descriptions, relative resource files, version/hash and SKILL.md URI. Use this before Presmium authoring work; no document or compilation is required.',
-    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    description: 'Lists bundled Presmium skill summaries and SKILL.md URIs. Optional name filters to one skill; details:true includes its complete file list and version. Simple wording edits need no skill discovery. No compilation.',
+    inputSchema: { type: 'object', properties: { name: { type: 'string', maxLength: 80 }, details: { type: 'boolean' } }, additionalProperties: false },
     kind: 'read',
     structured: true,
-    run: async () => catalogue(),
+    run: async ({ args }) => catalogue(args),
   },
   {
     name: 'read_skill',
-    description: 'Reads a bundled skill file as a bounded Unicode code-point text fragment. Start with SKILL.md, follow nextOffset until complete, then read the referenced relative files needed for the task. Only the four listed skills and their bundled files are readable; no document or compilation is required.',
+    description: 'Reads a bundled skill file as a bounded Unicode code-point text fragment. Start with SKILL.md, follow nextOffset until complete, then read the referenced relative files needed for the task. Only listed skills and their bundled files are readable; no document or compilation is required.',
     inputSchema: {
       type: 'object',
       properties: {
         name: { type: 'string', minLength: 1, maxLength: 80, description: 'The exact skill name from list_skills.' },
-        path: { type: 'string', minLength: 1, maxLength: 2048, default: 'SKILL.md', description: 'A bundled relative file path from list_skills; defaults to SKILL.md.' },
+        path: { type: 'string', minLength: 1, maxLength: 2048, default: 'SKILL.md', description: 'A bundled relative file path referenced by the skill or list_skills(details:true); defaults to SKILL.md.' },
         offset: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER, default: 0, description: 'Unicode code-point offset, initially zero; use the previous fragment\'s nextOffset.' },
         limit: { type: 'integer', minimum: 1, maximum: PAGE_LIMIT, default: PAGE_LIMIT, description: 'Maximum Unicode code points in this fragment.' },
       },
@@ -94,13 +96,13 @@ function resourceArgs(url: URL): Record<string, unknown> {
 /** Standard resources and ordinary read tools share the same bounded package reader. */
 export function registerSkillResources(server: McpServer): void {
   const contents = (url: URL, read: () => unknown) => {
-    try { return { contents: [{ uri: url.href, mimeType: 'application/json', text: JSON.stringify(read(), null, 2) }] } }
+    try { return { contents: [{ uri: url.href, mimeType: 'application/json', text: JSON.stringify(read()) }] } }
     catch (error) {
       const failure = exposedError(error)
       throw new ProtocolError(failure.status >= 500 ? ProtocolErrorCode.InternalError : ProtocolErrorCode.InvalidParams, failure.code)
     }
   }
-  server.registerResource('skills', SKILLS_URI, { mimeType: 'application/json', description: 'The bundled Presmium skill catalogue, including relative files and SKILL.md resource URIs.' }, async url => contents(url, catalogue))
+  server.registerResource('skills', SKILLS_URI, { mimeType: 'application/json', description: 'Bundled Presmium skill summaries and SKILL.md resource URIs.' }, async url => contents(url, catalogue))
   server.registerResource('skill-file', new ResourceTemplate(FILE_TEMPLATE, {
     list: async () => ({ resources: catalogue().skills.map(skill => ({ name: `${skill.name}/SKILL.md`, uri: skill.uri, description: skill.description, mimeType: 'application/json' })) }),
   }), { mimeType: 'application/json', description: 'A bundled skill file as a versioned, bounded JSON text fragment; optional offset/limit query parameters page through it.' }, async url => contents(url, () => skillFile(resourceArgs(url))))

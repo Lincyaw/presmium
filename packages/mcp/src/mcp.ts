@@ -100,7 +100,10 @@ const LOG_TAIL = 30
 const LISTED_FILES = 20
 
 /** A job as the AI reads it: where it is, what it made and where (the files below `url`), the end of its log. */
-function jobSummary(job: CompileJob, logLines = 0) {
+function jobSummary(job: CompileJob, logLines = 0, brief = false) {
+  if (brief) return { id: job.id, sequence: job.sequence, target: job.target, state: job.state,
+    ...job.progress ? { progress: job.progress } : {}, ...job.error ? { error: job.error.slice(0, 300) } : {},
+    ...job.warnings.length ? { warnings: job.warnings.length } : {}, ...job.main ? { main: `${job.url}${job.main}` } : {} }
   return {
     id: job.id,
     sequence: job.sequence,
@@ -294,11 +297,11 @@ const TOOLS: ToolSpec[] = [
   {
     name: 'build',
     structured: true,
-    description: 'Builds or exports the deck once allowed. A workspace host requires source {version, fingerprint} from get_document and checks that exact saved source, the targets and the inputs before asking the author; when every target already has a queued, running or finished job of that exact source and inputs, those jobs are returned with reused: true and nothing is asked or built. wait: false returns jobs immediately; follow their source, sequence and terminal state with get_builds. The compiler-only stdio host builds synchronously and cannot confirm a requested source or cancel a build.',
+    description: 'Builds or exports the deck once allowed. The workspace reads the current saved source internally; optional source pins an earlier read. Checks that source, targets and inputs before approval. Existing jobs for the same source and inputs are reused. wait:false returns jobs immediately; get_builds reads progress and results. A compiler-only host builds synchronously and cannot pin source or cancel.',
     properties: {
       ...DOCUMENT,
       to: { type: 'array', items: { type: 'string' }, description: 'What to make, e.g. ["slides", "pdf"]; default: the deck\'s renderers.' },
-      source: { type: 'object', properties: { version: { type: 'string', minLength: 1, maxLength: 128 }, fingerprint: { type: 'string', minLength: 1, maxLength: 128 } }, required: ['version', 'fingerprint'], additionalProperties: false, description: 'Required for workspace jobs: the exact saved document source returned by get_document.' },
+      source: { type: 'object', properties: { version: { type: 'string', minLength: 1, maxLength: 128 }, fingerprint: { type: 'string', minLength: 1, maxLength: 128 } }, required: ['version', 'fingerprint'], additionalProperties: false, description: 'Optional expected saved source; omitted means the current saved version.' },
       wait: { type: 'boolean', description: 'Wait for the jobs to end (default true).' },
     },
     kind: 'operate',
@@ -306,7 +309,11 @@ const TOOLS: ToolSpec[] = [
       const document = await call.document()
       const to = Array.isArray(call.args.to) ? call.args.to.filter((id): id is string => typeof id === 'string') : undefined
       const { jobs } = call.host
-      const source = call.args.source
+      let source = call.args.source
+      if (jobs && source === undefined && call.host.authoring) {
+        const current = await call.host.authoring.read(document, call.caller.member)
+        source = { version: current.version, fingerprint: current.fingerprint }
+      }
       if (jobs && (!isRecord(source) || typeof source.version !== 'string' || !source.version || source.version.length > 128 || typeof source.fingerprint !== 'string' || !source.fingerprint || source.fingerprint.length > 128)) throw Object.assign(new Error('job-source-required'), { status: 400 })
       if (!jobs && source !== undefined) throw Object.assign(new Error('job-source-unavailable'), { status: 409 })
       if (jobs) {
@@ -315,7 +322,7 @@ const TOOLS: ToolSpec[] = [
         const expected = source as { version: string, fingerprint: string }
         const finish = async (started: CompileJob[], reused?: true) => {
           const ended = call.args.wait === false ? started : await Promise.all(started.map(job => jobs.wait(job.id)))
-          return { jobs: ended.map(job => jobSummary(job)), ...reused ? { reused } : {} }
+          return { jobs: ended.map(job => jobSummary(job, 0, !call.caller.confirmed && call.caller.toolset !== 'all')), ...reused ? { reused } : {} }
         }
         if (!call.caller.confirmed) {
           // Checks every target before the author is asked; jobs that already exist for this exact source are returned, not asked for again.
@@ -340,7 +347,7 @@ const TOOLS: ToolSpec[] = [
   {
     name: 'get_builds',
     structured: true,
-    description: 'Reads the latest builds or one job by jobId within this document, including sequence, saved source, progress, errors, output files and caption addresses. Job reading remains available when current output-target discovery fails.',
+    description: 'Reads recent build states and output links. Give jobId for one job with complete source, file and log details. Job reading remains available when output-target discovery fails.',
     properties: { ...DOCUMENT, jobId: { type: 'string', minLength: 1, description: 'Read this job even when it is outside the ten most recent jobs.' } },
     kind: 'read',
     run: async (call) => {
@@ -358,7 +365,7 @@ const TOOLS: ToolSpec[] = [
       return {
         targets,
         ...targetFailure ? { targetFailure } : {},
-        jobs: jobs.list(document).slice(0, RECENT_JOBS).map(job => jobSummary(job, LOG_TAIL)),
+        jobs: jobs.list(document).slice(0, RECENT_JOBS).map(job => jobSummary(job, LOG_TAIL, !call.caller.confirmed && call.caller.toolset !== 'all')),
       }
     },
   },
@@ -374,7 +381,7 @@ const TOOLS: ToolSpec[] = [
       const own = () => jobs.list(document).find(job => job.id === id)
       const before = own()
       if (!before) throw Object.assign(new Error('job-not-found'), { status: 404 })
-      if (before.state !== 'queued' && before.state !== 'running') return { cancellation: 'already-finished', job: jobSummary(before, LOG_TAIL) }
+      if (before.state !== 'queued' && before.state !== 'running') return { cancellation: 'already-finished', job: jobSummary(before, LOG_TAIL, !call.caller.confirmed && call.caller.toolset !== 'all') }
       const lang = (await call.host.documents()).find(info => info.dir === document)?.lang ?? ''
       await call.approve('operate', m => m.cancelBuild(m.renderers([before.target])), { lang })
       const current = own()
@@ -382,7 +389,7 @@ const TOOLS: ToolSpec[] = [
       const active = current.state === 'queued' || current.state === 'running'
       const job = active ? jobs.cancel(current.id) : current
       if (!job || job.document !== document) throw Object.assign(new Error('job-not-found'), { status: 404 })
-      return { cancellation: active ? job.state === 'cancelled' ? 'cancelled' : 'requested' : 'already-finished', job: jobSummary(job, LOG_TAIL) }
+      return { cancellation: active ? job.state === 'cancelled' ? 'cancelled' : 'requested' : 'already-finished', job: jobSummary(job, LOG_TAIL, !call.caller.confirmed && call.caller.toolset !== 'all') }
     },
   },
   {
@@ -492,14 +499,18 @@ async function toolResult(run: () => Promise<unknown>, structured = false, lang?
   } catch (error) {
     if (structured) {
       const status = isRecord(error) && typeof error.status === 'number' ? error.status : 500
-      const detail = isRecord(error) && isRecord(error.detail) ? error.detail : undefined
-      const explain = status < 500 ? MCP_ERROR_TEXT[deckLocale(await lang?.().catch(() => undefined) ?? '')][errorMessage(error)] : undefined
-      const failure = { error: { code: status < 500 ? errorMessage(error) : 'tool-failed', message: explain ? explain(detail ?? {}) : errorMessage(error), status, retryable: status >= 500, ...detail ? { detail } : {} } }
+      let detail = isRecord(error) && isRecord(error.detail) ? error.detail : undefined
+      const code = errorMessage(error), explain = MCP_ERROR_TEXT[deckLocale(await lang?.().catch(() => undefined) ?? '')][code]
+      if (code === 'capture-browser-unavailable' && detail?.reason) {
+        console.error(`presmium mcp: ${code}: ${String(detail.reason)}`)
+        detail = undefined
+      }
+      const failure = { error: { code: status < 500 || explain ? code : 'tool-failed', message: explain ? explain(detail ?? {}) : code, status, retryable: status >= 500, ...detail ? { detail } : {} } }
       return { isError: true, structuredContent: failure, content: [{ type: 'text', text: toText(failure) }] }
     }
     const locale = deckLocale(await lang?.().catch(() => undefined) ?? '')
     const status = isRecord(error) && typeof error.status === 'number' ? error.status : 500
-    const explain = status < 500 ? MCP_ERROR_TEXT[locale][errorMessage(error)] : undefined
+    const explain = MCP_ERROR_TEXT[locale][errorMessage(error)]
     const coded = codes?.[locale]?.[errorMessage(error)] ?? explain?.(isRecord(error) && isRecord(error.detail) ? error.detail : {})
     return { isError: true, content: [{ type: 'text', text: coded ?? errorMessage(error) }] }
   }
