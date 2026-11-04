@@ -34,7 +34,7 @@ export default gsapScene(({ root, gsap, at, durations }) => {
     .take__1 { font-size: 4.6cqw; font-weight: 800; line-height: 1.2; white-space: nowrap; }
     .take__1 em { font-style: normal; color: var(--c-accent); }
     .take__2 { margin-top: 1.6cqh; font-size: ${TYPE.lead}cqw; color: var(--pm-color-muted); white-space: nowrap; }
-    .take__3 { display: inline-block; margin-top: 2.4cqh; font-size: ${TYPE.body}cqw; font-weight: 650; padding: 0.4cqw 1.4cqw; border-radius: 99cqw;
+    .take__3 { display: inline-block; margin-top: 2.4cqh; margin-right: 1cqw; font-size: ${TYPE.body}cqw; font-weight: 650; padding: 0.4cqw 1.4cqw; border-radius: 99cqw;
       color: var(--pm-color-warn); background: var(--pm-color-warn-soft); white-space: nowrap; }
     .paper { position: absolute; left: 8cqw; top: 47cqh; width: 84cqw; padding: 1.6cqw 2cqw; display: flex; gap: 2cqw; align-items: center; }
     .paper__m { flex: none; width: 9cqw; height: 9cqw; border-radius: 1.6cqw; overflow: hidden; background: #f7f5f0; box-shadow: 0 0 0 0.12cqw var(--c-line-strong); }
@@ -46,20 +46,20 @@ export default gsapScene(({ root, gsap, at, durations }) => {
     .paper__s { margin-top: 1cqh; font-size: ${TYPE.small}cqw; font-weight: 700; color: var(--c-accent); white-space: nowrap; }
   `, `
     ${brand(PAPER.short)}
-    <div class="pt pa" style="color:${METHOD.mask}">遮盖<span>六个不超过 9×10¹⁹ FLOPs 的小模型</span></div>
-    <div class="pt pb">直接给答案（对照）<span>以概率 H 给出答案，否则模型自己作答</span></div>
+    <div class="pt pa" style="color:${METHOD.mask}">遮盖<span>6 个小模型</span></div>
+    <div class="pt pb">直接给最终答案（对照）<span>每题以 H 的概率给出</span></div>
     <svg class="layer" ${LAYER}>
       <g class="panel-a">${axes({ x: AX, y: Y, ...ticks })}</g>
       <g class="panel-b">${axes({ x: BX, y: Y, ...ticks })}</g>
       ${small.map(({ i }, k) => `<path class="ma ma${k}" d="${maskPath(i)}" fill="none" stroke="${shade(i)}" stroke-width="0.55"/>`).join('')}
       ${small.map(({ i }, k) => `<path class="gb gb${k}" d="${givePath(i)}" fill="none" stroke="${shade(i)}" stroke-width="0.55"/>`).join('')}
     </svg>
-    <div class="ca">曲线分开：能力差别显出来</div>
-    <div class="cb"><span>曲线完全重合，预测误差仍有</span><b>${(ctrl.err * 100).toFixed(1)} 个百分点</b></div>
+    <div class="ca">曲线分开：模型能力差异清楚可见</div>
+    <div class="cb"><span>曲线重合 · 误差</span><b>${(ctrl.err * 100).toFixed(1)} 个百分点</b></div>
     <div class="take">
       <div class="take__1">提示量：衡量能力的<em>第二把尺子</em></div>
-      <div class="take__2">小模型还是零分时，就能读出大模型的分数</div>
-      <div class="take__3">前提：每道题有可靠的参考解答</div>
+      <div class="take__2">小模型接近零 → 大模型准确率</div>
+      <div class="take__3">前提：可靠的参考解答</div> <div class="take__3 take__4">logit 混合：教师须共用分词器</div>
     </div>
     <div class="card paper">
       <div class="paper__m">${MARK}</div>
@@ -73,10 +73,10 @@ export default gsapScene(({ root, gsap, at, durations }) => {
   `)
 
   const tl = gsap.timeline()
-  gsap.set(['.pt', '.panel-a', '.panel-b', '.ma', '.gb', '.ca', '.cb', '.take__1', '.take__2', '.take__3', '.paper'], { autoAlpha: 0 })
+  gsap.set(['.pt', '.panel-a', '.panel-b', '.ma', '.gb', '.ca', '.cb', '.take__1', '.take__2', '.take__3', '.take__4', '.paper'], { autoAlpha: 0 })
   gsap.set(['.ma', '.gb'], { drawSVG: '0%' })
 
-  // State 0. 提示必须让能力不同的模型拉开差别: masking, the curves spread. 若以概率 H 直接给出答案……完全重合: the
+  // State 0. 提示应清楚反映模型能力差异: masking, the curves spread. 若以概率 H 直接给出答案……完全重合: the
   // control's lines are drawn one by one onto the same diagonal. 误差仍有 20 个百分点: the readout.
   tl.to(['.pa', '.panel-a'], { autoAlpha: 1, duration: 0.4 }, T(0, 0.03))
   tl.to('.ma', { autoAlpha: 1, duration: 0.01 }, T(0, 0.08))
@@ -91,7 +91,8 @@ export default gsapScene(({ root, gsap, at, durations }) => {
   tl.to(['.pt', '.panel-a', '.panel-b', '.ma', '.gb', '.ca', '.cb'], { autoAlpha: 0, duration: 0.35 }, T(1))
   tl.fromTo('.take__1', { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.55, ease: 'expo.out', immediateRender: false }, T(1, 0.04))
   tl.fromTo('.take__2', { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'expo.out', immediateRender: false }, T(1, 0.32))
-  tl.fromTo('.take__3', { autoAlpha: 0, scale: 0.9, transformOrigin: '0 50%' }, { autoAlpha: 1, scale: 1, duration: 0.45, ease: 'back.out(1.8)', immediateRender: false }, T(1, 0.68))
+  tl.fromTo('.take__3:not(.take__4)', { autoAlpha: 0, scale: 0.9, transformOrigin: '0 50%' }, { autoAlpha: 1, scale: 1, duration: 0.45, ease: 'back.out(1.8)', immediateRender: false }, T(1, 0.5))
+  tl.fromTo('.take__4', { autoAlpha: 0, scale: 0.9, transformOrigin: '0 50%' }, { autoAlpha: 1, scale: 1, duration: 0.45, ease: 'back.out(1.8)', immediateRender: false }, T(1, 0.72))
   tl.fromTo('.paper', { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.6, ease: 'expo.out', immediateRender: false }, T(1, 0.8))
   tl.set({}, {}, T(2))
   return tl

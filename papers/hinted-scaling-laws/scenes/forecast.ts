@@ -1,14 +1,14 @@
 import { gsapScene } from '@lincyaw/addon-motion/scene'
-import { axes, decades, path, place, sample, scale, wipe } from '../../kit/chart.ts'
+import { axes, decades, path, place, sample, scale, sigmoid, wipe } from '../../kit/chart.ts'
 import { brand, clock, frame, isDark, LAYER, sup, TYPE } from '../../kit/frame.ts'
 import { baseline, D, flops, hintColor, law, METHOD, PAPER, pct } from './hsl.ts'
 
-// The forecast. The same compute axis as the first page. Only the six models up to 10²⁰ FLOPs are used: their
-// unhinted scores sit at zero, their logit-mixing scores spread out, and the joint law fitted to them is drawn at each
+// The forecast. The same compute axis as the first page. Only the six models up to 9×10¹⁹ FLOPs are used: their
+// unhinted scores sit at zero (and any S curve fits them), their logit-mixing scores spread out, and the joint law fitted to them is drawn at each
 // hint level. Its H = 0 slice is extended to 10²³ (28.7%); the held-out models then appear (25.9% at 10²³), and the
 // standard scaling law fitted to the same six unhinted scores (13.2%). Last, all 19 forecasts of the paper's five
 // families and benchmarks: each standard error moves to its hinted error.
-// Three states: the fit, the forecast against the truth, the 19 forecasts.
+// Four states: zeros fit any curve, the fit with hints, the forecast against the truth, the 19 forecasts.
 
 const W = D.delphi.forecast_logit.find(f => f.t === 6)!
 const LAW = W.laws.logit_mix!
@@ -19,6 +19,8 @@ const HS = [0.2, 0.4, 0.6, 0.8, 1.0, 1.4]
 const X = scale(18.25, 23.35, 16, 98)
 const yAll = scale(0, 1, 64, 16), yAcc = scale(0, 0.4, 64, 16)
 const TOP = 23
+// Curves that all agree with six zeros (illustrative): S curves whose rise begins anywhere past the window.
+const ZFAN = [21.3, 22.0, 22.7, 23.4]
 const truth = rungs.at(-1)!.acc
 /** A difference of two shown percentages, from their rounded values, so the screen adds up. */
 const gap = (a: number, b: number) => Math.abs(+(a * 100).toFixed(1) - +(b * 100).toFixed(1)).toFixed(1)
@@ -51,6 +53,8 @@ export default gsapScene(({ root, gsap, at, durations, color }) => {
     .r-ours { top: 16cqh; } .r-ours .v, .r-ours .e { color: var(--c-ours); }
     .r-true { top: 33cqh; } .r-true .v { color: var(--c-held); }
     .r-base { top: 50cqh; }
+    .zfan-lab { position: absolute; font-size: ${TYPE.small}cqw; line-height: 1.6; white-space: nowrap; }
+    .zfan-lab b { font-size: ${TYPE.lead}cqw; }
     .meth { position: absolute; left: ${X(18.25) / 1.6}cqw; top: 8.4cqh; font-size: ${TYPE.small}cqw; color: var(--pm-color-muted); white-space: nowrap; }
     .meth b { color: ${METHOD.logit_mix}; }
     .over { position: absolute; font-size: ${TYPE.small}cqw; color: var(--c-ours); white-space: nowrap; }
@@ -72,6 +76,7 @@ export default gsapScene(({ root, gsap, at, durations, color }) => {
       ${HS.map((h, k) => `<g class="sl sl${k}"><path d="${curve(h, yAll, lo, mid)}" fill="none" stroke="${hc(h)}" stroke-width="0.45"/>
         <path d="${curve(h, yAll, mid, TOP + 0.2)}" fill="none" stroke="${hc(h)}" stroke-width="0.45" stroke-dasharray="1 0.8"/></g>`).join('')}
       ${cells.map((col, i) => col.map(p => `<circle class="hc" cx="${X(fitted[i]!.c)}" cy="${yAll(p.v)}" r="0.75" fill="${hc(p.h)}"/>`).join('')).join('')}
+      ${ZFAN.map(c0 => `<path class="zfan" d="${path(place(sample(c => sigmoid(4 * (c - c0)), 18.3, 23.3, 120), X, yAll))}" fill="none" stroke="var(--c-muted)" stroke-width="0.35" stroke-dasharray="1.2 0.8"/>`).join('')}
       <g class="h0a"><path d="${curve(0, yAll, lo, mid)}" fill="none" stroke="var(--c-ours)" stroke-width="0.7"/></g>
       <g class="h0"><path class="h0-in" d="${curve(0, yAcc, lo, mid)}" fill="none" stroke="var(--c-ours)" stroke-width="0.7"/>
         <path class="h0-out" d="${curve(0, yAcc, mid, TOP)}" fill="none" stroke="var(--c-ours)" stroke-width="0.7" stroke-dasharray="1.2 0.8"/>
@@ -103,66 +108,75 @@ export default gsapScene(({ root, gsap, at, durations, color }) => {
           <text class="med-o" x="${EX(D.families.median_ens) - 0.8}" y="${rowY(18) + 4}" font-size="2.3" text-anchor="end" fill="var(--c-ours)">中位 ${(D.families.median_ens * 100).toFixed(1)}</text></g>
       </g>
     </svg>
-    <div class="win"><b>拟合只用 6 个模型</b><span class="muted">不超过 ${flops(W.boundary)} FLOPs<br>算力不到目标的 ${(W.frac * 100).toFixed(2)}%</span></div>
-    <div class="meth"><b>logit 混合</b> · GSM8K　教师：Llama-3.1 8B（上下文里有完整参考解答）　H：教师的权重，可以大于 1</div>
+    <div class="win"><b>用于拟合的 6 个模型</b><span class="muted">≤ ${flops(W.boundary)} FLOPs</span></div>
+    <div class="meth"><b>logit 混合</b> · 教师模型 Llama-3.1 8B · H 可大于 1</div>
+    <div class="zfan-lab" style="left:66cqw;top:30cqh"><b>只看原题</b><br>曲线定不下来<span class="note">　示意</span></div>
     <div class="hleg">${HS.map(h => `<div><i style="background:${hc(h)}"></i>提示量 H = ${h}</div>`).join('')}<div><i style="background:var(--c-ours)"></i>H = 0（原题）</div></div>
-    <div class="read r-ours"><div class="k">联合定律对 ${flops(TOP)} FLOPs 的预测</div><div class="v n-ours">${pct(W.pred)}</div><div class="e">差 ${gap(W.pred, truth)} 个百分点</div></div>
-    <div class="over over22" style="right:${100 - X(22) / 1.6 + 0.6}cqw;top:${yAcc(0.19) / 0.9}cqh">10²² 处高估 ${gap(at22, R22.acc)} 个百分点</div>
+    <div class="read r-ours"><div class="k">联合定律 · ${flops(TOP)}</div><div class="v n-ours">${pct(W.pred)}</div><div class="e">差 ${gap(W.pred, truth)}</div></div>
+    <div class="over over22" style="right:${100 - X(22) / 1.6 + 0.6}cqw;top:${yAcc(0.19) / 0.9}cqh">10²²：高估 ${gap(at22, R22.acc)}</div>
     <div class="read r-true"><div class="k">实际</div><div class="v">${pct(truth)}</div></div>
-    <div class="read r-base"><div class="k">标准缩放定律：同样 6 个模型的原题分数拟合 S 形曲线</div><div class="v">${pct(W.base_pred)}</div><div class="e">低估 ${gap(W.base_pred, truth)} 个百分点</div></div>
-    <div class="dleg"><span><i style="background:var(--c-base)"></i>标准缩放定律</span><span><i style="background:var(--c-ours)"></i>带提示（截断与遮盖的平均）</span></div>
-    <div class="score"><b>${D.families.wins} / ${panels.length}</b><span>组预测更准</span><em>五组模型 · 三个基准</em></div>
+    <div class="read r-base"><div class="k">标准缩放定律</div><div class="v">${pct(W.base_pred)}</div><div class="e">低估 ${gap(W.base_pred, truth)}</div></div>
+    <div class="dleg"><span><i style="background:var(--c-base)"></i>标准缩放定律</span><span><i style="background:var(--c-ours)"></i>提示辅助（截断与遮盖预测均值）</span></div>
+    <div class="score"><b>${D.families.wins} / ${panels.length}</b><span>次预测更准</span><em>五组模型 · 三个基准</em></div>
   `)
 
   const tl = gsap.timeline()
-  gsap.set(['.meth', '.over22', '.win', '.shade', '.ax-x', '.ax-all', '.ax-acc', '.sl', '.hc', '.h0a', '.h0', '.bl', '.held', '.fit', '.err', '.dumb', '.row', '.med', '.hleg', '.read', '.dleg', '.score'], { autoAlpha: 0 })
+  gsap.set(['.zfan', '.zfan-lab', '.meth', '.over22', '.win', '.shade', '.ax-x', '.ax-all', '.ax-acc', '.sl', '.hc', '.h0a', '.h0', '.bl', '.held', '.fit', '.err', '.dumb', '.row', '.med', '.hleg', '.read', '.dleg', '.score'], { autoAlpha: 0 })
   gsap.set(['.sl path:first-child', '.h0a path', '.h0-in'], { drawSVG: '0%' })
 
-  // State 0: the window of six models, their zeros, their hinted scores, and the law fitted to them at each level.
+  // State 0: the window of six models and their zeros; curves that all fit the zeros fan out (illustrative): the
+  // position and the steepness of the S curve are not determined.
   tl.to(['.ax-x', '.ax-all', '.shade'], { autoAlpha: 1, duration: 0.4 }, T(0, 0.02))
   tl.fromTo('.fit', { autoAlpha: 0, scale: 0.3, transformOrigin: '50% 50%' }, { autoAlpha: 1, scale: 1, duration: 0.35, ease: 'expo.out', stagger: 0.06, immediateRender: false }, T(0, 0.06))
-  tl.to('.win', { autoAlpha: 1, duration: 0.4 }, T(0, 0.12))
-  tl.to('.meth', { autoAlpha: 1, duration: 0.4 }, T(0, 0.45))
-  tl.fromTo('.hc', { autoAlpha: 0, attr: { cy: yAll(0.015) } }, { autoAlpha: 1, attr: { cy: (j: number) => yAll(cells[Math.floor(j / HS.length)]![j % HS.length]!.v) }, duration: 0.7, ease: 'power3.out', stagger: 0.012, immediateRender: false }, T(0, 0.55))
-  tl.to('.hleg', { autoAlpha: 1, duration: 0.4 }, T(0, 0.6))
+  tl.to('.win', { autoAlpha: 1, duration: 0.4 }, T(0, 0.14))
+  tl.to('.zfan', { autoAlpha: 1, duration: 0.01 }, T(0, 0.55))
+  root.querySelectorAll('.zfan').forEach((el, i) => wipe(tl, el, T(0, 0.55) + i * 0.15, 0.9))
+  tl.to('.zfan-lab', { autoAlpha: 1, duration: 0.4 }, T(0, 0.7))
+
+  // State 1: hints. The fan goes; the method line, the hinted scores of the six models and the law fitted to them at
+  // each level; its H = 0 slice is the forecast.
+  tl.to(['.zfan', '.zfan-lab'], { autoAlpha: 0, duration: 0.35 }, T(1))
+  tl.to('.meth', { autoAlpha: 1, duration: 0.4 }, T(1, 0.04))
+  tl.fromTo('.hc', { autoAlpha: 0, attr: { cy: yAll(0.015) } }, { autoAlpha: 1, attr: { cy: (j: number) => yAll(cells[Math.floor(j / HS.length)]![j % HS.length]!.v) }, duration: 0.7, ease: 'power3.out', stagger: 0.012, immediateRender: false }, T(1, 0.3))
+  tl.to('.hleg', { autoAlpha: 1, duration: 0.4 }, T(1, 0.34))
   HS.forEach((_, k) => {
-    tl.to(`.sl${k}`, { autoAlpha: 1, duration: 0.01 }, T(0, 0.72))
-    tl.to(`.sl${k} path:first-child`, { drawSVG: '100%', duration: 0.5, ease: 'power2.in' }, T(0, 0.72) + k * 0.06)
-    wipe(tl, root.querySelector(`.sl${k} path:last-child`)!, T(0, 0.72) + k * 0.06 + 0.5, 0.6, 'power2.out')
+    tl.to(`.sl${k}`, { autoAlpha: 1, duration: 0.01 }, T(1, 0.5))
+    tl.to(`.sl${k} path:first-child`, { drawSVG: '100%', duration: 0.5, ease: 'power2.in' }, T(1, 0.5) + k * 0.06)
+    wipe(tl, root.querySelector(`.sl${k} path:last-child`)!, T(1, 0.5) + k * 0.06 + 0.5, 0.6, 'power2.out')
   })
-  tl.to('.h0a', { autoAlpha: 1, duration: 0.01 }, T(0, 0.82))
-  tl.to('.h0a path', { drawSVG: '100%', duration: 0.6, ease: 'power2.inOut' }, T(0, 0.82))
+  tl.to('.h0a', { autoAlpha: 1, duration: 0.01 }, T(1, 0.78))
+  tl.to('.h0a path', { drawSVG: '100%', duration: 0.6, ease: 'power2.inOut' }, T(1, 0.78))
 
-  // State 1: the axis closes in on 0–40%; only the H = 0 slice stays, and runs on to 10²³. Then the truth, then the
+  // State 2: the axis closes in on 0–40%; only the H = 0 slice stays, and runs on to 10²³. Then the truth, then the
   // standard scaling law on the same six models.
-  tl.to(['.sl', '.hc', '.hleg', '.ax-all', '.h0a'], { autoAlpha: 0, duration: 0.35 }, T(1))
-  tl.to('.ax-acc', { autoAlpha: 1, duration: 0.4 }, T(1, 0.02))
-  fitted.forEach((r, i) => tl.to(`.fit${i}`, { attr: { cy: yAcc(r.acc) }, duration: 0.6, ease: 'power3.inOut' }, T(1, 0.02)))
-  tl.to('.h0', { autoAlpha: 1, duration: 0.01 }, T(1, 0.06))
-  tl.to('.h0-in', { drawSVG: '100%', duration: 0.3, ease: 'none' }, T(1, 0.06))
-  wipe(tl, root.querySelector('.h0-out')!, T(1, 0.1), 1.1)
-  tl.fromTo('.h0-end', { autoAlpha: 0, scale: 0.2, transformOrigin: '50% 50%' }, { autoAlpha: 1, scale: 1, duration: 0.4, ease: 'back.out(2)', immediateRender: false }, T(1, 0.24))
-  tl.to('.r-ours', { autoAlpha: 1, duration: 0.4 }, T(1, 0.26))
-  tl.fromTo('.held', { autoAlpha: 0, scale: 0.3, transformOrigin: '50% 50%' }, { autoAlpha: 1, scale: 1, duration: 0.35, ease: 'expo.out', stagger: 0.07, immediateRender: false }, T(1, 0.4))
-  tl.to('.r-true', { autoAlpha: 1, duration: 0.4 }, T(1, 0.48))
-  tl.to('.bl', { autoAlpha: 1, duration: 0.01 }, T(1, 0.62))
-  wipe(tl, root.querySelector('.bl-in')!, T(1, 0.62), 0.35, 'power2.in')
-  wipe(tl, root.querySelector('.bl-out')!, T(1, 0.62) + 0.35, 0.8, 'power2.out')
-  tl.to('.r-base', { autoAlpha: 1, duration: 0.4 }, T(1, 0.78))
-  tl.to('.err', { autoAlpha: 1, duration: 0.4 }, T(1, 0.82))
-  tl.to('.over22', { autoAlpha: 1, duration: 0.4 }, T(1, 0.88))
+  tl.to(['.sl', '.hc', '.hleg', '.ax-all', '.h0a'], { autoAlpha: 0, duration: 0.35 }, T(2))
+  tl.to('.ax-acc', { autoAlpha: 1, duration: 0.4 }, T(2, 0.02))
+  fitted.forEach((r, i) => tl.to(`.fit${i}`, { attr: { cy: yAcc(r.acc) }, duration: 0.6, ease: 'power3.inOut' }, T(2, 0.02)))
+  tl.to('.h0', { autoAlpha: 1, duration: 0.01 }, T(2, 0.06))
+  tl.to('.h0-in', { drawSVG: '100%', duration: 0.3, ease: 'none' }, T(2, 0.06))
+  wipe(tl, root.querySelector('.h0-out')!, T(2, 0.1), 1.1)
+  tl.fromTo('.h0-end', { autoAlpha: 0, scale: 0.2, transformOrigin: '50% 50%' }, { autoAlpha: 1, scale: 1, duration: 0.4, ease: 'back.out(2)', immediateRender: false }, T(2, 0.24))
+  tl.to('.r-ours', { autoAlpha: 1, duration: 0.4 }, T(2, 0.26))
+  tl.fromTo('.held', { autoAlpha: 0, scale: 0.3, transformOrigin: '50% 50%' }, { autoAlpha: 1, scale: 1, duration: 0.35, ease: 'expo.out', stagger: 0.07, immediateRender: false }, T(2, 0.4))
+  tl.to('.r-true', { autoAlpha: 1, duration: 0.4 }, T(2, 0.48))
+  tl.to('.bl', { autoAlpha: 1, duration: 0.01 }, T(2, 0.62))
+  wipe(tl, root.querySelector('.bl-in')!, T(2, 0.62), 0.35, 'power2.in')
+  wipe(tl, root.querySelector('.bl-out')!, T(2, 0.62) + 0.35, 0.8, 'power2.out')
+  tl.to('.r-base', { autoAlpha: 1, duration: 0.4 }, T(2, 0.78))
+  tl.to('.err', { autoAlpha: 1, duration: 0.4 }, T(2, 0.82))
+  tl.to('.over22', { autoAlpha: 1, duration: 0.4 }, T(2, 0.88))
 
-  // State 2: the 19 forecasts. The standard errors first, then each hinted error slides in from its standard one.
-  tl.to(['.meth', '.over22', '.win', '.shade', '.ax-x', '.ax-acc', '.h0', '.bl', '.held', '.fit', '.err', '.read'], { autoAlpha: 0, duration: 0.35 }, T(2))
-  tl.to(['.dumb', '.dleg'], { autoAlpha: 1, duration: 0.4 }, T(2, 0.02))
-  tl.fromTo('.row', { autoAlpha: 0, x: -3 }, { autoAlpha: 1, x: 0, duration: 0.3, ease: 'expo.out', stagger: 0.04, immediateRender: false }, T(2, 0.06))
+  // State 3: the 19 forecasts. The standard errors first, then each hinted error slides in from its standard one.
+  tl.to(['.meth', '.over22', '.win', '.shade', '.ax-x', '.ax-acc', '.h0', '.bl', '.held', '.fit', '.err', '.read'], { autoAlpha: 0, duration: 0.35 }, T(3))
+  tl.to(['.dumb', '.dleg'], { autoAlpha: 1, duration: 0.4 }, T(3, 0.02))
+  tl.fromTo('.row', { autoAlpha: 0, x: -3 }, { autoAlpha: 1, x: 0, duration: 0.3, ease: 'expo.out', stagger: 0.04, immediateRender: false }, T(3, 0.06))
   panels.forEach((p, i) => {
-    const t = T(2, 0.34) + i * 0.07
+    const t = T(3, 0.34) + i * 0.07
     tl.to(`.row${i} .ours`, { attr: { cx: EX(p.err) }, duration: 0.6, ease: 'power3.inOut' }, t)
     tl.to(`.row${i} .link`, { attr: { x2: EX(p.err) }, duration: 0.6, ease: 'power3.inOut' }, t)
   })
-  tl.to('.med', { autoAlpha: 1, duration: 0.4 }, T(2, 0.7))
-  tl.fromTo('.score', { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'expo.out', immediateRender: false }, T(2, 0.76))
-  tl.set({}, {}, T(3))
+  tl.to('.med', { autoAlpha: 1, duration: 0.4 }, T(3, 0.7))
+  tl.fromTo('.score', { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'expo.out', immediateRender: false }, T(3, 0.76))
+  tl.set({}, {}, T(4))
   return tl
 })

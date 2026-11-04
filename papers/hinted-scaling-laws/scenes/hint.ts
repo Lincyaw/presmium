@@ -19,6 +19,8 @@ const WHOLE = { x: 0, y: 0, w: 1, h: 1 }
 
 const words = D.problem.solution.replace(/<<[^>]*>>/g, '').replace(new RegExp(`\\$${D.problem.answer}\\b`), () => '［答案已删］').replace(/\n/g, ' ').split(/\s+/).filter(Boolean)
 const LEVELS = [0, 0.4, 0.8]
+/** The problem in one line (a paraphrase; the solution strips below are the real hint). */
+const GIST = '珍妮的鸭子每天下 16 个蛋，吃掉 3 个、烤松饼用 4 个，其余每个卖 2 美元：每天赚多少？<span class="muted">（转述）</span>'
 
 const RUNG = D.delphi.rungs.findIndex(r => Math.abs(r.c - 21) < 1e-6)
 const mask = D.delphi.methods.mask
@@ -47,16 +49,16 @@ export default gsapScene(({ root, gsap, at, durations, color }) => {
     .q { position: absolute; left: 8cqw; top: 11cqh; width: 84cqw; }
     .q__k { font-size: ${TYPE.small}cqw; font-weight: 700; color: var(--pm-color-muted); }
     .q__t { margin-top: 0.6cqh; font-size: ${TYPE.small}cqw; line-height: 1.45; color: var(--pm-color-ink); }
-    .sol { position: absolute; left: 8cqw; top: 30.5cqh; font-size: ${TYPE.small}cqw; font-weight: 700; color: var(--pm-color-muted); }
+    .sol { position: absolute; left: 8cqw; top: 22cqh; font-size: ${TYPE.small}cqw; font-weight: 700; color: var(--pm-color-muted); }
     .strip { position: absolute; left: 8cqw; width: 84cqw; display: flex; gap: 1.6cqw; }
-    .strip0 { top: 36cqh; } .strip1 { top: 51cqh; } .strip2 { top: 66cqh; }
+    .strip0 { top: 28cqh; } .strip1 { top: 43cqh; } .strip2 { top: 58cqh; }
     .strip__h { width: 8.5cqw; flex: none; font-size: ${TYPE.body}cqw; font-weight: 700; font-style: italic; white-space: nowrap; }
     .strip__h span { display: block; font-style: normal; font-weight: 500; font-size: ${TYPE.tiny}cqw; color: var(--pm-color-muted); }
     .toks { display: flex; flex-wrap: wrap; gap: 0.45cqw; }
     .tok { font-family: var(--pm-font-mono); font-size: 1.35cqw; padding: 0.25cqw 0.5cqw; border-radius: 0.35cqw; color: var(--pm-color-muted);
       box-shadow: inset 0 0 0 0.1cqw var(--c-line); }
     .tok--on { color: var(--pm-color-ink); background: color-mix(in srgb, ${METHOD.truncate} 22%, var(--pm-color-surface)); box-shadow: none; }
-    .kwh { position: absolute; left: 30cqw; top: 29.5cqh; font-size: ${TYPE.body}cqw; font-weight: 800; white-space: nowrap; }
+    .kwh { position: absolute; left: 30cqw; top: 21cqh; font-size: ${TYPE.body}cqw; font-weight: 800; white-space: nowrap; }
     .kwh span { font-size: ${TYPE.small}cqw; font-weight: 500; color: var(--pm-color-muted); margin-left: 0.6cqw; }
     .mchip { position: absolute; top: 63cqh; transform: translateX(-50%); text-align: center; white-space: nowrap; }
     .mchip b { display: block; font-size: ${TYPE.lead}cqw; }
@@ -71,16 +73,16 @@ export default gsapScene(({ root, gsap, at, durations, color }) => {
     .read i { font-weight: 700; margin-right: 0.4cqw; }
   `, `
     ${brand(PAPER.short)}
-    <div class="q"><div class="q__k">GSM8K 第 1 题</div><div class="q__t">${escape(D.problem.question)}</div></div>
-    <div class="sol">参考解答（去掉最终答案）</div>
-    <div class="kwh">提示量 H<span>写进题目的比例</span></div>
+    <div class="q"><div class="q__k">GSM8K 第 1 题</div><div class="q__t">${GIST}</div></div>
+    <div class="sol">参考解答（去掉答案）</div>
+    <div class="kwh">提示量 H<span>给出的比例</span></div>
     ${LEVELS.map(strip).join('')}
     ${figureHtml('f1', FIG1, MAP, { x: 4, y: 9, w: 92 }, `<div class="pfig-ring ring" style="left:${BOXES.mask.x * 100}%;top:${BOXES.mask.y * 100}%;width:${BOXES.mask.w * 100}%;height:${BOXES.mask.h * 100}%"></div>`)}
-    <div class="mchip m0" style="left:${4 + 92 * 0.16}cqw"><b style="color:${METHOD.truncate}">截断</b><span>给出解答的前 H（按词计）</span></div>
-    <div class="mchip m1" style="left:${4 + 92 * 0.48}cqw"><b style="color:${METHOD.mask}">遮盖</b><span>随机保留比例为 H 的词</span></div>
-    <div class="mchip m2" style="left:${4 + 92 * 0.82}cqw"><b style="color:${METHOD.logit_mix}">logit 混合</b><span>按权重 H 混入教师模型的 logits</span></div>
+    <div class="mchip m0" style="left:${4 + 92 * 0.16}cqw"><b style="color:${METHOD.truncate}">截断</b><span>前 H 比例的解答</span></div>
+    <div class="mchip m1" style="left:${4 + 92 * 0.48}cqw"><b style="color:${METHOD.mask}">遮盖</b><span>按 H 比例随机保留词</span></div>
+    <div class="mchip m2" style="left:${4 + 92 * 0.82}cqw"><b style="color:${METHOD.logit_mix}">logit 混合</b><span>按 H 混入教师 logits</span></div>
     <div class="pfig-src src1">论文图 1（上）</div>
-    <div class="gl"><b>${flops(21)} FLOPs 的模型</b> · 遮盖 · GSM8K 256 题<br>每格一题，颜色越深，这道题做对的次数越多</div>
+    <div class="gl"><b>${flops(21)} FLOPs</b> · 遮盖 · 256 题<br>颜色越深，做对越多</div>
     <div class="grid">${cells}</div>
     <div class="read"><i>H</i>= <span class="rh">0.0</span>　准确率<b class="ra">${pct(accAt[0]!)}</b></div>
     <svg class="layer" ${LAYER}>

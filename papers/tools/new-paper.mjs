@@ -3,8 +3,8 @@
 //
 //   node tools/new-paper.mjs <slug> --title <文稿标题> --institution <单位> --paper <English title> \
 //     --paper-zh <中文名> --arxiv <id> --authors <作者 等> [--year 2026]
-//   node tools/new-paper.mjs hinted-scaling-laws --title '带提示的缩放定律：小模型零分时怎样预测大模型' \
-//     --institution 斯坦福大学 --paper 'Hinted Scaling Laws' --paper-zh 带提示的缩放定律 --arxiv 2611.02270 \
+//   node tools/new-paper.mjs hinted-scaling-laws --title '提示辅助的缩放定律：小模型准确率接近零时怎样预测大模型的准确率' \
+//     --institution 斯坦福大学 --paper 'Hinted Scaling Laws' --paper-zh 提示辅助的缩放定律 --arxiv 2611.02270 \
 //     --authors 'Suze van Adrichem, Luke Bailey, Rohith Kuditipudi 等'
 //
 // The pages, in the order every film follows (CLAUDE.md, 标准): opening; problem (问题, 为什么重要, 论文要解决什么);
@@ -37,7 +37,7 @@ const OPENING = `三分钟读完一篇论文。大家好，这里是翰林院传
 /** key, page title, the title of each step (its TODO says what the step must carry). */
 const PAGES = [
   ['problem', 'TODO 问题（标题写成一句论断）', ['问题', '为什么重要', '论文要解决什么']],
-  ['method', 'TODO 方法', ['方法的组成', '方法怎样做']],
+  ['method', 'TODO 方法', ['方法由哪些部分组成', '方法如何运作']],
   ['evidence', 'TODO 主要证据', ['主要结果', '与基线对照']],
   ['close', 'TODO 条件与结论', ['条件与局限', '一句结论']],
 ]
@@ -67,7 +67,7 @@ page('opening', `三分钟读完一篇论文：${v['paper-zh']}`, ['开场'], 'o
   { institution: v.institution, title: v.paper, titleZh: v['paper-zh'], authors: v.authors, venue: `arXiv ${v.arxiv} · ${v.year}` }, [OPENING],
   `翰林院传达室的信使猫标志，旁边是“三分钟读完一篇论文”和“翰林院传达室”；下方是今天的论文：${v.institution}，${v.paper}（${v['paper-zh']}），arXiv ${v.arxiv}。`)
 for (const [key, title, stepTitles] of PAGES) {
-  page(key, title, stepTitles, key, { label: title }, stepTitles.map(s => `TODO ${s}：一句到两句讲稿，25 到 60 字。`), `TODO：这一页最后一步的画面，用文字描述。`)
+  page(key, title, stepTitles, key, { label: title }, stepTitles.map(s => `TODO ${s}：一到两句讲稿，25 到 60 字。`), `TODO：这一页最后一步的画面，用文字描述。`)
 }
 const notes = 'notes--text'
 blocks[notes] = { id: notes, type: 'text', only: ['web'], content: [
@@ -85,12 +85,12 @@ order.push('p-notes')
 const doc = {
   schemaVersion: 1, id: slug,
   metadata: {
-    title: v.title, lang: 'zh-CN', description: `TODO：一句话说清这篇论文解决什么、怎样做到（三分钟读完 ${v.paper}，${v.institution}，${v.year}）。`,
+    title: v.title, lang: 'zh-CN', description: `TODO：用一句话说清这篇论文解决什么问题、如何解决（三分钟读完 ${v.paper}，${v.institution}，${v.year}）。`,
     tags: ['论文'], plugins: ['@lincyaw/addon-motion', '@lincyaw/addon-lecture', '@lincyaw/addon-speech'], renderers: { web: {}, slides: {}, lecture: {} },
   },
   sectionOrder: order, sections, blocks, steps, narrations, assets: {}, definitions,
   production: {
-    defaults: { voiceSource: { type: 'tts', voice: { engine: 'edge', voice: 'zh-CN-XiaoxiaoNeural' } }, narrationStart: 'with-animation', trailingPauseMs: 350 },
+    defaults: { voiceSource: { type: 'tts', voice: { engine: 'volcengine', voice: 'zh_female_tianmeitaozi_uranus_bigtts' } }, narrationStart: 'with-animation', trailingPauseMs: 350 },
     stepOverrides: { 'close--step-1': { minimumHoldMs: 0, trailingPauseMs: 3500 }, 'notes--step-0': { voiceSource: { type: 'none' }, minimumHoldMs: 0, trailingPauseMs: 0 } }, mediaClips: [],
   },
 }
@@ -143,7 +143,7 @@ writeFileSync(join(dir, 'storyboard.md'), `# 分镜：${v['paper-zh']}（${v.pap
 
 ## A. 简报
 
-- **类型**：论文讲解视频，三分钟（讲稿约 780 字，含开场白），主要形式是配音视频（\`lecture\`），同时是网页（scrolly）和幻灯片。
+- **类型**：论文讲解视频，三分钟左右、最长六分钟（三分钟约 700 字讲稿，含开场白；定义与前提不为缩短而删），主要形式是配音视频（\`lecture\`），同时是网页（scrolly）和幻灯片。
 - **观众**：TODO（谁，已经知道什么）。
 - **看之前**：TODO（观众现在以为什么）。
 - **看之后**能复述：
@@ -156,7 +156,7 @@ writeFileSync(join(dir, 'storyboard.md'), `# 分镜：${v['paper-zh']}（${v.pap
 
 ## B. 论点
 
-看完后，观众明白 TODO（25 字以内），因为他们看到了 TODO（一个会变化的可见属性）。
+看完后，观众明白 TODO（25 字以内），因为他们看到了 TODO（画面中会随步骤变化、可直接看见的属性）。
 
 ABT：TODO，而且 TODO；但是 TODO；所以 TODO。
 

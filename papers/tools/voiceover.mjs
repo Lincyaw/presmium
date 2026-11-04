@@ -3,32 +3,49 @@
 // Only sentences without exact cached audio are synthesized; the audio lands in `<document>/.presmium/speech/`
 // with its lock, which is committed with the document so builds and exports need no engine.
 //
-//   node tools/voiceover.mjs <document> [--wait] [--dry-run]
+//   node tools/voiceover.mjs <document> [--wait] [--dry-run] [--voice <engine>:<voice>]
 //   node tools/voiceover.mjs hinted-scaling-laws --wait
+//   node tools/voiceover.mjs hinted-scaling-laws --wait --voice volcengine:zh_female_tianmeitaozi_uranus_bigtts
 //
-// The engine is the workspace's own (tools/env.sh defines the Edge engine, which is free). `--dry-run` prints the
-// engine, the voice and what is missing without starting anything; `--wait` follows the job until it ends.
+// The engine is Volcengine, with the operator's key from the workspace's operator directory (CLAUDE.md, 配音).
+// `--voice` first sets the document's default voice (production.defaults) and saves lecture.json; `--dry-run` prints
+// the engine, the voice and what is missing without starting anything; `--wait` follows the job until it ends.
 import { randomBytes } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { call, connect, WORKSPACE } from './mcp.mjs'
 
 const args = process.argv.slice(2)
 const document = args.find(a => !a.startsWith('--'))
 if (!document) {
-  console.error('usage: node tools/voiceover.mjs <document> [--wait] [--dry-run]')
+  console.error('usage: node tools/voiceover.mjs <document> [--wait] [--dry-run] [--voice <engine>:<voice>]')
   process.exit(2)
 }
 const wait = args.includes('--wait'), dry = args.includes('--dry-run')
 
 // The voice the document asks for, for the report (the service resolves it per step; this is the default).
-const doc = JSON.parse(readFileSync(join(WORKSPACE, document, 'lecture.json'), 'utf8'))
+const entry = join(WORKSPACE, document, 'lecture.json')
+const source = readFileSync(entry, 'utf8')
+const doc = JSON.parse(source)
+const chosen = args.includes('--voice') ? args[args.indexOf('--voice') + 1] : undefined
+if (chosen) {
+  const [engine, id] = chosen.split(':')
+  if (!engine || !id) { console.error('--voice takes <engine>:<voice>, e.g. volcengine:zh_female_tianmeitaozi_uranus_bigtts'); process.exit(2) }
+  doc.production.defaults.voiceSource = { type: 'tts', voice: { engine, voice: id } }
+}
+if (chosen && !dry) {
+  const indent = /^\{\n( +|\t)"/.exec(source)?.[1] ?? '  '
+  writeFileSync(`${entry}.voice-${process.pid}`, JSON.stringify(doc, null, indent) + '\n')
+  renameSync(`${entry}.voice-${process.pid}`, entry)
+  console.log(`default voice set to ${chosen}`)
+  await new Promise(r => setTimeout(r, 1500))  // let the service see the saved document
+}
 const voice = doc.production?.defaults?.voiceSource?.voice
 
 const client = await connect()
 try {
   const { value: caps } = await call(client, 'get_voice_authoring_capabilities', { document })
-  if (!caps.voiceover || !caps.actions?.start) throw new Error(`this service cannot generate voiceover (status ${caps.status}); start presmium serve with tools/env.sh and --allow spend`)
+  if (!caps.voiceover || !caps.actions?.start) throw new Error(`this service cannot generate voiceover (status ${caps.status}); start presmium serve with --allow spend`)
   const { value: status } = await call(client, 'get_voiceover_status', { document })
   const missing = status.steps.filter(s => s.state === 'missing')
   const sentences = missing.reduce((n, s) => n + (s.utterances - s.cached), 0)

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "id": "hinted-scaling-laws",
   "metadata": {
-    "title": "带提示的缩放定律：小模型零分时怎样预测大模型",
+    "title": "提示辅助的缩放定律：小模型准确率接近零时怎样预测大模型的准确率",
     "lang": "zh-CN",
-    "description": "三分钟读完 Hinted Scaling Laws（斯坦福大学，2026）：小模型在难题上都是零分时，给它们看一部分参考解答，把零分变成随提示量平滑上升的曲线，再用算力与提示量的联合定律预测大模型的准确率。",
+    "description": "三分钟读完 Hinted Scaling Laws（斯坦福大学，2026）：小模型在难题上的准确率都接近零时，在题目前加入一部分参考解答，把接近零的准确率变成随提示量平滑上升的曲线，再用算力与提示量的联合定律预测大模型的准确率。",
     "tags": [
       "缩放定律",
       "评测",
@@ -34,7 +34,7 @@
   "sections": {
     "p-opening": {
       "id": "p-opening",
-      "title": "三分钟读完一篇论文：带提示的缩放定律",
+      "title": "三分钟读完一篇论文：提示辅助的缩放定律",
       "level": 2,
       "children": [
         "opening--scene"
@@ -56,7 +56,7 @@
     },
     "p-problem": {
       "id": "p-problem",
-      "title": "小模型全是零分，缩放定律无从外推",
+      "title": "小模型准确率接近零，缩放定律无法外推",
       "level": 2,
       "children": [
         "problem--scene"
@@ -81,7 +81,7 @@
     },
     "p-hint": {
       "id": "p-hint",
-      "title": "提示量 H：把一道题变成一串由易到难的题",
+      "title": "提示量 H：参考解答写进题目的比例",
       "level": 2,
       "children": [
         "hint--scene"
@@ -129,13 +129,14 @@
     },
     "p-forecast": {
       "id": "p-forecast",
-      "title": "只用小模型，预测大模型的分数",
+      "title": "只用小模型，预测大模型的准确率",
       "level": 2,
       "children": [
         "forecast--scene"
       ],
       "stepOrder": [
         "forecast--step-0",
+        "forecast--hinted",
         "forecast--step-1",
         "forecast--step-2"
       ],
@@ -153,14 +154,15 @@
     },
     "p-ranking": {
       "id": "p-ranking",
-      "title": "分数都接近零时，少采样也能排对顺序",
+      "title": "准确率都接近零时，一次采样也能排对顺序",
       "level": 2,
       "children": [
         "ranking--scene"
       ],
       "stepOrder": [
         "ranking--step-0",
-        "ranking--step-1"
+        "ranking--step-1",
+        "ranking--hinted"
       ],
       "layout": {
         "type": "scrolly",
@@ -176,7 +178,7 @@
     },
     "p-close": {
       "id": "p-close",
-      "title": "提示要让能力显出差别",
+      "title": "提示应清楚反映模型能力差异",
       "level": 2,
       "children": [
         "close--scene"
@@ -202,7 +204,8 @@
       "title": "来源与说明",
       "level": 2,
       "children": [
-        "notes--text"
+        "notes--text",
+        "notes--slides"
       ],
       "stepOrder": [
         "notes--step-0"
@@ -219,10 +222,10 @@
       "definitionId": "opening--scene--definition",
       "parameters": {
         "scene": "opening",
-        "alt": "翰林院传达室的信使猫标志，旁边是“三分钟读完一篇论文”和“翰林院传达室”；下方是今天的论文：斯坦福大学，Hinted Scaling Laws（带提示的缩放定律），arXiv 2611.02270。",
+        "alt": "翰林院传达室的信使猫标志，旁边是“三分钟读完一篇论文”和“翰林院传达室”；下方是今天的论文：斯坦福大学，Hinted Scaling Laws（提示辅助的缩放定律），arXiv 2611.02270。",
         "institution": "斯坦福大学",
         "title": "Hinted Scaling Laws",
-        "titleZh": "带提示的缩放定律",
+        "titleZh": "提示辅助的缩放定律",
         "authors": "Suze van Adrichem, Luke Bailey, Rohith Kuditipudi 等",
         "venue": "arXiv 2611.02270 · 2026"
       }
@@ -233,7 +236,7 @@
       "definitionId": "problem--scene--definition",
       "parameters": {
         "scene": "problem",
-        "alt": "横轴为训练算力（对数刻度）的图：Delphi 系列十个小模型的 GSM8K 准确率都贴近零，每个点上方是一列按提示量着色的点，提示越多准确率越高；右侧依次写着“缩放定律：小模型的趋势 → 大模型”“预训练损失：有趋势”“下游准确率：一排零分”，以及“提示：给小模型看一部分参考解答”。"
+        "alt": "横轴为训练算力（对数刻度）的图：Delphi 系列十个小模型的 GSM8K 准确率都贴近零，每个点上方是一列按提示量着色的点，提示越多准确率越高；右侧依次写着“缩放定律：小模型的趋势 → 大模型”“预训练损失：有趋势”“下游准确率：接近零”，以及“提示：在题目前加入部分参考解答”。"
       }
     },
     "hint--scene": {
@@ -260,7 +263,7 @@
       "definitionId": "forecast--scene--definition",
       "parameters": {
         "scene": "forecast",
-        "alt": "19 组预测的误差对比：每一行一组模型家族与基准，黑点是标准缩放定律对最大模型的预测误差，红点是带提示的预测误差，17 组红点更小，中位误差从 21 个百分点降到 4.3。"
+        "alt": "Delphi 系列在 GSM8K 上：只用不超过 9×10¹⁹ FLOPs 的六个模型拟合。它们的原题准确率都接近零，任何 S 形曲线都能拟合这些数据；加入 logit 混合提示后（教师模型为 Llama-3.1 8B，H 是教师模型 logits 的混入权重），联合定律预测 10²³ FLOPs 模型的准确率为 28.7%，实际为 25.9%，标准缩放定律为 13.2%；19 组预测的误差对比中 17 组更准，中位误差从 20.8 降到 4.3 个百分点。"
       }
     },
     "ranking--scene": {
@@ -269,7 +272,7 @@
       "definitionId": "ranking--scene--definition",
       "parameters": {
         "scene": "ranking",
-        "alt": "左侧：七个模型在 AIME 上的原题准确率（都不到 1%）与加提示后的准确率（H = 0.7）用连线相连，顺序基本不变；右侧：排序与真值的一致性（Kendall τ）随每题采样次数增加，带提示的排序在一次采样时为 0.51，普通采样要约五次才追上。"
+        "alt": "左侧：七个模型在 AIME 上的原题准确率（真值，每题 4,096 次采样，都不到 1%）与加入截断提示 H = 0.7 后的准确率用连线相连，顺序基本不变；右侧：排序与真值的一致性（Kendall τ，1 为完全一致、0 为随机）随每题采样次数增加，提示辅助排序在一次采样时为 0.51，原题采样为 0.18，要约五次才追上。"
       }
     },
     "close--scene": {
@@ -278,7 +281,7 @@
       "definitionId": "close--scene--definition",
       "parameters": {
         "scene": "close",
-        "alt": "结论：提示量是衡量能力的第二把尺子；前提是每道题有可靠的参考解答。下方是论文信息：Hinted Scaling Laws，斯坦福大学，arXiv 2611.02270，代码 github.com/tatsu-lab/hinted-scaling-laws。"
+        "alt": "结论：提示量是衡量能力的第二把尺子；前提是每道题有可靠的参考解答。下方是论文信息：Hinted Scaling Laws，斯坦福大学，arXiv 2611.02270，代码地址为 github.com/tatsu-lab/hinted-scaling-laws。"
       }
     },
     "notes--text": {
@@ -323,7 +326,7 @@
           "children": [
             {
               "type": "text",
-              "text": "动画中的每个数字都由论文公开的逐次采样结果重新计算（scenes/data/derive.py，按论文式 (2) 与它的多起点最小二乘拟合），与论文报告的数值一致。Delphi 系列 10²³ FLOPs 模型在 GSM8K 上的准确率为 25.87%。只用不超过 9×10¹⁹ FLOPs 的六个模型、以 logit 混合加提示时（教师是上下文里放着完整参考解答的 Llama-3.1-8B-Instruct，H 是它的 logits 的权重，取 0 到 16），联合定律预测 28.73%，误差 2.86 个百分点；在留出的 10²² FLOPs 模型上它预测 13.3%，实际 7.4%，高估 5.9 个百分点。标准缩放定律（同样六个模型的原题准确率对算力拟合的 S 形曲线）预测 13.17%，误差 12.70。五组模型与三个基准的 19 组预测用截断与遮盖两种只需参考解答的提示，取两者预测的平均（Delphi 一组从 7 个模型起拟合，与论文图 5 相同），17 组好于标准缩放定律，中位误差从 20.8 降到 4.3 个百分点。AIME 上每题一次采样时，带提示的排序与真值（每题 4,096 次原题采样）的 Kendall τ 为 0.51，普通采样为 0.18。"
+              "text": "动画中的每个数字都由论文公开的每次采样结果重新计算（scenes/data/derive.py，按论文式 (2) 与它的多起点最小二乘拟合），与论文报告的数值一致。Delphi 系列 10²³ FLOPs 模型在 GSM8K 上的准确率为 25.87%。只用不超过 9×10¹⁹ FLOPs 的六个模型、采用 logit 混合时（把完整参考解答放进 Llama-3.1-8B-Instruct 的上下文，让它充当教师模型；H 是教师模型 logits 的混入权重，取 0 到 16），联合定律预测 28.73%，误差 2.86 个百分点；在留出的 10²² FLOPs 模型上它预测 13.3%，实际为 7.4%，高估 5.9 个百分点。标准缩放定律（同样六个模型的原题准确率对算力拟合的 S 形曲线）预测 13.17%，误差 12.70 个百分点。五组模型与三个基准共做 19 组预测，使用截断与遮盖两种只需参考解答的提示，并取两种预测值的平均（Delphi 一组从 7 个模型起拟合，与论文图 5 相同）；17 组预测的误差小于标准缩放定律，中位误差从 20.8 降到 4.3 个百分点。AIME 上每题一次采样时，提示辅助排序与真值（每题 4,096 次原题采样）的 Kendall τ 为 0.51，原题采样为 0.18。"
             }
           ]
         },
@@ -333,7 +336,7 @@
           "children": [
             {
               "type": "text",
-              "text": "“多给 0.1 的提示约等于三倍算力”由遮盖在 Delphi 上拟合的联合定律计算（β₂/β₁ ≈ 4.7，即每 0.1 的提示约合 0.47 个数量级的算力），是估算；联合定律那一页的拟合用了全部 12 个模型，只用来看形状，论文图 3 的实测等准确率线在接近噪声底时偏离直线。第一页中“与零分相容”的几条 S 形曲线是示意。"
+              "text": "“提示量每增加 0.1，约相当于算力增加三倍”由遮盖在 Delphi 上拟合的联合定律计算（β₂/β₁ ≈ 4.7，即提示量每增加 0.1，约相当于 0.47 个数量级的算力），是估算；联合定律那一页的拟合用了全部 12 个模型，只用来看形状，论文图 3 的实测等准确率线在接近噪声底时偏离直线。第一页中“能拟合接近零的准确率”的几条 S 形曲线是示意。"
             }
           ]
         },
@@ -361,6 +364,25 @@
       ],
       "only": [
         "web"
+      ]
+    },
+    "notes--slides": {
+      "id": "notes--slides",
+      "type": "text",
+      "only": [
+        "slides"
+      ],
+      "content": [
+        {
+          "id": "notes--slides--p0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "文献、数字来源与条件：见网页版"
+            }
+          ]
+        }
       ]
     }
   },
@@ -413,7 +435,7 @@
     "problem--step-2": {
       "id": "problem--step-2",
       "sectionId": "p-problem",
-      "title": "准确率是一排零",
+      "title": "准确率接近零",
       "visuals": [
         {
           "blockId": "problem--scene",
@@ -473,7 +495,7 @@
     "hint--step-2": {
       "id": "hint--step-2",
       "sectionId": "p-hint",
-      "title": "零分变成曲线",
+      "title": "接近零变成曲线",
       "visuals": [
         {
           "blockId": "hint--scene",
@@ -533,7 +555,7 @@
     "forecast--step-0": {
       "id": "forecast--step-0",
       "sectionId": "p-forecast",
-      "title": "只用六个小模型",
+      "title": "原题准确率接近零",
       "visuals": [
         {
           "blockId": "forecast--scene",
@@ -553,7 +575,7 @@
         {
           "blockId": "forecast--scene",
           "visible": true,
-          "state": "s1"
+          "state": "s2"
         }
       ],
       "narrationIds": [
@@ -568,7 +590,7 @@
         {
           "blockId": "forecast--scene",
           "visible": true,
-          "state": "s2"
+          "state": "s3"
         }
       ],
       "narrationIds": [
@@ -578,7 +600,7 @@
     "ranking--step-0": {
       "id": "ranking--step-0",
       "sectionId": "p-ranking",
-      "title": "分数拉开",
+      "title": "区分度提高",
       "visuals": [
         {
           "blockId": "ranking--scene",
@@ -593,7 +615,7 @@
     "ranking--step-1": {
       "id": "ranking--step-1",
       "sectionId": "p-ranking",
-      "title": "一次抵五次",
+      "title": "怎样衡量排序",
       "visuals": [
         {
           "blockId": "ranking--scene",
@@ -608,7 +630,7 @@
     "close--step-0": {
       "id": "close--step-0",
       "sectionId": "p-close",
-      "title": "直接给答案不行",
+      "title": "直接给最终答案无法区分模型",
       "visuals": [
         {
           "blockId": "close--scene",
@@ -642,9 +664,43 @@
         {
           "blockId": "notes--text",
           "visible": true
+        },
+        {
+          "blockId": "notes--slides",
+          "visible": true
         }
       ],
       "narrationIds": []
+    },
+    "forecast--hinted": {
+      "id": "forecast--hinted",
+      "sectionId": "p-forecast",
+      "title": "改用 logit 混合",
+      "visuals": [
+        {
+          "blockId": "forecast--scene",
+          "visible": true,
+          "state": "s1"
+        }
+      ],
+      "narrationIds": [
+        "forecast--hinted--n0"
+      ]
+    },
+    "ranking--hinted": {
+      "id": "ranking--hinted",
+      "sectionId": "p-ranking",
+      "title": "提示采样一次约抵原题五次",
+      "visuals": [
+        {
+          "blockId": "ranking--scene",
+          "visible": true,
+          "state": "s2"
+        }
+      ],
+      "narrationIds": [
+        "ranking--hinted--n0"
+      ]
     }
   },
   "narrations": {
@@ -653,7 +709,7 @@
       "content": [
         {
           "type": "text",
-          "text": "三分钟读完一篇论文。大家好，这里是翰林院传达室，今天给大家带来斯坦福大学的《带提示的缩放定律》。"
+          "text": "三分钟读完一篇论文。大家好，这里是翰林院传达室，今天给大家带来斯坦福大学的《提示辅助的缩放定律》。"
         }
       ]
     },
@@ -662,70 +718,16 @@
       "content": [
         {
           "type": "text",
-          "text": "训练一个 "
+          "text": "这是 Delphi 预训练系列：横轴是训练算力，十个小模型从 "
         },
         {
           "type": "pronunciation",
-          "display": "10²³",
-          "spoken": "十的二十三次方"
+          "display": "3×10¹⁸",
+          "spoken": "三乘十的十八次方"
         },
         {
           "type": "text",
-          "text": " FLOPs 的模型很贵。缩放定律先训小模型，再沿趋势外推。"
-        }
-      ]
-    },
-    "problem--step-1--n0": {
-      "id": "problem--step-1--n0",
-      "content": [
-        {
-          "type": "text",
-          "text": "预训练损失随算力平滑下降。可开发者和安全团队关心的是下游准确率。"
-        }
-      ]
-    },
-    "problem--step-2--n0": {
-      "id": "problem--step-2--n0",
-      "content": [
-        {
-          "type": "text",
-          "text": "在 GSM8K 数学题上，小模型都在 2% 左右，等于一排零分，曲线往哪里拐都说得通。"
-        }
-      ]
-    },
-    "problem--step-3--n0": {
-      "id": "problem--step-3--n0",
-      "content": [
-        {
-          "type": "text",
-          "text": "这篇论文的办法：给小模型看一部分参考解答，把零分变成一条能拟合的曲线。"
-        }
-      ]
-    },
-    "hint--step-0--n0": {
-      "id": "hint--step-0--n0",
-      "content": [
-        {
-          "type": "text",
-          "text": "每道题有一份去掉答案的参考解答，放进题目的比例叫提示量 H，按词计；H 为 0 就是原题。"
-        }
-      ]
-    },
-    "hint--step-1--n0": {
-      "id": "hint--step-1--n0",
-      "content": [
-        {
-          "type": "text",
-          "text": "三种给法：截断，给出解答的前 H；遮盖，随机保留比例为 H 的词；logit 混合，按权重 H 混入教师模型的 logits。"
-        }
-      ]
-    },
-    "hint--step-2--n0": {
-      "id": "hint--step-2--n0",
-      "content": [
-        {
-          "type": "text",
-          "text": "一个 "
+          "text": " 到 "
         },
         {
           "type": "pronunciation",
@@ -734,7 +736,79 @@
         },
         {
           "type": "text",
-          "text": " FLOPs 的模型原题几乎全错；提示量加大，做对的题一道道亮起，准确率平滑上升。"
+          "text": " FLOPs，问号是 "
+        },
+        {
+          "type": "pronunciation",
+          "display": "10²³",
+          "spoken": "十的二十三次方"
+        },
+        {
+          "type": "text",
+          "text": " 的目标。大模型训练很贵，缩放定律先训小模型，再沿趋势外推。"
+        }
+      ]
+    },
+    "problem--step-1--n0": {
+      "id": "problem--step-1--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "纵轴换成预训练损失，八个模型连成一条平滑下降的曲线。可开发者和安全团队关心的是下游准确率：前者要挑选数据和训练配方，后者要预判模型规模达到多大时会出现危险能力。"
+        }
+      ]
+    },
+    "problem--step-2--n0": {
+      "id": "problem--step-2--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "换成 GSM8K 数学题的准确率，十个小模型都在 2% 左右，低于噪声水平，可以视作零。这几条 S 形曲线都能拟合这些接近零的准确率，没法外推。"
+        }
+      ]
+    },
+    "problem--step-3--n0": {
+      "id": "problem--step-3--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "论文的办法是提示：在题目前加入一部分参考解答。接近零的准确率上方长出一列列点，颜色越亮，提示越多，准确率也越高。"
+        }
+      ]
+    },
+    "hint--step-0--n0": {
+      "id": "hint--step-0--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "以 GSM8K 第一题为例：每道题配一份去掉最终答案的参考解答，放进题目的比例叫提示量 H，按词计算，H 为 0 就是原题。AIME 和 HLE 的解答由前沿模型求解，判定正确后再改写。"
+        }
+      ]
+    },
+    "hint--step-1--n0": {
+      "id": "hint--step-1--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "论文图 1 展示了三种提示方法：截断给出参考解答的前 H 比例；遮盖按比例 H 随机保留词；logit 混合按权重 H 把教师模型的 logits 加进来。"
+        }
+      ]
+    },
+    "hint--step-2--n0": {
+      "id": "hint--step-2--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "换一个 "
+        },
+        {
+          "type": "pronunciation",
+          "display": "10²¹",
+          "spoken": "十的二十一次方"
+        },
+        {
+          "type": "text",
+          "text": " FLOPs 的模型，用遮盖提示。每格一道题，颜色越深做对越多。提示量从 0 加到 1，格子一片片变深，准确率从 2% 平滑升到 81%。"
         }
       ]
     },
@@ -743,7 +817,7 @@
       "content": [
         {
           "type": "text",
-          "text": "每个规模都是一条平滑的曲线，算力越大，曲线大体越高。"
+          "text": "每个规模都有这样一条曲线。这是 Delphi 的十二个模型，颜色越深表示算力越大；最深的两条曲线对应的模型，原题准确率已分别达到 7% 和 26%。算力越大，曲线大体越高。"
         }
       ]
     },
@@ -752,7 +826,7 @@
       "content": [
         {
           "type": "text",
-          "text": "摊在一张图上：横轴算力，纵轴提示量。等准确率线几乎平行：多给 0.1 的提示，约等于三倍算力。"
+          "text": "把数据放到论文图 3 上：横轴是算力，纵轴是提示量，颜色越深表示准确率越高。准确率相同的点连成的线几乎平行；沿一条线移动时，提示量增加 0.1，约相当于三倍算力。"
         }
       ]
     },
@@ -761,7 +835,7 @@
       "content": [
         {
           "type": "text",
-          "text": "于是用一条联合定律拟合整张图：算力和提示量一起进入 S 形函数，共六个参数；H 为 0 的那条线，就是对原题的预测。"
+          "text": "于是用一条联合定律拟合整张图：算力和提示量相加后放进 S 形函数，再加上噪声水平和上下限，共六个参数。直线是它的等准确率线，H = 0 的底边给出对原题准确率的预测。"
         }
       ]
     },
@@ -770,7 +844,7 @@
       "content": [
         {
           "type": "text",
-          "text": "只用六个小模型，算力不到目标的千分之一。它们原题几乎零分；改用 logit 混合，教师是看着解答的 Llama 3.1 8B，H 是它的权重。"
+          "text": "怎样预测？图中阴影区域是用于拟合的六个小模型，算力不到目标的千分之一。只看原题时，它们的准确率都接近零，这几条 S 形曲线都能拟合这些数据，位置和陡度无法确定。"
         }
       ]
     },
@@ -779,7 +853,25 @@
       "content": [
         {
           "type": "text",
-          "text": "联合定律预测大模型的准确率是 28.7%，实际是 25.9%；只看原题分数的标准缩放定律只给出 13.2%。"
+          "text": "联合定律预测 "
+        },
+        {
+          "type": "pronunciation",
+          "display": "10²³",
+          "spoken": "十的二十三次方"
+        },
+        {
+          "type": "text",
+          "text": " 的准确率为 28.7%，实际是 25.9%。黑色虚线是标准缩放定律，只拟合这六个模型的原题准确率，给出 13.2%，低估 12.7 个百分点。中间的 "
+        },
+        {
+          "type": "pronunciation",
+          "display": "10²²",
+          "spoken": "十的二十二次方"
+        },
+        {
+          "type": "text",
+          "text": " 上，联合定律高估了 5.9 个百分点。"
         }
       ]
     },
@@ -788,7 +880,7 @@
       "content": [
         {
           "type": "text",
-          "text": "换成截断和遮盖两种提示，在五组模型、三个基准上做了 19 组预测，17 组更准，中位误差从 20.8 个百分点降到 4.3。"
+          "text": "其他模型家族没有与被测模型共用分词器、能力更强的教师模型，因此只用截断和遮盖；两种方法各产生一组预测，再取预测值的平均。每行对应一次预测，黑点是标准缩放定律的误差，红点是提示辅助预测的误差。19 次预测里有 17 次更准，中位误差从 20.8 个百分点降到 4.3 个百分点。"
         }
       ]
     },
@@ -797,7 +889,7 @@
       "content": [
         {
           "type": "text",
-          "text": "提示也能帮助排序。七个模型在 AIME 上都不到 1%，加了提示，分数拉开，顺序基本不变。"
+          "text": "提示也能帮助排序。AIME 上这七个模型的原题准确率都不到 1%，左列是每题四千多次采样测出的真值。加入截断提示并取 H = 0.7 后，准确率最高升至 20%，只有一对模型交换了位置。"
         }
       ]
     },
@@ -806,7 +898,25 @@
       "content": [
         {
           "type": "text",
-          "text": "每题一次带提示的采样，排出的顺序相当于约五次普通采样。"
+          "text": "怎样衡量排得对不对？用 "
+        },
+        {
+          "type": "pronunciation",
+          "display": "Kendall τ",
+          "spoken": "Kendall tau"
+        },
+        {
+          "type": "text",
+          "text": "：排出的顺序和真实顺序完全一致是 1，随机是 0。黑线是原题采样，每题只采一次时，"
+        },
+        {
+          "type": "pronunciation",
+          "display": "τ",
+          "spoken": "tau"
+        },
+        {
+          "type": "text",
+          "text": " 只有 0.18。"
         }
       ]
     },
@@ -815,7 +925,7 @@
       "content": [
         {
           "type": "text",
-          "text": "提示必须让能力不同的模型拉开差别：若以概率 H 直接给出答案，零分模型的曲线完全重合，误差仍有 20.5 个百分点。"
+          "text": "提示还必须让不同能力模型的准确率差异清楚可见。左边是遮盖，六条曲线分开了；右边是对照，每题以 H 的概率直接给出最终答案。原题准确率接近零的模型，曲线完全重合，用这种方法预测，误差仍有 20.5 个百分点。"
         }
       ]
     },
@@ -824,7 +934,34 @@
       "content": [
         {
           "type": "text",
-          "text": "提示量是衡量能力的第二把尺子：小模型还是零分时，就能读出大模型的分数。前提是每道题都有可靠的参考解答。"
+          "text": "提示量是衡量能力的第二把尺子：小模型的准确率接近零时，仍能据此预测大模型的准确率。前提是每道题都有可靠的参考解答；使用 logit 混合时，还需要一个与被测模型共用分词器、能力更强的教师模型。"
+        }
+      ]
+    },
+    "forecast--hinted--n0": {
+      "id": "forecast--hinted--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "改用 logit 混合：把完整参考解答放进 Llama 3.1 8B 的上下文，让它充当教师模型；H 是教师模型 logits 的混入权重，可以大于 1。每个提示量下都有准确率，曲线的位置和陡度因此可以确定；红色的 H = 0 曲线给出目标规模处的预测。"
+        }
+      ]
+    },
+    "ranking--hinted--n0": {
+      "id": "ranking--hinted--n0",
+      "content": [
+        {
+          "type": "text",
+          "text": "紫线是提示辅助排序：每题做一次提示辅助采样，其余采样次数用于原题采样；采样越多，越看重原题准确率。只采一次时 "
+        },
+        {
+          "type": "pronunciation",
+          "display": "τ",
+          "spoken": "tau"
+        },
+        {
+          "type": "text",
+          "text": " 是 0.51，原题采样约五次才追上。"
         }
       ]
     }
@@ -851,7 +988,7 @@
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          10032
+          8613
         ],
         "fallback": {
           "type": "root",
@@ -861,7 +998,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "翰林院传达室的信使猫标志，旁边是“三分钟读完一篇论文”和“翰林院传达室”；下方是今天的论文：斯坦福大学，Hinted Scaling Laws（带提示的缩放定律），arXiv 2611.02270。"
+                  "value": "翰林院传达室的信使猫标志，旁边是“三分钟读完一篇论文”和“翰林院传达室”；下方是今天的论文：斯坦福大学，Hinted Scaling Laws（提示辅助的缩放定律），arXiv 2611.02270。"
                 }
               ]
             }
@@ -899,10 +1036,10 @@
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          8784,
-          7824,
-          9096,
-          7392
+          18624,
+          15829,
+          11987,
+          11201
         ],
         "fallback": {
           "type": "root",
@@ -912,7 +1049,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "横轴为训练算力（对数刻度）的图：Delphi 系列十个小模型的 GSM8K 准确率都贴近零，每个点上方是一列按提示量着色的点，提示越多准确率越高；右侧依次写着“缩放定律：小模型的趋势 → 大模型”“预训练损失：有趋势”“下游准确率：一排零分”，以及“提示：给小模型看一部分参考解答”。"
+                  "value": "横轴为训练算力（对数刻度）的图：Delphi 系列十个小模型的 GSM8K 准确率都贴近零，每个点上方是一列按提示量着色的点，提示越多准确率越高；右侧依次写着“缩放定律：小模型的趋势 → 大模型”“预训练损失：有趋势”“下游准确率：接近零”，以及“提示：在题目前加入部分参考解答”。"
                 }
               ]
             }
@@ -947,9 +1084,9 @@
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          9264,
-          11832,
-          10176
+          18282,
+          14208,
+          15025
         ],
         "fallback": {
           "type": "root",
@@ -994,9 +1131,9 @@
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          5688,
-          10152,
-          11568
+          15996,
+          16610,
+          16380
         ],
         "fallback": {
           "type": "root",
@@ -1035,15 +1172,19 @@
         },
         {
           "id": "s2"
+        },
+        {
+          "id": "s3"
         }
       ],
       "data": {
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          13104,
-          12504,
-          12024
+          16033,
+          23059,
+          22000,
+          25429
         ],
         "fallback": {
           "type": "root",
@@ -1053,7 +1194,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "19 组预测的误差对比：每一行一组模型家族与基准，黑点是标准缩放定律对最大模型的预测误差，红点是带提示的预测误差，17 组红点更小，中位误差从 21 个百分点降到 4.3。"
+                  "value": "Delphi 系列在 GSM8K 上：只用不超过 9×10¹⁹ FLOPs 的六个模型拟合。它们的原题准确率都接近零，任何 S 形曲线都能拟合这些数据；加入 logit 混合提示后（教师模型为 Llama-3.1 8B，H 是教师模型 logits 的混入权重），联合定律预测 10²³ FLOPs 模型的准确率为 28.7%，实际为 25.9%，标准缩放定律为 13.2%；19 组预测的误差对比中 17 组更准，中位误差从 20.8 降到 4.3 个百分点。"
                 }
               ]
             }
@@ -1079,14 +1220,18 @@
         },
         {
           "id": "s1"
+        },
+        {
+          "id": "s2"
         }
       ],
       "data": {
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          9456,
-          6000
+          19634,
+          14224,
+          15846
         ],
         "fallback": {
           "type": "root",
@@ -1096,7 +1241,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "左侧：七个模型在 AIME 上的原题准确率（都不到 1%）与加提示后的准确率（H = 0.7）用连线相连，顺序基本不变；右侧：排序与真值的一致性（Kendall τ）随每题采样次数增加，带提示的排序在一次采样时为 0.51，普通采样要约五次才追上。"
+                  "value": "左侧：七个模型在 AIME 上的原题准确率（真值，每题 4,096 次采样，都不到 1%）与加入截断提示 H = 0.7 后的准确率用连线相连，顺序基本不变；右侧：排序与真值的一致性（Kendall τ，1 为完全一致、0 为随机）随每题采样次数增加，提示辅助排序在一次采样时为 0.51，原题采样为 0.18，要约五次才追上。"
                 }
               ]
             }
@@ -1128,8 +1273,8 @@
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          11736,
-          11352
+          19626,
+          17043
         ],
         "fallback": {
           "type": "root",
@@ -1139,7 +1284,7 @@
               "children": [
                 {
                   "type": "text",
-                  "value": "结论：提示量是衡量能力的第二把尺子；前提是每道题有可靠的参考解答。下方是论文信息：Hinted Scaling Laws，斯坦福大学，arXiv 2611.02270，代码 github.com/tatsu-lab/hinted-scaling-laws。"
+                  "value": "结论：提示量是衡量能力的第二把尺子；前提是每道题有可靠的参考解答。下方是论文信息：Hinted Scaling Laws，斯坦福大学，arXiv 2611.02270，代码地址为 github.com/tatsu-lab/hinted-scaling-laws。"
                 }
               ]
             }
@@ -1154,8 +1299,8 @@
       "voiceSource": {
         "type": "tts",
         "voice": {
-          "engine": "edge",
-          "voice": "zh-CN-XiaoxiaoNeural"
+          "engine": "volcengine",
+          "voice": "zh_female_tianmeitaozi_uranus_bigtts"
         }
       },
       "narrationStart": "with-animation",

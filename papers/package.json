@@ -7,7 +7,6 @@
     "serve": "presmium serve .",
     "check": "node tools/film.mjs check",
     "build": "presmium build .",
-    "speech": "uv run --no-project --with edge-tts python -I tools/edge-speech.py",
     "voiceover": "node tools/voiceover.mjs",
     "film": "node tools/film.mjs"
   },

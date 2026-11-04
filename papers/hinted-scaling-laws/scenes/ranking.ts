@@ -7,7 +7,7 @@ import { D, PAPER } from './hsl.ts'
 // accuracy (left) to their accuracy with truncation hints at H = 0.7 (right). The gaps widen and the order mostly
 // holds; the one crossing stays visible. Then Kendall's τ against the number of completions per problem: one hinted
 // completion per problem ranks as well as about five unhinted ones.
-// Two states: the slope chart, τ against k.
+// Three states: the slope chart, τ and the unhinted ranking, the hinted ranking against it.
 
 const R = D.ranking.aime
 const NAMES: Record<string, string> = {
@@ -20,7 +20,7 @@ const LX = 50, RX = 92
 const LY = scale(0, 0.01, 64, 18), RY = scale(0, 0.25, 64, 18)
 
 /** The lowest and highest of a set of accuracies, as "0.06% 到 0.81%". */
-const range = (v: number[]) => { const f = (x: number) => (x * 100).toFixed(x < 0.01 ? 2 : 1); return `${f(Math.min(...v))}% 到 ${f(Math.max(...v))}%` }
+const range = (v: number[]) => { const f = (x: number) => (x * 100).toFixed(x < 0.01 ? 2 : 1); return `${f(Math.min(...v))}–${f(Math.max(...v))}%` }
 
 // Labels beside the left dots, pushed apart where the dots are closer than a line of text.
 function spread(ys: number[], gap: number): number[] {
@@ -61,7 +61,7 @@ export default gsapScene(({ root, gsap, at, durations, color }) => {
     .side { position: absolute; left: 66cqw; width: 31cqw; }
     .side b { display: block; font-size: 2.3cqw; line-height: 1.2; white-space: nowrap; }
     .side span { display: block; margin-top: 0.6cqh; font-size: ${TYPE.small}cqw; color: var(--pm-color-muted); line-height: 1.45; }
-    .k0 { top: 18cqh; } .k1 { top: 18cqh; }
+    .k0 { top: 18cqh; } .k1 { top: 18cqh; } .ktau { top: 18cqh; }
     .leg { position: absolute; left: 66cqw; top: 42cqh; width: 31cqw; font-size: ${TYPE.small}cqw; line-height: 1.5; }
     .leg div { display: flex; gap: 0.8cqw; align-items: baseline; margin-bottom: 0.8cqh; }
     .leg i { flex: none; display: inline-block; width: 2.2cqw; height: 0.4cqh; border-radius: 99cqw; transform: translateY(-0.4cqh); }
@@ -102,15 +102,16 @@ export default gsapScene(({ root, gsap, at, durations, color }) => {
           <text class="eq-tx" x="${kx(cross) + 1.4}" y="${KY(target) + 3.6}" font-size="2.7" font-weight="800">≈ ${Math.round(cross)} 次</text></g>
       </g>
     </svg>
-    <div class="side k0"><b>分数拉开，顺序基本不变</b><span>AIME 上的七个模型<br>原题准确率 ${range(R.truth)}<br>截断提示 H = 0.7：${range(hinted)}<br>七个模型中只有一对交换了位置</span></div>
-    <div class="side k1"><b>1 次带提示 ≈ ${Math.round(cross)} 次普通采样</b><span>每题只采样一次时，带提示的排序与真值的一致性是 ${target.toFixed(2)}，普通采样是 ${R.avg[0]!.toFixed(2)}</span></div>
-    <div class="leg"><div><i style="background:var(--c-base)"></i><span>普通采样：k 次都用原题</span></div>
-      <div><i style="background:${purple}"></i><span>带提示：每题一次带提示的采样，其余为原题</span></div></div>
+    <div class="side k0"><b>区分度提高，顺序基本不变</b><span>AIME · 7 个模型<br>${range(R.truth)} → ${range(hinted)}<br>只有一对换位</span></div>
+    <div class="side k1"><b>1 次提示 ≈ ${Math.round(cross)} 次原题</b><span>k = 1：${target.toFixed(2)} 对 ${R.avg[0]!.toFixed(2)}</span></div>
+    <div class="leg"><div class="leg-a"><i style="background:var(--c-base)"></i><span>原题采样</span></div>
+      <div class="leg-b"><i style="background:${purple}"></i><span>提示辅助排序</span></div></div>
+    <div class="side ktau"><b>Kendall τ</b><span>1 完全一致 · 0 随机</span></div>
     <div class="src">论文图 8 的数据（截断，AIME）</div>
   `)
 
   const tl = gsap.timeline()
-  gsap.set(['.slope', '.lead', '.name', '.link', '.dl', '.dr', '.tau', '.avg', '.prior', '.pa', '.pp', '.gap', '.eq', '.side', '.leg', '.src'], { autoAlpha: 0 })
+  gsap.set(['.slope', '.lead', '.name', '.link', '.dl', '.dr', '.tau', '.avg', '.prior', '.pa', '.pp', '.gap', '.eq', '.side', '.leg-a', '.leg-b', '.src'], { autoAlpha: 0 })
   gsap.set(['.link', '.avg', '.prior'], { drawSVG: '0%' })
 
   // State 0. 七个模型在 AIME 上都不到 1%: the left column and its seven dots, named. 加了提示，分数拉开: each model's
@@ -124,20 +125,29 @@ export default gsapScene(({ root, gsap, at, durations, color }) => {
     { autoAlpha: 1, scale: 1, duration: 0.3, ease: 'back.out(2)', immediateRender: false }, T(0, 0.58) + i * 0.12 + 0.6))
   tl.to('.k0', { autoAlpha: 1, duration: 0.4 }, T(0, 0.8))
 
-  // State 1. 每题一次带提示的采样: τ at k = 1 for both, the gap; 相当于约五次普通采样: the unhinted line climbs to the
-  // hinted one's first value at k ≈ 5.
+  // State 1. 怎样衡量排得对不对: the τ axis and what τ means; 原题采样: the unhinted line, 0.18 at one rollout a problem.
   tl.to(['.slope', '.m', '.k0'], { autoAlpha: 0, duration: 0.35 }, T(1))
-  tl.to(['.tau', '.leg', '.src'], { autoAlpha: 1, duration: 0.4 }, T(1, 0.02))
-  tl.to(['.avg', '.prior'], { autoAlpha: 1, duration: 0.01 }, T(1, 0.06))
-  tl.to(['.avg', '.prior'], { drawSVG: '100%', duration: 1.1, ease: 'power2.inOut' }, T(1, 0.06))
-  tl.to(['.pa', '.pp'], { autoAlpha: 1, duration: 0.3, stagger: 0.02 }, T(1, 0.12))
-  tl.fromTo('.gap', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.35, immediateRender: false }, T(1, 0.32))
+  tl.to(['.tau', '.src'], { autoAlpha: 1, duration: 0.4 }, T(1, 0.02))
+  tl.to('.ktau', { autoAlpha: 1, duration: 0.4 }, T(1, 0.1))
+  tl.to('.avg', { autoAlpha: 1, duration: 0.01 }, T(1, 0.55))
+  tl.to('.avg', { drawSVG: '100%', duration: 1.1, ease: 'power2.inOut' }, T(1, 0.55))
+  tl.to('.pa', { autoAlpha: 1, duration: 0.3, stagger: 0.02 }, T(1, 0.6))
+  tl.to('.leg-a', { autoAlpha: 1, duration: 0.4 }, T(1, 0.58))
+
+  // State 2. 提示辅助排序: its line, the gap at k = 1; 相当于约五次原题采样: the unhinted line climbs to the hinted
+  // one's first value at k ≈ 5.
+  tl.to('.ktau', { autoAlpha: 0, duration: 0.3 }, T(2))
+  tl.to('.prior', { autoAlpha: 1, duration: 0.01 }, T(2, 0.04))
+  tl.to('.prior', { drawSVG: '100%', duration: 1.1, ease: 'power2.inOut' }, T(2, 0.04))
+  tl.to('.pp', { autoAlpha: 1, duration: 0.3, stagger: 0.02 }, T(2, 0.1))
+  tl.to('.leg-b', { autoAlpha: 1, duration: 0.4 }, T(2, 0.06))
+  tl.fromTo('.gap', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.35, immediateRender: false }, T(2, 0.5))
   // The two dotted lines are revealed with a clip: drawSVG would replace their dash pattern.
   gsap.set(['.eq-drop', '.eq-tx', '.eq circle'], { autoAlpha: 0 })
-  tl.to('.eq', { autoAlpha: 1, duration: 0.01 }, T(1, 0.55))
-  wipe(tl, root.querySelector('.eq-line')!, T(1, 0.55), 0.6)
-  tl.to(['.eq circle', '.eq-drop', '.eq-tx'], { autoAlpha: 1, duration: 0.3, stagger: 0.08 }, T(1, 0.66))
-  tl.to('.k1', { autoAlpha: 1, duration: 0.4 }, T(1, 0.6))
-  tl.set({}, {}, T(2))
+  tl.to('.eq', { autoAlpha: 1, duration: 0.01 }, T(2, 0.66))
+  wipe(tl, root.querySelector('.eq-line')!, T(2, 0.66), 0.6)
+  tl.to(['.eq circle', '.eq-drop', '.eq-tx'], { autoAlpha: 1, duration: 0.3, stagger: 0.08 }, T(2, 0.74))
+  tl.to('.k1', { autoAlpha: 1, duration: 0.4 }, T(2, 0.72))
+  tl.set({}, {}, T(3))
   return tl
 })

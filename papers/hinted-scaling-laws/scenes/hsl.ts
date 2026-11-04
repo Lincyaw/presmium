@@ -22,7 +22,7 @@ export const D = data as unknown as {
 export const PAPER = {
   short: 'Hinted Scaling Laws',
   title: 'Hinted Scaling Laws',
-  zh: '带提示的缩放定律',
+  zh: '提示辅助的缩放定律',
   authors: 'Suze van Adrichem, Luke Bailey, Rohith Kuditipudi 等 · Stanford',
   arxiv: 'arXiv 2611.02270',
   code: 'github.com/tatsu-lab/hinted-scaling-laws',

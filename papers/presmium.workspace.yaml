@@ -14,6 +14,6 @@ site:
   landing:
     source: ./site/home.json
   head:
-    description: 三分钟读完一篇论文：用配音动画讲清一篇论文要解决什么问题、为什么重要、怎样做到、证据是什么。
+    description: 三分钟读完一篇论文：用配音动画讲清一篇论文要解决什么问题、为什么重要、如何解决、证据是什么。
   footer:
     message: 翰林院传达室 · 三分钟读完一篇论文

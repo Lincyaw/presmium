@@ -48,7 +48,7 @@ const TRI = `<svg class="tri" viewBox="0 0 ${VW} ${VH}" style="left:0;top:0;widt
   <circle class="tri-end" cx="${FU(A.c + DC)}" cy="${FV(A.h - DH)}" r="7" fill="var(--c-ours)" stroke="#fff" stroke-width="2"/>
   <g class="tri-tx" font-weight="800" fill="#16191d" stroke="#fff" stroke-width="7" paint-order="stroke" style="font-family: var(--pm-font-sans)">
     <text x="${(FU(A.c) + FU(A.c + DC)) / 2}" y="${FV(A.h) - 16}" font-size="30" text-anchor="middle">×3 算力</text>
-    <text x="${FU(A.c + DC) + 14}" y="${(FV(A.h) + FV(A.h - DH)) / 2 + 10}" font-size="30">0.1 提示</text>
+    <text x="${FU(A.c + DC) + 14}" y="${(FV(A.h) + FV(A.h - DH)) / 2 + 10}" font-size="30">提示量 +0.1</text>
   </g></svg>`
 const contour = (a: number): Pt[] => {
   const z = Math.log((a - b[4]!) / (b[3]! - a))
@@ -94,13 +94,13 @@ export default gsapScene(({ root, gsap, at, durations }) => {
       <path class="edge" d="M${PC(Math.log10(3e18))},${PH(0)} L${PC(23)},${PH(0)}" fill="none" stroke="var(--c-ours)" stroke-width="1"/>
     </svg>
     <div class="edge-lab" style="left:${PC(18.7) / 1.6}cqw;top:${PH(0) / 0.9 + 0.6}cqh">H = 0：对原题的预测</div>
-    <div class="side leg"><b>遮盖 · GSM8K</b><span>Delphi 的 12 个模型，一条曲线一个模型；最深的两条是 10²² 与 10²³（目标），原题就有 7% 与 26%</span><i></i><em><span>算力小</span><span>算力大</span></em></div>
-    <div class="side par"><b>等准确率线几乎平行</b><span>横轴算力，纵轴提示量；每个点一个模型在一个提示量下的准确率，颜色越深越高</span></div>
-    <div class="side xchg"><b>多 0.1 提示 ≈ 三倍算力</b><span>同一条等准确率线上，0.1 的提示与三倍的算力换得同样的准确率（估算）</span></div>
+    <div class="side leg"><b>遮盖 · GSM8K</b><span>Delphi 12 个模型</span><i></i><em><span>算力小</span><span>算力大</span></em></div>
+    <div class="side par"><b>等准确率线几乎平行</b></div>
+    <div class="side xchg"><b>提示量 +0.1 ≈ 算力 ×3</b><span>估算</span></div>
     <div class="card fml">
       <div class="fml__k">联合定律</div>
       <div class="fml__f">Acc(<span class="c">C</span>, <span class="h">H</span>) = max( F,<br>&nbsp;&nbsp;L + (A − L)·σ(<u>β₁<span class="c">C</span> + β₂<span class="h">H</span></u> + β₃) )</div>
-      <div class="fml__n"><b>C</b> 训练算力（对数）　<b style="color:#1f9e89">H</b> 提示量<br><b>F</b> 噪声底　<b>L</b>、<b>A</b> 准确率的下限与上限<br>算力与提示量在 S 形函数里相加，共 <b>6 个参数</b><br>直线：它的等准确率线（用全部 12 个模型拟合，只看形状）</div>
+      <div class="fml__n"><b>C</b> 算力（对数）　<b style="color:#1f9e89">H</b> 提示量<br><b>F</b> 噪声水平　<b>L</b>、<b>A</b> 下限、上限<br><b>6 个参数</b></div>
     </div>
   `)
 

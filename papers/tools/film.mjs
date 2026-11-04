@@ -13,14 +13,14 @@
 // apply_document_change with the whole document as an explicit replacement: no semantic operation sets a definition's
 // data), so the change has a history entry like any other. Beats inside a scene are placed as fractions of their
 // state's length (kit/frame.ts `clock`), so after retiming each beat lands with its sentence.
-// The gate: the standard length is 3:00; PASS up to 3:10.
+// The gate: aim for about three minutes; PASS up to 6:00, the ceiling. Content a viewer needs is not cut to be short.
 import { execFileSync, spawnSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
 import { call, connect, WORKSPACE } from './mcp.mjs'
 
-const GATE_MS = 190_000, STANDARD_MS = 180_000
+const GATE_MS = 360_000, AIM_MS = 180_000
 const [command, target, ...rest] = process.argv.slice(2)
 const option = (name, fallback) => { const i = rest.indexOf(`--${name}`); return i >= 0 ? rest[i + 1] : fallback }
 const bin = name => join(WORKSPACE, 'node_modules/.bin', name)
@@ -81,8 +81,8 @@ async function timing(document) {
     console.log(`\n${rows.length} steps, ${chars} 汉字 of narration, ${secs(voiceMs)} s of voice (${rate.toFixed(2)} 字/s)`)
     console.log(`film ${clockText(total)} (${secs(total)} s); with every state retimed to its voice about ${clockText(floor)} (${secs(floor)} s)`)
     const over = Math.min(total, floor) - GATE_MS
-    if (total <= GATE_MS) console.log(`PASS: within 3:10 (standard 3:00)`)
-    else console.log(`FAIL: ${secs(total - GATE_MS)} s over 3:10${floor < total ? ` (${floor <= GATE_MS ? 'retime alone passes' : `${secs(over)} s over even after retiming: cut about ${Math.ceil(over / 1000 * rate)} 汉字`})` : ''}; to reach 3:00 cut about ${Math.max(0, Math.ceil((Math.min(total, floor) - STANDARD_MS) / 1000 * rate))} 汉字`)
+    if (total <= GATE_MS) console.log(`PASS: within the 6:00 ceiling (aim about 3:00; ${clockText(Math.abs(total - AIM_MS))} ${total > AIM_MS ? 'over' : 'under'} it)`)
+    else console.log(`FAIL: ${secs(total - GATE_MS)} s over the 6:00 ceiling${floor < total ? ` (${floor <= GATE_MS ? 'retime alone passes' : `${secs(over)} s over even after retiming: cut about ${Math.ceil(over / 1000 * rate)} 汉字`})` : ''}`)
   } finally { await client.close() }
 }
 
