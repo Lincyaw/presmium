@@ -13,6 +13,7 @@ export interface McpMessages {
   generateVoiceover(scope: string): string
   cancelVoiceover(target: string): string
   previewVoice(voice: string): string
+  changeSpeechSettings: string
   changeMediaClip(action: 'add' | 'update' | 'remove', clipId: string): string
   historyChange(which: 'undo' | 'redo' | 'revert', revision: string): string
   authoringClientAction(action: string): string
@@ -57,6 +58,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     generateVoiceover: scope => `生成配音（${scope}）`,
     cancelVoiceover: () => '取消生成配音',
     previewVoice: voice => `试听音色“${voice}”`,
+    changeSpeechSettings: '修改语音服务设置',
     changeMediaClip: action => action === 'add' ? '添加音频片段' : action === 'update' ? '调整音频片段' : '删除音频片段',
     historyChange: which => which === 'undo' ? '撤消上一次修改' : which === 'redo' ? '恢复上一次撤消的修改' : '撤消版本历史中的一项修改',
     authoringClientAction: () => '在编辑器中执行操作',
@@ -97,6 +99,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     generateVoiceover: scope => `Generate Voiceover (${scope})`,
     cancelVoiceover: () => 'Cancel Voiceover',
     previewVoice: voice => `Preview Voice “${voice}”`,
+    changeSpeechSettings: 'Change Speech Settings',
     changeMediaClip: action => action === 'add' ? 'Add Audio Clip' : action === 'update' ? 'Adjust Audio Clip' : 'Delete Audio Clip',
     historyChange: which => which === 'undo' ? 'Undo Last Change' : which === 'redo' ? 'Redo Last Change' : 'Undo a Change from Version History',
     authoringClientAction: () => 'Perform Editor Action',
@@ -241,6 +244,11 @@ const kind = (detail: Detail) => typeof detail.kind === 'string' ? detail.kind :
 export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => string>> = {
   'zh-CN': {
     'operation-unavailable': () => '当前连接没有这项操作。请搜索可用操作。',
+    'speech-settings-permission-denied': () => '修改语音服务设置需要工作区所有者的权限。',
+    'speech-settings-invalid': () => '语音服务设置不完整或格式不正确。请检查后重试。',
+    'speech-settings-conflict': () => '语音服务设置已经变化。请重新读取后再修改。',
+    'speech-settings-busy': () => '语音服务设置正在修改。请稍后重试。',
+    'speech-settings-unavailable': () => '暂时无法读取或保存语音服务设置。请稍后重试。',
     'operation-name-required': () => '读取完整参数格式需要指定操作名称。',
     'editor-context-unavailable': () => '没有收到编辑器的当前页面。请指定页面和步骤，或在 Studio 中打开文稿。',
     'document-narration-text-missing': () => '讲稿中没有找到这段原文。请读取当前讲稿后重试。',
@@ -283,6 +291,11 @@ export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => s
   },
   'en': {
     'operation-unavailable': () => 'This connection does not offer that operation. Read the available operations.',
+    'speech-settings-permission-denied': () => 'Changing speech settings requires a workspace owner credential.',
+    'speech-settings-invalid': () => 'Speech settings are incomplete or invalid. Check the values and retry.',
+    'speech-settings-conflict': () => 'Speech settings changed. Read the current settings before editing again.',
+    'speech-settings-busy': () => 'Speech settings are being changed. Retry shortly.',
+    'speech-settings-unavailable': () => 'Speech settings could not be read or saved. Retry shortly.',
     'operation-name-required': () => 'Name an operation to read its complete input schema.',
     'editor-context-unavailable': () => 'No current editor page was reported. Specify a page and step, or open the document in Studio.',
     'document-narration-text-missing': () => 'The original text was not found in this script. Read the current script and retry.',

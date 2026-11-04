@@ -23,6 +23,7 @@ workspace 为每项能力创建一个实例，HTTP 与 MCP 共用实例与回执
 | `createDocumentImageAuthoring`（`document-images.ts`） | `document/image`、`document/asset` | `image-authoring.ts` |
 | `createDocumentTranscriptions`、`createTranscriptionAdoption` | `document/transcription*` | `transcription.ts` |
 | `createDocumentVoiceAuthoring`（`document-voice.ts`） | `voice-*` | `voice-authoring.ts` |
+| `OperatorSpeechSettings`（kernel 的 `node/operator-speech.ts`） | `speech-settings` | `speech-settings.ts` |
 | `createAuthoringClients`（`authoring-clients.ts`） | 共享 WebSocket 的 `authoring-client` 通道 | `authoring-clients.ts` |
 | `OutputJobs`（`jobs.ts`） | `jobs*` | `mcp.ts` 的 `build/get_builds/cancel_build` |
 | `createDocumentCapture`（`capture.ts`） | 无 | `capture.ts` 的 `capture_slides` |
@@ -49,6 +50,8 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 作者流程使用 `CanonicalSource { documentId, version, fingerprint }`；构建使用由它生成的 `JobSource { version, fingerprint }`。`schemaVersion` 与 `apiVersion` 不是源版本。
 
 ## 4. 读取与预算
+
+语音服务的运营者配置由 `get_speech_settings/change_speech_settings` 读取与修改，只向未绑定文稿的工作区所有者提供。Web 路由、MCP 与服务的密钥读取共用一个 `OperatorSpeechSettings` 实例。修改参数由 `SPEECH_SETTINGS_CHANGE_SCHEMA` 定义；HTTP 保留显式 revision，MCP 省略 revision 时在服务端读取，提交仍核对同一版本。修改属于 `write`、作用域为 workspace，保留写入确认；普通文稿编辑授权不会允许它。凭据只写不读，返回的 configured 为 configuration-only，不证明鉴权或合成可用。
 
 - `list_skills` 默认只返回技能摘要与入口；指定 `name` 可筛选一个技能，`details: true` 才展开完整文件列表与版本。技能正文与引用文件仍经 `read_skill` 分片读取。
 - `get_document_outline` 按集合（默认 `sections`，另有 `blocks/steps/narrations/assets/definitions/comments`）列出稳定 ID、类型与计数。

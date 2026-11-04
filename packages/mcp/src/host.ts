@@ -1,4 +1,4 @@
-import type { ProjectAuthoring, AuthoringClients, DocumentCapture, DocumentHistory } from '@lincyaw/kernel'
+import type { ProjectAuthoring, AuthoringClients, DocumentCapture, DocumentHistory, SpeechSettings } from '@lincyaw/kernel'
 import type {
   AgentMode,
   AgentTool,
@@ -75,6 +75,7 @@ export interface McpHost {
   audioAuthoring?: DocumentAudioAuthoring
   imageAuthoring?: DocumentImageAuthoring
   voiceAuthoring?: DocumentVoiceAuthoring
+  speechSettings?: SpeechSettings
   transcriptions?: DocumentTranscriptions
   transcriptionAdoption?: DocumentTranscriptionAdoption
   capture?: DocumentCapture

@@ -2,10 +2,14 @@ import { createRequire } from 'node:module'
 import { randomUUID } from 'node:crypto'
 import { constants, closeSync, fstatSync, lstatSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { Validator } from '@cfworker/json-schema'
+import { SPEECH_SETTINGS_CHANGE_SCHEMA } from '../contracts/speech-settings.ts'
 import type { SpeechSettingsAnswer, SpeechSettingsChange } from '../contracts/speech-settings.ts'
 
 const KEY = 'PRESMIUM_SPEECH_VOLCENGINE_KEY', APPID = 'PRESMIUM_SPEECH_VOLCENGINE_APPID'
 const MAX_BYTES = 16384
+const settingsChangeValidator = new Validator(structuredClone(SPEECH_SETTINGS_CHANGE_SCHEMA), '2020-12', false)
+export const validateSpeechSettingsChange = (value: unknown): value is SpeechSettingsChange => settingsChangeValidator.validate(value).valid
 const lockfile = createRequire(import.meta.url)('proper-lockfile') as { lock(file: string, options: { realpath: boolean, retries: number }): Promise<() => Promise<void>> }
 interface Stored { version: 1, revision: string, key?: string, appId?: string }
 const empty = (): Stored => ({ version: 1, revision: 'none' })

@@ -26,6 +26,6 @@ export { validateAuthoringClientRequest, validateAuthoringClientQuery, validateA
 export { validateProjectPlan, validateProjectApply } from './projects.ts'
 export { validateDocumentWorkspaceImageInspect, validateDocumentWorkspaceImageImport } from './document-image.ts'
 export { systemLocale } from './locale.ts'
-export { OperatorSpeechSettings, operatorSpeechSecrets, SpeechSettingsError } from './operator-speech.ts'
+export { OperatorSpeechSettings, operatorSpeechSecrets, SpeechSettingsError, validateSpeechSettingsChange } from './operator-speech.ts'
 export { devStateFile, readServiceState, removeServiceState, serveStateDir } from './service-state.ts'
 export type { ServiceState } from './service-state.ts'

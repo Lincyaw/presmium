@@ -9,7 +9,7 @@ import { join, relative } from 'node:path'
 import { Compiler, operatorDir as resolveOperatorDir, pluginLogger, runBlock, workspacePlugins } from '@lincyaw/compiler'
 import type { Compilation, CompilerOptions } from '@lincyaw/compiler'
 import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, DOCUMENT_VOICE_TASKS, errorMessage, PreviewPreparing, PRODUCTION_AUDIO_AUTHORING, REVISIONS, SPEECH, VOICEOVER, VOICEOVER_EXECUTION } from '@lincyaw/kernel'
-import { irRevision, operatorSpeechSecrets, serveStateDir } from '@lincyaw/kernel/node'
+import { irRevision, OperatorSpeechSettings, serveStateDir } from '@lincyaw/kernel/node'
 import { speechSettingsRoute } from './speech-settings.ts'
 import type { ApprovalKind, CanonicalSource, ChangeReviewService, Finding, IRDocument, Logger, ProductionAudioAuthoring, ServiceToken, SiteSpec, SpeechService } from '@lincyaw/kernel'
 import { serverConfigKey, servedDocument, startServer } from '@lincyaw/server'
@@ -91,6 +91,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   if (env.PRESMIUM_AGENT_CANDIDATE === '1') config.settings['presmium.assistant'] = { ...config.settings['presmium.assistant'], review: 'auto' }
   const { root } = config
   const operatorDirectory = resolveOperatorDir(root, options.operatorDir ?? env.PRESMIUM_OPERATOR_DIR)
+  const speechSettings = new OperatorSpeechSettings(operatorDirectory, name => env[name])
   const stateDir = makeStateDir(root, env)
   const docs = () => listDocuments(config)
   const compileSessions = new Map<string, CompileSession>()
@@ -170,7 +171,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     services: [...serverServices, ...workspaceServices],
     bundled: options.bundled,
     operatorDir: operatorDirectory,
-    secret: operatorSpeechSecrets(operatorDirectory, name => env[name]),
+    secret: speechSettings.secret,
   })
 
   // Coalesce only in-flight discovery. A later read reassembles actual services and problems;
@@ -270,6 +271,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     get audioAuthoring() { return audioAuthoring?.service },
     get imageAuthoring() { return imageAuthoring?.service },
     get voiceAuthoring() { return voiceAuthoring?.service },
+    speechSettings,
     get transcriptions() { return transcriptions },
     get transcriptionAdoption() { return transcriptionAdoption?.service },
     get capture() { return capture?.service },
@@ -391,7 +393,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   audioAuthoring = createDocumentAudioAuthoring({ root, editor, revisions: history?.revisions, services: authoringServices, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   imageAuthoring = createDocumentImageAuthoring({ root, editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   const routeOptions = {
-      speechSettings: speechSettingsRoute(operatorDirectory, name => env[name]),
+      speechSettings: speechSettingsRoute(speechSettings),
       config,
       editor,
       documentEditor,

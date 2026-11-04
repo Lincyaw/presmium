@@ -19,6 +19,7 @@ import { TRANSCRIPTION_TOOLS } from './transcription.ts'
 import { AUDIO_AUTHORING_TOOLS } from './audio-authoring.ts'
 import { IMAGE_AUTHORING_TOOLS } from './image-authoring.ts'
 import { VOICE_AUTHORING_TOOLS } from './voice-authoring.ts'
+import { SPEECH_SETTINGS_TOOLS } from './speech-settings.ts'
 import { DIAGNOSTIC_TOOLS, diagnosticSnapshot } from './diagnostics.ts'
 import { registerSkillResources, SKILL_INSTRUCTIONS, SKILL_TOOLS } from './skills.ts'
 import { CAPTURE_TOOLS, ToolContent } from './capture.ts'
@@ -142,6 +143,7 @@ const TOOLS: ToolSpec[] = [
   ...AUDIO_AUTHORING_TOOLS,
   ...IMAGE_AUTHORING_TOOLS,
   ...VOICE_AUTHORING_TOOLS,
+  ...SPEECH_SETTINGS_TOOLS,
   ...TRANSCRIPTION_TOOLS,
   ...CAPTURE_TOOLS,
   {
@@ -437,6 +439,7 @@ function runPlan(doc: IRDocument, node: CodeNode): string {
 }
 
 function hostSupports(host: McpHost, name: string): boolean {
+  if (SPEECH_SETTINGS_TOOLS.some(tool => tool.name === name)) return Boolean(host.speechSettings)
   if (name !== 'get_authoring_capabilities' && [...AUTHORING_TOOLS, ...AUTHORING_ACTION_TOOLS, ...EDITING_TOOLS].some(tool => tool.name === name)) return Boolean(host.authoring)
   if (PROJECT_TOOLS.some(tool => tool.name === name)) return Boolean(host.projectAuthoring)
   switch (name) {
@@ -535,7 +538,8 @@ async function offer(host: McpHost, caller: McpCaller): Promise<Offered> {
   const documents = await host.documents().catch(() => [])
   const only = caller.document ?? (documents.length === 1 ? documents[0]!.dir : undefined)
   const offered = (kind: 'read' | ApprovalKind) => kind === 'read' || (canOperate(caller) && host.offers(kind))
-  const builtIn = TOOLS.filter(tool => offered(tool.kind) && hostSupports(host, tool.name) && !(caller.confirmed && tool.audience === 'external'))
+  const builtIn = TOOLS.filter(tool => offered(tool.kind) && hostSupports(host, tool.name) && !(caller.confirmed && tool.audience === 'external')
+    && (!SPEECH_SETTINGS_TOOLS.includes(tool) || caller.document === undefined && hasRole(caller.member, 'owner')))
   const plugins: AgentTool[] = []
   const names = new Set(TOOLS.map(tool => tool.name))
   const own = host.authoring ? host.readyTools?.(only) : await host.tools?.(only).catch(() => undefined)

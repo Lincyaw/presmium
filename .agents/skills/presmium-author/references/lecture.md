@@ -59,6 +59,8 @@ Without the studio, `presmium speech key set [<dir>]` saves the Volcengine speec
 
 TTS providers, credentials and endpoints are operator configuration. Check the speech service's real engines and voice catalogue. `unavailable` differs from an empty available list. Unknown parameter capability stays unknown; do not imply unsupported style/rate options work.
 
+With a workspace owner MCP connection, discover `get_speech_settings` to read configuration status and `change_speech_settings` to save or clear credentials after workspace write approval. The server supplies the revision unless an earlier read is explicitly pinned. Reads never expose secret values; configuration-only success is not provider authentication. These global operations are unavailable to document-bound session credentials.
+
 ## Generate explicitly
 
 A cache-only preview can play existing exact-text/exact-voice audio; missing audio is generated on the explicit Video Play intent, or through batch generation before export. Use the installed lecture/speech generation action or documented API to synthesize an explicit revision-bound scope. Show provider, count and target before a paid operation. Never synthesize merely by opening the document, editing text, auditioning another voice or refreshing preview.

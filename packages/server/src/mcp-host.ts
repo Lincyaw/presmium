@@ -47,6 +47,7 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     get audioAuthoring() { return options.serverHost?.audioAuthoring },
     get imageAuthoring() { return options.serverHost?.imageAuthoring },
     get voiceAuthoring() { return options.serverHost?.voiceAuthoring },
+    get speechSettings() { return options.serverHost?.speechSettings },
     get transcriptions() { return options.serverHost?.transcriptions },
     get transcriptionAdoption() { return options.serverHost?.transcriptionAdoption },
     get capture() { return options.serverHost?.capture },
