@@ -9,7 +9,7 @@ import { DocumentBlockPreview } from '../document-editor/DocumentBlockPreview.ts
 import { nativeEditingCursor } from '../document-editor/selection.ts'
 import { hasBlockPreview } from '../document-editor/projection.ts'
 import type { NativeDocumentEditor } from '../document-editor/schema.tsx'
-import { isAgentChanging } from '../workbench.ts'
+import { isAgentChanging } from '../workbench-state.ts'
 
 /** Source editing is available before the first successful runtime compilation. */
 export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onOpenComments }: { commentsPortal?: HTMLElement | null, onCommentDraftRestore?(): void, onOpenComments?(): void }) {
@@ -37,10 +37,10 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onO
   const recoveryDisabled = readOnly || source?.saving || source?.composing || source?.recovering
   useEffect(() => {
     const element = container.current
-    if (element && source?.identity && source.content) return workbench.attachDocumentViewport(element, source.identity)
+    if (element && source?.identity && source.content) return workbench.editing.attachViewport(element, source.identity)
   }, [workbench, source?.identity, Boolean(source?.content)])
   // The editor applies `readOnly` while committing, so it is editable by the time this runs.
-  useEffect(() => { if (!readOnly) workbench.documentEditorEditable() }, [workbench, readOnly])
+  useEffect(() => { if (!readOnly) workbench.editing.editorEditable() }, [workbench, readOnly])
   useEffect(() => {
     if (!navigation) return
     const request = JSON.stringify([source?.identity, navigation.request])
@@ -69,7 +69,7 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onO
       const viewport = measure(), state = workbench.getState()
       if (gesture.generation !== state.documentPositionToken || !sameGeometry(gesture.viewport, viewport) || gesture.viewport.top !== viewport.top) return
       if (!state.authoring?.loading && !isAgentChanging(state)) {
-        const field = workbench.focusedDocumentField(), root = field?.editor.prosemirrorView.dom.getRootNode()
+        const field = workbench.editing.focusedField(), root = field?.editor.prosemirrorView.dom.getRootNode()
         if (field && root instanceof ShadowRoot && element.contains(root.host)) {
           try {
             const point = field.editor.prosemirrorView.coordsAtPos(field.editor.prosemirrorState.selection.head), bounds = element.getBoundingClientRect()
@@ -113,17 +113,17 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onO
     const scroll = (event: Event) => {
       const viewport = measure(), previous = baseline
       baseline = viewport
-      if (workbench.consumeDocumentReturnScroll(element)) { cancel(); return }
+      if (workbench.editing.consumeReturnScroll(element)) { cancel(); return }
       // Native scroll chaining from an iframe has no parent wheel event.
       if (!event.isTrusted) return
       if (!sameGeometry(previous, viewport)) { cancel(); return }
       if (viewport.top === previous.top) return
-      workbench.documentInteraction()
+      workbench.editing.interact()
       queue(viewport)
     }
     const interact = (event: Event) => {
       if (!event.isTrusted) return
-      workbench.documentInteraction()
+      workbench.editing.interact()
       baseline = measure()
       queue(baseline)
     }
@@ -134,7 +134,7 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onO
       if (['Home', 'End'].includes(event.key) && target instanceof HTMLElement && target.isContentEditable && !event.ctrlKey && !event.metaKey) return
       interact(event)
     }
-    const pointer = () => { cancel(); workbench.documentInteraction() }
+    const pointer = () => { cancel(); workbench.editing.interact() }
     element.addEventListener('scroll', scroll, { passive: true })
     element.addEventListener('wheel', interact, { passive: true })
     element.addEventListener('touchmove', interact, { passive: true })
@@ -197,7 +197,7 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onO
         commentsPortal={commentsPortal} onChange={document => workbench.recordDocument(document)} onReady={(editor, commands) => {
           bodyEditor.current = editor
           editingPosition.current = undefined
-          workbench.attachDocumentEditor(editor, commands, { identity: source.identity!, reset: source.reset })
+          workbench.editing.attachEditor(editor, commands, { identity: source.identity!, reset: source.reset })
         }}
         onEditingPosition={(position, editor) => {
           const state = workbench.getState(), current = state.authoring

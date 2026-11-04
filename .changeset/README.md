@@ -1,6 +1,6 @@
 # 版本与发布
 
-Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记录。公开的包（`@lincyaw/*`、`presmium` 与 `create-presmium`）是一组固定版本（`config.json` 的 `fixed`），一起发布、版本相同；1.0 从 `1.0.0-rc.0` 开始，处在预发布模式（`pre.json`，标签 `rc`）。源码以 `.ts`、`.vue` 直接发布，不预编译；各包内部的依赖写 `workspace:`，发布时换成版本：`workspace:*` 成为确切的版本，插件对 Presmium 的对等依赖 `workspace:^` 成为 `^<版本>`。
+Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记录。公开的包（`@lincyaw/*`、`presmium` 与 `create-presmium`）是一组固定版本（`config.json` 的 `fixed`），一起发布、版本相同；1.0 从 `1.0.0-rc.0` 开始，处在预发布模式（`pre.json`，标签 `rc`）。源码以 `.ts`、`.tsx` 直接发布，不预编译；各包内部的依赖写 `workspace:`，发布时换成版本：`workspace:*` 成为确切的版本，插件对 Presmium 的对等依赖 `workspace:^` 成为 `^<版本>`。
 
 ## 哪些包发布
 

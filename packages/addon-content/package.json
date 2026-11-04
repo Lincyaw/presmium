@@ -37,7 +37,6 @@
     }
   },
   "dependencies": {
-    "markmap-lib": "^0.18.12",
     "markmap-view": "^0.18.12",
     "plantuml-encoder": "^1.4.0"
   },

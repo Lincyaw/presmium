@@ -14,7 +14,7 @@ pinned dsh, without host mocks.
 
 | Change | Start from |
 |---|---|
-| Directive, steps, diagnostics, execution cache | `packages/cli/test/ir.test.ts`, `packages/addon-exec/test/compile.test.ts` |
+| Document lowering, steps, diagnostics, execution cache | `packages/cli/test/ir.test.ts`, `packages/addon-exec/test/compile.test.ts` |
 | Component display, keyboard, stepping back | `e2e/guide.spec.ts` |
 | Preview after a save | `e2e/viewer.spec.ts`, `e2e/workbench.spec.ts` |
 | Student build, translation, published files | `packages/cli/test/audience.test.ts`, `e2e/site.spec.ts` |

@@ -44,13 +44,13 @@ export function ProductionCaptionTiming({ identity, stepId, plan, current, loadi
   const [open, setOpen] = useState(false), [busy, setBusy] = useState(false), [failure, setFailure] = useState<string>(), [saved, setSaved] = useState(false), [, render] = useState(0)
   const drafts = useRef(new Map<string, Draft>()), alive = useRef(true), request = useRef<AbortController>(), needsRefresh = useRef(false), openRef = useRef(false), composing = useRef(false)
   const latest = useRef({ stepId, onChanged }); latest.current = { stepId, onChanged }
-  if (!drafts.current.has(stepId)) { const savedDraft = workbench.captionTimingDraft(stepId, identity); if (savedDraft) drafts.current.set(stepId, savedDraft) }
+  if (!drafts.current.has(stepId)) { const savedDraft = workbench.production.captionTimingDraft(stepId, identity); if (savedDraft) drafts.current.set(stepId, savedDraft) }
   const draft = drafts.current.get(stepId), value = draft && valueOf(draft), canonical = document?.production.captionTimings?.[stepId], hasDraft = Boolean(pendingSteps?.includes(stepId))
   const changed = draft && source?.version !== draft.version || draft && basis && (!same(draft.basis, basis) || draft.text !== (document && stepCaptionText(document, stepId)))
   const writable = Boolean(source?.version && source.fingerprint && !source.loading && !source.dirty && !source.saving && !source.composing && !source.restored && !source.recovering && !source.error && !disabled)
   useEffect(() => { alive.current = true; return () => { alive.current = false; request.current?.abort() } }, [])
   useEffect(() => { request.current?.abort(); openRef.current = false; setOpen(false); setBusy(false); setFailure(undefined); setSaved(false) }, [stepId])
-  const pending = (next: Draft, changedByAuthor = true) => { drafts.current.set(stepId, next); if (changedByAuthor) workbench.setCaptionTimingDraft(stepId, next, identity); setSaved(false); setFailure(undefined); render(n => n + 1) }
+  const pending = (next: Draft, changedByAuthor = true) => { drafts.current.set(stepId, next); if (changedByAuthor) workbench.production.setCaptionTimingDraft(stepId, next, identity); setSaved(false); setFailure(undefined); render(n => n + 1) }
   const initialize = () => {
     if (!document || !source?.version || !basis) return
     const text = stepCaptionText(document, stepId), existing = document.production.captionTimings?.[stepId]
@@ -72,12 +72,12 @@ export function ProductionCaptionTiming({ identity, stepId, plan, current, loadi
     const action: DocumentCaptionTimingAction = automatic ? { type: 'caption.timing.reset', stepId } : { type: 'caption.timing.set', stepId, value: value! }
     request.current = controller; setBusy(true); setFailure(undefined)
     try {
-      const answer = await workbench.applyDocumentCaptionTiming(action, randomUUID(), expected, controller.signal)
+      const answer = await workbench.production.applyCaptionTiming(action, randomUUID(), expected, controller.signal)
       needsRefresh.current = true
       if (!alive.current || workbench.getState().authoring?.identity !== identity) return
       const ownsInput = drafts.current.get(target) === sent
       if (ownsInput) {
-        workbench.setCaptionTimingDraft(target, undefined, identity)
+        workbench.production.setCaptionTimingDraft(target, undefined, identity)
         if (automatic) drafts.current.delete(target)
         else if (sent) drafts.current.set(target, { ...sent, version: answer.version })
       }
@@ -111,7 +111,7 @@ export function ProductionCaptionTiming({ identity, stepId, plan, current, loadi
         <div className="pmw-caption-times__actions">
           <PmButton small disabled={!basis?.available || busy || !writable} onClick={() => { if (document && basis && source?.version) pending({ version: source.version, text: stepCaptionText(document, stepId), basis: structuredClone(basis), rows: lineRows(stepCaptionText(document, stepId)) }) }}>{t.split}</PmButton>
           <PmButton small disabled={!canonical || busy || !writable} onClick={() => void apply(true)}>{t.automatic}</PmButton>
-          {hasDraft && <PmButton small disabled={busy} onClick={() => { workbench.setCaptionTimingDraft(stepId, undefined, identity); drafts.current.delete(stepId); initialize() }}>{t.discard}</PmButton>}
+          {hasDraft && <PmButton small disabled={busy} onClick={() => { workbench.production.setCaptionTimingDraft(stepId, undefined, identity); drafts.current.delete(stepId); initialize() }}>{t.discard}</PmButton>}
         </div>
         {storageFailure && <PmNotice tone="warn">{t.storageFailed}</PmNotice>}
         {saved && <PmNotice tone="ok">{t.saved}</PmNotice>}

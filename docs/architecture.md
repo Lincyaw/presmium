@@ -149,7 +149,7 @@ packages/addon-<ctx>/
 | `authoring*.ts`、`projects.ts`、`workspace.ts` | 作者操作与工作区 |
 | `classroom.ts`、`presenter-panels.ts`、`offline.ts`、`locale.ts` | 课堂、演讲者面板、离线、语言 |
 
-契约只做兼容扩展。`KERNEL_VERSION` 是插件契约版本，与包版本分开。
+文稿插件以结构化定义、编译步骤和运行时组件提供能力。`KERNEL_VERSION` 是插件契约版本，与包版本分开。
 
 ### 4.1 插件与服务
 
@@ -171,7 +171,11 @@ packages/addon-<ctx>/
 | `tools` | agent 工具，经 MCP 暴露 |
 | `operator` | 列在 `settings.presmium.workspace.plugins` 时每份文档都加载 |
 
+Node 入口与浏览器公开导出共用 `@lincyaw/kernel/node` 的 `packageExport`，按各自条件解析 `exports` 并校验目标在包内。
+
 插件按文稿 `plugins` 从文稿目录向上找 `node_modules`；依赖或范围不满足时报告 `presmium.plugins` 诊断，构建继续。工作区根目录取 `CompilerOptions.workspaceRoot`，否则向上找 `presmium.workspace.yaml`（不越过 git 根）；产物中的路径相对化，不随检出位置变化。
+
+文件组件的运行节点携带 `definition.kind`。插件编译步骤据此处理自己的定义种类，通用 lowering 只保留实现与参数。动画插件在普通步骤之前解析场景路径、选择场景组件并清理场景步骤参数。
 
 ### 4.3 锚点与检查
 
@@ -214,7 +218,8 @@ packages/addon-<ctx>/
 ### 4.6 执行
 
 - `RunRequest.executor` 精确选择执行器；不可用时返回 `failedRun`，回退到录制，不改用其他执行器。
-- 同一 `:session:` 的运行共享解释器状态、按序执行。
+- 同一执行会话的运行共享解释器状态、按序执行。
+- 分步执行的步数检查按沙箱实例隔离缓存，键包含文稿目录、代码、参数、事件上限和超时；每个沙箱最多保留 128 项，失败或截断的结果移出缓存。
 - `RunResult.outputs` 是 nbformat v4 输出；HTML 经 DOMPurify 清洗后显示。
 - 具名环境由头部 `execute.environments` 声明，不含凭据；凭据方式 `none`、`env`、`proxy`、`prompt`、`hub`，凭据只在服务端。
 - 编译时代码只得到清理过的 `RunContext.env`；有 `PROCESS_SANDBOX` 时经它运行。

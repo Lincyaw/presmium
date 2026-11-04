@@ -58,13 +58,13 @@ export function useRecordingAdoption({ identity, sectionId, stepId, active, disa
       if (!owns()) return
       const source = workbench.getState().authoring
       if (!source?.version || !source.fingerprint || !source.content || source.identity !== identity || source.dirty || source.saving || source.composing || source.restored || source.error) throw new Error('production-source-changed')
-      const expected = { identity, version: source.version }, inspection = await workbench.inspectDocumentAudio(target.assetId, expected, controller.signal)
+      const expected = { identity, version: source.version }, inspection = await workbench.production.inspectAudio(target.assetId, expected, controller.signal)
       if (!owns()) return
       const canonical = { documentId: source.content.id, version: source.version, fingerprint: source.fingerprint }, previous = retry.current
       sent = previous && previous.source.documentId === canonical.documentId && previous.source.version === canonical.version && previous.source.fingerprint === canonical.fingerprint && previous.stepId === target.stepId && previous.assetId === target.assetId && previous.sha256 === inspection.inspection.sha256
         ? previous : { id: requestId(), source: canonical, stepId: target.stepId, assetId: target.assetId, sha256: inspection.inspection.sha256 }
       retry.current = sent; submitted.current = sent
-      await workbench.adoptDocumentRecording(sent, expected, controller.signal)
+      await workbench.production.adoptRecording(sent, expected, controller.signal)
       if (!owns()) return
       if (retry.current === sent) retry.current = undefined
       setFailure(undefined)

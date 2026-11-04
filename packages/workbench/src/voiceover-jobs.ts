@@ -1,6 +1,6 @@
 import { errorMessage } from '@lincyaw/kernel'
 import type { VoiceoverJob } from '@lincyaw/kernel'
-import type { WorkbenchStore } from './workbench.ts'
+import type { WorkbenchStore } from './workbench-state.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 
 const active = (job: VoiceoverJob) => ['queued', 'running', 'cancelling'].includes(job.state)

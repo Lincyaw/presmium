@@ -2,6 +2,31 @@ import { existsSync, readFileSync } from 'node:fs'
 import { createRequire, findPackageJSON } from 'node:module'
 import { dirname, isAbsolute, join, relative, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { exports as resolveExports } from 'resolve.exports'
+
+/** Resolve a public package export with Node or browser conditions, retaining package-relative target validation. */
+export function packageExport(pkg: { name?: unknown, exports?: unknown }, dir: string, subpath: string, options: { browser?: boolean } = {}): string | undefined {
+  let targets: string[] | void
+  try {
+    targets = resolveExports(pkg as Parameters<typeof resolveExports>[0], subpath, options)
+  } catch {
+    return undefined
+  }
+  if (!targets?.length) return undefined
+  const base = pathToFileURL(`${dir}/`)
+  for (const target of targets) {
+    const path = target.split(/[?#]/, 1)[0]!
+    if (!path.startsWith('./') || /%2f|%5c/i.test(path)) continue
+    try {
+      const segments = path.slice(2).split(/[\\/]/).map(decodeURIComponent)
+      if (segments.some(segment => /^(?:\.{1,2}|node_modules)$/i.test(segment))) continue
+      if (new URL(target, base).href.startsWith(base.href)) return target
+    } catch {
+      // An export array may contain another valid package-relative target.
+    }
+  }
+  throw new Error(`${subpath} has no valid package-relative target`)
+}
 
 export const TYPESCRIPT_IMPORT: readonly string[] = ['--import', new URL('./strip-types.mjs', import.meta.url).href]
 

@@ -5,7 +5,7 @@ import { homedir } from 'node:os'
 import { dirname, extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { isRecord } from '@lincyaw/kernel'
-import { findInstalledPackage, FONT_LICENSE, fontLicense } from '@lincyaw/kernel/node'
+import { findInstalledPackage, FONT_LICENSE, fontLicense, packageExport } from '@lincyaw/kernel/node'
 import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 import { collectBrowserModules, emptyClientModules } from './client-modules.ts'
 
@@ -200,15 +200,9 @@ export function coreFingerprint(): string {
   return createHash('sha256').update([...versions, ...dirs.map(fingerprint)].join('\n')).digest('hex').slice(0, 16)
 }
 
-function exportTarget(value: unknown): string | undefined {
-  if (typeof value === 'string') return value
-  if (!isRecord(value)) return undefined
-  return exportTarget(value.browser) ?? exportTarget(value.import) ?? exportTarget(value.default)
-}
-
 /** The node entry of a plugin package (its `./presmium` export), loaded. */
 async function nodeEntry(dir: string, exports: Record<string, unknown>): Promise<PresmiumNodePlugin | undefined> {
-  const file = exportTarget(exports['./presmium'])
+  const file = packageExport({ exports }, dir, './presmium')
   if (!file) return undefined
   return (await import(pathToFileURL(join(dir, file)).href) as { default?: PresmiumNodePlugin }).default
 }
@@ -219,9 +213,9 @@ async function nodeEntry(dir: string, exports: Record<string, unknown>): Promise
  */
 function sharedExports(name: string, dir: string, exports: Record<string, unknown>, subpaths?: string[]): Record<string, string> {
   const shared: Record<string, string> = {}
-  for (const [subpath, value] of Object.entries(exports)) {
-    const target = exportTarget(value)
+  for (const subpath of Object.keys(exports)) {
     if (subpaths ? !subpaths.includes(subpath) : NOT_SHARED.has(subpath) || subpath.includes('*')) continue
+    const target = packageExport({ exports }, dir, subpath, { browser: true })
     if (!target || !MODULE_FILE.has(extname(target))) continue
     shared[subpath === '.' ? name : `${name}/${subpath.slice(2)}`] = join(dir, target)
   }

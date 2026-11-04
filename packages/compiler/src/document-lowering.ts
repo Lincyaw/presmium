@@ -1,6 +1,6 @@
 import { captionSourceFingerprint, documentColorValue, isRecord, voiceTarget } from '@lincyaw/kernel'
-import type { CodeNode, ComponentNode, Definition, DocumentBlock, Finding, InlineNode, IRBlock, IRSection, JsonObject, MdastNode, NarrationNode, RichTextNode, SourcePos, TeachingDocument, TextStyle, VisualState } from '@lincyaw/kernel'
-import { relative, resolve, sep } from 'node:path'
+import type { CodeNode, ComponentNode, DocumentBlock, Finding, InlineNode, IRBlock, IRSection, JsonObject, MdastNode, NarrationNode, RichTextNode, SourcePos, TeachingDocument, TextStyle, VisualState } from '@lincyaw/kernel'
+import { resolve } from 'node:path'
 
 const pointerKey = (id: string) => id.replaceAll('~', '~0').replaceAll('/', '~1')
 const source = (entry: string, pointer: string): SourcePos => ({ file: entry, line: 1, format: 'json', pointer })
@@ -30,7 +30,6 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
         const stateIndex = definition?.states.findIndex(state => state.id === visual?.state) ?? -1
         const local = stateIndex < 0 ? 0 : definition!.states[stateIndex]!.legacyIndex ?? stateIndex
         const parameters = { ...block.type === 'component' ? block.parameters : {}, ...visual?.parameters }
-        if (definition && isMotionScene(definition)) delete parameters.scene
         return { visible: visual?.visible ?? false, localStep: block.type === 'code' ? stepIndex : local, ...visual?.state !== undefined ? { state: visual.state } : {}, ...block.type === 'component' || visual?.parameters ? { parameters } : {} }
       })
       const visible = stepStates.flatMap((state, at) => state.visible ? [at] : [])
@@ -68,8 +67,8 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
           const definition = doc.definitions[block.definitionId]!
           const implementation = definition.implementation
           const data = definition.data ?? {}
-          const plugin = typeof data.plugin === 'string' ? data.plugin : implementation.type === 'plugin' ? implementation.plugin : isMotionScene(definition) ? 'presmium.motion' : 'deck'
-          const name = typeof data.name === 'string' ? data.name : implementation.type === 'plugin' ? implementation.name : isMotionScene(definition) ? 'PmScene' : `presmium-definition:${definition.id}`
+          const plugin = typeof data.plugin === 'string' ? data.plugin : implementation.type === 'plugin' ? implementation.plugin : 'deck'
+          const name = typeof data.name === 'string' ? data.name : implementation.type === 'plugin' ? implementation.name : `presmium-definition:${definition.id}`
           const node: ComponentNode = { type: 'component', plugin, name, props: { ...block.parameters }, ...block.children ? { children: block.children.map(child) } : {} }
           if (Array.isArray(data.durations) && data.durations.every(value => typeof value === 'number')) node.durations = data.durations
           if (isRecord(data.fallback) && typeof data.fallback.type === 'string') node.fallback = structuredClone(data.fallback) as MdastNode
@@ -79,14 +78,7 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
           if (implementation.type === 'file') {
             const file = resolve(deckDir, implementation.path)
             watch(file)
-            if (isMotionScene(definition)) {
-              if (implementation.exportName && implementation.exportName !== 'default') report({ checkId: 'presmium.document', severity: 'error', message: 'Motion scene files currently require their default export.', source: where })
-              const path = relative(deckDir, file).split(sep).join('/')
-              const scene = /^scenes\/([\w-]+(?:\/[\w-]+)*)\.(?:ts|js|mjs)$/.exec(path)?.[1]
-              if (scene) node.props.scene = scene
-              else report({ checkId: 'presmium.document', severity: 'error', message: 'A motion scene implementation must be a supported file below scenes/.', source: where })
-            }
-            node.definition = { file, language: typeof data.language === 'string' ? data.language : /\.[cm]?tsx?$/.test(file) ? 'typescript' : 'javascript', ...implementation.exportName !== undefined ? { exportName: implementation.exportName } : {} }
+            node.definition = { file, kind: definition.kind, language: typeof data.language === 'string' ? data.language : /\.[cm]?tsx?$/.test(file) ? 'typescript' : 'javascript', ...implementation.exportName !== undefined ? { exportName: implementation.exportName } : {} }
           }
           if (implementation.type === 'module') report({ checkId: 'presmium.document', severity: 'error', message: 'Module component implementations are not available in the current document runtime; use a project file or a registered plugin component.', source: where })
           return node
@@ -115,10 +107,6 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
     }))
     return { id: sectionId, index: index + 1, title: section.title, depth: index === 0 && (section.level ?? 1) === 1 ? 0 : section.level ?? 1, source: source(entry, `/sections/${pointerKey(sectionId)}`), steps: Math.max(0, section.stepOrder.length - 1), stepIds: [...section.stepOrder], stepNarrations, captionSources: Object.fromEntries(section.stepOrder.map(id => [id, captionSourceFingerprint(doc, id)])), hints: section.layout.renderers ?? {}, ...section.audience ? { audience: section.audience } : {}, config: { ...section.config, 'presmium.lecture': { ...section.config?.['presmium.lecture'], resolvedNarrationVoices } }, blocks }
   })
-}
-
-function isMotionScene(definition: Definition): boolean {
-  return definition.kind === 'scene' && definition.implementation.type === 'file' && (!definition.data?.plugin || definition.data.plugin === 'presmium.motion') && (!definition.data?.name || definition.data.name === 'PmScene')
 }
 
 function styled(node: MdastNode, style: TextStyle | undefined): MdastNode {

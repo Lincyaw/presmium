@@ -11,7 +11,7 @@ import { VOICE_CLONE_MESSAGES } from '../voice-clone-messages.ts'
 import { VOICE_MESSAGES, voiceFailure } from '../voice-messages.ts'
 import { prepareVoiceSnapshot, voiceSnapshotCurrent } from '../voice-snapshot.ts'
 import type { VoiceSnapshot } from '../voice-snapshot.ts'
-import { isAgentChanging } from '../workbench.ts'
+import { isAgentChanging } from '../workbench-state.ts'
 import { VoiceCloneDialog } from './VoiceCloneDialog.tsx'
 import { VoicePreviewDialog } from './VoicePreviewDialog.tsx'
 import { VoiceScopeField } from './VoiceScopeField.tsx'
@@ -84,7 +84,7 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
     const confirmation = review, generation = ++owner.current.generation
     setBusy(true); setFailure(undefined)
     try {
-      const saved = await workbench.applyDocumentVoice(confirmation.draft.scope, confirmation.draft.source, { replaceOverrides: confirmation.draft.replaceOverrides }, confirmation.expected)
+      const saved = await workbench.production.applyVoice(confirmation.draft.scope, confirmation.draft.source, { replaceOverrides: confirmation.draft.replaceOverrides }, confirmation.expected)
       if (!current() || generation !== owner.current.generation) return
       if (!saved) throw new Error('voice-context-changed')
       if (!clearVoiceDraft(workbench.client, identity, stepId, confirmation.draft)) { setStorageFailed(true); setReview(undefined); return }

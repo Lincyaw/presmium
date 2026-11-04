@@ -1,6 +1,6 @@
 import { errorMessage } from '@lincyaw/kernel'
 import type { CompileJob, JobSource } from '@lincyaw/kernel'
-import type { WorkbenchStore } from './workbench.ts'
+import type { WorkbenchStore } from './workbench-state.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 
 /** Of two copies of a job (an event and an answer cross on the way), the one of the later change. */

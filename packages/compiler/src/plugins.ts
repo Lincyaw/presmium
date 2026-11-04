@@ -3,10 +3,10 @@ import { readdir, readFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { errorMessage, isRecord, kernelIncompatibility } from '@lincyaw/kernel'
+import { packageExport } from '@lincyaw/kernel/node'
 import type { PresmiumNodePlugin, Severity } from '@lincyaw/kernel'
 import { createJiti } from 'jiti'
 import { satisfies, validRange } from 'semver'
-import { exports as resolveExports } from 'resolve.exports'
 
 export const NODE_PLUGIN_EXPORT = './presmium'
 
@@ -133,7 +133,7 @@ async function loadFrom(name: string, dir: string, problem: (severity: Severity,
       const label = typeof pkg.name === 'string' ? ` (${pkg.name}${typeof pkg.version === 'string' ? ` ${pkg.version}` : ''})` : ''
       return { problem: problem('error', `plugin "${name}"${label} is not loaded: ${peers}`) }
     }
-    const target = exportTarget(pkg, dir)
+    const target = packageExport(pkg, dir, NODE_PLUGIN_EXPORT)
     if (!target) return { loaded: { name, dir } }
     const file = fileURLToPath(new URL(target, pathToFileURL(`${dir}/`)))
     if (!existsSync(file)) {
@@ -204,35 +204,9 @@ export function findPackageDir(name: string, from: string, up = true): string | 
   }
 }
 
-function exportTarget(pkg: PluginPackage, dir: string): string | undefined {
-  let targets: string[] | void
-  try {
-    targets = resolveExports(pkg, NODE_PLUGIN_EXPORT)
-  } catch {
-    // A package with no matching Node export still contributes its components.
-    return undefined
-  }
-  if (!targets?.length) return undefined
-  const base = pathToFileURL(`${dir}/`)
-  for (const target of targets) {
-    const path = target.split(/[?#]/, 1)[0]!
-    if (!path.startsWith('./') || /%2f|%5c/i.test(path)) continue
-    try {
-      const segments = path.slice(2).split(/[\\/]/).map(decodeURIComponent)
-      if (segments.some(segment => /^(?:\.{1,2}|node_modules)$/i.test(segment))) continue
-      const normalized = new URL(target, base)
-      if (!normalized.href.startsWith(base.href)) continue
-      return target
-    } catch {
-      // Invalid URL encoding cannot name a package file; arrays may provide another target.
-    }
-  }
-  throw new Error(`${NODE_PLUGIN_EXPORT} has no valid package-relative Node target`)
-}
-
 function isNodePlugin(value: unknown): value is PresmiumNodePlugin {
   if (!isRecord(value) || typeof value.id !== 'string') return false
-  const lists = ['resolvers', 'checks', 'directives', 'passes', 'executors', 'roles', 'tools'] as const
+  const lists = ['resolvers', 'checks', 'passes', 'executors', 'tools'] as const
   const renderer = value.renderer
   return lists.every(key => value[key] === undefined || Array.isArray(value[key]))
     && ['version', 'kernel'].every(key => value[key] === undefined || typeof value[key] === 'string')

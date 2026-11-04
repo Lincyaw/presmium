@@ -67,7 +67,7 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 
 ### 2.8 行内扩展与角色
 
-扩展节点带 `kind`、`schemaVersion`、`data` 与可读 `fallback`。lowering 时 `presmium.mdast` 扩展还原为 mdast 节点，其余成为 `presmiumExtension`；讲稿的 `pronunciation`、`cue` 成为 `presmium.lecture` 的行内角色 `say`、`cue`（`PresmiumRoleNode`）。插件用 `RoleSpec.children` 给出角色在正文中的内容。
+扩展节点带 `kind`、`schemaVersion`、`data` 与可读 `fallback`。lowering 时 `presmium.mdast` 扩展还原为 mdast 节点，其余成为 `presmiumExtension`；讲稿的 `pronunciation`、`cue` 成为 `presmium.lecture` 的行内角色 `say`、`cue`（`PresmiumRoleNode`）。角色节点携带显示文字，渲染端与讲授插件直接消费结构化节点。
 
 ### 2.9 素材
 
@@ -75,7 +75,7 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 
 ### 2.10 定义与组件实例
 
-`Definition` 记录 `kind`、`schemaVersion`、实现引用（`file`、`module`、`plugin`）、参数 Schema、公开状态 `states` 与插件数据 `data`。实例只存自己的参数；改定义影响全部引用。命名状态按声明顺序派生局部步号，`legacyIndex` 只在迁移时显式保留原数字索引。组件升级移除状态或改变参数契约时产生绑定诊断。
+`Definition` 记录 `kind`、`schemaVersion`、实现引用（`file`、`module`、`plugin`）、参数 Schema、公开状态 `states` 与插件数据 `data`。实例只存自己的参数；改定义影响全部引用。命名状态按声明顺序派生局部步号，`legacyIndex` 只在迁移时显式保留原数字索引。组件升级移除状态或改变参数契约时产生绑定诊断。文件实现的运行节点保留 `definition.kind`，由插件编译步骤转换对应的定义种类；动画场景的路径、组件选择与步骤参数由动画插件处理。
 
 ### 2.11 讲授编排
 

@@ -3,7 +3,7 @@ import type { Narration, NarrationNode, TeachingDocument } from '@lincyaw/kernel
 import { randomUUID } from '@lincyaw/kernel'
 import { PmIconButton } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
-import { isAgentChanging } from '../workbench.ts'
+import { isAgentChanging } from '../workbench-state.ts'
 import { NarrationEditor } from './NarrationEditor.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
 import { narrationFieldFocus, narrationsToNative, nativeToNarrations } from './narration.ts'
@@ -43,13 +43,13 @@ function NarrationField({ identity, reset, blockId, stepId, content, readOnly, a
       const retained = new Set(Object.values(document?.steps ?? {}).filter(step => step.id !== stepId).flatMap(step => step.narrationIds))
       return new Map([...retained].flatMap(id => document!.narrations[id]!.content.flatMap(node => node.type === 'cue' ? [[node.id, id] as const] : [])))
     }}
-    onCueCopy={(from, to) => workbench.copyNarrationCueTiming(from, to, identity)}
+    onCueCopy={(from, to) => workbench.production.copyNarrationCueTiming(from, to, identity)}
     onReady={editor => {
       registration.current?.()
       fieldEditor.current = editor
-      registration.current = editor ? workbench.registerDocumentField({ identity, reset, blockId, stepId, focus: narrationFieldFocus(editor), editor }) : undefined
+      registration.current = editor ? workbench.editing.registerField({ identity, reset, blockId, stepId, focus: narrationFieldFocus(editor), editor }) : undefined
     }}
-    onFocus={() => { workbench.documentInteraction(); if (fieldEditor.current) workbench.activateDocumentHistory(fieldEditor.current); onPause() }} onChange={value => workbench.setDocumentNarrations(stepId, value, identity)}
+    onFocus={() => { workbench.editing.interact(); if (fieldEditor.current) workbench.editing.activateHistory(fieldEditor.current); onPause() }} onChange={value => workbench.production.setNarrations(stepId, value, identity)}
     onComposition={composing => workbench.documentComposition(composing, owner, identity)}
     onError={error => workbench.documentError(error)} />
 }
@@ -87,11 +87,11 @@ export function DocumentStepNarration({ blockId, sectionId, stepId, expanded, ad
         identity={source.identity!} reset={source.reset} blockId={blockId} stepId={stepId}
         content={ids.map(id => ({ id, content: document.narrations[id]!.content }))} readOnly={readOnly} advanced={advanced} onPause={onPause} />
       <StepProductionEditor key={`timing:${source.identity}:${source.reset}:${stepId}`} document={document} stepId={stepId} locale={locale} readOnly={readOnly} advanced={advanced}
-        onPause={onPause} onInteraction={() => workbench.documentInteraction()}
-        onChange={patch => workbench.setDocumentStepProduction(stepId, patch, source.identity)}
-        drafts={{ minimumHoldMs: workbench.documentTimingDraft(stepId, 'minimumHoldMs', source.identity, source.reset), trailingPauseMs: workbench.documentTimingDraft(stepId, 'trailingPauseMs', source.identity, source.reset) }}
+        onPause={onPause} onInteraction={() => workbench.editing.interact()}
+        onChange={patch => workbench.production.setStepTiming(stepId, patch, source.identity)}
+        drafts={{ minimumHoldMs: workbench.production.timingDraft(stepId, 'minimumHoldMs', source.identity, source.reset), trailingPauseMs: workbench.production.timingDraft(stepId, 'trailingPauseMs', source.identity, source.reset) }}
         draftStorageFailure={timingStorageFailure}
-        onDraft={(key, draft) => workbench.setDocumentTimingDraft(stepId, key, draft, source.identity!, source.reset)}
+        onDraft={(key, draft) => workbench.production.setTimingDraft(stepId, key, draft, source.identity!, source.reset)}
         onComposition={(key, composing) => workbench.documentComposition(composing, `production:${source.identity}:${source.reset}:${blockId}:${stepId}:${key}`, source.identity)} />
     </div>}
   </section>

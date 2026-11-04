@@ -1,25 +1,6 @@
 import { componentCode, docBlocks } from '@lincyaw/kernel'
-import type { DirectiveSpec, IRPass, MdastNode } from '@lincyaw/kernel'
+import type { IRPass, MdastNode } from '@lincyaw/kernel'
 import { EXEC_ID, paramsPrelude, shownOutput } from '../domain/index.ts'
-import { codeComponent } from './code-component.ts'
-
-export const runPanelDirective: DirectiveSpec = {
-  name: 'run-panel',
-  arg: true,
-  body: true,
-  options: { params: 'string', timeout: 'number', recorded: 'string', run: 'string' },
-  toIR(input, ctx) {
-    const when = input.options.run === undefined ? 'both' : String(input.options.run).trim()
-    if (when !== 'both' && when !== 'live') ctx.report({ checkId: 'presmium.exec.syntax', severity: 'warning', message: `{run-panel} :run: ${when} is not both or live; using both` })
-    const node = codeComponent('PmRunPanel', input, ctx, { when: when === 'live' ? 'live' : 'both' })
-    const recorded = input.options.recorded
-    if (typeof recorded === 'string') {
-      node.props.recorded = recorded
-      node.fallback?.children?.push({ type: 'code', lang: 'text', value: recorded })
-    }
-    return { node }
-  },
-}
 
 /** Gives each run panel its place in the document and its code's executor and session, which its runs send. */
 export const runPanelPass: IRPass = {

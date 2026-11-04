@@ -13,7 +13,7 @@ export interface SceneContext {
   state?: string
   /** The element the scene draws in; the scene owns its children. */
   root: HTMLElement
-  /** The length of each step of the scene (ms), from `:durations:`. */
+  /** The length of each step of the scene (ms), from the definition’s `durations`. */
   durations: readonly number[]
   /** Where step `k` starts on the scene's timeline (ms). */
   at(step: number): number

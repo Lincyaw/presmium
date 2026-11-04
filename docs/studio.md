@@ -97,6 +97,8 @@
 
 服务维护一份 `DiagnosticSnapshot`。编译、检查、预览、浏览器运行时、插件服务与作者窗口各自替换自己的一份；新编译使旧修订的失效。工作台订阅 `diagnostics/events`，MCP 的 `presmium://diagnostics` 读同一快照，dsh 每步前带至多 20 条。通知不启动模型；“让 AI 处理”由作者点击。
 
+工作台在 `workbench-state.ts` 定义各控制器共用的状态。`Workbench` 协调文稿、预览、历史与作者窗口；`DocumentEditing` 持有原生编辑器、焦点、页面操作与阅读位置恢复；`DocumentProduction` 经同一文稿事务处理媒体、字幕、音色与讲稿。面板分别调用 `editing` 与 `production`，文稿切换时各自释放所属资源。
+
 ## 6. bundle `@lincyaw/dsh`
 
 ### 6.1 形态与行
@@ -124,7 +126,7 @@
 
 - **指南**放进 system 消息，描述系统而不规定步骤：东西在哪，agent 负责什么（照要求做、不多做、不清楚先问），各工具证明什么。
 - **文稿快照**在每步之前（`agent/pre-step`）重读：文稿概况、页面、诊断、作者的位置（每轮只取一次）、焦点与浏览器反馈。浏览器反馈是观察数据，不是指令。
-- **技能**从 `@lincyaw/skills` 登记 author、animate、present、develop；用户的 `~/.agents/skills` 不进入，文稿项目的 `.agents/skills` 保留。
+- **技能**从 `@lincyaw/skills` 登记 author、animate、develop；用户的 `~/.agents/skills` 不进入，文稿项目的 `.agents/skills` 保留。
 - **角色**：web 载体用内置预设 `preset-authoring`：作者是可能不懂代码的教师，消息与批注就是要做的事；按作者看到的内容说话，不提文件、路径、语法、命令、工具与 git。
 
 ### 6.5 审阅与提交

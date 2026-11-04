@@ -22,7 +22,7 @@ runtime snapshot (`packages/kernel/src/ir.ts`).
 |---|---|
 | Architecture or design trade-off | `docs/domain-model.md`, `docs/architecture.md`, contract files, actual imports |
 | Check, build or preview fails | The user's command on a minimal document, the first diagnostic, `packages/compiler` or the failing renderer |
-| New directive, component or interaction | `presmium-develop/references/plugin.md`, a similar plugin, [packaging](references/packaging.md) |
+| New component, compilation pass or interaction | `presmium-develop/references/plugin.md`, a similar plugin, [packaging](references/packaging.md) |
 | Renderer or runtime view | `Renderer` in `packages/kernel/src/ir.ts`, `ViewerPluginContext` in `packages/viewer/src/client/viewer-plugins.ts` |
 | Editing, preview sync, agent behavior, dsh upgrade | `packages/workspace/src/node/routes.ts`, [workbench](references/workbench.md) |
 | Workbench look or a UI primitive | `docs/design-system.md`, `packages/design/src/tokens.css`, `packages/workbench/src/components.tsx` |
@@ -54,7 +54,7 @@ consume the IR. For an interactive feature also decide what a user sees in stati
 without an executor. Prefer an existing plugin, service or extension point.
 
 - Syntax, references, execution output and diagnostics belong to the compile side. Files a compile depends
-  on are registered with `ctx.watch(...)` on `DirectiveContext` or `PassContext`.
+  on are registered with `ctx.watch(...)` on `PassContext`.
 - Components get steps, configuration and services only through `@lincyaw/host`. One step gives one look,
   also after going forward and back.
 - Plugins cooperate through service contracts in `@lincyaw/kernel` or `@lincyaw/host`, never by importing

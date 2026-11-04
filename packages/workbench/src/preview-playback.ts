@@ -1,5 +1,5 @@
 import type { PreviewReport } from '@lincyaw/kernel'
-import type { PreviewSink } from './workbench.ts'
+import type { PreviewSink } from './workbench-state.ts'
 
 interface PlaybackContext { document?: string, scope: number, sinks: ReadonlySet<PreviewSink> }
 interface PendingPause {

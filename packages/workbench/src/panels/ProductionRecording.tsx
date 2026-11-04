@@ -64,7 +64,7 @@ export function ProductionRecording({ identity, sectionId, stepId, active, disab
       if (!owns()) return
       const currentSource = workbench.getState().authoring
       if (!currentSource?.version || currentSource.identity !== identity || currentSource.dirty || currentSource.saving || currentSource.composing || currentSource.restored || currentSource.error) throw new Error('production-source-changed')
-      const answer = await workbench.ensureDocumentAudio(file, { identity, version: currentSource.version }, controller.signal)
+      const answer = await workbench.production.ensureAudio(file, { identity, version: currentSource.version }, controller.signal)
       if (!owns()) return
       recording.imported(file, answer.inspection.assetId); adoption.imported(answer.inspection.assetId, selection); onImported(answer.inspection.assetId, transcriptionSelection)
     } catch (error) {

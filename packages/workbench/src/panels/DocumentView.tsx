@@ -5,7 +5,7 @@ import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { failureReason, timeAgo } from '../messages.ts'
 import { SHORTCUTS } from '../shortcuts.ts'
 import { DocumentOutline, DocumentWordCounter } from '../outline.ts'
-import { isAgentChanging } from '../workbench.ts'
+import { isAgentChanging } from '../workbench-state.ts'
 import { ExportPanel } from './ExportPanel.tsx'
 import { HistoryPanel } from './HistoryPanel.tsx'
 import type { HistoryRevisionAction } from './HistoryPanel.tsx'
@@ -238,7 +238,7 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
   const pages = editing || slides
   const top = Math.min(...items.map(item => Math.max(1, item.depth)))
   const pageActions = (item: typeof items[number], index: number) => {
-    const capability = workbench.pageEditCapability(item.id), previousPeer = index > 0, nextPeer = index < items.length - 1
+    const capability = workbench.editing.pageCapability(item.id), previousPeer = index > 0, nextPeer = index < items.length - 1
     return <PmMenu label={t.pageMore(item.title)} description={capability.reason} triggerRef={node => { if (node) menuTriggers.current.set(item.id, node); else menuTriggers.current.delete(item.id) }} items={[
       { id: 'rename', label: t.rename, icon: 'edit', disabled: !capability.rename || !canCreate || pageBusy || creating },
       { id: 'copy', label: t.pageCopy, icon: 'copy', disabled: !canCreate || pageBusy || creating },
@@ -246,19 +246,19 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
       { id: 'down', label: t.movePageDown, disabled: !capability.move || !canCreate || pageBusy || creating || !nextPeer },
       ...(canDelete ? [{ id: 'delete', label: t.pageDelete, icon: 'trash' as const, danger: true, separator: true, disabled: !canCreate || pageBusy || creating }] : []),
     ]} onSelect={id => {
-      workbench.clearPageEditFailure()
+      workbench.editing.clearFailure()
       if (id === 'rename') setRenaming({ id: item.id, title: item.title, trigger: menuTriggers.current.get(item.id) })
-      else if (id === 'copy') void workbench.duplicatePage(item.id)
+      else if (id === 'copy') void workbench.editing.duplicatePage(item.id)
       else if (id === 'delete') setDeleting({ id: item.id, title: item.title, trigger: menuTriggers.current.get(item.id) })
-      else if (id === 'up' && index > 0) void workbench.movePage(item.id, items[index - 1]!.id)
-      else if (id === 'down') void workbench.movePage(item.id, items[index + 2]?.id ?? null)
+      else if (id === 'up' && index > 0) void workbench.editing.movePage(item.id, items[index - 1]!.id)
+      else if (id === 'down') void workbench.editing.movePage(item.id, items[index + 2]?.id ?? null)
     }} />
   }
   return (
     <nav className="pmw-navigation" aria-label={t.navigation}>
       <header className="pmw-pane__header">
         <h2 className="pmw-pane__title">{editing ? t.pages : slides ? t.renderers.slides : t.navigation}</h2>
-        {editing && <PmIconButton icon="plus" label={t.newPage} small loading={creating} disabled={!canCreate || pageBusy || !items.length} onClick={() => { if (workbench.createPage()) onSelect() }} />}
+        {editing && <PmIconButton icon="plus" label={t.newPage} small loading={creating} disabled={!canCreate || pageBusy || !items.length} onClick={() => { if (workbench.editing.createPage()) onSelect() }} />}
         <PmIconButton icon="close" label={t.closeNavigation} small onClick={onClose} />
       </header>
       {failure && !renaming && !deleting && <PmNotice tone="danger">{failure}</PmNotice>}
@@ -266,13 +266,13 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
         : items.length === 0
         ? <p className="pmw-muted pmw-navigation__empty">{t.noSections}</p>
         : editing ? <PmSortableList label={t.pages} scopeKey={JSON.stringify([identity, documentId, document])} resetKey={reset} className="pmw-navigation__list" locale={locale}
-          items={items.map((item, index) => ({ id: item.id, label: item.title, prefix: item.number, reorderDisabled: !workbench.pageEditCapability(item.id).move, actions: pageActions(item, index) }))}
+          items={items.map((item, index) => ({ id: item.id, label: item.title, prefix: item.number, reorderDisabled: !workbench.editing.pageCapability(item.id).move, actions: pageActions(item, index) }))}
           value={current} reorderDisabled={reorderDisabled} loading={pageBusy || creating}
           onSelect={id => { workbench.goToSection(id); onSelect() }}
           onMove={async (id, before) => {
             const state = workbench.getState()
             if (state.document !== document || state.authoring?.identity !== identity || state.authoring?.content?.id !== documentId) return
-            if (!await workbench.movePage(id, before)) throw new Error('page-reorder-failed')
+            if (!await workbench.editing.movePage(id, before)) throw new Error('page-reorder-failed')
           }} /> : (
             <ol className="pmw-navigation__list" data-kind={pages ? 'slides' : 'headings'}>
               {items.map(item => (
@@ -291,8 +291,8 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
               ))}
             </ol>
           )}
-      {renaming && <PageRenameDialog section={renaming.id} title={renaming.title} trigger={renaming.trigger} onClose={() => { setRenaming(undefined); workbench.clearPageEditFailure() }} />}
-      {deleting && <PageDeleteDialog section={deleting.id} title={deleting.title} trigger={deleting.trigger} onClose={() => { setDeleting(undefined); workbench.clearPageEditFailure() }} />}
+      {renaming && <PageRenameDialog section={renaming.id} title={renaming.title} trigger={renaming.trigger} onClose={() => { setRenaming(undefined); workbench.editing.clearFailure() }} />}
+      {deleting && <PageDeleteDialog section={deleting.id} title={deleting.title} trigger={deleting.trigger} onClose={() => { setDeleting(undefined); workbench.editing.clearFailure() }} />}
     </nav>
   )
 }

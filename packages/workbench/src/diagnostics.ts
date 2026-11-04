@@ -1,6 +1,6 @@
 import { errorMessage } from '@lincyaw/kernel'
 import type { Diagnostic, DiagnosticSnapshot, PreviewDiagnostics } from '@lincyaw/kernel'
-import type { WorkbenchStore } from './workbench.ts'
+import type { WorkbenchStore } from './workbench-state.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 
 type Repairer = (diagnostics: readonly Diagnostic[]) => void | Promise<void>

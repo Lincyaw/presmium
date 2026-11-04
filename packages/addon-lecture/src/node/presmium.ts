@@ -7,7 +7,6 @@ import { lectureCheck } from './check.ts'
 import { defaultVideoFormat, exportVideo } from './export.ts'
 import { rememberLatestIrPass } from './latest-ir.ts'
 import { lectureRenderer } from './renderer.ts'
-import { cueRole, sayRole } from './roles.ts'
 import { lectureServer } from './routes/server.ts'
 import { LECTURE_DECK, lectureTools } from './tools.ts'
 import { productionAudioAuthoring } from './audio-authoring.ts'
@@ -49,7 +48,6 @@ const plugin: PresmiumNodePlugin = {
   checks: [lectureCheck],
   renderer: lectureRenderer,
   server: lectureServer,
-  roles: [cueRole, sayRole],
   passes: [rememberLatestIrPass],
   services: ctx => [[LECTURE_DECK, { deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot }], [VOICEOVER, { version: 1, preview: true }], [VOICEOVER_EXECUTION, voiceoverExecution(ctx)], [PRODUCTION_AUDIO_AUTHORING, productionAudioAuthoring(ctx)]],
   tools: lectureTools,

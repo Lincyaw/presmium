@@ -9,6 +9,8 @@ export interface MotionMessages {
   play: string
   pause: string
   scrub: string
+  defaultExport: string
+  scenePath: string
 }
 
 export const MOTION_MESSAGES: Record<Locale, MotionMessages> = {
@@ -21,6 +23,8 @@ export const MOTION_MESSAGES: Record<Locale, MotionMessages> = {
     play: '播放动画',
     pause: '暂停动画',
     scrub: '动画进度',
+    defaultExport: '动画场景文件必须提供默认导出。',
+    scenePath: '动画场景必须使用 scenes/ 下支持的文件格式。',
   },
   en: {
     steps: 'Animation steps',
@@ -31,5 +35,7 @@ export const MOTION_MESSAGES: Record<Locale, MotionMessages> = {
     play: 'Play Animation',
     pause: 'Pause Animation',
     scrub: 'Animation progress',
+    defaultExport: 'Motion scene files require their default export.',
+    scenePath: 'A motion scene must use a supported file below scenes/.',
   },
 }

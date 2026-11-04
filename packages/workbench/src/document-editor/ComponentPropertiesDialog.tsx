@@ -3,7 +3,7 @@ import { applyDocumentComponentAction, effectiveComponentParameters, isRecord, r
 import type { CanonicalSource, DocumentComponentAction, DocumentParameterValidation, JsonObject, TeachingDocument } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmNotice, PmSelect } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
-import { isAgentChanging } from '../workbench.ts'
+import { isAgentChanging } from '../workbench-state.ts'
 import { COMPONENT_PROPERTY_MESSAGES } from '../component-property-messages.ts'
 import type { ComponentPropertyMessages } from '../component-property-messages.ts'
 import { componentPropertyAction, componentSource, rebaseComponentPropertyDraft, sameComponentSource } from '../component-properties.ts'

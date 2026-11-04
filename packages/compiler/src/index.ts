@@ -6,8 +6,6 @@ export { Compiler, DECK_ENTRY, resolveEntry, sortFindings, workspacePlugins } fr
 export type { Compilation, CompileOptions, CompilerOptions, DocumentNodeServices } from './compiler.ts'
 export { dev } from './dev.ts'
 export type { DevOptions, DevServers } from './dev.ts'
-export { BUILTIN_DIRECTIVE_INFO, COMMON_DIRECTIVE_OPTIONS, RUN_OPTION } from './directives.ts'
-export type { DirectiveInfo, DirectiveOptionInfo } from './directives.ts'
 export type { RunStats } from './execute.ts'
 export type { GitRead } from './inputs.ts'
 export { pluginLogger } from './logging.ts'

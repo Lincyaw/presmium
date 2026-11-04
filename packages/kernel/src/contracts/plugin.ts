@@ -1,4 +1,4 @@
-import type { CanonicalSource, DirectiveSpec, IRDocument, IRPass, Renderer, RendererContribution, RoleSpec } from '../ir.ts'
+import type { CanonicalSource, IRDocument, IRPass, Renderer, RendererContribution } from '../ir.ts'
 import type { AgentTool } from './agent.ts'
 import type { AnchorResolver, AnchorString } from './anchors.ts'
 import type { Check, CheckContext } from './checks.ts'
@@ -159,7 +159,6 @@ export interface PresmiumNodePlugin {
   resolvers?: AnchorResolver[]
   checks?: Check[]
   anchors?(ctx: CheckContext): AnchorString[] | Promise<AnchorString[]>
-  directives?: DirectiveSpec[]
   passes?: IRPass[]
   executors?: Executor[]
   renderer?: Renderer
@@ -177,7 +176,6 @@ export interface PresmiumNodePlugin {
   services?(ctx: NodeServiceContext): [ServiceToken<unknown>, unknown][]
   environments?: Record<string, EnvironmentProvider>
   server?(ctx: ServerContext): ServerContribution | Promise<ServerContribution>
-  roles?: RoleSpec[]
   tools?: AgentTool[]
   operator?: boolean
 }

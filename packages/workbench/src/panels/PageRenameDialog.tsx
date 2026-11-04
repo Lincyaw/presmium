@@ -15,7 +15,7 @@ export function PageRenameDialog({ section, title: original, trigger, onClose }:
     }} onSubmit={event => {
       event.preventDefault()
       if (busy || !title.trim()) return
-      void workbench.renamePage(section, title.trim()).then(saved => { if (saved) onClose() })
+      void workbench.editing.renamePage(section, title.trim()).then(saved => { if (saved) onClose() })
     }}>
       <PmInput label={t.pageTitle} density="regular" value={title} error={failure} required autoFocus readOnly={busy} onChange={event => setTitle(event.target.value)} />
       <div className="pmw-operation__actions">

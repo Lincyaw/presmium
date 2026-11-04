@@ -3,7 +3,7 @@ import { PmBadge, PmButton, PmEmpty, PmIcon, PmIconButton, PmNotice } from '../c
 import type { IconName } from '@lincyaw/design'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
-import { isAgentChanging } from '../workbench.ts'
+import { isAgentChanging } from '../workbench-state.ts'
 
 /** A host-owned operation on a version, such as restoring an entire saved snapshot. This never replaces selective undo. */
 export interface HistoryRevisionAction {

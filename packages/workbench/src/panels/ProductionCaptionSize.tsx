@@ -13,7 +13,7 @@ export function ProductionCaptionSize({ identity, document, disabled, onChanged 
   return <PmField label={p.captionSize} group hint={p.captionSizeHint}>
     <div className="pm-ui-range-row">
       <PmRange label={p.captionSize} value={percent} min={Math.round(CAPTION_SCALE_MIN * 100)} max={Math.round(CAPTION_SCALE_MAX * 100)} step={10} disabled={disabled} valueText={value => `${Math.round(value)}%`}
-        onPreviewChange={setPreview} onValueCommit={value => { workbench.setDocumentCaptionScale(value / 100, identity); onChanged() }} />
+        onPreviewChange={setPreview} onValueCommit={value => { workbench.production.setCaptionScale(value / 100, identity); onChanged() }} />
       <output>{Math.round(preview ?? percent)}%</output>
     </div>
   </PmField>

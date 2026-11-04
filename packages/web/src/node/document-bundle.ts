@@ -54,6 +54,8 @@ export function documentComponents(doc: IRDocument | undefined): DocumentCompone
   for (const section of doc?.sections ?? []) for (const block of irBlocks(section.blocks)) {
     const node = block.node
     if (node.type !== 'component' || node.plugin !== 'deck' || !node.definition) continue
+    // Other definition kinds are claimed by their plugins, rather than invoked as React components.
+    if (node.definition.kind !== undefined && node.definition.kind !== 'component') continue
     const component = { name: node.name, file: node.definition.file, ...node.definition.exportName !== undefined ? { exportName: node.definition.exportName } : {} }
     const known = found.get(component.name)
     if (known && (known.file !== component.file || known.exportName !== component.exportName)) throw new Error(`Document component ${component.name} names multiple implementations.`)

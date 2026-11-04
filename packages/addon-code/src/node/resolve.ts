@@ -4,7 +4,6 @@ import { deckLocale, docBlocks, errorMessage, isRenderable } from '@lincyaw/kern
 import type { AnchorString, CodeNode, CodeVariant, IRDocument, IRPass, PassContext, Resolution, ResolutionStatus, ResolvedLocation, Severity } from '@lincyaw/kernel'
 import { CODE_MESSAGES, CodeRefError, driftDiff, highlightSteps, originUnits, permalink, repoWebUrl, splitTarget, toCodeConfig, toSnippet } from '../domain/index.ts'
 import type { CodeRefSpec } from '../domain/index.ts'
-import { codeRefs } from './directive.ts'
 import { openGitTree } from './git-tree.ts'
 import type { GitTree, Repository } from './git-tree.ts'
 
@@ -27,7 +26,7 @@ export const codeRefPass: IRPass = {
     const tree: GitTree = { ...own, src: { read: (file, ref) => (ref === undefined ? ctx.src.read(file) : own.src.read(file, ref)) } }
     for (const { section, block } of docBlocks(doc)) {
       const reference = block.node.type === 'code' ? block.node.reference : undefined
-      const spec = block.node.type === 'code' ? codeRefs.get(block.node) ?? (reference ? { anchor: reference.anchor, ...reference.pin ? { pin: reference.pin } : {}, ...reference.repo ? { repo: reference.repo } : {}, ...reference.highlightRegions ? { steps: reference.highlightRegions } : {} } : undefined) : undefined
+      const spec: CodeRefSpec | undefined = reference ? { anchor: reference.anchor, ...reference.pin ? { pin: reference.pin } : {}, ...reference.repo ? { repo: reference.repo } : {}, ...reference.highlightRegions ? { steps: reference.highlightRegions } : {} } : undefined
       if (!spec) continue
       const report: Report = (checkId, severity, message, hint) =>
         ctx.report({ checkId, severity, message, source: { ...block.source }, ...hint ? { hint } : {} })

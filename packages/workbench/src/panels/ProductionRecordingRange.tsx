@@ -63,7 +63,7 @@ export function ProductionRecordingRange({ identity, sectionId, stepId, active, 
     const version = source?.version, assetId = voice?.assetId, controller = new AbortController()
     if (!active || !version || !assetId || disabled) { setLoading(false); return }
     setLoading(true)
-    void workbench.inspectDocumentAudio(assetId, { identity, version }, controller.signal).then(answer => {
+    void workbench.production.inspectAudio(assetId, { identity, version }, controller.signal).then(answer => {
       if (!controller.signal.aborted && current() && latest.current.key === key) setInspection({ version: answer.version, value: answer.inspection })
     }, error => { if (!controller.signal.aborted && current() && latest.current.key === key) setFailure(failureText(error)) })
       .finally(() => { if (!controller.signal.aborted && current() && latest.current.key === key) setLoading(false) })
@@ -85,7 +85,7 @@ export function ProductionRecordingRange({ identity, sectionId, stepId, active, 
     const stored = drafts.current.get(key) ?? draft
     drafts.current.set(key, stored); sent.current = { key, draft: stored, request: change }; request.current = controller
     setBusy(true); setFailure(undefined)
-    try { await workbench.adoptDocumentRecording(change, { identity, version: source.version }, controller.signal); if (current()) settle() }
+    try { await workbench.production.adoptRecording(change, { identity, version: source.version }, controller.signal); if (current()) settle() }
     catch (error) { if (current() && request.current === controller && !settle() && !controller.signal.aborted) setFailure(failureText(error)) }
     finally { if (request.current === controller) { request.current = undefined; if (current()) setBusy(false) } }
   }

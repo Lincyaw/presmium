@@ -1,35 +1,20 @@
 import { componentCode, docBlocks, PROCESS_SANDBOX } from '@lincyaw/kernel'
-import type { DirectiveSpec, IRPass, ProcessSandbox } from '@lincyaw/kernel'
-import { minimalRunEnv } from '@lincyaw/kernel/node'
+import type { IRPass, ProcessSandbox } from '@lincyaw/kernel'
+import { directSandbox, minimalRunEnv } from '@lincyaw/kernel/node'
 import { configuredTimeout, EXEC_ID, execConfig, isPython, stringArgs } from '../domain/index.ts'
-import { codeComponent } from './code-component.ts'
 import { pythonExecutor } from './python.ts'
 
-export const stepRunDirective: DirectiveSpec = {
-  name: 'step-run',
-  arg: true,
-  body: true,
-  options: { steps: 'number', params: 'string', timeout: 'number' },
-  toIR(input, ctx) {
-    const node = codeComponent('PmStepRun', input, ctx)
-    const steps = Number(input.options.steps)
-    if (!Number.isInteger(steps) || steps < 1) {
-      ctx.report({ checkId: 'presmium.exec.syntax', severity: 'warning', message: '{step-run} needs :steps:, the number of lines the code executes; without it the slide has no steps' })
-      return { node }
-    }
-    node.props.steps = steps
-    return { node, span: steps }
-  },
-}
+const TRACE_CACHE_SIZE = 128
+const traces = new WeakMap<ProcessSandbox, Map<string, Promise<number | undefined>>>()
 
-const traced = new Map<string, Promise<number | undefined>>()
-
-function traceLength(code: string, args: Record<string, string>, maxEvents: number, timeoutMs: number, sandbox: ProcessSandbox | undefined): Promise<number | undefined> {
-  const key = JSON.stringify([code, args, maxEvents])
-  let found = traced.get(key)
+async function traceLength(deckDir: string, code: string, args: Record<string, string>, maxEvents: number, timeoutMs: number, sandbox: ProcessSandbox): Promise<number | undefined> {
+  let cache = traces.get(sandbox)
+  if (!cache) traces.set(sandbox, cache = new Map())
+  const key = JSON.stringify([deckDir, code, args, maxEvents, timeoutMs])
+  let found = cache.get(key)
   if (!found) {
     const program = `import __main__\nprint(__main__._pm_trace(${JSON.stringify(code)}, ${JSON.stringify(JSON.stringify(args))}, '', '{}', ${maxEvents}))\n`
-    found = pythonExecutor.run({ lang: 'python', code: program, timeoutMs }, undefined, { env: minimalRunEnv(), ...sandbox ? { sandbox } : {} }).then((result) => {
+    found = pythonExecutor.run({ lang: 'python', code: program, timeoutMs }, undefined, { env: minimalRunEnv(), sandbox }).then((result) => {
       if (!result.ok) return undefined
       try {
         const trace = JSON.parse(result.stdout) as { events: unknown[], truncated: boolean }
@@ -38,9 +23,12 @@ function traceLength(code: string, args: Record<string, string>, maxEvents: numb
         return undefined
       }
     })
-    traced.set(key, found)
+    cache.set(key, found)
+    while (cache.size > TRACE_CACHE_SIZE) cache.delete(cache.keys().next().value!)
   }
-  return found
+  let length: number | undefined
+  try { return length = await found }
+  finally { if (length === undefined && cache.get(key) === found) cache.delete(key) }
 }
 
 /** Warns when a step run declares another number of steps than the lines its code executes. */
@@ -50,14 +38,14 @@ export const stepCountPass: IRPass = {
   async run(doc, ctx) {
     if (!pythonExecutor.supports('python')) return
     const { maxTraceEvents } = execConfig(ctx.config)
-    const sandbox = ctx.service?.(PROCESS_SANDBOX)
+    const sandbox = ctx.service?.(PROCESS_SANDBOX) ?? directSandbox
     for (const { section, block } of docBlocks(doc)) {
       const { node } = block
       if (node.type !== 'component' || node.plugin !== EXEC_ID || node.name !== 'PmStepRun' || typeof node.props.steps !== 'number') continue
       const code = componentCode(node)
       if (!code || !isPython(code.lang)) continue
       const timeoutMs = (typeof node.props.timeout === 'number' ? node.props.timeout : undefined) ?? configuredTimeout(ctx.configFor(section)) ?? execConfig(ctx.config).timeoutMs
-      const lines = await traceLength(code.value, stringArgs(node.props.params as Record<string, unknown> | undefined), maxTraceEvents, timeoutMs, sandbox)
+      const lines = await traceLength(ctx.deckDir, code.value, stringArgs(node.props.params as Record<string, unknown> | undefined), maxTraceEvents, timeoutMs, sandbox)
       if (lines === undefined || lines === node.props.steps) continue
       ctx.report({
         checkId: 'presmium.exec',

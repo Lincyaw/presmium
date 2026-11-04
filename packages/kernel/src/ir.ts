@@ -168,46 +168,7 @@ export interface ComponentNode {
   layer?: 'overlay'
   durations?: number[]
   /** The authored code that defines this component instance, when supplied by its plugin. */
-  definition?: { file: string, language: string, exportName?: string }
-}
-
-export type DirectiveOptionType = 'string' | 'number' | 'boolean' | 'list'
-
-export interface DirectiveInput {
-  name: string
-  arg?: string
-  options: Record<string, unknown>
-  body: string
-}
-
-export interface DirectiveContext {
-  file: string
-  deckDir: string
-  workspaceRoot: string
-  lang?: string
-  config: Record<string, unknown>
-  source: SourcePos
-  parse(markdown: string): MdastNode
-  report(finding: Finding): void
-  watch(...files: string[]): void
-}
-
-export interface DirectiveResult {
-  node: IRNode
-  role?: BlockRole
-  span?: number
-}
-
-export interface RoleInput {
-  name: string
-  value: string
-  options: Record<string, unknown>
-}
-
-export interface RoleSpec {
-  name: string
-  options?: Record<string, DirectiveOptionType>
-  children?(input: RoleInput, ctx: DirectiveContext): MdastNode[]
+  definition?: { file: string, language: string, exportName?: string, kind?: string }
 }
 
 export interface PresmiumRoleNode extends MdastNode {
@@ -216,14 +177,6 @@ export interface PresmiumRoleNode extends MdastNode {
   name: string
   options: Record<string, unknown>
   children: MdastNode[]
-}
-
-export interface DirectiveSpec {
-  name: string
-  arg?: boolean | 'anchor'
-  body?: boolean
-  options?: Record<string, DirectiveOptionType>
-  toIR(input: DirectiveInput, ctx: DirectiveContext): DirectiveResult | Promise<DirectiveResult>
 }
 
 export interface RunCache {

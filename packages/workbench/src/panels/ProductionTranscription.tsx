@@ -82,7 +82,7 @@ export function ProductionTranscription({ identity, directory, document, section
     const controller = new AbortController(); importRequest.current = controller; setImporting(true); setFailure(undefined)
     pendingFile.current = value
     try {
-      const answer = await workbench.ensureDocumentAudio(value, { identity, version: now.version }, controller.signal)
+      const answer = await workbench.production.ensureAudio(value, { identity, version: now.version }, controller.signal)
       if (current() && !controller.signal.aborted) { setAssetId(answer.inspection.assetId); pendingFile.current = undefined }
     } catch (error) { if (current() && !controller.signal.aborted) setFailure(transcriptionFailure(error, locale)) }
     finally { if (importRequest.current === controller) { importRequest.current = undefined; if (current()) setImporting(false) } }
@@ -93,10 +93,10 @@ export function ProductionTranscription({ identity, directory, document, section
     const controller = new AbortController(); inspectionRequest.current = controller; setInspecting(true)
     setFailure(undefined)
     try {
-      const expected = { identity, version: now.version }, audio = await workbench.inspectDocumentAudio(assetId, expected, controller.signal)
+      const expected = { identity, version: now.version }, audio = await workbench.production.inspectAudio(assetId, expected, controller.signal)
       if (!current() || controller.signal.aborted) return
       const request: DocumentTranscriptionRequest = { intent: `transcription_${randomUUID()}`, source: { documentId: now.content.id, version: now.version, fingerprint: now.fingerprint }, assetId, audioSha256: audio.inspection.sha256, engine, lang: now.content.metadata.lang, confirmed: true }
-      await session.start(request, () => workbench.startDocumentTranscription(request, expected))
+      await session.start(request, () => workbench.production.startTranscription(request, expected))
     } catch (error) { if (current() && !controller.signal.aborted) setFailure(transcriptionFailure(error, locale)) }
     finally { if (inspectionRequest.current === controller) { inspectionRequest.current = undefined; if (current()) setInspecting(false) } }
   }

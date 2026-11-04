@@ -12,7 +12,7 @@ export function PageDeleteDialog({ section, title, trigger, onClose }: { section
   useEffect(() => {
     let current = true
     setLoading(true); setError(undefined)
-    void workbench.preparePageDeletion(section).then(answer => { if (current) setPlan(answer) }, () => { if (current) setError(t.pageEditRequestFailed) }).finally(() => { if (current) setLoading(false) })
+    void workbench.editing.preparePageDeletion(section).then(answer => { if (current) setPlan(answer) }, () => { if (current) setError(t.pageEditRequestFailed) }).finally(() => { if (current) setLoading(false) })
     return () => { current = false }
   }, [workbench, section, attempt])
   return <PmDialog open label={t.pageDeleteTitle(title)} description={plan ? t.pageDeleteHint(plan.counts.steps, plan.counts.narration) : t.pageDeleteLoading} busy={busy} closeLabel={t.close} onClose={onClose} onCloseAutoFocus={event => {
@@ -21,12 +21,12 @@ export function PageDeleteDialog({ section, title, trigger, onClose }: { section
   }}>
     <div className="pmw-operation">
       {plan?.last && <PmNotice>{t.pageDeleteLast}</PmNotice>}
-      {plan && !plan.allowed && <PmNotice tone="warn">{workbench.pageDeleteMessage(plan.reason ?? 'page-boundary')}</PmNotice>}
+      {plan && !plan.allowed && <PmNotice tone="warn">{workbench.editing.deletionMessage(plan.reason ?? 'page-boundary')}</PmNotice>}
       {(error || failure) && <PmNotice tone="danger">{error || failure}</PmNotice>}
       <div className="pmw-operation__actions">
         <PmButton disabled={busy} onClick={onClose}>{t.cancel}</PmButton>
-        {error || failure ? <PmButton disabled={busy} onClick={() => { workbench.clearPageEditFailure(); setAttempt(value => value + 1) }}>{t.retry}</PmButton>
-          : <PmButton variant="danger" loading={loading || busy} disabled={!plan?.allowed || loading} onClick={() => { if (plan) void workbench.deletePage(plan).then(saved => { if (saved) onClose() }) }}>{t.pageDelete}</PmButton>}
+        {error || failure ? <PmButton disabled={busy} onClick={() => { workbench.editing.clearFailure(); setAttempt(value => value + 1) }}>{t.retry}</PmButton>
+          : <PmButton variant="danger" loading={loading || busy} disabled={!plan?.allowed || loading} onClick={() => { if (plan) void workbench.editing.deletePage(plan).then(saved => { if (saved) onClose() }) }}>{t.pageDelete}</PmButton>}
       </div>
     </div>
   </PmDialog>

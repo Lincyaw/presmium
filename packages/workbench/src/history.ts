@@ -1,6 +1,6 @@
 import { errorMessage, randomUUID } from '@lincyaw/kernel'
 import type { RevertResult, ReviewChange, ReviewSnapshot, ReviewUpdate } from '@lincyaw/kernel'
-import type { WorkbenchStore } from './workbench.ts'
+import type { WorkbenchStore } from './workbench-state.ts'
 import { WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 

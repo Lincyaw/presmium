@@ -4,8 +4,9 @@ import type { ProductionPlan, ProductionPlaybackPosition, VoiceoverJob } from '@
 import { useWorkbench, useWorkbenchState } from './context.tsx'
 import { prepareVoiceSnapshot, voiceSnapshotCurrent } from './voice-snapshot.ts'
 import { voiceFailure } from './voice-messages.ts'
-import type { Workbench, WorkbenchState } from './workbench.ts'
-import { isAgentChanging } from './workbench.ts'
+import type { Workbench } from './workbench.ts'
+import type { WorkbenchState } from './workbench-state.ts'
+import { isAgentChanging } from './workbench-state.ts'
 
 const running = (job: VoiceoverJob) => ['queued', 'running', 'cancelling'].includes(job.state)
 

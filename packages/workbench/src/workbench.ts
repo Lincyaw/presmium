@@ -1,9 +1,9 @@
-import { applyDocumentCaptionTiming, changeDocumentCaptionScale, randomUUID, replaceStepNarrations, validateDocument } from '@lincyaw/kernel'
-import type { DocumentCaptionTimingAction } from '@lincyaw/kernel'
-import { reconcileCaptionTiming } from './caption-timing.ts'
+import { DocumentProduction } from './document-production.ts'
+import { DocumentEditing } from './document-editing.ts'
+import { isAgentChanging } from './workbench-state.ts'
+import type { AgentAnswer, AgentDraft, AgentRequest, PlaybackKey, Pointer, PreviewSink, WebView, WorkbenchMode, WorkbenchState, WorkbenchStore } from './workbench-state.ts'
+import { randomUUID } from '@lincyaw/kernel'
 import type { ProjectOperation, ProjectPlan } from '@lincyaw/kernel'
-import { undoDepth, redoDepth } from '@tiptap/pm/history'
-import { TextSelection } from '@tiptap/pm/state'
 import { CommentDraftBank } from './document-editor/comment-drafts.ts'
 import { ComponentPropertyDrafts } from './component-property-drafts.ts'
 import type { ComponentPropertyDraft } from './component-property-drafts.ts'
@@ -15,42 +15,25 @@ import { mutateCommentDrafts } from './document-editor/comment-draft-actions.ts'
 import { inspectComponentDrafts } from './component-draft-inspection.ts'
 import { mutateComponentDrafts } from './component-draft-actions.ts'
 import { DocumentSession } from './document-session.ts'
-import { sha256 } from './sha256.ts'
-import { reconcileRecordingAdoption } from './recording-adoption.ts'
 import { disposeTranscriptionSessions } from './transcription-session.ts'
 import { documentRecordingActive, disposeDocumentRecordings } from './audio-recording.ts'
-import { DOCUMENT_AUDIO_MAX_BYTES } from '@lincyaw/kernel'
 import type { DocumentSessionState } from './document-session.ts'
 import type { DocumentDraftReference } from './document-drafts.ts'
-import { DocumentReturnPoints, documentReturnStep, documentViewportOffset, restoreDocumentViewport } from './document-return-point.ts'
 import type { DocumentReturnPoint } from './document-return-point.ts'
-import type { DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentChangeAnswer, MediaClip, Narration, TeachingDocument, DocumentTranscriptionRequest, TranscriptionTask, TranscriptionAdoptionDraft, TranscriptionAdoptionApply, TranscriptionAdoptionPlan, TranscriptionAdoptionAnswer } from '@lincyaw/kernel'
-import type { NativeDocumentEditor } from './document-editor/schema.tsx'
-import type { DocumentEditorCommands } from './document-editor/DocumentEditor.tsx'
+import type { DocumentChangeAnswer, TeachingDocument } from '@lincyaw/kernel'
 import type { DocumentInsertionPlace } from './document-editor/insertion-place.ts'
-import { nativeBlockText, nativeTextPoint, nativeTextPosition } from './document-editor/selection.ts'
-import type { NativeTextPoint } from './document-editor/selection.ts'
-import type { DocumentFieldBookmark, DocumentFieldRegistration, DocumentHistoryEditor } from './document-editor/focus.ts'
-import { duplicateDocumentPage, moveDocumentPage, pageDeletion, removeDocumentPage, renameDocumentPage } from '@lincyaw/kernel'
-import { changeStepTiming } from './step-production.ts'
-import { changeDocumentVoice } from './document-voices.ts'
-import type { DocumentVoiceOptions, DocumentVoiceScope } from './document-voices.ts'
-import type { CanonicalSource, VoiceoverJob, VoiceSource } from '@lincyaw/kernel'
-import type { StepDurationDraft, StepDurationKey, StepTimingPatch } from './step-production.ts'
-import { DocumentTimingDrafts } from './document-timing-drafts.ts'
-import { CaptionTimingDrafts } from './caption-timing-drafts.ts'
-import type { CaptionTimingDraft } from './caption-timing-drafts.ts'
+import type { CanonicalSource, VoiceoverJob } from '@lincyaw/kernel'
 import { compileDocumentPreview, readPreviewWhenReady, waitForPreviewRequest } from './document-preview.ts'
 import { readDocumentSnapshot } from './document-preview.ts'
 import { errorMessage, sameProductionBinding, slideShape, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
-import type { Diagnostic, DiagnosticSnapshot, DocumentOperation, DocumentsAnswer, Focus, FocusReport, IrAnswer, IrEvent, IRDocument, JobsAnswer, OperationAnswer, PreviewAnchor, PreviewAnswer, PreviewCommand, PreviewDiagnostics, PreviewPoint, PreviewPosition, PreviewRect, PreviewRenderer, PreviewReport, ReviewChange, ReviewSnapshot, RevisionsAnswer, UncommittedFile } from '@lincyaw/kernel'
+import type { Diagnostic, Focus, FocusReport, IrAnswer, IrEvent, OperationAnswer, PreviewAnchor, PreviewCommand, PreviewDiagnostics, PreviewRenderer, PreviewReport, ReviewChange } from '@lincyaw/kernel'
 import { DocumentDiagnostics } from './diagnostics.ts'
 import { DocumentHistory } from './history.ts'
 import { DocumentJobs } from './jobs.ts'
 import { VoiceoverJobs } from './voiceover-jobs.ts'
-import { contentText, localeOf, MESSAGES } from './messages.ts'
+import { localeOf, MESSAGES } from './messages.ts'
 import type { AgentPlace, Locale } from './messages.ts'
-import { changedPlaces, findPlaceAtLine, findPlaceSource } from './places.ts'
+import { changedPlaces, findPlaceAtLine } from './places.ts'
 import { OperationLog } from './telemetry.ts'
 import type { OperationValue } from './telemetry.ts'
 import { PreviewPlayback } from './preview-playback.ts'
@@ -58,167 +41,14 @@ import { ProductionPlayback } from './production-playback.ts'
 import type { ProductionBinding, ProductionPlan, ProductionPlaybackCommand, ProductionPlaybackState } from '@lincyaw/kernel'
 import { workspaceClient, WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
-import type { PageDeletePlan } from '@lincyaw/kernel'
 import type { AuthoringClientAction, AuthoringClientActionResult, AuthoringClientSnapshot } from '@lincyaw/kernel'
 import { PRODUCTION_PLAYBACK_RATES } from '@lincyaw/kernel'
-
-/** `editing`: the canonical document is edited in the parent; `viewing`: a derived snapshot is presented. */
-export type WorkbenchMode = 'editing' | 'viewing'
-
-/**
- * How the web form is shown: as a page or as its presentation, whose controls can play a configured lecture.
- * Both share one preview page and switch in place with `go.view`.
- */
-export type WebView = 'document' | 'present'
-
-/** A playback key pressed in a preview that the workbench plays: Space, and the left and right arrows. */
-export type PlaybackKey = 'play-pause' | 'previous' | 'next'
-
-/** What the author points at in the document: a block (or a section), or a passage selected in it. */
-export interface Pointer {
-  target: PreviewAnchor
-  step?: number
-  /** The selected passage. */
-  quote?: string
-  /** Its box in the preview's viewport; none while it is out of sight. */
-  rect?: PreviewRect
-  obstacles?: PreviewRect[]
-  point?: PreviewPoint
-  /** Its text can be edited in place. */
-  isEditable: boolean
-}
-
-export type SaveState =
-  | { kind: 'idle' }
-  | { kind: 'saving' }
-  | { kind: 'saved', at: string }
-  | { kind: 'locked' }
-  | { kind: 'failed', message: string }
-
-/** A request for the agent of the conversation: its text and what it is about. */
-export interface AgentRequest {
-  text: string
-  focus: FocusReport[]
-}
-
-/** A request for the author to finish and send in the conversation, and what it is about: the host only shows it. */
-export interface AgentDraft {
-  text: string
-  focus: FocusReport[]
-}
-
-/** Where the host put a request: the conversation's session and the request's id, which its user message carries. */
-export interface AgentAnswer {
-  session: string
-  request: string
-}
-
-export interface WorkbenchState {
-  locale: Locale
-  authoring?: DocumentSessionState
-  /** Unaccepted numeric form input is retained separately from saved canonical timing. */
-  hasDocumentTimingDrafts?: boolean
-  documentTimingDraftStorageFailure?: boolean
-  captionTimingDraftSteps?: string[]
-  captionTimingDraftStorageFailure?: boolean
-  isDark: boolean
-  documents?: DocumentsAnswer
-  documentsFailure?: string
-  /** The workspace's routes answer 404: `@lincyaw/dsh` is turned off on the plugins page. */
-  isBundleDisabled?: boolean
-  document?: string
-  ir?: IrAnswer
-  mode: WorkbenchMode
-  previewRenderer: PreviewRenderer
-  /** In the web form: the page or the presentation, both in the same page, switched without loading it again. */
-  webView: WebView
-  previewReload: number
-  preview?: PreviewAnswer
-  previewFailure?: string
-  /** The IR revision the preview shows. */
-  previewIrRevision?: string
-  isPreparingPresentation?: boolean
-  presentationFailure?: string
-  presentationSnapshot?: { version: string, fingerprint: string, revision: string, project: number }
-  productionPlan?: ProductionPlan
-  productionPlayback?: ProductionPlaybackState
-  productionFailure?: string
-  voiceoverJobs?: VoiceoverJob[]
-  voiceoverJobsFailure?: string
-  /** A cache refresh that actually changed the current production binding; it never starts playback. */
-  voiceoverCacheRefresh?: { source: CanonicalSource, revision: string, sequence: number }
-  /** Changes when an acknowledged preview connection is attached or detached, including same-revision reloads. */
-  previewConnection: number
-  /** Where the preview is: the section the author reads, or the slide and its step. */
-  position?: PreviewPosition
-  /** Changes on every position intent, including A → B → A, without changing the source. */
-  documentPositionToken: string
-  /** Explicit author navigation, distinct from the player's passive cursor and frame reload reports. */
-  productionNavigationVersion: number
-  documentPositionIntent: 'seek' | 'pause'
-  /** An explicit source navigation request; scrolling updates position without issuing another request. */
-  documentNavigation?: { section: string, block?: string, request: string }
-  documentPositionFailure?: 'removed'
-  isCreatingPage?: boolean
-  isEditingPage?: boolean
-  editorHistory?: EditorHistoryState
-  isHistoryPreparing?: boolean
-  pageEditFailure?: string
-  diagnostics?: DiagnosticSnapshot
-  isDiagnosticsUnavailable: boolean
-  canRepairDiagnostics: boolean
-  isRepairingDiagnostics: boolean
-  diagnosticsRepairFailure?: string
-  pointer?: Pointer
-  save: SaveState
-  /** What the conversation's agent is told the author points at. */
-  focus: FocusReport[]
-  isFocusPending: boolean
-  focusFailure?: string
-  review?: ReviewSnapshot
-  history?: RevisionsAnswer
-  /** Files changed elsewhere and not yet in the history. */
-  outside?: UncommittedFile[]
-  historyFailure?: string
-  isHistoryBusy: boolean
-  isAsking: boolean
-  askFailure?: string
-  /** What the document can be made into, and its builds and exports (the author's and the AI's). */
-  jobs?: JobsAnswer
-  jobsFailure?: string
-  voiceServiceVersion?: number
-  jobPreparing?: { target: string, canCancel: boolean }
-}
-
-export interface PreviewSink {
-  readonly generation?: number
-  readonly capabilities?: readonly PreviewCommand['type'][]
-  send(command: PreviewCommand): void
-}
-
-export interface EditorHistoryState { section: string, undo: boolean, redo: boolean, field?: boolean }
 
 type Listener = () => void
 const sameSource = (a: CanonicalSource, b: CanonicalSource) => a.documentId === b.documentId && a.version === b.version && a.fingerprint === b.fingerprint
 
-/** The workbench's state as its parts read and change it. */
-export interface WorkbenchStore {
-  readonly state: WorkbenchState
-  set(patch: Partial<WorkbenchState>): void
-}
-
 // The export of the lecture as a video (`@lincyaw/addon-lecture`).
 export const VIDEO_TARGET = 'video'
-
-/** The document the conversation works on: none when no document is open. */
-export function selectedDocument(state: WorkbenchState): string | null {
-  return state.document ?? null
-}
-
-/** Whether the AI is changing the workspace now, or its change waits for the author. */
-export function isAgentChanging(state: WorkbenchState): boolean {
-  return Boolean(state.review?.engine === 'git' && (state.review.running || state.review.changes.length > 0))
-}
 
 /** Whether the document has a slides form (no renderers listed: every form). */
 export function hasSlides(ir: IrAnswer | undefined): boolean {
@@ -274,31 +104,9 @@ export function documentDirFor(title: string, taken: readonly string[]): string 
 export class Workbench {
   readonly client: WorkspaceClient
   readonly #documentSession: DocumentSession
-  readonly #audioImports = new WeakMap<File, { identity: string, version: string, id: string }>()
-  readonly #audioFingerprints = new WeakMap<File, Promise<string>>()
-  readonly #documentTimingDrafts = new DocumentTimingDrafts()
-  readonly #captionTimingDrafts = new CaptionTimingDrafts()
-  readonly #removedCueTimings = new Map<string, { pauseMs: number }>()
-  readonly #removedNarrations = new Map<string, { narration: Narration, override?: { narrationStart: 'with-animation' | 'after-animation' } }>()
-  #cueTimingScope?: string
-  #documentEditor?: NativeDocumentEditor
-  #documentEditorCommands?: DocumentEditorCommands
-  #documentEditorBinding?: { identity: string, reset: number }
-  readonly #documentReturnPoints = new DocumentReturnPoints()
-  #documentViewport?: { element: HTMLElement, identity: string, returnScrollTop?: number, stop(): void }
-  #stopDocumentReturnScroll?: () => void
-  #openingDocument?: { directory: string, scope: number, generation: number, focus?: 'body', initial?: boolean, stop(): void,
-    basis?: { identity: string, reset: number, version?: string, content: TeachingDocument }, point?: DocumentReturnPoint, fallback?: DocumentReturnPoint }
-  #stopDocumentLayoutScroll?: () => void
-  #activeDocumentHistory?: DocumentHistoryEditor
-  #unsubscribeDocumentHistory?: () => void
-  #unsubscribeDocumentSelection?: () => void
-  #documentSelectionGeneration = 0
+  readonly production: DocumentProduction
   #removedDocumentPosition?: { identity: string, documentId: string, sectionId: string, stepId?: string, version: string, fingerprint: string, scope: number, generation: number, token: string }
-  #pendingDocumentFocus?: { documentId: string, nodeId: string, generation: number, afterSave?: true }
-  #pendingDocumentSelection?: { documentId: string, anchor: NativeTextPoint, head: NativeTextPoint, focused: boolean }
-  readonly #documentFields = new Map<string, DocumentFieldRegistration>()
-  #pendingDocumentField?: { field: Omit<DocumentFieldRegistration, 'focus' | 'editor'>, bookmark: DocumentFieldBookmark, reset: number, generation: number }
+  readonly editing: DocumentEditing
   #state: WorkbenchState
   readonly #listeners = new Set<Listener>()
   readonly #commentDrafts = new CommentDraftBank()
@@ -329,7 +137,7 @@ export class Workbench {
   #documentScope = 0
   #jobPreparation?: AbortController
   readonly #playback = new PreviewPlayback(() => ({ document: this.#state.document, scope: this.#documentScope, sinks: this.#previewSinks }))
-  readonly #production = new ProductionPlayback(() => ({ document: this.#state.document, scope: this.#documentScope, sinks: this.#previewSinks,
+  readonly #productionPlayback = new ProductionPlayback(() => ({ document: this.#state.document, scope: this.#documentScope, sinks: this.#previewSinks,
     binding: this.#state.productionPlan?.binding, ready: this.#productionReady() }), state => this.#set({ productionPlayback: state }))
   /** A place to show that no preview could take yet (none was attached, e.g. the chat covered the document). */
   #pendingReveal?: PreviewAnchor
@@ -374,12 +182,7 @@ export class Workbench {
     }
     this.#documentSession = new DocumentSession(this.client, authoring => {
       if (this.#state.document !== authoring.directory) return
-      const pendingField = this.#pendingDocumentField
-      if (pendingField && (pendingField.field.identity !== authoring.identity || authoring.reset > pendingField.reset
-        || pendingField.field.blockId !== undefined && !authoring.content?.blocks[pendingField.field.blockId]
-        || !authoring.content?.steps[pendingField.field.stepId])) this.#pendingDocumentField = undefined
-      const cueTimingScope = JSON.stringify([authoring.identity, authoring.reset])
-      if (this.#cueTimingScope !== cueTimingScope) { this.#removedCueTimings.clear(); this.#removedNarrations.clear(); this.#cueTimingScope = cueTimingScope }
+      this.editing.sourceChanged(authoring)
       const previous = this.#state.authoring
       // A saved timestamp belongs to this client's acknowledged source version.
       // Remote adoption has no server modification time to display in its place.
@@ -394,34 +197,39 @@ export class Workbench {
       const removed = this.#state.webView === 'document' && position?.view !== 'present' && position && previous?.identity === authoring.identity
         && (selected ? !selectedStep || selectedIndex < 0 : !authoring.content?.sectionOrder.includes(position.section))
       const restoredPosition = !removed && this.#restoredDocumentPosition(authoring)
-      const scope = this.#documentScope, generation = this.#documentSelectionGeneration
-      if (removed && authoring.identity) this.#documentReturnPoints.forget(authoring.identity)
+      const scope = this.#documentScope, generation = this.editing.generation
+      if (removed && authoring.identity) this.editing.returnPoints.forget(authoring.identity)
       this.#set({ authoring,
         ...removed ? { position: undefined, documentNavigation: undefined, documentPositionFailure: 'removed' as const } : {},
         ...restoredPosition ? { documentPositionFailure: undefined } : {},
         ...moved ? { position: { ...position, section: selectedStep.sectionId, step: selectedIndex, trail: [] } } : {},
-        hasDocumentTimingDrafts: Boolean(authoring.identity && authoring.content && this.#documentTimingDrafts.has(authoring.identity, authoring.content)),
-        documentTimingDraftStorageFailure: this.#documentTimingDrafts.failed,
-        captionTimingDraftSteps: authoring.identity && authoring.member?.id && authoring.content ? this.#captionTimingDrafts.steps({ identity: authoring.identity, memberId: authoring.member.id }, authoring.content) : [],
-        captionTimingDraftStorageFailure: Boolean(authoring.identity && authoring.member?.id && this.#captionTimingDrafts.failed({ identity: authoring.identity, memberId: authoring.member.id })),
+        ...this.production.draftState(authoring),
         save: authoring.error ? { kind: 'failed', message: authoring.error } : authoring.saving ? { kind: 'saving' } : !authoring.dirty && (previous?.dirty || previous?.saving) ? { kind: 'saved', at: new Date().toISOString() } : adoptedCleanVersion || this.#state.save.kind === 'failed' ? { kind: 'idle' } : this.#state.save })
       // The deletion owns the token produced above; source restoration only retires its notice.
       if (removed && previous?.identity && previous.content && previous.version && previous.fingerprint
         && !previous.loading && !previous.dirty && !previous.saving && !previous.restored && !previous.composing && !previous.recovering && !previous.error
-        && scope === this.#documentScope && generation === this.#documentSelectionGeneration && !this.#state.position && this.#state.documentPositionFailure === 'removed') {
+        && scope === this.#documentScope && generation === this.editing.generation && !this.#state.position && this.#state.documentPositionFailure === 'removed') {
         this.#removedDocumentPosition = { identity: previous.identity, documentId: previous.content.id, sectionId: position.section,
           ...selected ? { stepId: selected } : {}, version: previous.version, fingerprint: previous.fingerprint, scope, generation, token: this.#state.documentPositionToken }
       }
-      this.#finishOpeningDocument()
+      this.editing.finishOpening()
       // Native insertion can select a page before the source actor receives that new entity.
       if (position && previous && previous.identity === authoring.identity && !previous.content?.sections[position.section]
-        && authoring.content?.sections[position.section]) this.#saveDocumentReturnPoint()
-      if (this.#production.changed()) void this.pausePlayback().catch(() => {})
+        && authoring.content?.sections[position.section]) this.editing.saveReturnPoint()
+      if (this.#productionPlayback.changed()) void this.pausePlayback().catch(() => {})
       const acknowledgedSourceChanged = !authoring.dirty && !authoring.loading && !authoring.error && !previous?.loading
         && previous?.identity === authoring.identity && Boolean(previous?.version && authoring.version)
         && (previous?.version !== authoring.version || previous?.fingerprint !== authoring.fingerprint)
       if (!authoring.dirty && previous?.dirty || acknowledgedSourceChanged) { void this.#history.read(authoring.directory); void this.loadDocuments() }
     })
+    this.production = new DocumentProduction({ store, session: this.#documentSession, client: this.client,
+      scope: () => this.#documentScope, document: identity => this.getDocument(identity), flush: signal => this.flushPendingEdits(signal),
+      pause: () => this.pausePlayback(), stopAuditions: () => this.stopAuditions(), stopPreviewOutputs: () => this.#playback.stopPreviewOutputs(),
+      sourceCurrent: binding => this.#productionSourceCurrent(binding) })
+    this.editing = new DocumentEditing({ store, session: this.#documentSession, scope: () => this.#documentScope,
+      flush: signal => this.flushPendingEdits(signal), goToSection: section => this.goToSection(section),
+      rememberStep: (directory, section, step) => { this.#selectedSteps.set(`${directory}\0${section}`, step) },
+      canAskAnimation: () => this.#drafters.size > 0, askAnimation: place => this.draftAnimation(place) })
     this.#diagnostics = new DocumentDiagnostics(this.client, store)
     this.#jobs = new DocumentJobs(this.client, store)
     this.#voiceover = new VoiceoverJobs(this.client, store, (job, signal) => this.#refreshVoiceover(job, signal))
@@ -516,7 +324,7 @@ export class Workbench {
   #restoredDocumentPosition(source: DocumentSessionState): boolean {
     const removed = this.#removedDocumentPosition
     if (!removed) return false
-    if (removed.scope !== this.#documentScope || removed.generation !== this.#documentSelectionGeneration || removed.token !== this.#state.documentPositionToken
+    if (removed.scope !== this.#documentScope || removed.generation !== this.editing.generation || removed.token !== this.#state.documentPositionToken
       || removed.identity !== source.identity || this.#state.documentPositionFailure !== 'removed' || source.error) {
       this.#removedDocumentPosition = undefined
       return false
@@ -530,9 +338,9 @@ export class Workbench {
 
   #set(patch: Partial<WorkbenchState>): void {
     if (Object.hasOwn(patch, 'position') || Object.hasOwn(patch, 'documentPositionFailure')) this.#removedDocumentPosition = undefined
-    if (Object.hasOwn(patch, 'position')) { this.#cancelOpeningDocument(); this.#stopDocumentReturnScroll?.() }
+    if (Object.hasOwn(patch, 'position')) this.editing.beforePosition()
     this.#state = { ...this.#state, ...patch, ...Object.hasOwn(patch, 'position') ? { documentPositionToken: this.#nextDocumentPosition(), documentPositionIntent: patch.documentPositionIntent ?? 'seek' } : {} }
-    if (Object.hasOwn(patch, 'position')) this.#saveDocumentReturnPoint()
+    if (Object.hasOwn(patch, 'position')) this.editing.saveReturnPoint()
     for (const listener of this.#listeners) listener()
   }
 
@@ -598,163 +406,28 @@ export class Workbench {
     await this.operateDocument({ op: 'retitle', dir, title })
   }
 
-  #watchOpeningInteraction(cancel: () => void): () => void {
-    if (typeof document === 'undefined') return () => {}
-    const focused = document.activeElement, dialog = focused?.closest('[role="dialog"]')
-    const interact = (event: Event) => {
-      if (!event.isTrusted) return
-      if (event.type === 'focusin' && (!(event.target instanceof Element) || event.target === focused || dialog?.contains(event.target))) return
-      cancel()
-    }
-    const events = ['pointerdown', 'keydown', 'beforeinput', 'wheel', 'touchmove', 'focusin']
-    for (const event of events) document.addEventListener(event, interact, true)
-    return () => { for (const event of events) document.removeEventListener(event, interact, true) }
-  }
-
-  #cancelOpeningDocument(): void {
-    const pending = this.#openingDocument
-    this.#openingDocument = undefined
-    pending?.stop()
-  }
-
-  #beginOpeningDocument(directory: string, focus?: 'body', fallback?: DocumentReturnPoint): void {
-    this.#cancelOpeningDocument()
-    this.#openingDocument = { directory, focus, fallback: fallback && { ...fallback }, scope: this.#documentScope, generation: this.#documentSelectionGeneration,
-      stop: this.#watchOpeningInteraction(() => this.#cancelOpeningDocument()) }
-  }
-
-  #saveDocumentReturnPoint(): void {
-    const source = this.#state.authoring, position = this.#state.position
-    if (!source?.identity || !source.content || source.loading || !position || !source.content.sectionOrder.includes(position.section)) return
-    const section = source.content.sections[position.section]
-    let stepId = section?.stepOrder[position.step]
-    if (this.#state.webView === 'present' || position.view === 'present') {
-      const snapshot = this.#state.presentationSnapshot, ir = this.#state.ir
-      if (!snapshot || !ir || source.dirty || source.saving || source.error || snapshot.version !== source.version || snapshot.fingerprint !== source.fingerprint
-        || snapshot.project !== (source.projectRevision ?? 0) || snapshot.revision !== ir.revision || snapshot.revision !== this.#state.previewIrRevision) return
-      const ids = ir.doc.sections.find(page => page.id === position.section)?.stepIds
-      if (!ids || ids.length && !ids[position.step]) return
-      stepId = ids[position.step]
-      if (stepId && (!section?.stepOrder.includes(stepId) || source.content.steps[stepId]?.sectionId !== position.section)) return
-    }
-    if (!section || !stepId && section.stepOrder.length) return
-    const viewport = this.#documentViewport, previous = this.#documentReturnPoints.read(source.identity)
-    const measured = this.#state.webView === 'document' && viewport?.identity === source.identity ? documentViewportOffset(viewport.element, section.id) : undefined
-    const offset = measured ?? (previous?.sectionId === section.id ? previous.offset : undefined)
-    this.#documentReturnPoints.write(source.identity, { sectionId: section.id, ...stepId ? { stepId } : {}, ...offset !== undefined ? { offset } : {} })
-  }
-
-  #finishOpeningDocument(): void {
-    const pending = this.#openingDocument, source = this.#state.authoring
-    if (!pending || source?.loading || !source?.identity || !source.content) return
-    if (source.error === 'document-identity-changed') { this.#cancelOpeningDocument(); return }
-    if (pending.scope !== this.#documentScope || pending.directory !== this.#state.document || pending.generation !== this.#documentSelectionGeneration) { this.#cancelOpeningDocument(); return }
-    if (!pending.basis) {
-      pending.basis = { identity: source.identity, reset: source.reset, version: source.version, content: source.content }
-      if (!pending.focus) {
-        pending.point = this.#documentReturnPoints.read(source.identity) ?? pending.fallback
-        if (!pending.point) {
-          const section = source.content.sections[source.content.sectionOrder[0]!]
-          if (!section) { this.#cancelOpeningDocument(); return }
-          pending.point = { sectionId: section.id, ...section.stepOrder[0] ? { stepId: section.stepOrder[0] } : {} }
-          pending.initial = true
-        }
-        if (documentReturnStep(source.content, pending.point) === undefined) {
-          this.#documentReturnPoints.forget(source.identity); this.#cancelOpeningDocument()
-          this.#set({ documentPositionFailure: 'removed' }); return
-        }
-      }
-    }
-    const basis = pending.basis
-    if (source.identity !== basis.identity || source.reset !== basis.reset || source.version !== basis.version || source.content !== basis.content) { this.#cancelOpeningDocument(); return }
-    const editor = this.#documentEditor, binding = this.#documentEditorBinding, viewport = this.#documentViewport
-    if (!editor || editor.prosemirrorView.isDestroyed || binding?.identity !== source.identity || binding.reset !== source.reset || viewport?.identity !== source.identity) return
-    // The editor can mount read-only while the source is still loading; a read-only body cannot take the caret yet.
-    if (pending.focus && !editor.isEditable) return
-    this.#cancelOpeningDocument()
-    if (pending.focus) {
-      const body = (blocks: typeof editor.document, sectionId?: string): { nodeId: string, sectionId: string } | undefined => {
-        for (const block of blocks) {
-          if (block.type === 'presmiumPage') sectionId = block.props.sectionId
-          else if (sectionId && editor.schema.blockSchema[block.type].content === 'inline') return { nodeId: block.id, sectionId }
-          const nested = body(block.children, sectionId)
-          if (nested) return nested
-        }
-      }
-      const target = body(editor.document)
-      if (target && source.content.sections[target.sectionId]) {
-        this.#set({ position: { section: target.sectionId, step: 0, trail: [], view: 'document' }, documentPositionFailure: undefined, documentNavigation: undefined })
-        this.#focusDocumentNode(editor, target.nodeId)
-      }
-      return
-    }
-    const point = pending.point!, step = documentReturnStep(source.content, point)
-    if (step === undefined) return
-    this.#selectedSteps.set(`${pending.directory}\0${point.sectionId}`, step)
-    this.#set({ position: { section: point.sectionId, step, trail: [], view: 'document' }, documentPositionFailure: undefined, documentNavigation: undefined })
-    if (pending.initial) return
-    const current = () => this.#state.document === pending.directory && this.#state.authoring?.identity === basis.identity
-      && this.#state.authoring.reset === basis.reset && this.#state.authoring.version === basis.version && this.#state.authoring.content === basis.content
-      && this.#documentViewport === viewport && this.#state.position?.section === point.sectionId && this.#state.position.step === step
-    const restore = () => {
-      if (!current()) { stop(); return }
-      const top = viewport.element.scrollTop
-      restoreDocumentViewport(viewport.element, point)
-      if (viewport.element.scrollTop !== top) viewport.returnScrollTop = viewport.element.scrollTop
-    }
-    const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(restore)
-    let stopInteraction: () => void = () => {}
-    const stop = () => { observer?.disconnect(); stopInteraction(); viewport.returnScrollTop = undefined; if (this.#stopDocumentReturnScroll === stop) this.#stopDocumentReturnScroll = undefined }
-    this.#stopDocumentReturnScroll?.(); this.#stopDocumentReturnScroll = stop
-    stopInteraction = this.#watchOpeningInteraction(stop)
-    observer?.observe(viewport.element)
-    observer?.observe(editor.prosemirrorView.dom)
-    restore()
-  }
-
-  /** Consume only this viewport owner's actual programmatic destination; user gestures retire it. */
-  consumeDocumentReturnScroll(element: HTMLElement): boolean {
-    const viewport = this.#documentViewport, top = viewport?.returnScrollTop
-    if (viewport?.element !== element || top === undefined) return false
-    viewport.returnScrollTop = undefined
-    return element.scrollTop === top
-  }
-
-  attachDocumentViewport(element: HTMLElement, identity: string): () => void {
-    this.#documentViewport?.stop()
-    const scroll = () => { if (!this.#openingDocument) this.#saveDocumentReturnPoint() }
-    const viewport = { element, identity, stop: () => element.removeEventListener('scroll', scroll) }
-    this.#documentViewport = viewport
-    element.addEventListener('scroll', scroll, { passive: true })
-    this.#finishOpeningDocument()
-    return () => { if (this.#documentViewport === viewport) { this.#saveDocumentReturnPoint(); this.#stopDocumentReturnScroll?.(); this.#documentViewport = undefined }; viewport.stop() }
-  }
-
-  /** The body editor became editable: an opening that waits to put the caret in it can finish now. */
-  documentEditorEditable(): void { this.#finishOpeningDocument() }
-
   async openDocument(dir: string, options: { focus?: 'body', expectedIdentity?: string, fallbackReturnPoint?: DocumentReturnPoint } = {}): Promise<void> {
     if (this.#state.document === dir) {
-      if (options.focus) { this.#beginOpeningDocument(dir, options.focus); this.#finishOpeningDocument() }
+      if (options.focus) { this.editing.beginOpening(dir, options.focus); this.editing.finishOpening() }
       return
     }
-    this.#saveDocumentReturnPoint()
+    this.editing.saveReturnPoint()
     this.#documentScope++
     const scope = this.#documentScope
     this.#stopSubscriptions()
     this.#history.subscribeReview(dir)
     this.#set({ ...DOCUMENT_RESET, document: dir, previewRenderer: 'web', webView: 'document' })
-    this.#beginOpeningDocument(dir, options.focus, options.fallbackReturnPoint)
+    this.editing.beginOpening(dir, options.focus, options.fallbackReturnPoint)
     this.#record('document.open')
     this.#diagnostics.subscribe(dir)
     // Authoring is ready from source JSON; compilation and preview are independent.
     const [opened] = await Promise.all([this.#documentSession.open(dir, options.expectedIdentity), this.#readFocus(dir), this.#history.read(dir)])
     if (opened === 'identity-changed' && scope === this.#documentScope && this.#state.document === dir) { this.closeDocument(); return }
-    this.#finishOpeningDocument()
+    this.editing.finishOpening()
   }
 
   closeDocument(): void {
-    this.#saveDocumentReturnPoint()
+    this.editing.saveReturnPoint()
     this.#documentScope++
     if (this.#state.document !== undefined) this.#record('document.close')
     this.#stopSubscriptions()
@@ -1019,7 +692,7 @@ export class Workbench {
     await this.pausePlayback()
     signal.throwIfAborted()
     if (!current()) return false
-    this.#production.reset()
+    this.#productionPlayback.reset()
     this.#set({ productionPlan: plan, voiceoverCacheRefresh: { source: job.source, revision: job.revision, sequence: (this.#state.voiceoverCacheRefresh?.sequence ?? 0) + 1 } })
     // The mounted production loader fetches this new binding in the existing frame.
     // Replacing the iframe for every clip would interrupt progressive playback and its connection.
@@ -1204,7 +877,7 @@ export class Workbench {
     signal.throwIfAborted()
     if (scope !== this.#documentScope || this.#state.authoring?.identity !== identity || !this.#productionSourceCurrent(plan.binding)) throw new Error('production-source-changed')
     this.#set({ productionPlan: plan })
-    if (this.#production.changed()) void this.pausePlayback().catch(() => {})
+    if (this.#productionPlayback.changed()) void this.pausePlayback().catch(() => {})
     return plan
   }
 
@@ -1225,7 +898,7 @@ export class Workbench {
         await this.pausePlayback()
         signal?.throwIfAborted()
       }
-      return await this.#production.control(control, signal)
+      return await this.#productionPlayback.control(control, signal)
     } catch (error) {
       const code = errorMessage(error), current = this.#state.productionPlan?.binding
       if (scope === this.#documentScope && !signal?.aborted && current && sameProductionBinding(current, control.binding) && this.#productionReady()
@@ -1237,7 +910,7 @@ export class Workbench {
 
   closeProduction(): void {
     this.#interruptProductionNavigation()
-    this.#production.reset()
+    this.#productionPlayback.reset()
     this.#set({ productionPlan: undefined, productionFailure: undefined })
   }
 
@@ -1266,46 +939,6 @@ export class Workbench {
     this.#record('preview.retry')
     if (this.#state.document !== undefined) void this.#readPreview(this.#state.document)
   }
-
-  #pageEditMessage(reason: string): string {
-    const t = this.#messages
-    if (reason === 'native-unavailable') return t.nativeEditUnavailable
-    if (reason.startsWith('native-')) return t.nativeEditDraft
-    switch (reason) {
-      case 'page-multiple-files': return t.pageEditFiles
-      case 'page-boundary': return t.pageEditBoundary
-      case 'page-hierarchy': return t.pageEditHierarchy
-      case 'page-implicit-title': return t.pageEditImplicitTitle
-      case 'page-formatted-title': return t.pageEditFormattedTitle
-      case 'page-title': return t.pageEditInvalidTitle
-      case 'page-compiler': return t.pageEditCompiler
-      case 'page-referenced': return t.pageDeleteReferenced
-      case 'page-external-bindings': return t.pageDeleteExternalBindings
-      case 'page-references-unavailable': return t.pageDeleteReferencesUnavailable
-      case 'page-busy': return t.pageEditBusy
-      case 'preview-flush-unavailable': return t.pageEditPreview
-      case 'page-context-changed': return t.pageEditChanged
-      case 'save-timeout': return t.pageEditFlushTimeout
-      case 'source-draft': return t.pageEditSourceDraft
-      case 'source-refresh': return t.pageEditRefresh
-      case 'page-draft':
-      case 'source-conflict':
-      case 'narration-conflict':
-      case 'revision-conflict': return t.pageEditDraft
-      case 'save-locked': return t.saveLocked
-      default: return t.pageEditRequestFailed
-    }
-  }
-
-  pageEditCapability(section: string): { rename: boolean, move: boolean, reason?: string } {
-    const exists = Boolean(this.#state.authoring?.content?.sections[section])
-    const capability = { rename: exists, move: exists }
-    if (isAgentChanging(this.#state)) return { rename: false, move: false, reason: this.#messages.saveLocked }
-    if (this.#state.isCreatingPage || this.#state.isEditingPage || this.#state.isHistoryBusy) return { rename: false, move: false, reason: this.#messages.pageEditBusy }
-    return capability
-  }
-
-  clearPageEditFailure(): void { this.#set({ pageEditFailure: undefined }) }
 
   /** The preview acknowledges that all registered lecture playback has paused before audition audio starts. */
   pausePlayback(interactive = false): Promise<void> { if (interactive) this.#interruptProductionNavigation(); return this.#playback.pause() }
@@ -1338,175 +971,14 @@ export class Workbench {
     if (!asset || asset.kind !== 'image' || asset.location !== answer.content.assets[answer.assetId]?.location) throw new Error('document-identity-changed')
     return asset.location
   }
-  #mediaSource(expected: { identity: string, version: string }): DocumentSessionState {
-    const source = this.#state.authoring
-    if (!source || !this.getDocument(expected.identity) || source.version !== expected.version || !source.fingerprint
-      || source.dirty || source.saving || source.composing || source.restored || source.error || isAgentChanging(this.#state)) throw new Error('production-source-changed')
-    return source
-  }
-  /** Inspects the saved declaration, including a local asset not yet attached to a step. */
-  async inspectDocumentAudio(assetId: string, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<DocumentAudioInspectionAnswer> {
-    const source = this.#mediaSource(expected), scope = this.#documentScope
-    const answer = await this.client.readDocumentAudio(source.directory, assetId, expected.version, signal)
-    signal?.throwIfAborted()
-    if (scope !== this.#documentScope || answer.document !== source.directory || answer.version !== expected.version || answer.fingerprint !== source.fingerprint || answer.inspection.assetId !== assetId) throw new Error('production-source-changed')
-    this.#mediaSource(expected)
-    return answer
-  }
-  /** Recognition keeps its captured source even if subsequent author input moves to a newer version. */
-  async startDocumentTranscription(request: Omit<DocumentTranscriptionRequest, 'source'>, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<TranscriptionTask> {
-    const source = this.#mediaSource(expected)
-    if (!source.content || !source.fingerprint) throw new Error('production-source-changed')
-    const sent: DocumentTranscriptionRequest = { ...structuredClone(request), source: { documentId: source.content.id, version: expected.version, fingerprint: source.fingerprint } }
-    const answer = await this.client.startTranscription(source.directory, sent, signal)
-    signal?.throwIfAborted()
-    if (answer.document !== source.directory || answer.intent !== sent.intent || answer.source.documentId !== sent.source.documentId
-      || answer.source.version !== sent.source.version || answer.source.fingerprint !== sent.source.fingerprint || answer.audio.assetId !== sent.assetId || answer.audio.sha256 !== sent.audioSha256) throw new Error('transcription-response-changed')
-    return answer
-  }
-  async planDocumentTranscription(draft: TranscriptionAdoptionDraft, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<TranscriptionAdoptionPlan> {
-    const source = this.#mediaSource(expected), sent = structuredClone(draft)
-    if (sent.source.documentId !== source.content?.id || sent.source.version !== expected.version || sent.source.fingerprint !== source.fingerprint) throw new Error('production-source-changed')
-    const answer = await this.client.planTranscriptionAdoption(source.directory, sent, signal)
-    signal?.throwIfAborted()
-    this.#mediaSource(expected)
-    if (answer.document !== source.directory || answer.changeId !== sent.id || answer.source.documentId !== sent.source.documentId
-      || answer.source.version !== sent.source.version || answer.source.fingerprint !== sent.source.fingerprint || answer.candidate.id !== sent.candidate.id
-      || answer.candidate.revision !== sent.candidate.revision || answer.draftRevision !== sent.draftRevision) throw new Error('transcription-response-changed')
-    return answer
-  }
-  async adoptDocumentTranscription(request: TranscriptionAdoptionApply, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<TranscriptionAdoptionAnswer> {
-    const source = this.#mediaSource(expected), sent = structuredClone(request)
-    if (sent.source.documentId !== source.content?.id || sent.source.version !== expected.version || sent.source.fingerprint !== source.fingerprint) throw new Error('production-source-changed')
-    const answer = await this.#writeDocumentMedia(expected, directory => this.client.applyTranscriptionAdoption(directory, sent, signal), signal)
-    if (answer.adoption.planId !== sent.planId || answer.adoption.candidate.id !== sent.candidate.id || answer.adoption.candidate.revision !== sent.candidate.revision
-      || answer.adoption.draftRevision !== sent.draftRevision) throw new Error('transcription-response-changed')
-    return answer
-  }
-  async #writeDocumentMedia<T extends DocumentChangeAnswer>(expected: { identity: string, version: string }, write: (directory: string) => Promise<T>, signal?: AbortSignal): Promise<T> {
-    const scope = this.#documentScope, source = this.#mediaSource(expected)
-    this.stopAuditions()
-    await this.pausePlayback()
-    await this.flushPendingEdits(signal)
-    signal?.throwIfAborted()
-    if (scope !== this.#documentScope) throw new Error('production-source-changed')
-    this.#mediaSource(expected)
-    let answer: T
-    try { answer = await write(source.directory) }
-    finally { await this.#documentSession.refresh(source.directory) }
-    signal?.throwIfAborted()
-    if (scope !== this.#documentScope || answer.document !== source.directory || answer.content.id !== source.content?.id) throw new Error('production-source-changed')
-    this.#mediaSource({ identity: expected.identity, version: answer.version })
-    return answer
-  }
-  /** Import commits the original file and its declaration together, without creating a clip or narration. */
-  async importDocumentAudio(file: File, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<DocumentAudioImportAnswer> {
-    let request: { identity: string, version: string, id: string } | undefined
-    const answer = await this.#writeDocumentMedia(expected, async directory => {
-      const existing = this.#audioImports.get(file), first = !existing || existing.identity !== expected.identity
-      request = first ? { identity: expected.identity, version: expected.version, id: randomUUID() } : existing!
-      this.#audioImports.set(file, request)
-      try { return await this.client.importDocumentAudio(directory, file, { id: request.id, baseDocumentVersion: request.version }, signal) }
-      catch (error) {
-        if (first && error instanceof WorkspaceServerError && error.status >= 400 && error.status < 500 && this.#audioImports.get(file) === request) this.#audioImports.delete(file)
-        throw error
-      }
-    }, signal)
-    if (answer.changeId !== request?.id || answer.inspection.assetId !== answer.assetId || !answer.content.assets[answer.assetId]) throw new Error('production-source-changed')
-    if (this.#audioImports.get(file) === request) this.#audioImports.delete(file)
-    return answer
-  }
-  /** Reconcile an ambiguous save against real asset bytes before admitting a new source-bound import. */
-  async ensureDocumentAudio(file: File, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<DocumentAudioInspectionAnswer> {
-    const source = this.#mediaSource(expected)
-    if (!file.size || file.size > DOCUMENT_AUDIO_MAX_BYTES) throw new Error('production.asset-size')
-    let pending = this.#audioFingerprints.get(file)
-    if (!pending) {
-      pending = file.arrayBuffer().then(sha256)
-      this.#audioFingerprints.set(file, pending)
-    }
-    const hash = await pending
-    signal?.throwIfAborted(); this.#mediaSource(expected)
-    for (const asset of Object.values(source.content?.assets ?? {})) {
-      if (asset.kind !== 'audio' || asset.fingerprint !== `sha256:${hash}`) continue
-      try {
-        const answer = await this.inspectDocumentAudio(asset.id, expected, signal)
-        if (answer.inspection.sha256 === hash) return answer
-      } catch (error) {
-        if (!(error instanceof WorkspaceServerError) || ![404, 413, 422].includes(error.status)) throw error
-      }
-    }
-    signal?.throwIfAborted(); this.#mediaSource(expected)
-    const previous = this.#audioImports.get(file)
-    if (previous?.identity === expected.identity && previous.version !== expected.version) this.#audioImports.delete(file)
-    let imported: DocumentAudioImportAnswer
-    try { imported = await this.importDocumentAudio(file, expected, signal) }
-    catch (error) {
-      if (!previous || this.#audioImports.get(file) !== previous || !(error instanceof WorkspaceServerError)
-        || error.status !== 409 || error.message !== 'document-version-changed') throw error
-      signal?.throwIfAborted(); this.#mediaSource(expected)
-      this.#audioImports.delete(file)
-      imported = await this.importDocumentAudio(file, expected, signal)
-    }
-    return { document: imported.document, version: imported.version, fingerprint: imported.fingerprint, inspection: imported.inspection }
-  }
-  /** The source actor owns this external transaction; capture is independent from preview output. */
-  async adoptDocumentRecording(request: DocumentRecordingAdoption, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<VerifiedDocumentRecordingAdoption> {
-    const scope = this.#documentScope, source = this.#mediaSource(expected), sent = structuredClone(request)
-    if (sent.source.documentId !== source.content?.id || sent.source.version !== source.version || sent.source.fingerprint !== source.fingerprint
-      || !source.content.steps[sent.stepId] || !source.content.assets[sent.assetId]) throw new Error('production-source-changed')
-    this.#playback.stopPreviewOutputs()
-    await this.pausePlayback()
-    await this.flushPendingEdits(signal)
-    signal?.throwIfAborted()
-    if (scope !== this.#documentScope) throw new Error('production-source-changed')
-    this.#mediaSource(expected)
-    const answer = await this.#documentSession.commitExternal(expected, async (_before, ownedSignal) => {
-      const saved = await this.client.adoptRecording(source.directory, sent, ownedSignal)
-      if (saved.changeId !== sent.id || saved.verification.stepId !== sent.stepId || saved.verification.assetId !== sent.assetId || saved.verification.sha256 !== sent.sha256) throw new Error('document-confirmation')
-      return saved
-    }, (before, remote, current) => reconcileRecordingAdoption(sent, before, remote, current), signal)
-    signal?.throwIfAborted()
-    if (scope !== this.#documentScope || this.#state.authoring?.identity !== expected.identity) throw new Error('production-source-changed')
-    return answer
-  }
-  async applyDocumentMediaClip(clip: MediaClip, expected: { identity: string, version: string, binding: ProductionBinding }, signal?: AbortSignal): Promise<DocumentChangeAnswer> {
-    this.#mediaSource(expected)
-    if (!this.#state.productionPlan || !sameProductionBinding(this.#state.productionPlan.binding, expected.binding) || !this.#productionSourceCurrent(expected.binding)) throw new Error('production-source-changed')
-    const id = randomUUID(), value = structuredClone(clip)
-    const answer = await this.#writeDocumentMedia(expected, directory => this.client.changeDocumentMediaClip(directory, { id, baseDocumentVersion: expected.version, binding: expected.binding, clip: value }, signal), signal)
-    if (answer.changeId !== id) throw new Error('production-source-changed')
-    return answer
-  }
-  async removeDocumentMediaClip(clipId: string, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<DocumentChangeAnswer> {
-    const id = randomUUID()
-    const answer = await this.#writeDocumentMedia(expected, directory => this.client.changeDocumentMediaClip(directory, { id, baseDocumentVersion: expected.version, removeClipId: clipId }, signal), signal)
-    if (answer.changeId !== id) throw new Error('production-source-changed')
-    return answer
-  }
-  /** Applies a reviewed voice scope to the current source actor, without replacing body or narration. */
-  async applyDocumentVoice(scope: DocumentVoiceScope, value: VoiceSource | null, options: DocumentVoiceOptions, expected: { identity: string, version: string, fingerprint: string }): Promise<boolean> {
-    const source = this.#state.authoring, document = this.getDocument(expected.identity), context = this.#documentScope
-    if (!source || !document || source.version !== expected.version || source.fingerprint !== expected.fingerprint
-      || source.dirty || source.saving || source.composing || source.restored || source.error || isAgentChanging(this.#state)) throw new Error('voice-context-changed')
-    const next = changeDocumentVoice(document, scope, value, options)
-    if (next === document) return true
-    this.stopAuditions()
-    this.#documentSession.record(next)
-    await this.flushPendingEdits()
-    if (context !== this.#documentScope || this.#state.authoring?.identity !== expected.identity) return false
-    const saved = this.#state.authoring
-    if (!saved || saved.dirty || saved.saving || saved.composing || saved.restored || saved.error) throw new Error('voice-save-unconfirmed')
-    return true
-  }
   /** Parameter planning is an authoring read; it does not compile, change modes or write the document. */
   async planDocumentComponentAction(action: DocumentComponentAction, id: string, expected: { identity: string, version: string, fingerprint: string }, signal?: AbortSignal): Promise<DocumentAuthoringActionPlan> {
-    const source = this.#mediaSource(expected), scope = this.#documentScope
+    const source = this.production.source(expected), scope = this.#documentScope
     if (!source.content || !source.fingerprint || source.fingerprint !== expected.fingerprint) throw new Error('component-source-changed')
     const request = { id, source: componentSource({ content: source.content, version: source.version!, fingerprint: source.fingerprint }), action: structuredClone(action) }
     const answer = await this.client.planDocumentAction(source.directory, request, signal)
     signal?.throwIfAborted()
-    const current = this.#mediaSource(expected)
+    const current = this.production.source(expected)
     if (scope !== this.#documentScope || !current.content || !current.fingerprint || answer.document !== source.directory || answer.changeId !== id || answer.effect.kind !== 'component'
       || !sameComponentSource(answer.source, request.source) || JSON.stringify(answer.action) !== JSON.stringify(request.action)) throw new Error('component-source-changed')
     return answer
@@ -1514,13 +986,13 @@ export class Workbench {
   /** The existing source actor owns adoption and ambiguous-response recovery, including later native input. */
   async applyDocumentComponentPlan(plan: DocumentAuthoringActionPlan, expected: { identity: string, version: string }, signal?: AbortSignal): Promise<{ answer: DocumentChangeAnswer, commitId?: string }> {
     if (plan.effect.kind !== 'component' || !plan.action.type.startsWith('component.')) throw new Error('component-plan-invalid')
-    const source = this.#mediaSource(expected), action = plan.action as DocumentComponentAction, scope = this.#documentScope
+    const source = this.production.source(expected), action = plan.action as DocumentComponentAction, scope = this.#documentScope
     if (!source.content || !source.fingerprint || !sameComponentSource(plan.source, componentSource({ content: source.content, version: source.version!, fingerprint: source.fingerprint }))) throw new Error('component-source-changed')
     this.#playback.stopPreviewOutputs()
     await this.pausePlayback()
     let receipt: AppliedDocumentAuthoringAction | undefined
     const remember = (answer: DocumentChangeAnswer) => {
-      if (this.#documentEditorBinding?.identity === expected.identity) this.#documentEditorCommands?.rememberComponentConfiguration(answer.content)
+      this.editing.rememberComponent(answer.content, expected.identity)
       return { answer, ...receipt?.commit ? { commitId: receipt.commit.id } : {} }
     }
     try {
@@ -1540,7 +1012,7 @@ export class Workbench {
         && file?.version === current.version && current.version !== plan.source.version) {
         // Canonical acceptance is already known even when later native input has
         // deleted the target. Undoing that deletion must restore its accepted configuration.
-        if (this.#documentEditorBinding?.identity === expected.identity) this.#documentEditorCommands?.rememberComponentConfiguration(plan.content)
+        this.editing.rememberComponent(plan.content, expected.identity)
         try {
           if (!applyDocumentComponentAction(current.content, action).effect.changed) return remember({ document: source.directory, content: plan.content,
             version: current.version, fingerprint: current.fingerprint, issues: plan.issues, changeId: plan.changeId, files: plan.files.map(value => ({ path: value.path, version: value.version })) })
@@ -1548,118 +1020,6 @@ export class Workbench {
       }
       throw error
     }
-  }
-  /** Manual caption times reuse the canonical action plan, media preflight and original source actor. */
-  async applyDocumentCaptionTiming(action: DocumentCaptionTimingAction, id: string, expected: { identity: string, version: string, fingerprint: string }, signal?: AbortSignal): Promise<DocumentChangeAnswer> {
-    const source = this.#mediaSource(expected), scope = this.#documentScope
-    if (!source.content || source.fingerprint !== expected.fingerprint) throw new Error('caption-source-changed')
-    const request = { id, source: componentSource({ content: source.content, version: source.version!, fingerprint: source.fingerprint! }), action }
-    const plan = await this.client.planDocumentAction(source.directory, request, signal)
-    signal?.throwIfAborted()
-    if (scope !== this.#documentScope || this.#state.authoring?.identity !== expected.identity || plan.effect.kind !== 'caption'
-      || plan.changeId !== id || JSON.stringify(plan.action) !== JSON.stringify(action) || !sameComponentSource(plan.source, request.source)) throw new Error('caption-source-changed')
-    this.#playback.stopPreviewOutputs()
-    await this.pausePlayback()
-    try {
-      return await this.#documentSession.commitExternal(expected, async (_before, ownedSignal) => {
-        const receipt = await this.client.applyDocumentAction(source.directory, { planId: plan.planId, digest: plan.digest, source: plan.source }, ownedSignal)
-        const actual = await this.client.readDocument(source.directory)
-        if (receipt.planId !== plan.planId || receipt.digest !== plan.digest || receipt.changeId !== id || !receipt.verification.saved || !receipt.verification.actionStateVerified
-          || !sameComponentSource(receipt.verification.source, componentSource(actual))) throw new Error('document-confirmation')
-        return { ...actual, changeId: id, files: receipt.files }
-      }, (before, answer, current) => reconcileCaptionTiming(action, before, answer, current), signal)
-    } catch (error) {
-      const current = this.#state.authoring, file = plan.files.find(file => file.path === (source.directory ? `${source.directory}/lecture.json` : 'lecture.json'))
-      // Lost ACK was independently read by commitExternal; only the exact predicted saved version can settle it.
-      if (scope === this.#documentScope && current?.identity === expected.identity && current.content && current.version === file?.version && current.fingerprint && !current.error) {
-        try {
-          if (!applyDocumentCaptionTiming(current.content, action).effect.changed) return { document: source.directory, content: plan.content, version: current.version!, fingerprint: current.fingerprint, changeId: id, issues: plan.issues, files: plan.files.map(({ path, version }) => ({ path, version })) }
-        } catch { /* A newer target stays pending with the actual request error. */ }
-      }
-      throw error
-    }
-  }
-  /** Uses the current actor revision so timing edits cannot replace later body or narration input. */
-  setDocumentStepProduction(stepId: string, patch: StepTimingPatch, identity?: string): void {
-    const document = this.getDocument(identity)
-    if (!document || isAgentChanging(this.#state)) return
-    const next = changeStepTiming(document, stepId, patch)
-    if (next === document) return
-    this.stopAuditions()
-    this.#documentSession.record(next)
-  }
-  /** The whole document's caption size (`production.captions.scale`), recorded like a step's timing. */
-  setDocumentCaptionScale(scale: number, identity?: string): void {
-    const document = this.getDocument(identity)
-    if (!document || isAgentChanging(this.#state)) return
-    const next = changeDocumentCaptionScale(document, scale)
-    if (next === document) return
-    this.#documentSession.record(next)
-  }
-  documentTimingDraft(stepId: string, key: StepDurationKey, identity: string, reset: number): StepDurationDraft | undefined {
-    const document = this.getDocument(identity)
-    return document && this.#state.authoring?.reset === reset ? this.#documentTimingDrafts.get(identity, document, stepId, key) : undefined
-  }
-  /** Retains unaccepted numeric input by stable target; it is not authoring content or a second timing source. */
-  setDocumentTimingDraft(stepId: string, key: StepDurationKey, draft: StepDurationDraft | undefined, identity: string, reset: number): void {
-    const source = this.#state.authoring, document = this.getDocument(identity)
-    if (!document?.steps[stepId] || source?.reset !== reset || isAgentChanging(this.#state)) return
-    if (!this.#documentTimingDrafts.set(identity, document, stepId, key, draft)) return
-    this.#set({ authoring: { ...source }, hasDocumentTimingDrafts: this.#documentTimingDrafts.has(identity, document), documentTimingDraftStorageFailure: this.#documentTimingDrafts.failed })
-  }
-  captionTimingDraft(stepId: string, identity: string): CaptionTimingDraft | undefined {
-    const source = this.#state.authoring
-    return source?.identity === identity && source.member?.id ? this.#captionTimingDrafts.get({ identity, memberId: source.member.id }, stepId) : undefined
-  }
-  setCaptionTimingDraft(stepId: string, draft: CaptionTimingDraft | undefined, identity: string): void {
-    const source = this.#state.authoring, document = this.getDocument(identity)
-    if (!document?.steps[stepId] || source?.identity !== identity || !source.member?.id) return
-    const scope = { identity, memberId: source.member.id }
-    this.#captionTimingDrafts.set(scope, stepId, draft)
-    this.#set({ captionTimingDraftSteps: this.#captionTimingDrafts.steps(scope, document), captionTimingDraftStorageFailure: this.#captionTimingDrafts.failed(scope) })
-  }
-  copyNarrationCueTiming(from: string, to: string, identity: string): void {
-    const document = this.getDocument(identity)
-    if (!document || isAgentChanging(this.#state)) return
-    const timing = document.production.cueTimings?.[from] ?? this.#removedCueTimings.get(from)
-    if (timing) this.#removedCueTimings.set(to, { ...timing })
-  }
-  /** Native block identity and order own the current step's complete script. */
-  setDocumentNarrations(stepId: string, narrations: Narration[], identity?: string): void {
-    const document = this.getDocument(identity)
-    if (!document || isAgentChanging(this.#state) || !Object.hasOwn(document.steps, stepId)) return
-    const step = document.steps[stepId]!
-    if (!document.sections[step.sectionId]?.stepOrder.includes(stepId)) return
-    const values = narrations.map(narration => {
-      const previous = document.narrations[narration.id] ?? this.#removedNarrations.get(narration.id)?.narration
-      return { ...previous, ...narration }
-    })
-    if (JSON.stringify(step.narrationIds.map(id => document.narrations[id])) === JSON.stringify(values)) return
-    const next = replaceStepNarrations(document, stepId, values)
-    for (const narration of values) {
-      const override = this.#removedNarrations.get(narration.id)?.override
-      if (override && !document.narrations[narration.id]) next.production.narrationOverrides = { ...next.production.narrationOverrides, [narration.id]: { ...override } }
-    }
-    const cueIds = new Set(values.flatMap(narration => narration.content.flatMap(node => node.type === 'cue' ? [node.id] : [])))
-    for (const cue of cueIds) {
-      const timing = this.#removedCueTimings.get(cue)
-      if (timing && !Object.hasOwn(next.production.cueTimings ?? {}, cue)) next.production.cueTimings = { ...next.production.cueTimings, [cue]: { ...timing } }
-    }
-    const references = (values: Narration[]) => JSON.stringify(values.map(narration => [narration.id, narration.provenance, narration.content.filter(node => node.type === 'cue')]))
-    if (references(step.narrationIds.map(id => document.narrations[id]!)) !== references(values)
-      && validateDocument(next).issues.some(issue => issue.severity === 'error')) throw new Error('document-narration-content')
-    for (const id of step.narrationIds) if (!next.steps[stepId]!.narrationIds.includes(id)) {
-      this.#removedNarrations.delete(id)
-      this.#removedNarrations.set(id, { narration: document.narrations[id]!, override: document.production.narrationOverrides?.[id] })
-    }
-    for (const [id, timing] of Object.entries(document.production.cueTimings ?? {})) if (!Object.hasOwn(next.production.cueTimings ?? {}, id)) {
-      this.#removedCueTimings.delete(id)
-      this.#removedCueTimings.set(id, { ...timing })
-    }
-    while (this.#removedNarrations.size > 512) this.#removedNarrations.delete(this.#removedNarrations.keys().next().value!)
-    while (this.#removedCueTimings.size > 512) this.#removedCueTimings.delete(this.#removedCueTimings.keys().next().value!)
-    this.stopAuditions()
-    this.#documentSession.record(next)
   }
   recordDocument(content: TeachingDocument): void { if (!isAgentChanging(this.#state)) this.#documentSession.record(content) }
   documentComposition(composing: boolean, owner = 'body', identity?: string): void { this.#documentSession.composition(composing, owner, identity) }
@@ -1672,232 +1032,10 @@ export class Workbench {
     if (this.#state.authoring?.identity === identity && !isAgentChanging(this.#state)) void this.#documentSession.forgetDraft(value)
   }
   documentError(error: Error): void { this.#set({ save: { kind: 'failed', message: error.message } }) }
-  documentInteraction(): void {
-    this.#documentSelectionGeneration++; this.#cancelOpeningDocument(); this.#stopDocumentReturnScroll?.()
-    if (this.#state.documentPositionFailure) this.#set({ documentPositionFailure: undefined })
-  }
-  pendingDocumentField(blockId: string | undefined, identity?: string): Pick<DocumentFieldRegistration, 'stepId'> | undefined {
-    const pending = this.#pendingDocumentField, source = this.#state.authoring
-    return pending && pending.generation === this.#documentSelectionGeneration && pending.field.blockId === blockId
-      && pending.field.identity === (identity ?? source?.identity) && pending.reset === source?.reset ? pending.field : undefined
-  }
-  /** A live native field owns its target only while it still has focus in this source. */
-  focusedDocumentField(): Readonly<Pick<DocumentFieldRegistration, 'identity' | 'reset' | 'blockId' | 'stepId'>> & { readonly editor: DocumentHistoryEditor } | undefined {
-    const source = this.#state.authoring, editor = this.#activeDocumentHistory
-    if (!source?.identity || !source.content || !editor || editor === this.#documentEditor || editor.prosemirrorView.isDestroyed || !editor.prosemirrorView.hasFocus()) return
-    for (const field of this.#documentFields.values()) {
-      if (field.editor !== editor || field.identity !== source.identity || field.reset !== source.reset) continue
-      const step = source.content.steps[field.stepId], section = step && source.content.sections[step.sectionId]
-      if (!step || !section?.stepOrder.includes(field.stepId)) return
-      const { identity, reset, blockId, stepId } = field
-      return { identity, reset, blockId, stepId, editor }
-    }
-    return undefined
-  }
-  registerDocumentField(field: DocumentFieldRegistration): () => void {
-    if (field.identity !== this.#state.authoring?.identity || field.reset !== this.#state.authoring.reset) return () => {}
-    const key = JSON.stringify([field.identity, field.blockId, field.stepId])
-    this.#documentFields.set(key, field)
-    const pending = this.#pendingDocumentField
-    if (pending && pending.reset === field.reset && JSON.stringify([pending.field.identity, pending.field.blockId, pending.field.stepId]) === key) {
-      this.#pendingDocumentField = undefined
-      if (pending.generation === this.#documentSelectionGeneration && field.identity === this.#state.authoring?.identity && field.reset === this.#state.authoring.reset) field.focus.restore(pending.bookmark)
-    }
-    return () => {
-      if (this.#documentFields.get(key) !== field) return
-      this.#documentFields.delete(key)
-      if (field.editor && this.#activeDocumentHistory === field.editor) this.activateDocumentHistory(this.#documentEditor)
-    }
-  }
-  /** Toolbar commands use the focused native editor's own history, without replacing the body editor. */
-  activateDocumentHistory(editor: DocumentHistoryEditor | undefined): void {
-    if (editor && editor !== this.#documentEditor && ![...this.#documentFields.values()].some(field => field.editor === editor && field.identity === this.#state.authoring?.identity)) return
-    if (editor === this.#activeDocumentHistory) return
-    this.#unsubscribeDocumentHistory?.()
-    this.#activeDocumentHistory = editor
-    const update = () => this.#set({ editorHistory: editor ? { section: this.#state.position?.section ?? '', undo: undoDepth(editor.prosemirrorState) > 0, redo: redoDepth(editor.prosemirrorState) > 0, field: editor !== this.#documentEditor } : undefined })
-    this.#unsubscribeDocumentHistory = editor?.onChange(update)
-    update()
-  }
-  attachDocumentEditor(editor: NativeDocumentEditor | undefined, commands?: DocumentEditorCommands, binding?: { identity: string, reset: number }): void {
-    if (binding && (binding.identity !== this.#state.authoring?.identity || binding.reset !== this.#state.authoring.reset)) return
-    const wasBody = !this.#activeDocumentHistory || this.#activeDocumentHistory === this.#documentEditor
-    if (editor !== this.#documentEditor) this.#documentSession.composition(false, 'body')
-    this.#unsubscribeDocumentSelection?.(); this.#stopDocumentLayoutScroll?.(); this.#stopDocumentLayoutScroll = undefined
-    this.#documentEditor = editor; this.#documentEditorCommands = commands; this.#documentEditorBinding = editor ? binding : undefined
-    if (editor) {
-      const focus = this.#pendingDocumentFocus, selection = this.#pendingDocumentSelection
-      this.#pendingDocumentFocus = undefined; this.#pendingDocumentSelection = undefined
-      if (focus && focus.documentId === this.#state.authoring?.content?.id && focus.generation === this.#documentSelectionGeneration && editor.getBlock(focus.nodeId)) {
-        // A deferred page operation adopts its selection only after the source write is acknowledged.
-        if (!focus.afterSave) {
-          this.#focusDocumentNode(editor, focus.nodeId)
-        }
-      } else if (!this.#pendingDocumentField && selection && selection.documentId === this.#state.authoring?.content?.id) {
-        const anchor = nativeTextPosition(editor, selection.anchor), head = nativeTextPosition(editor, selection.head)
-        if (anchor !== undefined && head !== undefined) {
-          editor.transact(transaction => transaction.setSelection(TextSelection.create(transaction.doc, anchor, head)))
-          if (selection.focused) editor.focus()
-        }
-      }
-    }
-    if (wasBody) this.activateDocumentHistory(editor)
-    if (editor) {
-      const focus = () => this.activateDocumentHistory(editor)
-      const element = editor.prosemirrorView.dom
-      element.addEventListener('focusin', focus)
-      if (editor.prosemirrorView.hasFocus()) focus()
-      const stopSelection = editor.onSelectionChange(() => { this.#documentSelectionGeneration++ })
-      this.#unsubscribeDocumentSelection = () => { this.#stopDocumentLayoutScroll?.(); stopSelection(); element.removeEventListener('focusin', focus) }
-      commands?.handleAnimationRequests({ available: () => this.#drafters.size > 0, request: place => this.draftAnimation(place) })
-    } else this.#unsubscribeDocumentSelection = undefined
-    this.#finishOpeningDocument()
-  }
-  /** `selectText`: the node's whole text is selected, so typing replaces it. */
-  #focusDocumentNode(editor: NativeDocumentEditor, nodeId: string, selectText = false): void {
-    this.#stopDocumentLayoutScroll?.(); this.#stopDocumentLayoutScroll = undefined
-    editor.setTextCursorPosition(nodeId, 'start')
-    const text = selectText ? nativeBlockText(editor, nodeId) : undefined
-    if (text) editor.transact(transaction => transaction.setSelection(TextSelection.create(transaction.doc, text.from, text.to)))
-    editor.focus()
-    editor.prosemirrorView.dispatch(editor.prosemirrorState.tr.scrollIntoView())
-    // React node views can finish sizing after the native editor mounts.
-    // Keep only this untouched focus visible through those layout changes.
-    if (typeof ResizeObserver !== 'undefined') {
-      const view = editor.prosemirrorView, document = view.dom.ownerDocument
-      const source = this.#state.authoring!, identity = source.identity, reset = source.reset, documentId = source.content!.id
-      const request = this.#state.documentNavigation?.request, selected = editor.prosemirrorState.selection
-      let size = view.dom.getBoundingClientRect(), active = true
-      const events = ['pointerdown', 'wheel', 'touchmove', 'keydown', 'beforeinput']
-      const cancel = () => {
-        if (!active) return
-        active = false; observer.disconnect(); stopFocus(); stopSelection()
-        for (const event of events) document.removeEventListener(event, interact, true)
-      }
-      const interact = (event: Event) => { if (event.isTrusted) cancel() }
-      const stopFocus = editor.onFocusChange((_, { focused }) => { if (!focused) cancel() })
-      const stopSelection = editor.onSelectionChange(cancel)
-      const observer = new ResizeObserver(() => {
-        if (!active) return
-        const current = this.#state.authoring
-        if (this.#documentEditor !== editor || view.isDestroyed || !current || current.identity !== identity || current.reset !== reset
-          || current?.content?.id !== documentId || this.#state.documentNavigation?.request !== request
-          || !editor.isFocused() || !editor.prosemirrorState.selection.eq(selected) || editor.getTextCursorPosition().block.id !== nodeId) { cancel(); return }
-        const next = view.dom.getBoundingClientRect()
-        if (next.width === size.width && next.height === size.height) return
-        size = next
-        view.dispatch(editor.prosemirrorState.tr.scrollIntoView())
-      })
-      for (const event of events) document.addEventListener(event, interact, true)
-      observer.observe(view.dom)
-      this.#stopDocumentLayoutScroll = cancel
-    }
-  }
   async flushPendingEdits(signal?: AbortSignal): Promise<void> {
     if (isAgentChanging(this.#state)) throw new Error('save-locked')
     await this.#documentSession.flush(signal)
   }
-  async #changeDocumentPage(change: (document: TeachingDocument) => void): Promise<boolean> {
-    const source = this.#state.authoring, directory = this.#state.document
-    if (!source?.content || directory === undefined || isAgentChanging(this.#state)) return false
-    const scope = this.#documentScope, identity = source.identity, documentId = source.content.id
-    const current = () => scope === this.#documentScope && directory === this.#state.document && identity === this.#state.authoring?.identity && documentId === this.#state.authoring?.content?.id
-    this.#set({ isEditingPage: true, pageEditFailure: undefined })
-    try {
-      await this.flushPendingEdits()
-      if (!current()) throw new Error('page-context-changed')
-      const document = structuredClone(this.#state.authoring!.content!)
-      change(document)
-      const editor = this.#documentEditor
-      this.#pendingDocumentField = undefined
-      const plannedFocus = this.#pendingDocumentFocus
-      if (!plannedFocus || plannedFocus.generation !== this.#documentSelectionGeneration) for (const field of this.#documentFields.values()) {
-        if (field.identity !== source.identity || field.reset !== this.#state.authoring!.reset || field.blockId !== undefined && !document.blocks[field.blockId] || !document.steps[field.stepId]) continue
-        const bookmark = field.focus.capture()
-        if (bookmark) {
-          const { focus: _focus, editor: _editor, ...target } = field
-          this.#pendingDocumentField = { field: target, bookmark, reset: this.#state.authoring!.reset + 1, generation: this.#documentSelectionGeneration }
-          this.#pendingDocumentSelection = undefined
-          break
-        }
-      }
-      if (editor && !this.#pendingDocumentField) {
-        const state = editor.prosemirrorState, anchor = nativeTextPoint(editor, state.selection.anchor), head = nativeTextPoint(editor, state.selection.head)
-        if (anchor && head) this.#pendingDocumentSelection = { documentId: document.id, anchor, head, focused: editor.prosemirrorView.hasFocus() }
-      }
-      this.#documentSession.replace(document)
-      await this.#documentSession.flush()
-      return current()
-    } catch (error) { if (current()) this.#set({ pageEditFailure: this.#pageEditMessage(errorMessage(error)) }); return false }
-    finally { if (current()) this.#set({ isEditingPage: false }) }
-  }
-  renamePage(section: string, title: string): Promise<boolean> {
-    return this.#changeDocumentPage(document => { Object.assign(document, renameDocumentPage(document, section, title)) })
-  }
-  async duplicatePage(section: string): Promise<boolean> {
-    if (this.#state.isEditingPage || this.#state.isCreatingPage || this.#state.isHistoryBusy) return false
-    const scope = this.#documentScope, identity = this.#state.authoring?.identity, generation = this.#documentSelectionGeneration, navigation = this.#state.documentNavigation?.request
-    let copied: string | undefined
-    const saved = await this.#changeDocumentPage(document => {
-      if (scope !== this.#documentScope || identity !== this.#state.authoring?.identity) throw new Error('page-context-changed')
-      const page = document.sections[section]
-      if (!page) throw new Error('page-boundary')
-      const copy = duplicateDocumentPage(document, section, contentText(document.metadata.lang).copyTitle(page.title), () => randomUUID())
-      copied = copy.section
-      Object.assign(document, copy.document)
-      if (generation === this.#documentSelectionGeneration) this.#pendingDocumentFocus = { documentId: document.id, nodeId: `page:${copied}`, generation, afterSave: true }
-    })
-    // Source confirmation owns editing. A later author selection takes precedence over this response.
-    if (!saved || !copied || scope !== this.#documentScope || generation !== this.#documentSelectionGeneration || navigation !== this.#state.documentNavigation?.request || !this.#state.authoring?.content?.sections[copied]) return saved
-    this.goToSection(copied)
-    const editor = this.#documentEditor
-    if (editor) {
-      const blocks = editor.document, start = blocks.findIndex(block => block.id === `page:${copied}`)
-      const first = (nodes: typeof blocks): string | undefined => {
-        for (const node of nodes) { if (node.type === 'presmiumPage') break; if (node.content !== undefined) return node.id; const child = first(node.children); if (child) return child }
-        return undefined
-      }
-      const target = start < 0 ? undefined : first(blocks.slice(start + 1)) ?? blocks[start]!.id
-      if (target) { editor.setTextCursorPosition(target, 'start'); editor.focus() }
-    }
-    return true
-  }
-  movePage(section: string, before: string | null): Promise<boolean> {
-    return this.#changeDocumentPage(document => { Object.assign(document, moveDocumentPage(document, section, before)) })
-  }
-  pageDeleteMessage(reason: string): string { return this.#pageEditMessage(reason) }
-  async preparePageDeletion(section: string): Promise<PageDeletePlan> {
-    await this.flushPendingEdits()
-    const source = this.#state.authoring
-    if (!source?.content || !source.version || this.#state.document === undefined) throw new Error('document-unavailable')
-    return pageDeletion(source.content, this.#state.document, source.version, section)
-  }
-  async deletePage(plan: PageDeletePlan): Promise<boolean> {
-    if (!plan.allowed || plan.document !== this.#state.document) return false
-    return this.#changeDocumentPage(document => {
-      if (this.#state.authoring?.version !== plan.source.version) throw new Error('revision-conflict')
-      const current = pageDeletion(document, plan.document, plan.source.version, plan.section)
-      if (!current.allowed) throw new Error(current.reason)
-      Object.assign(document, removeDocumentPage(document, plan.section, () => randomUUID()))
-      this.#set({ position: { section: document.sectionOrder[0]!, step: 0, trail: [], view: 'document' }, documentNavigation: { section: document.sectionOrder[0]!, request: randomUUID() } })
-    })
-  }
-  createPage(after = this.#state.position?.section): boolean {
-    const source = this.#state.authoring, editor = this.#documentEditor, commands = this.#documentEditorCommands
-    if (!source?.content || source.loading || source.composing || source.restored || source.error || !editor || !commands
-      || editor.prosemirrorView.isDestroyed || isAgentChanging(this.#state) || this.#state.isEditingPage || this.#state.isCreatingPage
-      || this.#state.isHistoryBusy || this.#state.isHistoryPreparing) return false
-    try {
-      this.#set({ pageEditFailure: undefined })
-      const created = commands.insertPage(after, contentText(source.content.metadata.lang).newPage)
-      this.#pendingDocumentField = undefined; this.#pendingDocumentSelection = undefined; this.#pendingDocumentFocus = undefined
-      this.#set({ position: { section: created.sectionId, step: 0, trail: [], view: 'document' }, documentNavigation: { section: created.sectionId, request: randomUUID() } })
-      // The default title is selected: the author's first words name the page, and Enter goes on to its body.
-      this.#focusDocumentNode(editor, `page:${created.sectionId}`, true)
-      return true
-    } catch (error) { this.#set({ pageEditFailure: this.#pageEditMessage(errorMessage(error)) }); return false }
-  }
-
   /** Points at a block or a passage (none: stops pointing): the preview outlines it and the conversation is told. */
   point(pointer: Pointer | undefined): void {
     const pointed = this.#state.pointer !== undefined || this.#state.focus.length > 0
@@ -2074,7 +1212,7 @@ export class Workbench {
     const plan = this.#state.productionPlan, range = plan?.pages.find(page => page.sectionId === sectionId)?.steps.find(step => step.stepId === stepId)
     if (plan?.canPreview && this.#productionReady() && range?.startMs !== undefined) {
       this.stopAuditions()
-      if (this.#production.selecting(sectionId, stepId)) return
+      if (this.#productionPlayback.selecting(sectionId, stepId)) return
       this.#selectedSteps.set(`${this.#state.document}\0${sectionId}`, step)
       this.#set({ position: { section: sectionId, step, trail: [], view: 'present' } })
       return this.controlProduction({ binding: plan.binding, action: 'step', sectionId, stepId }).catch(() => undefined)
@@ -2129,8 +1267,8 @@ export class Workbench {
     return true
   }
 
-  undo(): Promise<boolean> { if (this.#state.mode !== 'editing') return Promise.resolve(false); if (this.#activeDocumentHistory && (this.#state.editorHistory?.undo || this.#state.editorHistory?.field)) { this.#activeDocumentHistory.focus(); return Promise.resolve(this.#activeDocumentHistory.undo()) } return this.#changeHistory('undo') }
-  redo(): Promise<boolean> { if (this.#state.mode !== 'editing') return Promise.resolve(false); if (this.#activeDocumentHistory && (this.#state.editorHistory?.redo || this.#state.editorHistory?.field)) { this.#activeDocumentHistory.focus(); return Promise.resolve(this.#activeDocumentHistory.redo()) } return this.#changeHistory('redo') }
+  undo(): Promise<boolean> { const result = this.editing.nativeHistory('undo'); return result === undefined ? this.#changeHistory('undo') : Promise.resolve(result) }
+  redo(): Promise<boolean> { const result = this.editing.nativeHistory('redo'); return result === undefined ? this.#changeHistory('redo') : Promise.resolve(result) }
 
   async #changeHistory(action: 'undo' | 'redo' | 'revert', revision?: string): Promise<boolean> {
     if (this.#state.mode !== 'editing' || this.#state.isCreatingPage || this.#state.isEditingPage || this.#state.isHistoryBusy || this.#state.isHistoryPreparing) return false
@@ -2231,7 +1369,7 @@ export class Workbench {
     sink.send({ type: 'highlight', target: reveal ?? this.#state.pointer?.target ?? null })
     return () => {
       this.#previewSinks.delete(sink)
-      this.#production.detach(sink)
+      this.#productionPlayback.detach(sink)
       this.#set({ previewConnection: this.#state.previewConnection + 1 })
       this.#playback.detach(sink)
     }
@@ -2248,7 +1386,7 @@ export class Workbench {
     if (report.type === 'page-create') { origin?.send({ type: 'page-created', section: report.section, request: report.request, error: unsupported }); return }
     if (document !== this.#state.document || renderer !== this.#state.previewRenderer) return
     this.#playback.report(document, report, origin)
-    this.#production.report(document, report, origin)
+    this.#productionPlayback.report(document, report, origin)
     switch (report.type) {
       case 'ready':
       case 'updated':
@@ -2283,7 +1421,7 @@ export class Workbench {
         if (snapshot && source && (source.dirty || source.loading || source.version !== snapshot.version || source.fingerprint !== snapshot.fingerprint)) break
         // An initial loader can report its old cursor while a newer stable selection is preparing.
         // Explicit native exits still reach the outer document workspace.
-        if (report.view !== 'document' && this.#production.selecting()) break
+        if (report.view !== 'document' && this.#productionPlayback.selecting()) break
         // A fresh frame announces its document view before applying the queued
         // presentation command. Only the requested view completes that switch.
         if (renderer === 'web' && this.#awaitingView) {
@@ -2322,19 +1460,14 @@ export class Workbench {
 
   #stopSubscriptions(): void {
     this.#componentPropertyDrafts.stopAgentRead()
-    this.#saveDocumentReturnPoint(); this.#cancelOpeningDocument(); this.#stopDocumentReturnScroll?.()
-    this.#documentViewport?.stop(); this.#documentViewport = undefined; this.#documentEditorBinding = undefined
+    this.editing.reset()
     this.#presentationPreparation++
     this.#presentationController?.abort(new Error('client-document-changed'))
     this.#voiceover.stop()
-    this.#production.reset()
+    this.#productionPlayback.reset()
     this.#set({ isPreparingPresentation: false, presentationFailure: undefined, presentationSnapshot: undefined, productionPlan: undefined, productionFailure: undefined })
-    this.#removedCueTimings.clear(); this.#removedNarrations.clear(); this.#cueTimingScope = undefined
+    this.production.reset()
     this.#documentSession.close()
-    this.#unsubscribeDocumentHistory?.(); this.#unsubscribeDocumentHistory = undefined; this.#activeDocumentHistory = undefined; this.#documentEditor = undefined
-    this.#unsubscribeDocumentSelection?.(); this.#unsubscribeDocumentSelection = undefined
-    this.#pendingDocumentFocus = undefined; this.#pendingDocumentSelection = undefined; this.#documentSelectionGeneration++
-    this.#documentFields.clear(); this.#pendingDocumentField = undefined
     this.#playback.reset()
     this.#focusVersion++
     this.#pendingReveal = undefined
@@ -2357,7 +1490,7 @@ export class Workbench {
     this.#documentSession.dispose()
     this.#commentDrafts.close()
     this.#componentPropertyDrafts.close()
-    this.#captionTimingDrafts.close()
+    this.production.dispose()
     disposeTranscriptionSessions(this.client)
     disposeDocumentRecordings(this)
   }

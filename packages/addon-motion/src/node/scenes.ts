@@ -4,10 +4,12 @@ import { SCENE_EXTENSIONS, SCENE_NAME, SCENES_DIR } from '../domain/index.ts'
 
 export const SCENES_MODULE = 'virtual:presmium-motion/scenes'
 
-/** The file of scene `name` in the deck (`scenes/<name>.ts` and the other extensions), if there is one. */
-export function sceneFile(deckDir: string, name: string): string | undefined {
-  if (!SCENE_NAME.test(name)) return undefined
-  return SCENE_EXTENSIONS.map(ext => join(deckDir, SCENES_DIR, `${name}${ext}`)).find(file => existsSync(file))
+/** The scene name of a supported file below the document's scenes directory. */
+export function sceneName(deckDir: string, file: string): string | undefined {
+  const path = relative(join(deckDir, SCENES_DIR), file).split(sep).join('/')
+  const ext = SCENE_EXTENSIONS.find(ext => path.endsWith(ext))
+  const name = ext && path.slice(0, -ext.length)
+  return name && SCENE_NAME.test(name) ? name : undefined
 }
 
 /** The deck's scenes by name: the files under `scenes/`, the first extension of SCENE_EXTENSIONS winning. */
@@ -23,9 +25,10 @@ export function deckScenes(deckDir: string): Map<string, string> {
       }
       const ext = SCENE_EXTENSIONS.find(e => entry.endsWith(e))
       if (!ext) continue
-      const name = relative(root, path).slice(0, -ext.length).split(sep).join('/')
+      const name = sceneName(deckDir, path)
+      if (name === undefined) continue
       const known = scenes.get(name)
-      if (SCENE_NAME.test(name) && (!known || SCENE_EXTENSIONS.indexOf(ext) < SCENE_EXTENSIONS.findIndex(e => known.endsWith(e)))) scenes.set(name, path)
+      if (!known || SCENE_EXTENSIONS.indexOf(ext) < SCENE_EXTENSIONS.findIndex(e => known.endsWith(e))) scenes.set(name, path)
     }
   }
   if (existsSync(root) && statSync(root).isDirectory()) walk(root)

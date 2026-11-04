@@ -56,7 +56,7 @@ export function ProductionMediaClips({ identity, version, document, sectionId, s
     const assetId = draft.clip.assetId, controller = new AbortController(), requestKey = key
     if (!assetId || disabled || !version || inspection?.version === version && inspection.value.assetId === assetId) { setLoading(false); return }
     setLoading(true)
-    void workbench.inspectDocumentAudio(assetId, { identity, version }, controller.signal).then(answer => {
+    void workbench.production.inspectAudio(assetId, { identity, version }, controller.signal).then(answer => {
       if (controller.signal.aborted || !active()) return
       setInspection({ version: answer.version, value: answer.inspection })
       const current = ownDraft(latest.current.entries, requestKey)
@@ -85,7 +85,7 @@ export function ProductionMediaClips({ identity, version, document, sectionId, s
     if (!sent) return
     file.current = value; setRetryImport(false)
     try {
-      const answer = await workbench.ensureDocumentAudio(value, sent.expected, sent.controller.signal)
+      const answer = await workbench.production.ensureAudio(value, sent.expected, sent.controller.signal)
       if (!active() || sent.controller.signal.aborted) return
       const next = acknowledge(answer, sent.expected.version)
       if (owner.current.revision === sent.revision && selected.current === sent.key) {
@@ -103,7 +103,7 @@ export function ProductionMediaClips({ identity, version, document, sectionId, s
     const sent = start('apply')
     if (!sent) return
     try {
-      const answer = await workbench.applyDocumentMediaClip(clip, { ...sent.expected, binding }, sent.controller.signal)
+      const answer = await workbench.production.applyMediaClip(clip, { ...sent.expected, binding }, sent.controller.signal)
       if (!active() || sent.controller.signal.aborted) return
       const next = acknowledge(answer, sent.expected.version), current = ownDraft(latest.current.entries, sent.key)
       if (sent.key === 'new') blank.current = newDraft(answer.version, stepId)
@@ -123,7 +123,7 @@ export function ProductionMediaClips({ identity, version, document, sectionId, s
     const sent = start('remove')
     if (!sent) return
     try {
-      const answer = await workbench.removeDocumentMediaClip(canonical.id, sent.expected, sent.controller.signal)
+      const answer = await workbench.production.removeMediaClip(canonical.id, sent.expected, sent.controller.signal)
       if (!active() || sent.controller.signal.aborted) return
       const next = acknowledge(answer, sent.expected.version), current = ownDraft(latest.current.entries, sent.key)
       if (!current || same(current, sent.draft)) {

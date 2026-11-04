@@ -200,3 +200,5 @@ utterance identity. Do not replace the iframe per clip or add a second media clo
 other audio starts and source/project changes retire pending intent; rate changes preserve it.
 Estimated plans never admit arbitrary time seeks or export. Provider errors map through speechFailureCode
 to localized reasons; never display upstream payloads or credentials.
+
+The workbench shares its state through `workbench-state.ts`. `DocumentEditing` owns editor focus, selection, page operations and viewport restoration; `DocumentProduction` owns source-bound media, timing drafts and narration edits. Panels use `workbench.editing` and `workbench.production`; their document lifetime ends through `reset`, with durable resources closed on `dispose`.

@@ -1,4 +1,4 @@
-# Packages, official plugins, directives and releases
+# Packages, official plugins and releases
 
 The plugin contract is `presmium-develop/references/plugin.md`; package conventions are
 `docs/architecture.md` 4.2 and section 5, and `docs/ir.md` sections 5 and 6. The package list and versioning
@@ -6,7 +6,7 @@ are `.changeset/README.md`.
 
 ## Read an existing plugin first
 
-`packages/addon-guide` (directive to component, overlay), `packages/addon-content` (directives, pass,
+`packages/addon-guide` (browser services and overlays), `packages/addon-content` (compilation passes,
 notebook extension), `packages/addon-exec` (executors, browser services), `packages/addon-classroom`
 (pass depending on services).
 
@@ -36,7 +36,7 @@ syntax or Markdown fallback.
 ## Skills
 
 Skills live in `.agents/skills`; `.claude/skills` links to it and `AGENTS.md` to `CLAUDE.md`. The author,
-animate, present and develop skills are packed into `@lincyaw/skills`, registered by Studio and exposed by
+animate and develop skills are packed into `@lincyaw/skills`, registered by Studio and exposed by
 MCP (`list_skills`, `read_skill`, `presmium://skills`); `presmium skills install <dir>` installs missing
 ones. New projects get those listed in `packages/create-presmium/src/templates.ts`. Shipped skills are
 self-contained (no `docs/`, `packages/`, `scripts/` or `e2e/` references); `presmium-maintain` is not

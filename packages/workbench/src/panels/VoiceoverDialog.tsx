@@ -8,7 +8,7 @@ import type { DocumentVoiceScope } from '../document-voices.ts'
 import { VOICE_MESSAGES, voiceFailure } from '../voice-messages.ts'
 import { prepareVoiceSnapshot, runtimeVoiceScope, voiceSnapshotCurrent } from '../voice-snapshot.ts'
 import type { VoiceSnapshot } from '../voice-snapshot.ts'
-import { isAgentChanging } from '../workbench.ts'
+import { isAgentChanging } from '../workbench-state.ts'
 import { VoiceScopeField } from './VoiceScopeField.tsx'
 
 interface CheckedVoice { snapshot: VoiceSnapshot, document: TeachingDocument }

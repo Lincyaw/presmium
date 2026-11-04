@@ -91,7 +91,7 @@ function AdoptionTarget({ identity, candidate, document, sectionId, stepId, disa
     const sent: TranscriptionAdoptionDraft = { id: value.id, source: { documentId: document.id, version: now.version, fingerprint: now.fingerprint }, candidate: { id: candidate.transcriptionId, revision: candidate.revision }, draftRevision: value.revision, targets: [{ ...target, content: normalized.parts, discardAtoms: value.discarded.filter(key => atoms.some(atom => atom.key === key)) }], ...removeCueTimings.length ? { removeCueTimings } : {} }
     setReviewing(true); setFailure(undefined)
     try {
-      const answer = await workbench.planDocumentTranscription(sent, { identity, version: now.version })
+      const answer = await workbench.production.planTranscription(sent, { identity, version: now.version })
       if (request !== generation.current || latest.current.revision !== sent.draftRevision) return
       setPlan(answer); setOpen(true)
     } catch { if (request === generation.current) setFailure(t.previewFailed) }
@@ -102,7 +102,7 @@ function AdoptionTarget({ identity, candidate, document, sectionId, stepId, disa
     const sent = plan, planId = plan.planId
     setApplying(true); setFailure(undefined)
     try {
-      const answer = await workbench.adoptDocumentTranscription({ planId, source: sent.source, candidate: sent.candidate, draftRevision: sent.draftRevision }, { identity, version: sent.source.version })
+      const answer = await workbench.production.adoptTranscription({ planId, source: sent.source, candidate: sent.candidate, draftRevision: sent.draftRevision }, { identity, version: sent.source.version })
       if (latest.current.id === sent.changeId && latest.current.revision === sent.draftRevision) {
         const next: Draft = { ...latest.current, id: randomUUID(), revision: 0, discarded: [], baseVersion: answer.version, applied: true }
         latest.current = next; setDraft(next)

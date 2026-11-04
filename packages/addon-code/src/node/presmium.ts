@@ -1,7 +1,6 @@
 import { createRequire } from 'node:module'
 import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 import { CODE_ID, regionResolver } from '../domain/index.ts'
-import { codeRefDirective } from './directive.ts'
 import { codeRefAnchors, codeRefPass } from './resolve.ts'
 import { patternResolver, symbolResolver } from './syntax-resolvers.ts'
 
@@ -12,7 +11,6 @@ const plugin: PresmiumNodePlugin = {
   version,
   kernel: '^1.0.0',
   resolvers: [regionResolver, symbolResolver, patternResolver],
-  directives: [codeRefDirective],
   passes: [codeRefPass],
   anchors: ctx => codeRefAnchors(ctx.ir),
 }

@@ -319,7 +319,7 @@ export class Compiler {
     return { workspace, headmatter, lang, plugins, configOf, service, execute, inputs, findings, report, at, signal: options.signal, document, rawSource: read }
   }
 
-  /** Registers each plugin's directives, roles, anchor resolvers, executors, environment providers and components. */
+  /** Collects the plugins' anchor resolvers, executors, environment providers and components. */
   async #collectContributions(run: CompileRun): Promise<Contributions> {
     const { plugins, configOf, execute, report, at } = run
     const resolvers = createAnchorResolverRegistry()

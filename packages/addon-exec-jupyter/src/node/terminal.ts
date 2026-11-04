@@ -1,27 +1,6 @@
 import { docBlocks } from '@lincyaw/kernel'
-import type { ComponentNode, DirectiveSpec, IRPass } from '@lincyaw/kernel'
-import { DEFAULT_TERMINAL_ROWS, EXEC_JUPYTER_ID, jupyterSpecs, terminalFallback } from '../domain/index.ts'
-
-export const terminalDirective: DirectiveSpec = {
-  name: 'terminal',
-  arg: true,
-  body: false,
-  options: { height: 'number' },
-  toIR(input, ctx) {
-    const env = input.arg?.trim() ?? ''
-    if (!env) ctx.report({ checkId: EXEC_JUPYTER_ID, severity: 'error', message: '{terminal} needs the name of a kind: jupyter environment of execute.environments, e.g. :::{terminal} gpu' })
-    const height = input.options.height
-    const rows = typeof height === 'number' && Number.isInteger(height) && height > 0 ? height : DEFAULT_TERMINAL_ROWS
-    const node: ComponentNode = {
-      type: 'component',
-      plugin: EXEC_JUPYTER_ID,
-      name: 'PmTerminal',
-      props: { env, rows },
-      fallback: { type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', value: terminalFallback(env, ctx.lang) }] }] },
-    }
-    return { node }
-  },
-}
+import type { IRPass } from '@lincyaw/kernel'
+import { EXEC_JUPYTER_ID, jupyterSpecs } from '../domain/index.ts'
 
 export const terminalPass: IRPass = {
   name: 'presmium.execJupyter.terminals',

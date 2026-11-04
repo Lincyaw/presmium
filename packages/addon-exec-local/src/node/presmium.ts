@@ -6,7 +6,7 @@ import { DEVCONTAINER_KIND, EXEC_LOCAL_ID } from '../domain/index.ts'
 import { createContainerExecutor } from './container.ts'
 import { findDefinition } from './devcontainer.ts'
 import { dockerAvailable } from './docker.ts'
-import { localEnvDirective, localEnvPass } from './local-env.ts'
+import { localEnvPass } from './local-env.ts'
 import { localEnvRoutes } from './server.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
@@ -33,7 +33,6 @@ const plugin: PresmiumNodePlugin = {
   id: EXEC_LOCAL_ID,
   version,
   kernel: '^1.0.0',
-  directives: [localEnvDirective],
   passes: [localEnvPass(container)],
   executors: [container],
   environments: { [DEVCONTAINER_KIND]: devcontainer },

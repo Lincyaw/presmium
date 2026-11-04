@@ -14,7 +14,7 @@ Plugins declare it as a peer dependency, so they share the application's copy:
 
 ## Entries
 
-- `@lincyaw/kernel`: the contracts (`PresmiumNodePlugin`, `PluginDefinition`, `DirectiveSpec`, `IRPass`, `Renderer`, `RenderContext`, `Check`, the service tokens), the canonical authoring types (`TeachingDocument`, `DocumentEditOperation`), `DOCUMENT_ENTRY`, `DOCUMENT_SCHEMA_VERSION`, `DOCUMENT_JSON_SCHEMA`, `validateDocument`, the derived IR types (`IRDocument` and its nodes), `KERNEL_VERSION`, `IR_VERSION`, and plain helpers such as `docBlocks`, `withProp`, `deckLocale`, `jsonResponse` and `problemResponse`.
+- `@lincyaw/kernel`: the contracts (`PresmiumNodePlugin`, `PluginDefinition`, `IRPass`, `Renderer`, `RenderContext`, `Check`, the service tokens), the canonical authoring types (`TeachingDocument`, `DocumentEditOperation`), `DOCUMENT_ENTRY`, `DOCUMENT_SCHEMA_VERSION`, `DOCUMENT_JSON_SCHEMA`, `validateDocument`, the derived IR types (`IRDocument` and its nodes), `KERNEL_VERSION`, `IR_VERSION`, and plain helpers such as `docBlocks`, `withProp`, `deckLocale`, `jsonResponse` and `problemResponse`.
 - `@lincyaw/kernel/contracts`, `@lincyaw/kernel/ir`: the contracts (types, service tokens and the preview protocol's parsers) or the IR types alone; the helpers are only in `@lincyaw/kernel`.
 - `@lincyaw/kernel/reading`: plain functions that read a compiled document, the IR (`chapters`, `blockText`, `narrationAt`, `tokenize`); they do no I/O.
 - `@lincyaw/kernel/node`: helpers for Node code: `copyPublished` and `isInside` (its other exports are internal).

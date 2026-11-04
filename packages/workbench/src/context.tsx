@@ -2,7 +2,8 @@ import { createContext, useContext, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
 import { MESSAGES } from './messages.ts'
 import type { WorkbenchMessages } from './messages.ts'
-import type { Workbench, WorkbenchState } from './workbench.ts'
+import type { Workbench } from './workbench.ts'
+import type { WorkbenchState } from './workbench-state.ts'
 
 const WORKBENCH = createContext<Workbench | undefined>(undefined)
 

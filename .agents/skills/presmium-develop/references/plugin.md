@@ -71,6 +71,7 @@ presmium-plugin-poll/
   `presmium check` and the build.
 - The dev dependencies install Presmium for the tests and `pnpm dev`: the CLI and the renderers (the
   packages that produce each form) the example uses.
+- The Node entry and browser exports use the same package export resolver with their respective conditions. Node conditional exports such as `"./presmium": { "node": "./src/node/presmium.ts" }` are supported.
 - `./presmium` is the only export Presmium needs. The viewer (Presmium's browser app, which shows the web
   page and the slides) finds the browser files by path, not by
   `exports`: `components/*.tsx` (also `.ts`, `.js`, `.jsx`), `src/client/plugin.ts`,

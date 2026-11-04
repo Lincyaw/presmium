@@ -1,6 +1,6 @@
 import type { PreviewReport, ProductionBinding, ProductionPlaybackCommand, ProductionPlaybackState } from '@lincyaw/kernel'
 import { sameProductionBinding } from '@lincyaw/kernel'
-import type { PreviewSink } from './workbench.ts'
+import type { PreviewSink } from './workbench-state.ts'
 
 interface Context {
   document?: string
