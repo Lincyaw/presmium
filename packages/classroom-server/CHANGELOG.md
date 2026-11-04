@@ -1,5 +1,12 @@
 # @lincyaw/classroom-server
 
+## 1.0.0-rc.31
+
+### Patch Changes
+
+- Updated dependencies [d2f07d1]
+  - @lincyaw/kernel@1.0.0-rc.31
+
 ## 1.0.0-rc.30
 
 ### Patch Changes

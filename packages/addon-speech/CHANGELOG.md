@@ -1,5 +1,9 @@
 # @lincyaw/addon-speech
 
+## 1.0.0-rc.31
+
+No changes in this release.
+
 ## 1.0.0-rc.30
 
 ### Patch Changes

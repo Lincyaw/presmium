@@ -1,5 +1,15 @@
 # @lincyaw/workbench
 
+## 0.2.0-rc.31
+
+### Patch Changes
+
+- d2f07d1: Edit each step's script as native content blocks with insertion, deletion, merging and shared undo history.
+  Keep saved script references, shared cues and production settings consistent with these edits.
+- Updated dependencies [d2f07d1]
+  - @lincyaw/kernel@1.0.0-rc.31
+  - @lincyaw/design@1.0.0-rc.31
+
 ## 0.2.0-rc.30
 
 ### Patch Changes

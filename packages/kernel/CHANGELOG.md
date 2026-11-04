@@ -1,5 +1,12 @@
 # @lincyaw/kernel
 
+## 1.0.0-rc.31
+
+### Patch Changes
+
+- d2f07d1: Edit each step's script as native content blocks with insertion, deletion, merging and shared undo history.
+  Keep saved script references, shared cues and production settings consistent with these edits.
+
 ## 1.0.0-rc.30
 
 ### Patch Changes
