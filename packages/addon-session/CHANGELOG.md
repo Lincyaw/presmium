@@ -1,5 +1,11 @@
 # @lincyaw/addon-session
 
+## 1.0.0-rc.59
+
+### Patch Changes
+
+- @lincyaw/classroom-server@1.0.0-rc.59
+
 ## 1.0.0-rc.58
 
 ### Patch Changes
