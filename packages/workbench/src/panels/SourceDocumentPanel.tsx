@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { hasRole } from '@lincyaw/kernel'
-import { PmButton, PmNotice, PmSelect, PmSkeleton } from '../components.tsx'
+import { PmButton, PmNotice, PmSkeleton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { DocumentEditor } from '../document-editor/DocumentEditor.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from '../document-editor/messages.ts'
@@ -29,12 +29,6 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onO
   const bodyEditor = useRef<NativeDocumentEditor>()
   const editingPosition = useRef<{ nativeBlockId: string, sectionId: string, position: number, editor: NativeDocumentEditor, identity: string, reset: number | undefined }>()
   const cancelReading = useRef<() => void>()
-  const [selectedDraft, setSelectedDraft] = useState('')
-  const drafts = source?.recoveryDrafts ?? []
-  const draftKey = (value: { id: string, revision: number, token: string }) => JSON.stringify([value.id, value.revision, value.token])
-  const draft = drafts.find(value => draftKey(value) === selectedDraft)
-  useEffect(() => { setSelectedDraft('') }, [source?.identity])
-  const recoveryDisabled = readOnly || source?.saving || source?.composing || source?.recovering
   useEffect(() => {
     const element = container.current
     if (element && source?.identity && source.content) return workbench.editing.attachViewport(element, source.identity)
@@ -154,20 +148,9 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onO
   const error = source?.error === 'document-version-changed' || source?.error === 'document-identity-changed' ? messages.conflict
     : source?.error ? messages.saveFailure : undefined
   return <section ref={container} className="pmw-source-document" aria-label={t.documentEditor} aria-busy={source?.loading || undefined}>
-    {Boolean(positionFailure || source?.storageFailure || source?.recoveryReadFailure || source?.restored || error || drafts.length || source?.recoveryChanged) && <div className="pmw-source-document__notices">
+    {Boolean(positionFailure || source?.storageFailure || source?.restored || error) && <div className="pmw-source-document__notices">
       {positionFailure && <PmNotice tone="warn">{t.documentPositionRemoved}</PmNotice>}
-      {Boolean(source?.storageFailure || source?.recoveryReadFailure) && <PmNotice tone="warn">{source?.storageFailure ? t.narrationRecoveryUnavailable : t.documentDraftUnreadable}</PmNotice>}
-      {Boolean(drafts.length || source?.recoveryChanged) && <PmNotice tone="accent"><div className="pmw-source-document__recovery">
-        <span>{source?.recoveryChanged ? t.documentDraftChanged : t.documentDraftFound}</span>
-        <PmSelect label={t.documentDraftSelect} value={draft ? selectedDraft : ''} disabled={Boolean(recoveryDisabled)} onChange={event => setSelectedDraft(event.currentTarget.value)}>
-          <option value="">{t.documentDraftChoose}</option>
-          {drafts.map((value, index) => <option key={draftKey(value)} value={draftKey(value)}>{t.documentDraftOption(index + 1, new Intl.DateTimeFormat(locale, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(value.updatedAt), value.source)}</option>)}
-        </PmSelect>
-        <div className="pmw-source-document__recovery-actions">
-          <PmButton small variant="primary" disabled={!draft || Boolean(recoveryDisabled)} onClick={() => { if (draft && source?.identity) void workbench.recoverDocumentDraft(draft, source.identity) }}>{t.documentDraftRestore}</PmButton>
-          <PmButton small disabled={!draft || Boolean(recoveryDisabled)} onClick={() => { if (draft && source?.identity) workbench.forgetDocumentDraft(draft, source.identity) }}>{t.narrationDiscard}</PmButton>
-        </div>
-      </div></PmNotice>}
+      {source?.storageFailure && <PmNotice tone="warn">{t.narrationRecoveryUnavailable}</PmNotice>}
       {source?.restored && !error && <PmNotice tone="accent"><span>{messages.restored}</span><span className="pmw-notice__actions"><PmButton small onClick={() => void workbench.retryDocument()}>{t.retry}</PmButton><PmButton small onClick={() => void workbench.discardDocument()}>{t.narrationDiscard}</PmButton></span></PmNotice>}
       {error && <PmNotice tone="danger"><span>{error}</span><span className="pmw-notice__actions"><PmButton small onClick={() => void workbench.retryDocument()}>{t.retry}</PmButton>{source?.dirty && <PmButton small onClick={() => void workbench.discardDocument()}>{t.narrationDiscard}</PmButton>}</span></PmNotice>}
     </div>}

@@ -1163,7 +1163,10 @@ export class Workbench {
     return this.#state.authoring?.identity === identity && !isAgentChanging(this.#state) ? this.#documentSession.recoverDraft(value).then(() => {}) : Promise.resolve()
   }
   forgetDocumentDraft(value: DocumentDraftReference, identity: string): void {
-    if (this.#state.authoring?.identity === identity && !isAgentChanging(this.#state)) void this.#documentSession.forgetDraft(value)
+    this.forgetDocumentDrafts([value], identity)
+  }
+  forgetDocumentDrafts(values: readonly DocumentDraftReference[], identity: string): void {
+    if (this.#state.authoring?.identity === identity && !isAgentChanging(this.#state)) void this.#documentSession.forgetDrafts(values)
   }
   documentError(error: Error): void { this.#set({ save: { kind: 'failed', message: error.message } }) }
   async flushPendingEdits(signal?: AbortSignal): Promise<void> {

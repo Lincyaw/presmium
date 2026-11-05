@@ -782,21 +782,27 @@ export class DocumentSession {
   }
 
   async forgetDraft(value: DocumentDraftReference, request?: DocumentDraftOperation): Promise<boolean | void> {
+    return this.forgetDrafts([value], request)
+  }
+
+  /** Retire only the displayed revisions together; another tab's newer input stays recoverable. */
+  async forgetDrafts(values: readonly DocumentDraftReference[], request?: DocumentDraftOperation): Promise<boolean | void> {
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
-    if (!slot?.state.identity || !slot.state.content || slot.state.recovering || slot.flight || slot.assetFlight || slot.state.composing || this.#disposed) return
+    if (!values.length || !slot?.state.identity || !slot.state.content || slot.state.recovering || slot.flight || slot.assetFlight || slot.state.composing || this.#disposed) return
     const identity = slot.state.identity, documentId = slot.state.content.id, input = slot.input, read = slot.read
     const operation = slot.recoveryOperation = (slot.recoveryOperation ?? 0) + 1
     const current = () => { this.#checkOperation(request); return !this.#disposed && this.#active === slot.state.directory && this.#slots.get(slot.state.directory) === slot && slot.state.identity === identity && slot.input === input && slot.read === read && slot.recoveryOperation === operation && !slot.state.composing && !slot.flight && !slot.assetFlight }
     slot.state = { ...slot.state, recovering: true }; this.#emit(slot)
     try {
       this.#checkOperation(request)
-      const candidate = (await slot.drafts.read(identity, documentId, request?.signal)).records.find(record => record.id === value.id && record.revision === value.revision && record.token === value.token)
+      const records = (await slot.drafts.read(identity, documentId, request?.signal)).records
+      const candidates = values.map(value => records.find(record => record.id === value.id && record.revision === value.revision && record.token === value.token))
       if (!current()) return
       this.#checkOperation(request)
-      if (candidate?.owned && candidate.id === slot.draft?.id) return
-      if (!candidate) slot.state = { ...slot.state, recoveryChanged: true }
+      if (candidates.some(candidate => candidate?.owned && candidate.id === slot.draft?.id)) return
+      if (candidates.some(candidate => !candidate)) slot.state = { ...slot.state, recoveryChanged: true }
       else {
-        const settled = await slot.drafts.settle(identity, [value], request && { ...request, guard: () => { if (!current()) throw new Error('client-body-drafts-changed') } })
+        const settled = await slot.drafts.settle(identity, values, request && { ...request, guard: () => { if (!current()) throw new Error('client-body-drafts-changed') } })
         if (!current()) return
         slot.persistFailure = !settled
         slot.state = { ...slot.state, recoveryChanged: false, storageFailure: Boolean(slot.persistFailure || slot.legacyFailure === 'write') }

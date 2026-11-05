@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode, RefObject } from 'react'
-import { PmButton, PmDialog, PmIconButton, PmMenu, PmNotice, PmSkeleton, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
+import { PmBadge, PmButton, PmDialog, PmIcon, PmIconButton, PmMenu, PmNotice, PmSkeleton, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { failureReason, timeAgo } from '../messages.ts'
 import { SHORTCUTS } from '../shortcuts.ts'
@@ -364,6 +364,8 @@ function DocumentToolbar({ presentButton, framed, onBack, actions, aside, naviga
   const history = useWorkbenchState(state => state.history)
   const editorHistory = useWorkbenchState(state => state.editorHistory)
   const dirty = useWorkbenchState(state => Boolean(state.authoring?.dirty))
+  const draftCount = useWorkbenchState(state => state.authoring?.recoveryDrafts?.length ?? 0)
+  const draftReadFailure = useWorkbenchState(state => Boolean(state.authoring?.recoveryReadFailure))
   const busy = useWorkbenchState(state => state.isHistoryBusy || state.isHistoryPreparing || Boolean(state.isCreatingPage) || Boolean(state.isEditingPage || state.authoring?.composing) || isAgentChanging(state))
   const timingDrafts = useWorkbenchState(state => state.hasDocumentTimingDrafts)
   const preparing = useWorkbenchState(state => Boolean(state.isPreparingPresentation))
@@ -376,6 +378,7 @@ function DocumentToolbar({ presentButton, framed, onBack, actions, aside, naviga
   const undoDisabled = Boolean(capabilities?.readOnly || !editorHistory?.undo && (editorHistory?.field || !history?.undo && !dirty) || busy)
   const redoDisabled = Boolean(capabilities?.readOnly || !editorHistory?.redo && (editorHistory?.field || dirty || !history?.redo) || busy)
   const commentsLabel = openComments ? `${t.comments} (${openComments})` : t.comments
+  const historyLabel = draftReadFailure ? `${t.versionHistory} · ${t.documentDraftUnreadable}` : draftCount ? t.historyWithDrafts(draftCount) : t.versionHistory
   return (
     <PmToolbar className={framed ? 'pmw-toolbar' : 'pmw-toolbar pmw-toolbar--document'} label={t.commands}>
       {!framed && <div className="pmw-toolbar__document">
@@ -394,7 +397,7 @@ function DocumentToolbar({ presentButton, framed, onBack, actions, aside, naviga
         {capabilities?.narration !== false && <PmToolbarButton asChild><PmIconButton small icon="captions" label={t.documentNarration} hint={t.documentNarrationHint} aria-pressed={aside === 'narration'} disabled={!hasStep} onClick={() => onAside('narration')} /></PmToolbarButton>}
       </>}
       {!compactCommands && <PmToolbarButton asChild><PmIconButton small icon="comment" label={commentsLabel} aria-pressed={aside === 'comments'} onClick={() => onAside('comments')} /></PmToolbarButton>}
-      {!narrow && <PmToolbarButton asChild><PmIconButton small icon="versions" label={t.versionHistory} aria-pressed={aside === 'history'} onClick={() => onAside('history')} /></PmToolbarButton>}
+      {!narrow && <span className="pmw-toolbar__history"><PmToolbarButton asChild><PmIconButton small icon="versions" label={historyLabel} aria-pressed={aside === 'history'} onClick={() => onAside('history')} /></PmToolbarButton>{(draftCount > 0 || draftReadFailure) && <PmBadge tone={draftReadFailure ? 'warn' : 'neutral'}>{draftCount || <PmIcon name="warning" />}</PmBadge>}</span>}
       <span className="pmw-toolbar__divider" aria-hidden="true" />
       <PmToolbarButton asChild><PmIconButton small icon="eye" label={t.readDocument} disabled={blocked || changingView} onClick={onRead} /></PmToolbarButton>
       <PmToolbarButton asChild><PmIconButton ref={presentButton} small icon="slides" label={t.present} hint={preparing || changingView ? t.presentationPreparing : timingDrafts ? t.timingDraftPending : blocked ? t.presentationPending : t.presentHint} loading={preparing || changingView} disabled={blocked || changingView} onClick={onPresent} /></PmToolbarButton>
@@ -408,7 +411,7 @@ function DocumentToolbar({ presentButton, framed, onBack, actions, aside, naviga
         ] : [],
         ...capabilities?.production !== false ? [{ id: 'production', label: p.title, icon: 'arrange' as const, disabled: busy || !hasStep || changingView }] : [],
         ...capabilities?.narration !== false ? [{ id: 'narration', label: t.documentNarration, icon: 'captions' as const, disabled: !hasStep }] : [],
-        { id: 'history', label: t.versionHistory, icon: 'versions' },
+        { id: 'history', label: historyLabel, icon: 'versions' },
       ]} onSelect={id => { if (id === 'undo') void workbench.undo(); else if (id === 'redo') void workbench.redo(); else if (id === 'production') onProduction(); else onAside(id as DocumentAside) }} />}
     </PmToolbar>
   )

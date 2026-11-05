@@ -117,6 +117,10 @@ independent snapshots and never take focus or mode while editing.
   slow save and keep recovery gates on failure. Cancellation aborts pending guarded storage mutations;
   author backups queued independently still finish. Required review refuses retry. Verify actual browser
   recovery, fragment paging, blocked storage cancellation, refresh/save conflicts and continuing input.
+- Local body drafts appear in Version History as a separate group before saved versions. Keep the body
+  free of discovery banners; the existing history entry carries the count, including the narrow More menu.
+  Each row recovers or discards directly. Discard All retires only the displayed exact references in one
+  native store transaction, preserving current input and other windows' newer revisions.
 - Comments use native rich-text ranges with stable unit IDs and offsets; cross-block selection uses the
   editor's public APIs, not DOM `selectionchange`. The editor's Y.Doc is not storage. Web and MCP share the
   pure comment actions; owner and editor permissions apply in both. Reply and edit drafts are backed up by

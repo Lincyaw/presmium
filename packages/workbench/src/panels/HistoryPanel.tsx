@@ -1,3 +1,4 @@
+import { hasRole } from '@lincyaw/kernel'
 import type { HistoryRevision } from '@lincyaw/kernel'
 import { PmBadge, PmButton, PmEmpty, PmIcon, PmIconButton, PmNotice } from '../components.tsx'
 import type { IconName } from '@lincyaw/design'
@@ -26,11 +27,15 @@ export function HistoryPanel({ onClose, revisionAction }: HistoryPanelProps) {
   const workbench = useWorkbench()
   const history = useWorkbenchState(state => state.history)
   const outside = useWorkbenchState(state => state.outside)
+  const source = useWorkbenchState(state => state.authoring)
   const changing = useWorkbenchState(state => state.isHistoryBusy || state.isHistoryPreparing || isAgentChanging(state))
-  const busy = changing || revisionAction?.pendingRevision !== undefined
+  const busy = changing || revisionAction?.pendingRevision !== undefined || Boolean(source?.recovering)
   const readOnly = workbench.client.capabilities?.readOnly === true
   const locale = useWorkbenchState(state => state.locale)
   const memberId = useWorkbenchState(state => state.authoring?.member?.id)
+  const drafts = source?.recoveryDrafts ?? []
+  const draftBusy = busy || readOnly || Boolean(source?.member && !hasRole(source.member, 'editor'))
+    || !source?.identity || Boolean(source.loading || source.saving || source.composing || source.recovering)
   const revisions = history?.revisions ?? []
   // Undoing and redoing are not versions of their own: they mark the change they act on.
   const changes = revisions.filter(revision => !revision.reverts)
@@ -48,6 +53,31 @@ export function HistoryPanel({ onClose, revisionAction }: HistoryPanelProps) {
           <PmButton small disabled={busy} onClick={() => void workbench.recordOutsideChanges()}>{t.recordOutside}</PmButton>
         </PmNotice>
       )}
+      {source?.recoveryReadFailure && <PmNotice tone="warn">{t.documentDraftUnreadable}</PmNotice>}
+      {source?.recoveryChanged && <PmNotice tone="accent">{t.documentDraftChanged}</PmNotice>}
+      {drafts.length > 0 && <section className="pmw-history-group" aria-labelledby="pmw-history-drafts">
+        <header className="pmw-history-group__header">
+          <h3 id="pmw-history-drafts" className="pmw-pane__title">{t.documentDrafts} <PmBadge>{drafts.length}</PmBadge></h3>
+          {drafts.length > 1 && <PmButton small disabled={draftBusy} onClick={() => { if (source?.identity) workbench.forgetDocumentDrafts(drafts, source.identity) }}>{t.documentDraftDiscardAll}</PmButton>}
+        </header>
+        <ol className="pmw-versions">
+          {drafts.map((draft, index) => <li key={JSON.stringify([draft.id, draft.revision, draft.token])} className="pmw-version">
+            <span className="pmw-version__icon" aria-hidden="true"><PmIcon name="edit" /></span>
+            <div className="pmw-version__body">
+              <p className="pmw-version__summary">{t.documentDraftName(index + 1)}</p>
+              <p className="pmw-version__meta">
+                <span>{t.unsaved}</span><span>·</span>
+                <time dateTime={new Date(draft.updatedAt).toISOString()} title={new Date(draft.updatedAt).toLocaleString(locale)}>{timeAgo(new Date(draft.updatedAt).toISOString(), locale)}</time>
+              </p>
+            </div>
+            <div className="pmw-version__actions">
+              <PmButton small disabled={draftBusy} onClick={() => { if (source?.identity) void workbench.recoverDocumentDraft(draft, source.identity) }}>{t.documentDraftRestore}</PmButton>
+              <PmButton small disabled={draftBusy} onClick={() => { if (source?.identity) workbench.forgetDocumentDrafts([draft], source.identity) }}>{t.narrationDiscard}</PmButton>
+            </div>
+          </li>)}
+        </ol>
+      </section>}
+      {drafts.length > 0 && <div className="pmw-history-group__header"><h3 className="pmw-pane__title">{t.historySavedVersions}</h3></div>}
       {changes.length === 0
         ? <PmEmpty icon="versions">{t.noHistory}</PmEmpty>
         : (

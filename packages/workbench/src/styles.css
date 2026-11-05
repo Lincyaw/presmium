@@ -721,6 +721,11 @@
   justify-self: start;
 }
 
+.pmw-version__actions { grid-column: 2; display: flex; flex-wrap: wrap; gap: var(--pm-space-2); }
+.pmw-history-group { display: grid; gap: var(--pm-space-2); }
+.pmw-history-group__header { display: flex; align-items: center; gap: var(--pm-space-2); padding-inline: var(--pm-space-3); }
+.pmw-toolbar__history { display: inline-flex; align-items: center; gap: var(--pm-space-1); }
+
 /* Above the video: its file. */
 
 
@@ -921,8 +926,6 @@
 .pmw-document__source[hidden] { display: none; }
 .pmw-source-document { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: var(--pm-space-5); background: var(--pm-color-canvas); }
 .pmw-source-document__notices { position: sticky; inset-block-start: 0; z-index: var(--pm-z-site-header); display: grid; gap: var(--pm-space-3); margin-block-end: var(--pm-space-3); }
-.pmw-source-document__recovery { display: grid; gap: var(--pm-space-2); min-width: 0; }
-.pmw-source-document__recovery-actions { display: flex; flex-wrap: wrap; gap: var(--pm-space-2); }
 .pmw-source-document__diagnostics { margin-block-end: var(--pm-space-3); }
 /* Its end margin is the editor's own end area, which fills the rest of the sheet and takes the presses below the last block. */
 .pmw-source-document__sheet { display: flex; flex-direction: column; max-width: var(--pm-sheet-width); min-height: 100%; margin-inline: auto; padding-block-start: var(--pm-space-4); background: var(--pm-color-surface); box-shadow: var(--pm-shadow-page); }
