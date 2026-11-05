@@ -103,7 +103,10 @@ acceptance. Details are in `packages/vscode/README.md`.
 `pnpm deploy` of `@lincyaw/presmium` as the resource `runtime/`, and the launcher page, then runs `tauri build`
 for this machine's platform; `pnpm --filter presmium-desktop dev` opens it unbundled. The app starts
 `presmium studio <workspace>` itself and opens the address it prints; Studio and dsh are not changed for it.
-Linux needs the WebKitGTK 4.1 development packages to compile.
+Linux needs the WebKitGTK 4.1 development packages to compile. `scripts/prepare.mjs` drops what nothing reads at run time (source
+maps, type declarations, `.pdb` files, package tests and demos, node-pty binaries of other platforms); CI packs the
+deb with xz and the DMG with LZMA through `hdiutil convert`, since compressing straight from the folder leaves half
+the file unused.
 
 Verify in the built app, not only `cargo check`: the launcher, opening a workspace (sign-in included), a
 document, its preview, closing the window and killing the app (no `presmium-node` left), and Studio ending on

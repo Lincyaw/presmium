@@ -70,9 +70,22 @@ jobs:
             pnpm --filter presmium-desktop build --bundles app
             bundle=packages/desktop/src-tauri/target/release/bundle
             mkdir -p "$bundle/dmg"
-            hdiutil create -volname "Presmium Studio" -srcfolder "$bundle/macos/Presmium Studio.app" -ov -format UDZO "$bundle/dmg/Presmium Studio.dmg"
+            # Compressing straight from the folder leaves about half the file as unused gaps between chunks;
+            # converting a plain image writes the chunks back to back. LZMA (ULMO) needs macOS 10.15 or later.
+            hdiutil create -volname "Presmium Studio" -srcfolder "$bundle/macos/Presmium Studio.app" -ov -format UDRW "$RUNNER_TEMP/presmium.dmg"
+            hdiutil convert "$RUNNER_TEMP/presmium.dmg" -format ULMO -ov -o "$bundle/dmg/Presmium Studio.dmg"
+            rm "$RUNNER_TEMP/presmium.dmg"
           else
             pnpm --filter presmium-desktop build
+          fi
+          # Tauri's deb is gzip with no setting for it; xz makes it about a third smaller.
+          if [ "$RUNNER_OS" = Linux ]; then
+            for deb in packages/desktop/src-tauri/target/release/bundle/deb/*.deb; do
+              unpacked=$(mktemp -d)
+              dpkg-deb -R "$deb" "$unpacked/package"
+              dpkg-deb --root-owner-group -Zxz -b "$unpacked/package" "$deb"
+              rm -rf "$unpacked"
+            done
           fi
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
