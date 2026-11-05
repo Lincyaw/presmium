@@ -1,5 +1,11 @@
 # @lincyaw/kernel
 
+## 1.0.0-rc.60
+
+### Patch Changes
+
+- 9b9746b: Allow MCP clients to upload local images and audio outside model context, then import them through the existing approved media transaction. Support file selection, SDK uploads and authenticated proxy prefixes with bounded, expiring, write-once references.
+
 ## 1.0.0-rc.59
 
 No changes in this release.
