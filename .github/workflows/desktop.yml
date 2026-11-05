@@ -70,6 +70,8 @@ jobs:
             pnpm --filter presmium-desktop build --bundles app
             bundle=packages/desktop/src-tauri/target/release/bundle
             mkdir -p "$bundle/dmg"
+            # Without a Developer ID the app is signed ad hoc ("-" in tauri.conf.json); an unsigned app is reported as damaged.
+            codesign --verify --deep --strict --verbose=2 "$bundle/macos/Presmium Studio.app"
             # Compressing straight from the folder leaves about half the file as unused gaps between chunks;
             # converting a plain image writes the chunks back to back. LZMA (ULMO) needs macOS 10.15 or later.
             hdiutil create -volname "Presmium Studio" -srcfolder "$bundle/macos/Presmium Studio.app" -ov -format UDRW "$RUNNER_TEMP/presmium.dmg"
@@ -138,7 +140,7 @@ jobs:
             exit 0
           fi
           # The prerelease and its tag stay put (the token may not move tags); each build replaces the assets.
-          notes="Installers built from ${GITHUB_SHA::8} on main. Unsigned: on macOS Control-click the app and choose Open; on Windows choose More info, then Run anyway. 由 main 的 ${GITHUB_SHA::8} 构建，未签名：macOS 按住 Control 点按应用并选“打开”；Windows 点“更多信息”再点“仍要运行”。"
+          notes="Installers built from ${GITHUB_SHA::8} on main. Not notarized. macOS: move the app to Applications; if it is blocked, open System Settings > Privacy & Security and choose Open Anyway, or run xattr -dr com.apple.quarantine \"/Applications/Presmium Studio.app\". Windows: choose More info, then Run anyway. 由 main 的 ${GITHUB_SHA::8} 构建，未经苹果公证。macOS：把应用拖进“应用程序”；被拦下时到“系统设置 > 隐私与安全性”点“仍要打开”，或在终端运行 xattr -dr com.apple.quarantine \"/Applications/Presmium Studio.app\"。Windows：点“更多信息”再点“仍要运行”。"
           if ! gh release view desktop-latest > /dev/null 2>&1; then
             gh release create desktop-latest --prerelease --latest=false --target "$GITHUB_SHA" --title "Presmium Studio desktop (latest main)" --notes "$notes"
           fi
