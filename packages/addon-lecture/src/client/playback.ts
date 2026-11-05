@@ -77,9 +77,9 @@ export function useLecturePlayback() {
       await stepClock?.prepare?.(current)
       signal?.throwIfAborted()
       await settleProductionPlayback(stepClock, signal, current)
-      void stepClock?.prepare?.(slides.filter(slide => !current.includes(slide)), { wait: false }).catch(error => {
+      return () => { void stepClock?.prepare?.(slides.filter(slide => !current.includes(slide)), { wait: false }).catch(error => {
         if (!signal?.aborted) console.warn('[presmium] upcoming pictures could not be prepared', error)
-      })
+      }) }
     }
     const next = new LecturePlayer(track, doc, ops, clock, playback, Boolean(plan), preparePicture)
     current.current = next

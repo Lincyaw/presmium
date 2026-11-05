@@ -31,7 +31,7 @@ const CHECK_DIR = '.presmium/web/check'
 export const CODE_CHECK = 'presmium.preview.code'
 const KEEP = 3
 // Failed imports are rechecked with the bundler resolver before reusing their diagnostics.
-const FORMAT = 5
+const FORMAT = 7
 
 export interface DocumentBundleInput {
   deckDir: string
@@ -76,7 +76,7 @@ export interface DocumentBundle {
    * What the entry loads, as its build records it: its chunks, those it may import later (scenes), by path in the
    * bundle, and the app's shared modules among their imports, by specifier. A page preloads them with the entry.
    */
-  loads: { files: string[], shared: string[] }
+  loads: { files: string[], shared: string[], images?: Record<string, string[]> }
   /** The document's code that does not bundle, left out: loading a part that imports it fails with why. */
   failures: CodeFailure[]
 }
@@ -93,7 +93,7 @@ export interface CodeFailure {
   missing?: string
 }
 
-interface OutputFile { type: string, fileName: string, isEntry?: boolean, imports?: string[], dynamicImports?: string[], moduleIds?: string[] }
+interface OutputFile { type: string, fileName: string, isEntry?: boolean, imports?: string[], dynamicImports?: string[], moduleIds?: string[], referencedFiles?: string[] }
 
 interface BundlerError { message?: string, code?: string, exporter?: string, id?: string, loc?: { file?: string, line?: number }, errors?: BundlerError[] }
 
@@ -157,7 +157,7 @@ export function codeFindings(failures: readonly CodeFailure[], deckDir: string):
 }
 
 /** The chunks an entry imports, at once or later, and the external modules among their imports. */
-function entryLoads(bundle: Record<string, OutputFile>, externals: ReadonlySet<string>): DocumentBundle['loads'] {
+function entryLoads(bundle: Record<string, OutputFile>, externals: ReadonlySet<string>, imageReferences: ReadonlyMap<string, ReadonlySet<string>>, fileName: (reference: string) => string): DocumentBundle['loads'] {
   const byName = new Map(Object.values(bundle).map(file => [file.fileName, file]))
   const files = new Set<string>(), shared = new Set<string>()
   const visit = (name: string) => {
@@ -169,7 +169,30 @@ function entryLoads(bundle: Record<string, OutputFile>, externals: ReadonlySet<s
   }
   for (const file of byName.values()) if (file.isEntry) visit(file.fileName)
   files.delete(BUNDLE_ENTRY)
-  return { files: [...files], shared: [...shared] }
+  const images: Record<string, string[]> = {}
+  const pictures = (name: string, seen = new Set<string>()): string[] => {
+    const file = byName.get(name)
+    if (!file || seen.has(name)) return []
+    seen.add(name)
+    return [...(file.referencedFiles ?? []).filter(name => /\.(avif|gif|jpe?g|png|svg|webp)$/i.test(name)),
+      ...(file.moduleIds ?? []).flatMap(id => [...imageReferences.get(id) ?? []].map(fileName)),
+      ...(file.imports ?? []).flatMap(name => pictures(name, seen))]
+  }
+  for (const file of byName.values()) {
+    const own = [...new Set(pictures(file.fileName))]
+    if (own.length) for (const id of file.moduleIds ?? []) images[id] = own
+  }
+  return { files: [...files], shared: [...shared], images }
+}
+
+/** Only the selected page's images, named by public output references rather than reading a scene's code. */
+export function picturePreloads(doc: IRDocument, loads: DocumentBundle['loads'], codeUrl: string, deckDir: string): Record<string, string[]> {
+  return Object.fromEntries(doc.sections.map(section => [section.id, [...new Set([...irBlocks(section.blocks)].flatMap(block => {
+    const node = block.node
+    if (node.type !== 'component' || !node.definition) return []
+    const file = resolve(deckDir, node.definition.file)
+    return (loads.images?.[existsSync(file) ? realpathSync(file) : file] ?? []).map(file => `${codeUrl}${file}`)
+  }))]]))
 }
 
 /** Why a module the document loads when it shows a part does not bundle, if it does not. */
@@ -317,7 +340,7 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
   }
   const images = new ImageEncoder(imageCache(input.workspaceRoot))
   /** The bundle's own part of the build; with `probe`, of a part bundled by itself, getting the files it loads. */
-  const bundler = (probe?: Set<string>): Plugin => ({
+  const bundler = (probe: Set<string> | undefined, imageReferences: ReadonlyMap<string, ReadonlySet<string>>): Plugin => ({
     name: 'presmium:document-bundle',
     // Before Vite's own resolution: the app's modules stay imports by name.
     enforce: 'pre',
@@ -342,7 +365,7 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
     generateBundle(_, output) {
       if (probe) return
       const bundle = output as unknown as Record<string, OutputFile>
-      loads = entryLoads(bundle, externals)
+      loads = entryLoads(bundle, externals, imageReferences, reference => this.getFileName(reference))
       for (const chunk of Object.values(bundle)) {
         for (const id of chunk.moduleIds ?? []) {
           const file = id.replace(/[?#].*$/s, '')
@@ -356,7 +379,9 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
   // A try of the whole that fails is followed by its parts bundled by themselves: its failure is not yet the build's.
   const logger = createLogger('warn')
   const customLogger = { ...logger, error: (message: string, options?: Parameters<typeof logger.error>[1]) => stripVTControlCharacters(message).includes('Build failed') ? undefined : logger.error(message, options) }
-  const config = (entry: string, probe?: Set<string>): InlineConfig => ({
+  const config = (entry: string, probe?: Set<string>): InlineConfig => {
+    const imageReferences = new Map<string, Set<string>>()
+    return {
     configFile: false,
     root: input.deckDir,
     base: './',
@@ -364,7 +389,10 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
     mode: 'production',
     esbuild: { jsx: 'automatic' },
     publicDir: false,
-    plugins: [bundler(probe), images.vitePlugin(file => { if (probe) probe.add(file); else keep(file) })],
+    plugins: [bundler(probe, imageReferences), images.vitePlugin(file => { if (probe) probe.add(file); else keep(file) }, (module, reference) => {
+      const references = imageReferences.get(module) ?? new Set<string>()
+      references.add(reference); imageReferences.set(module, references)
+    })],
     resolve: { dedupe: ['react', 'react-dom'] },
     build: {
       outDir: join(work, probe ? 'part' : 'out'),
@@ -385,7 +413,7 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
         },
       },
     },
-  })
+  } }
   try {
     await build(config(join(work, 'entry.ts')))
   } catch (error) {

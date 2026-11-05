@@ -10,6 +10,7 @@ export interface TrackClock {
   readonly blocked: Readonly<Store<boolean>>
   readonly buffering: Readonly<Store<boolean>>
   prepare(t: number, signal?: AbortSignal): Promise<void>
+  preloadAhead?(t: number): void
   play(): void
   pause(): void
   seek(t: number): void
@@ -102,6 +103,7 @@ export class MediaClock extends SilentClock {
   private readonly voices: Voice[] = []
   private readonly lifetime = new AbortController()
   private prefetchedAt = Number.NEGATIVE_INFINITY
+  private ahead = false
 
   constructor(duration: number, media: ClockMedia[]) {
     super(duration)
@@ -158,7 +160,7 @@ export class MediaClock extends SilentClock {
       const clip = MediaClock.clipAt(voice.clips, t)
       return clip ? [{ voice, clip }] : []
     })
-    const ready = active.every(({ voice, clip }) => this.buffered(voice.el, clip, t))
+    const ready = this.ahead && active.every(({ voice, clip }) => this.buffered(voice.el, clip, t))
     const upcoming = this.voices.flatMap(voice => {
       const clip = voice.clips.find(clip => clip.start + clip.duration > t && clip.start < t + BUFFER_AHEAD_MS && (ready || clip.start <= t))
       return clip ? [{ voice, at: Math.max(t, clip.start) }] : []
@@ -202,8 +204,10 @@ export class MediaClock extends SilentClock {
       pending.addEventListener('abort', abort, { once: true })
       if (pending.aborted) abort()
       else check()
-    }))); this.prefetch(t, true) } finally { batch.abort() }
+    }))) } finally { batch.abort() }
   }
+
+  preloadAhead(t: number): void { this.ahead = true; this.prefetch(t, true) }
 
   override now(): number {
     // Keep the current clip as the clock until its sound reaches the end. Wall time must not skip an unloaded clip
@@ -238,6 +242,7 @@ export class MediaClock extends SilentClock {
 
   override seek(t: number): void {
     super.seek(t)
+    this.ahead = false
     this.prefetch(t, true)
     for (const voice of this.voices) {
       const { el, clips } = voice

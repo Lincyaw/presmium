@@ -77,6 +77,7 @@ export async function readAnswer<T = unknown>(response: Promise<Response>): Prom
 
 /** The lectures published at the first of `bases` that has an index (the last when none answers). */
 export function staticSource(bases: readonly string[]): LectureSource {
+  const delivery = new Map<string, LectureTrack['playbackMedia']>()
   let located: Promise<string> | undefined
   const base = () => located ??= (async () => {
     for (const candidate of bases.slice(0, -1)) {
@@ -90,8 +91,17 @@ export function staticSource(bases: readonly string[]): LectureSource {
       const response = await fetch(new URL('index.json', await base()))
       return response.ok ? summaries(await response.json()) : []
     },
-    track: async (id, _planId, signal) => readTrackAnswer(await fetch(new URL(`${encodeURIComponent(id)}/track.json`, await base()), { cache: 'no-cache', signal })),
-    media: async (id, src) => (ABSOLUTE_URL.test(src) ? src : new URL(`${encodeURIComponent(id)}/${src.split('/').map(encodeURIComponent).join('/')}`, await base()).href),
+    track: async (id, _planId, signal) => {
+      const track = await readTrackAnswer(await fetch(new URL(`${encodeURIComponent(id)}/track.json`, await base()), { cache: 'no-cache', signal }))
+      delivery.set(id, track?.playbackMedia)
+      return track
+    },
+    media: async (id, src) => {
+      if (ABSOLUTE_URL.test(src)) return src
+      const alternative = delivery.get(id)?.[src]
+      const file = alternative && typeof Audio !== 'undefined' && new Audio().canPlayType(alternative.type) ? alternative.src : src
+      return new URL(`${encodeURIComponent(id)}/${file.split('/').map(encodeURIComponent).join('/')}`, await base()).href
+    },
   }
 }
 

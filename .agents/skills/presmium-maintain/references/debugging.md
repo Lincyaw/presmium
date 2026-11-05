@@ -54,9 +54,9 @@ Rules for judging:
   single track opens that track's player; multiple tracks keep their chooser. Pages publishes `/build-info.json`
   with the checked-out commit and source CLI version for deployment diagnosis.
   The lecture preloads a 30-second window of audio and pictures, with at most four audio files selected for preload.
-  Current audio needs two seconds of playable data (or the rest of a shorter clip) before future audio starts loading.
-  The shared step clock waits for the player's actual current page; future pictures warm in the background after it
-  is ready. Check that future resources load before Play, and that a previously finished clip plays again after
+  Both current audio (two seconds of playable data, or the rest of a shorter clip) and the current picture must be
+  ready before future audio and pictures warm. The shared step clock waits for the player's actual current page.
+  Check that future resources load before Play, and that a previously finished clip plays again after
   seeking back. Server audio uses native media URLs with document and production identities, supports Range/206 and
   stops loading on disposal; check paths containing literal `%XX` too. Capture and export still await all pictures.
   For load comparisons keep compression, cache and bandwidth identical; record first ready picture, usable player
@@ -65,6 +65,10 @@ Rules for judging:
   `loadedmetadata`, `buffered` and the final byte: some files only become playable after a full download despite
   the two-second threshold. Check actual image URLs and sizes too; both imported images and static relative
   `new URL(..., import.meta.url)` assets must reach the shared WebP encoder and participate in bundle invalidation.
+  Published Opus clips have an optional `playbackMedia` fast-start M4A: compare packet identity and timeline bounds,
+  verify playable data before the final byte, and check legacy Ogg playback too. Private server media keeps its original
+  version-bound resource path. A deep link must mount its selected page first; its picture hints follow only that
+  page's static dependencies and start after the framework load to avoid delaying the first visible page.
 - After an upgrade, verify on the author's actual workspace copy (old `@lincyaw/slidev-addon-*` imports map
   to `@lincyaw/addon-*`). Never delete their copy, rewrite their sources or externalize modules to pass.
 

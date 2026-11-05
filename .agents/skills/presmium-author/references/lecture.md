@@ -9,7 +9,10 @@ How to write the narration (a spoken script for the presentation, not the readin
 A `?view=lecture` link with one track opens its player directly. Before Play, the player buffers the selected audio
 and prepares its picture, including the scene and its images. Playback warms about 30 seconds ahead, selecting at
 most four audio files for preload, and starts when the current clip has about two seconds buffered (or the rest of
-a shorter clip) and the picture is ready. Loading or buffering holds the audio, picture and timeline together;
+a shorter clip) and the picture is ready. Future audio and pictures warm only after both are ready. Published single-track
+Opus clips also have a fast-start M4A with the same encoded audio and timing; supported browsers use it to start
+before the full file arrives, while the original Ogg remains available. This is a build derivative, not a new voiceover
+or an editable source. Loading or buffering holds the audio, picture and timeline together;
 seeking prepares the target position through the same path. Check actual audible media, a later step and replay
 after going back, rather than treating a moving time display as proof of sound.
 

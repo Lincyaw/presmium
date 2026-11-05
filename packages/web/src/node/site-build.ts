@@ -8,7 +8,7 @@ import { FONT_LICENSE, fontLicense } from '@lincyaw/kernel/node'
 import { SitemapStream, streamToPromise } from 'sitemap'
 import { chapterRedirects, offlineEnabled, pageLink, SERVICE_WORKER, searchDocuments, sitePageLayout, translationPages, webPages } from '../domain/index.ts'
 import type { AppConfig, SiteConfig, SiteShell, WebPage } from '../domain/index.ts'
-import { BUNDLE_ENTRY, buildDocumentBundle, codeFindings, documentComponents } from './document-bundle.ts'
+import { BUNDLE_ENTRY, buildDocumentBundle, codeFindings, documentComponents, picturePreloads } from './document-bundle.ts'
 import type { DocumentBundle } from './document-bundle.ts'
 import { writeServiceWorker } from './offline.ts'
 import { publishedDocument, publishedFile } from './publish.ts'
@@ -332,6 +332,7 @@ export async function buildSlidesSite(doc: IRDocument, ctx: RenderContext, nodeP
     origins: [],
   }
   const preload = code && loads ? presentationPreloads(`${ctx.base}${CODE_DIR}/${code}/`, loads, built, ctx.plugins) : []
-  writeFileSync(join(ctx.outDir, 'index.html'), pageHtml({ entry: appEntry(built.app), appUrl: built.appUrl, shared: built.app.manifest.shared, config, title: doc.meta.title, preload }))
+  const pictures = code && loads ? picturePreloads(doc, loads, `${ctx.base}${CODE_DIR}/${code}/`, ctx.deckDir) : undefined
+  writeFileSync(join(ctx.outDir, 'index.html'), pageHtml({ entry: appEntry(built.app), appUrl: built.appUrl, shared: built.app.manifest.shared, config, title: doc.meta.title, preload, pictures, firstSection: doc.sections[0]?.id }))
   reportEncoded(ctx, await images.done())
 }

@@ -108,6 +108,8 @@ export interface LectureTrack {
   durationMs?: number
   audio?: MediaSegment[]
   video?: VideoSegment[]
+  /** Published alternatives; the original clips and their fingerprints remain the source of timing and identity. */
+  playbackMedia?: Record<string, { src: string, type: string }>
   blocks: Record<string, TrackBlock>
   utterances: Utterance[]
   /** Derived author times; ordinary audio utterances remain unchanged. */
@@ -230,6 +232,9 @@ export function parseTrack(value: unknown): { track?: LectureTrack, problems: st
       ...isRecord(value.binding) && typeof value.binding.planId === 'string' && typeof value.binding.irRevision === 'string' && isRecord(value.binding.source) && typeof value.binding.source.documentId === 'string' && typeof value.binding.source.version === 'string' && typeof value.binding.source.fingerprint === 'string' ? { binding: value.binding as unknown as ProductionBinding } : {},
       ...audio?.length ? { audio } : {},
       ...video?.length ? { video } : {},
+      ...isRecord(value.playbackMedia) ? { playbackMedia: Object.fromEntries(Object.entries(value.playbackMedia).flatMap(([src, media]) =>
+        /^clips\/[0-9a-f]{32}\.(ogg|wav)$/.test(src) && isRecord(media) && typeof media.src === 'string' && /^clips\/[0-9a-f]{32}\.m4a$/.test(media.src) && media.type === 'audio/mp4; codecs="opus"'
+          ? [[src, { src: media.src, type: media.type }]] : [])) } : {},
       blocks,
       ...Array.isArray(value.captionOverrides) ? { captionOverrides: value.captionOverrides.flatMap(value => captionOverride(value) ?? []) } : {},
       utterances: utterances.sort((a, b) => a.t - b.t),

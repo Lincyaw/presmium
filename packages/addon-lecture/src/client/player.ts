@@ -38,9 +38,9 @@ export class LecturePlayer {
   private generation = 0
   private readonly bufferMissing: boolean
   private preparation?: AbortController
-  private readonly preparePicture?: (at: number, signal?: AbortSignal) => Promise<void>
+  private readonly preparePicture?: (at: number, signal?: AbortSignal) => Promise<void | (() => void)>
 
-  constructor(track: LectureTrack, doc: IRDocument, operations: Operations, clock: TrackClock, playback?: PlaybackControl, bufferMissing = false, preparePicture?: (at: number, signal?: AbortSignal) => Promise<void>) {
+  constructor(track: LectureTrack, doc: IRDocument, operations: Operations, clock: TrackClock, playback?: PlaybackControl, bufferMissing = false, preparePicture?: (at: number, signal?: AbortSignal) => Promise<void | (() => void)>) {
     this.track = track
     this.clock = clock
     this.operations = operations
@@ -84,7 +84,10 @@ export class LecturePlayer {
 
   async prepare(signal?: AbortSignal): Promise<void> {
     const at = this.clock.now()
-    await Promise.all([this.clock.prepare(at, signal), this.preparePicture?.(at, signal)])
+    const [, warmPicture] = await Promise.all([this.clock.prepare(at, signal), this.preparePicture?.(at, signal)])
+    signal?.throwIfAborted()
+    this.clock.preloadAhead?.(at)
+    warmPicture?.()
   }
 
   private async resume(generation: number): Promise<boolean> {

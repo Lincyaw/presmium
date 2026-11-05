@@ -108,7 +108,7 @@ export class ImageEncoder {
   }
 
   /** A Vite plugin: a raster image a module imports is emitted as WebP, and the import is its URL. */
-  vitePlugin(onFile?: (file: string) => void): Plugin {
+  vitePlugin(onFile?: (file: string) => void, onImage?: (module: string, reference: string) => void): Plugin {
     const encoder = this
     return {
       name: 'presmium:webp-images',
@@ -120,6 +120,7 @@ export class ImageEncoder {
         this.addWatchFile(file)
         onFile?.(file)
         const reference = this.emitFile({ type: 'asset', name: webpName(file), source: await encoder.encode(file) })
+        onImage?.(id, reference)
         return `export default import.meta.ROLLUP_FILE_URL_${reference}`
       },
       async transform(code, id) {
@@ -138,6 +139,7 @@ export class ImageEncoder {
           this.addWatchFile(file)
           onFile?.(file)
           const reference = this.emitFile({ type: 'asset', name: webpName(file), source: await encoder.encode(file) })
+          onImage?.(id, reference)
           changes.push({ start: Number(path.start), end: Number(path.end), value: `import.meta.ROLLUP_FILE_URL_${reference}` })
         }
         if (!changes.length) return undefined

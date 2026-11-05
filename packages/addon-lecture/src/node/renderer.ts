@@ -14,6 +14,7 @@ import { productionMessages } from '../domain/production.ts'
 import { synthesizeLecture } from './synthesize.ts'
 import { readProductionAssetFile } from './production-assets.ts'
 import type { ProductionAssetFile } from './production-assets.ts'
+import { fastStartAudio } from './audio-delivery.ts'
 
 const clipsOf = (track: LectureTrack) => new Set(track.utterances.flatMap(u => u.clip ?? []))
 
@@ -22,7 +23,7 @@ async function publishTrack(track: LectureTrack, text: string, file: string, doc
   mkdirSync(out, { recursive: true })
   const audio = publishedMedia(track.audio, track.id, policy)
   const video = publishedMedia(track.video, track.id, policy)
-  writeFileSync(join(out, TRACK_FILE), formatTrack({ ...track, ...audio ? { audio } : {}, ...video ? { video } : {} }))
+  const playbackMedia: NonNullable<LectureTrack['playbackMedia']> = {}
   for (const segment of policy.kind === 'url' ? [] : [...track.audio ?? [], ...track.video ?? []]) {
     if (segment.assetId) {
       const asset = assets.get(segment.assetId)
@@ -49,7 +50,14 @@ async function publishTrack(track: LectureTrack, text: string, file: string, doc
     }
     mkdirSync(join(out, CLIPS_DIR), { recursive: true })
     copyFileSync(source, join(out, CLIPS_DIR, clip))
+    const delivery = await fastStartAudio(join(out, CLIPS_DIR, clip), join(ctx.workDir, 'audio-delivery'))
+    if (delivery) {
+      writeFileSync(join(out, CLIPS_DIR, delivery.name), delivery.bytes)
+      playbackMedia[`${CLIPS_DIR}/${clip}`] = { src: `${CLIPS_DIR}/${delivery.name}`, type: delivery.type }
+    }
   }
+  const { playbackMedia: _previousDelivery, ...canonical } = track
+  writeFileSync(join(out, TRACK_FILE), formatTrack({ ...canonical, ...audio ? { audio } : {}, ...video ? { video } : {}, ...Object.keys(playbackMedia).length ? { playbackMedia } : {} }))
   for (const lang of captionLanguages(track)) {
     const captions = captionsVtt(track, lang)
     writeFileSync(join(out, `captions.${lang}.vtt`), captions.vtt)

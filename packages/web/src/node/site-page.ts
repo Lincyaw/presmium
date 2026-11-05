@@ -26,6 +26,9 @@ export interface PageHtmlInput {
   body?: string
   /** More modules the page will import, fetched with the app instead of one after another (a document's scene code). */
   preload?: string[]
+  /** Published images by section, so the address's current picture can load before the viewer starts. */
+  pictures?: Record<string, string[]>
+  firstSection?: string
 }
 
 /** The reader's appearance before the first paint: as the workbench asks, as the reader chose, else as the system is. */
@@ -83,6 +86,18 @@ export function pageHtml(input: PageHtmlInput): string {
     ...(config.site?.shell.theme?.stylesheets ?? []).map(url => `<link rel="stylesheet" href="${escapeHtml(url)}">`),
     `<link rel="modulepreload" fetchpriority="high" href="${escapeHtml(`${appUrl}${entry.script}`)}">`,
     ...config.ir ? [`<link rel="preload" as="fetch" crossorigin fetchpriority="high" href="${escapeHtml(config.ir)}">`] : [],
+    ...input.pictures ? [`<script>(() => {
+      const preload = () => {
+      const pictures = ${json(input.pictures)}
+      const section = new URLSearchParams(location.search).get('section') || ${json(input.firstSection ?? '')}
+      for (const href of Array.isArray(pictures[section]) ? pictures[section] : []) {
+        const link = document.createElement('link')
+        link.rel = 'preload'; link.as = 'image'; link.fetchPriority = 'low'; link.href = href
+        document.head.appendChild(link)
+      }
+      }
+      addEventListener('DOMContentLoaded', preload, { once: true })
+    })()</script>`] : [],
     // The app's modules, the document's own code (its bundle) and, when given, what its scenes load, all in parallel;
     // each once, though the scenes' modules import the app's.
     ...entry.preload.map(file => `<link rel="modulepreload" fetchpriority="high" href="${escapeHtml(`${appUrl}${file}`)}">`),

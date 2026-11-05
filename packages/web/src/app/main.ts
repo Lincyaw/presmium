@@ -119,6 +119,10 @@ async function bootDocument(): Promise<void> {
   // A slides page asked to print its slides: an export.
   const print = config.form === 'slides' ? parsePrintQuery(location.search) : undefined
   const { app, viewer, router, shared, active } = createPageApp({ config, doc, components, embedded: preview?.embedded ?? false, ssr: config.rendered === true, dark, print })
+  // Mount the address's page directly: the first page would otherwise start loading scenes before this jump.
+  const asked = parsePositionQuery(location.search, doc)
+  const initialPosition = config.form === 'slides' && !config.rendered && !config.block
+  if (initialPosition && asked.section) viewer!.show({ section: asked.section, step: asked.step ?? 0 })
   active.set(preview?.active ?? true)
   const original = createStore(doc)
   const refresh = async (force = false) => {
@@ -187,8 +191,7 @@ async function bootDocument(): Promise<void> {
 
   // The place and the view the address asks for (`?view=present&section=…`); while an overlay view is shown its place
   // stays in the address, so that a reload comes back to it.
-  const asked = parsePositionQuery(location.search, doc)
-  if (asked.section) viewer!.show({ section: asked.section, step: asked.step ?? 0 })
+  if (!initialPosition && asked.section) viewer!.show({ section: asked.section, step: asked.step ?? 0 })
   if (asked.view) {
     await viewersReady
     if (findView(asked.view)) viewer!.setView(asked.view)
