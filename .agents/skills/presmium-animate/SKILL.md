@@ -9,7 +9,7 @@ Work top down: each layer decides the next, and its details are in the reference
 
 ## 1. Ground rules
 
-- Presmium-owned normalized document IR is the only editable authority; animation implementations are referenced project files. Do not add a MyST directive or Markdown source as a second input.
+- Presmium-owned normalized document IR is the only editable authority; animation implementations are referenced project files. Keep page titles, narration, steps, parameters, timing and comments in `lecture.json`. Do not add per-page content files, a MyST directive or Markdown as a second input, or a generator that reconstructs the saved document from them.
 - A step rests on the final frame of its state, and that frame is at once the still on the web page, the slide and the held shot of the video. So a piece is designed as a strip of rest frames, and motion is what carries one into the next.
 - Every state is reconstructible when selected in any order: the look is a function of the step and the time only. An earlier playback side effect is not state.
 

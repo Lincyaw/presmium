@@ -7,6 +7,8 @@ description: "Write, edit, present and produce a Presmium teaching document: the
 
 A **document** is a folder containing `lecture.json`: the only editable source of a teaching document. Everything readers see is derived from it by the compiler: the **reading version** (the web page, and a notebook when listed) and the **presentation version** (the slides, and the narrated **lecture** video made from the slides and the narration). Don't create `lecture.md`, `slides.md` or any second copy of the content.
 
+Web edits and author actions save this same document. Read its latest saved content before changing it. Keep titles, body, steps, narration, parameters, comments and production settings there; checks, builds and publishing read it without regenerating its content. Project scripts may create a new document or request explicit changes through the author actions, with the original source version retained when the change depends on a previous read. They must not reconstruct an existing document from separate page descriptions. Without an author service, one coordinator edits the latest document and preserves unrelated fields.
+
 A **workspace** has `presmium.workspace.yaml`; its `documents` patterns name the documents, normally `*/lecture.json`. The **studio** is the browser editor started by `presmium studio`.
 
 Terms used throughout:
