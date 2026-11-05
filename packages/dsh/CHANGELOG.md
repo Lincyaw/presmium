@@ -1,5 +1,16 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.52
+
+### Patch Changes
+
+- f992607: Inspect, read and explicitly discard native step timing, caption timing and recording range drafts through the existing compact editor action. Discovery omits input values; discard synchronizes open fields without saving the document, and retains proposals when storage, source or input guards fail.
+- Updated dependencies [f992607]
+  - @lincyaw/kernel@1.0.0-rc.53
+  - @lincyaw/mcp@1.0.0-rc.53
+  - @lincyaw/skills@1.0.0-rc.53
+  - @lincyaw/cli@1.0.0-rc.53
+
 ## 0.2.0-rc.51
 
 ### Patch Changes

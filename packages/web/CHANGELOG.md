@@ -1,5 +1,11 @@
 # @lincyaw/web
 
+## 1.0.0-rc.53
+
+### Patch Changes
+
+- @lincyaw/design@1.0.0-rc.53
+
 ## 1.0.0-rc.52
 
 ### Patch Changes
