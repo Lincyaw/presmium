@@ -1,5 +1,15 @@
 # @lincyaw/mcp
 
+## 1.0.0-rc.65
+
+### Patch Changes
+
+- ea85126: Page voice catalogues and retained jobs, keep generation and polling receipts compact, and preserve complete job fields through bounded cursor-based JSON reads without model verification parameters.
+- Updated dependencies [ea85126]
+  - @lincyaw/skills@1.0.0-rc.65
+  - @lincyaw/compiler@1.0.0-rc.65
+  - @lincyaw/kernel@1.0.0-rc.65
+
 ## 1.0.0-rc.64
 
 ### Patch Changes

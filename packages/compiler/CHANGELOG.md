@@ -1,5 +1,11 @@
 # @lincyaw/compiler
 
+## 1.0.0-rc.65
+
+### Patch Changes
+
+- @lincyaw/kernel@1.0.0-rc.65
+
 ## 1.0.0-rc.64
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @lincyaw/server
 
+## 1.0.0-rc.65
+
+### Patch Changes
+
+- Updated dependencies [ea85126]
+  - @lincyaw/mcp@1.0.0-rc.65
+  - @lincyaw/compiler@1.0.0-rc.65
+  - @lincyaw/kernel@1.0.0-rc.65
+
 ## 1.0.0-rc.64
 
 ### Patch Changes
