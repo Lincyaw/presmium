@@ -21,6 +21,8 @@ import { clearVoiceDraft, keepVoiceDraft, voiceDraftSnapshot } from './voice-dra
 import type { VoiceDraft } from './voice-drafts.ts'
 import { discardMediaDraft, keepMediaDrafts, mediaDraftSnapshot } from './media-drafts.ts'
 import type { MediaDrafts } from './media-drafts.ts'
+import { TranscriptionCorrections } from './transcription-drafts.ts'
+import type { TranscriptionCorrection, TranscriptionCorrectionTarget } from './transcription-drafts.ts'
 
 interface ProductionOptions {
   store: WorkbenchStore
@@ -56,6 +58,7 @@ export class DocumentProduction {
   readonly #documentTimingDrafts = new DocumentTimingDrafts()
   readonly #captionTimingDrafts = new CaptionTimingDrafts()
   readonly #recordingRangeDrafts = new Map<string, Map<string, RecordingRangeDraft>>()
+  readonly #transcriptionCorrections = new TranscriptionCorrections()
   readonly #draftViews = new Set<ProductionDraftView>()
   readonly #draftSalt = randomUUID()
   #draftRevision = 0
@@ -77,7 +80,7 @@ export class DocumentProduction {
     }
   }
   reset(): void { this.#removedCueTimings.clear(); this.#removedNarrations.clear(); this.#cueTimingScope = undefined }
-  dispose(): void { this.#closed = true; this.reset(); this.#captionTimingDrafts.close(); this.#recordingRangeDrafts.clear(); this.#draftViews.clear() }
+  dispose(): void { this.#closed = true; this.reset(); this.#captionTimingDrafts.close(); this.#transcriptionCorrections.close(); this.#recordingRangeDrafts.clear(); this.#draftViews.clear() }
   get draftRevision(): number { return this.#draftRevision }
   get productionDraftsBlocked(): boolean {
     const identity = this.#options.store.state.authoring?.identity
@@ -112,6 +115,15 @@ export class DocumentProduction {
     const kept = keepMediaDrafts(this.#options.client, identity, stepId, value)
     this.#draftChanged(); return kept
   }
+  transcriptionCorrection(target: TranscriptionCorrectionTarget) { return this.#transcriptionCorrections.read(target) }
+  keepTranscriptionCorrection(target: TranscriptionCorrectionTarget, draft: TranscriptionCorrection): boolean {
+    const kept = this.#transcriptionCorrections.keep(target, draft)
+    this.#draftChanged(); return kept
+  }
+  completeTranscriptionCorrection(target: TranscriptionCorrectionTarget, expected: TranscriptionCorrection, next: TranscriptionCorrection): boolean {
+    const completed = this.#transcriptionCorrections.complete(target, expected, next)
+    this.#draftChanged(); return completed
+  }
   /** Native pending range input survives mode and document changes within this workbench. */
   recordingRangeDrafts(identity: string): ReadonlyMap<string, RecordingRangeDraft> {
     let values = this.#recordingRangeDrafts.get(identity)
@@ -130,6 +142,7 @@ export class DocumentProduction {
     const state = this.#options.store.state, source = state.authoring, identity = source?.identity, memberId = source?.member?.id, content = source?.content
     if (this.#closed || !source || !identity || !memberId || !content || !source.version || !source.fingerprint || source.loading) throw new Error('client-production-drafts-unavailable')
     const revision = this.#draftRevision, version = source.version, reset = source.reset
+    const corrections = this.#transcriptionCorrections.snapshot(identity)
     const views = [...this.#draftViews].filter(view => view.identity === identity)
     const viewState = () => JSON.stringify(views.map(view => view.blocked()))
     const blocked = viewState()
@@ -139,6 +152,7 @@ export class DocumentProduction {
         && !isAgentChanging(value) && !value.isCreatingPage && !value.isEditingPage && !value.isHistoryBusy && !value.isHistoryPreparing && !this.productionDraftsBlocked)
     }
     const guard = () => {
+      corrections.guard()
       const current = this.#options.store.state.authoring
       if (!current || current.identity !== identity || current.member?.id !== memberId || current.content !== content || current.version !== version || current.reset !== reset
         || current.loading || revision !== this.#draftRevision || viewState() !== blocked) throw new Error('client-production-drafts-changed')
@@ -181,9 +195,14 @@ export class DocumentProduction {
       add('media-clip', JSON.stringify([stepId, name]), stepId, draft, draft.version !== version || Boolean(draft.baseClip && JSON.stringify(draft.baseClip) !== JSON.stringify(original)), persisted ? 'tab' : 'memory',
         () => discardMediaDraft(this.#options.client, identity, stepId, name, value), { clipId: draft.clip.id, ...draft.clip.assetId ? { assetId: draft.clip.assetId } : {} }, !media.partial)
     }
+    for (const { key, target, draft, persisted } of corrections.entries) {
+      const { identity: _identity, ...binding } = target
+      add('transcription', key, target.stepId, { ...binding, draft }, true, persisted ? 'tab' : 'memory',
+        () => this.#transcriptionCorrections.discard(key, draft), {}, !corrections.partial)
+    }
     candidates.sort((a, b) => a.key.localeCompare(b.key))
     guard()
-    return { stamp: JSON.stringify([this.#draftSalt, identity, memberId, version, reset, revision]), coverage: timingPartial || captionPartial || voices.partial || media.partial ? 'partial' : 'tab-state', candidates, guard }
+    return { stamp: JSON.stringify([this.#draftSalt, identity, memberId, version, reset, revision]), coverage: timingPartial || captionPartial || voices.partial || media.partial || corrections.partial ? 'partial' : 'tab-state', candidates, guard }
   }
 
   source(expected: { identity: string, version: string }): DocumentSessionState {

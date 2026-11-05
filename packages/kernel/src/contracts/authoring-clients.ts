@@ -95,7 +95,7 @@ export interface ClientCommentDraftMetadata {
   threadId?: string
   commentId?: string
 }
-const PRODUCTION_DRAFT_KINDS = ['step-timing', 'caption-timing', 'recording-range', 'voice', 'media-clip'] as const
+const PRODUCTION_DRAFT_KINDS = ['step-timing', 'caption-timing', 'recording-range', 'voice', 'media-clip', 'transcription'] as const
 export interface ClientProductionDraftMetadata {
   draft: string
   kind: typeof PRODUCTION_DRAFT_KINDS[number]

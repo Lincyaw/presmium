@@ -7,24 +7,13 @@ import { NarrationEditor } from '../document-editor/NarrationEditor.tsx'
 import { narrationToNative, nativeToNarration } from '../document-editor/narration.ts'
 import type { NativeNarrationEditor } from '../document-editor/narration-schema.tsx'
 import { TRANSCRIPTION_MESSAGES } from '../transcription-messages.ts'
+import { transcriptionCorrectionKey } from '../transcription-drafts.ts'
+import type { TranscriptionCorrection as Draft } from '../transcription-drafts.ts'
 
 interface Props { identity: string, candidate: TranscriptionRevision, document: TeachingDocument, sectionId: string, stepId: string, disabled: boolean }
-interface Draft { id: string, revision: number, nodes?: NarrationNode[], discarded: string[], shared: 'fork' | 'edit-shared', baseVersion?: string, applied?: boolean }
 const ordered = (value: unknown): unknown => Array.isArray(value) ? value.map(ordered) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, ordered((value as Record<string, unknown>)[key])])) : value
 const same = (a: unknown, b: unknown) => JSON.stringify(ordered(a)) === JSON.stringify(ordered(b))
 const displayed = (nodes: readonly NarrationNode[]) => nodes.map(node => node.type === 'text' ? node.text : node.type === 'pronunciation' ? node.display : '').join('')
-function restore(key: string): { draft: Draft, failed: boolean } {
-  const fallback = () => ({ draft: { id: randomUUID(), revision: 0, discarded: [], shared: 'fork' as const }, failed: false })
-  try {
-    const raw = localStorage.getItem(key)
-    if (!raw) return fallback()
-    const value = JSON.parse(raw)
-    if (!value || typeof value.id !== 'string' || !Number.isSafeInteger(value.revision) || value.revision < 0 || !Array.isArray(value.discarded) || !value.discarded.every((key: unknown) => typeof key === 'string') || !['fork', 'edit-shared'].includes(value.shared)
-      || value.baseVersion !== undefined && typeof value.baseVersion !== 'string' || value.applied !== undefined && typeof value.applied !== 'boolean'
-      || value.nodes !== undefined && (!Array.isArray(value.nodes) || !value.nodes.every((node: NarrationNode) => node && (node.type === 'text' && typeof node.text === 'string' || node.type === 'pronunciation' && typeof node.display === 'string' && typeof node.spoken === 'string' || node.type === 'cue' && typeof node.id === 'string' && typeof node.action === 'string')))) throw new Error('invalid-draft')
-    return { draft: value, failed: false }
-  } catch { return { ...fallback(), failed: true } }
-}
 
 export function TranscriptionAdoption(props: Props) {
   const locale = useWorkbenchState(state => state.locale), t = TRANSCRIPTION_MESSAGES[locale]
@@ -41,11 +30,27 @@ export function TranscriptionAdoption(props: Props) {
 
 function AdoptionTarget({ identity, candidate, document, sectionId, stepId, disabled, narrationId, segments }: Props & { narrationId?: string, segments: string[] }) {
   const workbench = useWorkbench(), locale = useWorkbenchState(state => state.locale), t = TRANSCRIPTION_MESSAGES[locale], source = useWorkbenchState(state => state.authoring)
-  const key = `presmium.transcription-draft.v1:${JSON.stringify([identity, candidate.transcriptionId, candidate.revision, stepId, narrationId, segments])}`
-  const [restored] = useState(() => restore(key)), [draft, setDraft] = useState(restored.draft), latest = useRef(draft)
+  const correctionTarget = useMemo(() => ({ identity, candidate: { id: candidate.transcriptionId, revision: candidate.revision }, stepId, narrationId, segmentIds: segments }), [identity, candidate.transcriptionId, candidate.revision, stepId, narrationId, JSON.stringify(segments)])
+  const correctionKey = transcriptionCorrectionKey(correctionTarget), key = `presmium.transcription-draft.v1:${correctionKey}`
+  const [restored] = useState(() => workbench.production.transcriptionCorrection(correctionTarget)), [draft, setDraft] = useState(restored.draft), latest = useRef(draft)
   const [storageFailed, setStorageFailed] = useState(restored.failed), [composing, setComposing] = useState(false)
   const [plan, setPlan] = useState<TranscriptionAdoptionPlan>(), [reviewing, setReviewing] = useState(false), [applying, setApplying] = useState(false), [open, setOpen] = useState(false), [failure, setFailure] = useState<string>(), [status, setStatus] = useState<string>()
-  const editor = useRef<NativeNarrationEditor>(), generation = useRef(0)
+  const editor = useRef<NativeNarrationEditor>(), generation = useRef(0), interaction = useRef({ composing: false, pending: false }), unavailable = useRef(false)
+  unavailable.current = disabled || reviewing || applying || open
+  useEffect(() => workbench.production.registerDraftView({ identity, kind: 'transcription', has: target => target === correctionKey,
+    blocked: () => interaction.current.composing || interaction.current.pending || unavailable.current,
+    clear: () => {
+      generation.current++
+      const value = workbench.production.transcriptionCorrection(correctionTarget)
+      latest.current = value.draft; setDraft(value.draft); setStorageFailed(value.failed)
+      setPlan(undefined); setOpen(false); setFailure(undefined); setStatus(undefined)
+    } }), [workbench, identity, correctionKey])
+  useEffect(() => { workbench.refreshAuthoringClientControls() }, [workbench, disabled, reviewing, applying, open])
+  const busy = (value: boolean) => { interaction.current.pending = value; workbench.refreshAuthoringClientControls() }
+  const composition = (value: boolean) => {
+    if (interaction.current.composing === value) return
+    interaction.current.composing = value; setComposing(value); workbench.refreshAuthoringClientControls()
+  }
   useEffect(() => () => { generation.current++ }, [])
   const binding: CanonicalSource = { documentId: document.id, version: source?.version ?? '', fingerprint: source?.fingerprint ?? '' }
   const references = narrationId ? Object.values(document.steps).filter(step => step.narrationIds.includes(narrationId)).map(step => step.id) : []
@@ -76,7 +81,7 @@ function AdoptionTarget({ identity, candidate, document, sectionId, stepId, disa
     generation.current++
     const next = { ...latest.current, ...patch, revision: latest.current.revision + 1, applied: false }
     latest.current = next; setDraft(next); setPlan(undefined); setFailure(undefined); setStatus(undefined)
-    try { localStorage.setItem(key, JSON.stringify(next)); setStorageFailed(false) } catch { setStorageFailed(true) }
+    setStorageFailed(!workbench.production.keepTranscriptionCorrection(correctionTarget, next))
   }
   const pause = () => { workbench.stopAuditions(); void workbench.pausePlayback().catch(() => {}) }
   const preview = async () => {
@@ -89,34 +94,34 @@ function AdoptionTarget({ identity, candidate, document, sectionId, stepId, disa
     const retainsOriginal = references.length > 1 && value.shared === 'fork'
     const removeCueTimings = atoms.filter(atom => value.discarded.includes(atom.key) && atom.node.type === 'cue' && !retainsOriginal && Object.hasOwn(document.production.cueTimings ?? {}, atom.node.id)).map(atom => (atom.node as Extract<NarrationNode, { type: 'cue' }>).id)
     const sent: TranscriptionAdoptionDraft = { id: value.id, source: { documentId: document.id, version: now.version, fingerprint: now.fingerprint }, candidate: { id: candidate.transcriptionId, revision: candidate.revision }, draftRevision: value.revision, targets: [{ ...target, content: normalized.parts, discardAtoms: value.discarded.filter(key => atoms.some(atom => atom.key === key)) }], ...removeCueTimings.length ? { removeCueTimings } : {} }
-    setReviewing(true); setFailure(undefined)
+    busy(true); setReviewing(true); setFailure(undefined)
     try {
       const answer = await workbench.production.planTranscription(sent, { identity, version: now.version })
       if (request !== generation.current || latest.current.revision !== sent.draftRevision) return
       setPlan(answer); setOpen(true)
     } catch { if (request === generation.current) setFailure(t.previewFailed) }
-    finally { setReviewing(false) }
+    finally { busy(false); setReviewing(false) }
   }
   const apply = async () => {
     if (!plan?.planId || !planCurrent || plan.conflicts.length || plan.draftRevision !== latest.current.revision || composing || applying || !sourceReady) return
-    const sent = plan, planId = plan.planId
-    setApplying(true); setFailure(undefined)
+    const sent = plan, planId = plan.planId, expected = latest.current, request = ++generation.current
+    busy(true); setApplying(true); setFailure(undefined)
     try {
       const answer = await workbench.production.adoptTranscription({ planId, source: sent.source, candidate: sent.candidate, draftRevision: sent.draftRevision }, { identity, version: sent.source.version })
-      if (latest.current.id === sent.changeId && latest.current.revision === sent.draftRevision) {
-        const next: Draft = { ...latest.current, id: randomUUID(), revision: 0, discarded: [], baseVersion: answer.version, applied: true }
-        latest.current = next; setDraft(next)
-        try { localStorage.setItem(key, JSON.stringify(next)); setStorageFailed(false) } catch { setStorageFailed(true) }
-      }
+      const next: Draft = { ...expected, id: randomUUID(), revision: 0, discarded: [], baseVersion: answer.version, applied: true }
+      const completed = workbench.production.completeTranscriptionCorrection(correctionTarget, expected, next)
+      if (request !== generation.current) return
+      if (completed) { latest.current = next; setDraft(next) }
+      setStorageFailed(!completed)
       setPlan(undefined); setOpen(false); setStatus(t.adopted)
     } catch { setFailure(t.applyFailed) }
-    finally { setApplying(false) }
+    finally { busy(false); setApplying(false) }
   }
   if (!displayed(nodes).trim() && !atoms.length) return <span>{t.empty}</span>
   return <>
     <PmField label={t.text} group><NarrationEditor identity={key} fieldId={original?.outputNarrationId ?? draft.id} content={nodes} getContent={() => latest.current.nodes ?? nodes} locale={locale} advanced={false} readOnly={disabled || applying}
       toNative={value => narrationToNative(original?.outputNarrationId ?? draft.id, value)} fromNative={nativeToNarration}
-      onReady={value => { editor.current = value }} onComposition={setComposing} onFocus={pause} onChange={value => {
+      onReady={value => { editor.current = value }} onComposition={composition} onFocus={pause} onChange={value => {
         const used = new Set<string>()
         for (const node of value) { const atom = atoms.find(atom => !used.has(atom.key) && same(atom.node, node)); if (atom) used.add(atom.key) }
         change({ nodes: value, discarded: latest.current.discarded.filter(key => !used.has(key)) })
