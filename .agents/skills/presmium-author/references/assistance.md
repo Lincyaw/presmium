@@ -22,7 +22,9 @@ select a file, and read readiness with the same operation's `{upload}`. SDK cons
 path; each clone input is limited to 10 MiB. Do not import clone inputs as canonical assets first, and
 use only the actual speaker's consent. Owners can stage audio for separately approved training even
 when canonical writes require review; imports retain their review checks. Do not send base64 through
-model arguments. The temporary upload does not save the document; the import retains approval and
+model arguments. Studio fixes clone inputs before its spending confirmation; the host handles preparation
+and cleanup without extra model calls or parameters. If preparation expires, request fresh approval.
+The temporary upload does not save the document; the import retains approval and
 history. Links last ten minutes, allow one transfer and expire when the service stops. See
 `docs/authoring-actions.md` section 7 for limits and ownership.
 

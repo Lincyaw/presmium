@@ -1,8 +1,11 @@
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
+import type { CallToolResult } from '@modelcontextprotocol/client'
+import { CallToolResultSchema } from '@modelcontextprotocol/core'
 import { DOCUMENT_AUDIO_MAX_BYTES, DOCUMENT_IMAGE_MAX_BYTES, MEDIA_UPLOAD_PATH, APPROVAL_KINDS, deckLocale, errorMessage, isRecord } from '@lincyaw/kernel'
 import type { ApprovalKind, MediaUpload, MediaUploadKind } from '@lincyaw/kernel'
 import { MCP_MESSAGES } from './messages.ts'
 import { TOOL_APPROVAL_META, TOOL_KIND_META, TOOL_WORKSPACE_META } from './tool-meta.ts'
+import { CLONE_PREPARATION_METHOD } from './clone-protocol.ts'
 
 export interface ListedTool {
   name: string
@@ -30,6 +33,8 @@ export interface CalledTool {
 }
 
 export interface PresmiumMcpClient {
+  /** Trusted host only. The native reference remains inside this closure, outside model arguments/results. */
+  prepareVoiceClone(args: Record<string, unknown>, signal?: AbortSignal): Promise<PreparedMcpCall>
   /** Transfer selected client-local bytes outside tool/model content; import its returned upload through the existing media tool. */
   uploadMedia(document: string, kind: MediaUploadKind, file: File, signal?: AbortSignal): Promise<MediaUpload>
   tools(): Promise<ListedTool[]>
@@ -40,8 +45,23 @@ export interface PresmiumMcpClient {
   close(): Promise<void>
 }
 
+export interface PreparedMcpCall {
+  call(signal?: AbortSignal): Promise<CalledTool>
+  close(): Promise<void>
+}
+
+function called(result: CallToolResult): CalledTool {
+  const content = Array.isArray(result.content) ? result.content as { type: string, text?: unknown, data?: unknown, mimeType?: unknown }[] : []
+  return { isError: result.isError === true,
+    text: content.flatMap(part => part.type === 'text' && typeof part.text === 'string' ? [part.text] : []).join('\n'),
+    images: content.flatMap(part => part.type === 'image' && typeof part.data === 'string' && typeof part.mimeType === 'string' ? [{ data: part.data, mimeType: part.mimeType }] : []),
+    ...isRecord(result.structuredContent) ? { structured: result.structuredContent } : {},
+  }
+}
+
 const KINDS = new Set<string>(['read', ...APPROVAL_KINDS])
 const CALL_TIMEOUT_MS = 10 * 60_000
+const CLEANUP_TIMEOUT_MS = 2_000
 
 export async function connectPresmiumMcp(url: string, token: string, name = 'presmium-dsh'): Promise<PresmiumMcpClient> {
   const client = new Client({ name, version: '0.1.0' }, { versionNegotiation: { mode: 'auto' } })
@@ -135,6 +155,38 @@ export async function connectPresmiumMcp(url: string, token: string, name = 'pre
     return stop
   }
   return {
+    async prepareVoiceClone(args, signal) {
+      if (closed) throw new Error('operation-unavailable')
+      const { document, ...request } = structuredClone(args)
+      const invoke = async (phase: 'prepare' | 'execute' | 'release', prepared?: string, signal?: AbortSignal) => called(await client.request({
+        method: CLONE_PREPARATION_METHOD,
+        params: { phase, ...document !== undefined ? { document } : {}, ...phase !== 'release' ? { request } : {}, ...prepared ? { prepared } : {} },
+      }, CallToolResultSchema, { signal: phase === 'release' ? AbortSignal.timeout(CLEANUP_TIMEOUT_MS) : signal, timeout: phase === 'release' ? CLEANUP_TIMEOUT_MS : CALL_TIMEOUT_MS }))
+      const response = await invoke('prepare', undefined, signal)
+      if (response.isError) throw new Error(response.text)
+      const value = response.structured ?? JSON.parse(response.text)
+      if (!isRecord(value) || typeof value.prepared !== 'string' || !/^[a-f0-9]{64}$/.test(value.prepared)) throw new Error('operation-not-prepared')
+      const prepared = value.prepared
+      let retired = false, running: Promise<CalledTool> | undefined
+      return {
+        call(signal) {
+          if (running) return running
+          if (retired) return Promise.reject(new Error('voice-clone-expired'))
+          running = invoke('execute', prepared, signal)
+          return running
+        },
+        async close() {
+          if (retired) return
+          retired = true
+          if (closed) return
+          // A failed cleanup must not replace a completed paid operation; the native lease also expires.
+          try {
+            const result = await invoke('release', prepared)
+            if (result.isError) throw new Error(result.text)
+          } catch (error) { console.error(`[presmium] the prepared voice-clone input could not be released: ${errorMessage(error)}`) }
+        },
+      }
+    },
     async uploadMedia(document, kind, file, signal) {
       if (closed) throw new Error('media-upload-unavailable')
       let named = false, cursor: string | undefined
@@ -186,13 +238,7 @@ export async function connectPresmiumMcp(url: string, token: string, name = 'pre
     },
     async call(tool, args, signal) {
       const result = await client.callTool({ name: tool, arguments: args }, { signal, timeout: CALL_TIMEOUT_MS })
-      const content = Array.isArray(result.content) ? result.content as { type: string, text?: unknown, data?: unknown, mimeType?: unknown }[] : []
-      return {
-        isError: result.isError === true,
-        text: content.flatMap(part => (part.type === 'text' && typeof part.text === 'string' ? [part.text] : [])).join('\n'),
-        images: content.flatMap(part => (part.type === 'image' && typeof part.data === 'string' && typeof part.mimeType === 'string' ? [{ data: part.data, mimeType: part.mimeType }] : [])),
-        ...isRecord(result.structuredContent) ? { structured: result.structuredContent } : {},
-      }
+      return called(result)
     },
     async read(uri) {
       const { contents } = await client.readResource({ uri })

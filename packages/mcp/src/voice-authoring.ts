@@ -1,6 +1,7 @@
-import { DOCUMENT_VOICE_CATALOG_SCHEMA, DOCUMENT_VOICE_CLONE_SCHEMA, DOCUMENT_VOICE_CLONE_QUERY_SCHEMA, VOICEOVER_JOB_QUERY_SCHEMA, VOICEOVER_START_SCHEMA, VOICEOVER_STATUS_SCHEMA, VOICE_PREVIEW_CHECK_SCHEMA, VOICE_PREVIEW_START_SCHEMA } from '@lincyaw/kernel'
+import { DOCUMENT_VOICE_CATALOG_SCHEMA, DOCUMENT_VOICE_CLONE_SCHEMA, DOCUMENT_VOICE_CLONE_QUERY_SCHEMA, VOICEOVER_JOB_QUERY_SCHEMA, VOICEOVER_START_SCHEMA, VOICEOVER_STATUS_SCHEMA, VOICE_PREVIEW_CHECK_SCHEMA, VOICE_PREVIEW_START_SCHEMA, hasRole } from '@lincyaw/kernel'
 import type { DocumentVoiceCatalogQuery, DocumentVoiceCloneQuery, DocumentVoiceCloneRequest, VoiceCloneStatus, VoiceoverJobQuery, VoiceoverStart, VoiceoverStatusQuery, VoicePreviewCheck, VoicePreviewStart } from '@lincyaw/kernel'
 import type { Call, ToolSpec } from './mcp.ts'
+import type { ClonePreparationRequest } from './clone-protocol.ts'
 
 const document = { type: 'string', description: 'The served document directory.' }
 const input = (properties: Record<string, unknown>, required: string[] = []) => ({ type: 'object', additionalProperties: false, properties: { document, ...properties }, required })
@@ -9,6 +10,22 @@ const service = (call: Call) => {
   return call.host.voiceAuthoring
 }
 const language = async (call: Call, selected: string) => (await call.host.documents()).find(document => document.dir === selected)?.lang ?? ''
+
+/** Only the authenticated trusted host may split native preparation from its own approval. */
+export async function nativeCloneCall(call: Call, request: ClonePreparationRequest, available: boolean) {
+  if (!call.caller.confirmed || !hasRole(call.caller.member, 'owner')) throw Object.assign(new Error('operation-unavailable'), { status: 403 })
+  const owner = service(call)
+  if (!owner.prepareCloneReference || !owner.runPreparedClone || !owner.releasePreparedClone) throw Object.assign(new Error('operation-unavailable'), { status: 503 })
+  const document = await call.document()
+  if (request.phase === 'release') return { released: owner.releasePreparedClone(document, request.prepared, call.caller.member) }
+  if (!available || !call.host.offers('spend')) throw Object.assign(new Error('operation-unavailable'), { status: 403 })
+  if (request.phase === 'prepare') {
+    const prepared = await owner.prepareCloneReference(document, request.request, call.caller.member, call.signal)
+    return { prepared: prepared.id, engine: prepared.engine, voice: prepared.voice }
+  }
+  if (request.phase === 'execute') return cloneResult(await owner.runPreparedClone(document, request.prepared, request.request, call.caller.member, call.signal))
+  throw Object.assign(new Error('operation-unavailable'), { status: 400 })
+}
 export const VOICE_AUTHORING_TOOLS: ToolSpec[] = [
   {
     name: 'get_voice_clone_status', kind: 'read', structured: true, workspace: 'author',

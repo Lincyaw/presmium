@@ -2,6 +2,7 @@ import { PROJECT_TOOLS } from './projects.ts'
 import { createRequire } from 'node:module'
 import { createMcpHandler, fromJsonSchema, McpServer, ResourceTemplate, UriTemplate } from '@modelcontextprotocol/server'
 import type { AuthInfo, CallToolResult, JsonSchemaType, Variables } from '@modelcontextprotocol/server'
+import { CallToolResultSchema } from '@modelcontextprotocol/core'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
 import { AUTHORING_CLIENT_MAX_CLIENTS, deckLocale, docBlocks, errorMessage, hasRole, isPresentingRole, isRecord, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
 import type { AgentTool, ApprovalKind, ApprovalRequest, ApprovalScope, CodeNode, CompileJob, DocumentSummary, Finding, IRDocument, Member } from '@lincyaw/kernel'
@@ -19,7 +20,9 @@ import { TRANSCRIPTION_TOOLS } from './transcription.ts'
 import { AUDIO_AUTHORING_TOOLS } from './audio-authoring.ts'
 import { IMAGE_AUTHORING_TOOLS } from './image-authoring.ts'
 import { MEDIA_UPLOAD_TOOLS } from './media-uploads.ts'
-import { VOICE_AUTHORING_TOOLS } from './voice-authoring.ts'
+import { VOICE_AUTHORING_TOOLS, nativeCloneCall } from './voice-authoring.ts'
+import { CLONE_PREPARATION_METHOD, CLONE_PREPARATION_SCHEMA } from './clone-protocol.ts'
+import type { ClonePreparationRequest } from './clone-protocol.ts'
 import { SPEECH_SETTINGS_TOOLS } from './speech-settings.ts'
 import { WORKSPACE_REVIEW_TOOLS } from './workspace-review.ts'
 import { SOURCE_TOOLS } from './workspace-source.ts'
@@ -733,6 +736,15 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
     }
     return self
   }
+
+  // A separate method fails closed on old servers; private phases never enter model tool arguments.
+  server.server.setRequestHandler(CLONE_PREPARATION_METHOD, {
+    params: fromJsonSchema<ClonePreparationRequest>(CLONE_PREPARATION_SCHEMA as unknown as JsonSchemaType), result: CallToolResultSchema,
+  }, (request, ctx) => {
+    const own = call({ ...request.document !== undefined ? { document: request.document } : {} }, ctx.mcpReq.signal)
+    return toolResult(() => nativeCloneCall(own, request, builtIn.some(tool => tool.name === 'clone_voice')), true,
+      async () => { const document = await own.document(); return (await host.documents()).find(doc => doc.dir === document)?.lang })
+  })
 
   for (const tool of builtIn) {
     if (!full && !common.has(tool.name)) continue

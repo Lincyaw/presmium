@@ -4,13 +4,15 @@ import { isInside } from '@lincyaw/kernel/node'
 import { connectPresmiumMcp } from '@lincyaw/mcp/client'
 import { errorMessage, isRecord } from '@lincyaw/kernel'
 import type { DiagnosticSnapshot, DocumentSummary } from '@lincyaw/kernel'
-import type { ListedTool, PresmiumMcpClient } from '@lincyaw/mcp/client'
+import type { ListedTool, PresmiumMcpClient, PreparedMcpCall } from '@lincyaw/mcp/client'
 import type { DshAgent, DshContext, DshLogger } from './dsh-types.ts'
 import { SERVER_ROUTES } from './server-routes.ts'
 import type { WorkspaceServerClient } from './service.ts'
 import { WorkspaceServerClient as CandidateServer } from './service.ts'
 import { WORKSPACE_ROUTES } from './server-routes.ts'
 
+/** Fixed inputs owned by one pending invocation, including native resources that need retirement. */
+export interface PreparedBindingCall { signature: string, arguments: Record<string, unknown>, native?: PreparedMcpCall }
 /** The document an agent session works on: an MCP client with a session token for it, its tools and its diagnostics. */
 export interface DocumentBinding {
   agentSessionId: string
@@ -23,7 +25,7 @@ export interface DocumentBinding {
   /** Complete metadata for the currently registered model surface; replaced only at tool installation. */
   registeredTools?: readonly ListedTool[]
   /** Ephemeral fixed inputs between pre-execute approval and this exact invocation. */
-  preparedCalls?: Map<symbol, { signature: string, arguments: Record<string, unknown> }>
+  preparedCalls?: Map<symbol, PreparedBindingCall>
   toolChanges: BindingTools
   diagnostics: BindingDiagnostics
 }
@@ -160,9 +162,12 @@ export class BindingDiagnostics {
 }
 
 async function closeBinding(binding: DocumentBinding): Promise<void> {
+  const prepared = [...binding.preparedCalls?.values() ?? []]
   binding.preparedCalls?.clear()
   try {
-    await Promise.all([binding.diagnostics.close(), binding.toolChanges.close()])
+    const results = await Promise.allSettled([...prepared.flatMap(value => value.native ? [value.native.close()] : []), binding.diagnostics.close(), binding.toolChanges.close()])
+    const failed = results.find(result => result.status === 'rejected')
+    if (failed?.status === 'rejected') throw failed.reason
   } finally {
     await Promise.all([binding.client.close(), binding.authorClient.close()])
   }

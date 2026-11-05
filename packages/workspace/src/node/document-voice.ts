@@ -2,6 +2,7 @@ import { DOCUMENT_ENTRY, VOICE_CLONE_MAX_AUDIO_BYTES, fnv1a64, hasRole, speechEn
 import type { CanonicalSource, DocumentVoiceAuthoring, DocumentVoiceCloneAudio, Finding, Member, PreparedVoiceClone, SpeechService, VoiceoverExecution, VoiceoverJob } from '@lincyaw/kernel'
 import { createVoiceoverOwner, createVoiceoverRoutes, validateDocumentVoiceCatalogQuery, validateDocumentVoiceClone, validateDocumentVoiceCloneQuery, validateVoicePreviewStart } from '@lincyaw/kernel/node'
 import { extname } from 'node:path'
+import { randomBytes } from 'node:crypto'
 import { readDocumentAudioBytes } from './document-audio.ts'
 import { readAuthoringDocument } from './document-editor.ts'
 import { RequestError } from './errors.ts'
@@ -20,7 +21,14 @@ const same = (a: CanonicalSource, b: CanonicalSource) => a.documentId === b.docu
 export function createDocumentVoiceAuthoring({ editor, services, revision, uploads }: DocumentVoiceAuthoringOptions) {
   const pending = new Set<{ controller: AbortController, finished: Promise<unknown> }>()
   const owners = new Map<string, ReturnType<typeof createVoiceoverOwner>>()
-  const clones = new Set<PreparedVoiceClone>()
+  const clones = new Map<string, { document: string, member: string, request: string, prepared: PreparedVoiceClone }>()
+  const cloneEntry = (document: string, id: string, member: Member) => {
+    if (!hasRole(member, 'owner')) throw new RequestError(403, 'voice-clone-permission-denied')
+    authorize(document, member)
+    const entry = clones.get(id)
+    if (entry && (entry.document !== document || entry.member !== member.id)) throw new RequestError(403, 'voice-clone-permission-denied')
+    return entry
+  }
   let closed = false
   const authorize = (document: string, member: Member) => {
     if (!hasRole(member, 'editor')) throw new RequestError(403, 'voice-authoring-permission-denied')
@@ -98,6 +106,7 @@ export function createDocumentVoiceAuthoring({ editor, services, revision, uploa
       let statement: Blob | undefined = new Blob([statementInput.bytes as Uint8Array<ArrayBuffer>], { type: statementInput.type })
       let started: ReturnType<NonNullable<SpeechService['cloneVoice']>> | undefined
       let expired = false
+      const id = randomBytes(32).toString('hex')
       const prepared: PreparedVoiceClone = { engine: speechEngineId(engine), voice: request.voice,
         start: startSignal => {
           if (started) return started
@@ -112,13 +121,32 @@ export function createDocumentVoiceAuthoring({ editor, services, revision, uploa
           }).finally(() => prepared.close())
           return started
         },
-        close: () => { expired = true; clearTimeout(timer); sample = undefined; statement = undefined; clones.delete(prepared) },
+        close: () => { expired = true; clearTimeout(timer); sample = undefined; statement = undefined; clones.delete(id) },
       }
       const timer = setTimeout(() => prepared.close(), 90000)
       timer.unref()
-      clones.add(prepared)
+      clones.set(id, { document, member: member.id, request: JSON.stringify(request), prepared })
       return prepared
     }),
+    prepareCloneReference: async (document, request, member, signal) => {
+      const prepared = await service.prepareClone!(document, request, member, signal)
+      const found = [...clones].find(([, entry]) => entry.prepared === prepared)
+      if (!found) { prepared.close(); throw new RequestError(409, 'voice-clone-expired') }
+      if (signal?.aborted) { prepared.close(); signal.throwIfAborted() }
+      return { id: found[0], engine: prepared.engine, voice: prepared.voice }
+    },
+    runPreparedClone: (document, id, request, member, signal) => {
+      const entry = cloneEntry(document, id, member)
+      if (!entry) throw new RequestError(409, 'voice-clone-expired')
+      if (entry.request !== JSON.stringify(request)) throw new RequestError(409, 'voice-clone-preparation-changed')
+      try { return entry.prepared.start(signal) }
+      catch (error) { entry.prepared.close(); throw error }
+    },
+    releasePreparedClone: (document, id, member) => {
+      const entry = cloneEntry(document, id, member)
+      entry?.prepared.close()
+      return Boolean(entry)
+    },
     cloneStatus: (document, query, member, signal) => work(signal, async signal => {
       if (!hasRole(member, 'owner')) throw new RequestError(403, 'voice-clone-permission-denied')
       if (!validateDocumentVoiceCloneQuery(query)) throw new RequestError(400, 'voice-clone-invalid')
@@ -177,5 +205,5 @@ export function createDocumentVoiceAuthoring({ editor, services, revision, uploa
     },
     readPreview: async (document, id, member) => ownerOf(document, member).readPreview(id),
   }
-  return { service, routes: createVoiceoverRoutes(service), async close() { closed = true; for (const prepared of clones) prepared.close(); for (const operation of pending) operation.controller.abort(); await Promise.allSettled([...owners.values()].map(owner => owner.close())); await Promise.allSettled([...pending].map(operation => operation.finished)); owners.clear() } }
+  return { service, routes: createVoiceoverRoutes(service), async close() { closed = true; for (const { prepared } of clones.values()) prepared.close(); for (const operation of pending) operation.controller.abort(); await Promise.allSettled([...owners.values()].map(owner => owner.close())); await Promise.allSettled([...pending].map(operation => operation.finished)); owners.clear() } }
 }

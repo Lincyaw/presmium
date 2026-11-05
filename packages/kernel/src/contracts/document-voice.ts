@@ -52,6 +52,10 @@ export interface DocumentVoiceAuthoring extends DocumentVoiceTasks {
   /** Undefined when there is something to cancel; otherwise the unchanged state that cancel would report. */
   checkCancel(document: string, query: VoiceoverJobQuery, member: Member): Promise<VoiceoverCancellation | undefined>
   prepareClone?(document: string, request: DocumentVoiceCloneRequest, member: Member, signal?: AbortSignal): Promise<PreparedVoiceClone>
+  /** Trusted host preparation uses the same bounded native bank; references never enter model arguments. */
+  prepareCloneReference?(document: string, request: DocumentVoiceCloneRequest, member: Member, signal?: AbortSignal): Promise<{ id: string, engine: string, voice: string }>
+  runPreparedClone?(document: string, id: string, request: DocumentVoiceCloneRequest, member: Member, signal?: AbortSignal): Promise<VoiceCloneStatus>
+  releasePreparedClone?(document: string, id: string, member: Member): boolean
   cloneStatus?(document: string, query: DocumentVoiceCloneQuery, member: Member, signal?: AbortSignal): Promise<VoiceCloneStatus>
 }
 
