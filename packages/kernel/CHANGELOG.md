@@ -1,5 +1,11 @@
 # @lincyaw/kernel
 
+## 1.0.0-rc.62
+
+### Patch Changes
+
+- 1cfad6a: Accept temporary audio uploads directly as voice-clone samples and recorded consent, without importing canonical assets. Reuse the existing clone owner, 10 MiB limit, frozen input bytes, source checks and spending approval; preserve workspace file paths and canonical import review.
+
 ## 1.0.0-rc.61
 
 No changes in this release.

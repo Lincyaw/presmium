@@ -1,5 +1,9 @@
 # @lincyaw/addon-content
 
+## 1.0.0-rc.62
+
+No changes in this release.
+
 ## 1.0.0-rc.61
 
 No changes in this release.

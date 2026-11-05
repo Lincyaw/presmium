@@ -1,5 +1,37 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.62
+
+### Patch Changes
+
+- Updated dependencies [1cfad6a]
+  - @lincyaw/kernel@1.0.0-rc.62
+  - @lincyaw/mcp@1.0.0-rc.62
+  - @lincyaw/addon-assistant@1.0.0-rc.62
+  - @lincyaw/addon-classroom@1.0.0-rc.62
+  - @lincyaw/addon-code@1.0.0-rc.62
+  - @lincyaw/addon-content@1.0.0-rc.62
+  - @lincyaw/addon-exec@1.0.0-rc.62
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.62
+  - @lincyaw/addon-exec-local@1.0.0-rc.62
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.62
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.62
+  - @lincyaw/addon-guide@1.0.0-rc.62
+  - @lincyaw/addon-lecture@1.0.0-rc.62
+  - @lincyaw/addon-motion@1.0.0-rc.62
+  - @lincyaw/addon-publish@1.0.0-rc.62
+  - @lincyaw/addon-session@1.0.0-rc.62
+  - @lincyaw/addon-speech@1.0.0-rc.62
+  - @lincyaw/addon-stage@1.0.0-rc.62
+  - @lincyaw/cli@1.0.0-rc.62
+  - create-presmium@1.0.0-rc.62
+  - @lincyaw/host@1.0.0-rc.62
+  - @lincyaw/render-notebook@1.0.0-rc.62
+  - @lincyaw/render-slides@1.0.0-rc.62
+  - @lincyaw/viewer@1.0.0-rc.62
+  - @lincyaw/web@1.0.0-rc.62
+  - @lincyaw/studio@0.2.0-rc.61
+
 ## 1.0.0-rc.61
 
 ### Patch Changes
