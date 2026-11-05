@@ -2,7 +2,7 @@ import { DOCUMENT_VOICE_CATALOG_SCHEMA, DOCUMENT_VOICE_CLONE_SCHEMA, DOCUMENT_VO
 import type { DocumentVoiceCatalogQuery, DocumentVoiceCloneQuery, DocumentVoiceCloneRequest, VoiceCloneStatus, VoiceoverJobQuery, VoiceoverStart, VoiceoverStatusQuery, VoicePreviewCheck, VoicePreviewStart } from '@lincyaw/kernel'
 import type { Call, ToolSpec } from './mcp.ts'
 import type { ClonePreparationRequest } from './clone-protocol.ts'
-import { VOICE_STATUS_PAGE_SCHEMA, voiceStatusPage } from './voice-status.ts'
+import { VOICE_JOB_READ_SCHEMA, VOICE_PAGE_SCHEMA, voiceCatalogPage, voiceJobRead, voiceJobSummary, voiceJobsPage, voiceObservationSummary, voiceStatusPage } from './voice-results.ts'
 
 const document = { type: 'string', description: 'The served document directory.' }
 const input = (properties: Record<string, unknown>, required: string[] = []) => ({ type: 'object', additionalProperties: false, properties: { document, ...properties }, required })
@@ -63,30 +63,30 @@ export const VOICE_AUTHORING_TOOLS: ToolSpec[] = [
   },
   {
     name: 'get_voice_catalog', kind: 'read', structured: true,
-    description: 'Reads the same real voice catalogue as Web, without compiling scenes or generating audio. Supply an optional expected canonical source, engine and language. Returns available/unavailable distinctly, actual engine declarations and the saved source; source changes during discovery are rejected. Unknown rate/style ranges remain absent.',
-    inputSchema: { type: 'object', additionalProperties: false, properties: { document, query: structuredClone(DOCUMENT_VOICE_CATALOG_SCHEMA) } },
+    description: 'Reads the same real voice catalogue as Web in bounded pages: default 8 voices, maximum 20 and 7168 pretty-JSON characters. Continue with nextCursor as cursor and the same engine/language query; source changes or a removed continuation refuse the page. Preserves available/unavailable and provider/bundled distinctions, real engine declarations and saved source. Does not compile or generate audio. Unknown rate/style ranges remain absent.',
+    inputSchema: { type: 'object', additionalProperties: false, properties: { document, query: structuredClone(DOCUMENT_VOICE_CATALOG_SCHEMA), ...VOICE_PAGE_SCHEMA } },
     run: async call => {
       if (!call.host.voiceAuthoring) throw Object.assign(new Error('voice-authoring-host-unavailable'), { status: 503 })
-      return call.host.voiceAuthoring.catalog(await call.document(), call.args.query as DocumentVoiceCatalogQuery ?? {}, call.caller.member, call.signal)
+      return voiceCatalogPage(await call.host.voiceAuthoring.catalog(await call.document(), call.args.query as DocumentVoiceCatalogQuery ?? {}, call.caller.member, call.signal), call.args)
     },
   },
   {
     name: 'get_voiceover_status', kind: 'read', structured: true,
     description: 'Reads live IR voice targets, stable step IDs and cache readiness in pages of 8 rows (maximum 20, 7168 pretty-JSON characters). Continue with nextCursor as cursor; source or IR changes refuse continuation. Counts cover all steps, unbound pages and jobs. Jobs summarize multi-step scopes and long errors; get_voiceover_job reads details. Does not compile or synthesize; if IR is missing or stale, explicitly read presmium://ir?document=<directory> first. Returned source and revision bind later generation. Use job list/get for discovery without services.',
-    inputSchema: input({ query: structuredClone(VOICEOVER_STATUS_SCHEMA), ...VOICE_STATUS_PAGE_SCHEMA }),
+    inputSchema: input({ query: structuredClone(VOICEOVER_STATUS_SCHEMA), ...VOICE_PAGE_SCHEMA }),
     run: async call => voiceStatusPage(await service(call).snapshot(await call.document(), call.args.query as VoiceoverStatusQuery ?? {}, call.caller.member, call.signal), call.args),
   },
   {
     name: 'get_voiceover_jobs', kind: 'read', structured: true,
-    description: 'Lists real retained voiceover jobs from the same Workspace owner Web uses, with source, IR revision, monotonic sequence and current/old/unknown indication. No compilation, Node discovery, provider request or cache refresh. Jobs are process-local; no durable history is claimed.',
-    inputSchema: input({}),
-    run: async call => service(call).listJobs(await call.document(), call.caller.member),
+    description: 'Lists real retained voiceover job summaries in live pages: default 8, maximum 20 and 7168 pretty-JSON characters. Continue with nextCursor as cursor; a removed continuation returns 409. Retains source, IR revision, sequence, progress and current/old/unknown indication. Multi-step scope returns its count, long errors are marked previews; get_voiceover_job with path reads complete details. No compilation, service discovery, provider request or cache refresh. Jobs are process-local.',
+    inputSchema: input({ ...VOICE_PAGE_SCHEMA }),
+    run: async call => voiceJobsPage(await service(call).listJobs(await call.document(), call.caller.member), call.args),
   },
   {
     name: 'get_voiceover_job', kind: 'read', structured: true,
-    description: 'Reads one real generation intent or task, including pre-admission cancellation without inventing a job. Poll by client intent after an unknown acknowledgement. Reads remain available with invalid canonical JSON or a changed document UUID and do not discover services or compile.',
-    inputSchema: input({ query: structuredClone(VOICEOVER_JOB_QUERY_SCHEMA) }, ['query']),
-    run: async call => service(call).getJob(await call.document(), call.args.query as VoiceoverJobQuery, call.caller.member),
+    description: 'Polls one real intent/task with compact scope/error summaries, including pre-admission cancellation. Optional path selects complete own JSON fields; path:[] reads the complete observation. Small selected values use encoding:value; large ones use JSON-text fragments of at most 2048 decoded characters and 7168 pretty-JSON characters. Continue with nextCursor as cursor and the same job query, then assemble text before parsing. Cursor carries path, offset and identity; changed selected values refuse continuation. Invalid canonical JSON and changed document UUID remain observable; no compilation or service discovery.',
+    inputSchema: input({ query: structuredClone(VOICEOVER_JOB_QUERY_SCHEMA), ...VOICE_JOB_READ_SCHEMA }, ['query']),
+    run: async call => voiceJobRead(await service(call).getJob(await call.document(), call.args.query as VoiceoverJobQuery, call.caller.member), call.args),
   },
   {
     name: 'start_voiceover', kind: 'spend', structured: true,
@@ -97,7 +97,7 @@ export const VOICE_AUTHORING_TOOLS: ToolSpec[] = [
       const scope = request.scope.kind === 'page' ? request.scope.section : request.scope.kind === 'step' ? request.scope.target.section : request.scope.kind
       await call.approve('spend', messages => messages.generateVoiceover(scope), { lang: await language(call, selected), detail: selected, check: () => service(call).checkStart(selected, request, call.caller.member, call.signal) })
       call.signal.throwIfAborted()
-      return service(call).start(selected, request, call.caller.member, call.signal)
+      return voiceJobSummary(await service(call).start(selected, request, call.caller.member, call.signal))
     },
   },
   {
@@ -107,10 +107,10 @@ export const VOICE_AUTHORING_TOOLS: ToolSpec[] = [
     run: async call => {
       const selected = await call.document(), query = call.args.query as VoiceoverJobQuery
       const finished = await service(call).checkCancel(selected, query, call.caller.member)
-      if (finished) return finished
+      if (finished) return voiceObservationSummary(finished)
       await call.approve('operate', messages => messages.cancelVoiceover('id' in query ? query.id : query.intent), { lang: await language(call, selected), detail: selected })
       call.signal.throwIfAborted()
-      return service(call).cancel(selected, query, call.caller.member)
+      return voiceObservationSummary(await service(call).cancel(selected, query, call.caller.member))
     },
   },
   {
