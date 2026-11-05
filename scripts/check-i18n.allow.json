@@ -25,6 +25,7 @@
   {"file": "packages/studio/src/messages.ts", "key": "usage", "rule": "MCP", "reason": "CLI help names the external-client protocol served by --preview-port, required to configure the connection."},
   {"file": "packages/studio/src/messages.ts", "key": "usage", "rule": "HTTP", "reason": "CLI help distinguishes the HTTP MCP listener from the existing stdio command."},
   {"file": "packages/studio/src/messages.ts", "key": "previewPortInUse", "rule": "MCP", "reason": "CLI error identifies the fixed external MCP listener and the option that resolves its port conflict."},
+  {"file": "packages/studio/src/messages.ts", "key": "previewPortMoved", "rule": "MCP", "reason": "CLI notice gives the external MCP address of this run, which differs from the one clients were set up with."},
   {"file": "packages/studio/src/messages.ts", "key": "mcpToken", "rule": "MCP", "reason": "CLI connection instructions must name the protocol selected in external MCP clients."},
   {"file": "packages/studio/src/messages.ts", "key": "mcpToken", "rule": "HTTP", "reason": "CLI connection instructions specify Streamable HTTP and its Authorization header so external clients can connect."},
   {"file": "packages/studio/src/messages.ts", "key": "badMcpToken", "rule": "MCP", "reason": "CLI credential error identifies the external MCP connection whose access token the operator must update."},

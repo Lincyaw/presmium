@@ -14,6 +14,7 @@ export interface StudioMessages {
   ended(how: string, log: string): string
   portInUse(port: number, address: string): string
   previewPortInUse(port: number, address: string): string
+  previewPortMoved(port: number, url: string): string
   mcpToken(file: string): string
   badMcpToken(file: string): string
   noFreePort(address: string): string
@@ -43,7 +44,7 @@ presmium-studio-<散列>.log（每个安装一个）保存在 $XDG_STATE_HOME/pr
                  它的主机受信任，打印的网址用它。代理需保留 Host 并转发 WebSocket
   --preview-url <网址>  同样情况下预览所在的地址，由代理转发到工作区服务；可以带路径，
                  此时它必须与 Studio 不同源，否则预览中文稿的代码能读到 Studio 的会话
-  --preview-port <端口>  工作区服务与 HTTP MCP 的固定端口（默认 4321）；0 为随机端口
+  --preview-port <端口>  工作区服务与 HTTP MCP 的固定端口（默认 4321，被占用时换一个空闲端口）；0 为随机端口
   -h, --help     显示本说明`,
     badPort: value => `--port 需要 0 到 65535 之间的端口号，而不是“${value}”。`,
     badUrl: (option, value) => `${option} 需要一个完整的网址，例如 https://studio.example.com/，而不是“${value}”。`,
@@ -56,6 +57,7 @@ presmium-studio-<散列>.log（每个安装一个）保存在 $XDG_STATE_HOME/pr
     ended: (how, log) => `presmium studio: ${how}。日志在 ${log}`,
     portInUse: (port, address) => `${address} 的端口 ${port} 已被占用。请用 --port 指定另一个端口。`,
     previewPortInUse: (port, address) => `${address} 的工作区与 MCP 端口 ${port} 已被占用。请停止占用它的服务，或用 --preview-port 指定另一个固定端口。`,
+    previewPortMoved: (port, url) => `presmium studio: 端口 ${port} 已被占用，这次的 MCP 地址是 ${url}。按默认地址配置的 MCP 客户端这次连不上；需要固定地址时，用 --preview-port 指定一个空闲端口。`,
     mcpToken: file => `presmium studio: MCP 客户端使用 HTTP（Streamable HTTP），从 ${file} 读取访问令牌，设置 Authorization: Bearer <访问令牌>；同一目录重启与升级后保持不变。`,
     badMcpToken: file => `MCP 访问令牌文件 ${file} 无效。请移走该文件后重试，并在客户端更新访问令牌。`,
     noFreePort: address => `${address} 上没有空闲的端口。请停止占用端口的服务后重试。`,
@@ -85,7 +87,7 @@ Options:
   --preview-url <url>  in that case, the address of the previews, forwarded to the workspace service; it
                  may have a path, and should be another origin than Studio’s, or the documents’ code in
                  previews can read Studio’s session
-  --preview-port <n>  fixed workspace-service and HTTP MCP port (default: 4321); 0 requests a random port
+  --preview-port <n>  fixed workspace-service and HTTP MCP port (default: 4321, or a free one when that is in use); 0 requests a random port
   -h, --help     show this help`,
     badPort: value => `--port takes a port number from 0 to 65535, not “${value}”.`,
     badUrl: (option, value) => `${option} takes a full address, such as https://studio.example.com/, not “${value}”.`,
@@ -98,6 +100,7 @@ Options:
     ended: (how, log) => `presmium studio: ${how}; the log is ${log}`,
     portInUse: (port, address) => `Port ${port} of ${address} is in use. Give another with --port.`,
     previewPortInUse: (port, address) => `Workspace and MCP port ${port} of ${address} is in use. Stop the service using it, or choose another fixed port with --preview-port.`,
+    previewPortMoved: (port, url) => `presmium studio: port ${port} is in use, so the MCP address is ${url} this time. MCP clients set up with the usual address cannot reach it; for a fixed address, choose a free port with --preview-port.`,
     mcpToken: file => `presmium studio: MCP clients use HTTP (Streamable HTTP); read the access token from ${file} and set Authorization: Bearer <value>. It stays the same for this directory across restarts and upgrades.`,
     badMcpToken: file => `MCP access token file ${file} is invalid. Move it aside and retry, then update the access token in your clients.`,
     noFreePort: address => `There is no free port on ${address}. Stop a service that uses one, then retry.`,

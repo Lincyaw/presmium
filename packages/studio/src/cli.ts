@@ -64,6 +64,7 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
   for (const url of studio.networkUrls) process.stdout.write(`network  ${url}\n`)
   process.stdout.write(`mcp  ${studio.mcp.url}\n`)
   process.stderr.write(`${t.mcpToken(studio.mcp.tokenFile)}\n`)
+  if (studio.mcp.movedFrom) process.stderr.write(`${t.previewPortMoved(studio.mcp.movedFrom, studio.mcp.url)}\n`)
   process.stderr.write(`${t.log(studio.log)}\n`)
   if (values.host && values.host !== '127.0.0.1' && values.host !== '::1' && !values['public-url']) {
     process.stderr.write(`${studio.networkUrls.length

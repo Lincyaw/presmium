@@ -31,7 +31,7 @@ export interface StudioOptions {
    */
   publicUrl?: string
   previewUrl?: string
-  /** The workspace service and HTTP MCP port (default: 4321). Zero explicitly requests a free port. */
+  /** The workspace service and HTTP MCP port. Without it Studio uses 4321, or a free port when 4321 is in use; zero requests a free port. */
   previewPort?: number
   env?: NodeJS.ProcessEnv
   presmium?: string
@@ -43,7 +43,8 @@ export interface Studio {
   url: string
   networkUrls: string[]
   workspaceServerUrl: string
-  mcp: { url: string, tokenFile: string }
+  /** `movedFrom` is the default port when it was in use and the MCP address differs from the usual one. */
+  mcp: { url: string, tokenFile: string, movedFrom?: number }
   root: string
   home: string
   log: string
@@ -221,8 +222,14 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
   }
   const boundAddress = listenAddress ?? '127.0.0.1'
   const wildcard = WILDCARD.test(boundAddress)
-  const previewPort = options.previewPort ?? DEFAULT_PREVIEW_PORT
-  if (previewPort !== 0 && await freePort(boundAddress, previewPort) === undefined) throw new Error(t.previewPortInUse(previewPort, boundAddress))
+  // External MCP clients keep the default address, so it is preferred; an explicit port must be free.
+  let previewPort = options.previewPort ?? DEFAULT_PREVIEW_PORT
+  let movedFrom: number | undefined
+  if (previewPort !== 0 && await freePort(boundAddress, previewPort) === undefined) {
+    if (options.previewPort !== undefined) throw new Error(t.previewPortInUse(previewPort, boundAddress))
+    movedFrom = previewPort
+    previewPort = 0
+  }
   const port = await choosePort(boundAddress, options.port)
   const dshAddress = wildcard ? '127.0.0.1' : boundAddress
   const dshPort = wildcard ? await choosePort(dshAddress, undefined) : port
@@ -312,7 +319,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
       url: address,
       networkUrls,
       workspaceServerUrl: url,
-      mcp: { url: mcpUrl.href, tokenFile },
+      mcp: { url: mcpUrl.href, tokenFile, ...movedFrom ? { movedFrom } : {} },
       root,
       home,
       log: log.file,

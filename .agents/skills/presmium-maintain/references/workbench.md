@@ -13,7 +13,7 @@ dsh is configured as a tree of **rows** (one plugin each, with configuration and
 
 ## Event transport
 
-Studio defaults its workspace service and HTTP MCP to fixed port 4321. External MCP credentials are persisted per canonical launch directory under the Studio state home, independently of installation profiles; internal service and session tokens remain separate. An occupied port fails with `--preview-port` guidance; only an explicit zero requests a temporary port. Check real HTTP calls before and after a restart with the same URL and credential when changing this lifecycle (`docs/studio.md`, sections 5.2, 9 and 11).
+Studio defaults its workspace service and HTTP MCP to fixed port 4321. External MCP credentials are persisted per canonical launch directory under the Studio state home, independently of installation profiles; internal service and session tokens remain separate. When 4321 is occupied and no `--preview-port` was given, Studio starts on a free port and says the MCP address differs this time; an occupied explicit port fails; an explicit zero requests a temporary port. Check real HTTP calls before and after a restart with the same URL and credential when changing this lifecycle (`docs/studio.md`, sections 5.2, 9 and 11).
 
 Studio sets `client-hmr.disabled: true` in its web patch. Source, diagnostics, reviews, IR and jobs update
 through the authenticated Presmium event WebSocket; a client rebuild leaves the page running. Do not
