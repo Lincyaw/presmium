@@ -1,5 +1,16 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.54
+
+### Patch Changes
+
+- a0a0e0b: Inspect, read and explicitly discard native pending voice choices and individual media clip proposals through the existing editor action. Keep sibling inputs, synchronize open forms after confirmed local retirement and retain input when storage, source or composition guards refuse the operation. Make existing approvals reachable inside modal and nested dialogs without weakening their focus boundary.
+- Updated dependencies [a0a0e0b]
+  - @lincyaw/kernel@1.0.0-rc.55
+  - @lincyaw/skills@1.0.0-rc.55
+  - @lincyaw/cli@1.0.0-rc.55
+  - @lincyaw/mcp@1.0.0-rc.55
+
 ## 0.2.0-rc.53
 
 ### Patch Changes
