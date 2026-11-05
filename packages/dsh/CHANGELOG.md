@@ -1,5 +1,16 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.53
+
+### Patch Changes
+
+- 0b1348a: Restore new text and place-comment drafts and discard active comment inputs through the existing editor action. Ordinary restore selects the native target internally, returns compact feedback and preserves prior branches. Prefer direct common tools in operation search. Hide transport-owned source and connection fields from ordinary editor discovery. Keep asynchronous browser status receipts as compact as immediate completion, with full details available explicitly. Keep comment forms open while answering approvals, retain newer input across cancellation and storage failures, and allow explicit local draft reads when saved JSON is invalid.
+- Updated dependencies [0b1348a]
+  - @lincyaw/kernel@1.0.0-rc.54
+  - @lincyaw/mcp@1.0.0-rc.54
+  - @lincyaw/skills@1.0.0-rc.54
+  - @lincyaw/cli@1.0.0-rc.54
+
 ## 0.2.0-rc.52
 
 ### Patch Changes
