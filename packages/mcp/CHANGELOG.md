@@ -1,5 +1,15 @@
 # @lincyaw/mcp
 
+## 1.0.0-rc.63
+
+### Patch Changes
+
+- 06e3914: Pin voice-clone audio before Studio spending approval, reject changed or expired preparation without retraining, and release prepared inputs after rejection or cancellation without adding model tools or arguments.
+- Updated dependencies [06e3914]
+  - @lincyaw/kernel@1.0.0-rc.63
+  - @lincyaw/skills@1.0.0-rc.63
+  - @lincyaw/compiler@1.0.0-rc.63
+
 ## 1.0.0-rc.62
 
 ### Patch Changes

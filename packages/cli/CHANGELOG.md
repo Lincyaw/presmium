@@ -1,5 +1,16 @@
 # @lincyaw/cli
 
+## 1.0.0-rc.63
+
+### Patch Changes
+
+- Updated dependencies [06e3914]
+  - @lincyaw/kernel@1.0.0-rc.63
+  - @lincyaw/workspace@1.0.0-rc.63
+  - @lincyaw/skills@1.0.0-rc.63
+  - @lincyaw/compiler@1.0.0-rc.63
+  - @lincyaw/server@1.0.0-rc.63
+
 ## 1.0.0-rc.62
 
 ### Patch Changes
