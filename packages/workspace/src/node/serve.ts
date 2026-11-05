@@ -397,7 +397,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   })
   const running = server
   serverServices = running.services
-  voiceAuthoring = createDocumentVoiceAuthoring({ editor, services: authoringServices, revision: document => { const latest = compileSessions.get(document)?.latest; return latest ? irRevision(latest.doc) : undefined } })
+  mediaUploads = createMediaUploads({ editor, url: () => `${publicOrigin()}${basePath.replace(/\/$/, '')}` })
+  voiceAuthoring = createDocumentVoiceAuthoring({ editor, uploads: mediaUploads, services: authoringServices, revision: document => { const latest = compileSessions.get(document)?.latest; return latest ? irRevision(latest.doc) : undefined } })
   workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, voices: voiceAuthoring.service, diagnostics: running.diagnostics, url: () => options.publicUrl ? new URL(options.publicUrl).origin : running.url, basePath, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
   history = openHistory()
   workspaceChanges = createWorkspaceChanges({ config, editor, locks, revisions: history?.revisions, changed: documentsChanged })
@@ -413,7 +414,6 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   documentHistory = createDocumentHistory({ config, editor, locks, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required', changed: (before, after) => documentsChanged(documentsDiff(before, after)), reverted: (target, revision) => history?.agentSessionReviews.reverted(target, revision) })
   transcriptions = createDocumentTranscriptions({ root, editor, services: authoringServices })
   transcriptionAdoption = createTranscriptionAdoption({ documentEditor, transcriptions })
-  mediaUploads = createMediaUploads({ editor, url: () => `${publicOrigin()}${basePath.replace(/\/$/, '')}` })
   audioAuthoring = createDocumentAudioAuthoring({ root, editor, uploads: mediaUploads, revisions: history?.revisions, services: authoringServices, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   imageAuthoring = createDocumentImageAuthoring({ root, editor, uploads: mediaUploads, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   const routeOptions = {

@@ -21,7 +21,7 @@ export const VOICE_AUTHORING_TOOLS: ToolSpec[] = [
   },
   {
     name: 'clone_voice', kind: 'spend', structured: true, workspace: 'author',
-    description: 'Trains an owned voice slot from a sample and the speaker’s recorded consent statement, after spending approval. sample and consent.statement are audio file paths inside the selected document, each at most 10 MiB. Consent names the actual speaker and scope. The server fixes the original bytes before approval and records consent through the existing speech service. No automatic retry after a lost response; inspect clone status.',
+    description: 'Trains an owned voice slot from a sample and the speaker’s recorded consent statement, after spending approval. sample and consent.statement each accept a workspace audio path or {upload} from prepare_media_upload, at most 10 MiB each. Uploads do not save assets or change the document. Consent names the actual speaker and scope. The original service fixes bytes before approval and records consent through the existing speech service. No automatic retry after a lost response; inspect clone status.',
     inputSchema: { ...DOCUMENT_VOICE_CLONE_SCHEMA, properties: { document, ...DOCUMENT_VOICE_CLONE_SCHEMA.properties } },
     run: async call => {
       const selected = await call.document(), { document: _document, ...request } = call.args

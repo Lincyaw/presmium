@@ -17,7 +17,11 @@ To see a page as the presentation shows it, call `capture_slides` with its secti
 For files on the client's machine, use `prepare_media_upload({kind:'image'|'audio'})`, open its URL to
 select a file, and read readiness with the same operation's `{upload}`. SDK consumers can use
 `uploadMedia(document, kind, File, signal?)` directly. Import ready bytes through the existing
-`import_workspace_image({upload})` or `import_workspace_audio({upload})`; do not send base64 through
+`import_workspace_image({upload})` or `import_workspace_audio({upload})`. For `clone_voice`, each of
+`sample` and `consent.statement` can use `{upload}` directly, or retain its workspace-relative file
+path; each clone input is limited to 10 MiB. Do not import clone inputs as canonical assets first, and
+use only the actual speaker's consent. Owners can stage audio for separately approved training even
+when canonical writes require review; imports retain their review checks. Do not send base64 through
 model arguments. The temporary upload does not save the document; the import retains approval and
 history. Links last ten minutes, allow one transfer and expire when the service stops. See
 `docs/authoring-actions.md` section 7 for limits and ownership.

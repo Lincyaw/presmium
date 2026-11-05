@@ -5,6 +5,7 @@ import type { Member } from './server.ts'
 import type { SpeechEngineInfo, VoiceCloneRequest, VoiceCloneStatus } from './speech.ts'
 import type { VoiceCatalogAnswer, VoiceoverCancellation } from './voice.ts'
 import type { DocumentVoiceTasks, VoiceoverJobQuery, VoiceoverStart, VoicePreviewStart } from './voiceover-execution.ts'
+import { MEDIA_LOCATION_PROPERTIES } from './media-uploads.ts'
 
 export interface DocumentVoiceCapabilities {
   document: string
@@ -25,11 +26,12 @@ export interface DocumentVoiceCatalogQuery { source?: CanonicalSource, engine?: 
 export interface DocumentVoiceCatalogAnswer extends VoiceCatalogAnswer { document: string, source: CanonicalSource, findings?: Finding[] }
 
 export const VOICE_CLONE_MAX_AUDIO_BYTES = 10 << 20
-/** Files are scoped workspace paths; the service reads and fixes their bytes before spending approval. */
+export type DocumentVoiceCloneAudio = string | { upload: string }
+/** Scoped workspace paths or ready uploads; the service fixes their bytes before spending approval. */
 export type DocumentVoiceCloneRequest = Omit<VoiceCloneRequest, 'sample' | 'consent'> & {
   source?: CanonicalSource
-  sample: string
-  consent: { speaker: string, scope: string, statement: string }
+  sample: DocumentVoiceCloneAudio
+  consent: { speaker: string, scope: string, statement: DocumentVoiceCloneAudio }
 }
 export interface DocumentVoiceCloneQuery { engine?: string, voice: string }
 /** A process-local capability for this call, never a model argument or a retained plan. */
@@ -63,6 +65,7 @@ export const DOCUMENT_VOICE_CATALOG_SCHEMA = {
 } as const
 
 const cloneText = { type: 'string', minLength: 1, maxLength: 200 } as const
+const cloneAudio: Schema = { oneOf: [{ type: 'string', minLength: 1, maxLength: 1024 }, { type: 'object', additionalProperties: false, properties: { upload: MEDIA_LOCATION_PROPERTIES.upload }, required: ['upload'] }] }
 export const DOCUMENT_VOICE_CLONE_QUERY_SCHEMA: Schema = {
   type: 'object', additionalProperties: false, properties: { engine: cloneText, voice: cloneText }, required: ['voice'],
 }
@@ -70,8 +73,8 @@ export const DOCUMENT_VOICE_CLONE_SCHEMA: Schema = {
   type: 'object', additionalProperties: false,
   properties: {
     source: structuredClone(DOCUMENT_VOICE_CATALOG_SCHEMA.properties.source) as unknown as Schema, engine: cloneText, voice: cloneText,
-    sample: { type: 'string', minLength: 1, maxLength: 1024 },
-    consent: { type: 'object', additionalProperties: false, properties: { speaker: cloneText, scope: { type: 'string', minLength: 1, maxLength: 2000 }, statement: { type: 'string', minLength: 1, maxLength: 1024 } }, required: ['speaker', 'scope', 'statement'] },
+    sample: cloneAudio,
+    consent: { type: 'object', additionalProperties: false, properties: { speaker: cloneText, scope: { type: 'string', minLength: 1, maxLength: 2000 }, statement: cloneAudio }, required: ['speaker', 'scope', 'statement'] },
     lang: { type: 'string', minLength: 1, maxLength: 100 }, text: { type: 'string', maxLength: 4000 },
   }, required: ['voice', 'sample', 'consent'],
 }

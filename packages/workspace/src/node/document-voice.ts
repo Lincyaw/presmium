@@ -1,21 +1,23 @@
 import { DOCUMENT_ENTRY, VOICE_CLONE_MAX_AUDIO_BYTES, fnv1a64, hasRole, speechEngineId } from '@lincyaw/kernel'
-import type { CanonicalSource, DocumentVoiceAuthoring, Finding, Member, PreparedVoiceClone, SpeechService, VoiceoverExecution, VoiceoverJob } from '@lincyaw/kernel'
+import type { CanonicalSource, DocumentVoiceAuthoring, DocumentVoiceCloneAudio, Finding, Member, PreparedVoiceClone, SpeechService, VoiceoverExecution, VoiceoverJob } from '@lincyaw/kernel'
 import { createVoiceoverOwner, createVoiceoverRoutes, validateDocumentVoiceCatalogQuery, validateDocumentVoiceClone, validateDocumentVoiceCloneQuery, validateVoicePreviewStart } from '@lincyaw/kernel/node'
 import { extname } from 'node:path'
 import { readDocumentAudioBytes } from './document-audio.ts'
 import { readAuthoringDocument } from './document-editor.ts'
 import { RequestError } from './errors.ts'
 import type { SourceEditor } from './source-editor.ts'
+import type { MediaUploadsOwner } from './media-uploads.ts'
 
 export interface DocumentVoiceServices { speech?: SpeechService, voiceover?: { version: 1, preview: true }, voiceoverExecution?: VoiceoverExecution, findings?: Finding[] }
 export interface DocumentVoiceAuthoringOptions {
   editor: SourceEditor
   services(document: string, source: CanonicalSource): Promise<DocumentVoiceServices>
   revision?(document: string): string | undefined
+  uploads?: MediaUploadsOwner
 }
 const same = (a: CanonicalSource, b: CanonicalSource) => a.documentId === b.documentId && a.version === b.version && a.fingerprint === b.fingerprint
 
-export function createDocumentVoiceAuthoring({ editor, services, revision }: DocumentVoiceAuthoringOptions) {
+export function createDocumentVoiceAuthoring({ editor, services, revision, uploads }: DocumentVoiceAuthoringOptions) {
   const pending = new Set<{ controller: AbortController, finished: Promise<unknown> }>()
   const owners = new Map<string, ReturnType<typeof createVoiceoverOwner>>()
   const clones = new Set<PreparedVoiceClone>()
@@ -70,23 +72,30 @@ export function createDocumentVoiceAuthoring({ editor, services, revision }: Doc
       if (clones.size >= 4) throw new RequestError(503, 'voice-authoring-busy')
       const request = structuredClone(value), loaded = await load(document, member, signal, request.source)
       const speech = loaded.speech, engine = request.engine ?? await speech?.defaultSynthesisEngine?.()
-      const mime = (path: string) => {
-        if (path.split(/[\\/]/).some(part => part.startsWith('.'))) throw new RequestError(403, 'audio-file-path')
+      const read = async (input: DocumentVoiceCloneAudio) => {
+        const path = typeof input === 'string' ? input : undefined
+        if (path !== undefined && path.split(/[\\/]/).some(part => part.startsWith('.'))) throw new RequestError(403, 'audio-file-path')
+        const uploaded = typeof input !== 'string' ? uploads?.read(document, loaded.source.documentId, member, input.upload, 'audio') : undefined
+        if (path === undefined && !uploaded) throw new RequestError(503, 'media-upload-unavailable')
         const types: Record<string, string> = { '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.webm': 'audio/webm', '.ogg': 'audio/ogg', '.m4a': 'audio/mp4', '.mp4': 'audio/mp4', '.flac': 'audio/flac', '.aac': 'audio/aac' }
-        const type = types[extname(path).toLowerCase()]
+        const type = types[extname(path ?? uploaded!.name).toLowerCase()]
         if (!type) throw new RequestError(422, 'voice-clone-audio-type')
-        editor.assertEditable({ document, home: false }, path, member)
-        return type
+        if (path !== undefined) editor.assertEditable({ document, home: false }, path, member)
+        const bytes = uploaded?.bytes ?? await readDocumentAudioBytes(editor, { document, member, rest: '' }, path!, signal, VOICE_CLONE_MAX_AUDIO_BYTES)
+        if (bytes.length > VOICE_CLONE_MAX_AUDIO_BYTES) throw new RequestError(413, 'production.asset-size')
+        return { bytes, type }
       }
-      const sampleType = mime(request.sample), statementType = mime(request.consent.statement)
-      const [sampleBytes, statementBytes] = await Promise.all([request.sample, request.consent.statement].map(path => readDocumentAudioBytes(editor, { document, member, rest: '' }, path, signal, VOICE_CLONE_MAX_AUDIO_BYTES)))
+      const [sampleRead, statementRead] = await Promise.allSettled([read(request.sample), read(request.consent.statement)])
+      if (sampleRead.status === 'rejected') throw sampleRead.reason
+      if (statementRead.status === 'rejected') throw statementRead.reason
+      const sampleInput = sampleRead.value, statementInput = statementRead.value
       current(document, member, loaded.source); signal.throwIfAborted()
       if (!speech?.cloneVoice || !engine || !(await speech.engines()).some(info => info.id === speechEngineId(engine) && info.clone)) throw new RequestError(409, 'voice-clone-unavailable')
       current(document, member, loaded.source); signal.throwIfAborted()
       // Several readers may finish concurrently; the retained byte budget is checked again before retaining blobs.
       if (clones.size >= 4) throw new RequestError(503, 'voice-authoring-busy')
-      let sample: Blob | undefined = new Blob([sampleBytes! as Uint8Array<ArrayBuffer>], { type: sampleType })
-      let statement: Blob | undefined = new Blob([statementBytes! as Uint8Array<ArrayBuffer>], { type: statementType })
+      let sample: Blob | undefined = new Blob([sampleInput.bytes as Uint8Array<ArrayBuffer>], { type: sampleInput.type })
+      let statement: Blob | undefined = new Blob([statementInput.bytes as Uint8Array<ArrayBuffer>], { type: statementInput.type })
       let started: ReturnType<NonNullable<SpeechService['cloneVoice']>> | undefined
       let expired = false
       const prepared: PreparedVoiceClone = { engine: speechEngineId(engine), voice: request.voice,
