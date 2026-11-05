@@ -1,5 +1,15 @@
 # @lincyaw/mcp
 
+## 1.0.0-rc.61
+
+### Patch Changes
+
+- 0b81469: Return bounded live pages of transcription task summaries instead of an entire task history. Continue by stable task or issue identity without extra verification parameters; full task details and the native Web list remain available through their existing queries.
+- Updated dependencies [0b81469]
+  - @lincyaw/skills@1.0.0-rc.61
+  - @lincyaw/compiler@1.0.0-rc.61
+  - @lincyaw/kernel@1.0.0-rc.61
+
 ## 1.0.0-rc.60
 
 ### Patch Changes
