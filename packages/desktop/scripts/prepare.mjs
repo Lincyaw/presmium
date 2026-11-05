@@ -72,6 +72,31 @@ function runtime() {
   snapshotFiles(join(target, 'node_modules', '@lincyaw'))
   for (const file of ['.pnpm', '.bin', '.modules.yaml']) rmSync(join(target, 'node_modules', file), { recursive: true, force: true })
   for (const file of ['pnpm-lock.yaml', 'pnpm-workspace.yaml', 'scripts', 'src-tauri', 'ui', '.gitignore']) rmSync(join(target, file), { recursive: true, force: true })
+  prune(join(target, 'node_modules'))
+}
+
+// Files no installed program reads: source maps, type declarations, Windows debug symbols, a package's own
+// tests and demos, and node-pty's prebuilt binaries for the other platforms. About a third of the runtime.
+const unused = /\.(map|d\.[cm]?ts|pdb)$/
+const unusedInPackage = new Set(['test', 'tests', '__tests__', 'demo'])
+function prune(modules) {
+  const sweep = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const file = join(dir, entry.name)
+      if (entry.isDirectory()) sweep(file)
+      else if (unused.test(entry.name)) rmSync(file)
+    }
+  }
+  sweep(modules)
+  const folders = (dir) => readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => join(dir, entry.name))
+  for (const folder of folders(modules)) {
+    const packages = folder.split(/[\\/]/).pop().startsWith('@') ? folders(folder) : [folder]
+    for (const dir of packages) for (const sub of unusedInPackage) rmSync(join(dir, sub), { recursive: true, force: true })
+  }
+  const prebuilds = join(modules, 'node-pty', 'prebuilds')
+  if (existsSync(prebuilds)) {
+    for (const name of readdirSync(prebuilds)) if (name !== `${process.platform}-${process.arch}`) rmSync(join(prebuilds, name), { recursive: true, force: true })
+  }
 }
 
 async function launcher() {

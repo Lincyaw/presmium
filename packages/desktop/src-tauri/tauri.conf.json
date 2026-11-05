@@ -37,6 +37,9 @@
     "linux": {
       "deb": {
         "depends": []
+      },
+      "rpm": {
+        "compression": { "type": "zstd", "level": 19 }
       }
     }
   }
