@@ -1,5 +1,13 @@
 # @lincyaw/workbench
 
+## 0.2.0-rc.67
+
+### Patch Changes
+
+- dfebc06: Move local draft recovery into Version History, with a quiet draft count on the existing history entry. Recover or discard a draft directly from its row, or discard all listed drafts together while preserving newer input from other windows.
+- @lincyaw/design@1.0.0-rc.67
+  - @lincyaw/kernel@1.0.0-rc.67
+
 ## 0.2.0-rc.66
 
 ### Patch Changes

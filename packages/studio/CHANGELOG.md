@@ -1,5 +1,12 @@
 # @lincyaw/studio
 
+## 0.2.0-rc.66
+
+### Patch Changes
+
+- Updated dependencies [dfebc06]
+  - @lincyaw/dsh@0.2.0-rc.66
+
 ## 0.2.0-rc.65
 
 ### Patch Changes

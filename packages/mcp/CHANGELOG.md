@@ -1,5 +1,13 @@
 # @lincyaw/mcp
 
+## 1.0.0-rc.67
+
+### Patch Changes
+
+- @lincyaw/compiler@1.0.0-rc.67
+  - @lincyaw/kernel@1.0.0-rc.67
+  - @lincyaw/skills@1.0.0-rc.67
+
 ## 1.0.0-rc.66
 
 - Refresh subscribed resource values after recovering a readonly notification stream, including resource-only clients.
