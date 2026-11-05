@@ -1,5 +1,12 @@
 # @lincyaw/skills
 
+## 1.0.0-rc.70
+
+### Patch Changes
+
+- 3b97947: Prioritize the current narrated page and audio before look-ahead loading, stream server audio through native media URLs, and combine GSAP plugin loading to reduce cold-start requests. Keep capture and export waiting for every picture.
+- @lincyaw/kernel@1.0.0-rc.70
+
 ## 1.0.0-rc.69
 
 ### Patch Changes
