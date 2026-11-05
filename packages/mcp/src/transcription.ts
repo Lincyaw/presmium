@@ -1,5 +1,5 @@
 import { DOCUMENT_TRANSCRIPTION_INPUT_SCHEMA, TRANSCRIPTION_ADOPTION_APPLY_SCHEMA, TRANSCRIPTION_ADOPTION_DRAFT_SCHEMA } from '@lincyaw/kernel'
-import type { DocumentTranscriptionRequest, DocumentTranscriptions, TranscriptionAdoptionApply, TranscriptionAdoptionDraft } from '@lincyaw/kernel'
+import type { DocumentTranscriptionRequest, DocumentTranscriptions, TranscriptionAdoptionApply, TranscriptionAdoptionDraft, TranscriptionTask } from '@lincyaw/kernel'
 import type { Call, ToolSpec } from './mcp.ts'
 
 const document = { type: 'string', description: 'The served document directory, omitted only for one document or a document-bound token.' }
@@ -12,6 +12,42 @@ function service(call: Call): DocumentTranscriptions {
   return call.host.transcriptions
 }
 const language = async (call: Call, selected: string) => (await call.host.documents()).find(document => document.dir === selected)?.lang ?? ''
+
+/** Discovery stays small; the existing single-task query retains the complete native record. */
+async function readTasks(call: Call) {
+  const value = await service(call).list(await call.document(), call.caller.member)
+  call.signal.throwIfAborted()
+  const preview = (text: string, limit: number) => text.slice(0, text.length > limit && /[\uD800-\uDBFF]/.test(text[limit - 1]!) ? limit - 1 : limit)
+  const summary = (task: TranscriptionTask) => ({ id: task.id, intent: task.intent, sequence: task.sequence, state: task.state, current: task.current,
+    ...task.staleReason ? { staleReason: task.staleReason } : {}, progress: { phase: task.progress.phase }, createdAt: preview(task.createdAt, 64),
+    ...task.result ? { result: { transcriptionId: task.result.transcriptionId, revision: task.result.revision } } : {},
+    ...task.error ? { error: preview(task.error, 256) } : {},
+    ...task.createdAt.length > 64 || (task.error?.length ?? 0) > 256 ? { detailsTruncated: true } : {},
+  })
+  const rows = [
+    ...value.tasks.map(task => ({ cursor: `task:${task.id}`, task: summary(task) })),
+    ...value.issues.map(issue => ({ cursor: `issue:${issue.id}`, issue: { id: issue.id, code: issue.code } })),
+  ]
+  const previous = call.args.cursor, from = previous === undefined ? 0 : rows.findIndex(row => row.cursor === previous) + 1
+  if (previous !== undefined && from === 0) throw Object.assign(new Error('transcription-list-changed'), { status: 409 })
+  const reply: { tasks: ReturnType<typeof summary>[], issues: typeof value.issues, totalTasks: number, totalIssues: number, truncated?: true, nextCursor?: string } = {
+    tasks: [], issues: [], totalTasks: value.tasks.length, totalIssues: value.issues.length, ...value.truncated ? { truncated: true } : {},
+  }
+  for (let index = from; index < Math.min(rows.length, from + Number(call.args.limit ?? 8)); index++) {
+    const row = rows[index]!, last = reply.nextCursor
+    if ('task' in row) reply.tasks.push(row.task)
+    else reply.issues.push(row.issue)
+    if (index + 1 < rows.length) reply.nextCursor = row.cursor
+    else delete reply.nextCursor
+    if (JSON.stringify(reply, null, 2).length <= 7168) continue
+    if ('task' in row) reply.tasks.pop()
+    else reply.issues.pop()
+    if (last === undefined) throw Object.assign(new Error('transcription-list-entry-too-large'), { status: 413 })
+    reply.nextCursor = last
+    break
+  }
+  return reply
+}
 
 /** Candidate identity already pins every fragment; do not add a second verification token. */
 async function readResult(call: Call) {
@@ -62,9 +98,9 @@ export const TRANSCRIPTION_TOOLS: ToolSpec[] = [
   },
   {
     name: 'get_transcriptions', kind: 'read', structured: true,
-    description: 'Discovers real workspace transcription tasks from active state and bounded durable journals. Reports corrupt records as issues, never completed tasks. Invalid current JSON and an older document UUID remain observable as stale; this read does not load services, compile or call ASR.',
-    inputSchema: input({}, []),
-    run: async call => service(call).list(await call.document(), call.caller.member),
+    description: 'Discovers real workspace transcription tasks in bounded live pages: at most 7168 pretty-JSON characters, default 8 rows, maximum 20. Continue with nextCursor as cursor; no source or snapshot parameter. New earlier tasks appear on a fresh first page; a removed cursor returns 409. Summaries retain IDs, state, progress, sequence, current/stale indication and result identity; get_transcription reads complete details. Reports corrupt records as issues. Invalid current JSON remains observable as stale. Does not load services, compile or call ASR.',
+    inputSchema: input({ cursor: { type: 'string', minLength: 6, maxLength: 520, pattern: '^(task|issue):[^\\u0000]+$' }, limit: { type: 'integer', minimum: 1, maximum: 20 } }, []),
+    run: readTasks,
   },
   {
     name: 'get_transcription', kind: 'read', structured: true,
