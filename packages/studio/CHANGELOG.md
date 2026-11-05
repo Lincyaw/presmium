@@ -1,5 +1,12 @@
 # @lincyaw/studio
 
+## 0.2.0-rc.56
+
+### Patch Changes
+
+- a1f5fd1: When port 4321 is taken (for example by another Studio) and no `--preview-port` was given, `presmium studio` starts on a free port and prints that the MCP address differs this time, instead of refusing to start.
+- @lincyaw/dsh@0.2.0-rc.56
+
 ## 0.2.0-rc.55
 
 ### Patch Changes

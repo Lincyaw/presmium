@@ -1,5 +1,11 @@
 # create-presmium
 
+## 1.0.0-rc.57
+
+### Patch Changes
+
+- @lincyaw/kernel@1.0.0-rc.57
+
 ## 1.0.0-rc.56
 
 ### Patch Changes
