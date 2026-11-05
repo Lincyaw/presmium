@@ -1,5 +1,37 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.71
+
+### Patch Changes
+
+- 049fcee: Move paper explainers under `examples/papers/papers/` so the paper collection has room to grow without mixing documents and shared workspace files.
+- @lincyaw/addon-assistant@1.0.0-rc.71
+  - @lincyaw/addon-classroom@1.0.0-rc.71
+  - @lincyaw/addon-code@1.0.0-rc.71
+  - @lincyaw/addon-content@1.0.0-rc.71
+  - @lincyaw/addon-exec@1.0.0-rc.71
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.71
+  - @lincyaw/addon-exec-local@1.0.0-rc.71
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.71
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.71
+  - @lincyaw/addon-guide@1.0.0-rc.71
+  - @lincyaw/addon-lecture@1.0.0-rc.71
+  - @lincyaw/addon-motion@1.0.0-rc.71
+  - @lincyaw/addon-publish@1.0.0-rc.71
+  - @lincyaw/addon-session@1.0.0-rc.71
+  - @lincyaw/addon-speech@1.0.0-rc.71
+  - @lincyaw/addon-stage@1.0.0-rc.71
+  - @lincyaw/cli@1.0.0-rc.71
+  - create-presmium@1.0.0-rc.71
+  - @lincyaw/host@1.0.0-rc.71
+  - @lincyaw/kernel@1.0.0-rc.71
+  - @lincyaw/mcp@1.0.0-rc.71
+  - @lincyaw/render-notebook@1.0.0-rc.71
+  - @lincyaw/render-slides@1.0.0-rc.71
+  - @lincyaw/viewer@1.0.0-rc.71
+  - @lincyaw/web@1.0.0-rc.71
+  - @lincyaw/studio@0.2.0-rc.70
+
 ## 1.0.0-rc.70
 
 ### Patch Changes
