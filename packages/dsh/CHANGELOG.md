@@ -1,5 +1,15 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.71
+
+### Patch Changes
+
+- Updated dependencies [33b8224]
+  - @lincyaw/skills@1.0.0-rc.72
+  - @lincyaw/cli@1.0.0-rc.72
+  - @lincyaw/mcp@1.0.0-rc.72
+  - @lincyaw/kernel@1.0.0-rc.72
+
 ## 0.2.0-rc.70
 
 ### Patch Changes

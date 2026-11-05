@@ -1,5 +1,12 @@
 # @lincyaw/skills
 
+## 1.0.0-rc.72
+
+### Patch Changes
+
+- 33b8224: Encode static scene images referenced through new URL(..., import.meta.url) with the shared WebP pipeline, reducing the images needed before narrated playback can start. Track these source images so edits invalidate cached scene bundles.
+- @lincyaw/kernel@1.0.0-rc.72
+
 ## 1.0.0-rc.71
 
 ### Patch Changes
