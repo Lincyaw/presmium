@@ -1,0 +1,6 @@
+Use case: scientific-educational.
+Reformat the referenced cover into an EXACT 4:3 landscape canvas, 1536 pixels wide by 1152 pixels tall. The user explicitly requires width:height = 4:3. Recompose the layout for this aspect ratio, do NOT crop off text or squeeze the wide original.
+Preserve the warm ivory paper texture, bold black Chinese type with vermilion emphasis, minimal editorial science style, series name, brand, paper name and conceptual chart. No added objects or new claims.
+Arrange compact small labels "三分钟读完一篇论文" top left and "翰林院传达室" top right with generous margins. Main headline in the upper half in two large left-aligned lines: "给小模型一点提示" with "一点提示" in vermilion, and "预测大模型准确率" in black. All glyphs must be fully visible and large enough for a thumbnail.
+In the lower half: lower-left a small paper name on two lines "Hinted Scaling Laws" and "提示辅助的缩放定律"; lower-right a clean schematic chart with near-zero gray small-model points, slim columns of purple/teal/green/yellow hinted points, an elegant vermilion rising curve extending to an amber large-model target. Chart axis labels EXACTLY "准确率" and "训练算力"; tiny tags "小模型", "大模型", "示意". No numerical ticks or invented statistics. Ensure chart and headline do not overlap.
+Output dimensions MUST be 1536x1152, precisely 4:3. All text exactly correct, no extra text, no watermark.

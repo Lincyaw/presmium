@@ -107,6 +107,8 @@ Build only when the required speech cache and provider capability actually exist
 
 ## Time the video and review its frames
 
+For a paper-explainer video, follow the workspace's publication requirements and deliver its publication title, body copy, cover and actual exported video together. Keep promotional copy separate from the teaching source; link it to the matching cover and video with paths that exist. Check that the cover and copy agree with the final video, including its numbers and conditions. A source document or a proposed output path does not replace an exported video. The papers workspace defines its file names and delivery checks in `examples/papers/AGENTS.md`.
+
 ```sh
 presmium-lecture timing lesson
 presmium-lecture export lesson --size 640x360 --fps 10 --contact-sheet

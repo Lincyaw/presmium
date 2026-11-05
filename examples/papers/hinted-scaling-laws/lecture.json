@@ -1409,6 +1409,9 @@
         "trailingPauseMs": 1200
       }
     },
-    "mediaClips": []
+    "mediaClips": [],
+    "captions": {
+      "scale": 0.9
+    }
   }
 }
