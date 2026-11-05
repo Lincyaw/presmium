@@ -249,5 +249,7 @@ export type DocumentEditOperation =
   | { type: 'updateSection', sectionId: SectionId, title?: string, layout?: Layout }
   | { type: 'setStepState', stepId: StepId, visuals: VisualState[], inherits?: StepId }
   | { type: 'setNarration', narration: Narration, stepId?: StepId, index?: number }
+  | { type: 'removeNarration', stepId: StepId, narrationId: NarrationId }
+  | { type: 'setStepNarrations', stepId: StepId, narrationIds: NarrationId[] }
   | { type: 'setTiming', stepId?: StepId, sectionId?: SectionId, value: StepProduction }
   | { type: 'replaceAsset', asset: Asset }

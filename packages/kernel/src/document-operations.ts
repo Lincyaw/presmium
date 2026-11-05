@@ -1,11 +1,12 @@
 import { isDocumentPlaceAnchor } from './contracts/document.ts'
 import { degradeDocumentCommentAnchor } from './document-comments.ts'
+import { replaceStepNarrations } from './document-narrations.ts'
 import type { DocumentBlock, DocumentEditOperation, TeachingDocument } from './contracts/document.ts'
 
 /** Operations describe author intent; the caller validates the resulting complete document before committing it. */
 export function applyDocumentOperations(source: TeachingDocument, operations: readonly DocumentEditOperation[]): TeachingDocument {
   if (!operations.length || operations.length > 1000) throw new Error('document-operation-count')
-  const document = structuredClone(source)
+  let document = structuredClone(source)
   const block = (id: string): DocumentBlock => {
     if (!Object.hasOwn(document.blocks, id)) throw new Error('document-block-missing')
     return document.blocks[id]!
@@ -127,6 +128,21 @@ export function applyDocumentOperations(source: TeachingDocument, operations: re
           const value = step(operation.stepId)
           if (!value.narrationIds.includes(operation.narration.id)) insert(value.narrationIds, operation.index ?? value.narrationIds.length, operation.narration.id)
         }
+        break
+      }
+      case 'removeNarration': {
+        const value = step(operation.stepId)
+        if (!value.narrationIds.includes(operation.narrationId)) throw new Error('document-narration-target')
+        document = replaceStepNarrations(document, value.id, value.narrationIds.filter(id => id !== operation.narrationId).map(id => document.narrations[id]!))
+        break
+      }
+      case 'setStepNarrations': {
+        step(operation.stepId)
+        const narrations = operation.narrationIds.map(id => {
+          if (!Object.hasOwn(document.narrations, id)) throw new Error('document-narration-target')
+          return document.narrations[id]!
+        })
+        document = replaceStepNarrations(document, operation.stepId, narrations)
         break
       }
       case 'setTiming':

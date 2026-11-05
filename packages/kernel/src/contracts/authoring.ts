@@ -6,7 +6,7 @@ import type { DocumentOutlineAnswer, DocumentOutlineQuery, DocumentPartAnswer, D
 import type { AppliedDocumentAuthoringAction, DocumentAuthoringActionInspection, DocumentAuthoringActionPlan, DocumentAuthoringActionRead, DocumentAuthoringActionReference, DocumentAuthoringActionRequest, DocumentAuthoringAction, DocumentComponentImpactAnswer, DocumentComponentImpactQuery } from './authoring-actions.ts'
 
 export const AUTHORING_API_VERSION = 1 as const
-export const DOCUMENT_OPERATION_TYPES = ['insertBlock', 'moveBlock', 'deleteBlock', 'updateText', 'updateSection', 'setStepState', 'setNarration', 'setTiming', 'replaceAsset'] as const satisfies readonly DocumentEditOperation['type'][]
+export const DOCUMENT_OPERATION_TYPES = ['insertBlock', 'moveBlock', 'deleteBlock', 'updateText', 'updateSection', 'setStepState', 'setNarration', 'removeNarration', 'setStepNarrations', 'setTiming', 'replaceAsset'] as const satisfies readonly DocumentEditOperation['type'][]
 
 export interface AuthoringCapabilities {
   apiVersion: typeof AUTHORING_API_VERSION

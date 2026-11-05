@@ -338,6 +338,7 @@ export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => s
     'speech-settings-unavailable': () => '暂时无法读取或保存语音服务设置。请稍后重试。',
     'operation-name-required': () => '查看操作参数需要指定操作名称。',
     'editor-context-unavailable': () => '没有收到编辑器的当前页面。请指定页面和步骤，或在 Studio 中打开文稿。',
+    'document-narration-target': () => '讲稿块或步骤已经变化。请重新读取后选择。',
     'document-narration-text-missing': () => '讲稿中没有找到这段原文。请读取当前讲稿后重试。',
     'document-narration-text-ambiguous': () => '讲稿中有多处相同的文字。请提供更完整的原文。',
     'document-edit-request-too-large': () => '修改内容过长。请减少本次修改的内容后重试。',
@@ -460,6 +461,7 @@ export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => s
     'speech-settings-unavailable': () => 'Speech settings could not be read or saved. Retry shortly.',
     'operation-name-required': () => 'Name an operation to inspect its arguments.',
     'editor-context-unavailable': () => 'No current editor page was reported. Specify a page and step, or open the document in Studio.',
+    'document-narration-target': () => 'The script block or step changed. Read its current blocks and choose again.',
     'document-narration-text-missing': () => 'The original text was not found in this script. Read the current script and retry.',
     'document-narration-text-ambiguous': () => 'The text appears more than once. Provide a longer exact phrase.',
     'document-edit-request-too-large': () => 'This edit is too large. Reduce its content and retry.',
@@ -522,7 +524,7 @@ export function documentChangeSummary(t: McpMessages, change: DocumentChange, co
           : op.type === 'updateText' ? [pageOf.get(op.blockId), t.change.what.update]
             : op.type === 'updateSection' ? [op.sectionId, t.change.what.section]
               : op.type === 'setStepState' ? [stepPage(op.stepId), t.change.what.step]
-                : op.type === 'setNarration' ? [stepPage(op.stepId), t.change.what.script]
+                : op.type === 'setNarration' || op.type === 'removeNarration' || op.type === 'setStepNarrations' ? [stepPage(op.stepId), t.change.what.script]
                   : op.type === 'setTiming' ? [op.sectionId ?? stepPage(op.stepId), t.change.what.timing]
                     : [undefined, t.change.what.asset]
     const list = byPage.get(section) ?? []

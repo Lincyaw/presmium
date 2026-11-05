@@ -28,6 +28,8 @@ export const DOCUMENT_CHANGE_JSON_SCHEMA: Schema = {
       operation('updateSection', { sectionId: id, title: { type: 'string' }, layout: ref('Layout') }, ['sectionId']),
       operation('setStepState', { stepId: id, visuals: { type: 'array', items: ref('Visual') }, inherits: id }, ['stepId', 'visuals']),
       operation('setNarration', { narration: ref('Narration'), stepId: id, index }, ['narration']),
+      operation('removeNarration', { stepId: id, narrationId: id }),
+      operation('setStepNarrations', { stepId: id, narrationIds: { type: 'array', maxItems: 1000, items: id, uniqueItems: true, description: 'Complete ordered existing narration IDs for this step. Omitted references are removed; entities still used by other steps remain.' } }),
       operation('setTiming', { stepId: id, sectionId: id, value: ref('StepProduction') }, ['value']),
       operation('replaceAsset', { asset: ref('Asset') }),
     ] },

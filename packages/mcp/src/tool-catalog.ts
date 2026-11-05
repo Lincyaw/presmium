@@ -18,7 +18,7 @@ const CALL_SCHEMA = { type: 'object', additionalProperties: false, properties: {
 export function compactToolCatalog(tools: readonly ListedTool[]): ListedTool[] {
   return [{ name: 'operations', kind: 'read', description: 'Find operations by query, or inspect one by name. Generated summaries list variants; select variant for only that action’s arguments. Use schema:true for its full definition.', inputSchema: QUERY_SCHEMA },
     ...KINDS.filter(kind => tools.some(tool => tool.kind === kind)).map(kind => ({ name: dispatcher(kind), kind,
-      description: `Calls one discovered ${kind} operation using its original schema, permissions and confirmation policy. Supply operation and its business arguments; use operations(name,schema:true) if needed.`, inputSchema: CALL_SCHEMA })),
+      description: `Run a discovered ${kind} operation. Its schema, permissions and approvals apply.`, inputSchema: CALL_SCHEMA })),
     ...tools.filter(tool => COMMON.has(tool.name))]
 }
 

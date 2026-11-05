@@ -114,15 +114,18 @@ async function target(call: Call, opened: Awaited<ReturnType<typeof open>>, writ
 export const EDITING_TOOLS: ToolSpec[] = [
   {
     name: 'get_context', kind: 'read', structured: true, workspace: 'author',
-    description: 'Reads the current editor page and step, title, narration and reported text selection. Omit section/step to use the active editor; no source versions, compilation or draft mutation.',
+    description: 'Reads the current editor page and step, title, narration with aligned stable narrationIds, and reported text selection. Omit section/step to use the active editor; no source versions, compilation or draft mutation.',
     inputSchema: { type: 'object', additionalProperties: false, properties: targetFields },
     run: async call => {
       const opened = await open(call, false), context = await target(call, opened)
       const focus = call.host.focus?.(opened.document)?.focus.find(item => item.section === context.section.id)
       let remaining = 2000, truncated = false
-      const narration = context.step.narrationIds.flatMap(id => {
-        const full = narrationCaptionText(opened.current.content.narrations[id]!.content)
+      const narrationIds: string[] = []
+      if (context.step.narrationIds.length > 12) truncated = true
+      const narration = context.step.narrationIds.slice(0, 12).flatMap(id => {
         if (remaining <= 0) { truncated = true; return [] }
+        const full = narrationCaptionText(opened.current.content.narrations[id]!.content)
+        narrationIds.push(id)
         const text = full.slice(0, remaining); remaining -= text.length
         if (text.length !== full.length) truncated = true
         return [text]
@@ -130,26 +133,33 @@ export const EDITING_TOOLS: ToolSpec[] = [
       if (context.section.title.length > 160 || (context.step.title?.length ?? 0) > 160 || (focus?.quote ?? focus?.excerpt ?? '').length > 500) truncated = true
       return { document: opened.document, page: context.page, pageId: context.section.id, title: context.section.title.slice(0, 160), step: context.stepIndex, stepId: context.step.id,
         ...context.editor ? { editor: context.editor } : {},
-        blocks: context.step.visuals.slice(0, 12).map(visual => ({ id: visual.blockId, type: opened.current.content.blocks[visual.blockId]?.type })),
+        blocks: context.step.visuals.slice(0, 12).map(visual => ({ id: visual.blockId, type: opened.current.content.blocks[visual.blockId]?.type })), narrationIds,
         ...context.step.title ? { stepTitle: context.step.title.slice(0, 160) } : {}, narration,
         ...focus ? { selectedText: (focus.quote ?? focus.excerpt).slice(0, 500) } : {}, ...truncated || context.step.visuals.length > 12 ? { truncated: true } : {} }
     },
   },
   {
     name: 'edit_narration', kind: 'operate', structured: true,
-    description: 'Replaces one unique exact phrase in a step narration. Use replace:"" to delete it. Section/step default to the active editor. Keeps cue/pronunciation atoms; missing or ambiguous text is refused. Saves once and returns a short result.',
-    inputSchema: { type: 'object', additionalProperties: false, properties: { ...targetFields, find: { type: 'string', minLength: 1, maxLength: 4096 }, replace: { type: 'string', maxLength: 4096 }, details: common.details }, required: ['find', 'replace'] },
+    description: 'Edit the active step’s script: find/replace a unique phrase, or remove a block by stable narration ID (get_context) or 1-based index. replace:"" deletes text. remove handles cue/pronunciation-only blocks and preserves shared references. After a lost reply, read current blocks before retrying.',
+    inputSchema: { type: 'object', additionalProperties: false, properties: { ...targetFields, find: { type: 'string', minLength: 1, maxLength: 4096 }, replace: { type: 'string', maxLength: 4096 }, remove: { oneOf: [{ type: 'integer', minimum: 1 }, fields.sectionId], description: 'One stable narration ID or 1-based block index in this step; prefer its ID after a read.' }, details: common.details },
+      oneOf: [{ required: ['find', 'replace'], not: { required: ['remove'] } }, { required: ['remove'], not: { anyOf: ['find', 'replace'].map(key => ({ required: [key] })) } }] },
     run: async call => {
       const opened = await open(call), context = await target(call, opened, true)
-      let content: TeachingDocument
-      try { content = replaceStepNarrationText(opened.current.content, context.step.id, String(call.args.find), String(call.args.replace)) }
-      catch (error) { throw Object.assign(error as Error, { status: 409 }) }
+      let content: TeachingDocument | DocumentEditOperation[]
+      if (call.args.remove !== undefined) {
+        const id = typeof call.args.remove === 'number' ? context.step.narrationIds[call.args.remove - 1] : String(call.args.remove)
+        if (!id || !context.step.narrationIds.includes(id)) throw Object.assign(new Error('document-narration-target'), { status: 409 })
+        content = [{ type: 'removeNarration', stepId: context.step.id, narrationId: id }]
+      } else {
+        try { content = replaceStepNarrationText(opened.current.content, context.step.id, String(call.args.find), String(call.args.replace)) }
+        catch (error) { throw Object.assign(error as Error, { status: 409 }) }
+      }
       return { ...await edit(call, opened, content), page: context.page, step: context.stepIndex }
     },
   },
   {
     name: 'rename_page', kind: 'operate', structured: true,
-    description: 'Renames a page in one call. Give section as its 1-based number or stable ID and title. The workspace reads the current source, validates and saves through the existing transaction/history, and returns the exact saved title plus reported editor/preview synchronization. No capability, plan or readback calls are needed. Optional source refuses a stale edit. Optional requestId identifies the intent; after a lost response inspect current content instead of blindly repeating a write. No compilation or voice generation.',
+    description: 'Rename one page by its 1-based number or stable ID and new title. The host validates and saves once, returning a short receipt. Optional source pins an earlier read; details:true exposes diagnostics. After a lost reply, read current state before retrying.',
     inputSchema: { type: 'object', additionalProperties: false, properties: { ...common, section, title: fields.title }, required: ['section', 'title'] },
     run: async call => {
       const opened = await open(call), section = call.args.section

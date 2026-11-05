@@ -86,7 +86,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 ## 5. 文稿修改
 
-普通编辑通过一次 MCP 调用完成。`get_context` 返回当前编辑器页、步骤、标题、讲稿与实际报告的选中文字；读取保存内容，不读取未提交草稿。多文稿时从当前成员的已连接编辑器定位，多个文稿或不同位置不能确定时要求明确目标。`edit_narration` 按唯一原文替换或删除一句，默认使用当前页与步骤，保留读音和 cue；原文缺失、重复、编辑器尚未保存或版本已过期时拒绝修改。`rename_page` 接收页码（从 1 开始）或稳定 ID 与标题；`edit_document` 接收最多 32 个标准内容操作。适配器在服务端串联现有 `read/plan/checkApply/apply`，沿用 CAS、验证、锁、修改历史与保存后读取，不持有第二套事务或计划表。请求最多 32768 个 JSON 字符；标准操作的参数格式直接复用内核 `DocumentChange` 的定义。可选 `source` 将意图绑定到先前读取的版本；省略时以本次调用读取的版本为基础，期间发生并发写入仍返回 409，不自动重试。请求回执丢失时先读取当前状态，不盲目重新写入。
+普通编辑通过一次 MCP 调用完成。`get_context` 返回当前编辑器页、步骤、标题、讲稿与实际报告的选中文字；讲稿文本与稳定 `narrationIds` 逐项对齐，最多返回 12 块、合计 2000 个 UTF-16 字符，超限标明 `truncated`，其余经文稿分片读取。读取保存内容，不读取未提交草稿。多文稿时从当前成员的已连接编辑器定位，多个文稿或不同位置不能确定时要求明确目标。`edit_narration` 默认使用当前页与步骤：`find/replace` 按唯一原文替换或删除一句，保留读音和 cue；`remove` 按稳定讲稿 ID 或从 1 开始的块序号删除整块，支持重复文字、纯读音和纯 cue 块。两种输入方式互斥；先读取时优先使用 ID。目标缺失、原文重复、编辑器尚未保存或版本已过期时拒绝修改。`rename_page` 接收页码（从 1 开始）或稳定 ID 与标题；`edit_document` 接收最多 32 个标准内容操作。适配器在服务端串联现有 `read/plan/checkApply/apply`，沿用 CAS、验证、锁、修改历史与保存后读取，不持有第二套事务或计划表。请求最多 32768 个 JSON 字符；标准操作的参数格式直接复用内核 `DocumentChange` 的定义。可选 `source` 将意图绑定到先前读取的版本；省略时以本次调用读取的版本为基础，期间发生并发写入仍返回 409，不自动重试。请求回执丢失时先读取当前状态，不盲目重新写入。
 
 普通回执只给出 `saved`、`changed`、实际修改值和编辑器状态；`details: true` 才给出保存版本、修改摘要、修改历史 ID 与校验详情。编辑器反馈最多等待 750 毫秒，使用 `AuthoringClients` 的真实报告，分别列出保存版本是否已被编辑器采用、预览是否准备为同一版本。`current/pending/unavailable` 描述编辑器报告，不代表视觉检查；反馈失败也保留成功的保存状态。普通编辑按回执报告结果，不默认编译整份文稿、截图或生成配音。
 
@@ -96,7 +96,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 | 计划族 | 预检 → 提交 | 范围 |
 | --- | --- | --- |
-| 通用修改 | `plan_document_change` → `apply_document_change` | `DocumentChange`：`DOCUMENT_OPERATION_TYPES` 的九种操作、整份 replacement、同文稿文本 `fileChanges` |
+| 通用修改 | `plan_document_change` → `apply_document_change` | `DocumentChange`：`DOCUMENT_OPERATION_TYPES` 中的标准操作、整份 replacement、同文稿文本 `fileChanges` |
 | 页面 | `plan_page_change` → `apply_page_change` | `create`、`rename`、`move`、`delete` |
 | 页面复制 | `plan_page_duplication` → `apply_page_duplication` | 复制一页 |
 | 语义动作 | `plan_authoring_action` → `apply_authoring_action` | `DOCUMENT_AUTHORING_ACTION_TYPES`：`comment.*` 七种、`voice.set`、`component.*` 四种、`caption.timing.set/reset`、`caption.scale.set` |
@@ -110,6 +110,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 - **身份**：新实体 ID、批注作者与日期由服务在预检时固定，重试不生成第二组。复制时共享素材与定义保留引用。
 - **删除**：页面与批注删除的 apply 另需 `confirmDeletion: true`。保留讲稿中的 cue 指向被删内容时返回 `page-referenced`。删页清除独占的块、步骤、讲稿与片段，保留共享讲稿、素材、定义与批注线程；最后一页留一个空步骤。
 - **批注**：内容是 `RichTextNode[]`，不暴露 BlockNote JSON。锚点是文本范围（`from`/`to` 两个 `{ blockId, offset }`，按 UTF-16 计），或位置 `{ blockId, stepId }`（块在该步的呈现；省略 `stepId` 表示整块）。位置的步骤必须属于块所在的 section；步骤失效时锚点降为块级，块失效时线程保留内容并报告 `anchorDetached`。非法返回 422。owner 可管理他人批注，editor 只改自己的。
+- **讲稿结构**：`removeNarration` 只移除指定步骤对讲稿块的引用；`setStepNarrations` 接收该步骤完整、有序的已有讲稿 ID 列表，未列出的引用会移除。新增块可在同一批次中先 `setNarration`，再设置列表。两者复用 Web 的 `replaceStepNarrations`，保留其他步骤仍使用的讲稿与覆盖，清理无人引用的讲稿、覆盖和 cue 时间。空列表表示该步没有讲稿。
 - **音色**：`voice.set` 的 scope 为 document、page、step 或 steps，source 为 TTS、none 或 null（移除该槽位）。默认保留下层覆盖，`replaceOverrides` 明确替换。录音来源只经 `adopt_recording` 设置。
 - **组件参数**：`changes` 对路径 `set` 或 `remove`，只允许 Schema 声明的可编辑字段，未修改的字段保留。步骤参数是顶层浅覆盖，改子字段会物化整个顶层值，后继继承影响由 `read_authoring_action_impact` 分页读取。`component.definition.use` 只选择已有 Definition。
 - **字幕时间**：`caption.timing.set` 需要当前 IR 与确认时长，以 `read_production_plan` 的 `ProductionStep.captionTiming` 为基准提交步内起止时间，只改字幕映射。`reset` 不需编译。
