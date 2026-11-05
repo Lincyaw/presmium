@@ -1,5 +1,12 @@
 # @lincyaw/web
 
+## 1.0.0-rc.74
+
+### Patch Changes
+
+- 1caefe5: Publish lossless fast-start alternatives for Opus voiceover clips so supported browsers can play before the full download. Prepare the requested page directly, preload its pictures earlier, and start look-ahead loading only after the current audio and picture are ready.
+- @lincyaw/design@1.0.0-rc.74
+
 ## 1.0.0-rc.73
 
 ### Patch Changes
