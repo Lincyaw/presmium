@@ -239,6 +239,7 @@ Studio 的 HTTP MCP 默认地址为 `http://127.0.0.1:4321/mcp`，使用 Streama
 4. Studio 意外结束时窗口回到启动页，说明原因并提供“详细信息”（这次启动的输出）。
 5. 启动页只能调用应用自己的命令；Studio 的页面（回环地址上的 http）没有应用的任何权限。指向本机的新窗口留在应用中，其他链接在系统浏览器中打开；下载存入“下载”文件夹并在文件管理器中显示。
 6. 菜单与启动页的语言按系统语言（zh-CN 或 en）；Studio 页面的语言由 Studio 自己决定。
+7. `.github/workflows/desktop.yml` 构建六个平台的安装包（Windows 的 NSIS `.exe`，macOS 的 `.dmg`，Linux 的 `.deb` 与 `.rpm`）。推送到 `main` 构建成功后，安装包替换滚动预发布 [`desktop-latest`](https://github.com/Lincyaw/presmium/releases/tag/desktop-latest) 的内容；发布 GitHub Release 时附加到该 Release。没有签名证书时安装包未签名。
 
 ## 12. 升级闸门
 

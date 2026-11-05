@@ -101,8 +101,9 @@ jobs:
           retention-days: 14
 
   release:
-    name: Attach installers to the release
-    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
+    name: Publish installers
+    # A push to main refreshes the rolling prerelease desktop-latest; a published release, or a dispatch with a tag, gets its own copies.
+    if: github.event_name == 'release' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
     needs: build
     runs-on: ubuntu-24.04
     permissions:
@@ -118,4 +119,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
-        run: gh release upload "$RELEASE_TAG" installers/* --clobber
+        run: |
+          if [ -n "$RELEASE_TAG" ]; then
+            gh release upload "$RELEASE_TAG" installers/* --clobber
+            exit 0
+          fi
+          gh release delete desktop-latest --cleanup-tag --yes || true
+          gh release create desktop-latest installers/* --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "Presmium Studio desktop (latest main)" \
+            --notes "Installers built from ${GITHUB_SHA::8} on main. Unsigned: on macOS Control-click the app and choose Open; on Windows choose More info, then Run anyway. 由 main 的 ${GITHUB_SHA::8} 构建，未签名：macOS 按住 Control 点按应用并选“打开”；Windows 点“更多信息”再点“仍要运行”。"

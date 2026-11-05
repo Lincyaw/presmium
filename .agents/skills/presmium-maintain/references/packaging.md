@@ -108,4 +108,5 @@ Linux needs the WebKitGTK 4.1 development packages to compile.
 Verify in the built app, not only `cargo check`: the launcher, opening a workspace (sign-in included), a
 document, its preview, closing the window and killing the app (no `presmium-node` left), and Studio ending on
 its own (the launcher shows the error). `.github/workflows/desktop.yml` builds the installers of six platforms
-and attaches them to a release; it does no window acceptance. Details are in `packages/desktop/README.md`.
+and, after a push to main, replaces the assets of the rolling prerelease `desktop-latest` (a published GitHub
+Release gets its own copies); it does no window acceptance. Details are in `packages/desktop/README.md`.
