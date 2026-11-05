@@ -5,7 +5,7 @@ import type { WorkspaceClient } from './workspace-client.ts'
 
 export interface VoiceDraft { version: string, scope: DocumentVoiceScope, source: VoiceSource | null, replaceOverrides: boolean, rateInput?: string }
 export type VoiceDraftStorageStatus = 'available' | 'unavailable' | 'corrupt'
-interface StoredDraft { draft?: VoiceDraft, status: VoiceDraftStorageStatus, unreadable?: string }
+interface StoredDraft { draft?: VoiceDraft, status: VoiceDraftStorageStatus, unreadable?: string, raw?: string | null }
 const drafts = new WeakMap<WorkspaceClient, Map<string, StoredDraft>>()
 const keyOf = (identity: string, stepId: string) => JSON.stringify([identity, stepId])
 const storageKey = (key: string) => `presmium.voice-draft.v2:${key}`
@@ -36,6 +36,7 @@ function load(client: WorkspaceClient, key: string): StoredDraft {
   known.set(key, entry)
   try {
     const raw = sessionStorage.getItem(storageKey(key))
+    entry.raw = raw
     if (raw !== null) {
       entry.unreadable = raw
       const value: unknown = JSON.parse(raw)
@@ -64,7 +65,9 @@ export function keepVoiceDraft(client: WorkspaceClient, identity: string, stepId
   entry.draft = structuredClone(value)
   try {
     if (entry.unreadable !== undefined) sessionStorage.setItem(`${storageKey(key)}:unreadable`, entry.unreadable)
-    sessionStorage.setItem(storageKey(key), JSON.stringify(entry.draft))
+    const raw = JSON.stringify(entry.draft)
+    sessionStorage.setItem(storageKey(key), raw)
+    entry.raw = raw
     entry.status = 'available'; delete entry.unreadable
     return true
   } catch { entry.status = 'unavailable'; return false }
@@ -76,14 +79,35 @@ export function clearVoiceDraft(client: WorkspaceClient, identity: string, stepI
   if (expected && JSON.stringify(entry.draft) !== JSON.stringify(expected)) return false
   try {
     const raw = sessionStorage.getItem(storageKey(key))
-    if (expected && raw !== null) {
-      let persisted: unknown
-      try { persisted = JSON.parse(raw) } catch { entry.status = 'corrupt'; entry.unreadable = raw; return false }
-      if (!valid(persisted)) { entry.status = 'corrupt'; entry.unreadable = raw; return false }
-      if (JSON.stringify(persisted) !== JSON.stringify(expected)) return false
-    }
+    if (expected && (entry.unreadable !== undefined || raw !== entry.raw)) return false
     sessionStorage.removeItem(storageKey(key))
+    entry.raw = null
     delete entry.draft; delete entry.unreadable; entry.status = 'available'
     return true
   } catch { entry.status = 'unavailable'; return false }
+}
+
+/** Enumerate this native bank, including offscreen forms; callers receive no second persisted copy. */
+export function voiceDraftSnapshot(client: WorkspaceClient, identity: string): { entries: { stepId: string, value: VoiceDraft, persisted: boolean }[], partial: boolean } {
+  const keys = new Set([...store(client).keys()].filter(key => key.startsWith(`${JSON.stringify([identity]).slice(0, -1)},`)))
+  let partial = false
+  try {
+    const prefix = `presmium.voice-draft.v2:${JSON.stringify([identity]).slice(0, -1)},`
+    for (let index = 0; index < sessionStorage.length; index++) {
+      const key = sessionStorage.key(index)
+      if (key?.startsWith(prefix) && !key.endsWith(':unreadable')) keys.add(key.slice('presmium.voice-draft.v2:'.length))
+    }
+  } catch { partial = true }
+  const entries: { stepId: string, value: VoiceDraft, persisted: boolean }[] = []
+  for (const key of keys) {
+    let target: unknown
+    try { target = JSON.parse(key) } catch { partial = true; continue }
+    if (!Array.isArray(target) || target.length !== 2 || target[0] !== identity || typeof target[1] !== 'string') { partial = true; continue }
+    const entry = load(client, key)
+    let persisted = false
+    try { const raw = sessionStorage.getItem(storageKey(key)); persisted = entry.status === 'available' && raw === entry.raw; if (raw !== entry.raw) partial = true } catch { partial = true }
+    if (entry.status === 'corrupt' || entry.raw === undefined) partial = true
+    if (entry.draft) entries.push({ stepId: target[1], value: structuredClone(entry.draft), persisted })
+  }
+  return { entries, partial }
 }

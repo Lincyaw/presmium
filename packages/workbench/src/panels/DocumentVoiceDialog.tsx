@@ -4,7 +4,7 @@ import { PmButton, PmDialog, PmField, PmInput, PmNotice, PmSearchList, PmSegment
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { documentVoiceStepIds, previewDocumentVoiceChange, resolveDocumentStepVoice } from '../document-voices.ts'
 import type { DocumentVoiceImpact } from '../document-voices.ts'
-import { clearVoiceDraft, keepVoiceDraft, readVoiceDraft, voiceDraftStorageStatus } from '../voice-drafts.ts'
+import { readVoiceDraft, voiceDraftStorageStatus } from '../voice-drafts.ts'
 import type { VoiceDraft } from '../voice-drafts.ts'
 import { PRODUCTION_MESSAGES } from '../production-messages.ts'
 import { VOICE_CLONE_MESSAGES } from '../voice-clone-messages.ts'
@@ -26,13 +26,14 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
   const t = VOICE_MESSAGES[locale], p = PRODUCTION_MESSAGES[locale], c = VOICE_CLONE_MESSAGES[locale]
   const serviceVersion = useWorkbenchState(state => state.voiceServiceVersion)
   const identity = useRef(actor!.identity!).current, directory = useRef(actor!.directory).current
-  const [restored] = useState(() => readVoiceDraft(workbench.client, identity, stepId))
+  const [restored, setRestored] = useState(() => readVoiceDraft(workbench.client, identity, stepId))
   const [draft, setDraft] = useState<VoiceDraft>(() => restored ?? { version: actor!.version!, scope: { kind: 'step', stepId }, source: resolveDocumentStepVoice(actor!.content!, stepId).value ?? null, replaceOverrides: false })
   const [storageFailed, setStorageFailed] = useState(() => voiceDraftStorageStatus(workbench.client, identity, stepId) !== 'available')
   const [engineFilter, setEngineFilter] = useState(draft.source?.type === 'tts' ? draft.source.voice.engine : undefined)
   const [language, setLanguage] = useState(''), [query, setQuery] = useState(''), [catalog, setCatalog] = useState<VoiceCatalogAnswer>()
   const [catalogBusy, setCatalogBusy] = useState(true), [catalogFailure, setCatalogFailure] = useState<string>(), [reload, setReload] = useState(0)
-  const [busy, setBusy] = useState(false), [failure, setFailure] = useState<string>(), [review, setReview] = useState<Review>()
+  const pending = useRef(false), composing = useRef(false)
+  const [busy, renderBusy] = useState(false), [failure, setFailure] = useState<string>(), [review, setReview] = useState<Review>()
   const [preview, setPreview] = useState<{ quote: VoicePreviewQuote, snapshot: VoiceSnapshot }>(), [cloning, setCloning] = useState(false)
   const owner = useRef({ active: true, generation: 0 }), request = useRef<AbortController>()
   useEffect(() => () => { owner.current.active = false; owner.current.generation++; request.current?.abort() }, [])
@@ -57,10 +58,25 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
   const rateInvalid = draft.rateInput !== undefined && normalizedRate !== undefined && normalizedRate.length > 0 && (!rateRange || !/^\d+(?:\.\d+)?$/.test(normalizedRate) || !Number.isFinite(rate) || rate! < rateRange.min || rate! > rateRange.max)
   const sourceType = draft.source === null ? 'inherit' : draft.source.type
   const current = () => owner.current.active && workbench.getState().authoring?.identity === identity
+  const unavailable = useRef(false)
+  unavailable.current = blocked || cloning || Boolean(preview)
+  const setBusy = (value: boolean) => { pending.current = value; renderBusy(value); workbench.refreshAuthoringClientControls() }
+  useEffect(() => workbench.production.registerDraftView({ identity, kind: 'voice', has: key => current() && key === stepId,
+    blocked: () => composing.current || pending.current || unavailable.current,
+    clear: () => {
+      const actual = workbench.getState().authoring, content = workbench.getDocument(identity)
+      if (!actual?.version || !content) return
+      owner.current.generation++; request.current?.abort(); request.current = undefined
+      const value: VoiceDraft = { version: actual.version, scope: { kind: 'step', stepId }, source: resolveDocumentStepVoice(content, stepId).value ?? null, replaceOverrides: false }
+      setDraft(value); setRestored(undefined); setStorageFailed(false); setReview(undefined); setFailure(undefined)
+      setEngineFilter(value.source?.type === 'tts' ? value.source.voice.engine : undefined); setLanguage(''); setQuery('')
+    } }), [workbench, identity, stepId])
+  useEffect(() => workbench.registerNavigationGuard(() => current() && (composing.current || pending.current || unavailable.current)), [workbench, identity])
+  useEffect(() => { workbench.refreshAuthoringClientControls() }, [workbench, blocked, busy, preview, cloning])
   const edit = (value: VoiceDraft) => {
     request.current?.abort(); owner.current.generation++
     setBusy(false); setFailure(undefined); setReview(undefined); setPreview(undefined); workbench.stopAuditions()
-    setDraft(value); setStorageFailed(!keepVoiceDraft(workbench.client, identity, stepId, value))
+    setDraft(value); setStorageFailed(!workbench.production.keepVoiceDraft(identity, stepId, value))
   }
   const checkedDraft = (value: VoiceDraft): VoiceDraft => ({ ...value, version: workbench.getState().authoring!.version! })
   const checkScope = async (value = draft) => {
@@ -73,7 +89,7 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
       const source = workbench.getState().authoring, latest = workbench.getDocument(identity)
       if (!source?.version || !source.fingerprint || !latest || source.dirty || source.saving || source.error || source.restored || source.composing) throw new Error('voice-context-changed')
       const proposal = checkedDraft(value), impact = previewDocumentVoiceChange(latest, proposal.scope, proposal.source, { replaceOverrides: proposal.replaceOverrides })
-      setDraft(proposal); setStorageFailed(!keepVoiceDraft(workbench.client, identity, stepId, proposal))
+      setDraft(proposal); setStorageFailed(!workbench.production.keepVoiceDraft(identity, stepId, proposal))
       const targets = documentVoiceStepIds(latest, proposal.scope).map(id => { const step = latest.steps[id]!, page = latest.sections[step.sectionId]!; return `${page.title} · ${t.step(latest.sectionOrder.indexOf(page.id) + 1, page.stepOrder.indexOf(id) + 1)}` })
       setReview({ draft: proposal, impact, scopeLabel: t.scopes[proposal.scope.kind], targets, expected: { identity, version: source.version, fingerprint: source.fingerprint } })
     } catch (error) { if (current() && generation === owner.current.generation) setFailure(voiceFailure(error, locale)) }
@@ -87,7 +103,7 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
       const saved = await workbench.production.applyVoice(confirmation.draft.scope, confirmation.draft.source, { replaceOverrides: confirmation.draft.replaceOverrides }, confirmation.expected)
       if (!current() || generation !== owner.current.generation) return
       if (!saved) throw new Error('voice-context-changed')
-      if (!clearVoiceDraft(workbench.client, identity, stepId, confirmation.draft)) { setStorageFailed(true); setReview(undefined); return }
+      if (!workbench.production.clearVoiceDraft(identity, stepId, confirmation.draft)) { setStorageFailed(true); setReview(undefined); return }
       onClose()
     } catch (error) { if (current() && generation === owner.current.generation) { setReview(undefined); setFailure(voiceFailure(error, locale)) } }
     finally { if (current() && generation === owner.current.generation) setBusy(false) }
@@ -109,7 +125,7 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
   if (!document || !validTarget) return <PmDialog open label={t.settings} closeLabel={t.close} onClose={onClose}><PmNotice tone="warn">{p.draftChanged}</PmNotice></PmDialog>
   return <>
     <PmDialog open label={t.settings} closeLabel={t.close} onClose={onClose} footer={<><PmButton onClick={onClose}>{t.close}</PmButton><PmButton loading={busy} disabled={blocked || rateInvalid || draft.source?.type === 'tts' && !draft.source.voice.voice.trim() || draft.scope.kind === 'steps' && !draft.scope.stepIds.length} variant="primary" onClick={() => void checkScope()}>{t.check}</PmButton></>}>
-      <div className="pmw-voice__form">
+      <div className="pmw-voice__form" onCompositionStartCapture={() => { composing.current = true; workbench.refreshAuthoringClientControls() }} onCompositionEndCapture={() => { composing.current = false; workbench.refreshAuthoringClientControls() }}>
         {restored && <PmNotice tone="accent">{t.draftRecovered}</PmNotice>}
         {storageFailed && <PmNotice tone="warn">{t.recoveryFailed}</PmNotice>}
         {failure && <PmNotice tone="danger">{failure}</PmNotice>}

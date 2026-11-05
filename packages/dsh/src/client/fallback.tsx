@@ -1,4 +1,4 @@
-import { DocumentView, HistoryPanel, HomePanel, PreviewPanel, useWorkbench, useWorkbenchState, WorkbenchProvider } from '@lincyaw/workbench'
+import { DocumentView, HistoryPanel, HomePanel, PreviewPanel, useWorkbench, useWorkbenchState, WorkbenchProvider, WorkbenchApprovals } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
 import { useRef } from 'react'
 import type { ComponentType } from 'react'
@@ -30,7 +30,7 @@ export function registerFallbackLayout(ctx: DshClientContext, workbench: Workben
   const t = () => CLIENT_MESSAGES[workbench.state.locale]
   const provided = (Component: ComponentType, className?: string) => function PresmiumPanel() {
     return (
-      <WorkbenchProvider workbench={workbench}>
+      <WorkbenchProvider workbench={workbench} dialogActions={<WorkbenchApprovals />}>
         <WorkbenchRuntimeBoundary workbench={workbench}>{className ? <div className={className}><Component /></div> : <Component />}</WorkbenchRuntimeBoundary>
       </WorkbenchProvider>
     )

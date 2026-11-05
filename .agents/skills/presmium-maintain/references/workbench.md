@@ -251,14 +251,19 @@ to localized reasons; never display upstream payloads or credentials.
 
 The workbench shares its state through `workbench-state.ts`. `DocumentEditing` owns editor focus, selection, page operations and viewport restoration; `DocumentProduction` owns source-bound media, timing drafts and narration edits. Panels use `workbench.editing` and `workbench.production`; their document lifetime ends through `reset`, with durable resources closed on `dispose`.
 
-Production draft MCP actions share `DocumentProduction`'s existing numeric, caption and recording-range
-banks. `production-draft-actions.ts` provides metadata-only discovery, exact-handle fragments and explicit
+Production draft MCP actions share `DocumentProduction`'s existing numeric, caption, recording-range,
+voice and media banks. `production-draft-actions.ts` provides metadata-only discovery, exact-handle fragments and explicit
 discard through `editor_action`; it does not own another store or submit source changes. Mounted native
 views register composition/save guards and clear their visible input only after a successful discard.
 Tab storage must compare the captured raw value and persist removal before clearing memory; unreadable
 or externally changed slots report partial coverage. Local reads tolerate invalid canonical JSON;
 discard retains strict source, input-revision, permission and pending-write checks. See
 `docs/authoring-actions.md` section 11 for the public contract.
+Voice/media writes publish draft revisions through the production owner; their banks remain the only
+content stores. Retiring one clip preserves sibling entries and refreshes the mounted form from that bank.
+Report interaction changes only when the native state changes; empty preview cleanup must not invalidate
+a successful mutation acknowledgement. Studio supplies existing approvals through the shared dialog
+actions slot so modal and nested confirmations retain their focus boundary while accepting MCP requests.
 
 Comment draft actions use the same `CommentDrafts` registry and strict backup transactions as the UI.
 Mounted native composers own active discard; recovery controllers reopen new text/place forms and wait

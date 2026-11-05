@@ -17,6 +17,10 @@ import { DocumentTimingDrafts } from './document-timing-drafts.ts'
 import { CaptionTimingDrafts } from './caption-timing-drafts.ts'
 import type { CaptionTimingDraft } from './caption-timing-drafts.ts'
 import type { ClientProductionDraftMetadata } from '@lincyaw/kernel'
+import { clearVoiceDraft, keepVoiceDraft, voiceDraftSnapshot } from './voice-drafts.ts'
+import type { VoiceDraft } from './voice-drafts.ts'
+import { discardMediaDraft, keepMediaDrafts, mediaDraftSnapshot } from './media-drafts.ts'
+import type { MediaDrafts } from './media-drafts.ts'
 
 interface ProductionOptions {
   store: WorkbenchStore
@@ -96,6 +100,18 @@ export class DocumentProduction {
     this.#draftViews.add(view); this.#draftChanged()
     return () => { if (closed) return; closed = true; this.#draftViews.delete(view); this.#draftChanged() }
   }
+  keepVoiceDraft(identity: string, stepId: string, value: VoiceDraft): boolean {
+    const kept = keepVoiceDraft(this.#options.client, identity, stepId, value)
+    this.#draftChanged(); return kept
+  }
+  clearVoiceDraft(identity: string, stepId: string, expected: VoiceDraft): boolean {
+    const cleared = clearVoiceDraft(this.#options.client, identity, stepId, expected)
+    this.#draftChanged(); return cleared
+  }
+  keepMediaDrafts(identity: string, stepId: string, value: MediaDrafts): boolean {
+    const kept = keepMediaDrafts(this.#options.client, identity, stepId, value)
+    this.#draftChanged(); return kept
+  }
   /** Native pending range input survives mode and document changes within this workbench. */
   recordingRangeDrafts(identity: string): ReadonlyMap<string, RecordingRangeDraft> {
     let values = this.#recordingRangeDrafts.get(identity)
@@ -128,7 +144,7 @@ export class DocumentProduction {
         || current.loading || revision !== this.#draftRevision || viewState() !== blocked) throw new Error('client-production-drafts-changed')
     }
     const candidates: ProductionDraftSnapshot['candidates'] = []
-    const add = (kind: ClientProductionDraftMetadata['kind'], key: string, stepId: string, value: unknown, requiresReview: boolean, storage: 'tab' | 'memory', remove: () => boolean, extra: { field?: StepDurationKey, assetId?: string } = {}, readable = true) => {
+    const add = (kind: ClientProductionDraftMetadata['kind'], key: string, stepId: string, value: unknown, requiresReview: boolean, storage: 'tab' | 'memory', remove: () => boolean, extra: { field?: StepDurationKey, assetId?: string, clipId?: string } = {}, readable = true) => {
       const matches = views.filter(view => view.kind === kind && view.has(key))
       const discardable = readable && clean() && !this.#unknownDraftViews && !matches.some(view => view.blocked())
       candidates.push({ key: JSON.stringify([kind, key]), metadata: { kind, stepId, ...extra, targetAvailable: Object.hasOwn(content.steps, stepId), requiresReview, storage, discardable }, value,
@@ -155,9 +171,19 @@ export class DocumentProduction {
       const [stepId] = JSON.parse(key) as [string]
       add('recording-range', key, stepId, value, value.version !== version, 'memory', () => this.#recordingRangeDrafts.get(identity)!.delete(key), { assetId: value.voice.assetId })
     }
+    const voices = voiceDraftSnapshot(this.#options.client, identity)
+    for (const { stepId, value, persisted } of voices.entries) {
+      add('voice', stepId, stepId, value, value.version !== version, persisted ? 'tab' : 'memory', () => clearVoiceDraft(this.#options.client, identity, stepId, value), {}, !voices.partial)
+    }
+    const media = mediaDraftSnapshot(this.#options.client, identity)
+    for (const { stepId, value, persisted } of media.entries) for (const [name, draft] of Object.entries(value.entries)) {
+      const original = content.production.mediaClips.find(clip => clip.id === draft.clip.id)
+      add('media-clip', JSON.stringify([stepId, name]), stepId, draft, draft.version !== version || Boolean(draft.baseClip && JSON.stringify(draft.baseClip) !== JSON.stringify(original)), persisted ? 'tab' : 'memory',
+        () => discardMediaDraft(this.#options.client, identity, stepId, name, value), { clipId: draft.clip.id, ...draft.clip.assetId ? { assetId: draft.clip.assetId } : {} }, !media.partial)
+    }
     candidates.sort((a, b) => a.key.localeCompare(b.key))
     guard()
-    return { stamp: JSON.stringify([this.#draftSalt, identity, memberId, version, reset, revision]), coverage: timingPartial || captionPartial ? 'partial' : 'tab-state', candidates, guard }
+    return { stamp: JSON.stringify([this.#draftSalt, identity, memberId, version, reset, revision]), coverage: timingPartial || captionPartial || voices.partial || media.partial ? 'partial' : 'tab-state', candidates, guard }
   }
 
   source(expected: { identity: string, version: string }): DocumentSessionState {

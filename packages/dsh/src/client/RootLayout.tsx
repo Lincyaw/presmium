@@ -35,7 +35,7 @@ type Box = { left: number, top: number, width: number, height: number }
 export function rootLayoutFor(options: RootLayoutOptions) {
   return function PresmiumRootLayout(props: RootSlotProps) {
     return (
-      <WorkbenchProvider workbench={options.workbench}>
+      <WorkbenchProvider workbench={options.workbench} dialogActions={<WorkbenchApprovals />}>
         <WorkbenchRuntimeBoundary workbench={options.workbench}><RootLayout {...props} {...options} /></WorkbenchRuntimeBoundary>
       </WorkbenchProvider>
     )

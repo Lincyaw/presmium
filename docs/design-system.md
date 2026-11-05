@@ -59,7 +59,7 @@
 | 焦点 | `--pm-color-accent` 边框加 `--pm-color-accent-line` 光圈，宽度 `--pm-space-px` |
 | 选中 | `--pm-color-selected` 或 `--pm-color-accent-soft`，配合形状标记 |
 | 图示与动画中的角色、系列、类别 | `--pm-color-category-1` 到 `--pm-color-category-8`，填充 `--pm-color-category-<n>-soft`；场景中写 `color('category-1')` |
-| 浮层 | `--pm-shadow-float`、`--pm-z-popover`、`--pm-z-dialog`、`--pm-z-tooltip` |
+| 浮层 | `--pm-shadow-float`、`--pm-z-popover`、`--pm-z-dialog`、`--pm-z-dialog-popover`、`--pm-z-tooltip` |
 | 时长 | `--pm-duration-fast`、`--pm-duration`、`--pm-duration-slow`、`--pm-ease`；循环 `--pm-duration-spin`、`--pm-duration-pulse` |
 
 外壳断点：1280 px 及以上三栏；768 到 1279 px 属性改为抽屉；768 px 以下单主区。可用画布低于 `--pm-canvas-min-width` 时先收起辅助面板。
@@ -125,6 +125,7 @@ Checkbox、Radio、Switch 只有 `pm-ui-checkbox` 的基础着色；首次使用
 ### 4.3 浮层
 
 - Dialog 模态，有标题、说明与关闭操作；外部按下不关闭，`Esc` 关闭，关闭后焦点回到触发器。打开时聚焦显式 `autoFocus` 的字段，否则聚焦首个可用控件。
+- 工作台宿主可通过 `WorkbenchProvider.dialogActions` 为共享 `PmDialog` 的标题栏提供操作。Studio 在此提供原有批准入口，模态及嵌套确认框内可直接批准或拒绝请求，保留 Radix 的模态焦点边界。对话框内的 `PmPopover` 自动使用 `--pm-z-dialog-popover`，经 Portal 渲染时仍位于对话框之上。
 - 非模态的属性编辑用面板、Drawer 或 Popover。
 - 非模态批注表单在作者操作全局批准入口及批准浮层时保持打开；通过共享 `PmPopover` 的原生外部交互回调区分这类操作。批准不改变原生表单的目标或输入版本。
 - Menu 打开后聚焦首个可用项，方向键、首尾、选择后关闭与焦点归还由 Radix 管理。

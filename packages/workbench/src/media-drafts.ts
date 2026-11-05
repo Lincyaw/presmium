@@ -4,7 +4,7 @@ import type { MediaClipDraft } from './MediaClipEditor.tsx'
 import type { WorkspaceClient } from './workspace-client.ts'
 
 export interface MediaDrafts { selectedClipId?: string, entries: Record<string, MediaClipDraft> }
-interface Entry { value: MediaDrafts, failed: boolean, volatile: boolean, unreadable?: string }
+interface Entry { value: MediaDrafts, failed: boolean, volatile: boolean, unreadable?: string, raw?: string | null }
 const memory = new WeakMap<WorkspaceClient, Map<string, Entry>>()
 const prefix = 'presmium.media-drafts.v1:', limit = 64
 const keyOf = (identity: string, stepId: string) => prefix + JSON.stringify([identity, stepId])
@@ -38,6 +38,7 @@ function load(client: WorkspaceClient, key: string): Entry {
   const entry: Entry = { value: { entries: {} }, failed: false, volatile: false }
   try {
     const raw = sessionStorage.getItem(key)
+    entry.raw = raw
     if (raw !== null) {
       entry.unreadable = raw
       if (raw.length > 131072) throw new Error('media-drafts-size')
@@ -68,6 +69,7 @@ export function keepMediaDrafts(client: WorkspaceClient, identity: string, stepI
     if (raw.length > 131072) throw new Error('media-drafts-size')
     if (entry.unreadable !== undefined) sessionStorage.setItem(`${key}:unreadable`, entry.unreadable)
     sessionStorage.setItem(key, raw)
+    entry.raw = raw
     const keys = Array.from({ length: sessionStorage.length }, (_, index) => sessionStorage.key(index)!).filter(name => name.startsWith(prefix) && !name.endsWith(':unreadable') && name !== key)
     let excess = keys.length - limit + 1
     for (const old of keys) {
@@ -80,4 +82,44 @@ export function keepMediaDrafts(client: WorkspaceClient, identity: string, stepI
     trim(known)
     return true
   } catch { entry.failed = true; trim(known); return false }
+}
+
+/** This is the same step/form bank used when the author reopens Media, including session-only input. */
+export function mediaDraftSnapshot(client: WorkspaceClient, identity: string): { entries: { stepId: string, value: MediaDrafts, persisted: boolean }[], partial: boolean } {
+  const scoped = `${prefix}${JSON.stringify([identity]).slice(0, -1)},`
+  const keys = new Set([...store(client).keys()].filter(key => key.startsWith(scoped)))
+  let partial = false
+  try {
+    for (let index = 0; index < sessionStorage.length; index++) {
+      const key = sessionStorage.key(index)
+      if (key?.startsWith(scoped) && !key.endsWith(':unreadable')) keys.add(key)
+    }
+  } catch { partial = true }
+  const entries: { stepId: string, value: MediaDrafts, persisted: boolean }[] = []
+  for (const key of keys) {
+    let target: unknown
+    try { target = JSON.parse(key.slice(prefix.length)) } catch { partial = true; continue }
+    if (!Array.isArray(target) || target.length !== 2 || target[0] !== identity || typeof target[1] !== 'string') { partial = true; continue }
+    const entry = load(client, key)
+    let persisted = false
+    try { const raw = sessionStorage.getItem(key); persisted = !entry.failed && raw === entry.raw; if (raw !== entry.raw) partial = true } catch { partial = true }
+    if (entry.unreadable !== undefined || entry.raw === undefined) partial = true
+    if (Object.keys(entry.value.entries).length) entries.push({ stepId: target[1], value: structuredClone(entry.value), persisted })
+  }
+  return { entries, partial }
+}
+
+/** Retire one exact clip proposal, preserving sibling forms and any independently changed storage. */
+export function discardMediaDraft(client: WorkspaceClient, identity: string, stepId: string, name: string, expected: MediaDrafts): boolean {
+  const key = keyOf(identity, stepId), entry = load(client, key)
+  if (!Object.hasOwn(expected.entries, name) || JSON.stringify(entry.value) !== JSON.stringify(expected)) return false
+  try {
+    if (entry.raw === undefined || entry.unreadable !== undefined || sessionStorage.getItem(key) !== entry.raw) return false
+    const next = structuredClone(entry.value)
+    delete next.entries[name]
+    const raw = JSON.stringify(next)
+    sessionStorage.setItem(key, raw)
+    entry.value = next; entry.raw = raw; entry.failed = false; entry.volatile = false
+    return true
+  } catch { entry.failed = true; return false }
 }

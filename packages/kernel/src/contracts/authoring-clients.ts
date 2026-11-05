@@ -95,12 +95,14 @@ export interface ClientCommentDraftMetadata {
   threadId?: string
   commentId?: string
 }
+const PRODUCTION_DRAFT_KINDS = ['step-timing', 'caption-timing', 'recording-range', 'voice', 'media-clip'] as const
 export interface ClientProductionDraftMetadata {
   draft: string
-  kind: 'step-timing' | 'caption-timing' | 'recording-range'
+  kind: typeof PRODUCTION_DRAFT_KINDS[number]
   stepId: string
   field?: 'minimumHoldMs' | 'trailingPauseMs'
   assetId?: string
+  clipId?: string
   targetAvailable: boolean
   requiresReview: boolean
   storage: 'tab' | 'memory'
@@ -228,7 +230,7 @@ const nullableComponentReference: Schema = { oneOf: [componentDraftReference, { 
 const nullableCommentReference: Schema = { oneOf: [draftReference, { type: 'null' }] }
 const commentRestore = object({ composerId: id, expectedCurrent: nullableCommentReference })
 const cursor = object({ after: entity, token: digest })
-const productionMetadata = object({ draft: digest, kind: { enum: ['step-timing', 'caption-timing', 'recording-range'] }, stepId: entity, field: { enum: ['minimumHoldMs', 'trailingPauseMs'] }, assetId: entity, targetAvailable: bool, requiresReview: bool, storage: { enum: ['tab', 'memory'] }, discardable: bool }, ['draft', 'kind', 'stepId', 'targetAvailable', 'requiresReview', 'storage', 'discardable'])
+const productionMetadata = object({ draft: digest, kind: { enum: [...PRODUCTION_DRAFT_KINDS] }, stepId: entity, field: { enum: ['minimumHoldMs', 'trailingPauseMs'] }, assetId: entity, clipId: entity, targetAvailable: bool, requiresReview: bool, storage: { enum: ['tab', 'memory'] }, discardable: bool }, ['draft', 'kind', 'stepId', 'targetAvailable', 'requiresReview', 'storage', 'discardable'])
 export const AUTHORING_CLIENT_ACTION_RESULT_SCHEMA: Schema = { oneOf: [
   object({ type: { const: 'body-drafts.inspect' }, family: { const: 'body' }, coverage: { enum: ['stored-and-session', 'partial'] }, token: digest,
     drafts: { type: 'array', maxItems: 10, items: bodyMetadata }, next: cursor }, ['type', 'family', 'coverage', 'token', 'drafts']),

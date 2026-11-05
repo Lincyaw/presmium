@@ -46,8 +46,9 @@ Expand an animation card's step captions/script area to edit canonical narration
 For pending production inputs use `editor_action` with `production-drafts.inspect`, `.read` or `.discard`.
 Discover the selected variant through `operations`; inspect returns at most ten metadata entries without
 input values. Choose its opaque `draft` for an explicit bounded JSON read, or discard with `confirm:true`.
-The native stores cover step hold/pause, caption timing and recording range; recording ranges are memory
-only. Discard resets the open field to its saved value without saving the document. Composition, an active
+The native stores cover step hold/pause, caption timing, recording range, voice choices and media clip
+proposals; recording ranges are memory only. Each media clip proposal has its own handle; discarding one
+keeps sibling inputs. Voice and media forms still recover through their own native reopen flow. Discard resets the open field to its saved value without saving the document. Composition, an active
 save, a changed source or unavailable storage can refuse it and retain the proposal. Local inspect/read
 still work with invalid saved JSON. Use a fresh inspect after input changes; these stores contain current
 proposals, not historical backup branches.

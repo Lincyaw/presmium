@@ -4,7 +4,7 @@ import { randomUUID } from '@lincyaw/kernel'
 import { MediaClipEditor } from '../MediaClipEditor.tsx'
 import type { MediaClipDraft } from '../MediaClipEditor.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
-import { keepMediaDrafts, mediaDraftStorageFailed, readMediaDrafts } from '../media-drafts.ts'
+import { mediaDraftStorageFailed, readMediaDrafts } from '../media-drafts.ts'
 import type { MediaDrafts } from '../media-drafts.ts'
 import { MEDIA_MESSAGES, mediaFailure } from '../media-messages.ts'
 
@@ -42,9 +42,23 @@ export function ProductionMediaClips({ identity, version, document, sectionId, s
   snapshot.current = draft; selected.current = key; latest.current = session
   const assets = Object.values(document.assets).filter(asset => asset.kind === 'audio').map(asset => ({ id: asset.id, label: asset.title || asset.location.split('/').at(-1) || asset.id }))
   const active = () => owner.current.active && workbench.getState().authoring?.identity === identity
+  const interacting = useRef(false), unavailable = useRef(false)
+  unavailable.current = disabled || Boolean(busy)
+  useEffect(() => workbench.production.registerDraftView({ identity, kind: 'media-clip', has: target => {
+    const [ownerStep, name] = JSON.parse(target) as [string, string]
+    return active() && ownerStep === stepId && Object.hasOwn(latest.current.entries, name)
+  }, blocked: () => interacting.current || Boolean(request.current) || unavailable.current,
+  clear: () => {
+    owner.current.revision++
+    const value = readMediaDrafts(workbench.client, identity, stepId)
+    latest.current = value; setSession(value); setStorageFailed(false); setFailure(undefined); setStatus(undefined)
+    blank.current = newDraft(workbench.getState().authoring?.version ?? version, stepId)
+  } }), [workbench, identity, stepId])
+  useEffect(() => workbench.registerNavigationGuard(() => active() && (interacting.current || Boolean(request.current))), [workbench, identity])
+  useEffect(() => { workbench.refreshAuthoringClientControls() }, [workbench, disabled, busy])
   const remember = (value: MediaDrafts) => {
     latest.current = value; setSession(value)
-    setStorageFailed(!keepMediaDrafts(workbench.client, identity, stepId, value))
+    setStorageFailed(!workbench.production.keepMediaDrafts(identity, stepId, value))
   }
   const edit = (value: MediaClipDraft) => {
     owner.current.revision++; setFailure(undefined); setStatus(undefined)
@@ -138,6 +152,7 @@ export function ProductionMediaClips({ identity, version, document, sectionId, s
   return <MediaClipEditor locale={locale} assets={assets} clips={clips} selectedClipId={selectedClipId} draft={draft} inspection={inspectCurrent} stepDurationMs={stepDurationMs}
     disabled={disabled} canApply={Boolean(binding && stepDurationMs !== undefined)} loading={loading} busy={busy} pending={Boolean(ownDraft(session.entries, key))} review={Boolean(ownDraft(session.entries, key) && draft.version !== version)}
     failure={failure} storageFailed={storageFailed} status={status} retryImport={retryImport}
+    onInteraction={value => { if (value === interacting.current) return; interacting.current = value; workbench.refreshAuthoringClientControls() }}
     onEditStart={pause} onChange={edit} onImport={value => void importAudio(value)} onRetryImport={() => { if (file.current) void importAudio(file.current) }}
     onRead={() => { setFailure(undefined); setInspection(undefined); setReload(value => value + 1) }}
     onReview={() => { if (inspectCurrent && (!draft.baseClip || canonical)) edit({ ...draft, version, ...canonical ? { baseClip: structuredClone(canonical) } : {} }) }}

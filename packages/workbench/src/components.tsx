@@ -5,7 +5,7 @@ import * as Popover from '@radix-ui/react-popover'
 import * as Tabs from '@radix-ui/react-tabs'
 import * as Toolbar from '@radix-ui/react-toolbar'
 import * as RadioGroup from '@radix-ui/react-radio-group'
-import { forwardRef, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { createContext, forwardRef, useContext, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { ComponentProps, CSSProperties, InputHTMLAttributes, ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
 import { Group as ResizableGroup, Panel as ResizablePanel, Separator as ResizableSeparator } from 'react-resizable-panels'
 import { PmButton, PmIcon, PmIconButton, PmTooltip } from './base-controls.tsx'
@@ -286,8 +286,13 @@ export function PmWorkspaceSwitcher({ label, value, items, onValueChange, placeh
 export type PopoverPlacement = 'below-end' | 'below-start' | 'above-end' | 'above-start'
 const placementOf = (placement: PopoverPlacement) => ({ side: placement.startsWith('above') ? 'top' as const : 'bottom' as const, align: placement.endsWith('start') ? 'start' as const : 'end' as const })
 
+/** Host controls remain reachable inside the active modal without weakening its focus boundary. */
+export const PmDialogActionsContext = createContext<ReactNode>(undefined)
+const PmDialogLayerContext = createContext(false)
+
 export function PmDialog({ open, label, closeLabel, name, actions, description, footer, busy, onClose, onOpenAutoFocus, onCloseAutoFocus, children }: { open: boolean, label: string, closeLabel: string, name?: string, actions?: ReactNode, description?: string, footer?: ReactNode, busy?: boolean, onClose(): void, onOpenAutoFocus?(event: Event): void, onCloseAutoFocus?(event: Event): void, children?: ReactNode }) {
   const id = useId()
+  const hostActions = useContext(PmDialogActionsContext)
   // A descendant's React autoFocus runs before Radix's open-focus event.
   const trigger = useRef<HTMLElement | null>(typeof document === 'undefined' ? null : document.activeElement as HTMLElement)
   useEffect(() => {
@@ -318,14 +323,17 @@ export function PmDialog({ open, label, closeLabel, name, actions, description, 
           const target = available(trigger.current) ? trigger.current : [...document.querySelectorAll<HTMLElement>('[role="toolbar"] button, main button')].find(available)
           target?.focus()
         }}>
+          <PmDialogLayerContext.Provider value>
           <div className="pm-ui-dialog__header">
             <Dialog.Title className="pm-ui-dialog__title">{label}</Dialog.Title>
             {actions}
+            {hostActions}
             <Dialog.Close asChild><PmIconButton icon="close" label={closeLabel} small disabled={busy} /></Dialog.Close>
           </div>
           {description && <Dialog.Description className="pm-ui-dialog__description">{description}</Dialog.Description>}
           <div className="pm-ui-dialog__body">{children}</div>
           {footer && <div className="pm-ui-dialog__footer">{footer}</div>}
+          </PmDialogLayerContext.Provider>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -334,11 +342,12 @@ export function PmDialog({ open, label, closeLabel, name, actions, description, 
 
 /** A non-modal floating panel on its trigger, with the shared `pm-ui-popover` surface (host's PmPopover for React pages). */
 export function PmPopover({ open, label, name, placement = 'below-end', trigger, onOpenChange, onInteractOutside, children }: { open: boolean, label: string, name?: string, placement?: PopoverPlacement, trigger: ReactNode, onOpenChange(open: boolean): void, onInteractOutside?: ComponentProps<typeof Popover.Content>['onInteractOutside'], children?: ReactNode }) {
+  const inDialog = useContext(PmDialogLayerContext)
   return (
     <Popover.Root open={open} onOpenChange={onOpenChange}>
       <Popover.Trigger asChild>{trigger}</Popover.Trigger>
       <Popover.Portal>
-        <Popover.Content className={cls('pm-ui-popover', 'pm-ui-floating', 'pm-ui', name)} aria-label={label} {...placementOf(placement)} sideOffset={6} collisionPadding={16} onInteractOutside={onInteractOutside} onEscapeKeyDown={event => event.stopPropagation()}>
+        <Popover.Content className={cls('pm-ui-popover', 'pm-ui-floating', 'pm-ui', name)} data-layer={inDialog ? 'dialog' : undefined} aria-label={label} {...placementOf(placement)} sideOffset={6} collisionPadding={16} onInteractOutside={onInteractOutside} onEscapeKeyDown={event => event.stopPropagation()}>
           {children}
         </Popover.Content>
       </Popover.Portal>

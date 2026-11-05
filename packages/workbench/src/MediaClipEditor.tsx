@@ -45,6 +45,7 @@ export interface MediaClipEditorProps {
   onReview(): void
   onApply(clip: MediaClip): void
   onRemove(): void
+  onInteraction?(busy: boolean): void
   onEditStart(): void
 }
 
@@ -72,7 +73,7 @@ export function MediaClipEditor(props: MediaClipEditorProps) {
     props.onApply({ ...clip, sourceRange: { startMs: startMs!, endMs: endMs! }, attachment: { ...clip.attachment, offsetMs: offsetMs! } })
   }
   const change = (patch: Partial<MediaClipDraft>) => props.onChange({ ...draft, ...patch })
-  const composition = (field: string) => ({ onCompositionStart: () => composing.current.add(field), onCompositionEnd: () => { composing.current.delete(field) } })
+  const composition = (field: string) => ({ onCompositionStart: () => { composing.current.add(field); props.onInteraction?.(true) }, onCompositionEnd: () => { composing.current.delete(field); props.onInteraction?.(composing.current.size > 0 || volumePreview !== undefined) } })
   return <section className="pm-ui-media-clip-editor" aria-label={t.title} data-density={density} onFocusCapture={props.onEditStart} onPointerDownCapture={props.onEditStart}
     onKeyDown={event => {
       event.stopPropagation()
@@ -102,7 +103,7 @@ export function MediaClipEditor(props: MediaClipEditorProps) {
       <PmInput label={t.offset} density={density} width="number" inputMode="decimal" maxLength={32} value={draft.offsetText ?? (clip.attachment.offsetMs / 1000).toFixed(3)}
         readOnly={disabled || !inspected} error={offsetMs === undefined ? t.invalidOffset : undefined} onChange={event => change({ offsetText: event.target.value })} {...composition('offset')} />
       <PmField label={t.volume} density={density} group><div className="pm-ui-range-row">
-        <PmRange label={t.volume} density={density} value={clip.volume * 100} max={100} disabled={disabled || !inspected} valueText={value => `${Math.round(value)}%`} onPreviewChange={setVolumePreview}
+        <PmRange label={t.volume} density={density} value={clip.volume * 100} max={100} disabled={disabled || !inspected} valueText={value => `${Math.round(value)}%`} onPreviewChange={value => { setVolumePreview(value); props.onInteraction?.(value !== undefined || composing.current.size > 0) }}
           onValueCommit={value => change({ clip: { ...clip, volume: value / 100 } })} />
         <output>{Math.round(volumePreview ?? clip.volume * 100)}%</output><PmButton density={density} aria-pressed={Boolean(clip.muted)} disabled={disabled || !inspected} onClick={() => change({ clip: { ...clip, muted: !clip.muted } })}>{clip.muted ? t.unmute : t.mute}</PmButton>
       </div></PmField>

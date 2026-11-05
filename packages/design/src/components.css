@@ -1058,6 +1058,10 @@
   border-radius: var(--pm-radius-card);
 }
 
+.pm-ui-popover[data-layer="dialog"] {
+  z-index: var(--pm-z-dialog-popover);
+}
+
 .pm-ui-drawer {
   position: fixed;
   z-index: var(--pm-z-dialog);
