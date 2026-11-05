@@ -150,6 +150,7 @@ export interface McpCliMessages {
   notFound(entry: string): string
   bridging(url: string): string
   unreachable: string
+  invalidRequest: string
   missingTool: string
   unexpectedToolArgument(argument: string): string
   unknownTool(tool: string): string
@@ -189,7 +190,8 @@ capture_overview）用 --out 保存为 PNG 文件，路径写到标准错误。�
     badAllow: (kinds, value) => `--allow 不接受“${value}”。可用的种类：${kinds.join('、')}。`,
     notFound: entry => `找不到 ${entry}。请检查路径，或用 presmium new 新建文稿。`,
     bridging: url => `presmium mcp: 转接到正在运行的 Presmium 服务 ${url}`,
-    unreachable: 'Presmium 服务已停止。请重新启动 presmium studio 或 presmium serve，然后重试。',
+    unreachable: '无法确认此请求的执行结果。请检查状态或历史后再决定是否重试；连接会自动发现重新启动的服务。',
+    invalidRequest: '请求引用重复，请等待前一个请求结束。',
     missingTool: '缺少工具名。请在 presmium mcp call 之后给出工具名；presmium mcp tools 列出全部工具。',
     unexpectedToolArgument: argument => `多余的参数“${argument}”。presmium mcp call 接受工具名与一个 JSON 对象，presmium mcp tools 接受一个工具名与 --json、--all、--schema。`,
     unknownTool: tool => `当前服务没有工具“${tool}”。用 presmium mcp tools 查看可用工具。`,
@@ -230,7 +232,8 @@ usage error or when the service can’t be reached.
     badAllow: (kinds, value) => `--allow does not take “${value}”. The kinds are ${kinds.join(', ')}.`,
     notFound: entry => `Couldn’t find ${entry}. Check the path, or make a document with presmium new.`,
     bridging: url => `presmium mcp: relaying to the running Presmium service at ${url}`,
-    unreachable: 'The Presmium service stopped. Start presmium studio or presmium serve again, then retry.',
+    unreachable: 'The request outcome is unknown. Check status or history before deciding to retry; this connection automatically discovers a restarted service.',
+    invalidRequest: 'This request reference is already in use. Wait for the earlier request to finish.',
     missingTool: 'No tool given. Name the tool after presmium mcp call; presmium mcp tools lists them all.',
     unexpectedToolArgument: argument => `Unexpected argument “${argument}”. presmium mcp call takes a tool name and one JSON object; presmium mcp tools takes one tool name and --json, --all, --schema.`,
     unknownTool: tool => `This service has no tool named “${tool}”. Use presmium mcp tools to list available tools.`,

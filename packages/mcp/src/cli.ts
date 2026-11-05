@@ -3,6 +3,7 @@ import { stat } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
 import { APPROVAL_KINDS, errorMessage, isRecord, LOCAL_AUTHOR } from '@lincyaw/kernel'
 import type { ApprovalKind } from '@lincyaw/kernel'
 import { devStateFile, fileVersion, readServiceState, serveStateDir } from '@lincyaw/kernel/node'
@@ -13,7 +14,7 @@ import type { BridgeTarget } from './bridge.ts'
 import { connectPresmiumMcp } from './client.ts'
 import type { PresmiumMcpClient } from './client.ts'
 import type { McpHost } from './host.ts'
-import { serveMcpStdio } from './mcp.ts'
+import { createPresmiumMcp } from './mcp.ts'
 import { MCP_CLI_MESSAGES, systemLocale } from './messages.ts'
 import { queryToolCatalog } from './tool-catalog.ts'
 
@@ -106,13 +107,24 @@ export async function main(argv: string[], options: { bundled?: string } = {}): 
   }
   const dir = deck.endsWith('.json') ? dirname(deck) : deck
   const running = runningService(dir)
-  if (running) {
-    process.stderr.write(`${t.bridging(running.mcp)}\n`)
-    await bridgeStdio(running, { locate: () => runningService(dir), unreachable: t.unreachable, log: message => process.stderr.write(`presmium mcp: ${message}\n`) })
-    return 0
-  }
-  serveMcpStdio(compilerMcpHost(deck, allow, options.bundled), { member: LOCAL_AUTHOR, mode: 'author', document: '' })
-  return undefined
+  if (running) process.stderr.write(`${t.bridging(running.mcp)}\n`)
+  await bridgeStdio(running, {
+    locate: () => runningService(dir), unreachable: t.unreachable, invalidRequest: t.invalidRequest,
+    log: message => process.stderr.write(`presmium mcp: ${message}\n`),
+    connected: target => process.stderr.write(`${t.bridging(target.mcp)}\n`),
+    fallback: () => {
+      const handler = createPresmiumMcp(compilerMcpHost(deck, allow, options.bundled))
+      const transport = new StreamableHTTPClientTransport(new URL('http://presmium.local/mcp'), {
+        fetch: (url, init) => handler.fetch(new Request(url, init), { member: LOCAL_AUTHOR, mode: 'author', document: '' }),
+      })
+      return { transport, async close() {
+        const results = await Promise.allSettled([transport.close(), handler.close()])
+        const failure = results.find(result => result.status === 'rejected')
+        if (failure?.status === 'rejected') throw failure.reason
+      } }
+    },
+  })
+  return 0
 }
 
 const PICTURE_EXTENSIONS: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }
@@ -237,10 +249,10 @@ export function runningService(dir: string, env: NodeJS.ProcessEnv = process.env
   }
   for (let next = at; ; at = next) {
     const state = readServiceState(join(serveStateDir(at, env), 'server.json'))
-    if (state) return { mcp: state.mcp, token: state.token }
+    if (state) return { mcp: state.mcp, token: state.token, pid: state.pid }
     next = dirname(at)
     if (next === at) break
   }
   const dev = readServiceState(devStateFile(realpathSync(resolve(dir))))
-  return dev ? { mcp: dev.mcp, token: dev.token } : undefined
+  return dev ? { mcp: dev.mcp, token: dev.token, pid: dev.pid } : undefined
 }
