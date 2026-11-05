@@ -2,6 +2,7 @@ import { DOCUMENT_VOICE_CATALOG_SCHEMA, DOCUMENT_VOICE_CLONE_SCHEMA, DOCUMENT_VO
 import type { DocumentVoiceCatalogQuery, DocumentVoiceCloneQuery, DocumentVoiceCloneRequest, VoiceCloneStatus, VoiceoverJobQuery, VoiceoverStart, VoiceoverStatusQuery, VoicePreviewCheck, VoicePreviewStart } from '@lincyaw/kernel'
 import type { Call, ToolSpec } from './mcp.ts'
 import type { ClonePreparationRequest } from './clone-protocol.ts'
+import { VOICE_STATUS_PAGE_SCHEMA, voiceStatusPage } from './voice-status.ts'
 
 const document = { type: 'string', description: 'The served document directory.' }
 const input = (properties: Record<string, unknown>, required: string[] = []) => ({ type: 'object', additionalProperties: false, properties: { document, ...properties }, required })
@@ -71,9 +72,9 @@ export const VOICE_AUTHORING_TOOLS: ToolSpec[] = [
   },
   {
     name: 'get_voiceover_status', kind: 'read', structured: true,
-    description: 'Reads the existing real IR voice targets, stable step IDs, exact-cache readiness and shared jobs. Does not compile or synthesize; if IR is missing or stale, explicitly read presmium://ir?document=<directory> first. Returned source and revision bind later generation. This status can read the real voice catalogue; use job list/get for discovery without services.',
-    inputSchema: input({ query: structuredClone(VOICEOVER_STATUS_SCHEMA) }),
-    run: async call => service(call).snapshot(await call.document(), call.args.query as VoiceoverStatusQuery ?? {}, call.caller.member, call.signal),
+    description: 'Reads live IR voice targets, stable step IDs and cache readiness in pages of 8 rows (maximum 20, 7168 pretty-JSON characters). Continue with nextCursor as cursor; source or IR changes refuse continuation. Counts cover all steps, unbound pages and jobs. Jobs summarize multi-step scopes and long errors; get_voiceover_job reads details. Does not compile or synthesize; if IR is missing or stale, explicitly read presmium://ir?document=<directory> first. Returned source and revision bind later generation. Use job list/get for discovery without services.',
+    inputSchema: input({ query: structuredClone(VOICEOVER_STATUS_SCHEMA), ...VOICE_STATUS_PAGE_SCHEMA }),
+    run: async call => voiceStatusPage(await service(call).snapshot(await call.document(), call.args.query as VoiceoverStatusQuery ?? {}, call.caller.member, call.signal), call.args),
   },
   {
     name: 'get_voiceover_jobs', kind: 'read', structured: true,

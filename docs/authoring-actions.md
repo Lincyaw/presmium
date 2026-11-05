@@ -226,6 +226,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 | `quote_voice_preview` | read | 实际文字、提供方与缓存状态；quote 两分钟有效 |
 | `preview_voice` | spend | 返回 `presmium://voice-preview/{id}?document=…` 音频资源 |
 
+- MCP 的 `get_voiceover_status` 按步骤、未绑定页面与任务摘要续读，默认八条、最多二十条，完整 JSON 响应最多 7168 个 UTF-16 字符。将 `nextCursor` 作为下一次的 `cursor` 即可；宿主在续读位置内绑定文稿来源与 IR 版本，变化时拒绝续读。任务摘要保留原 ID、状态与进度，多个步骤的范围只返回数量，长错误仅返回预览，完整任务由 `get_voiceover_job` 读取。网页沿用原生完整状态。
 - 任务查询与取消不编译，坏 JSON 下也可用；任务不转到新源继续，状态在当前进程内。生成试听不代表客户端已播放。
 - ASR 词时属于原录音，永远不作为新 TTS 的字幕时间。新 TTS 有真实 words 时按 display 与 spoken 映射字幕，否则只显示分段或标明的比例估时。可能调用 ASR 的对齐只在明确的生成或对齐意图内发生。
 - 产物只在 source、revision、planId 与缓存键全部匹配时进入当前计划，旧 TTS 不与新字幕混播。
