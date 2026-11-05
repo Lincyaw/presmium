@@ -1,3 +1,4 @@
+import { MEDIA_UPLOAD_PATH } from '@lincyaw/kernel'
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage } from 'node:http'
 import { dirname } from 'node:path'
@@ -166,6 +167,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   const decide = async (req: IncomingMessage): Promise<Decision> => {
     const url = new URL(req.url ?? '/', 'http://presmium')
     const path = inner(url.pathname)
+    if (options.serverHost?.mediaUploads && path.startsWith(`${MEDIA_UPLOAD_PATH}/`)) return { kind: 'fetch' }
     const member = memberOf(req)
     if ('status' in member) return refuse(member)
     const target = parsePluginPath(path)
@@ -209,7 +211,8 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     if (!caller) return problemResponse(401, 'MCP needs an Authorization: Bearer token')
     const limited = await limitBody(request, MAX_BODY)
     if (limited instanceof Response) return limited
-    const response = await (options.mcp ? options.mcp(limited, caller) : mcp!.fetch(limited, caller))
+    const access = { ...caller, endpoint: options.publicUrl ? `${options.publicUrl.replace(/\/+$/, '')}/mcp` : request.url }
+    const response = await (options.mcp ? options.mcp(limited, access) : mcp!.fetch(limited, access))
     return mcpTokens.tieToGrant(given!, response)
   }
 
@@ -237,6 +240,8 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   const handle = async (request: Request, req: IncomingMessage): Promise<Response> => {
     const url = new URL(request.url)
     const path = inner(url.pathname)
+    // This exact capability route authenticates its own one-write upload reference, not a workspace credential.
+    if (options.serverHost?.mediaUploads && path.startsWith(`${MEDIA_UPLOAD_PATH}/`)) return options.serverHost.mediaUploads.handle(request)
     const member = memberOf(req)
     if ('status' in member) return problemResponse(member.status, member.message)
     const document = requestedDocument(req.headers, url)

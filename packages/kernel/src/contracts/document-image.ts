@@ -1,13 +1,15 @@
+import { MEDIA_LOCATION_PROPERTIES, MEDIA_LOCATION_CHOICES, mediaFileSchema } from './media-uploads.ts'
+import type { DocumentMediaLocation, DocumentMediaFile } from './media-uploads.ts'
 import type { CanonicalSource } from '../ir.ts'
 import type { Member } from './server.ts'
 import type { DocumentImageImportAnswer } from './workspace.ts'
 import { DOCUMENT_IMAGE_MAX_BYTES } from './workspace.ts'
 
-export interface DocumentWorkspaceImageInspect { source: CanonicalSource, path: string }
-export interface DocumentWorkspaceImageImport { id: string, source: CanonicalSource, file: { path: string, sha256: string, byteLength: number } }
+export type DocumentWorkspaceImageInspect = { source: CanonicalSource } & DocumentMediaLocation
+export interface DocumentWorkspaceImageImport { id: string, source: CanonicalSource, file: DocumentMediaFile }
 export interface WorkspaceImageInspection {
   document: string, source: CanonicalSource
-  file: { path: string, sha256: string, byteLength: number }
+  file: DocumentMediaFile
   image: { mediaType: string, dimensions: { width: number, height: number } }
 }
 export interface VerifiedDocumentImageImport extends DocumentImageImportAnswer {
@@ -28,5 +30,5 @@ export interface DocumentImageAuthoring {
   importWorkspace(document: string, request: DocumentWorkspaceImageImport, member: Member, signal?: AbortSignal): Promise<VerifiedDocumentImageImport>
 }
 const source = { type: 'object', additionalProperties: false, properties: { documentId: { type: 'string', minLength: 1, maxLength: 200 }, version: { type: 'string', pattern: '^[a-f\\d]{20}$' }, fingerprint: { type: 'string', pattern: '^[a-f\\d]{16}$' } }, required: ['documentId', 'version', 'fingerprint'] } as const
-export const DOCUMENT_WORKSPACE_IMAGE_INSPECTION_SCHEMA = { type: 'object', additionalProperties: false, properties: { source, path: { type: 'string', minLength: 1, maxLength: 1024 } }, required: ['source', 'path'] } as const
-export const DOCUMENT_WORKSPACE_IMAGE_IMPORT_SCHEMA = { type: 'object', additionalProperties: false, properties: { id: { type: 'string', minLength: 1, maxLength: 200 }, source, file: { type: 'object', additionalProperties: false, properties: { path: { type: 'string', minLength: 1, maxLength: 1024 }, sha256: { type: 'string', pattern: '^[a-f\\d]{64}$' }, byteLength: { type: 'integer', minimum: 1, maximum: DOCUMENT_IMAGE_MAX_BYTES } }, required: ['path', 'sha256', 'byteLength'] } }, required: ['id', 'source', 'file'] } as const
+export const DOCUMENT_WORKSPACE_IMAGE_INSPECTION_SCHEMA = { type: 'object', additionalProperties: false, properties: { source, ...MEDIA_LOCATION_PROPERTIES }, required: ['source'], oneOf: MEDIA_LOCATION_CHOICES } as const
+export const DOCUMENT_WORKSPACE_IMAGE_IMPORT_SCHEMA = { type: 'object', additionalProperties: false, properties: { id: { type: 'string', minLength: 1, maxLength: 200 }, source, file: mediaFileSchema(DOCUMENT_IMAGE_MAX_BYTES) }, required: ['id', 'source', 'file'] } as const

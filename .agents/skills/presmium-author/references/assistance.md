@@ -14,6 +14,14 @@ When connected to a workspace MCP host, discover saved entities with `get_docume
 
 To see a page as the presentation shows it, call `capture_slides` with its section: it returns PNG pictures (and their files in the service's state directory) of every step's rest frame, or of the steps and `at` moments you name (milliseconds into a step's animation, drawn by the same step clock a lecture export uses, so a picture is the same each time it is taken). `measure` adds the boxes of the elements matching a CSS selector, in slide pixels, with their text and `data-*` attributes; `appearance: 'dark'`, `scale: 2` and `clip` cover the dark theme, fine detail and one region; `captions: false` leaves out the captions drawn over the slide, and each frame's narration is in the result as text either way. At most 12 pictures a call. `arrive: 'backward'` reaches each step from the step after it, as a presenter going back does, with the page's own clock: compare it with the direct picture; `capture-page-reloaded` means going back reloaded the page. `capture_overview` takes every page at once (each page's last step, or every step with `steps: 'all'`) into one directory named in reading order, with sheets of labelled thumbnails; it is the material of a cold-read review. `capture_reading` takes one page of the reading version at a window `width` (default 1280, 390 for a phone), scrolled through so that its components load, at rest, cut at 8000 pixels. A scene whose code doesn't bundle fails alone: its page shows the failure, the capture's `problems` say why, and `check_document` (like `presmium check`) reports it as a `presmium.preview.code` error with its file and line. When the whole document can't be prepared the capture fails with `capture-preview-failed`, and `get_diagnostics` holds the reason.
 
+For files on the client's machine, use `prepare_media_upload({kind:'image'|'audio'})`, open its URL to
+select a file, and read readiness with the same operation's `{upload}`. SDK consumers can use
+`uploadMedia(document, kind, File, signal?)` directly. Import ready bytes through the existing
+`import_workspace_image({upload})` or `import_workspace_audio({upload})`; do not send base64 through
+model arguments. The temporary upload does not save the document; the import retains approval and
+history. Links last ten minutes, allow one transfer and expire when the service stops. See
+`docs/authoring-actions.md` section 7 for limits and ownership.
+
 For existing workspace audio or images, call `import_workspace_audio({path})` or
 `import_workspace_image({path})` with a same-document workspace-relative path. No separate capability,
 source or inspection request is needed. The host pins source and actual SHA-256/bytes before approval and

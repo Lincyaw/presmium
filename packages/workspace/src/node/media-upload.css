@@ -1,0 +1,4 @@
+.pm-media-upload-body { margin: 0; padding: var(--pm-space-6); color: var(--pm-color-ink); background: var(--pm-color-bg); font-family: var(--pm-font-sans); }
+.pm-media-upload { max-inline-size: var(--pm-dialog-width); margin-inline: auto; }
+.pm-media-upload form { display: grid; justify-items: start; gap: var(--pm-space-4); }
+.pm-media-upload h1 { font-size: var(--pm-text-lg); }

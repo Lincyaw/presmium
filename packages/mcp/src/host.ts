@@ -6,6 +6,7 @@ import type {
   ApprovalRequest,
   DiagnosticSnapshot,
   DocumentAuthoring,
+  DocumentMediaUploads,
   DocumentAudioAuthoring,
   DocumentImageAuthoring,
   DocumentVoiceAuthoring,
@@ -30,6 +31,8 @@ export interface McpCaller {
   document?: string
   /** Catalog shape only; both profiles enforce the same caller permissions. */
   toolset?: 'compact' | 'all'
+  /** Trusted transport address for links; never a model argument. */
+  endpoint?: string
 }
 
 export interface McpFocus {
@@ -73,6 +76,7 @@ export interface McpHost {
   documentHistory?: DocumentHistory
   authoringClients?: AuthoringClients
   authoringWindows?: AuthoringWindows
+  mediaUploads?: DocumentMediaUploads
   audioAuthoring?: DocumentAudioAuthoring
   imageAuthoring?: DocumentImageAuthoring
   voiceAuthoring?: DocumentVoiceAuthoring

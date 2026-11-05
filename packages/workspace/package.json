@@ -36,7 +36,8 @@
     "image-size": "2.0.4",
     "mime-types": "3.0.2",
     "playwright-chromium": "1.64.1",
-    "yaml": "^2.9.1"
+    "yaml": "^2.9.1",
+    "@lincyaw/design": "workspace:*"
   },
   "devDependencies": {
     "@lincyaw/mcp": "workspace:*",

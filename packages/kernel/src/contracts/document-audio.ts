@@ -1,3 +1,5 @@
+import { MEDIA_LOCATION_PROPERTIES, MEDIA_LOCATION_CHOICES, mediaFileSchema } from './media-uploads.ts'
+import type { DocumentMediaLocation, DocumentMediaFile } from './media-uploads.ts'
 import type { CanonicalSource } from '../ir.ts'
 import type { Finding } from './checks.ts'
 import type { DocumentIssue, MediaClip, TimeRange } from './document.ts'
@@ -33,18 +35,18 @@ export interface VerifiedDocumentRecordingAdoption extends DocumentChangeAnswer 
 }
 /** Inspect an existing real snapshot; an expected revision is optional during discovery. */
 export type DocProductionPlanQuery = ProductionAudioPlanQuery
-export interface DocumentWorkspaceAudioInspect { source: CanonicalSource, path: string }
+export type DocumentWorkspaceAudioInspect = { source: CanonicalSource } & DocumentMediaLocation
 export interface WorkspaceAudioInspectionAnswer {
   document: string
   source: CanonicalSource
-  file: { path: string, sha256: string, byteLength: number }
+  file: DocumentMediaFile
   inspection: Omit<ProductionAssetInspection, 'assetId' | 'mediaId'>
 }
 export interface DocumentWorkspaceAudioImport {
   id: string
   source: CanonicalSource
   /** Workspace-relative regular file permitted by the selected document's existing source scope. */
-  file: { path: string, sha256: string, byteLength: number }
+  file: DocumentMediaFile
 }
 export interface VerifiedDocumentAudioImport extends DocumentAudioImportAnswer {
   verification: {
@@ -116,15 +118,15 @@ export const DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA = {
   type: 'object', additionalProperties: false,
   properties: {
     id: { type: 'string', minLength: 1, maxLength: 200 }, source,
-    file: { type: 'object', additionalProperties: false, properties: { path: { type: 'string', minLength: 1, maxLength: 1024 }, sha256: { type: 'string', pattern: '^[a-f\\d]{64}$' }, byteLength: { type: 'integer', minimum: 1, maximum: DOCUMENT_AUDIO_MAX_BYTES } }, required: ['path', 'sha256', 'byteLength'] },
+    file: mediaFileSchema(DOCUMENT_AUDIO_MAX_BYTES),
   },
   required: ['id', 'source', 'file'],
 } as const
 
 export const DOCUMENT_WORKSPACE_AUDIO_INSPECTION_SCHEMA = {
   type: 'object', additionalProperties: false,
-  properties: { source, path: { type: 'string', minLength: 1, maxLength: 1024 } },
-  required: ['source', 'path'],
+  properties: { source, ...MEDIA_LOCATION_PROPERTIES },
+  required: ['source'], oneOf: MEDIA_LOCATION_CHOICES,
 } as const
 
 const clipId = { type: 'string', minLength: 1, maxLength: 200, pattern: '^[^\\u0000-\\u001f]+$', not: { enum: ['__proto__', 'constructor', 'prototype'] } } as const

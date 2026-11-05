@@ -12,6 +12,7 @@ SCOPE.push('packages/cloud/src/client')
 SCOPE.push('deploy/cloud/keycloak/theme/presmium/login/resources/css/layout.css')
 SCOPE.push('examples/gallery/site')
 SCOPE.push('packages/desktop/ui')
+SCOPE.push('packages/workspace/src/node/media-upload.css')
 
 const root = new URL('..', import.meta.url).pathname
 const RAW = [

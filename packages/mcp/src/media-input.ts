@@ -5,12 +5,13 @@ import type { Call } from './mcp.ts'
 /** Ordinary fields come from the native request schema; the complete SDK request stays available. */
 export function mediaInput(schema: { properties: Record<string, unknown> }, fields: Record<string, unknown>, required: string[]) {
   const ordinary = { ...fields, source: schema.properties.source, ...schema.properties.id ? { requestId: schema.properties.id } : {} }
+  const modes = required.includes('path') && fields.upload ? [required, required.map(key => key === 'path' ? 'upload' : key)] : [required]
   return { type: 'object', additionalProperties: false,
     properties: { document: { type: 'string', maxLength: 200 }, ...ordinary,
       details: { type: 'boolean', description: 'Include native verification details for diagnostics.' },
       request: { ...structuredClone(schema), description: 'Advanced native request. Cannot be mixed with ordinary fields.' } },
     oneOf: [
-      { required, not: { required: ['request'] } },
+      ...modes.map(keys => ({ required: keys, not: { anyOf: [{ required: ['request'] }, ...fields.upload ? [{ required: [keys.includes('upload') ? 'path' : 'upload'] }] : []] } })),
       { required: ['request'], not: { anyOf: Object.keys(ordinary).map(key => ({ required: [key] })) } },
     ],
   }
@@ -42,7 +43,7 @@ export async function prepareMediaArguments(name: string, args: Record<string, u
     if (!isRecord(result) || !isRecord(result.inspection) || typeof result.inspection.sha256 !== 'string') throw new Error('media-response-invalid')
     request = { id, source, stepId: args.stepId, assetId: args.assetId, sha256: result.inspection.sha256, ...args.sourceRange ? { sourceRange: args.sourceRange } : {} }
   } else {
-    const result = await read(name === 'import_workspace_audio' ? 'inspect_workspace_audio' : 'inspect_workspace_image', { ...document, request: { source, path: args.path } })
+    const result = await read(name === 'import_workspace_audio' ? 'inspect_workspace_audio' : 'inspect_workspace_image', { ...document, request: { source, ...args.upload ? { upload: args.upload } : { path: args.path } } })
     if (!isRecord(result) || !isRecord(result.file)) throw new Error('media-response-invalid')
     request = { id, source, file: result.file }
   }

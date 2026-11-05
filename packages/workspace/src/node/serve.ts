@@ -1,3 +1,4 @@
+import { createMediaUploads } from './media-uploads.ts'
 import { createProjectAuthoring } from './projects.ts'
 import { createDocumentHistory } from './document-history.ts'
 import { createAuthoringClients } from './authoring-clients.ts'
@@ -129,6 +130,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   let authoringWindows: ReturnType<typeof createAuthoringWindows> | undefined
   let transcriptions: ReturnType<typeof createDocumentTranscriptions> | undefined
   let transcriptionAdoption: ReturnType<typeof createTranscriptionAdoption> | undefined
+  let mediaUploads: ReturnType<typeof createMediaUploads> | undefined
   let audioAuthoring: ReturnType<typeof createDocumentAudioAuthoring> | undefined
   let imageAuthoring: ReturnType<typeof createDocumentImageAuthoring> | undefined
   let capture: ReturnType<typeof createDocumentCapture> | undefined
@@ -208,7 +210,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     authoringServicesClosed = true
     transcriptionAdoption?.close()
     for (const load of nodeServicePending) load.controller.abort()
-    await Promise.all([projectAuthoring?.close(), transcriptions?.close(), audioAuthoring?.close(), voiceAuthoring?.close(), documentHistory?.close(), authoringClients?.close(), authoringWindows?.close(), workspaceRoutesOwner?.close?.()])
+    await Promise.all([mediaUploads?.close(), projectAuthoring?.close(), transcriptions?.close(), audioAuthoring?.close(), voiceAuthoring?.close(), documentHistory?.close(), authoringClients?.close(), authoringWindows?.close(), workspaceRoutesOwner?.close?.()])
     await Promise.allSettled([...nodeServicePending].map(load => load.promise))
     nodeServiceLoads.clear()
   }
@@ -278,6 +280,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     get projectAuthoring() { return projectAuthoring?.service },
     get authoringClients() { return authoringClients?.service },
     get authoringWindows() { return authoringWindows?.service },
+    get mediaUploads() { return mediaUploads },
     get audioAuthoring() { return audioAuthoring?.service },
     get imageAuthoring() { return imageAuthoring?.service },
     get voiceAuthoring() { return voiceAuthoring?.service },
@@ -410,8 +413,9 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   documentHistory = createDocumentHistory({ config, editor, locks, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required', changed: (before, after) => documentsChanged(documentsDiff(before, after)), reverted: (target, revision) => history?.agentSessionReviews.reverted(target, revision) })
   transcriptions = createDocumentTranscriptions({ root, editor, services: authoringServices })
   transcriptionAdoption = createTranscriptionAdoption({ documentEditor, transcriptions })
-  audioAuthoring = createDocumentAudioAuthoring({ root, editor, revisions: history?.revisions, services: authoringServices, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
-  imageAuthoring = createDocumentImageAuthoring({ root, editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
+  mediaUploads = createMediaUploads({ editor, url: () => `${publicOrigin()}${basePath.replace(/\/$/, '')}` })
+  audioAuthoring = createDocumentAudioAuthoring({ root, editor, uploads: mediaUploads, revisions: history?.revisions, services: authoringServices, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
+  imageAuthoring = createDocumentImageAuthoring({ root, editor, uploads: mediaUploads, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   const routeOptions = {
       speechSettings: speechSettingsRoute(speechSettings),
       changesRoutes: workspaceChanges.routes,

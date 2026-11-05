@@ -86,7 +86,7 @@ export const AUDIO_AUTHORING_TOOLS: ToolSpec[] = [
   {
     name: 'import_workspace_audio', kind: 'operate', structured: true,
     description: 'Imports one existing regular workspace audio file allowed by the selected document scope, after host authorization. Ordinary input is path; no separate source or inspection call is needed. Source, SHA-256 and byte length are pinned internally before approval, then rechecked by the native transaction. Optional source pins an earlier read; request is the advanced native input. Shares Web media validation, binary/document CAS, rollback and receipts; history origin is agent and required review cannot be bypassed. Ordinary response is saved, assetId and durationMs; details:true or advanced request returns the native receipt. Does not attach narration, recognize, synthesize or play. After a lost response inspect saved assets instead of automatically repeating the import.',
-    inputSchema: mediaInput(DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA, { path: DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA.properties.file.properties.path }, ['path']),
+    inputSchema: mediaInput(DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA, { path: DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA.properties.file.properties.path, upload: DOCUMENT_AUDIO_WORKSPACE_IMPORT_SCHEMA.properties.file.properties.upload }, ['path']),
     run: async call => {
       const selected = await call.document()
       if (call.args.request) checkMediaWrite(call, selected)
@@ -97,7 +97,7 @@ export const AUDIO_AUTHORING_TOOLS: ToolSpec[] = [
         return service(call).inspectWorkspace(selected, args.request as DocumentWorkspaceAudioInspect, call.caller.member, call.signal)
       })).request) as DocumentWorkspaceAudioImport
       const target = (await call.host.documents()).find(document => document.dir === selected)
-      await call.approve('operate', messages => messages.importAudio(prepared.file.path.split('/').at(-1) ?? prepared.file.path), { lang: target?.lang ?? '', detail: `${target?.title ?? selected}\n${prepared.file.path}`, check: () => service(call).checkWorkspaceImport(selected, prepared, call.caller.member, call.signal) })
+      await call.approve('operate', messages => messages.importAudio(prepared.file.path !== undefined ? (prepared.file.path.split('/').at(-1) ?? prepared.file.path) : prepared.file.name), { lang: target?.lang ?? '', detail: `${target?.title ?? selected}\n${prepared.file.path ?? prepared.file.name}`, check: () => service(call).checkWorkspaceImport(selected, prepared, call.caller.member, call.signal) })
       call.signal.throwIfAborted()
       const result = await service(call).importWorkspace(selected, prepared, call.caller.member, call.signal)
       return mediaResult('import_workspace_audio', result, call.args)

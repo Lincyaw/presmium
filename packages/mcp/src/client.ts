@@ -1,6 +1,6 @@
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
-import { APPROVAL_KINDS, deckLocale, errorMessage, isRecord } from '@lincyaw/kernel'
-import type { ApprovalKind } from '@lincyaw/kernel'
+import { DOCUMENT_AUDIO_MAX_BYTES, DOCUMENT_IMAGE_MAX_BYTES, MEDIA_UPLOAD_PATH, APPROVAL_KINDS, deckLocale, errorMessage, isRecord } from '@lincyaw/kernel'
+import type { ApprovalKind, MediaUpload, MediaUploadKind } from '@lincyaw/kernel'
 import { MCP_MESSAGES } from './messages.ts'
 import { TOOL_APPROVAL_META, TOOL_KIND_META, TOOL_WORKSPACE_META } from './tool-meta.ts'
 
@@ -30,6 +30,8 @@ export interface CalledTool {
 }
 
 export interface PresmiumMcpClient {
+  /** Transfer selected client-local bytes outside tool/model content; import its returned upload through the existing media tool. */
+  uploadMedia(document: string, kind: MediaUploadKind, file: File, signal?: AbortSignal): Promise<MediaUpload>
   tools(): Promise<ListedTool[]>
   subscribeTools(changed: () => void): Promise<() => Promise<void>>
   call(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<CalledTool>
@@ -133,6 +135,33 @@ export async function connectPresmiumMcp(url: string, token: string, name = 'pre
     return stop
   }
   return {
+    async uploadMedia(document, kind, file, signal) {
+      if (closed) throw new Error('media-upload-unavailable')
+      let named = false, cursor: string | undefined
+      do {
+        const page = await client.listTools(cursor ? { cursor } : undefined)
+        named = page.tools.some(tool => tool.name === 'prepare_media_upload')
+        if (named || page.tools.some(tool => tool.name === 'read_operation')) break
+        cursor = page.nextCursor
+      } while (cursor)
+      const request = async (args: Record<string, unknown>): Promise<MediaUpload> => {
+        const response = await client.callTool({ name: named ? 'prepare_media_upload' : 'read_operation', arguments: named ? { document, ...args } : { operation: 'prepare_media_upload', arguments: { document, ...args } } }, { signal, timeout: CALL_TIMEOUT_MS })
+        const value = response.structuredContent ?? JSON.parse(response.content.filter(part => part.type === 'text').map(part => part.text).join('\n'))
+        if (response.isError) throw new Error(isRecord(value) && isRecord(value.error) && typeof value.error.code === 'string' ? value.error.code : 'media-upload-unavailable')
+        if (!isRecord(value) || typeof value.upload !== 'string' || typeof value.url !== 'string' || value.kind !== kind) throw new Error('media-upload-unavailable')
+        return value as unknown as MediaUpload
+      }
+      const grant = await request({ kind }), endpoint = new URL(url)
+      if (!/^[a-f0-9]{64}$/.test(grant.upload) || !Number.isSafeInteger(grant.maxBytes) || grant.maxBytes < 1 || grant.maxBytes > (kind === 'audio' ? DOCUMENT_AUDIO_MAX_BYTES : DOCUMENT_IMAGE_MAX_BYTES)) throw new Error('media-upload-invalid')
+      // Transfer only to this connection's origin/path; a public browser link may use another proxy address.
+      const destination = new URL(`${endpoint.origin}${endpoint.pathname.replace(/\/mcp\/?$/, '')}${MEDIA_UPLOAD_PATH}/${grant.upload}`)
+      if (!file.size || file.size > grant.maxBytes || typeof file.name !== 'string') throw new Error('media-upload-size')
+      const sent = await fetch(destination, { method: 'POST', body: file, signal, credentials: 'omit', redirect: 'error', headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/octet-stream', 'x-presmium-upload-name': encodeURIComponent(file.name) } })
+      if (!sent.ok) throw Object.assign(new Error('media-upload-failed'), { upload: grant.upload })
+      const ready = await request({ upload: grant.upload })
+      if (ready.upload !== grant.upload || ready.state !== 'ready' || ready.byteLength !== file.size) throw new Error('media-upload-not-ready')
+      return ready
+    },
     async tools() {
       const listed: ListedTool[] = []
       let cursor: string | undefined

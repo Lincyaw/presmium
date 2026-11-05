@@ -1681,6 +1681,9 @@ importers:
       '@lincyaw/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@lincyaw/design':
+        specifier: workspace:*
+        version: link:../design
       '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel

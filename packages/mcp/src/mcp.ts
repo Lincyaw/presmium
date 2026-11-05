@@ -18,6 +18,7 @@ import { AUTHORING_CLIENT_TOOLS } from './authoring-clients.ts'
 import { TRANSCRIPTION_TOOLS } from './transcription.ts'
 import { AUDIO_AUTHORING_TOOLS } from './audio-authoring.ts'
 import { IMAGE_AUTHORING_TOOLS } from './image-authoring.ts'
+import { MEDIA_UPLOAD_TOOLS } from './media-uploads.ts'
 import { VOICE_AUTHORING_TOOLS } from './voice-authoring.ts'
 import { SPEECH_SETTINGS_TOOLS } from './speech-settings.ts'
 import { WORKSPACE_REVIEW_TOOLS } from './workspace-review.ts'
@@ -148,6 +149,7 @@ const TOOLS: ToolSpec[] = [
   ...AUTHORING_CLIENT_TOOLS,
   ...AUDIO_AUTHORING_TOOLS,
   ...IMAGE_AUTHORING_TOOLS,
+  ...MEDIA_UPLOAD_TOOLS,
   ...VOICE_AUTHORING_TOOLS,
   ...SPEECH_SETTINGS_TOOLS,
   ...WORKSPACE_REVIEW_TOOLS,
@@ -448,6 +450,7 @@ function runPlan(doc: IRDocument, node: CodeNode): string {
 }
 
 function hostSupports(host: McpHost, name: string): boolean {
+  if (MEDIA_UPLOAD_TOOLS.some(tool => tool.name === name)) return Boolean(host.mediaUploads)
   if (WORKSPACE_CHANGES_TOOLS.some(tool => tool.name === name)) return Boolean(host.workspaceChanges)
   if (SOURCE_TOOLS.some(tool => tool.name === name)) return Boolean(host.workspaceSource)
   if (WORKSPACE_REVIEW_TOOLS.some(tool => tool.name === name)) return Boolean(host.workspaceReview)
@@ -890,7 +893,7 @@ export function createPresmiumMcp(host: McpHost): PresmiumMcp {
   return {
     fetch: (request, caller) => {
       const full = caller.confirmed === true || new URL(request.url).searchParams.get('tools') === 'all' || caller.toolset === 'all'
-      const own = { ...caller, toolset: full ? 'all' : 'compact' } satisfies McpCaller
+      const own = { ...caller, endpoint: caller.endpoint ?? request.url, toolset: full ? 'all' : 'compact' } satisfies McpCaller
       return handlerOf(caller.document, full).fetch(request, { authInfo: { token: '', clientId: caller.member.id, scopes: [caller.mode], extra: { caller: own } } })
     },
     async close() {

@@ -2,7 +2,7 @@ import type { DocumentCapture, ProjectAuthoring, DocumentHistory, SpeechSettings
 import type { Compilation } from '@lincyaw/compiler'
 import { pluginId } from '@lincyaw/compiler'
 import type { DocumentSummary, Finding, IRDocument, Member, OutputJobs, PresmiumNodePlugin, RunResult, ServiceToken } from '@lincyaw/kernel'
-import type { AgentTool, DocumentAuthoring, DocumentAudioAuthoring, DocumentImageAuthoring, DocumentVoiceAuthoring, DocumentTranscriptionAdoption, DocumentTranscriptions, Route } from '@lincyaw/kernel'
+import type { AgentTool, DocumentAuthoring, DocumentAudioAuthoring, DocumentMediaUploads, DocumentImageAuthoring, DocumentVoiceAuthoring, DocumentTranscriptionAdoption, DocumentTranscriptions, Route } from '@lincyaw/kernel'
 
 export interface ServedPlugin {
   id: string
@@ -53,6 +53,8 @@ export interface ServerHost {
   documentHistory?: DocumentHistory
   authoringClients?: AuthoringClients
   authoringWindows?: import('@lincyaw/kernel').AuthoringWindows
+  /** The upload capability grants temporary input only, never access to authoring routes. */
+  mediaUploads?: DocumentMediaUploads & { handle(request: Request): Promise<Response> }
   audioAuthoring?: DocumentAudioAuthoring
   imageAuthoring?: DocumentImageAuthoring
   voiceAuthoring?: DocumentVoiceAuthoring

@@ -8,6 +8,7 @@ import { productionAssetFile, validateDocumentRecordingAdoption, validateDocumen
 import { readAuthoringDocument } from './document-editor.ts'
 import { catchRequestErrors, RequestError } from './errors.ts'
 import type { Revisions } from './revisions.ts'
+import type { MediaUploadsOwner } from './media-uploads.ts'
 import type { SourceEditor, SourceTransactionHistory } from './source-editor.ts'
 
 export interface DocumentAudioServices { audio?: ProductionAudioAuthoring, findings?: Finding[] }
@@ -15,6 +16,7 @@ export interface DocumentAudioAuthoringOptions extends DocumentAudioServices {
   root: string
   editor: SourceEditor
   revisions?: Revisions
+  uploads?: MediaUploadsOwner
   reviewRequired?: boolean
   services?(document: string, source: CanonicalSource): Promise<DocumentAudioServices>
 }
@@ -57,7 +59,7 @@ export async function readDocumentAudioBytes(editor: SourceEditor, ctx: RequestC
 }
 
 /** Owns the canonical transaction and receipts; plugin services only inspect actual media. */
-export function createDocumentAudioAuthoring({ root, editor, revisions, audio, services, reviewRequired = false }: DocumentAudioAuthoringOptions): { service: DocumentAudioAuthoring, routes: Record<string, Route>, close(): Promise<void> } {
+export function createDocumentAudioAuthoring({ root, editor, revisions, audio, services, reviewRequired = false, uploads }: DocumentAudioAuthoringOptions): { service: DocumentAudioAuthoring, routes: Record<string, Route>, close(): Promise<void> } {
   const receipts = new Map<string, Receipt>(), imports = new Map<string, { signature: string, source: CanonicalSource, promise: Promise<VerifiedDocumentAudioImport> }>(), operations = new Set<Operation>()
   const clipChanges = new Map<string, { signature: string, promise: Promise<VerifiedDocumentMediaClipChange> }>()
   const recordingChanges = new Map<string, { signature: string, promise: Promise<VerifiedDocumentRecordingAdoption> }>()
@@ -131,7 +133,7 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
     }
   }
   const importKey = (ctx: RequestContext, id: string) => JSON.stringify(['audio', ctx.document, ctx.member.id, id])
-  const importSignature = (change: DocumentAudioImport, source: CanonicalSource, title: string, sha256: string, byteLength: number) => hash(JSON.stringify([change.id, source.documentId, change.baseDocumentVersion, source.fingerprint, title, sha256, byteLength]))
+  const importSignature = (change: DocumentAudioImport, source: CanonicalSource, title: string, sha256: string, byteLength: number, upload?: string) => hash(JSON.stringify([change.id, source.documentId, change.baseDocumentVersion, source.fingerprint, title, sha256, byteLength, ...upload ? [upload] : []]))
   /** A known intent replays (receipt still current) or joins its flight; a different payload under the same ID is refused. */
   const known = (ctx: RequestContext, signature: string, previous: Receipt | undefined, pending: { signature: string } | undefined) => {
     if (!previous && !pending) return false
@@ -139,10 +141,10 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
     if (previous) opened(ctx, previous.version)
     return true
   }
-  const once = (ctx: RequestContext, change: DocumentAudioImport, source: CanonicalSource, title: string, sha256: string, byteLength: number, origin: 'editor' | 'agent', run: () => Promise<VerifiedDocumentAudioImport>) => {
+  const once = (ctx: RequestContext, change: DocumentAudioImport, source: CanonicalSource, title: string, sha256: string, byteLength: number, origin: 'editor' | 'agent', run: () => Promise<VerifiedDocumentAudioImport>, upload?: string) => {
     authorize(ctx.member); available()
     if (origin === 'agent' && reviewRequired) throw new RequestError(409, 'authoring-review-required')
-    const key = importKey(ctx, change.id), signature = importSignature(change, source, title, sha256, byteLength)
+    const key = importKey(ctx, change.id), signature = importSignature(change, source, title, sha256, byteLength, upload)
     const previous = receipts.get(key)
     if (previous) {
       if (previous.signature !== signature) throw new RequestError(409, 'document-change-id-reused')
@@ -155,7 +157,7 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
     imports.set(key, { signature, source, promise })
     return promise
   }
-  const importBytes = async (ctx: RequestContext, change: DocumentAudioImport, title: string, bytes: Uint8Array, source: CanonicalSource, found: DocumentAudioServices, origin: 'editor' | 'agent', signal: AbortSignal) => {
+  const importBytes = async (ctx: RequestContext, change: DocumentAudioImport, title: string, bytes: Uint8Array, source: CanonicalSource, found: DocumentAudioServices, origin: 'editor' | 'agent', signal: AbortSignal, upload?: string) => {
     check(signal)
     if (!found.audio) throw new RequestError(503, 'production-audio-unavailable')
     const current = opened(ctx, change.baseDocumentVersion, source), assetId = `audio_${randomUUID().replaceAll('-', '')}`, probed = await found.audio.inspectBytes(assetId, bytes, signal)
@@ -166,7 +168,7 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
     check(signal); opened(ctx, change.baseDocumentVersion, source)
     const saved = await editor.transactionWithBinary(scopeOf(ctx.document), { path: current.source.path, content, base: current.source.version }, { path, content: bytes }, ctx.member, history(ctx, candidate, origin, async () => { check(signal) }))
     const version = saved.versions.find(file => file.path === current.source.path)!.version
-    const receipt: Receipt = { signature: importSignature(change, source, title, hash(bytes), bytes.length), source, version, files: saved.versions, assetId, inspection: probed.inspection, ...saved.revision ? { commit: saved.revision } : {} }
+    const receipt: Receipt = { signature: importSignature(change, source, title, hash(bytes), bytes.length, upload), source, version, files: saved.versions, assetId, inspection: probed.inspection, ...saved.revision ? { commit: saved.revision } : {} }
     remember(importKey(ctx, change.id), receipt)
     // A committed write is verified even when its request disconnected or shutdown began meanwhile.
     return readback(ctx, change.id, receipt)
@@ -318,12 +320,25 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
     recordingChanges.set(key, { signature, promise })
     return promise
   }
+  const mediaInput = async (ctx: RequestContext, source: CanonicalSource, location: { path?: string, upload?: string }, signal?: AbortSignal) => {
+    if (location.upload !== undefined) {
+      signal?.throwIfAborted()
+      if (!uploads) throw new RequestError(503, 'media-upload-unavailable')
+      return uploads.read(ctx.document, source.documentId, ctx.member, location.upload, 'audio')
+    }
+    workspacePath(ctx.document, location.path!, ctx.member)
+    return { bytes: await reader(ctx, location.path!, signal), name: titleOf(basename(location.path!)) }
+  }
   const workspaceImport = (document: string, request: DocumentWorkspaceAudioImport, member: Member) => {
     authorize(member); available()
     if (!validateDocumentWorkspaceAudioImport(request)) throw new RequestError(400, 'document-audio-import-invalid')
     if (Buffer.byteLength(JSON.stringify(request)) > DOCUMENT_AUDIO_REQUEST_MAX_BYTES) throw new RequestError(413, 'document-audio-request-size')
-    workspacePath(document, request.file.path, member)
-    return { ctx: ctxOf(document, member), title: titleOf(basename(request.file.path)), change: { id: request.id, baseDocumentVersion: request.source.version } }
+    if (request.file.path !== undefined) workspacePath(document, request.file.path, member)
+    else {
+      if (!uploads) throw new RequestError(503, 'media-upload-unavailable')
+      if (uploads.read(document, request.source.documentId, member, request.file.upload, 'audio').name !== request.file.name) throw new RequestError(409, 'audio-file-changed')
+    }
+    return { ctx: ctxOf(document, member), title: request.file.path !== undefined ? titleOf(basename(request.file.path)) : request.file.name, change: { id: request.id, baseDocumentVersion: request.source.version } }
   }
   const service: DocumentAudioAuthoring = {
     capabilities: (document, member) => work(member, undefined, async signal => {
@@ -341,16 +356,15 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
     }),
     inspectWorkspace: (document, request, member, signal) => work(member, signal, async signal => {
       if (!validateDocumentWorkspaceAudioInspect(request)) throw new RequestError(400, 'document-audio-query-invalid')
-      workspacePath(document, request.path, member)
       const ctx = ctxOf(document, member)
       opened(ctx, request.source.version, request.source)
-      const [bytes, found] = await Promise.all([reader(ctx, request.path, signal), resolved(document, request.source, signal)])
+      const [{ bytes, name }, found] = await Promise.all([mediaInput(ctx, request.source, request, signal), resolved(document, request.source, signal)])
       if (!found.audio) throw new RequestError(503, 'production-audio-unavailable')
       const probed = await found.audio.inspectBytes('workspace-audio-probe', bytes, signal)
       const { assetId: _assetId, mediaId: _mediaId, ...inspection } = probed.inspection
       if (inspection.sha256 !== hash(bytes) || inspection.byteLength !== bytes.length) throw new RequestError(409, 'audio-inspection-changed')
       check(signal); opened(ctx, request.source.version, request.source)
-      return { document, source: request.source, file: { path: request.path, sha256: inspection.sha256, byteLength: inspection.byteLength }, inspection } satisfies WorkspaceAudioInspectionAnswer
+      return { document, source: request.source, file: { ...request.upload ? { upload: request.upload, name } : { path: request.path! }, sha256: inspection.sha256, byteLength: inspection.byteLength }, inspection } satisfies WorkspaceAudioInspectionAnswer
     }),
     readProductionPlan: (document, request, member, signal) => work(member, signal, async signal => {
       if (!validateDocumentProductionPlanQuery(request)) throw new RequestError(400, 'production-query-invalid')
@@ -368,9 +382,10 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
       return work(member, signal, async signal => {
         if (reviewRequired) throw new RequestError(409, 'authoring-review-required')
         const key = importKey(ctx, request.id)
-        if (known(ctx, importSignature(change, request.source, title, request.file.sha256, request.file.byteLength), receipts.get(key), imports.get(key))) return
+        if (known(ctx, importSignature(change, request.source, title, request.file.sha256, request.file.byteLength, request.file.upload), receipts.get(key), imports.get(key))) return
         opened(ctx, request.source.version, request.source)
-        const [bytes, found] = await Promise.all([reader(ctx, request.file.path, signal), resolved(document, request.source, signal)])
+        const [{ bytes, name }, found] = await Promise.all([mediaInput(ctx, request.source, request.file, signal), resolved(document, request.source, signal)])
+        if (request.file.upload && name !== request.file.name) throw new RequestError(409, 'audio-file-changed')
         if (bytes.length !== request.file.byteLength || hash(bytes) !== request.file.sha256) throw new RequestError(409, 'audio-file-changed')
         if (!found.audio) throw new RequestError(503, 'production-audio-unavailable')
         await found.audio.inspectBytes('workspace-audio-probe', bytes, signal)
@@ -381,10 +396,11 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
       const { ctx, title, change } = workspaceImport(document, request, member)
       return work(member, signal, signal => once(ctx, change, request.source, title, request.file.sha256, request.file.byteLength, 'agent', async () => {
         opened(ctx, request.source.version, request.source)
-        const [bytes, found] = await Promise.all([reader(ctx, request.file.path, signal), resolved(document, request.source, signal)])
+        const [{ bytes, name }, found] = await Promise.all([mediaInput(ctx, request.source, request.file, signal), resolved(document, request.source, signal)])
+        if (request.file.upload && name !== request.file.name) throw new RequestError(409, 'audio-file-changed')
         if (bytes.length !== request.file.byteLength || hash(bytes) !== request.file.sha256) throw new RequestError(409, 'audio-file-changed')
-        return importBytes(ctx, change, title, bytes, request.source, found, 'agent', signal)
-      }))
+        return importBytes(ctx, change, title, bytes, request.source, found, 'agent', signal, request.file.upload)
+      }, request.file.upload))
     },
     validateClipChange: (document, request, member, signal) => work(member, signal, async signal => {
       if (!validateDocumentMediaClipValidation(request)) throw new RequestError(400, 'document-media-clip-invalid')

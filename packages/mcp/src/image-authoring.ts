@@ -28,8 +28,8 @@ export const IMAGE_AUTHORING_TOOLS: ToolSpec[] = [
   },
   {
     name: 'import_workspace_image', kind: 'operate', structured: true,
-    description: 'Imports one regular image using only path. Source, original SHA-256 and length are pinned internally before approval; no separate inspection call is needed. Optional source pins an earlier read. request is advanced native input; details:true returns the existing verification receipt. Stale source and changed bytes are refused before approval and rechecked at commit. Uses the same Web image validation and canonical/binary transaction, exact source and original SHA-256/length, agent history origin, and process-local current-source receipt. Required review cannot be bypassed. Returns saved, assetId and dimensions; details:true or advanced request returns the existing verification receipt. No remote upload or scene compilation. After a lost response inspect saved assets instead of automatically repeating the import.',
-    inputSchema: mediaInput(DOCUMENT_WORKSPACE_IMAGE_IMPORT_SCHEMA, { path: DOCUMENT_WORKSPACE_IMAGE_IMPORT_SCHEMA.properties.file.properties.path }, ['path']),
+    description: 'Imports one regular image using path or a ready upload reference. Source, original SHA-256 and length are pinned internally before approval; no separate inspection call is needed. Optional source pins an earlier read. request is advanced native input; details:true returns the existing verification receipt. Stale source and changed bytes are refused before approval and rechecked at commit. Uses the same Web image validation and canonical/binary transaction, exact source and original SHA-256/length, agent history origin, and process-local current-source receipt. Required review cannot be bypassed. Returns saved, assetId and dimensions; details:true or advanced request returns the existing verification receipt. Client-local uploads use prepare_media_upload; no scene compilation. After a lost response inspect saved assets instead of automatically repeating the import.',
+    inputSchema: mediaInput(DOCUMENT_WORKSPACE_IMAGE_IMPORT_SCHEMA, { path: DOCUMENT_WORKSPACE_IMAGE_IMPORT_SCHEMA.properties.file.properties.path, upload: DOCUMENT_WORKSPACE_IMAGE_IMPORT_SCHEMA.properties.file.properties.upload }, ['path']),
     run: async call => {
       const selected = await call.document()
       if (call.args.request) checkMediaWrite(call, selected)
@@ -40,7 +40,7 @@ export const IMAGE_AUTHORING_TOOLS: ToolSpec[] = [
         return service(call).inspectWorkspace(selected, args.request as DocumentWorkspaceImageInspect, call.caller.member, call.signal)
       })).request) as DocumentWorkspaceImageImport
       const target = (await call.host.documents()).find(document => document.dir === selected)
-      await call.approve('operate', messages => messages.importImage(prepared.file.path.split('/').at(-1) ?? prepared.file.path), { lang: target?.lang ?? '', detail: `${target?.title ?? selected}\n${prepared.file.path}`, check: () => service(call).checkWorkspaceImport(selected, prepared, call.caller.member, call.signal) })
+      await call.approve('operate', messages => messages.importImage(prepared.file.path !== undefined ? (prepared.file.path.split('/').at(-1) ?? prepared.file.path) : prepared.file.name), { lang: target?.lang ?? '', detail: `${target?.title ?? selected}\n${prepared.file.path ?? prepared.file.name}`, check: () => service(call).checkWorkspaceImport(selected, prepared, call.caller.member, call.signal) })
       call.signal.throwIfAborted()
       const result = await service(call).importWorkspace(selected, prepared, call.caller.member, call.signal)
       if (!call.args.request && !call.args.details) return mediaResult('import_workspace_image', result, call.args)

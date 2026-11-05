@@ -8,10 +8,11 @@ import type { Asset, CanonicalSource, DocumentImageAuthoring, DocumentImageImpor
 import { productionAssetFile, validateDocumentWorkspaceImageImport, validateDocumentWorkspaceImageInspect } from '@lincyaw/kernel/node'
 import { readAuthoringDocument } from './document-editor.ts'
 import { catchRequestErrors, RequestError } from './errors.ts'
+import type { MediaUploadsOwner } from './media-uploads.ts'
 import type { Revisions } from './revisions.ts'
 import type { SourceEditor, SourceTransactionHistory } from './source-editor.ts'
 
-interface Options { root: string, editor: SourceEditor, revisions?: Revisions, reviewRequired?: boolean }
+interface Options { root: string, editor: SourceEditor, revisions?: Revisions, reviewRequired?: boolean, uploads?: MediaUploadsOwner }
 interface ImageFormat { extension: string, mediaType: string }
 interface Receipt { signature: string, assetId: string, version: string, files?: DocumentImageImportAnswer['files'], commit?: DocumentImageImportAnswer['commit'] }
 const FORMATS: Record<string, ImageFormat> = {
@@ -34,7 +35,7 @@ function inspect(bytes: Uint8Array) {
 }
 
 /** Original bytes and the canonical asset bank are committed or rolled back together. */
-export function createDocumentImageAuthoring({ root, editor, revisions, reviewRequired = false }: Options): { service: DocumentImageAuthoring, routes: Record<string, Route> } {
+export function createDocumentImageAuthoring({ root, editor, revisions, reviewRequired = false, uploads }: Options): { service: DocumentImageAuthoring, routes: Record<string, Route> } {
   const receipts = new Map<string, Receipt>(), pending = new Map<string, { signature: string, done: Promise<DocumentImageImportAnswer> }>()
   const binding = (current: ReturnType<typeof readAuthoringDocument>): CanonicalSource => ({ documentId: current.content.id, version: current.source.version, fingerprint: fnv1a64(current.source.content) })
   const opened = (ctx: RequestContext, version?: string, source?: CanonicalSource) => {
@@ -89,9 +90,9 @@ export function createDocumentImageAuthoring({ root, editor, revisions, reviewRe
       return revisions.commitWhileLocked({ paths, summary: document.metadata.lang.startsWith('en') ? 'Import image' : '导入图片', body: '', origin: { kind: origin, member: ctx.member } })
     },
   })
-  const signatureOf = (change: DocumentImageImport, title: string, hash: string, origin: 'editor' | 'agent', source?: CanonicalSource, inputPath?: string) => createHash('sha256').update(JSON.stringify([change.id, change.baseDocumentVersion, source?.documentId ?? null, source?.fingerprint ?? null, origin, inputPath ?? null, title, hash])).digest('hex')
+  const signatureOf = (change: DocumentImageImport, title: string, hash: string, origin: 'editor' | 'agent', source?: CanonicalSource, inputPath?: string | { upload: string }) => createHash('sha256').update(JSON.stringify([change.id, change.baseDocumentVersion, source?.documentId ?? null, source?.fingerprint ?? null, origin, inputPath ?? null, title, hash])).digest('hex')
   const keyOf = (ctx: RequestContext, change: DocumentImageImport) => JSON.stringify([ctx.document, ctx.member.id, change.id])
-  const apply = async (ctx: RequestContext, change: DocumentImageImport, title: string, bytes: Uint8Array, image: ReturnType<typeof inspect>, hash: string, signal: AbortSignal, origin: 'editor' | 'agent', source?: CanonicalSource, inputPath?: string): Promise<DocumentImageImportAnswer> => {
+  const apply = async (ctx: RequestContext, change: DocumentImageImport, title: string, bytes: Uint8Array, image: ReturnType<typeof inspect>, hash: string, signal: AbortSignal, origin: 'editor' | 'agent', source?: CanonicalSource, inputPath?: string | { upload: string }): Promise<DocumentImageImportAnswer> => {
     const signature = signatureOf(change, title, hash, origin, source, inputPath), key = keyOf(ctx, change)
     const replay = async () => {
       const previous = receipts.get(key)
@@ -160,10 +161,19 @@ export function createDocumentImageAuthoring({ root, editor, revisions, reviewRe
       signal?.throwIfAborted(); return bytes.slice(0, length)
     } finally { await handle.close() }
   }
+  const input = async (ctx: RequestContext, source: CanonicalSource, location: { path?: string, upload?: string }, signal?: AbortSignal) => {
+    if (location.upload !== undefined) {
+      signal?.throwIfAborted()
+      if (!uploads) throw new RequestError(503, 'media-upload-unavailable')
+      return uploads.read(ctx.document, source.documentId, ctx.member, location.upload, 'image')
+    }
+    return { bytes: await reader(ctx, location.path!, signal), name: basename(location.path!) }
+  }
   const workspaceImport = async (ctx: RequestContext, request: DocumentWorkspaceImageImport, signal?: AbortSignal) => {
-    const bytes = await reader(ctx, request.file.path, signal), sha256 = createHash('sha256').update(bytes).digest('hex')
+    const { bytes, name } = await input(ctx, request.source, request.file, signal), sha256 = createHash('sha256').update(bytes).digest('hex')
     if (bytes.length !== request.file.byteLength || sha256 !== request.file.sha256) throw new RequestError(409, 'image-file-changed')
-    const image = inspect(bytes), title = [...basename(request.file.path).replace(/[\u0000-\u001f\u007f-\u009f]/g, '').trim()].slice(0, ASSET_TITLE_MAX_LENGTH).join('')
+    if (request.file.upload && request.file.name !== name) throw new RequestError(409, 'image-file-changed')
+    const image = inspect(bytes), title = [...name.replace(/[\u0000-\u001f\u007f-\u009f]/g, '').trim()].slice(0, ASSET_TITLE_MAX_LENGTH).join('')
     return { bytes, image, sha256, title }
   }
   let active = 0
@@ -183,9 +193,9 @@ export function createDocumentImageAuthoring({ root, editor, revisions, reviewRe
       if (!validateDocumentWorkspaceImageInspect(request)) throw new RequestError(400, 'document-image-query-invalid')
       return limited(async () => {
       const ctx = ctxOf(document, member); opened(ctx, request.source.version, request.source)
-      const bytes = await reader(ctx, request.path, signal), image = inspect(bytes), sha256 = createHash('sha256').update(bytes).digest('hex')
+      const { bytes, name } = await input(ctx, request.source, request, signal), image = inspect(bytes), sha256 = createHash('sha256').update(bytes).digest('hex')
       signal?.throwIfAborted(); opened(ctx, request.source.version, request.source)
-      return { document, source: request.source, file: { path: request.path, sha256, byteLength: bytes.length }, image: { mediaType: image.mediaType, dimensions: image.dimensions } }
+      return { document, source: request.source, file: { ...request.upload ? { upload: request.upload, name } : { path: request.path! }, sha256, byteLength: bytes.length }, image: { mediaType: image.mediaType, dimensions: image.dimensions } }
       })
     },
     async checkWorkspaceImport(document, request, member, signal) {
@@ -195,7 +205,7 @@ export function createDocumentImageAuthoring({ root, editor, revisions, reviewRe
       return limited(async () => {
       const ctx = ctxOf(document, member), change = { id: request.id, baseDocumentVersion: request.source.version }, key = keyOf(ctx, change)
       if (!receipts.has(key) && !pending.has(key)) opened(ctx, request.source.version, request.source)
-      const { sha256, title } = await workspaceImport(ctx, request, signal), signature = signatureOf(change, title, sha256, 'agent', request.source, request.file.path)
+      const { sha256, title } = await workspaceImport(ctx, request, signal), signature = signatureOf(change, title, sha256, 'agent', request.source, request.file.path ?? { upload: request.file.upload! })
       const receipt = receipts.get(key), known = receipt ?? pending.get(key)
       if (known && known.signature !== signature) throw new RequestError(409, 'document-change-id-reused')
       // A receipt of this exact import replays while the source is still the one it saved; an import in flight decides itself.
@@ -209,7 +219,7 @@ export function createDocumentImageAuthoring({ root, editor, revisions, reviewRe
       if (!validateDocumentWorkspaceImageImport(request)) throw new RequestError(400, 'document-image-import-invalid')
       return limited(async () => {
       const ctx = ctxOf(document, member), { bytes, image, sha256, title } = await workspaceImport(ctx, request, signal)
-      const result = await apply(ctx, { id: request.id, baseDocumentVersion: request.source.version }, title, bytes, image, sha256, signal ?? new AbortController().signal, 'agent', request.source, request.file.path)
+      const result = await apply(ctx, { id: request.id, baseDocumentVersion: request.source.version }, title, bytes, image, sha256, signal ?? new AbortController().signal, 'agent', request.source, request.file.path ?? { upload: request.file.upload! })
       try {
         const current = opened(ctx, result.version), asset = current.content.assets[result.assetId], file = asset && productionAssetFile(join(root, document), asset.location)
         if (!asset || !file || !await matches(ctx, asset, bytes, image, new AbortController().signal)) throw new Error('asset-changed')
