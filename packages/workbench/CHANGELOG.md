@@ -1,5 +1,14 @@
 # @lincyaw/workbench
 
+## 0.2.0-rc.58
+
+### Patch Changes
+
+- 1e724c7: 通过现有 MCP 制作草稿操作读取与丢弃手工转写校对，沿用原生草稿存储和转写采用流程；保护组词、存储失败、跨窗口新输入与延迟保存结果。
+- Updated dependencies [1e724c7]
+  - @lincyaw/kernel@1.0.0-rc.58
+  - @lincyaw/design@1.0.0-rc.58
+
 ## 0.2.0-rc.57
 
 ### Patch Changes

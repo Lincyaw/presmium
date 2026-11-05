@@ -1,5 +1,11 @@
 # @lincyaw/studio
 
+## 0.2.0-rc.57
+
+### Patch Changes
+
+- @lincyaw/dsh@0.2.0-rc.57
+
 ## 0.2.0-rc.56
 
 ### Patch Changes
