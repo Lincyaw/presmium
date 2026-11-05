@@ -101,7 +101,7 @@ jobs:
           cd packages/desktop/src-tauri/target/release/bundle
           for file in deb/*.deb rpm/*.rpm dmg/*.dmg nsis/*.exe; do
             [ -f "$file" ] || continue
-            name=$(basename "$file")
+            name=$(basename "$file"); name=${name// /-}
             cp "$file" "$GITHUB_WORKSPACE/installers/${name%.*}-${{ matrix.target }}.${name##*.}"
           done
           ls -la "$GITHUB_WORKSPACE/installers"
@@ -137,7 +137,13 @@ jobs:
             gh release upload "$RELEASE_TAG" installers/* --clobber
             exit 0
           fi
-          gh release delete desktop-latest --cleanup-tag --yes || true
-          gh release create desktop-latest installers/* --prerelease --latest=false --target "$GITHUB_SHA" \
-            --title "Presmium Studio desktop (latest main)" \
-            --notes "Installers built from ${GITHUB_SHA::8} on main. Unsigned: on macOS Control-click the app and choose Open; on Windows choose More info, then Run anyway. 由 main 的 ${GITHUB_SHA::8} 构建，未签名：macOS 按住 Control 点按应用并选“打开”；Windows 点“更多信息”再点“仍要运行”。"
+          # The prerelease and its tag stay put (the token may not move tags); each build replaces the assets.
+          notes="Installers built from ${GITHUB_SHA::8} on main. Unsigned: on macOS Control-click the app and choose Open; on Windows choose More info, then Run anyway. 由 main 的 ${GITHUB_SHA::8} 构建，未签名：macOS 按住 Control 点按应用并选“打开”；Windows 点“更多信息”再点“仍要运行”。"
+          if ! gh release view desktop-latest > /dev/null 2>&1; then
+            gh release create desktop-latest --prerelease --latest=false --target "$GITHUB_SHA" --title "Presmium Studio desktop (latest main)" --notes "$notes"
+          fi
+          for old in $(gh release view desktop-latest --json assets --jq '.assets[].name'); do
+            [ -e "installers/$old" ] || gh release delete-asset desktop-latest "$old" --yes
+          done
+          gh release upload desktop-latest installers/* --clobber
+          gh release edit desktop-latest --notes "$notes"
