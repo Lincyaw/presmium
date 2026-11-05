@@ -153,14 +153,29 @@ export class MediaClock extends SilentClock {
   private prefetch(t: number, force = false): void {
     if (!force && Math.abs(t - this.prefetchedAt) < 1_000) return
     this.prefetchedAt = t
+    // Keep future files from competing with the audio needed to start or resume this position.
+    const active = this.voices.flatMap(voice => {
+      const clip = MediaClock.clipAt(voice.clips, t)
+      return clip ? [{ voice, clip }] : []
+    })
+    const ready = active.every(({ voice, clip }) => this.buffered(voice.el, clip, t))
     const upcoming = this.voices.flatMap(voice => {
-      const clip = voice.clips.find(clip => clip.start + clip.duration > t && clip.start < t + BUFFER_AHEAD_MS)
+      const clip = voice.clips.find(clip => clip.start + clip.duration > t && clip.start < t + BUFFER_AHEAD_MS && (ready || clip.start <= t))
       return clip ? [{ voice, at: Math.max(t, clip.start) }] : []
     }).sort((a, b) => a.at - b.at).slice(0, MAX_PREFETCH_FILES)
     for (const { voice } of upcoming) {
       voice.el.preload = 'auto'
       void this.load(voice).catch(() => { if (!this.lifetime.signal.aborted) this.fail(new Error('playback-media-unavailable')) })
     }
+  }
+
+  private buffered(el: HTMLAudioElement, clip: Clip, t: number): boolean {
+    const offset = (clip.sourceStartMs + t - clip.start) / 1000
+    const end = Math.min((clip.sourceStartMs + clip.duration) / 1000, Number.isFinite(el.duration) ? el.duration : Infinity)
+    const needed = Math.min(START_BUFFER_MS / 1000 * this.rate.getSnapshot(), end - offset)
+    if (el.readyState < 2) return false
+    for (let i = 0; i < el.buffered.length; i++) if (el.buffered.start(i) <= offset + 0.05 && el.buffered.end(i) + 0.05 >= offset + needed) return true
+    return false
   }
 
   override async prepare(t: number, signal?: AbortSignal): Promise<void> {
@@ -180,20 +195,14 @@ export class MediaClock extends SilentClock {
       const abort = () => { cleanup(); reject(pending.reason) }
       const check = () => {
         if (el.error) { cleanup(); reject(new Error('playback-media-unavailable')); return }
-        const offset = (clip.sourceStartMs + t - clip.start) / 1000
-        const end = Math.min((clip.sourceStartMs + clip.duration) / 1000, Number.isFinite(el.duration) ? el.duration : Infinity)
-        const needed = Math.min(START_BUFFER_MS / 1000 * this.rate.getSnapshot(), end - offset)
-        if (el.readyState < 2) return
-        for (let i = 0; i < el.buffered.length; i++) if (el.buffered.start(i) <= offset + 0.05 && el.buffered.end(i) + 0.05 >= offset + needed) {
-          cleanup(); resolve(); return
-        }
+        if (this.buffered(el, clip, t)) { cleanup(); resolve() }
       }
       const timeout = setTimeout(() => { cleanup(); reject(new Error('playback-timeout')) }, BUFFER_TIMEOUT_MS)
       for (const name of events) el.addEventListener(name, check)
       pending.addEventListener('abort', abort, { once: true })
       if (pending.aborted) abort()
       else check()
-    }))) } finally { batch.abort() }
+    }))); this.prefetch(t, true) } finally { batch.abort() }
   }
 
   override now(): number {

@@ -81,13 +81,14 @@ export function pageHtml(input: PageHtmlInput): string {
     ...entry.css.map(file => `<link rel="stylesheet" href="${escapeHtml(`${appUrl}${file}`)}">`),
     // A workspace theme's fonts, tokens and styles come after the app's, so that they override them.
     ...(config.site?.shell.theme?.stylesheets ?? []).map(url => `<link rel="stylesheet" href="${escapeHtml(url)}">`),
+    `<link rel="modulepreload" fetchpriority="high" href="${escapeHtml(`${appUrl}${entry.script}`)}">`,
+    ...config.ir ? [`<link rel="preload" as="fetch" crossorigin fetchpriority="high" href="${escapeHtml(config.ir)}">`] : [],
     // The app's modules, the document's own code (its bundle) and, when given, what its scenes load, all in parallel;
     // each once, though the scenes' modules import the app's.
-    ...[...new Set([...entry.preload.map(file => `${appUrl}${file}`), ...config.bundle ? [config.bundle] : [], ...input.preload ?? []])].map(url => `<link rel="modulepreload" href="${escapeHtml(url)}">`),
-    // The document itself, fetched with the app instead of after it has started.
-    ...config.ir ? [`<link rel="preload" as="fetch" crossorigin href="${escapeHtml(config.ir)}">`] : [],
+    ...entry.preload.map(file => `<link rel="modulepreload" fetchpriority="high" href="${escapeHtml(`${appUrl}${file}`)}">`),
+    ...[...new Set([...config.bundle ? [config.bundle] : [], ...input.preload ?? []])].map(url => `<link rel="modulepreload" fetchpriority="low" href="${escapeHtml(url)}">`),
     `<script type="application/json" id="${APP_CONFIG_ELEMENT}">${json(config)}</script>`,
-    `<script type="module" src="${escapeHtml(`${appUrl}${entry.script}`)}"></script>`,
+    `<script type="module" fetchpriority="high" src="${escapeHtml(`${appUrl}${entry.script}`)}"></script>`,
   ]
   return `<!doctype html>
 <html lang="${escapeHtml(config.lang)}">

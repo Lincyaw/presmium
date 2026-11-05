@@ -258,9 +258,11 @@ server(ctx) {                          // once per document: presmium dev serves
   `ctx.service(DOCUMENT_FILES)` when the program running the server (`presmium serve`, the studio)
   provides it (paths relative to `workspaceRoot`), so the write is reviewed and versioned; write directly
   only when it is absent. Both tokens come from `@lincyaw/kernel`.
-- Browser: `useServer()` returns `{ available, member, fetch(pluginId, path, init?), events(pluginId, path) }`
+- Browser: `useServer()` returns `{ available, member, fetch(pluginId, path, init?), events(pluginId, path), resourceURL?(pluginId, path) }`
   (`events` is an `EventSource`; answer it with `sseResponse`). `fetch` sends `Accept-Language` with the page's
-  language; answer in it. In a built site `available` is false: hide the control or degrade.
+  language; answer in it. Optional `resourceURL` gives native media a document-scoped GET URL using the page's
+  existing authentication and proxy root; normal route authorization and version checks still apply. In a built site
+  `available` is false: hide the control or degrade.
 
 An `Exporter` is `{ id, label: { 'zh-CN': ..., en: ... }, available?(doc, config), run(ctx) }`; `ctx` gives
 `deckDir`, `workspaceRoot`, `config`, an empty `outDir`, `signal` (stop your processes and reject),
@@ -300,8 +302,8 @@ export default function PmPoll({ question, choices }: {
 | `useStepState({ from, to? })` | `{ active, reached, done }` of internal steps `[from, to)`, relative to the block's `at`; do not subtract `at` yourself |
 | `useStepScope()`, `useBlockStepRange()` | `scope.step(k)` is the absolute step of internal step k; `useStepState(useBlockStepRange())` is active while the block (within its parents) is shown: stop media and background work outside it |
 | `useStepTime({ until? })` | Milliseconds since the component's step began; `Infinity` when settled (stepped back, document view, reduced motion, after `until`, a slide that is not the current one). The lecture replay and video export drive it. Pause your animation library's timeline and seek to this time; never play by the page clock |
-| `useService(STEP_CLOCK)?.wait(promise)` | Register async preparation of a picture (loading a module, WebGL); the video export waits for it before each frame |
-| `useService(STEP_CLOCK)?.registerPreparation?.(slide, prepare)` | Register bounded look-ahead preparation for a slide; return the unsubscribe function from the component's effect. `prepare(slides)` warms those pictures and waits for their registered work. Do not play media or advance a step while warming it. |
+| `useService(STEP_CLOCK)?.wait(promise, slide?)` | Register async picture preparation (loading a module, WebGL) for its slide. `settled(slides)` waits for those slides and unscoped work; `settled()` waits for all work before a capture/export frame. Failures follow the same scope. |
+| `useService(STEP_CLOCK)?.registerPreparation?.(slide, prepare)` | Register bounded look-ahead preparation for a slide; return the unsubscribe function from the component's effect. `prepare(slides)` warms those pictures and waits for their work; `{ wait: false }` starts background warming. Do not play media or advance a step while warming it. |
 | `usePrefersReducedMotion()` | When true, show the final state directly |
 | `useActions(elementRef, { name: (seeking) => ... }, { clear })` | Named actions: call the returned `run(name)` from buttons. A recorded lecture replays them, and the narration's ``{cue to=<block>}`click <name>` `` runs them; on a jump the host calls `clear` and replays in order. The look must be a function of the actions so far |
 | `useCursor()`, `useViewRole()`, `usePresentationMode()` | `{ slide, step }`; `'audience' \| 'presenter' \| 'reader'`; `'slides' \| 'document'`. The current step (`useHost().useStep()`, `useHost()` being the object behind these functions) is `Infinity` in the fully expanded document view: a component with internal steps may then give readers its own stepper; the look is a function of (section step, local step) |

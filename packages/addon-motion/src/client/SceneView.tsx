@@ -243,7 +243,7 @@ export default function SceneView(props: SceneProps) {
       fail(error)
       const work = Promise.reject(error)
       work.catch(() => {})
-      clock?.wait(work)
+      clock?.wait(work, cursor.slide)
     }
   }, [shown, clock])
   useEffect(() => {
@@ -371,7 +371,7 @@ export default function SceneView(props: SceneProps) {
       work.catch((error) => {
         if (!disposed && version === generation) fail(error)
       })
-      clock?.wait(work)
+      clock?.wait(work, cursor.slide)
     }
     rebuildNow.current = rebuild
     preloadScenes()

@@ -23,10 +23,16 @@ export function createServerClient(options: { document?: string, root?: string, 
   const root = (options.root ?? '/').replace(/\/?$/, '/')
   const member = createStore<Member | undefined>(undefined)
   const url = (plugin: string, path: string) => `${root}__presmium/${plugin}/${path.replace(/^\//, '')}`
+  const resourceURL = (plugin: string, path: string) => {
+    const target = url(plugin, path)
+    // After query parsing, the server decodes this selector just like the document header.
+    return `${target}${target.includes('?') ? '&' : '?'}document=${encodeURIComponent(documentHeader(document))}`
+  }
   const client: ServerClient = {
     available: true, member,
+    resourceURL,
     fetch(plugin, path, init = {}) { const headers = new Headers(init.headers); headers.set('Presmium-Document', documentHeader(document)); if (!headers.has('Accept-Language')) headers.set('Accept-Language', currentLocale()); return fetch(url(plugin, path), { ...init, headers }) },
-    events(plugin, path) { const target = url(plugin, path); return new EventSource(`${target}${target.includes('?') ? '&' : '?'}document=${documentHeader(document)}`) },
+    events(plugin, path) { return new EventSource(resourceURL(plugin, path)) },
   }
   void fetch(`${root}${SERVER_PATH.slice(1)}/hello`, { headers: { 'Presmium-Document': documentHeader(document) } }).then(response => response.ok ? response.json() : undefined).then((hello: { member?: Member } | undefined) => member.set(hello?.member)).catch(() => undefined)
   documents.set(client, document)

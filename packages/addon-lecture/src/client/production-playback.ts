@@ -10,7 +10,7 @@ interface Loader { load(binding: ProductionBinding, signal: AbortSignal): Promis
 interface Driver { plan: ProductionPlan, player: LecturePlayer, clock?: StepClock }
 
 /** Let newly mounted pictures register their preparation, then await the real shared step clock. */
-export async function settleProductionPlayback(clock?: StepClock, signal?: AbortSignal): Promise<void> {
+export async function settleProductionPlayback(clock?: StepClock, signal?: AbortSignal, slides?: readonly number[]): Promise<void> {
   const frame = () => new Promise<void>((resolve, reject) => {
     signal?.throwIfAborted()
     const abort = () => { cancelAnimationFrame(id); reject(signal?.reason ?? new DOMException('Playback cancelled', 'AbortError')) }
@@ -18,7 +18,7 @@ export async function settleProductionPlayback(clock?: StepClock, signal?: Abort
     signal?.addEventListener('abort', abort, { once: true })
   })
   await frame(); signal?.throwIfAborted()
-  await clock?.settled(); signal?.throwIfAborted()
+  await clock?.settled(slides); signal?.throwIfAborted()
   await frame(); signal?.throwIfAborted()
 }
 

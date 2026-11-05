@@ -81,6 +81,8 @@ export interface ServerClient {
   readonly available: boolean
   readonly member: Store<Member | undefined>
   fetch(plugin: string, path: string, init?: RequestInit): Promise<Response>
+  /** A document-scoped GET resource for native media requests, using the page's existing authentication. */
+  resourceURL?(plugin: string, path: string): string
   events(plugin: string, path: string): EventSource
 }
 
@@ -167,10 +169,11 @@ export interface StepClockDriver {
 
 export interface StepClock {
   drive(driver: StepClockDriver): Unsubscribe
-  wait(work: Promise<unknown>): void
-  settled(): Promise<void>
+  wait(work: Promise<unknown>, slide?: number): void
+  /** Wait for the named slides, or every pending picture when omitted (capture/export). */
+  settled(slides?: readonly number[]): Promise<void>
   /** Warm pictures for the given slide indices before playback reaches them. */
-  prepare?(slides: readonly number[]): Promise<void>
+  prepare?(slides: readonly number[], options?: { wait?: boolean }): Promise<void>
   registerPreparation?(slide: number, prepare: () => void | Promise<void>): Unsubscribe
 }
 

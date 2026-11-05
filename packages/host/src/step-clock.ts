@@ -16,11 +16,12 @@ function isForward(to: NavigationPosition, from: StepChange | undefined) { retur
 const nextFrame = () => new Promise<void>(done => typeof requestAnimationFrame === 'undefined' ? setTimeout(done, 0) : requestAnimationFrame(() => done()))
 function handOff(elapsed: number) { const at = change.getSnapshot(); if (at) change.set({ ...at, at: clockNow() - elapsed, forward: true }); ensureTicking() }
 export function createStepClock(navigation: Navigation): { clock: StepClock, stop: Unsubscribe } {
-  const pending = new Set<Promise<unknown>>()
+  const pending = new Map<Promise<unknown>, number | undefined>()
   const preparations = new Map<number, Set<() => void | Promise<void>>>()
-  let failure: { error: unknown } | undefined
+  const failures = new Map<number | undefined, unknown>()
   let stopped = false
-  const rethrow = () => { const failed = failure; failure = undefined; if (failed) throw failed.error }
+  const matches = (slide: number | undefined, slides?: readonly number[]) => slide === undefined || slides === undefined || slides.includes(slide)
+  const rethrow = (slides?: readonly number[]) => { for (const [slide, error] of failures) if (matches(slide, slides)) { failures.delete(slide); throw error } }
   const stop = observe(navigation.position, position => { const before = change.getSnapshot(); if (before && before.slide === position.slide && before.step === position.step) return; change.set({ slide: position.slide, step: position.step, at: clockNow(), forward: isForward(position, before) }); ensureTicking() }, true)
   let unfollow: Unsubscribe | undefined
   // A driver that comes while an exclusive one holds the clock waits for it, the latest one only.
@@ -37,20 +38,29 @@ export function createStepClock(navigation: Navigation): { clock: StepClock, sto
         if (waiting) { const held = waiting; waiting = undefined; activate(held) } else if (last !== undefined) handOff(last)
       }
     },
-    wait(work) { if (!stopped) pending.add(work); void work.catch(error => { if (!stopped) failure ??= { error } }).finally(() => pending.delete(work)) },
+    wait(work, slide) { if (!stopped) pending.set(work, slide); void work.catch(error => { if (!stopped && !failures.has(slide)) failures.set(slide, error) }).finally(() => pending.delete(work)) },
     registerPreparation(slide, prepare) {
       const callbacks = preparations.get(slide) ?? new Set()
       preparations.set(slide, callbacks); callbacks.add(prepare)
       return () => { callbacks.delete(prepare); if (!callbacks.size) preparations.delete(slide) }
     },
-    async prepare(slides) {
-      await Promise.all([...new Set(slides)].flatMap(slide => [...preparations.get(slide) ?? []].map(prepare => prepare())))
+    async prepare(slides, options) {
+      for (const slide of new Set(slides)) for (const prepare of preparations.get(slide) ?? []) clock.wait(Promise.resolve().then(prepare), slide)
       await nextFrame()
-      await clock.settled()
+      if (options?.wait !== false) await clock.settled(slides)
     },
-    async settled() { let waited = false; for (let round = 0; round < 100; round++) { if (stopped) return; if (!pending.size) { if (waited) { waited = false; await nextFrame() } if (!pending.size) return rethrow() } await Promise.allSettled([...pending]); waited = true } throw new Error('the page kept preparing its picture: settled() stopped waiting after 100 rounds') },
+    async settled(slides) {
+      const own = () => [...pending].filter(([, slide]) => matches(slide, slides)).map(([work]) => work)
+      let waited = false
+      for (let round = 0; round < 100; round++) {
+        if (stopped) return
+        if (!own().length) { if (waited) { waited = false; await nextFrame() } if (!own().length) return rethrow(slides) }
+        await Promise.allSettled(own()); waited = true
+      }
+      throw new Error('the page kept preparing its picture: settled() stopped waiting after 100 rounds')
+    },
   }
-  return { clock, stop() { if (stopped) return; stopped = true; stop(); unfollow?.(); waiting = undefined; driver.set(undefined); change.set(undefined); pending.clear(); preparations.clear(); failure = undefined } }
+  return { clock, stop() { if (stopped) return; stopped = true; stop(); unfollow?.(); waiting = undefined; driver.set(undefined); change.set(undefined); pending.clear(); preparations.clear(); failures.clear() } }
 }
 export interface StepTimeOptions { until?: number }
 const settle = (time: number, until: number | undefined) => until !== undefined && time >= until ? Infinity : Math.max(0, time)

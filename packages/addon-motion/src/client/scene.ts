@@ -69,20 +69,7 @@ async function gsapPlugins(gsap: typeof Gsap) {
   // name, and an element with the id `gsap` (a section labelled `(gsap)=`) does, so the plugins would find the element.
   const page = window as unknown as { gsap?: unknown }
   if (page.gsap !== gsap) page.gsap = gsap
-  const [{ SplitText }, { TextPlugin }, { DrawSVGPlugin }, { MorphSVGPlugin }, { MotionPathPlugin }, { CustomEase }, { CustomBounce }, { CustomWiggle }, { Physics2DPlugin }, { PhysicsPropsPlugin }, { Flip }] = await Promise.all([
-    import('gsap/SplitText'),
-    import('gsap/TextPlugin'),
-    import('gsap/DrawSVGPlugin'),
-    import('gsap/MorphSVGPlugin'),
-    import('gsap/MotionPathPlugin'),
-    import('gsap/CustomEase'),
-    import('gsap/CustomBounce'),
-    import('gsap/CustomWiggle'),
-    import('gsap/Physics2DPlugin'),
-    import('gsap/PhysicsPropsPlugin'),
-    import('gsap/Flip'),
-  ])
-  return { SplitText, TextPlugin, DrawSVGPlugin, MorphSVGPlugin, MotionPathPlugin, CustomEase, CustomBounce, CustomWiggle, Physics2DPlugin, PhysicsPropsPlugin, Flip }
+  return import('./gsap-plugins.ts')
 }
 
 export type GsapPlugins = Awaited<ReturnType<typeof gsapPlugins>>

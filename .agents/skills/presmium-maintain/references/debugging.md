@@ -54,9 +54,13 @@ Rules for judging:
   single track opens that track's player; multiple tracks keep their chooser. Pages publishes `/build-info.json`
   with the checked-out commit and source CLI version for deployment diagnosis.
   The lecture preloads a 30-second window of audio and pictures, with at most four audio files selected for preload.
-  Current audio needs two seconds of playable data (or the rest of a shorter clip), and the shared step clock must
-  confirm the picture is ready before playback starts. Check that future resources load before Play, and that a
-  previously finished clip plays again after seeking back.
+  Current audio needs two seconds of playable data (or the rest of a shorter clip) before future audio starts loading.
+  The shared step clock waits for the player's actual current page; future pictures warm in the background after it
+  is ready. Check that future resources load before Play, and that a previously finished clip plays again after
+  seeking back. Server audio uses native media URLs with document and production identities, supports Range/206 and
+  stops loading on disposal; check paths containing literal `%XX` too. Capture and export still await all pictures.
+  For load comparisons keep compression, cache and bandwidth identical; record first ready picture, usable player
+  and advancing native media time after Play separately.
 - After an upgrade, verify on the author's actual workspace copy (old `@lincyaw/slidev-addon-*` imports map
   to `@lincyaw/addon-*`). Never delete their copy, rewrite their sources or externalize modules to pass.
 

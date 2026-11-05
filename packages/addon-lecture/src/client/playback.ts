@@ -67,14 +67,19 @@ export function useLecturePlayback() {
     const clock = await createClock(track, source, signal)
     if (load !== generation.current || signal?.aborted) { clock.dispose(); signal?.throwIfAborted(); return }
     clear()
-    const events = timedEvents(track).filter(event => event.type === 'go')
     const preparePicture = exporting ? undefined : async (at: number, signal?: AbortSignal) => {
+      const events = next.events.filter(event => event.type === 'go')
       const before = events.findLastIndex(event => event.t <= at)
-      const slides = [...new Set(events.slice(Math.max(0, before)).filter(event => event.t <= at + BUFFER_AHEAD_MS)
-        .flatMap(event => doc.sections.find(section => section.id === event.data.section)?.index ?? []))].slice(0, 3)
-      await stepClock?.prepare?.(slides)
+      const section = next.cursor.getSnapshot()?.sectionId
+      const current = doc.sections.filter(page => page.id === section).map(page => page.index)
+      const slides = [...new Set([...current, ...events.slice(Math.max(0, before)).filter(event => event.t <= at + BUFFER_AHEAD_MS)
+        .flatMap(event => doc.sections.find(section => section.id === event.data.section)?.index ?? [])])].slice(0, 3)
+      await stepClock?.prepare?.(current)
       signal?.throwIfAborted()
-      await settleProductionPlayback(stepClock, signal)
+      await settleProductionPlayback(stepClock, signal, current)
+      void stepClock?.prepare?.(slides.filter(slide => !current.includes(slide)), { wait: false }).catch(error => {
+        if (!signal?.aborted) console.warn('[presmium] upcoming pictures could not be prepared', error)
+      })
     }
     const next = new LecturePlayer(track, doc, ops, clock, playback, Boolean(plan), preparePicture)
     current.current = next

@@ -50,13 +50,18 @@ export function serverSource(server: ServerClient): LectureSource {
     plan: (query, signal) => readAnswer<ProductionPlan>(server.fetch(LECTURE_ID, `production-plan?source=${encodeURIComponent(JSON.stringify(query.source))}&irRevision=${encodeURIComponent(query.irRevision)}`, { signal })),
     async productionMedia(binding, clipId, signal) {
       const query = `source=${encodeURIComponent(JSON.stringify(binding.source))}&irRevision=${encodeURIComponent(binding.irRevision)}&planId=${encodeURIComponent(binding.planId)}&clipId=${encodeURIComponent(clipId)}`
+      signal?.throwIfAborted()
+      if (server.resourceURL) return server.resourceURL(LECTURE_ID, `production-media?${query}`)
       const response = await server.fetch(LECTURE_ID, `production-media?${query}`, { signal })
       if (!response.ok) throw new Error(await refusal(response))
       return URL.createObjectURL(await response.blob())
     },
     async media(id, src, signal) {
       if (ABSOLUTE_URL.test(src)) return src
-      const response = await server.fetch(LECTURE_ID, `tracks/${encodeURIComponent(id)}/${src.split('/').map(encodeURIComponent).join('/')}`, { signal })
+      signal?.throwIfAborted()
+      const path = `tracks/${encodeURIComponent(id)}/${src.split('/').map(encodeURIComponent).join('/')}`
+      if (server.resourceURL) return server.resourceURL(LECTURE_ID, path)
+      const response = await server.fetch(LECTURE_ID, path, { signal })
       if (!response.ok) throw new Error(`${src}: HTTP ${response.status}`)
       return URL.createObjectURL(await response.blob())
     },
