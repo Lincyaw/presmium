@@ -8,6 +8,7 @@ import { FloatingThreadController, getReferenceText, Thread, useBlockNoteEditor,
 import type { ComponentProps, ThreadProps } from '@blocknote/react'
 import type { Locale } from '../messages.ts'
 import { PmButton, PmEmpty, PmNotice, PmSelect } from '../components.tsx'
+import { isApprovalTarget } from '../approvals.tsx'
 import { useWorkbenchState } from '../context.tsx'
 import { enterSubmits } from './comments.ts'
 import type { DocumentCommentEditorHandle, DocumentThreadStore } from './comments.ts'
@@ -166,7 +167,7 @@ export function DocumentThreadsSidebar({ children }: { children?: ReactNode }) {
   const focus = (id: string, event: FocusEvent) => { if (!(event.target as HTMLElement).closest('.bn-action-toolbar')) comments.selectThread(id) }
   const blur = (event: FocusEvent) => {
     const next = event.relatedTarget
-    if (!next || next.closest('.bn-action-toolbar')) return
+    if (!next || isApprovalTarget(next) || next.closest('.bn-action-toolbar')) return
     const parent = next.closest('.bn-thread')
     if (!parent || !(event.target instanceof Node) || !parent.contains(event.target)) comments.selectThread(undefined)
   }
