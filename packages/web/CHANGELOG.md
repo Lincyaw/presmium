@@ -1,5 +1,12 @@
 # @lincyaw/web
 
+## 1.0.0-rc.73
+
+### Patch Changes
+
+- a47bc87: Site navigation items can show the Presmium brand mark, and the documentation navbar links to Presmium Studio with it.
+- @lincyaw/design@1.0.0-rc.73
+
 ## 1.0.0-rc.72
 
 ### Patch Changes
