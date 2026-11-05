@@ -24,7 +24,7 @@ const isResponse = (message: JSONRPCMessage): message is JSONRPCMessage & { id: 
 interface Connection extends BridgeConnection { target?: BridgeTarget, pending: Set<Id>, serverRequests: Set<string>, retired: boolean, closed: boolean }
 interface Pending {
   id: Id, wireId: string, connection?: Connection, method: string, controller: AbortController
-  listen?: { message: RequestMessage, acknowledged: boolean, notifications: Record<string, unknown> }
+  listen?: { message: RequestMessage, acknowledged: boolean, announce: boolean, notifications: Record<string, unknown> }
 }
 const SUBSCRIPTION_ID = 'io.modelcontextprotocol/subscriptionId'
 
@@ -37,16 +37,20 @@ export async function bridgeStdio(first: BridgeTarget | undefined, options: Brid
   let switching: Promise<Connection> | undefined
   const write = (message: JSONRPCMessage) => { if (!closed) output.write(serializeMessage(message)) }
   const unavailable = (id: Id) => write({ jsonrpc: '2.0', id, error: { code: -32000, message: options.unreachable } })
+  const notifyListener = (operation: Pending) => {
+    const filter = operation.listen?.notifications ?? {}, params = { _meta: { [SUBSCRIPTION_ID]: String(operation.id) } }
+    if (filter.toolsListChanged) write({ jsonrpc: '2.0', method: 'notifications/tools/list_changed', params })
+    if (filter.promptsListChanged) write({ jsonrpc: '2.0', method: 'notifications/prompts/list_changed', params })
+    if (filter.resourcesListChanged) write({ jsonrpc: '2.0', method: 'notifications/resources/list_changed', params })
+    if (Array.isArray(filter.resourceSubscriptions)) for (const uri of filter.resourceSubscriptions) if (typeof uri === 'string') {
+      write({ jsonrpc: '2.0', method: 'notifications/resources/updated', params: { ...params, uri } })
+    }
+  }
   const changed = () => {
     if (!ready || closed) return
     if (protocolVersion) {
       write({ jsonrpc: '2.0', method: 'notifications/tools/list_changed' })
       write({ jsonrpc: '2.0', method: 'notifications/resources/list_changed' })
-    } else for (const operation of pending.values()) {
-      if (!operation.listen?.acknowledged) continue
-      const params = { _meta: { [SUBSCRIPTION_ID]: String(operation.id) } }
-      if (operation.listen.notifications.toolsListChanged) write({ jsonrpc: '2.0', method: 'notifications/tools/list_changed', params })
-      if (operation.listen.notifications.resourcesListChanged) write({ jsonrpc: '2.0', method: 'notifications/resources/list_changed', params })
     }
   }
   const forget = (operation: Pending, wireId = operation.wireId) => {
@@ -122,7 +126,10 @@ export async function bridgeStdio(first: BridgeTarget | undefined, options: Brid
           const already = operation.listen.acknowledged
           operation.listen.acknowledged = true
           operation.listen.notifications = isRecord(message.params.notifications) ? message.params.notifications : {}
-          if (already) return
+          if (!already) write({ ...message, params: { ...message.params, _meta: { ...message.params._meta, [SUBSCRIPTION_ID]: String(operation.id) } } })
+          if (already || operation.listen.announce) notifyListener(operation)
+          operation.listen.announce = false
+          return
         }
         write({ ...message, params: { ...message.params, _meta: { ...message.params._meta, [SUBSCRIPTION_ID]: String(operation.id) } } })
         return
@@ -164,6 +171,7 @@ export async function bridgeStdio(first: BridgeTarget | undefined, options: Brid
       if (closed) { await close(next); return before }
       current = next; before.retired = true; retire(before)
       // Only readonly notification streams follow the service; business requests retain their original backend.
+      for (const operation of pending.values()) if (operation.listen) operation.listen.announce = true
       resumeListeners(next)
       options.connected?.(target); changed()
       return next
@@ -188,6 +196,7 @@ export async function bridgeStdio(first: BridgeTarget | undefined, options: Brid
       const previous = operation.connection, controller = operation.controller
       exchanges.delete(operation.wireId); previous?.pending.delete(operation.wireId)
       operation.wireId = `presmium-request-${++serial}`; operation.controller = new AbortController(); operation.connection = next
+      operation.listen.announce = true
       exchanges.set(operation.wireId, operation); next.pending.add(operation.wireId)
       controller.abort()
       if (previous) retire(previous)
@@ -223,7 +232,7 @@ export async function bridgeStdio(first: BridgeTarget | undefined, options: Brid
         return
       }
       operation = { id: message.id, wireId: `presmium-request-${++serial}`, method: message.method, controller: new AbortController(),
-        ...message.method === 'subscriptions/listen' ? { listen: { message, acknowledged: false, notifications: {} } } : {} }
+        ...message.method === 'subscriptions/listen' ? { listen: { message, acknowledged: false, announce: false, notifications: {} } } : {} }
       pending.set(message.id, operation); exchanges.set(operation.wireId, operation)
     }
     let connection: Connection | undefined
