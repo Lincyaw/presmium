@@ -16,6 +16,7 @@ import type { StepDurationDraft, StepDurationKey, StepTimingPatch } from './step
 import { DocumentTimingDrafts } from './document-timing-drafts.ts'
 import { CaptionTimingDrafts } from './caption-timing-drafts.ts'
 import type { CaptionTimingDraft } from './caption-timing-drafts.ts'
+import type { ClientProductionDraftMetadata } from '@lincyaw/kernel'
 
 interface ProductionOptions {
   store: WorkbenchStore
@@ -30,6 +31,19 @@ interface ProductionOptions {
   sourceCurrent(binding: ProductionBinding): boolean
 }
 export interface RecordingRangeDraft { version: string, voice: Extract<VoiceSource, { type: 'recording' }>, range?: TimeRange, startText?: string, endText?: string }
+export interface ProductionDraftView {
+  identity: string
+  kind: ClientProductionDraftMetadata['kind']
+  has(key: string): boolean
+  blocked(): boolean
+  clear(key: string): void
+}
+export interface ProductionDraftSnapshot {
+  stamp: string
+  coverage: 'tab-state' | 'partial'
+  candidates: { key: string, metadata: Omit<ClientProductionDraftMetadata, 'draft'>, value: unknown, discard(): void }[]
+  guard(): void
+}
 
 /** Source-bound media transactions, timing drafts and narration edits share the document actor. */
 export class DocumentProduction {
@@ -38,6 +52,11 @@ export class DocumentProduction {
   readonly #documentTimingDrafts = new DocumentTimingDrafts()
   readonly #captionTimingDrafts = new CaptionTimingDrafts()
   readonly #recordingRangeDrafts = new Map<string, Map<string, RecordingRangeDraft>>()
+  readonly #draftViews = new Set<ProductionDraftView>()
+  readonly #draftSalt = randomUUID()
+  #draftRevision = 0
+  #unknownDraftViews = 0
+  #closed = false
   readonly #removedCueTimings = new Map<string, { pauseMs: number }>()
   readonly #removedNarrations = new Map<string, { narration: Narration, override?: { narrationStart: 'with-animation' | 'after-animation' } }>()
   #cueTimingScope?: string
@@ -54,12 +73,91 @@ export class DocumentProduction {
     }
   }
   reset(): void { this.#removedCueTimings.clear(); this.#removedNarrations.clear(); this.#cueTimingScope = undefined }
-  dispose(): void { this.reset(); this.#captionTimingDrafts.close(); this.#recordingRangeDrafts.clear() }
+  dispose(): void { this.#closed = true; this.reset(); this.#captionTimingDrafts.close(); this.#recordingRangeDrafts.clear(); this.#draftViews.clear() }
+  get draftRevision(): number { return this.#draftRevision }
+  get productionDraftsBlocked(): boolean {
+    const identity = this.#options.store.state.authoring?.identity
+    return this.#closed || Boolean(this.#unknownDraftViews) || this.#options.session.hasPendingAssetWrite()
+      || [...this.#draftViews].some(view => view.identity === identity && view.blocked())
+  }
+  #draftChanged(): void {
+    if (this.#closed) return
+    this.#draftRevision++
+    const source = this.#options.store.state.authoring
+    if (source) this.#options.store.set({ authoring: { ...source }, ...this.draftState(source) })
+  }
+  registerDraftView(view: ProductionDraftView): () => void {
+    if (this.#closed) return () => {}
+    let closed = false
+    if (this.#draftViews.size >= 128) {
+      this.#unknownDraftViews++; this.#draftChanged()
+      return () => { if (closed) return; closed = true; this.#unknownDraftViews--; this.#draftChanged() }
+    }
+    this.#draftViews.add(view); this.#draftChanged()
+    return () => { if (closed) return; closed = true; this.#draftViews.delete(view); this.#draftChanged() }
+  }
   /** Native pending range input survives mode and document changes within this workbench. */
-  recordingRangeDrafts(identity: string): Map<string, RecordingRangeDraft> {
+  recordingRangeDrafts(identity: string): ReadonlyMap<string, RecordingRangeDraft> {
     let values = this.#recordingRangeDrafts.get(identity)
     if (!values) { values = new Map(); this.#recordingRangeDrafts.set(identity, values) }
     return values
+  }
+  setRecordingRangeDraft(identity: string, key: string, value: RecordingRangeDraft | undefined): void {
+    this.recordingRangeDrafts(identity)
+    const values = this.#recordingRangeDrafts.get(identity)!
+    if (value) values.set(key, value); else values.delete(key)
+    this.#draftChanged()
+  }
+
+  /** Native banks remain the sole content owners. A snapshot exposes metadata until an explicit read. */
+  productionDraftSnapshot(): ProductionDraftSnapshot {
+    const state = this.#options.store.state, source = state.authoring, identity = source?.identity, memberId = source?.member?.id, content = source?.content
+    if (this.#closed || !source || !identity || !memberId || !content || !source.version || !source.fingerprint || source.loading) throw new Error('client-production-drafts-unavailable')
+    const revision = this.#draftRevision, version = source.version, reset = source.reset
+    const views = [...this.#draftViews].filter(view => view.identity === identity)
+    const viewState = () => JSON.stringify(views.map(view => view.blocked()))
+    const blocked = viewState()
+    const clean = () => {
+      const value = this.#options.store.state, current = value.authoring
+      return Boolean(this.#options.client.capabilities?.readOnly !== true && current && !current.loading && !current.dirty && !current.saving && !current.composing && !current.restored && !current.recovering && !current.error
+        && !isAgentChanging(value) && !value.isCreatingPage && !value.isEditingPage && !value.isHistoryBusy && !value.isHistoryPreparing && !this.productionDraftsBlocked)
+    }
+    const guard = () => {
+      const current = this.#options.store.state.authoring
+      if (!current || current.identity !== identity || current.member?.id !== memberId || current.content !== content || current.version !== version || current.reset !== reset
+        || current.loading || revision !== this.#draftRevision || viewState() !== blocked) throw new Error('client-production-drafts-changed')
+    }
+    const candidates: ProductionDraftSnapshot['candidates'] = []
+    const add = (kind: ClientProductionDraftMetadata['kind'], key: string, stepId: string, value: unknown, requiresReview: boolean, storage: 'tab' | 'memory', remove: () => boolean, extra: { field?: StepDurationKey, assetId?: string } = {}, readable = true) => {
+      const matches = views.filter(view => view.kind === kind && view.has(key))
+      const discardable = readable && clean() && !this.#unknownDraftViews && !matches.some(view => view.blocked())
+      candidates.push({ key: JSON.stringify([kind, key]), metadata: { kind, stepId, ...extra, targetAvailable: Object.hasOwn(content.steps, stepId), requiresReview, storage, discardable }, value,
+        discard: () => {
+          guard()
+          const activeViews = views.filter(view => view.kind === kind && view.has(key))
+          if (!discardable || !clean() || activeViews.some(view => view.blocked())) throw new Error('client-production-draft-needs-human')
+          if (!remove()) { this.#draftChanged(); throw new Error('client-production-draft-storage-unavailable') }
+          for (const view of activeViews) view.clear(key)
+          this.#draftChanged()
+        } })
+    }
+    const timingPartial = this.#documentTimingDrafts.partial(identity), scope = { identity, memberId }
+    for (const [key, value] of this.#documentTimingDrafts.entries(identity)) {
+      const [stepId, field] = JSON.parse(key) as [string, StepDurationKey]
+      add('step-timing', key, stepId, value, !Object.hasOwn(content.steps, stepId) || (this.#documentTimingDrafts.get(identity, content, stepId, field)?.review ?? true), this.#documentTimingDrafts.failed || timingPartial ? 'memory' : 'tab', () => this.#documentTimingDrafts.discard(identity, key), { field }, !timingPartial)
+    }
+    const captionPartial = this.#captionTimingDrafts.partial(scope)
+    for (const [stepId, value] of this.#captionTimingDrafts.entries(scope)) {
+      const basis = state.productionPlan?.pages.flatMap(page => page.steps).find(step => step.stepId === stepId)?.captionTiming
+      add('caption-timing', stepId, stepId, value, value.version !== version || !basis || JSON.stringify(basis) !== JSON.stringify(value.basis), this.#captionTimingDrafts.failed(scope) || captionPartial ? 'memory' : 'tab', () => this.#captionTimingDrafts.discard(scope, stepId), {}, !captionPartial)
+    }
+    for (const [key, value] of this.#recordingRangeDrafts.get(identity) ?? []) {
+      const [stepId] = JSON.parse(key) as [string]
+      add('recording-range', key, stepId, value, value.version !== version, 'memory', () => this.#recordingRangeDrafts.get(identity)!.delete(key), { assetId: value.voice.assetId })
+    }
+    candidates.sort((a, b) => a.key.localeCompare(b.key))
+    guard()
+    return { stamp: JSON.stringify([this.#draftSalt, identity, memberId, version, reset, revision]), coverage: timingPartial || captionPartial ? 'partial' : 'tab-state', candidates, guard }
   }
 
   source(expected: { identity: string, version: string }): DocumentSessionState {
@@ -280,6 +378,7 @@ export class DocumentProduction {
     const source = this.#options.store.state.authoring, document = this.#options.document(identity)
     if (!document?.steps[stepId] || source?.reset !== reset || isAgentChanging(this.#options.store.state)) return
     if (!this.#documentTimingDrafts.set(identity, document, stepId, key, draft)) return
+    this.#draftRevision++
     this.#options.store.set({ authoring: { ...source }, hasDocumentTimingDrafts: this.#documentTimingDrafts.has(identity, document), documentTimingDraftStorageFailure: this.#documentTimingDrafts.failed })
   }
   captionTimingDraft(stepId: string, identity: string): CaptionTimingDraft | undefined {
@@ -291,7 +390,15 @@ export class DocumentProduction {
     if (!document?.steps[stepId] || source?.identity !== identity || !source.member?.id) return
     const scope = { identity, memberId: source.member.id }
     this.#captionTimingDrafts.set(scope, stepId, draft)
+    this.#draftRevision++
     this.#options.store.set({ captionTimingDraftSteps: this.#captionTimingDrafts.steps(scope, document), captionTimingDraftStorageFailure: this.#captionTimingDrafts.failed(scope) })
+  }
+  discardCaptionTimingDraft(stepId: string, identity: string): boolean {
+    const source = this.#options.store.state.authoring
+    if (source?.identity !== identity || !source.member?.id) return false
+    const discarded = this.#captionTimingDrafts.discard({ identity, memberId: source.member.id }, stepId)
+    this.#draftChanged()
+    return discarded
   }
   copyNarrationCueTiming(from: string, to: string, identity: string): void {
     const document = this.#options.document(identity)

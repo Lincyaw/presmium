@@ -8,6 +8,8 @@ const KEYS = ['minimumHoldMs', 'trailingPauseMs'] as const
 /** Only unaccepted form strings live here. Accepted timing remains in the document actor. */
 export class DocumentTimingDrafts {
   readonly #documents = new Map<string, Map<string, StoredDraft>>()
+  readonly #stored = new Map<string, string | null>()
+  readonly #unreadable = new Set<string>()
   failed = false
   #storage(identity: string): string { return `presmium.document-timing.v1:${identity}` }
   #load(identity: string): Map<string, StoredDraft> {
@@ -18,6 +20,7 @@ export class DocumentTimingDrafts {
     let raw: string | null = null
     try {
       raw = sessionStorage.getItem(this.#storage(identity))
+      this.#stored.set(identity, raw)
       const entries: unknown = JSON.parse(raw ?? '[]')
       if (!Array.isArray(entries) || entries.length > 512) throw new Error('document-timing-draft-data')
       for (const entry of entries) {
@@ -27,12 +30,12 @@ export class DocumentTimingDrafts {
         values.set(entry[0], { text: value.text, error: true, review: true, baseValue: value.baseValue, baseSource: value.baseSource })
       }
     } catch {
-      this.failed = true
+      this.failed = true; this.#unreadable.add(identity)
       if (raw !== null) try { sessionStorage.setItem(`${this.#storage(identity)}:unreadable`, raw) } catch { /* Keep the original slot untouched when storage is unavailable. */ }
     }
     if (!this.failed) for (const key of this.#documents.keys()) {
       if (this.#documents.size <= 8) break
-      if (key !== identity) this.#documents.delete(key)
+      if (key !== identity) { this.#documents.delete(key); this.#stored.delete(key) }
     }
     return values
   }
@@ -45,6 +48,22 @@ export class DocumentTimingDrafts {
   has(identity: string, document: TeachingDocument): boolean {
     return [...this.#load(identity).keys()].some(target => Object.hasOwn(document.steps, JSON.parse(target)[0]))
   }
+  partial(identity: string): boolean { this.#load(identity); try { return this.#unreadable.has(identity) || sessionStorage.getItem(this.#storage(identity)) !== this.#stored.get(identity) } catch { return true } }
+  entries(identity: string): readonly (readonly [string, StoredDraft])[] { return [...this.#load(identity)] }
+  /** Retire only after the original session slot accepted the removal. */
+  discard(identity: string, key: string): boolean {
+    const values = this.#load(identity)
+    if (this.#unreadable.has(identity) || !values.has(key)) return false
+    try {
+      if (sessionStorage.getItem(this.#storage(identity)) !== this.#stored.get(identity)) { this.failed = true; return false }
+      const next = [...values].filter(([target]) => target !== key)
+      if (next.length) sessionStorage.setItem(this.#storage(identity), JSON.stringify(next))
+      else sessionStorage.removeItem(this.#storage(identity))
+      this.#stored.set(identity, next.length ? JSON.stringify(next) : null)
+      values.delete(key); this.failed = false
+      return true
+    } catch { this.failed = true; return false }
+  }
   set(identity: string, document: TeachingDocument, stepId: string, key: StepDurationKey, draft: StepDurationDraft | undefined): boolean {
     const values = this.#load(identity), target = JSON.stringify([stepId, key]), previous = values.get(target), actual = stepTimingValue(document, stepId, key)
     if (draft && draft.text.length > 256 || draft && !previous && values.size >= 512) { this.failed = true; return true }
@@ -54,6 +73,7 @@ export class DocumentTimingDrafts {
     try {
       if (values.size) sessionStorage.setItem(this.#storage(identity), JSON.stringify([...values]))
       else sessionStorage.removeItem(this.#storage(identity))
+      this.#stored.set(identity, values.size ? JSON.stringify([...values]) : null)
       this.failed = false
     } catch { this.failed = true }
     return true

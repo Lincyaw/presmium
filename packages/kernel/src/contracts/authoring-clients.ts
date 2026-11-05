@@ -12,14 +12,14 @@ export const AUTHORING_CLIENT_MAX_REQUESTS = 64
 export const AUTHORING_CLIENT_REQUEST_TIMEOUT_MS = 30000
 export const AUTHORING_CLIENT_ACK_MAX_BYTES = 32768
 export const AUTHORING_CLIENT_EVENT_MAX_BYTES = 8 << 10
-export const AUTHORING_CLIENT_ACTIONS = ['state.read', 'source.flush', 'preview.prepare', 'view.set', 'native-history.undo', 'native-history.redo', 'recording.start', 'recording.stop', 'recording.cancel', 'recording.discard', 'recording.save', 'recording.listen', 'recording.pause', 'comment-drafts.inspect', 'comment-drafts.read', 'comment-drafts.restore', 'comment-drafts.discard', 'body-drafts.inspect', 'body-drafts.read', 'body-drafts.restore', 'body-drafts.discard', 'body-drafts.retry', 'component-drafts.inspect', 'component-drafts.read', 'component-drafts.restore', 'component-drafts.discard', 'playback.pause', 'position.step', 'playback.play', 'playback.seek', 'playback.rate'] as const
+export const AUTHORING_CLIENT_ACTIONS = ['state.read', 'source.flush', 'preview.prepare', 'view.set', 'native-history.undo', 'native-history.redo', 'recording.start', 'recording.stop', 'recording.cancel', 'recording.discard', 'recording.save', 'recording.listen', 'recording.pause', 'comment-drafts.inspect', 'comment-drafts.read', 'comment-drafts.restore', 'comment-drafts.discard', 'body-drafts.inspect', 'body-drafts.read', 'body-drafts.restore', 'body-drafts.discard', 'body-drafts.retry', 'component-drafts.inspect', 'component-drafts.read', 'component-drafts.restore', 'component-drafts.discard', 'production-drafts.inspect', 'production-drafts.read', 'production-drafts.discard', 'playback.pause', 'position.step', 'playback.play', 'playback.seek', 'playback.rate'] as const
 export type AuthoringClientActionType = typeof AUTHORING_CLIENT_ACTIONS[number]
 export type AuthoringClientView = 'document' | 'reading' | 'presentation' | 'production'
 /** Browser-owned actions that may write the saved source of the same document. */
 export const authoringClientActionChangesSource = (type: AuthoringClientActionType): boolean => ['source.flush', 'native-history.undo', 'native-history.redo', 'recording.save', 'body-drafts.retry'].includes(type)
 /** Local backup operations retain lease/input checks without requiring a readable current source. */
-export const authoringClientActionUsesLocalDraft = (type: AuthoringClientActionType): boolean => ['body-drafts.inspect', 'body-drafts.read', 'body-drafts.restore', 'body-drafts.discard'].includes(type)
-export const authoringClientActionMutatesDraft = (type: AuthoringClientActionType): boolean => ['comment-drafts.restore', 'comment-drafts.discard', 'component-drafts.restore', 'component-drafts.discard', 'body-drafts.restore', 'body-drafts.discard', 'body-drafts.retry'].includes(type)
+export const authoringClientActionUsesLocalDraft = (type: AuthoringClientActionType): boolean => ['body-drafts.inspect', 'body-drafts.read', 'body-drafts.restore', 'body-drafts.discard', 'production-drafts.inspect', 'production-drafts.read'].includes(type)
+export const authoringClientActionMutatesDraft = (type: AuthoringClientActionType): boolean => ['production-drafts.discard', 'comment-drafts.restore', 'comment-drafts.discard', 'component-drafts.restore', 'component-drafts.discard', 'body-drafts.restore', 'body-drafts.discard', 'body-drafts.retry'].includes(type)
 export type AuthoringClientAction =
   | { type: 'state.read' }
   | { type: 'source.flush' }
@@ -41,6 +41,9 @@ export type AuthoringClientAction =
   | { type: 'component-drafts.read', draft: ClientComponentDraftReference, offset: number, maxChars?: number }
   | { type: 'component-drafts.restore', draft: ClientComponentDraftReference, expectedCurrent: ClientComponentDraftReference | null }
   | { type: 'component-drafts.discard', draft: ClientComponentDraftReference, current: boolean }
+  | { type: 'production-drafts.inspect', cursor?: { after: string, token: string }, limit?: number }
+  | { type: 'production-drafts.read', draft: string, offset: number, maxChars?: number }
+  | { type: 'production-drafts.discard', draft: string, confirm: true }
   | { type: 'playback.pause' }
   | { type: 'position.step', sectionId: string, stepId: string }
   | { type: 'playback.play', binding: ProductionBinding }
@@ -91,11 +94,26 @@ export interface ClientCommentDraftMetadata {
   threadId?: string
   commentId?: string
 }
+export interface ClientProductionDraftMetadata {
+  draft: string
+  kind: 'step-timing' | 'caption-timing' | 'recording-range'
+  stepId: string
+  field?: 'minimumHoldMs' | 'trailingPauseMs'
+  assetId?: string
+  targetAvailable: boolean
+  requiresReview: boolean
+  storage: 'tab' | 'memory'
+  discardable: boolean
+}
 export type AuthoringClientActionResult =
   | { type: 'body-drafts.inspect', family: 'body', coverage: 'stored-and-session' | 'partial', token: string, drafts: ClientBodyDraftMetadata[], next?: { after: string, token: string } }
   | { type: 'body-drafts.read', family: 'body', draft: ClientBodyDraftReference, storage: 'durable' | 'rescue' | 'session', format: 'presmium-document-json-v1', offset: number, endOffset: number, totalUtf16: number, totalUtf8: number, sha256: string, jsonText: string }
   | { type: 'body-drafts.restore' | 'body-drafts.discard' | 'body-drafts.retry', family: 'body', draft: ClientBodyDraftReference,
       outcome: 'restored' | 'already-saved' | 'source-restored' | 'backup-discarded' | 'saved', dirty: boolean, conflicted: boolean, backupPending?: true, backupRetained?: true }
+
+  | { type: 'production-drafts.inspect', family: 'production', coverage: 'tab-state' | 'partial', token: string, drafts: ClientProductionDraftMetadata[], next?: { after: string, token: string } }
+  | { type: 'production-drafts.read', family: 'production', draft: string, format: 'presmium-production-draft-json-v1', offset: number, endOffset: number, totalUtf16: number, totalUtf8: number, sha256: string, jsonText: string }
+  | { type: 'production-drafts.discard', family: 'production', draft: string, discarded: true }
 
   | { type: 'comment-drafts.inspect', family: 'comment', coverage: 'stored-and-session' | 'session-only', skippedInvalid: number, token: string, drafts: ClientCommentDraftMetadata[], next?: { after: string, token: string } }
   | { type: 'comment-drafts.read', family: 'comment', draft: ClientCommentDraftReference, storage: 'durable' | 'session', format: 'presmium-rich-text-json-v1', offset: number, endOffset: number, totalUtf16: number, totalUtf8: number, sha256: string, jsonText: string }
@@ -209,12 +227,16 @@ const nullableComponentReference: Schema = { oneOf: [componentDraftReference, { 
 const nullableCommentReference: Schema = { oneOf: [draftReference, { type: 'null' }] }
 const commentRestore = object({ composerId: id, expectedCurrent: nullableCommentReference })
 const cursor = object({ after: entity, token: digest })
+const productionMetadata = object({ draft: digest, kind: { enum: ['step-timing', 'caption-timing', 'recording-range'] }, stepId: entity, field: { enum: ['minimumHoldMs', 'trailingPauseMs'] }, assetId: entity, targetAvailable: bool, requiresReview: bool, storage: { enum: ['tab', 'memory'] }, discardable: bool }, ['draft', 'kind', 'stepId', 'targetAvailable', 'requiresReview', 'storage', 'discardable'])
 export const AUTHORING_CLIENT_ACTION_RESULT_SCHEMA: Schema = { oneOf: [
   object({ type: { const: 'body-drafts.inspect' }, family: { const: 'body' }, coverage: { enum: ['stored-and-session', 'partial'] }, token: digest,
     drafts: { type: 'array', maxItems: 10, items: bodyMetadata }, next: cursor }, ['type', 'family', 'coverage', 'token', 'drafts']),
   object({ type: { const: 'body-drafts.read' }, family: { const: 'body' }, draft: bodyDraftReference, storage: { enum: ['durable', 'rescue', 'session'] }, format: { const: 'presmium-document-json-v1' }, offset: integer, endOffset: integer, totalUtf16: integer, totalUtf8: integer, sha256: digest, jsonText: { type: 'string', maxLength: 2048 } }),
   object({ type: { enum: ['body-drafts.restore', 'body-drafts.discard', 'body-drafts.retry'] }, family: { const: 'body' }, draft: bodyDraftReference,
     outcome: { enum: ['restored', 'already-saved', 'source-restored', 'backup-discarded', 'saved'] }, dirty: bool, conflicted: bool, backupPending: { const: true }, backupRetained: { const: true } }, ['type', 'family', 'draft', 'outcome', 'dirty', 'conflicted']),
+  object({ type: { const: 'production-drafts.inspect' }, family: { const: 'production' }, coverage: { enum: ['tab-state', 'partial'] }, token: digest, drafts: { type: 'array', maxItems: 10, items: productionMetadata }, next: cursor }, ['type', 'family', 'coverage', 'token', 'drafts']),
+  object({ type: { const: 'production-drafts.read' }, family: { const: 'production' }, draft: digest, format: { const: 'presmium-production-draft-json-v1' }, offset: integer, endOffset: integer, totalUtf16: integer, totalUtf8: integer, sha256: digest, jsonText: { type: 'string', maxLength: 2048 } }),
+  object({ type: { const: 'production-drafts.discard' }, family: { const: 'production' }, draft: digest, discarded: { const: true } }),
   object({ type: { const: 'comment-drafts.inspect' }, family: { const: 'comment' }, coverage: { enum: ['stored-and-session', 'session-only'] }, skippedInvalid: integer,
     token: digest, drafts: { type: 'array', maxItems: 10, items: object({ draft: draftReference, kind: { enum: ['create', 'reply', 'edit'] }, storage: { enum: ['durable', 'session'] }, updatedAt: integer, baseVersion: entity, composing: bool, pendingSubmission: bool, ownersKnown: bool, active: bool, discardable: bool, restore: commentRestore, threadId: entity, commentId: entity }, ['draft', 'kind', 'storage', 'updatedAt', 'baseVersion', 'composing', 'pendingSubmission', 'ownersKnown', 'active', 'discardable']) }, next: cursor }, ['type', 'family', 'coverage', 'skippedInvalid', 'token', 'drafts']),
   object({ type: { const: 'comment-drafts.read' }, family: { const: 'comment' }, draft: draftReference, storage: { enum: ['durable', 'session'] }, format: { const: 'presmium-rich-text-json-v1' }, offset: integer, endOffset: integer, totalUtf16: integer, totalUtf8: integer, sha256: digest, jsonText: { type: 'string', maxLength: 2048 } }),
@@ -246,6 +268,9 @@ export const AUTHORING_CLIENT_ACTION_SCHEMA: Schema = { oneOf: [
   action('view.set', { view: { enum: ['document', 'reading', 'presentation', 'production'] } }),
   ...['native-history.undo', 'native-history.redo', 'recording.start', 'recording.stop', 'recording.cancel', 'recording.save', 'recording.listen', 'recording.pause'].map(type => action(type)),
   action('recording.discard', { confirm: { const: true } }),
+  object({ type: { const: 'production-drafts.inspect' }, cursor, limit: { type: 'integer', minimum: 1, maximum: 10 } }, ['type']),
+  object({ type: { const: 'production-drafts.read' }, draft: digest, offset: integer, maxChars: { type: 'integer', minimum: 2, maximum: 2048 } }, ['type', 'draft', 'offset']),
+  action('production-drafts.discard', { draft: digest, confirm: { const: true } }),
   object({ type: { const: 'comment-drafts.inspect' }, cursor, limit: { type: 'integer', minimum: 1, maximum: 10 } }, ['type']),
   object({ type: { const: 'comment-drafts.read' }, draft: draftReference, offset: integer, maxChars: { type: 'integer', minimum: 2, maximum: 2048 } }, ['type', 'draft', 'offset']),
   action('comment-drafts.restore', { draft: draftReference, composerId: id, expectedCurrent: nullableCommentReference }),

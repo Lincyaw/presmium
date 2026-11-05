@@ -92,6 +92,9 @@ export function DocumentStepNarration({ blockId, sectionId, stepId, expanded, ad
         drafts={{ minimumHoldMs: workbench.production.timingDraft(stepId, 'minimumHoldMs', source.identity, source.reset), trailingPauseMs: workbench.production.timingDraft(stepId, 'trailingPauseMs', source.identity, source.reset) }}
         draftStorageFailure={timingStorageFailure}
         onDraft={(key, draft) => workbench.production.setTimingDraft(stepId, key, draft, source.identity!, source.reset)}
+        draftControlKey={JSON.stringify([source.identity, source.reset, stepId])}
+        registerDraftControl={(key, control) => workbench.production.registerDraftView({ identity: source.identity!, kind: 'step-timing',
+          has: target => target === JSON.stringify([stepId, key]), blocked: () => control.composing(), clear: () => control.clear() })}
         onComposition={(key, composing) => workbench.documentComposition(composing, `production:${source.identity}:${source.reset}:${blockId}:${stepId}:${key}`, source.identity)} />
     </div>}
   </section>

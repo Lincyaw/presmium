@@ -47,8 +47,8 @@ export function ProductionRecordingRange({ identity, sectionId, stepId, active, 
     if (!value || !actual?.version || saved?.type !== 'recording' || saved.assetId !== value.request.assetId || !same(saved.sourceRange, value.request.sourceRange)
       || actual.content?.assets[saved.assetId]?.fingerprint !== `sha256:${value.request.sha256}`) return false
     const pending = drafts.get(value.key)
-    if (pending === value.draft) drafts.delete(value.key)
-    else if (pending?.version === value.draft.version && same(pending.voice, value.draft.voice)) drafts.set(value.key, { ...pending, version: actual.version, voice: structuredClone(saved) })
+    if (pending === value.draft) workbench.production.setRecordingRangeDraft(identity, value.key, undefined)
+    else if (pending?.version === value.draft.version && same(pending.voice, value.draft.voice)) workbench.production.setRecordingRangeDraft(identity, value.key, { ...pending, version: actual.version, voice: structuredClone(saved) })
     if (current()) { workbench.refreshAuthoringClientControls(); setFailure(undefined); render(value => value + 1) }
     if (latest.current.key === value.key && latest.current.active && !latest.current.disabled && reported.current !== value.request.id) {
       reported.current = value.request.id; latest.current.onChanged()
@@ -56,6 +56,8 @@ export function ProductionRecordingRange({ identity, sectionId, stepId, active, 
     return true
   }
   useEffect(() => workbench.registerNavigationGuard(() => current() && (composing.current || Boolean(request.current))), [workbench, identity])
+  useEffect(() => workbench.production.registerDraftView({ identity, kind: 'recording-range', has: target => current() && target === latest.current.key,
+    blocked: () => composing.current || Boolean(request.current), clear: () => { setFailure(undefined); render(value => value + 1) } }), [workbench, identity])
   useEffect(() => { workbench.refreshAuthoringClientControls() }, [workbench, busy, key, active])
   useEffect(() => () => { mounted.current = false; request.current?.abort() }, [])
   useEffect(() => { request.current?.abort(); request.current = undefined; setBusy(false); setFailure(undefined) }, [key, active])
@@ -72,7 +74,7 @@ export function ProductionRecordingRange({ identity, sectionId, stepId, active, 
   useEffect(() => { settle() }, [source?.version, source?.content, source?.loading, source?.dirty, source?.saving, source?.composing, source?.restored, source?.error, active, disabled, key])
   const edit = (patch: Partial<RangeDraft>) => {
     if (!draft) return
-    drafts.set(key, { ...draft, ...range ? { range: { ...range } } : {}, ...patch }); workbench.refreshAuthoringClientControls(); setFailure(undefined); render(value => value + 1)
+    workbench.production.setRecordingRangeDraft(identity, key, { ...draft, ...range ? { range: { ...range } } : {}, ...patch }); workbench.refreshAuthoringClientControls(); setFailure(undefined); render(value => value + 1)
   }
   const apply = async () => {
     if (!voice || !draft || !inspected || !valid || !changed || busy || disabled || !active || composing.current || !current()) return
@@ -83,7 +85,7 @@ export function ProductionRecordingRange({ identity, sectionId, stepId, active, 
     const change: DocumentRecordingAdoption = previous && previous.source.version === source.version && previous.stepId === stepId && previous.assetId === voice.assetId && previous.sha256 === inspected.sha256 && same(previous.sourceRange, proposed)
       ? previous : { id: randomUUID(), source: { documentId: source.content.id, version: source.version, fingerprint: source.fingerprint }, stepId, assetId: voice.assetId, sha256: inspected.sha256, sourceRange: proposed }
     const stored = drafts.get(key) ?? draft
-    drafts.set(key, stored); sent.current = { key, draft: stored, request: change }; request.current = controller
+    workbench.production.setRecordingRangeDraft(identity, key, stored); sent.current = { key, draft: stored, request: change }; request.current = controller
     setBusy(true); setFailure(undefined)
     try { await workbench.production.adoptRecording(change, { identity, version: source.version }, controller.signal); if (current()) settle() }
     catch (error) { if (current() && request.current === controller && !settle() && !controller.signal.aborted) setFailure(failureText(error)) }

@@ -3,7 +3,7 @@ import type { CaptionTimingSource, TeachingDocument } from '@lincyaw/kernel'
 export interface CaptionTimingRow { id: string, from: number, to: number, start: string, end: string }
 export interface CaptionTimingDraft { version: string, text: string, basis: CaptionTimingSource, rows: CaptionTimingRow[] }
 type Scope = { identity: string, memberId: string }
-interface Entry { values: Map<string, CaptionTimingDraft>, failed: boolean, unreadable: boolean }
+interface Entry { raw?: string | null, values: Map<string, CaptionTimingDraft>, failed: boolean, unreadable: boolean }
 const MAX_CHARS = 1 << 20
 const MAX_TARGETS = 512
 const valid = (value: unknown): value is CaptionTimingDraft => {
@@ -32,6 +32,7 @@ export class CaptionTimingDrafts {
     const result: Entry = { values: new Map(), failed: false, unreadable: false }; this.#entries.set(key, result)
     try {
       const raw = sessionStorage.getItem(key)
+      result.raw = raw
       if (raw === null) return result
       if (raw.length > MAX_CHARS) throw new Error('caption-draft-limit')
       const data: unknown = JSON.parse(raw)
@@ -44,6 +45,21 @@ export class CaptionTimingDrafts {
     return result
   }
   get(scope: Scope, stepId: string): CaptionTimingDraft | undefined { return this.#entry(scope).values.get(stepId) }
+  entries(scope: Scope): readonly (readonly [string, CaptionTimingDraft])[] { return [...this.#entry(scope).values] }
+  partial(scope: Scope): boolean { const entry = this.#entry(scope); try { return entry.unreadable || sessionStorage.getItem(this.#key(scope)) !== entry.raw } catch { return true } }
+  discard(scope: Scope, stepId: string): boolean {
+    const entry = this.#entry(scope)
+    if (entry.unreadable || !entry.values.has(stepId)) return false
+    try {
+      const next = [...entry.values].filter(([target]) => target !== stepId), key = this.#key(scope)
+      if (sessionStorage.getItem(key) !== entry.raw) { entry.failed = true; return false }
+      if (next.length) sessionStorage.setItem(key, JSON.stringify(next))
+      else sessionStorage.removeItem(key)
+      entry.raw = next.length ? JSON.stringify(next) : null
+      entry.values.delete(stepId); entry.failed = false
+      return true
+    } catch { entry.failed = true; return false }
+  }
   steps(scope: Scope, document: TeachingDocument): string[] { return [...this.#entry(scope).values.keys()].filter(id => Object.hasOwn(document.steps, id)) }
   failed(scope: Scope): boolean { return this.#entry(scope).failed }
   set(scope: Scope, stepId: string, value: CaptionTimingDraft | undefined): void {
@@ -54,6 +70,7 @@ export class CaptionTimingDrafts {
       const key = this.#key(scope), raw = JSON.stringify([...entry.values])
       if (raw.length > MAX_CHARS || entry.values.size > MAX_TARGETS || [...entry.values.values()].some(draft => !valid(draft))) throw new Error('caption-draft-limit')
       if (entry.values.size) sessionStorage.setItem(key, raw); else sessionStorage.removeItem(key)
+      entry.raw = entry.values.size ? raw : null
       entry.failed = false
     } catch { entry.failed = true }
   }

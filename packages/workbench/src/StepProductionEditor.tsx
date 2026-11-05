@@ -40,16 +40,21 @@ interface DurationFieldProps {
   onDraft?(draft: StepDurationDraft | undefined): void
   onChange(value: number | null): void
   onComposition?(composing: boolean): void
+  controlKey?: string
+  registerControl?(control: StepDraftControl): () => void
 }
+export interface StepDraftControl { composing(): boolean, clear(): void }
 
 /** Short author intent, never an estimated timestamp or a second playback clock. */
-function DurationField({ label, value, source, locale, readOnly, draft, onDraft, onChange, onComposition }: DurationFieldProps) {
-  const t = MESSAGES[locale], current = useRef({ onComposition, onChange, onDraft, value })
-  current.current = { onComposition, onChange, onDraft, value }
+function DurationField({ label, value, source, locale, readOnly, draft, onDraft, onChange, onComposition, controlKey, registerControl }: DurationFieldProps) {
+  const t = MESSAGES[locale], current = useRef({ onComposition, onChange, onDraft, value, registerControl })
+  current.current = { onComposition, onChange, onDraft, value, registerControl }
   const [text, setText] = useState(draft?.text ?? (value === undefined ? '' : String(value))), [error, setError] = useState(draft?.error ?? false)
   const focused = useRef(false), composing = useRef(false)
   useEffect(() => { if (!focused.current) { setText(draft?.text ?? (value === undefined ? '' : String(value))); setError(draft?.error ?? false) } }, [value, source, draft?.text, draft?.error, draft?.review])
   useEffect(() => () => { if (composing.current) current.current.onComposition?.(false) }, [])
+  useEffect(() => current.current.registerControl?.({ composing: () => composing.current,
+    clear: () => { setText(current.current.value === undefined ? '' : String(current.current.value)); setError(false) } }), [controlKey])
   const commit = (input: string): boolean => {
     const normalized = input.normalize('NFKC').trim()
     if (!normalized) { setError(false); current.current.onDraft?.(undefined); current.current.onChange(null); return true }
@@ -92,10 +97,12 @@ export interface StepProductionEditorProps {
   draftStorageFailure?: boolean
   onDraft?(key: StepDurationKey, draft: StepDurationDraft | undefined): void
   onComposition?(key: StepDurationKey, composing: boolean): void
+  draftControlKey?: string
+  registerDraftControl?(key: StepDurationKey, control: StepDraftControl): () => void
 }
 
 /** A reusable view of the canonical step production, including inherited and migrated settings. */
-export function StepProductionEditor({ document, stepId, locale, readOnly, advanced = true, onPause, onInteraction, onChange, drafts, onDraft, draftStorageFailure, onComposition }: StepProductionEditorProps) {
+export function StepProductionEditor({ document, stepId, locale, readOnly, advanced = true, onPause, onInteraction, onChange, drafts, onDraft, draftStorageFailure, onComposition, draftControlKey, registerDraftControl }: StepProductionEditorProps) {
   const t = MESSAGES[locale], [unifying, setUnifying] = useState(false)
   const start = stepTimingValue(document, stepId, 'narrationStart'), minimum = stepTimingValue(document, stepId, 'minimumHoldMs'), trailing = stepTimingValue(document, stepId, 'trailingPauseMs')
   const narrations = stepNarrationStarts(document, stepId), hasOverrides = narrations.some(value => value.overridden)
@@ -120,8 +127,10 @@ export function StepProductionEditor({ document, stepId, locale, readOnly, advan
     </PmField>
     <div className="pm-ui-step-production__durations">
       <DurationField label={t.minimum} value={minimum.value} source={minimum.source} locale={locale} readOnly={readOnly} draft={drafts?.minimumHoldMs} onDraft={draft => onDraft?.('minimumHoldMs', draft)}
+        controlKey={draftControlKey} registerControl={registerDraftControl && (control => registerDraftControl('minimumHoldMs', control))}
         onChange={value => apply({ minimumHoldMs: value })} onComposition={composing => onComposition?.('minimumHoldMs', composing)} />
       <DurationField label={t.trailing} value={trailing.value} source={trailing.source} locale={locale} readOnly={readOnly} draft={drafts?.trailingPauseMs} onDraft={draft => onDraft?.('trailingPauseMs', draft)}
+        controlKey={draftControlKey} registerControl={registerDraftControl && (control => registerDraftControl('trailingPauseMs', control))}
         onChange={value => apply({ trailingPauseMs: value })} onComposition={composing => onComposition?.('trailingPauseMs', composing)} />
     </div></>}
     {!advanced && (drafts?.minimumHoldMs || drafts?.trailingPauseMs || draftStorageFailure) ? <span className="pm-ui-field__error" role="alert">{t.advancedDraft}</span>

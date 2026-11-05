@@ -247,3 +247,12 @@ Estimated plans never admit arbitrary time seeks or export. Provider errors map 
 to localized reasons; never display upstream payloads or credentials.
 
 The workbench shares its state through `workbench-state.ts`. `DocumentEditing` owns editor focus, selection, page operations and viewport restoration; `DocumentProduction` owns source-bound media, timing drafts and narration edits. Panels use `workbench.editing` and `workbench.production`; their document lifetime ends through `reset`, with durable resources closed on `dispose`.
+
+Production draft MCP actions share `DocumentProduction`'s existing numeric, caption and recording-range
+banks. `production-draft-actions.ts` provides metadata-only discovery, exact-handle fragments and explicit
+discard through `editor_action`; it does not own another store or submit source changes. Mounted native
+views register composition/save guards and clear their visible input only after a successful discard.
+Tab storage must compare the captured raw value and persist removal before clearing memory; unreadable
+or externally changed slots report partial coverage. Local reads tolerate invalid canonical JSON;
+discard retains strict source, input-revision, permission and pending-write checks. See
+`docs/authoring-actions.md` section 11 for the public contract.

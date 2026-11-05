@@ -43,6 +43,15 @@ The page menu's Duplicate page action copies the canonical page with new owned e
 
 Expand an animation card's step captions/script area to edit canonical narration and its start timing through horizontal choices. Advanced hold and trailing-pause controls belong to video production. The fields show their actual inherited source. An explicit step start overrides inherited narration settings only for that step; restoring inheritance keeps shared narration, voice, cue and media settings. Unaccepted numeric input in production remains a separate form draft across step navigation and refresh; it is never written into `lecture.json`. Resolve it or explicitly restore inheritance before presenting.
 
+For pending production inputs use `editor_action` with `production-drafts.inspect`, `.read` or `.discard`.
+Discover the selected variant through `operations`; inspect returns at most ten metadata entries without
+input values. Choose its opaque `draft` for an explicit bounded JSON read, or discard with `confirm:true`.
+The native stores cover step hold/pause, caption timing and recording range; recording ranges are memory
+only. Discard resets the open field to its saved value without saving the document. Composition, an active
+save, a changed source or unavailable storage can refuse it and retain the proposal. Local inspect/read
+still work with invalid saved JSON. Use a fresh inspect after input changes; these stores contain current
+proposals, not historical backup branches.
+
 Preview compilation is independent. When it fails, retain valid document content, show readable diagnostics and identify the previous snapshot's version. Do not fix a preview by writing generated IR or silently replacing the authoring file with editor-private state.
 
 For agent changes, state the affected objects and intended result, inspect the actual diff and validate the same document. Never infer a paid provider capability from a prototype or silently synthesize narration while editing.

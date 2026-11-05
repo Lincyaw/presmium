@@ -13,6 +13,7 @@ import type { DocumentAuthoringActionPlan, DocumentComponentAction, AppliedDocum
 import { inspectCommentDrafts } from './document-editor/comment-draft-inspection.ts'
 import { mutateCommentDrafts } from './document-editor/comment-draft-actions.ts'
 import { executeBodyDraftAction } from './body-draft-actions.ts'
+import { executeProductionDraftAction } from './production-draft-actions.ts'
 import { inspectComponentDrafts } from './component-draft-inspection.ts'
 import { mutateComponentDrafts } from './component-draft-actions.ts'
 import { DocumentSession } from './document-session.ts'
@@ -292,7 +293,7 @@ export class Workbench {
   /** Only counters enter passive client state; no new form payload is exposed to MCP. */
   authoringDraftRevision(): string {
     const source = this.#state.authoring
-    return JSON.stringify([this.#documentSession.bodyDraftRevision(), this.authoringCommentDraftRevision(), source?.identity && source.member?.id ? this.#componentPropertyDrafts.revision(source.identity, source.member.id) : 0, this.#clientControlRevision])
+    return JSON.stringify([this.#documentSession.bodyDraftRevision(), this.authoringCommentDraftRevision(), source?.identity && source.member?.id ? this.#componentPropertyDrafts.revision(source.identity, source.member.id) : 0, this.production.draftRevision, this.#clientControlRevision])
   }
   subscribeAuthoringDraftChanges(listener: () => void): () => void {
     const comments = this.#commentDrafts.subscribe(listener), properties = this.#componentPropertyDrafts.subscribe(listener)
@@ -864,6 +865,7 @@ export class Workbench {
         ...safe && state.mode === 'editing' && state.editorHistory?.undo ? ['native-history.undo' as const] : [],
         ...safe && state.mode === 'editing' && state.editorHistory?.redo ? ['native-history.redo' as const] : [],
         ...unique,
+        ...source.member?.id ? ['production-drafts.inspect' as const, 'production-drafts.read' as const, ...this.client.capabilities?.readOnly !== true && safe && !source.dirty && !source.saving && !state.isHistoryBusy && !state.isHistoryPreparing && !this.production.productionDraftsBlocked ? ['production-drafts.discard' as const] : []] : [],
         ...bodyDrafts.read ? ['body-drafts.inspect' as const, 'body-drafts.read' as const] : [],
         ...bodyDrafts.mutate && !locked && !state.isCreatingPage && !state.isEditingPage && !state.isHistoryBusy && !state.isHistoryPreparing && !state.hasDocumentTimingDrafts
           ? ['body-drafts.restore' as const, 'body-drafts.discard' as const, ...bodyDrafts.current ? ['body-drafts.retry' as const] : []] : [],
@@ -904,6 +906,10 @@ export class Workbench {
         if (!actual || actual.documentId !== expected.documentId || action.type !== 'body-drafts.inspect' && action.type !== 'body-drafts.read' && isAgentChanging(this.#state)) throw new Error('client-source-changed')
       }
       return executeBodyDraftAction(this.#documentSession, () => this.#state.authoring, action, { signal, guard, source: expected, ...action.type !== 'body-drafts.retry' ? { localDraft: true as const } : {} }, fits)
+    }
+    if (action.type === 'production-drafts.inspect' || action.type === 'production-drafts.read' || action.type === 'production-drafts.discard') {
+      if (!identity || !this.#state.authoring?.member?.id || !fits) throw new Error('client-production-drafts-unavailable')
+      return executeProductionDraftAction(this.production, action, signal, () => { owned(); current() }, fits)
     }
     if (action.type === 'comment-drafts.inspect' || action.type === 'comment-drafts.read') {
       const drafts = identity ? this.documentCommentDrafts(identity) : undefined
