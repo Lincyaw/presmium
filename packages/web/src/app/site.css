@@ -197,6 +197,16 @@
   height: var(--pm-size-icon-sm);
 }
 
+.pm-site-nav__brand {
+  display: inline-flex;
+  flex: none;
+}
+
+.pm-site-nav__brand .pm-ui-brand-mark {
+  width: var(--pm-size-logo);
+  height: var(--pm-size-logo);
+}
+
 .pm-site-nav--vertical {
   flex-direction: column;
   align-items: stretch;

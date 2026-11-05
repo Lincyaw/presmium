@@ -1,4 +1,5 @@
 import { PmDrawer, PmIcon, PmIconButton, PmPopover, PmPresenterPanels, PmToolbar, useAppearance, useMessages, useStore } from '@lincyaw/host'
+import { brandMarkup } from '@lincyaw/design'
 import { isChapterTitle, isRecord } from '@lincyaw/kernel'
 import { listViews, OverlayViewOutlet, PageViewOutlet, useViewer } from '@lincyaw/viewer'
 import { useEffect, useState } from 'react'
@@ -9,6 +10,8 @@ import type { PageRouter } from '../router.ts'
 import { SearchDialog } from './search.tsx'
 
 export const APPEARANCE_KEY = 'presmium-appearance'
+const PRESMIUM_MARK = { __html: brandMarkup() }
+
 /** The same attributes drive site layouts and the design system's theme token mappings. */
 export function siteThemeAttributes(config: AppConfig) {
   const theme = config.site.shell.theme
@@ -35,7 +38,10 @@ function isCurrent(link: string | undefined, here: string | undefined, root: str
 export function NavLinks({ items, root, vertical = false, onNavigate }: { items: NavItem[], root: string, vertical?: boolean, onNavigate?(): void }) {
   const [open, setOpen] = useState<string>(), here = useHere()
   return <ul className={`pm-site-nav${vertical ? ' pm-site-nav--vertical' : ''}`}>{items.map((item, index) => {
-    if (!item.items?.length) { const external = item.link !== undefined && /^[a-z][a-z\d+.-]*:/i.test(item.link); return <li key={`${item.text}-${index}`} className="pm-site-nav__item"><a className="pm-site-nav__link" href={item.link} aria-current={!external && isCurrent(item.link, here, root) ? 'page' : undefined} onClick={onNavigate} {...external ? { target: '_blank', rel: 'noopener' } : {}}>{item.text}{external && <PmIcon name="external" />}</a></li> }
+    if (!item.items?.length) {
+      const external = item.link !== undefined && /^[a-z][a-z\d+.-]*:/i.test(item.link)
+      return <li key={`${item.text}-${index}`} className="pm-site-nav__item"><a className="pm-site-nav__link" href={item.link} aria-current={!external && isCurrent(item.link, here, root) ? 'page' : undefined} onClick={onNavigate} {...external ? { target: '_blank', rel: 'noopener' } : {}}>{item.icon === 'presmium' && <span className="pm-site-nav__brand" aria-hidden="true" dangerouslySetInnerHTML={PRESMIUM_MARK} />}{item.text}{external && <PmIcon name="external" />}</a></li>
+    }
     return <li key={`${item.text}-${index}`} className="pm-site-nav__group">{vertical ? <><p className="pm-site-nav__heading">{item.text}</p><NavLinks items={item.items} root={root} vertical onNavigate={onNavigate} /></> : <PmPopover open={open === item.text} label={item.text} placement="below-start" name="pm-site-nav-menu" onOpenChange={next => setOpen(next ? item.text : undefined)} trigger={<button type="button" className="pm-site-nav__link">{item.text}<PmIcon name="chevron-down" /></button>}><NavLinks items={item.items} root={root} vertical onNavigate={onNavigate} /></PmPopover>}</li>
   })}</ul>
 }

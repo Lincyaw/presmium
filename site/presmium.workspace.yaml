@@ -9,6 +9,7 @@ site:
   locales:
     en: { title: Presmium documentation }
   nav:
+    - { text: Presmium Studio, link: 'https://presmium.lincyaw.com/studios/new?mode=design', icon: presmium }
     - { text: API, link: /api/ }
     - { text: GitHub, link: 'https://github.com/Lincyaw/presmium' }
   footer:

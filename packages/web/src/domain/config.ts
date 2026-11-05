@@ -17,6 +17,8 @@ export interface CrossFormLinks {
 export interface NavItem {
   text: string
   link?: string
+  /** A product mark shown beside the label. Unknown values are omitted during configuration parsing. */
+  icon?: 'presmium'
   items?: NavItem[]
 }
 
@@ -38,7 +40,8 @@ function navItems(value: unknown): NavItem[] {
     if (!isRecord(item) || !text(item.text)) return []
     const items = navItems(item.items)
     const link = text(item.link)
-    return link || items.length > 0 ? [{ text: text(item.text)!, ...link ? { link } : {}, ...items.length > 0 ? { items } : {} }] : []
+    const icon = item.icon === 'presmium' ? 'presmium' as const : undefined
+    return link || items.length > 0 ? [{ text: text(item.text)!, ...link ? { link } : {}, ...icon ? { icon } : {}, ...items.length > 0 ? { items } : {} }] : []
   })
 }
 

@@ -45,6 +45,9 @@ site:
   head:
     description: 从示例开始学习，阅读讲义并观看演示。
   nav:
+    - text: Presmium Studio
+      link: https://presmium.lincyaw.com/studios/new?mode=design
+      icon: presmium
     - text: 课程仓库
       link: https://github.com/example/course
   footer:
@@ -62,6 +65,7 @@ site:
 - 显式参数覆盖主题默认值；换主题时删掉旧参数即可用新主题的默认值。参数只接受上表的取值，不接受 CSS 或 HTML。
 - 配色随亮暗切换；字体与宽度只作用于网站正文，不改变幻灯片画布。
 - `site.nav`、`footer`、`head`、`sitemap`、`lang`、`locales` 照常有效。导航中的站内绝对路径会加上 `site.base`。页头导航只放网站级的去处（另一个站点、代码仓库、关于页），不为每份文稿各加一项：读者从首页的文稿列表与文稿页左侧的目录到达文稿；不写 `nav` 时页头只有网站名称与工具。
+- 导航项可写 `icon: presmium`，在文字前显示 Presmium 品牌图标；它复用 `@lincyaw/design` 的品牌标志，不另加图片或自定义 SVG。
 - 文稿列表页的介绍取自工作区 `title` 与 `site.head.description`。
 - 修改后重启 `pnpm serve`，或重新 `pnpm build`。
 
