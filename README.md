@@ -7,7 +7,7 @@ Presmium is an open-source presentation toolkit for teaching and technical commu
 
 **Live examples:** [profile.aoyangfang.top/presmium](https://profile.aoyangfang.top/presmium/) — feature collections, tutorials, complete courses and an animation reference, all built from the [gallery](examples/gallery/README.md) in this repository.
 
-The [paper explainers](examples/papers/README.md) live in `examples/papers/`, one subfolder per paper. CI checks and builds them, and the Pages workflow publishes their website under `/papers/` alongside the gallery.
+The [paper explainers](examples/papers/README.md) live in `examples/papers/`, with each paper under `papers/`. CI checks and builds them, and the Pages workflow publishes their website under `/papers/` alongside the gallery.
 
 ## Quick start
 

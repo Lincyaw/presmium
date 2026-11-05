@@ -1,8 +1,8 @@
 import { gsapScene } from '@lincyaw/addon-motion/scene'
-import { axes, path, scale } from '../../kit/chart.ts'
-import { brand, clock, escape, frame, LAYER, TYPE } from '../../kit/frame.ts'
-import { FIGURE_CSS, figureHtml, view } from '../../kit/figure.ts'
-import type { FigureMap } from '../../kit/figure.ts'
+import { axes, path, scale } from '../../../kit/chart.ts'
+import { brand, clock, escape, frame, LAYER, TYPE } from '../../../kit/frame.ts'
+import { FIGURE_CSS, figureHtml, view } from '../../../kit/figure.ts'
+import type { FigureMap } from '../../../kit/figure.ts'
 import { D, flops, METHOD, PAPER, pct } from './hsl.ts'
 import fig1 from '../figures/fig1-methods.json'
 

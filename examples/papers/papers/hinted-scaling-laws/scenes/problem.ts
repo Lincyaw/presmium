@@ -1,6 +1,6 @@
 import { gsapScene } from '@lincyaw/addon-motion/scene'
-import { axes, decades, path, place, sample, scale, sigmoid, wipe } from '../../kit/chart.ts'
-import { brand, clock, frame, isDark, LAYER, sup, TYPE } from '../../kit/frame.ts'
+import { axes, decades, path, place, sample, scale, sigmoid, wipe } from '../../../kit/chart.ts'
+import { brand, clock, frame, isDark, LAYER, sup, TYPE } from '../../../kit/frame.ts'
 import { D, flops, hintColor, PAPER } from './hsl.ts'
 
 // The problem. One axis of training compute and the Delphi ladder on it: small models, and the target at 10²³ FLOPs.

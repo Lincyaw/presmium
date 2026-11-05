@@ -46,12 +46,12 @@ metadata, `references/` links, the document contract and that every `presmium <c
 ## Published example sites
 
 `examples/gallery/` is the main example site. `examples/papers/` is the paper-explainer workspace, with
-one `<slug>/lecture.json` per paper and a shared `kit/`, `site/` and `tools/`. CI checks and builds the paper
-workspace. The Pages workflow builds the gallery at the configured base path and the paper site at
-`<base>/papers/`, then copies the paper site's `dist/web/` into the gallery output's `papers/` before
-uploading the combined artifact. New paper directories matching `*/lecture.json` are included automatically.
-After moving a workspace, update its pnpm importer, tool resource paths and production instructions;
-keep the document's identity and committed speech cache with it.
+one `papers/<slug>/lecture.json` per paper and a shared `kit/`, `site/` and `tools/`. CI checks and builds
+the paper workspace. The Pages workflow builds the gallery at the configured base path and the paper site
+at `<base>/papers/`, then copies the paper site's `dist/web/` into the gallery output's `papers/` before
+uploading the combined artifact. New paper directories matching `papers/*/lecture.json` are included
+automatically. After moving a workspace, update its pnpm importer, tool resource paths and production
+instructions; keep the document's identity and committed speech cache with it.
 
 ## Structure checks
 

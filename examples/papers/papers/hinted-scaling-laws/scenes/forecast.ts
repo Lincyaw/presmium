@@ -1,6 +1,6 @@
 import { gsapScene } from '@lincyaw/addon-motion/scene'
-import { axes, decades, path, place, sample, scale, sigmoid, wipe } from '../../kit/chart.ts'
-import { brand, clock, frame, isDark, LAYER, sup, TYPE } from '../../kit/frame.ts'
+import { axes, decades, path, place, sample, scale, sigmoid, wipe } from '../../../kit/chart.ts'
+import { brand, clock, frame, isDark, LAYER, sup, TYPE } from '../../../kit/frame.ts'
 import { baseline, D, flops, hintColor, law, METHOD, PAPER, pct } from './hsl.ts'
 
 // The forecast. The same compute axis as the first page. Only the six models up to 9×10¹⁹ FLOPs are used: their

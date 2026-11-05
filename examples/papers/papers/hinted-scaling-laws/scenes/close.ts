@@ -1,7 +1,7 @@
 import { gsapScene } from '@lincyaw/addon-motion/scene'
-import { axes, path, ramp, scale } from '../../kit/chart.ts'
-import { brand, clock, escape, frame, LAYER, TYPE } from '../../kit/frame.ts'
-import { BRAND, MARK } from '../../kit/brand.ts'
+import { axes, path, ramp, scale } from '../../../kit/chart.ts'
+import { brand, clock, escape, frame, LAYER, TYPE } from '../../../kit/frame.ts'
+import { BRAND, MARK } from '../../../kit/brand.ts'
 import { D, METHOD, ORANGES, PAPER } from './hsl.ts'
 
 // The condition and the takeaway. Two panels on the same axes for the six Delphi models up to 9×10¹⁹ FLOPs: under

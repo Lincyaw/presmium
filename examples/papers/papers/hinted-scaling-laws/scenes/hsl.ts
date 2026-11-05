@@ -2,8 +2,8 @@
 // which `data/derive.py` computes from the paper's released results (github.com/tatsu-lab/hinted-scaling-laws).
 
 import data from './data/hsl.json'
-import { ramp, sigmoid, VIRIDIS } from '../../kit/chart.ts'
-import { sup } from '../../kit/frame.ts'
+import { ramp, sigmoid, VIRIDIS } from '../../../kit/chart.ts'
+import { sup } from '../../../kit/frame.ts'
 
 export const D = data as unknown as {
   delphi: {

@@ -1,4 +1,4 @@
-// Scaffold a new paper film: `examples/papers/<slug>/` with a lecture.json in the series' standard order, the opening page
+// Scaffold a new paper film: `examples/papers/papers/<slug>/` with a lecture.json in the series' standard order, the opening page
 // with its fixed line, a placeholder scene for every other page, a storyboard to fill in and a data module stub.
 //
 //   node tools/new-paper.mjs <slug> --title <文稿标题> --institution <单位> --paper <English title> \
@@ -31,7 +31,7 @@ if (!slug || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || missing.length) {
   console.error(`usage: node tools/new-paper.mjs <slug, lowercase-with-dashes> --title … --institution … --paper … --paper-zh … --arxiv … --authors …${missing.length ? `\nmissing: ${missing.map(k => `--${k}`).join(', ')}` : ''}`)
   process.exit(2)
 }
-const dir = join(WORKSPACE, slug)
+const dir = join(WORKSPACE, 'papers', slug)
 if (existsSync(dir)) { console.error(`${dir} exists already`); process.exit(1) }
 
 const v = values
@@ -103,8 +103,8 @@ const doc = {
 mkdirSync(join(dir, 'scenes', 'data'), { recursive: true })
 mkdirSync(join(dir, 'figures'), { recursive: true })
 writeFileSync(join(dir, 'lecture.json'), JSON.stringify(doc, null, 1) + '\n')
-writeFileSync(join(dir, 'scenes', 'opening.ts'), "export { default } from '../../kit/opening.ts'\n")
-writeFileSync(join(dir, 'scenes', 'ending.ts'), "export { default } from '../../kit/closing.ts'\n")
+writeFileSync(join(dir, 'scenes', 'opening.ts'), "export { default } from '../../../kit/opening.ts'\n")
+writeFileSync(join(dir, 'scenes', 'ending.ts'), "export { default } from '../../../kit/closing.ts'\n")
 writeFileSync(join(dir, 'scenes', 'paper.ts'), `// The data and the colours every scene of this film shares. Every number on screen is read from data/*.json, which
 // data/derive.py computes from the paper's released results (or, without them, copies from the paper with its table).
 
@@ -121,7 +121,7 @@ export const PAPER = {
 `)
 for (const [key] of PAGES) {
   writeFileSync(join(dir, 'scenes', `${key}.ts`), `import { gsapScene } from '@lincyaw/addon-motion/scene'
-import { brand, escape, frame, TYPE } from '../../kit/frame.ts'
+import { brand, escape, frame, TYPE } from '../../../kit/frame.ts'
 import { PAPER } from './paper.ts'
 
 // TODO: the ${key} page's scene. A placeholder until then: the page title and the current state, so the document
@@ -137,7 +137,7 @@ export default gsapScene(({ root, gsap, parameters, state }) => {
 writeFileSync(join(dir, 'scenes', 'data', 'derive.py'), `#!/usr/bin/env python3
 """Every number the scenes of this film draw, computed from the paper's released data.
 
-    uv run --no-project --with numpy --with pandas python -I ${slug}/scenes/data/derive.py <data dir> <out.json>
+    uv run --no-project --with numpy --with pandas python -I papers/${slug}/scenes/data/derive.py <data dir> <out.json>
 
 Print each number the film quotes next to the paper's value; a number that does not match is not put on screen.
 """
@@ -215,5 +215,5 @@ TODO：\`scenes/data/derive.py\` 算出的每个数字与论文值的对照；�
 
 （每轮评审追加在这里：时间、谁看的、发现、改了什么。）
 `)
-console.log(`wrote ${slug}/: lecture.json (${order.length} pages), storyboard.md, scenes/ (opening, ${PAGES.map(p => p[0]).join(', ')}, paper.ts), scenes/data/derive.py, figures/`)
-console.log(`next: pnpm exec presmium check ${slug}; fill storyboard.md A–H; write the narration in lecture.json`)
+console.log(`wrote papers/${slug}/: lecture.json (${order.length} pages), storyboard.md, scenes/ (opening, ${PAGES.map(p => p[0]).join(', ')}, paper.ts), scenes/data/derive.py, figures/`)
+console.log(`next: pnpm exec presmium check papers/${slug}; fill storyboard.md A–H; write the narration in lecture.json`)

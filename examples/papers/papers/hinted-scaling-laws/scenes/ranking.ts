@@ -1,6 +1,6 @@
 import { gsapScene } from '@lincyaw/addon-motion/scene'
-import { axes, path, ramp, scale, wipe } from '../../kit/chart.ts'
-import { brand, clock, escape, frame, isDark, LAYER, TYPE } from '../../kit/frame.ts'
+import { axes, path, ramp, scale, wipe } from '../../../kit/chart.ts'
+import { brand, clock, escape, frame, isDark, LAYER, TYPE } from '../../../kit/frame.ts'
 import { D, PAPER } from './hsl.ts'
 
 // Ranking. Seven models on AIME whose unhinted accuracies are all under 1%: a slope chart from their true unhinted

@@ -1,7 +1,7 @@
-# 三分钟读完一篇论文（翰林院传达室）：每篇论文是一份文稿（<slug>/lecture.json），配一段三分钟的配音动画。
+# 三分钟读完一篇论文（翰林院传达室）：每篇论文是一份文稿（papers/<slug>/lecture.json），配一段三分钟的配音动画。
 # 在本目录运行 pnpm serve 预览整个网站；制作流程见 CLAUDE.md。
 title: 翰林院传达室
-documents: ['*/lecture.json']
+documents: ['papers/*/lecture.json']
 site:
   lang: zh-CN
   theme: showcase

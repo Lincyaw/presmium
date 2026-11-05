@@ -109,8 +109,8 @@ ABT：缩放定律用小模型预测大模型的准确率，而且开发者真�
 - 节拍用 `clock` 的 `T(k, f)`：状态 k 的比例 f 处；讲授时每个状态的时长就是这一步配音的长度，节拍跟着句子走。按讲稿里关键词的位置（字数比例）放节拍。
 - 不用 SVG 的 `id` 和 `url(#…)`（同一页面上多个场景会互相冲突），箭头画成路径。
 - 颜色变化不能补间 `var()` 或 `color-mix()`：用 `isDark`、`color()` 取实际颜色或预先算好 `rgb()`。
-- 只有协调者改 `lecture.json`、`kit/`、`hsl.ts` 和 `data/`；每个 agent 只改分给自己的场景文件。保存前确认它能编译（`pnpm exec presmium check hinted-scaling-laws --json`，忽略“没有配音”那一条），一个编译不过的场景会让整份文稿的预览失败。
-- 看结果用 `pnpm exec presmium mcp call capture_slides '{"document":"hinted-scaling-laws","section":"p-<页>"}' --out <目录>`；亮色与暗色都要看（暗色加 `"appearance":"dark"`，其余参数见 `pnpm exec presmium mcp tools`）。
+- 只有协调者改 `lecture.json`、`kit/`、`hsl.ts` 和 `data/`；每个 agent 只改分给自己的场景文件。保存前确认它能编译（`pnpm exec presmium check papers/hinted-scaling-laws --json`，忽略“没有配音”那一条），一个编译不过的场景会让整份文稿的预览失败。
+- 看结果用 `pnpm exec presmium mcp call capture_slides '{"document":"papers/hinted-scaling-laws","section":"p-<页>"}' --out <目录>`；亮色与暗色都要看（暗色加 `"appearance":"dark"`，其余参数见 `pnpm exec presmium mcp tools`）。
 
 ## J. 评审记录
 
