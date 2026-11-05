@@ -1,5 +1,37 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.69
+
+### Patch Changes
+
+- 76e748d: 为论文视频约定标题、正文文案、封面与成片的完整交付，补齐 Hinted Scaling Laws 发布素材，并将该片字幕缩小至默认字号的 90%。
+- @lincyaw/cli@1.0.0-rc.69
+  - @lincyaw/mcp@1.0.0-rc.69
+  - @lincyaw/addon-classroom@1.0.0-rc.69
+  - @lincyaw/addon-code@1.0.0-rc.69
+  - @lincyaw/addon-content@1.0.0-rc.69
+  - @lincyaw/addon-exec@1.0.0-rc.69
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.69
+  - @lincyaw/addon-exec-local@1.0.0-rc.69
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.69
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.69
+  - @lincyaw/addon-lecture@1.0.0-rc.69
+  - @lincyaw/addon-motion@1.0.0-rc.69
+  - @lincyaw/addon-publish@1.0.0-rc.69
+  - @lincyaw/addon-session@1.0.0-rc.69
+  - @lincyaw/addon-speech@1.0.0-rc.69
+  - @lincyaw/addon-stage@1.0.0-rc.69
+  - create-presmium@1.0.0-rc.69
+  - @lincyaw/render-notebook@1.0.0-rc.69
+  - @lincyaw/studio@0.2.0-rc.68
+  - @lincyaw/web@1.0.0-rc.69
+  - @lincyaw/addon-assistant@1.0.0-rc.69
+  - @lincyaw/addon-guide@1.0.0-rc.69
+  - @lincyaw/host@1.0.0-rc.69
+  - @lincyaw/kernel@1.0.0-rc.69
+  - @lincyaw/render-slides@1.0.0-rc.69
+  - @lincyaw/viewer@1.0.0-rc.69
+
 ## 1.0.0-rc.68
 
 ### Patch Changes
