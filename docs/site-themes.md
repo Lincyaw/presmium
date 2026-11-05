@@ -201,7 +201,7 @@ const stop = whenPresentationReady(frame, () => cover.remove(), { lecture: true 
 ### 4.2 构建时的体积优化
 
 - 网站的页面与它的放映共用一份查看器（`_app/<键>/`），读者在一个站点里只下载一次。
-- 文稿发布的位图（`media/` 下的图片、场景代码与首页模板 import 的图片）大于 48 KB 时在发布时编码为 WebP，以 `.webp` 文件名写入，宽度不超过 2400 像素：PNG 用近无损，照片用有损。编码结果按图片内容缓存在 `.presmium/images/`，再次构建不重新编码。`public/` 中的文件与页面头部用于链接预览的图片按原样发布。场景代码用 `import` 引用图片（`import figure from './x.png'` 或 `x.png?url`）；`new URL(…, import.meta.url)` 引用的图片按原样发布。
+- 文稿发布的位图（`media/` 下的图片、场景代码与首页模板引用的图片）大于 48 KB 时在发布时编码为 WebP，以 `.webp` 文件名写入，宽度不超过 2400 像素：PNG 用近无损，照片用有损。编码结果按图片内容缓存在 `.presmium/images/`，再次构建不重新编码。`public/` 中的文件与页面头部用于链接预览的图片按原样发布。场景代码可用 `import figure from './x.png'`、`x.png?url` 或静态 `new URL('./x.png', import.meta.url)` 引用图片；后者的相对路径字面量也进入同一编码与文件监听流程。动态 URL、带查询或片段的 URL、局部绑定的 `URL` 构造器保留原有处理。
 - 页面在加载查看器的同时预加载文稿数据与代码；放映还按构建清单预加载场景代码、它们引用的共享模块，以及放映插件的浏览器与查看器模块。
 - 页面头部有一段脚本：部署更新后，浏览器缓存的旧页面加载不到旧版本的模块时，页面在线时重新加载一次（30 秒内至多一次）。
 - `presmium serve` 给讲授的语音与配乐发 `Cache-Control: private, no-cache` 与按内容的 `ETag`：浏览器保留文件，每次确认未变时得到 304，支持按 Range 分段读取。

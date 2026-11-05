@@ -61,6 +61,10 @@ Rules for judging:
   stops loading on disposal; check paths containing literal `%XX` too. Capture and export still await all pictures.
   For load comparisons keep compression, cache and bandwidth identical; record first ready picture, usable player
   and advancing native media time after Play separately.
+  Compare the same audio alone with the complete page before attributing a long transfer to the network. Inspect
+  `loadedmetadata`, `buffered` and the final byte: some files only become playable after a full download despite
+  the two-second threshold. Check actual image URLs and sizes too; both imported images and static relative
+  `new URL(..., import.meta.url)` assets must reach the shared WebP encoder and participate in bundle invalidation.
 - After an upgrade, verify on the author's actual workspace copy (old `@lincyaw/slidev-addon-*` imports map
   to `@lincyaw/addon-*`). Never delete their copy, rewrite their sources or externalize modules to pass.
 

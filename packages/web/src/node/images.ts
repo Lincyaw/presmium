@@ -1,8 +1,11 @@
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs'
 import { basename, extname, join } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { isRecord } from '@lincyaw/kernel'
 import type { LocalAsset } from '@lincyaw/kernel'
 import { copyPublished, threadBudget } from '@lincyaw/kernel/node'
+import type { Plugin } from 'vite'
 import pLimit from 'p-limit'
 import sharp from 'sharp'
 
@@ -35,6 +38,24 @@ function encodable(file: string): boolean {
 export const imageCache = (workspaceRoot: string) => join(workspaceRoot, '.presmium', 'images')
 
 const webpName = (name: string) => `${basename(name, extname(name))}.webp`
+
+/** The parser's nodes, including TS and JSX; strings and comments are never considered asset expressions. */
+function nodes(value: unknown, found: Record<string, unknown>[] = []): Record<string, unknown>[] {
+  if (Array.isArray(value)) for (const item of value) nodes(item, found)
+  else if (isRecord(value)) {
+    if (typeof value.type === 'string') found.push(value)
+    for (const item of Object.values(value)) if (item && typeof item === 'object') nodes(item, found)
+  }
+  return found
+}
+const namesURL = (value: unknown) => nodes(value).some(node => node.type === 'Identifier' && node.name === 'URL')
+/** Conservatively leave a module alone if a local binding could replace the native URL constructor. */
+function shadowsURL(node: Record<string, unknown>): boolean {
+  if (node.type === 'VariableDeclarator' || node.type === 'ClassDeclaration' || node.type === 'ClassExpression') return namesURL(node.id)
+  if (typeof node.type === 'string' && /Function/.test(node.type)) return namesURL(node.id) || namesURL(node.params)
+  if (typeof node.type === 'string' && node.type.startsWith('Import')) return namesURL(node.local)
+  return node.type === 'CatchClause' && namesURL(node.param)
+}
 
 export class ImageEncoder {
   readonly #cacheDir: string
@@ -87,17 +108,41 @@ export class ImageEncoder {
   }
 
   /** A Vite plugin: a raster image a module imports is emitted as WebP, and the import is its URL. */
-  vitePlugin() {
+  vitePlugin(onFile?: (file: string) => void): Plugin {
     const encoder = this
     return {
       name: 'presmium:webp-images',
       enforce: 'pre' as const,
-      load: async function (this: { emitFile(file: { type: 'asset', name: string, source: Uint8Array }): string }, id: string) {
+      async load(id) {
         // An image imported for its URL, plainly or with `?url`; other queries (`?raw`, `?inline`) want its bytes.
         const file = id.replace(/\?url$/, '')
         if (/[?#]/.test(file) || !encodable(file)) return undefined
+        this.addWatchFile(file)
+        onFile?.(file)
         const reference = this.emitFile({ type: 'asset', name: webpName(file), source: await encoder.encode(file) })
         return `export default import.meta.ROLLUP_FILE_URL_${reference}`
+      },
+      async transform(code, id) {
+        if (!/\.[cm]?[jt]sx?$/.test(id) || !code.includes('import.meta') || !code.includes('URL')) return undefined
+        const lang = /\.tsx$/.test(id) ? 'tsx' : /\.[cm]?ts$/.test(id) ? 'ts' : /\.jsx$/.test(id) ? 'jsx' : 'js'
+        const ast = nodes(this.parse(code, { lang }))
+        if (ast.some(shadowsURL)) return undefined
+        const changes: { start: number, end: number, value: string }[] = []
+        for (const node of ast) {
+          if (node.type !== 'NewExpression' || !isRecord(node.callee) || node.callee.type !== 'Identifier' || node.callee.name !== 'URL' || !Array.isArray(node.arguments) || node.arguments.length !== 2) continue
+          const [path, base] = node.arguments
+          if (!isRecord(path) || path.type !== 'Literal' || typeof path.value !== 'string' || !path.value.startsWith('.') || /[?#]/.test(path.value) || !isRecord(base)) continue
+          if (code.slice(Number(base.start), Number(base.end)).replace(/\s/g, '') !== 'import.meta.url') continue
+          const file = fileURLToPath(new URL(path.value, pathToFileURL(id)))
+          if (!encodable(file)) continue
+          this.addWatchFile(file)
+          onFile?.(file)
+          const reference = this.emitFile({ type: 'asset', name: webpName(file), source: await encoder.encode(file) })
+          changes.push({ start: Number(path.start), end: Number(path.end), value: `import.meta.ROLLUP_FILE_URL_${reference}` })
+        }
+        if (!changes.length) return undefined
+        for (const { start, end, value } of changes.sort((a, b) => b.start - a.start)) code = code.slice(0, start) + value + code.slice(end)
+        return { code, map: null }
       },
     }
   }

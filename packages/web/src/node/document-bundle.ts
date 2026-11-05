@@ -31,7 +31,7 @@ const CHECK_DIR = '.presmium/web/check'
 export const CODE_CHECK = 'presmium.preview.code'
 const KEEP = 3
 // Failed imports are rechecked with the bundler resolver before reusing their diagnostics.
-const FORMAT = 3
+const FORMAT = 5
 
 export interface DocumentBundleInput {
   deckDir: string
@@ -364,7 +364,7 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
     mode: 'production',
     esbuild: { jsx: 'automatic' },
     publicDir: false,
-    plugins: [bundler(probe), images.vitePlugin()],
+    plugins: [bundler(probe), images.vitePlugin(file => { if (probe) probe.add(file); else keep(file) })],
     resolve: { dedupe: ['react', 'react-dom'] },
     build: {
       outDir: join(work, probe ? 'part' : 'out'),
