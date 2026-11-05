@@ -126,6 +126,7 @@ Checkbox、Radio、Switch 只有 `pm-ui-checkbox` 的基础着色；首次使用
 
 - Dialog 模态，有标题、说明与关闭操作；外部按下不关闭，`Esc` 关闭，关闭后焦点回到触发器。打开时聚焦显式 `autoFocus` 的字段，否则聚焦首个可用控件。
 - 非模态的属性编辑用面板、Drawer 或 Popover。
+- 非模态批注表单在作者操作全局批准入口及批准浮层时保持打开；通过共享 `PmPopover` 的原生外部交互回调区分这类操作。批准不改变原生表单的目标或输入版本。
 - Menu 打开后聚焦首个可用项，方向键、首尾、选择后关闭与焦点归还由 Radix 管理。
 - 不用 `window.alert`、`window.confirm`、`prompt`；确认用 `PmDialog`。原生 `title` 不算 Tooltip。
 

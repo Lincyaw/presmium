@@ -37,7 +37,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 ## 3. 能力与版本
 
-工具是否可用以 MCP 的工具表为准；已列出的简单编辑工具可直接调用。需要了解高级动作限制时，`get_authoring_capabilities` 与各服务的 `get_*_capabilities` 报告能否预检与提交、预算、`idempotency` 与 `review`，不编译文稿。状态区分 available、unavailable 与 unknown；`verification: configuration-only` 只看了配置，不证明鉴权或合成可用。能力响应不含凭据。工具的参数来自同一份 `inputSchema`，没有单独维护的参数清单。外部 MCP 默认只列出当前上下文、页标题、讲稿编辑、文稿目录、操作查询及按权限种类分开的调用入口。`operations` 按关键字分页查找动作，指定 `name` 时返回自动生成的参数摘要，`schema: true` 才返回完整 Schema。`read_operation`、`edit_operation`、`spend_operation`、`write_operation` 与 `agent_operation` 只调用同种权限的已授权动作，保留目标 Schema 校验、确认策略与错误和图片结果；没有相应动作的入口不提供。Schema 只携带实际引用到的定义。
+工具是否可用以 MCP 的工具表为准；已列出的简单编辑工具可直接调用。需要了解高级动作限制时，`get_authoring_capabilities` 与各服务的 `get_*_capabilities` 报告能否预检与提交、预算、`idempotency` 与 `review`，不编译文稿。状态区分 available、unavailable 与 unknown；`verification: configuration-only` 只看了配置，不证明鉴权或合成可用。能力响应不含凭据。工具的参数来自同一份 `inputSchema`，没有单独维护的参数清单。精简连接的 `get_authoring_clients` 默认返回选窗、位置、编辑状态、可用动作与待处理请求；`details: true` 或完整兼容目录才包含源版本、epoch 与连接修订等完整文稿客户端报告。精简连接中，`editor_action` 立即完成与后续 `get_authoring_client_request` 查询使用同一种简短回执；查询时加 `details: true` 才返回完整传输回执，完整兼容目录保留原回执。外部 MCP 默认只列出当前上下文、页标题、讲稿编辑、文稿目录、操作查询及按权限种类分开的调用入口。`operations` 按关键字分页查找动作，同一搜索结果优先列出常驻快捷工具，指定 `name` 时返回自动生成的参数摘要，`schema: true` 才返回完整 Schema。`read_operation`、`edit_operation`、`spend_operation`、`write_operation` 与 `agent_operation` 只调用同种权限的已授权动作，保留目标 Schema 校验、确认策略与错误和图片结果；没有相应动作的入口不提供。Schema 只携带实际引用到的定义。
 
 一个工具含多种动作时，参数摘要从原 Schema 生成 `variants`，包括判别字段和可选值。`operations` 同时指定 `name` 与 `variant`，只读取所选动作的参数，例如 `{name: "editor_action", variant: "body-drafts.read"}`；加 `schema: true` 读取该动作的完整约束。嵌套对象参数沿原路径保留，公共字段与必填约束不删除。未知或不能唯一定位的动作拒绝筛选；使用分支位置、锚点或独立资源引用的 Schema 也拒绝筛选，仍可省略 `variant` 读取原完整定义。筛选仅用于发现参数，执行始终校验工具的原完整 Schema，不改变可调用动作、权限或确认策略。 对由 `required/not` 表达的简单互斥输入方式，摘要自动返回 `inputChoices`，列出每组 required 与 forbidden；它不代替完整 Schema。
 
@@ -261,7 +261,11 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 - 定位与播放先暂停，不切模式、不编译；播放只面向已准备的 `ProductionBinding`。
 - `preview.prepare` 显式编译并准备已保存源，不合成或播放；编辑未保存或有模态框时不开放。
 - 草稿 inspect 每页最多 10 项，只返回元数据；read 按第 4 节分片，带完整 UTF-8 SHA-256，格式为 `presmium-document-json-v1`（正文）、`presmium-rich-text-json-v1`（批注）或 `presmium-component-parameters-json-v1`（组件属性）。当前内存稿遮蔽同 ID 的旧存储。
-- 批注与组件属性的 restore 带候选引用与 `expectedCurrent`，先备份当前稿再分出新分支；恢复不提交，仍由作者 Save 或 Apply。discard 只退休选中的备份。
+- 批注 restore 只需候选 `draft`，客户端选择唯一的原生恢复入口并严格保留当前分支。`composerId` 与 `expectedCurrent` 是可选的成对高级绑定，不能只提供其一；原生目标不唯一时拒绝。inspect 默认只给出 `restorable` 标记，动作内的 `details: true` 才展开这些绑定；普通恢复与丢弃回执不重复输入的引用，恢复仍返回采用后的新引用。表单标识与保留分支的核验信息只在顶层 `details: true` 或高级请求中展开。组件属性 restore 仍显式提供候选与 `expectedCurrent`。恢复都不提交，仍由作者 Save 或 Apply。
+- 批注恢复包含新建文字批注、整个内容块或某一步的位置批注，以及已挂载的回复和已有批注编辑器。新建批注复用原生打开入口，严格提交候选副本后，等待真实编辑器载入并读回内容才报告完成；关闭的表单可以重新打开。原选区签名或位置失效时拒绝恢复，原分支仍保留。位置恢复控制器只在表单打开或该内容块存在草稿时注册。
+- 批注 discard 退休确切版本。已挂载的原生表单在存储确认后清除选中输入；已有批注编辑器恢复当前保存值，回复与新建表单恢复为空。其它分支不变。组词、提交中、只读、来源或输入变化时拒绝；存储失败保留输入。退休标记与恢复副本的严格事务都接收取消及原生输入守卫；异步哈希后重新核对内存记录身份，再退休旧版本。取消不回滚已经提交的本地备份。
+- 修改前的只读准备可以等待本地存储回执，并在原引用、来源、原生输入及所有者均未变化时有限重读；不重复恢复、退休或保存，也不换用新的来源或分支。读取分片和元数据分页仍需使用同一观察版本，变化时拒绝续读。
+- 批注 inspect/read 即使保存源暂时无效仍可读取本地草稿，不把客户端缓存当作保存源已核验；restore/discard 保持严格来源校验。点击全局批准入口及其浮层保留当前批注表单，批准中的新输入仍使原请求失效。
 - 正文动作复用当前 `DocumentSession` 与原生备份库。inspect 返回单个不透明的确切分支引用、`current` 标记、存储状态、基线版本、组词与待提交状态；`baseObserved` 只比较浏览器上次观察的保存版本。存储读取不完整时报告 `coverage: partial`。read 必须显式选择引用；被动状态与 inspect 都不带正文。
 - 正文 restore 选择非 current 备份，先严格保存原分支再恢复到原生编辑器，不自动保存或消除冲突。discard 带 `confirm: true`：current 恢复当前已保存正文，非 current 只退休选中的备份。retry 选择确切 current 引用，显式刷新并保存；服务端在确认前固定源版本，浏览器刷新与最终 CAS 都必须匹配该版本。并发刷新替换观察、输入变化、组词或来源变化时拒绝，不隐式换源重试。要求审阅的工作区拒绝 retry。
 - 正文 inspect、read、restore、discard 按同一成员、文稿、客户端连接与输入版本授权；即使保存源暂时失效或浏览器观察落后，仍可读取与退休本地备份。restore 与 current discard 另外需要原生入口成功读取保存源。只涉及本地草稿的完成回执不宣称服务端源已核验。取消会终止等待与未提交的恢复标记事务，已排队的作者备份仍保存；回执只报告实际 outcome、dirty、conflicted 与必要的备份状态。
@@ -350,6 +354,6 @@ agent 的循环：探测能力 → 读源 → 预检 → 提交或开始任务 �
 - 远程上传素材；MCP 只导入工作区内已有文件。
 - 步骤的新建、重排与删除动作，共享讲稿的分离编辑，独立组件实现副本。
 - 任意 checkout；选中文件的提交与丢弃使用第 12 节的共享未提交修改入口。
-- 新建批注 composer 的草稿恢复，其它未接入表单的草稿。
+- 音色、媒体与转写校对等其它未接入表单的草稿。
 - 原音与新讲稿的自动词对齐、跨步连续分配原音、只转写所选区间。
 - 通用 `plan_document_change`、`apply_document_change` 的大文稿输入没有预算（它们的结果不带文稿，用 `read_document_part` 读取）；agent 优先用页面与语义动作。

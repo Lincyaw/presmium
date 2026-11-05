@@ -52,6 +52,16 @@ save, a changed source or unavailable storage can refuse it and retain the propo
 still work with invalid saved JSON. Use a fresh inspect after input changes; these stores contain current
 proposals, not historical backup branches.
 
+For comment drafts use `editor_action` with `comment-drafts.inspect`, `.read`, `.restore` or `.discard`.
+Inspect returns metadata and a `restorable` flag without comment text, anchor signatures or baselines.
+Ordinary restore needs only the returned `draft`: the client selects a unique native target and preserves
+current input before adopting a new branch. It can reopen a closed new text or place-comment form;
+reply and existing-comment editing use their mounted native composers. A changed text anchor is refused.
+Discard retires only that exact version, then clears its open form or restores the saved comment text.
+Composition, saving, read-only state, storage failure or changed input can refuse mutation. Local reads
+still work when saved JSON is invalid. Inspect `details:true` and the paired `composerId/expectedCurrent`
+binding are for diagnostics; do not copy them into ordinary calls. Restoring is separate from saving.
+
 Preview compilation is independent. When it fails, retain valid document content, show readable diagnostics and identify the previous snapshot's version. Do not fix a preview by writing generated IR or silently replacing the authoring file with editor-private state.
 
 For agent changes, state the affected objects and intended result, inspect the actual diff and validate the same document. Never infer a paid provider capability from a prototype or silently synthesize narration while editing.

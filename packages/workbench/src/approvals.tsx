@@ -6,6 +6,11 @@ import { WorkspaceServerError } from './workspace-client.ts'
 
 interface Pending { id: string, request: ApprovalRequest }
 
+/** Approval controls belong to the operation's editing context, including their portaled panel. */
+export function isApprovalTarget(target: EventTarget | null | undefined): boolean {
+  return target instanceof Element && Boolean(target.closest('[data-approval-trigger], .pmw-approvals'))
+}
+
 /**
  * The host's operations waiting for the author, such as an external MCP client's import: shown only while one is
  * pending, answered here as in the viewer's "Approvals". The host times them out; a late answer is reported, not retried.
@@ -38,7 +43,7 @@ export function WorkbenchApprovals({ density = 'compact' }: { density?: 'compact
   }
   return (
     <PmPopover open={open} onOpenChange={setOpen} label={t.approvalsTitle} name="pmw-approvals" trigger={
-      <PmButton variant="accent" density={density}>{t.approvals(pending.length)}</PmButton>
+      <PmButton data-approval-trigger="" variant="accent" density={density}>{t.approvals(pending.length)}</PmButton>
     }>
       <h2 className="pmw-approvals__heading">{t.approvalsTitle}</h2>
       <ul className="pmw-approvals__list">

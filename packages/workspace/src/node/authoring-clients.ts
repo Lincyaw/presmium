@@ -70,7 +70,7 @@ export function createAuthoringClients(editor: SourceEditor, options: { reviewRe
       if (!validateAuthoringClientQuery(query)) throw new RequestError(400, 'client-query-invalid')
       const all = [...clients.values()].filter(client => client.member === member.id && client.value.document === document && (!query.clientId || client.value.clientId === query.clientId)
         && (!query.after || client.value.clientId > query.after)).sort((a, b) => a.value.clientId.localeCompare(b.value.clientId))
-      const answer = { document, clients: [] as AuthoringClientDescriptor[], unavailable: ['new-comment-restore', 'active-comment-discard', 'other-form-drafts', 'review', 'open-document', ...options.reviewRequired ? ['source-writes-require-review'] : []] }
+      const answer = { document, clients: [] as AuthoringClientDescriptor[], unavailable: ['other-form-drafts', 'review', 'open-document', ...options.reviewRequired ? ['source-writes-require-review'] : []] }
       for (const client of all) {
         const row = structuredClone(client.value)
         row.snapshot.actions = row.snapshot.actions.filter(type => !requiresReview(type))
@@ -203,8 +203,9 @@ export function createAuthoringClients(editor: SourceEditor, options: { reviewRe
       if (action.type === 'production-drafts.discard' && (result.type !== action.type || result.draft !== action.draft || !result.discarded)) throw new RequestError(400, 'client-result-invalid')
       const sameComment = (a: import('@lincyaw/kernel').ClientCommentDraftReference | null, b: import('@lincyaw/kernel').ClientCommentDraftReference | null) => a === null || b === null ? a === b
         : a.id === b.id && a.revision === b.revision && a.token === b.token
-      if (action.type === 'comment-drafts.restore' && (result.type !== action.type || !sameComment(result.draft, action.draft) || result.composerId !== action.composerId
-        || !sameComment(result.preservedCurrent, action.expectedCurrent) || result.restored.revision !== 1 || result.restored.id === action.draft.id || result.restored.id === action.expectedCurrent?.id)) throw new RequestError(400, 'client-result-invalid')
+      if (action.type === 'comment-drafts.restore' && (result.type !== action.type || !sameComment(result.draft, action.draft)
+        || action.composerId !== undefined && (result.composerId !== action.composerId || !sameComment(result.preservedCurrent, action.expectedCurrent ?? null))
+        || result.restored.revision !== 1 || result.restored.id === action.draft.id || result.restored.id === result.preservedCurrent?.id)) throw new RequestError(400, 'client-result-invalid')
       if (action.type === 'comment-drafts.discard' && (result.type !== action.type || !sameComment(result.draft, action.draft) || !result.discarded)) throw new RequestError(400, 'client-result-invalid')
       const sameDraft = (a: import('@lincyaw/kernel').ClientComponentDraftReference | null, b: import('@lincyaw/kernel').ClientComponentDraftReference | null) => a === null || b === null ? a === b
         : a.id === b.id && a.revision === b.revision && a.token === b.token && a.blockId === b.blockId && a.stepId === b.stepId

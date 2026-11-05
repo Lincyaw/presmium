@@ -58,6 +58,7 @@ export function queryToolCatalog(tools: readonly ListedTool[], args: Record<stri
   if (args.schema || args.variant !== undefined) throw failure('operation-name-required')
   const query = String(args.query ?? '').toLowerCase(), offset = Number(args.offset ?? 0), limit = Number(args.limit ?? 10)
   const found = tools.filter(tool => `${tool.name} ${tool.description}`.toLowerCase().includes(query))
+    .sort((a, b) => Number(COMMON.has(b.name)) - Number(COMMON.has(a.name)))
   return { operations: found.slice(offset, offset + limit).map(tool => ({ name: tool.name, kind: tool.kind, description: description(tool) })),
     ...offset + limit < found.length ? { next: offset + limit } : {} }
 }

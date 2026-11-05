@@ -870,7 +870,7 @@ export class Workbench {
         ...bodyDrafts.mutate && !locked && !state.isCreatingPage && !state.isEditingPage && !state.isHistoryBusy && !state.isHistoryPreparing && !state.hasDocumentTimingDrafts
           ? ['body-drafts.restore' as const, 'body-drafts.discard' as const, ...bodyDrafts.current ? ['body-drafts.retry' as const] : []] : [],
         ...commentDrafts?.readable ? ['comment-drafts.inspect' as const, 'comment-drafts.read' as const] : [],
-        ...clean && !state.isHistoryBusy && !state.isHistoryPreparing && commentDrafts?.readable && commentDrafts.ownersKnown ? ['comment-drafts.discard' as const, ...state.webView === 'document' && commentDrafts.hasRestoreComposer() ? ['comment-drafts.restore' as const] : []] : [],
+        ...this.client.capabilities?.readOnly !== true && clean && !state.isHistoryBusy && !state.isHistoryPreparing && commentDrafts?.readable && commentDrafts.ownersKnown ? ['comment-drafts.discard' as const, ...state.webView === 'document' && commentDrafts.hasRestoreComposer() ? ['comment-drafts.restore' as const] : []] : [],
         ...source.member?.id && this.#componentPropertyDrafts.readable(source.identity, source.member.id) ? ['component-drafts.inspect' as const, 'component-drafts.read' as const] : [],
         ...clean && !state.isHistoryBusy && !state.isHistoryPreparing && source.member?.id && this.#componentPropertyDrafts.readable(source.identity, source.member.id) ? ['component-drafts.restore' as const, 'component-drafts.discard' as const] : [],
         ...this.#canPreparePresentation() ? ['preview.prepare' as const] : [],
@@ -924,7 +924,7 @@ export class Workbench {
       const guard = () => {
         owned()
         const state = this.#state, source = state.authoring
-        if (!source?.content || source.member?.id !== memberId || !source.version || !source.fingerprint
+        if (this.client.capabilities?.readOnly === true || !source?.content || source.member?.id !== memberId || !source.version || !source.fingerprint
           || !sameSource({ documentId: source.content.id, version: source.version, fingerprint: source.fingerprint }, expected)
           || source.loading || source.dirty || source.saving || source.composing || source.restored || source.recovering || source.error || isAgentChanging(state)
           || state.isCreatingPage || state.isEditingPage || state.isHistoryBusy || state.isHistoryPreparing || state.hasDocumentTimingDrafts

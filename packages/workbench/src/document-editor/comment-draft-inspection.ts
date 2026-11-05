@@ -9,7 +9,7 @@ export const commentDraftReference = (value: CommentDraftCandidate) => ({ id: va
 export function commentDraftMetadata(value: CommentDraftCandidate, drafts: CommentDrafts): ClientCommentDraftMetadata {
   const target = value.target
   return { draft: commentDraftReference(value), kind: isNewCommentDraft(target) ? 'create' : target.commentId ? 'edit' : 'reply', storage: value.storage,
-    updatedAt: value.updatedAt, baseVersion: value.version, composing: value.composing, pendingSubmission: Boolean(value.pending), ownersKnown: drafts.ownersKnown, active: drafts.activeRecord(value), discardable: !value.composing && !value.pending && !drafts.targetActive(value.target),
+    updatedAt: value.updatedAt, baseVersion: value.version, composing: value.composing, pendingSubmission: Boolean(value.pending), ownersKnown: drafts.ownersKnown, active: drafts.activeRecord(value), discardable: drafts.canDiscard(value),
     ...isNewCommentDraft(target) ? {} : { threadId: target.threadId, ...target.commentId ? { commentId: target.commentId } : {} } }
 }
 
@@ -17,7 +17,7 @@ export async function inspectCommentDrafts(drafts: CommentDrafts, action: Extrac
   const read = await drafts.readForAgent(signal, action.type === 'comment-drafts.read' ? action.draft : undefined)
   const current = () => { signal.throwIfAborted(); if (drafts.revision !== read.revision) throw new Error('client-comment-drafts-changed') }
   if (action.type === 'comment-drafts.inspect') {
-    const values = await Promise.all(read.candidates.map(async value => { const restore = await drafts.restoreChoice(value, signal); return { ...commentDraftMetadata(value, drafts), ...restore ? { restore } : {} } })), token = await hash(JSON.stringify({ values, coverage: read.coverage, skippedInvalid: read.skippedInvalid }))
+    const values = await Promise.all(read.candidates.map(async value => { const restore = await drafts.restoreChoice(value, signal); return { ...commentDraftMetadata(value, drafts), ...restore ? { restorable: true as const, ...action.details ? { restore } : {} } : {} } })), token = await hash(JSON.stringify({ values, coverage: read.coverage, skippedInvalid: read.skippedInvalid }))
     current()
     if (action.cursor && action.cursor.token !== token) throw new Error('client-comment-drafts-changed')
     const start = action.cursor ? values.findIndex(value => value.draft.id === action.cursor!.after) + 1 : 0

@@ -333,12 +333,12 @@ export function PmDialog({ open, label, closeLabel, name, actions, description, 
 }
 
 /** A non-modal floating panel on its trigger, with the shared `pm-ui-popover` surface (host's PmPopover for React pages). */
-export function PmPopover({ open, label, name, placement = 'below-end', trigger, onOpenChange, children }: { open: boolean, label: string, name?: string, placement?: PopoverPlacement, trigger: ReactNode, onOpenChange(open: boolean): void, children?: ReactNode }) {
+export function PmPopover({ open, label, name, placement = 'below-end', trigger, onOpenChange, onInteractOutside, children }: { open: boolean, label: string, name?: string, placement?: PopoverPlacement, trigger: ReactNode, onOpenChange(open: boolean): void, onInteractOutside?: ComponentProps<typeof Popover.Content>['onInteractOutside'], children?: ReactNode }) {
   return (
     <Popover.Root open={open} onOpenChange={onOpenChange}>
       <Popover.Trigger asChild>{trigger}</Popover.Trigger>
       <Popover.Portal>
-        <Popover.Content className={cls('pm-ui-popover', 'pm-ui-floating', 'pm-ui', name)} aria-label={label} {...placementOf(placement)} sideOffset={6} collisionPadding={16} onEscapeKeyDown={event => event.stopPropagation()}>
+        <Popover.Content className={cls('pm-ui-popover', 'pm-ui-floating', 'pm-ui', name)} aria-label={label} {...placementOf(placement)} sideOffset={6} collisionPadding={16} onInteractOutside={onInteractOutside} onEscapeKeyDown={event => event.stopPropagation()}>
           {children}
         </Popover.Content>
       </Popover.Portal>

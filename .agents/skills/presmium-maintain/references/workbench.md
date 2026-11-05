@@ -23,6 +23,9 @@ subscription injection optional so standalone callers still use EventSource.
 
 ## Agent tool catalogs
 
+Document client discovery omits transport bindings by default; request `details: true` for protocol diagnosis.
+Compact browser request polling returns the same projected receipt as an immediate editor action.
+Use `details: true` on the status query for the original receipt; full compatibility connections keep it.
 External MCP and the Harness model surface share `@lincyaw/mcp/client`'s compact catalog,
 argument summaries and resolver. `DocumentBinding.tools` keeps full trusted metadata off the model;
 `registeredTools` pins what was installed until the next step boundary or the agent is idle. Resolve the real target before policy,
@@ -256,3 +259,19 @@ Tab storage must compare the captured raw value and persist removal before clear
 or externally changed slots report partial coverage. Local reads tolerate invalid canonical JSON;
 discard retains strict source, input-revision, permission and pending-write checks. See
 `docs/authoring-actions.md` section 11 for the public contract.
+
+Comment draft actions use the same `CommentDrafts` registry and strict backup transactions as the UI.
+Mounted native composers own active discard; recovery controllers reopen new text/place forms and wait
+for actual native adoption. Direct mounted targets take precedence over controllers. Registration stays
+stable across ordinary input; readiness and captured read-only state follow their native lifetimes.
+Restore can derive the unique composer and preserved branch internally; explicit legacy bindings remain
+paired. Keep original candidates and current input backed up, carry cancellation/source/input guards into
+IndexedDB create/mark, and recheck a writer's identity synchronously after every awaited hash before
+removing it. Approval interactions keep these non-modal forms open through the shared popover boundary;
+they never loosen the request's input or source checks.
+
+Comment mutation preflight may reread the same exact reference up to four times while native owners and
+record pointers are unchanged, so an outstanding durability acknowledgement does not force a new model
+call. Capture those pointers before any await; actual input, ownership, source or cancellation changes
+refuse instead of retrying. The retry boundary ends before recover/mark/create. Metadata pagination
+still validates its observation token, and retired candidates are checked through their exact marker.

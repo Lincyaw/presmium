@@ -1,6 +1,6 @@
 import { documentAnchorKey, documentCommentTargets, isDocumentPlaceAnchor, isRecord, randomUUID, validateDocument, validateDocumentCommentAnchor } from '@lincyaw/kernel'
 import type { DocumentComment, DocumentThread, DocumentThreadAnchor, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
-import { DocumentDraftStore } from '../document-draft-store.ts'
+import { DocumentDraftStore, waitForDraft } from '../document-draft-store.ts'
 import { sha256 as tokenOf } from '../sha256.ts'
 import type { DraftStoreResult } from '../document-draft-store.ts'
 
@@ -39,8 +39,10 @@ export interface CommentDraftComposer {
   id: string
   target: CommentComposerTarget
   snapshot(): { record?: CommentDraftRecord, composing: boolean, available: boolean }
-  targetState(): 'current' | 'changed' | 'unavailable'
+  targetState(target?: CommentComposerTarget): 'current' | 'changed' | 'unavailable'
+  accepts?(target: CommentComposerTarget): boolean
   restore?(candidate: CommentDraftCandidate, operation: CommentDraftOperation): Promise<CommentDraftRecord | undefined>
+  discard?(candidate: CommentDraftCandidate, operation?: CommentDraftOperation): Promise<boolean>
 }
 interface Writing { record: CommentDraftRecord, raw: string, store: DocumentDraftStore, generation: number, pending: boolean, failed: boolean, done: Promise<DraftStoreResult>, clearing?: boolean }
 const PREFIX = 'presmium.comment-draft.v1:'
@@ -117,14 +119,56 @@ export class CommentDrafts {
   targetActive(target: CommentComposerTarget): boolean { return !this.ownersKnown || [...this.#composers.values()].some(value => sameCommentDraftTarget(value.target, target) && value.snapshot().available) }
   activeRecord(record: CommentDraftRecord): boolean { return [...this.#composers.values()].some(value => value.snapshot().record?.id === record.id && value.snapshot().record?.revision === record.revision && value.snapshot().available) }
   owns(record: CommentDraftRecord): boolean { return !this.#closed && this.#writing.get(record.id)?.record === record }
+  /** Durability acknowledgements can settle without changing author input or native ownership. */
+  inputGuard(): () => void {
+    const records = new Map([...this.#writing].map(([id, value]) => [id, value.record])), unknown = this.#unregisteredComposers
+    const owners = [...this.#composers].map(([id, value]) => ({ id, value, ...value.snapshot() }))
+    return () => {
+      if (this.#closed || unknown !== this.#unregisteredComposers || records.size !== this.#writing.size || [...records].some(([id, record]) => this.#writing.get(id)?.record !== record)
+        || owners.length !== this.#composers.size || owners.some(owner => {
+          const state = owner.value.snapshot()
+          return this.#composers.get(owner.id) !== owner.value || state.record !== owner.record || state.composing !== owner.composing || state.available !== owner.available
+        })) throw new Error('client-comment-drafts-changed')
+    }
+  }
+  #activeComposers(candidate: CommentDraftRecord): CommentDraftComposer[] {
+    return [...this.#composers.values()].filter(composer => {
+      if (composer.accepts) return false // A recovery controller is not a second owner of the visible editor.
+      const record = composer.snapshot().record
+      return record?.id === candidate.id && record.revision === candidate.revision
+    })
+  }
+  canDiscard(candidate: CommentDraftCandidate): boolean {
+    if (!this.ownersKnown || candidate.composing || candidate.pending) return false
+    const owners = this.#activeComposers(candidate)
+    return !owners.length || owners.length === 1 && Boolean(owners[0]!.discard && owners[0]!.snapshot().available && !owners[0]!.snapshot().composing)
+  }
+  /** Both the UI and MCP retire the exact branch before changing the actual mounted editor. */
+  async discardProposal(candidate: CommentDraftCandidate, operation?: CommentDraftOperation): Promise<boolean> {
+    operation?.signal?.throwIfAborted(); operation?.guard?.()
+    if (!this.canDiscard(candidate)) throw new Error('client-comment-draft-needs-human')
+    const owners = this.#activeComposers(candidate)
+    const guard = () => {
+      operation?.signal?.throwIfAborted(); operation?.guard?.()
+      const current = this.#activeComposers(candidate)
+      if (!this.canDiscard(candidate) || current.length !== owners.length || current.some((owner, index) => owner !== owners[index])) throw new Error('client-comment-composer-changed')
+    }
+    guard()
+    return owners[0] ? owners[0].discard!(candidate, { signal: operation?.signal, guard }) : this.discard(candidate, { signal: operation?.signal, guard })
+  }
   async restoreChoice(candidate: CommentDraftCandidate, signal: AbortSignal): Promise<{ composerId: string, expectedCurrent: CommentDraftReference | null } | undefined> {
-    if (!this.ownersKnown || isNewCommentDraft(candidate.target) || candidate.storage !== 'durable' || candidate.composing || candidate.pending) return
-    const matching = [...this.#composers.values()].filter(value => value.restore && sameCommentDraftTarget(value.target, candidate.target) && value.snapshot().available && !value.snapshot().composing && value.targetState() !== 'unavailable')
+    if (!this.ownersKnown || candidate.storage !== 'durable' || candidate.composing || candidate.pending) return
+    const available = [...this.#composers.values()].filter(value => value.restore && value.snapshot().available && !value.snapshot().composing && value.targetState(candidate.target) !== 'unavailable')
+    const direct = available.filter(value => !value.accepts && sameCommentDraftTarget(value.target, candidate.target))
+    const matching = direct.length ? direct : available.filter(value => value.accepts?.(candidate.target))
     if (matching.length !== 1) return
     const composer = matching[0]!, current = composer.snapshot().record
     if (!current) return { composerId: composer.id, expectedCurrent: null }
     const writing = this.#writing.get(current.id)
-    if (current.id === candidate.id || current.composing || current.pending || !writing || writing.record !== current || writing.pending || writing.failed || !writing.store.owns(keyOf(this.#scope, current.id), writing.raw)) return
+    if (current.id === candidate.id || current.composing || current.pending || !writing || writing.record !== current) return
+    if (writing.pending && await waitForDraft(writing.done, signal) !== 'committed') return
+    signal.throwIfAborted()
+    if (writing.failed || this.#writing.get(current.id) !== writing || !writing.store.owns(keyOf(this.#scope, current.id), writing.raw)) return
     const token = await tokenOf(writing.raw); signal.throwIfAborted()
     if (this.#composers.get(composer.id) !== composer || composer.snapshot().record !== current || !composer.snapshot().available || composer.snapshot().composing) throw new Error('client-comment-drafts-changed')
     return { composerId: composer.id, expectedCurrent: { id: current.id, revision: current.revision, token } }
@@ -296,19 +340,21 @@ export class CommentDrafts {
     this.#settling++; this.#touch()
     try {
     if (this.#closed || !this.#reader) return false
-    const values = await this.#reader.read([prefix(this.#scope)], operation?.signal), writing = this.#writing.get(reference.id)
+    const values = await this.#reader.read([keyOf(this.#scope, reference.id)], operation?.signal), writing = this.#writing.get(reference.id)
     const raw = writing && writing.record.revision === reference.revision && await tokenOf(writing.raw) === reference.token ? writing.raw : values.get(keyOf(this.#scope, reference.id))
     if (this.#closed || typeof raw !== 'string' || await tokenOf(raw) !== reference.token) return false
     const value: unknown = JSON.parse(raw)
     if (!valid(value, this.#scope) || value.revision !== reference.revision || this.#closed) return false
     operation?.signal?.throwIfAborted(); operation?.guard?.()
-    const committed = await this.#reader!.mark([[markerOf(this.#scope, reference), reference.token]])
+    const committed = await this.#reader!.mark([[markerOf(this.#scope, reference), reference.token]], operation)
+    operation?.signal?.throwIfAborted(); operation?.guard?.()
+    const writtenToken = writing ? await tokenOf(writing.raw) : undefined
     operation?.signal?.throwIfAborted(); operation?.guard?.()
     if (!this.#closed) {
       if (committed) this.#touch()
-      if (committed && writing && this.#writing.get(reference.id) === writing && writing.record.revision === reference.revision && await tokenOf(writing.raw) === reference.token) { this.#writing.delete(reference.id); writing.store.close() }
+      if (committed && writing && this.#writing.get(reference.id) === writing && writing.record.revision === reference.revision && writtenToken === reference.token) { this.#writing.delete(reference.id); writing.store.close() }
       if (!committed) this.#admissionFailure = true
-      this.#pending(); await this.refresh()
+      this.#pending(); void this.refresh()
     }
     return committed
     } catch (error) { if (operation) throw error; this.#readFailure = true; this.#pending(); return false }
@@ -319,7 +365,7 @@ export class CommentDrafts {
     if (this.#closed || !this.#reader) return
     this.#settling++; this.#touch()
     try {
-      const values = await this.#reader.read([prefix(this.#scope)], operation?.signal), writing = this.#writing.get(reference.id)
+      const values = await this.#reader.read([keyOf(this.#scope, reference.id), markerOf(this.#scope, reference)], operation?.signal), writing = this.#writing.get(reference.id)
       const raw = writing && writing.record.revision === reference.revision && await tokenOf(writing.raw) === reference.token ? writing.raw : values.get(keyOf(this.#scope, reference.id))
       if (this.#closed || typeof raw !== 'string' || await tokenOf(raw) !== reference.token || values.get(markerOf(this.#scope, reference)) === reference.token) return
       const value: unknown = JSON.parse(raw)
@@ -327,7 +373,7 @@ export class CommentDrafts {
       operation?.signal?.throwIfAborted(); operation?.guard?.()
       const record: CommentDraftRecord = { ...value, target: isNewCommentDraft(target) ? structuredClone(target) : value.target, id: randomUUID(), owner: this.#owner, revision: 1, updatedAt: Date.now(), version, composing: false, pending: undefined }
       const store = new DocumentDraftStore(this.#scope, undefined, { family: 'comment', owner: this.#owner }), next = JSON.stringify(record)
-      if (next.length > MAX_CHARS || !await store.create(keyOf(this.#scope, record.id), next) || this.#closed) { store.close(); if (!this.#closed) { this.#admissionFailure = true; this.#pending() }; return }
+      if (next.length > MAX_CHARS || !await store.create(keyOf(this.#scope, record.id), next, operation) || this.#closed) { store.close(); if (!this.#closed) { this.#admissionFailure = true; this.#pending() }; return }
       try { operation?.signal?.throwIfAborted(); operation?.guard?.() } catch (error) { store.close(); throw error }
       this.#writing.set(record.id, { record, raw: next, store, generation: 0, pending: false, failed: false, done: Promise.resolve('committed') })
       this.#touch(); void this.refresh()
