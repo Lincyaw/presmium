@@ -1,5 +1,12 @@
 # @lincyaw/skills
 
+## 1.0.0-rc.64
+
+### Patch Changes
+
+- 30b7d70: Read voiceover status in bounded pages with automatic source and preview revision binding, preserving native Web state and complete job detail reads.
+- @lincyaw/kernel@1.0.0-rc.64
+
 ## 1.0.0-rc.63
 
 ### Patch Changes
