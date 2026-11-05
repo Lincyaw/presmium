@@ -13,6 +13,30 @@ function service(call: Call): DocumentTranscriptions {
 }
 const language = async (call: Call, selected: string) => (await call.host.documents()).find(document => document.dir === selected)?.lang ?? ''
 
+/** Candidate identity already pins every fragment; do not add a second verification token. */
+async function readResult(call: Call) {
+  const candidate = await service(call).readResult(await call.document(), String(call.args.id), String(call.args.revision), call.caller.member)
+  const path = (call.args.path ?? []) as string[], offset = Number(call.args.offset ?? 0)
+  const fail = (status: number, code: string): never => { throw Object.assign(new Error(code), { status }) }
+  let value: unknown = candidate
+  for (const key of path) {
+    if (!value || typeof value !== 'object' || !Object.hasOwn(value, key) || Array.isArray(value) && !/^(0|[1-9][0-9]*)$/.test(key)) return fail(404, 'transcription-result-field-missing')
+    value = (value as Record<string, unknown>)[key]
+  }
+  if (value === undefined) return fail(404, 'transcription-result-field-missing')
+  const text = JSON.stringify(value), boundary = (index: number) => !(index > 0 && index < text.length && /[\uD800-\uDBFF]/.test(text[index - 1]!) && /[\uDC00-\uDFFF]/.test(text[index]!))
+  if (!Number.isSafeInteger(offset) || offset < 0 || offset > text.length || !boundary(offset)) return fail(400, 'transcription-result-offset-invalid')
+  const base = { transcriptionId: candidate.transcriptionId, revision: candidate.revision, path }, fits = (reply: unknown) => JSON.stringify(reply, null, 2).length <= 7168
+  const whole = call.args.path === undefined ? candidate : { ...base, encoding: 'value', complete: true, value }
+  if (offset === 0 && text.length <= 2048 && fits(whole)) return whole
+  const fragment = (end: number) => ({ ...base, encoding: 'json-text-fragment', offsetUnit: 'utf16', offset, ...end < text.length ? { nextOffset: end } : {}, totalChars: text.length, complete: end === text.length, text: text.slice(offset, end) })
+  let low = offset, high = Math.min(text.length, offset + 2048)
+  while (low < high) { const middle = Math.ceil((low + high) / 2); if (fits(fragment(middle))) low = middle; else high = middle - 1 }
+  if (!boundary(low)) low--
+  if (low < offset || low === offset && offset < text.length || !fits(fragment(low))) return fail(413, 'transcription-result-response-too-large')
+  return fragment(low)
+}
+
 export const TRANSCRIPTION_TOOLS: ToolSpec[] = [
   {
     name: 'get_transcription_capabilities', kind: 'read', structured: true,
@@ -50,9 +74,9 @@ export const TRANSCRIPTION_TOOLS: ToolSpec[] = [
   },
   {
     name: 'get_transcription_result', kind: 'read', structured: true,
-    description: 'Reads one immutable transcription candidate at its exact id and revision, including real provider provenance and available segment/word timing. It does not overwrite canonical narration, re-align timestamps or synthesize audio.',
-    inputSchema: input({ id, revision: id }, ['id', 'revision']),
-    run: async call => service(call).readResult(await call.document(), String(call.args.id), String(call.args.revision), call.caller.member),
+    description: 'Read immutable transcription material by id/revision. Optional path selects own JSON fields or canonical array indices. Small results retain their value; large ones return UTF-16 JSON-text fragments, at most 2048 decoded characters and 7168 response characters. Follow nextOffset with the same id/revision and path; assemble text before parsing. No extra verification token or provider call.',
+    inputSchema: input({ id, revision: id, path: { type: 'array', maxItems: 8, items: { type: 'string', minLength: 1, maxLength: 200 } }, offset: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER } }, ['id', 'revision']),
+    run: readResult,
   },
   {
     name: 'cancel_transcription', kind: 'operate', structured: true,

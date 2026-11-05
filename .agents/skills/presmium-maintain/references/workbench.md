@@ -88,6 +88,7 @@ independent snapshots and never take focus or mode while editing.
   Keep default receipts compact and explicit native request mode compatible; derive alternative input
   requirements from schema rather than maintaining another parameter table. Verify both actual MCP approval
   and Harness ask, including file/source changes during the decision and native receipt replay.
+- Immutable transcription MCP reads verify the original candidate through the existing service, cap decoded fragments and complete escaped responses, and keep small whole results compatible. Candidate ID/revision binds continuation without another snapshot or verification parameter; optional own-field paths avoid reading unrelated transcript material.
 - Transcription correction drafts remain in the native localStorage bank owned by `DocumentProduction`; MCP reads/discards use the existing production-draft actions. Reopen reads the latest persisted value unless a failed local write must be kept. Native edits and late adoption completion compare original storage bytes; completion also compares exact in-memory input, including after the adopted target changes or unmounts. Never replace immutable provider results with local corrections.
 - Browser-only MCP actions (`preview.prepare`, `source.flush`, body, comment and component-property drafts)
   go over the shared workspace WebSocket to the `AuthoringClients` owner and need exact client

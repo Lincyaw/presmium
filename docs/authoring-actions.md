@@ -180,6 +180,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 - `TranscriptionRevision` 固定 source、音频 ID 与 SHA、实际引擎、毫秒 `segments` 与 `timing: 'words' | 'segments' | 'none'`。只有校验过的 words 才算 `words`。转写整份资产。
 - 工具：`start_transcription`（spend）、`get_transcriptions`、`get_transcription`、`get_transcription_result`、`cancel_transcription`（operate）。
+- `get_transcription_result` 沿用必需的候选 ID 与 revision，服务逐次核验原结果。小结果保留原对象；超过 2048 个序列化字符时，按 `nextOffset` 返回 `json-text-fragment`，每片最多 2048 个解码后 UTF-16 字符、完整响应最多 7168 个缩进 JSON 字符。可选 `path` 沿自身字段与规范数组索引选择文本、段落或元数据；选中的小值返回 `encoding: value`。续读保持同一 ID、revision 和 path，先拼接 text 再解析，不需要额外源版本或验证 token。偏移不拆有效代理对；候选被改动时拒绝混读，文稿正文独立变化不使该不可变结果失效。
 - 语音服务经 `Compiler.nodeServices()` 按目标文稿装配，不运行 IR pass 或场景。
 - 每文稿同时一个 ASR 任务。同 intent 同输入返回同一任务。重启时进行中的付费请求不自动重试，标为 `transcription-interrupted`。
 - 转写期间正文可编辑；完成时源已变仍保存带原 source 的候选，标为需重新检查。取消尽力中止，提供方可能已计费；取消后晚到的结果不采用。
