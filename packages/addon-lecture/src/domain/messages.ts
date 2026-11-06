@@ -87,9 +87,7 @@ export interface LectureMessages {
     sideTabs: string
     language: string
     close: string
-    synthetic: string
     silent: string
-    syntheticBy: (provider: string) => string
     loading: string
     buffering: string
     mediaUnavailable: string
@@ -251,9 +249,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       sideTabs: '字幕列表与章节',
       language: '字幕语言',
       close: '关闭讲授',
-      synthetic: 'AI 生成的配音',
       silent: '无声播放',
-      syntheticBy: provider => `AI 生成的配音（${provider}）`,
       loading: '正在加载讲授…',
       buffering: '正在缓冲…',
       mediaUnavailable: '音频暂时无法加载，请重试',
@@ -377,9 +373,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       sideTabs: 'Caption list and chapters',
       language: 'Caption language',
       close: 'Close Lecture',
-      synthetic: 'AI-generated voiceover',
       silent: 'Silent playback',
-      syntheticBy: provider => `AI-generated voiceover (${provider})`,
       loading: 'Loading the lecture…',
       buffering: 'Buffering…',
       mediaUnavailable: 'The audio could not be loaded. Please try again.',

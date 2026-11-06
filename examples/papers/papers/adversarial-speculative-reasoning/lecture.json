@@ -526,7 +526,7 @@
   "evidence--step-3": {
    "id": "evidence--step-3",
    "sectionId": "p-evidence",
-   "title": "accepted length（接受长度）基本不变",
+   "title": "accepted length 基本不变",
    "visuals": [
     {
      "blockId": "evidence--scene",
@@ -644,7 +644,7 @@
    "content": [
     {
      "type": "text",
-     "text": "这个编程智能体跑了 90 轮。每一步判断都会写进 KV 缓存，后面的推理会一直读回这些 token。"
+     "text": "这个编程智能体跑了 90 轮。每一步判断都会写进 KV 缓存，后面的推理会一直读回这些词元。"
     }
    ]
   },
@@ -653,7 +653,7 @@
    "content": [
     {
      "type": "text",
-     "text": "speculative decoding（推测解码）让 draft model（草稿模型）先猜一段 token，target model（目标模型）一次验证。接受则提交，拒绝则从 residual distribution（残差分布）重采样，最终 output distribution 仍与 target model 的 distribution 相同。"
+     "text": "推测解码先让草稿模型猜一段词元，再由目标模型一次验证。接受则提交，拒绝则从残差分布重采样，最终输出分布仍与目标模型一致。"
     }
    ]
   },
@@ -662,7 +662,7 @@
    "content": [
     {
      "type": "text",
-     "text": "但低精度服务里，exact verification（精确验证）在 distribution 上无损，context precision（token 写入 KV cache 时的数值精度）却不均匀。论文重复同一前向：verification slot（验证槽位）越靠后，噪声越大。nats 是自然对数概率差，相差 1 nat 表示两个概率的比值约为 2.7。"
+     "text": "但低精度服务里，精确验证在输出分布上无损，context precision 却不均匀。这里的 context precision 是词元写入 KV 缓存时的数值精度。论文重复同一前向，验证槽位越靠后，噪声越大。自然对数概率差以 nat 为单位，相差 1 nat 表示两个概率的比值约为 2.7。"
     }
    ]
   },
@@ -671,7 +671,7 @@
    "content": [
     {
      "type": "text",
-     "text": "大多数 token 不怕这点误差。三十轮后，verify-written context 出现更多超过四 nats 的极端偏差，事件率比 decode-written context 高约一到两成。"
+     "text": "大多数词元不怕这点误差。三十轮后，验证写入的上下文出现更多超过四 nat 的极端偏差，事件率比解码写入的上下文高约一到两成。"
     }
    ]
   },
@@ -680,7 +680,7 @@
    "content": [
     {
      "type": "text",
-     "text": "ordinary, high-acceptance draft model（普通高接受率草稿模型）只追求接受率。decision point（决策点）的首个 token 落进哪个 slot，由前面接受了多少 token 决定，基本靠运气。"
+     "text": "普通的高接受率草稿模型只追求接受率。决策点的首个词元落进哪个槽位，由前面接受了多少词元决定，基本靠运气。"
     }
    ]
   },
@@ -689,7 +689,7 @@
    "content": [
     {
      "type": "text",
-     "text": "论文让 adversarial draft（对抗草稿）在 decision point 提出应拒绝的判断。target model 拒绝后重新采样，output distribution（输出分布）完全不变，verification block（验证块）却在这里断开。"
+     "text": "论文让对抗草稿在决策点提出应拒绝的判断。目标模型拒绝后重新采样，输出分布完全不变，验证块却在这里断开。"
     }
    ]
   },
@@ -698,7 +698,7 @@
    "content": [
     {
      "type": "text",
-     "text": "被拒绝 token 及其后的旧 draft token 全部丢弃，target model 重采样的首个 token 成为新 block 的 slot 0，也就是 committing sentence 的首个 token；只有它使用最精确的 slot，后续 token 依次进入 slot 1、2。验证从这里重新开始，普通 token 仍保持高 draft acceptance rate。"
+     "text": "被拒绝的词元及其后的旧草稿词元全部丢弃，目标模型重新采样的首个词元成为新验证块的槽位 0，也就是 committing sentence 的首个词元；只有它使用最精确的槽位，后续词元依次进入槽位 1、2。验证从这里重新开始，普通词元仍保持高接受率。"
     }
    ]
   },
@@ -707,7 +707,7 @@
    "content": [
     {
      "type": "text",
-     "text": "论文先让 target model 担任 judge，在推理轨迹里找 committing sentence，也就是决策句：确认观察、说明下一步或正式落下决定的那一句。"
+     "text": "论文先让目标模型担任评审，在推理轨迹里找 committing sentence，也就是决策句：确认观察、说明下一步或正式落下决定的那一句。"
     }
    ]
   },
@@ -716,7 +716,7 @@
    "content": [
     {
      "type": "text",
-     "text": "从 committing sentence 前的前缀重新采样，得到共享前缀的 fork pair（同源分叉对）：preferred side 先运行验证测试，adversarial side 跳过验证直接猜测。两条续写构成 preference pair，训练只看决策之后的变化。"
+     "text": "从 committing sentence 前的前缀重新采样，得到共享前缀的 fork pair，也就是同源分叉对：可取侧先运行验证测试，对抗侧跳过验证直接猜测。两条续写构成偏好对，训练只看决策之后的变化。"
     }
    ]
   },
@@ -725,7 +725,7 @@
    "content": [
     {
      "type": "text",
-     "text": "然后用 direct preference optimization（DPO，直接偏好优化）反向训练：把 adversarial side 当作 chosen、preferred side 当作 rejected，让 draft model 稳定触发拒绝。target model 完全冻结，draft model 不需要更聪明。"
+     "text": "然后用直接偏好优化反向训练：把对抗侧当作选中样本、可取侧当作拒绝样本，让草稿模型稳定触发拒绝。目标模型完全冻结，草稿模型不需要更聪明。"
     }
    ]
   },
@@ -734,7 +734,7 @@
    "content": [
     {
      "type": "text",
-     "text": "先确认 draft model 学会 preference。held-out tasks 上，decision frame（principle、evidence、likely 等决策表述）的 held-out preference accuracy 是 0.635；run tests 是 0.85。decision correctness 接近随机，说明它学到行为方向，不是判断最终对错。"
+     "text": "先确认草稿模型学会偏好。在未参与训练的任务上，decision frame 的偏好准确率是 0.635，运行测试是 0.85。decision frame 指原则、证据、可能等决策表述。决策正确率接近随机，说明它学到行为方向，不是判断最终对错。"
     }
    ]
   },
@@ -761,7 +761,7 @@
    "content": [
     {
      "type": "text",
-     "text": "accepted length（接受长度）基本不变。GLM-5.3 仍是 2.28；DeepSeek-V4.1-Flash 从 2.50 降到 2.46，约下降 1.6%，论文概括为至多百分之二。"
+     "text": "接受长度基本不变。GLM-5.3 仍是 2.28；DeepSeek-V4.1-Flash 从 2.50 降到 2.46，约下降 1.6%，论文概括为至多百分之二。"
     }
    ]
   },
@@ -770,7 +770,7 @@
    "content": [
     {
      "type": "text",
-     "text": "这不是随便训练草稿的结果。同一批 preference pair 翻转后，训练成 preferred direction（偏好可取侧），GLM-5.3 下降 4.9 个百分点，DeepSeek-V4.1-Flash 下降 1.4。"
+     "text": "这不是随便训练草稿的结果。同一批偏好对翻转后，训练成可取方向，GLM-5.3 下降 4.9 个百分点，DeepSeek-V4.1-Flash 下降 1.4。"
     }
    ]
   },
@@ -779,7 +779,7 @@
    "content": [
     {
      "type": "text",
-     "text": "换成 thinking length 或 decision correctness 等无关偏好，二十七次运行合并为 67.5%，对 unbiased draft 的 67.8%，几乎没有变化。"
+     "text": "换成思考长度或决策正确率等无关偏好，二十七次运行合并为 67.5%，与无偏草稿的 67.8% 相比，几乎没有变化。"
     }
    ]
   },
@@ -788,7 +788,7 @@
    "content": [
     {
      "type": "text",
-     "text": "preferred direction 结果下降，无关方向结果不动。只有 adversarial direction 把拒绝放在 decision point，收益才出现。"
+     "text": "可取方向结果下降，无关方向结果不动。只有对抗方向把拒绝放在决策点，收益才出现。"
     }
    ]
   },
@@ -797,7 +797,7 @@
    "content": [
     {
      "type": "text",
-     "text": "target model 和 verification rule 没变，给定 KV context 时 output distribution 也没变；改变的是关键 token 写入 KV cache 时的 context precision。只训练整套系统约 0.06% 到 0.28% 的 draft 参数，draft model 于是成了 precision 的分配器。"
+     "text": "目标模型和验证规则没变，给定 KV 上下文时输出分布也没变；改变的是关键词元写入 KV 缓存时的 context precision。只训练整套系统约 0.06% 到 0.28% 的草稿模型参数，草稿模型于是成了精度分配器。"
     }
    ]
   },
@@ -806,7 +806,7 @@
    "content": [
     {
      "type": "text",
-     "text": "代价是 accepted length 至多下降约百分之二。"
+     "text": "代价是接受长度至多下降约百分之二。"
     }
    ]
   },
@@ -815,7 +815,7 @@
    "content": [
     {
      "type": "text",
-     "text": "一句话总结：让关键决策句的首个 token 落在最精确的 verification slot。想看哪篇论文，欢迎在评论区留言。翰林院传达室为您分享最新论文，我们下期见。"
+     "text": "一句话总结：让关键决策句的首个词元落在最精确的验证槽位。想看哪篇论文，欢迎在评论区留言。翰林院传达室为您分享最新论文，我们下期见。"
     }
    ]
   }

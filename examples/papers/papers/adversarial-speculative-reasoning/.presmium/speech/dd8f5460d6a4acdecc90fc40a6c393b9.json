@@ -1,0 +1,218 @@
+{
+  "key": "dd8f5460d6a4acdecc90fc40a6c393b9",
+  "audio": "dd8f5460d6a4acdecc90fc40a6c393b9.ogg",
+  "mime": "audio/ogg",
+  "duration": 8.394708333333334,
+  "words": [
+    {
+      "text": "这",
+      "start": 0,
+      "end": 0.175
+    },
+    {
+      "text": "个",
+      "start": 0.175,
+      "end": 0.265
+    },
+    {
+      "text": "编",
+      "start": 0.265,
+      "end": 0.495
+    },
+    {
+      "text": "程",
+      "start": 0.495,
+      "end": 0.695
+    },
+    {
+      "text": "智",
+      "start": 0.695,
+      "end": 0.855
+    },
+    {
+      "text": "能",
+      "start": 0.855,
+      "end": 1.015
+    },
+    {
+      "text": "体",
+      "start": 1.015,
+      "end": 1.195
+    },
+    {
+      "text": "跑",
+      "start": 1.195,
+      "end": 1.425
+    },
+    {
+      "text": "了",
+      "start": 1.425,
+      "end": 1.525
+    },
+    {
+      "text": "90",
+      "start": 2.055,
+      "end": 2.085
+    },
+    {
+      "text": "轮。",
+      "start": 2.085,
+      "end": 2.385
+    },
+    {
+      "text": "每",
+      "start": 2.9400418,
+      "end": 3.0550418
+    },
+    {
+      "text": "一",
+      "start": 3.0550418,
+      "end": 3.1650417
+    },
+    {
+      "text": "步",
+      "start": 3.1650417,
+      "end": 3.3050418
+    },
+    {
+      "text": "判",
+      "start": 3.3050418,
+      "end": 3.5750418
+    },
+    {
+      "text": "断",
+      "start": 3.5750418,
+      "end": 3.7950418
+    },
+    {
+      "text": "都",
+      "start": 3.7950418,
+      "end": 3.9250417
+    },
+    {
+      "text": "会",
+      "start": 3.9250417,
+      "end": 4.0650415
+    },
+    {
+      "text": "写",
+      "start": 4.0650415,
+      "end": 4.305042
+    },
+    {
+      "text": "进",
+      "start": 4.305042,
+      "end": 4.5250416
+    },
+    {
+      "text": "KV",
+      "start": 4.5250416,
+      "end": 4.555042
+    },
+    {
+      "text": "缓",
+      "start": 4.9050417,
+      "end": 5.085042
+    },
+    {
+      "text": "存，",
+      "start": 5.085042,
+      "end": 5.3850417
+    },
+    {
+      "text": "后",
+      "start": 5.755042,
+      "end": 5.9450417
+    },
+    {
+      "text": "面",
+      "start": 5.9450417,
+      "end": 6.075042
+    },
+    {
+      "text": "的",
+      "start": 6.075042,
+      "end": 6.165042
+    },
+    {
+      "text": "推",
+      "start": 6.165042,
+      "end": 6.3450418
+    },
+    {
+      "text": "理",
+      "start": 6.3450418,
+      "end": 6.465042
+    },
+    {
+      "text": "会",
+      "start": 6.465042,
+      "end": 6.6450415
+    },
+    {
+      "text": "一",
+      "start": 6.6450415,
+      "end": 6.835042
+    },
+    {
+      "text": "直",
+      "start": 6.835042,
+      "end": 6.995042
+    },
+    {
+      "text": "读",
+      "start": 6.995042,
+      "end": 7.2250414
+    },
+    {
+      "text": "回",
+      "start": 7.2250414,
+      "end": 7.375042
+    },
+    {
+      "text": "这",
+      "start": 7.375042,
+      "end": 7.495042
+    },
+    {
+      "text": "些",
+      "start": 7.495042,
+      "end": 7.6450415
+    },
+    {
+      "text": "词",
+      "start": 7.6450415,
+      "end": 7.845042
+    },
+    {
+      "text": "元。",
+      "start": 7.845042,
+      "end": 8.075042
+    }
+  ],
+  "engine": "volcengine",
+  "model": "seed-tts-2.0",
+  "voice": "zh_female_tianmeitaozi_uranus_bigtts",
+  "provider": "火山引擎",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "这个编程智能体跑了 90 轮。每一步判断都会写进 KV 缓存，后面的推理会一直读回这些词元。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "火山引擎",
+    "ProduceID": "dd8f5460d6a4acdecc90fc40a6c393b9",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "326a347ab435d4a50433f8cac5ba8294bca6c50492d820998f32e8bc2aba4629",
+  "profile": "690d5ae216b5e2235e2ea04afbb839b644f2da78da4c1c010caf76bd7d25d975",
+  "requestKey": "cc3a444c6053d12d537afc96a50377de",
+  "request": {
+    "spoken": "这个编程智能体跑了 90 轮。每一步判断都会写进 KV 缓存，后面的推理会一直读回这些词元。",
+    "rate": 1,
+    "style": ""
+  }
+}

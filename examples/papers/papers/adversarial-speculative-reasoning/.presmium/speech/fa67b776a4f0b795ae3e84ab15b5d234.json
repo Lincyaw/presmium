@@ -1,0 +1,243 @@
+{
+  "key": "fa67b776a4f0b795ae3e84ab15b5d234",
+  "audio": "fa67b776a4f0b795ae3e84ab15b5d234.ogg",
+  "mime": "audio/ogg",
+  "duration": 11.587875,
+  "words": [
+    {
+      "text": "换",
+      "start": 0.055,
+      "end": 0.235
+    },
+    {
+      "text": "成",
+      "start": 0.235,
+      "end": 0.465
+    },
+    {
+      "text": "思",
+      "start": 0.465,
+      "end": 0.655
+    },
+    {
+      "text": "考",
+      "start": 0.655,
+      "end": 0.855
+    },
+    {
+      "text": "长",
+      "start": 0.855,
+      "end": 1.185
+    },
+    {
+      "text": "度",
+      "start": 1.185,
+      "end": 1.365
+    },
+    {
+      "text": "或",
+      "start": 1.365,
+      "end": 1.535
+    },
+    {
+      "text": "决",
+      "start": 1.535,
+      "end": 1.725
+    },
+    {
+      "text": "策",
+      "start": 1.725,
+      "end": 1.885
+    },
+    {
+      "text": "正",
+      "start": 1.885,
+      "end": 2.065
+    },
+    {
+      "text": "确",
+      "start": 2.065,
+      "end": 2.245
+    },
+    {
+      "text": "率",
+      "start": 2.245,
+      "end": 2.425
+    },
+    {
+      "text": "等",
+      "start": 2.425,
+      "end": 2.585
+    },
+    {
+      "text": "无",
+      "start": 2.585,
+      "end": 2.765
+    },
+    {
+      "text": "关",
+      "start": 2.765,
+      "end": 2.945
+    },
+    {
+      "text": "偏",
+      "start": 2.945,
+      "end": 3.165
+    },
+    {
+      "text": "好，",
+      "start": 3.165,
+      "end": 3.455
+    },
+    {
+      "text": "二",
+      "start": 4.0200415,
+      "end": 4.0950413
+    },
+    {
+      "text": "十",
+      "start": 4.0950413,
+      "end": 4.2950416
+    },
+    {
+      "text": "七",
+      "start": 4.2950416,
+      "end": 4.5550413
+    },
+    {
+      "text": "次",
+      "start": 4.5550413,
+      "end": 4.7550416
+    },
+    {
+      "text": "运",
+      "start": 4.7550416,
+      "end": 4.885041
+    },
+    {
+      "text": "行",
+      "start": 4.885041,
+      "end": 5.1250415
+    },
+    {
+      "text": "合",
+      "start": 5.1250415,
+      "end": 5.3250413
+    },
+    {
+      "text": "并",
+      "start": 5.3250413,
+      "end": 5.4950414
+    },
+    {
+      "text": "为",
+      "start": 5.4950414,
+      "end": 5.6450415
+    },
+    {
+      "text": "67.5%，",
+      "start": 6.6250415,
+      "end": 6.6550417
+    },
+    {
+      "text": "与",
+      "start": 7.3850827,
+      "end": 7.555083
+    },
+    {
+      "text": "无",
+      "start": 7.6550827,
+      "end": 7.805083
+    },
+    {
+      "text": "偏",
+      "start": 7.805083,
+      "end": 8.065083
+    },
+    {
+      "text": "草",
+      "start": 8.065083,
+      "end": 8.305082
+    },
+    {
+      "text": "稿",
+      "start": 8.305082,
+      "end": 8.485083
+    },
+    {
+      "text": "的",
+      "start": 8.485083,
+      "end": 8.6050825
+    },
+    {
+      "text": "67.8%",
+      "start": 9.775083,
+      "end": 9.805082
+    },
+    {
+      "text": "相",
+      "start": 9.805082,
+      "end": 10.075083
+    },
+    {
+      "text": "比，",
+      "start": 10.075083,
+      "end": 10.275083
+    },
+    {
+      "text": "几",
+      "start": 10.385082,
+      "end": 10.555082
+    },
+    {
+      "text": "乎",
+      "start": 10.555082,
+      "end": 10.705083
+    },
+    {
+      "text": "没",
+      "start": 10.705083,
+      "end": 10.885082
+    },
+    {
+      "text": "有",
+      "start": 10.885082,
+      "end": 10.915083
+    },
+    {
+      "text": "变",
+      "start": 10.915083,
+      "end": 10.975082
+    },
+    {
+      "text": "化。",
+      "start": 10.975082,
+      "end": 11.035083
+    }
+  ],
+  "engine": "volcengine",
+  "model": "seed-tts-2.0",
+  "voice": "zh_female_tianmeitaozi_uranus_bigtts",
+  "provider": "火山引擎",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "换成思考长度或决策正确率等无关偏好，二十七次运行合并为 67.5%，与无偏草稿的 67.8% 相比，几乎没有变化。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "火山引擎",
+    "ProduceID": "fa67b776a4f0b795ae3e84ab15b5d234",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "a38a043b8add07795505faaf129e5a68ccba0a14961d1cf7bf2f6e98d0759474",
+  "profile": "690d5ae216b5e2235e2ea04afbb839b644f2da78da4c1c010caf76bd7d25d975",
+  "requestKey": "9847bfe73071f41ddf383e1e2ebdea52",
+  "request": {
+    "spoken": "换成思考长度或决策正确率等无关偏好，二十七次运行合并为 67.5%，与无偏草稿的 67.8% 相比，几乎没有变化。",
+    "rate": 1,
+    "style": ""
+  }
+}

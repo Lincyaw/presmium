@@ -1,0 +1,268 @@
+{
+  "key": "74ed4caddc180a415694f6e973f0610f",
+  "audio": "74ed4caddc180a415694f6e973f0610f.ogg",
+  "mime": "audio/ogg",
+  "duration": 11.035208333333333,
+  "words": [
+    {
+      "text": "论",
+      "start": 0.045,
+      "end": 0.225
+    },
+    {
+      "text": "文",
+      "start": 0.225,
+      "end": 0.525
+    },
+    {
+      "text": "先",
+      "start": 0.525,
+      "end": 0.735
+    },
+    {
+      "text": "让",
+      "start": 0.735,
+      "end": 0.915
+    },
+    {
+      "text": "目",
+      "start": 0.915,
+      "end": 1.135
+    },
+    {
+      "text": "标",
+      "start": 1.135,
+      "end": 1.355
+    },
+    {
+      "text": "模",
+      "start": 1.355,
+      "end": 1.535
+    },
+    {
+      "text": "型",
+      "start": 1.535,
+      "end": 1.825
+    },
+    {
+      "text": "担",
+      "start": 1.825,
+      "end": 1.975
+    },
+    {
+      "text": "任",
+      "start": 1.975,
+      "end": 2.135
+    },
+    {
+      "text": "评",
+      "start": 2.135,
+      "end": 2.365
+    },
+    {
+      "text": "审，",
+      "start": 2.365,
+      "end": 2.615
+    },
+    {
+      "text": "在",
+      "start": 3.2000418,
+      "end": 3.2750418
+    },
+    {
+      "text": "推",
+      "start": 3.2750418,
+      "end": 3.3850417
+    },
+    {
+      "text": "理",
+      "start": 3.3850417,
+      "end": 3.5050418
+    },
+    {
+      "text": "轨",
+      "start": 3.5050418,
+      "end": 3.6750417
+    },
+    {
+      "text": "迹",
+      "start": 3.6750417,
+      "end": 3.8550417
+    },
+    {
+      "text": "里",
+      "start": 3.8550417,
+      "end": 4.015042
+    },
+    {
+      "text": "找",
+      "start": 4.015042,
+      "end": 4.2350416
+    },
+    {
+      "text": "committing",
+      "start": 4.2350416,
+      "end": 4.7150416
+    },
+    {
+      "text": "sentence，",
+      "start": 4.7150416,
+      "end": 5.255042
+    },
+    {
+      "text": "也",
+      "start": 5.5000834,
+      "end": 5.5550833
+    },
+    {
+      "text": "就",
+      "start": 5.5550833,
+      "end": 5.6650834
+    },
+    {
+      "text": "是",
+      "start": 5.6650834,
+      "end": 5.8250833
+    },
+    {
+      "text": "决",
+      "start": 5.8250833,
+      "end": 6.0350833
+    },
+    {
+      "text": "策",
+      "start": 6.0350833,
+      "end": 6.2050834
+    },
+    {
+      "text": "句：",
+      "start": 6.2050834,
+      "end": 6.2350836
+    },
+    {
+      "text": "确",
+      "start": 7.0350833,
+      "end": 7.2050834
+    },
+    {
+      "text": "认",
+      "start": 7.2050834,
+      "end": 7.4150834
+    },
+    {
+      "text": "观",
+      "start": 7.4150834,
+      "end": 7.6250834
+    },
+    {
+      "text": "察、",
+      "start": 7.6250834,
+      "end": 7.6550837
+    },
+    {
+      "text": "说",
+      "start": 8.220125,
+      "end": 8.295125
+    },
+    {
+      "text": "明",
+      "start": 8.295125,
+      "end": 8.375125
+    },
+    {
+      "text": "下",
+      "start": 8.375125,
+      "end": 8.575125
+    },
+    {
+      "text": "一",
+      "start": 8.575125,
+      "end": 8.665125
+    },
+    {
+      "text": "步",
+      "start": 8.665125,
+      "end": 8.905126
+    },
+    {
+      "text": "或",
+      "start": 8.935125,
+      "end": 9.155126
+    },
+    {
+      "text": "正",
+      "start": 9.155126,
+      "end": 9.465125
+    },
+    {
+      "text": "式",
+      "start": 9.465125,
+      "end": 9.685125
+    },
+    {
+      "text": "落",
+      "start": 9.685125,
+      "end": 9.845125
+    },
+    {
+      "text": "下",
+      "start": 9.845125,
+      "end": 10.065125
+    },
+    {
+      "text": "决",
+      "start": 10.065125,
+      "end": 10.225125
+    },
+    {
+      "text": "定",
+      "start": 10.225125,
+      "end": 10.375125
+    },
+    {
+      "text": "的",
+      "start": 10.375125,
+      "end": 10.455125
+    },
+    {
+      "text": "那",
+      "start": 10.455125,
+      "end": 10.545125
+    },
+    {
+      "text": "一",
+      "start": 10.545125,
+      "end": 10.655125
+    },
+    {
+      "text": "句。",
+      "start": 10.655125,
+      "end": 10.885125
+    }
+  ],
+  "engine": "volcengine",
+  "model": "seed-tts-2.0",
+  "voice": "zh_female_tianmeitaozi_uranus_bigtts",
+  "provider": "火山引擎",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "论文先让目标模型担任评审，在推理轨迹里找 committing sentence，也就是决策句：确认观察、说明下一步或正式落下决定的那一句。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "火山引擎",
+    "ProduceID": "74ed4caddc180a415694f6e973f0610f",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "b88ec0af42a4abfb00a6b16aeebd4a98b550ed557199f4286c0d72e218c0e086",
+  "profile": "690d5ae216b5e2235e2ea04afbb839b644f2da78da4c1c010caf76bd7d25d975",
+  "requestKey": "c3b9c742a7471b1a75309da23abae3b4",
+  "request": {
+    "spoken": "论文先让目标模型担任评审，在推理轨迹里找 committing sentence，也就是决策句：确认观察、说明下一步或正式落下决定的那一句。",
+    "rate": 1,
+    "style": ""
+  }
+}

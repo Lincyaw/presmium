@@ -215,3 +215,10 @@ ABT：speculative decoding 用 draft model 加速 target model，而且 exact ve
 - 导出 1920×1080、30fps、H.264/AAC MP4，烧入 88 条中文字幕；字幕无重叠、无越界。
 - 作者复看后把文档级字幕比例从默认 100% 调到 90%，重新导出成片。
 - `contact sheet` 在 FFmpeg 7 下原先只取到 42 帧中的 36 帧；导出器改用扁平帧选择与 `-fps_mode passthrough` 后，42 帧完整写出。
+
+### 第 7 轮（2026-11-06，字幕语言与成片更新）
+
+- 删除讲授播放器在 TTS 成片上自动显示的“AI 生成的配音”徽标，论文内容与导出设置不再承担这条展示。
+- 旁白去掉全部 19 组括号；通用方法、模型、槽位、分布和训练字段改用中文，只保留论文专有的 `context precision`、`committing sentence`、`decision frame`、`fork pair`，以及模型、基准和必要单位名称。
+- 重新生成 18 句、1354 字配音并清理旧缓存；当前 21 句均有与文稿一致的配音。
+- 成片缩短到 5:02，共 9068 帧；文稿检查为 0 error、0 warning，42 帧帧表完整。

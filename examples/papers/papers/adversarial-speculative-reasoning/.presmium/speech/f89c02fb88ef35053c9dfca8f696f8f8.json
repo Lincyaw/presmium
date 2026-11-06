@@ -1,0 +1,198 @@
+{
+  "key": "f89c02fb88ef35053c9dfca8f696f8f8",
+  "audio": "f89c02fb88ef35053c9dfca8f696f8f8.ogg",
+  "mime": "audio/ogg",
+  "duration": 13.809666666666667,
+  "words": [
+    {
+      "text": "接",
+      "start": 0,
+      "end": 0.165
+    },
+    {
+      "text": "受",
+      "start": 0.165,
+      "end": 0.355
+    },
+    {
+      "text": "长",
+      "start": 0.355,
+      "end": 0.625
+    },
+    {
+      "text": "度",
+      "start": 0.625,
+      "end": 0.765
+    },
+    {
+      "text": "基",
+      "start": 0.765,
+      "end": 0.945
+    },
+    {
+      "text": "本",
+      "start": 0.945,
+      "end": 1.115
+    },
+    {
+      "text": "不",
+      "start": 1.115,
+      "end": 1.275
+    },
+    {
+      "text": "变。",
+      "start": 1.275,
+      "end": 1.565
+    },
+    {
+      "text": "GLM-5.3",
+      "start": 3.2150416,
+      "end": 3.2450416
+    },
+    {
+      "text": "仍",
+      "start": 3.2450416,
+      "end": 3.5650415
+    },
+    {
+      "text": "是",
+      "start": 3.5650415,
+      "end": 3.8250415
+    },
+    {
+      "text": "2.28；",
+      "start": 3.8250415,
+      "end": 3.8550415
+    },
+    {
+      "text": "DeepSeek-V4.1-Flash",
+      "start": 5.080083,
+      "end": 5.125083
+    },
+    {
+      "text": "从",
+      "start": 7.005083,
+      "end": 7.245083
+    },
+    {
+      "text": "2.50",
+      "start": 7.245083,
+      "end": 7.2750826
+    },
+    {
+      "text": "降",
+      "start": 8.205083,
+      "end": 8.455083
+    },
+    {
+      "text": "到",
+      "start": 8.455083,
+      "end": 8.635083
+    },
+    {
+      "text": "2.46，",
+      "start": 8.635083,
+      "end": 8.665083
+    },
+    {
+      "text": "约",
+      "start": 9.8151245,
+      "end": 9.975124
+    },
+    {
+      "text": "下",
+      "start": 9.975124,
+      "end": 10.195125
+    },
+    {
+      "text": "降",
+      "start": 10.195125,
+      "end": 10.345124
+    },
+    {
+      "text": "1.6%，",
+      "start": 10.345124,
+      "end": 10.375124
+    },
+    {
+      "text": "论",
+      "start": 11.755125,
+      "end": 11.985125
+    },
+    {
+      "text": "文",
+      "start": 11.985125,
+      "end": 12.055124
+    },
+    {
+      "text": "概",
+      "start": 12.055124,
+      "end": 12.205124
+    },
+    {
+      "text": "括",
+      "start": 12.205124,
+      "end": 12.365125
+    },
+    {
+      "text": "为",
+      "start": 12.365125,
+      "end": 12.585125
+    },
+    {
+      "text": "至",
+      "start": 12.585125,
+      "end": 12.8151245
+    },
+    {
+      "text": "多",
+      "start": 12.8151245,
+      "end": 12.985125
+    },
+    {
+      "text": "百",
+      "start": 12.985125,
+      "end": 13.135124
+    },
+    {
+      "text": "分",
+      "start": 13.135124,
+      "end": 13.275125
+    },
+    {
+      "text": "之",
+      "start": 13.275125,
+      "end": 13.405125
+    },
+    {
+      "text": "二。",
+      "start": 13.405125,
+      "end": 13.655125
+    }
+  ],
+  "engine": "volcengine",
+  "model": "seed-tts-2.0",
+  "voice": "zh_female_tianmeitaozi_uranus_bigtts",
+  "provider": "火山引擎",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "接受长度基本不变。GLM-5.3 仍是 2.28；DeepSeek-V4.1-Flash 从 2.50 降到 2.46，约下降 1.6%，论文概括为至多百分之二。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "火山引擎",
+    "ProduceID": "f89c02fb88ef35053c9dfca8f696f8f8",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "5552b4a01e539ac1ca104115949abc97768149eadcf9e8e54ee2aec1b92c7772",
+  "profile": "690d5ae216b5e2235e2ea04afbb839b644f2da78da4c1c010caf76bd7d25d975",
+  "requestKey": "005598c729c6bf7c19efa1091cd4cf33",
+  "request": {
+    "spoken": "接受长度基本不变。GLM-5.3 仍是 2.28；DeepSeek-V4.1-Flash 从 2.50 降到 2.46，约下降 1.6%，论文概括为至多百分之二。",
+    "rate": 1,
+    "style": ""
+  }
+}

@@ -1,0 +1,208 @@
+{
+  "key": "86a23e0fb797efe85c50ac3f53e929f7",
+  "audio": "86a23e0fb797efe85c50ac3f53e929f7.ogg",
+  "mime": "audio/ogg",
+  "duration": 8.196375,
+  "words": [
+    {
+      "text": "可",
+      "start": 0,
+      "end": 0.185
+    },
+    {
+      "text": "取",
+      "start": 0.185,
+      "end": 0.405
+    },
+    {
+      "text": "方",
+      "start": 0.405,
+      "end": 0.615
+    },
+    {
+      "text": "向",
+      "start": 0.615,
+      "end": 0.855
+    },
+    {
+      "text": "结",
+      "start": 0.855,
+      "end": 1.015
+    },
+    {
+      "text": "果",
+      "start": 1.015,
+      "end": 1.125
+    },
+    {
+      "text": "下",
+      "start": 1.125,
+      "end": 1.375
+    },
+    {
+      "text": "降，",
+      "start": 1.375,
+      "end": 1.675
+    },
+    {
+      "text": "无",
+      "start": 2.025,
+      "end": 2.215
+    },
+    {
+      "text": "关",
+      "start": 2.215,
+      "end": 2.425
+    },
+    {
+      "text": "方",
+      "start": 2.425,
+      "end": 2.655
+    },
+    {
+      "text": "向",
+      "start": 2.655,
+      "end": 2.895
+    },
+    {
+      "text": "结",
+      "start": 2.895,
+      "end": 3.045
+    },
+    {
+      "text": "果",
+      "start": 3.045,
+      "end": 3.185
+    },
+    {
+      "text": "不",
+      "start": 3.185,
+      "end": 3.325
+    },
+    {
+      "text": "动。",
+      "start": 3.325,
+      "end": 3.565
+    },
+    {
+      "text": "只",
+      "start": 4.2550416,
+      "end": 4.435042
+    },
+    {
+      "text": "有",
+      "start": 4.435042,
+      "end": 4.6350417
+    },
+    {
+      "text": "对",
+      "start": 4.6350417,
+      "end": 4.875042
+    },
+    {
+      "text": "抗",
+      "start": 4.875042,
+      "end": 5.0950418
+    },
+    {
+      "text": "方",
+      "start": 5.0950418,
+      "end": 5.305042
+    },
+    {
+      "text": "向",
+      "start": 5.305042,
+      "end": 5.535042
+    },
+    {
+      "text": "把",
+      "start": 5.535042,
+      "end": 5.6950417
+    },
+    {
+      "text": "拒",
+      "start": 5.6950417,
+      "end": 5.955042
+    },
+    {
+      "text": "绝",
+      "start": 5.955042,
+      "end": 6.0950418
+    },
+    {
+      "text": "放",
+      "start": 6.0950418,
+      "end": 6.255042
+    },
+    {
+      "text": "在",
+      "start": 6.255042,
+      "end": 6.4050417
+    },
+    {
+      "text": "决",
+      "start": 6.4050417,
+      "end": 6.5250416
+    },
+    {
+      "text": "策",
+      "start": 6.5250416,
+      "end": 6.6850414
+    },
+    {
+      "text": "点，",
+      "start": 6.6850414,
+      "end": 6.8850417
+    },
+    {
+      "text": "收",
+      "start": 7.075042,
+      "end": 7.325042
+    },
+    {
+      "text": "益",
+      "start": 7.325042,
+      "end": 7.3950415
+    },
+    {
+      "text": "才",
+      "start": 7.3950415,
+      "end": 7.5650415
+    },
+    {
+      "text": "出",
+      "start": 7.5650415,
+      "end": 7.705042
+    },
+    {
+      "text": "现。",
+      "start": 7.705042,
+      "end": 7.915042
+    }
+  ],
+  "engine": "volcengine",
+  "model": "seed-tts-2.0",
+  "voice": "zh_female_tianmeitaozi_uranus_bigtts",
+  "provider": "火山引擎",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "可取方向结果下降，无关方向结果不动。只有对抗方向把拒绝放在决策点，收益才出现。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "火山引擎",
+    "ProduceID": "86a23e0fb797efe85c50ac3f53e929f7",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "77fa8edae1e2d45d5a2010ccdb5650c5f7b726a2d62e8e6e3501193de7490080",
+  "profile": "690d5ae216b5e2235e2ea04afbb839b644f2da78da4c1c010caf76bd7d25d975",
+  "requestKey": "8b4506ed2223c373dc0dc699ebfcf50e",
+  "request": {
+    "spoken": "可取方向结果下降，无关方向结果不动。只有对抗方向把拒绝放在决策点，收益才出现。",
+    "rate": 1,
+    "style": ""
+  }
+}

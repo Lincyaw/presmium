@@ -163,10 +163,6 @@ export default function PlayerPanel(_props: { view?: string }) {
   const current = selectedZero ? selectedCaptions?.[0] : timed
   const voice = player?.track.voice
   const unsaid = player?.track.utterances.filter((u) => u.unsaid) ?? []
-  const synthetic =
-    voice?.kind === 'synthetic' && voice.provider
-      ? t.player.syntheticBy(voice.provider)
-      : t.player.synthetic
   const lang = burnedCaptions ?? language
   const text = (u: Utterance) =>
     lang && lang !== player?.track.lang
@@ -186,9 +182,7 @@ export default function PlayerPanel(_props: { view?: string }) {
   if (controlled) return player && (current || manual) && caption && !leftOut ? <PmCaption overlay label={t.player.captions} lines={[caption]} lang={lang} /> : null
   if (!id) return null
   if (exporting) return player ? <div className="pm-lecture-layer">
-    <div className="pm-lecture-export" data-time={Math.round(time)} data-clip={current?.clip}>
-      {voice?.kind === 'synthetic' && <span className="pm-lecture-player__ai pm-ui-badge pm-ui-badge--accent pm-ui-badge--pill">{synthetic}</span>}
-    </div>
+    <div className="pm-lecture-export" data-time={Math.round(time)} data-clip={current?.clip} />
     {burned?.text && <BurnedCaption caption={burned} time={time} lang={burnedCaptions!} />}
   </div> : null
   const problem = failure ? t.player.failed(failure) : status === 'missing' ? t.player.missing(id) : undefined

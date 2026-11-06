@@ -1,0 +1,113 @@
+{
+  "key": "a6e2c3180f5f163a30bdf72aec0417fa",
+  "audio": "a6e2c3180f5f163a30bdf72aec0417fa.ogg",
+  "mime": "audio/ogg",
+  "duration": 3.399875,
+  "words": [
+    {
+      "text": "代",
+      "start": 0,
+      "end": 0.205
+    },
+    {
+      "text": "价",
+      "start": 0.205,
+      "end": 0.425
+    },
+    {
+      "text": "是",
+      "start": 0.425,
+      "end": 0.685
+    },
+    {
+      "text": "接",
+      "start": 0.685,
+      "end": 0.945
+    },
+    {
+      "text": "受",
+      "start": 0.945,
+      "end": 1.185
+    },
+    {
+      "text": "长",
+      "start": 1.185,
+      "end": 1.525
+    },
+    {
+      "text": "度",
+      "start": 1.525,
+      "end": 1.685
+    },
+    {
+      "text": "至",
+      "start": 1.685,
+      "end": 1.875
+    },
+    {
+      "text": "多",
+      "start": 1.875,
+      "end": 2.025
+    },
+    {
+      "text": "下",
+      "start": 2.025,
+      "end": 2.275
+    },
+    {
+      "text": "降",
+      "start": 2.275,
+      "end": 2.455
+    },
+    {
+      "text": "约",
+      "start": 2.455,
+      "end": 2.605
+    },
+    {
+      "text": "百",
+      "start": 2.605,
+      "end": 2.755
+    },
+    {
+      "text": "分",
+      "start": 2.755,
+      "end": 2.885
+    },
+    {
+      "text": "之",
+      "start": 2.885,
+      "end": 3.005
+    },
+    {
+      "text": "二。",
+      "start": 3.005,
+      "end": 3.205
+    }
+  ],
+  "engine": "volcengine",
+  "model": "seed-tts-2.0",
+  "voice": "zh_female_tianmeitaozi_uranus_bigtts",
+  "provider": "火山引擎",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "代价是接受长度至多下降约百分之二。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "火山引擎",
+    "ProduceID": "a6e2c3180f5f163a30bdf72aec0417fa",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "e776ba57ec6c64274f77c426bf72ee11734d4e982765981426ad65f664f7731b",
+  "profile": "690d5ae216b5e2235e2ea04afbb839b644f2da78da4c1c010caf76bd7d25d975",
+  "requestKey": "8812de3030e26b9c6e2bb7a4834040e6",
+  "request": {
+    "spoken": "代价是接受长度至多下降约百分之二。",
+    "rate": 1,
+    "style": ""
+  }
+}
