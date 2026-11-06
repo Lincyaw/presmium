@@ -454,8 +454,10 @@ export async function buildViewerApp(cacheDir: string, plugins: readonly AppPlug
   writeFileSync(join(work, 'out', FONT_LICENSE), fontLicense(import.meta.url))
   // Another session may have built the same app meanwhile: its build stays, since its pages may be loading from it.
   if (!existsSync(join(out, APP_MANIFEST))) {
-    rmSync(out, { recursive: true, force: true })
-    renameSync(join(work, 'out'), out)
+    try { renameSync(join(work, 'out'), out) }
+    catch (error) {
+      if (!existsSync(join(out, APP_MANIFEST))) throw error
+    }
   }
   rmSync(work, { recursive: true, force: true })
   cleanViewerApps(cacheDir, out)
@@ -514,8 +516,10 @@ export async function buildViewerServer(app: ViewerApp, plugins: readonly AppPlu
   })
   // Another build of the same site may have written it meanwhile.
   if (!existsSync(file)) {
-    rmSync(join(app.dir, SERVER_DIR), { recursive: true, force: true })
-    renameSync(work, join(app.dir, SERVER_DIR))
+    try { renameSync(work, join(app.dir, SERVER_DIR)) }
+    catch (error) {
+      if (!existsSync(file)) throw error
+    }
   }
   rmSync(work, { recursive: true, force: true })
   return file

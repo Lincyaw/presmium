@@ -443,8 +443,14 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
   const out = join(input.outDir, name)
   const bundle: DocumentBundle = { key: name, dir: out, inputs, restartable: code.restartable, components: code.components, loads, failures: [...failed.values()].flat() }
   writeFileSync(join(work, 'out', BUNDLE_MANIFEST), `${JSON.stringify(bundle, null, 2)}\n`)
-  rmSync(out, { recursive: true, force: true })
-  renameSync(join(work, 'out'), out)
+  // The key names the bundle's exact output. A concurrent preview may install the same immutable directory
+  // first; reusing its completed manifest is success, while deleting the target here races into ENOTEMPTY.
+  if (!existsSync(join(out, BUNDLE_MANIFEST))) {
+    try { renameSync(join(work, 'out'), out) }
+    catch (error) {
+      if (!existsSync(join(out, BUNDLE_MANIFEST))) throw error
+    }
+  }
   rmSync(work, { recursive: true, force: true })
   // The document's last few bundles stay, for pages still loading an earlier one.
   const builds = readdirSync(input.outDir).filter(entry => !entry.startsWith('.')).map(entry => ({ dir: join(input.outDir, entry), time: statSync(join(input.outDir, entry)).mtimeMs })).sort((a, b) => b.time - a.time)
