@@ -32,8 +32,7 @@
   "p-evidence",
   "p-controls",
   "p-close",
-  "p-ending",
-  "p-notes"
+  "p-ending"
  ],
  "sections": {
   "p-opening": {
@@ -224,21 +223,6 @@
      }
     }
    }
-  },
-  "p-notes": {
-   "id": "p-notes",
-   "title": "来源与说明",
-   "level": 2,
-   "children": [
-    "notes--text",
-    "notes--slides"
-   ],
-   "stepOrder": [
-    "notes--step-0"
-   ],
-   "layout": {
-    "type": "stack"
-   }
   }
  },
  "blocks": {
@@ -312,8 +296,8 @@
    "definitionId": "close--scene--definition",
    "parameters": {
     "scene": "close",
-    "alt": "target model 与 exact verification 不变，给定 KV context 时 output distribution 也不变；只训练整套系统中百分之零点零六到百分之零点二八的 draft 参数。结论页同时列出 accepted length 至多下降约百分之二、两个约七千五百亿参数模型与长程编程任务的范围。",
-    "label": "context precision 的分配器与适用边界"
+    "alt": "target model 与 exact verification 不变，给定 KV context 时 output distribution 也不变；只训练整套系统中百分之零点零六到百分之零点二八的 draft 参数。结论页同时列出 accepted length 至多下降约百分之二、两个约七千五百亿参数模型与长程编程任务。",
+    "label": "context precision 的分配器"
    }
   },
   "ending--scene": {
@@ -326,86 +310,6 @@
     "summary": "让关键决策句首 token 落在最精确 verification slot",
     "paper": "Adversarial Speculative Reasoning · arXiv 2611.05345"
    }
-  },
-  "notes--text": {
-   "id": "notes--text",
-   "type": "text",
-   "only": [
-    "web"
-   ],
-   "content": [
-    {
-     "id": "notes--t0",
-     "type": "heading",
-     "level": 3,
-     "children": [
-      {
-       "type": "text",
-       "text": "论文"
-      }
-     ]
-    },
-    {
-     "id": "notes--t1",
-     "type": "paragraph",
-     "children": [
-      {
-       "type": "text",
-       "text": "Hongyin Luo, Wei Fang, Lijie Yang 等. Adversarial Speculative Reasoning Improves Long Horizon Agents. arXiv 2611.05345, 2026."
-      }
-     ]
-    },
-    {
-     "id": "notes--t2",
-     "type": "heading",
-     "level": 3,
-     "children": [
-      {
-       "type": "text",
-       "text": "画面里的数字从哪里来"
-      }
-     ]
-    },
-    {
-     "id": "notes--t3",
-     "type": "paragraph",
-     "children": [
-      {
-       "type": "text",
-       "text": "论文没有链接公开的结果仓库。scenes/data/derive.py 记录正文、图 1、图 2、图 4 与图 5 的数值，检查上屏用到的差值、参数占比与 accepted length 变化，并写出 scenes/data/asr.json。verification slot 的相对噪声线按论文报告的每槽约 4% 斜率重建；论文原图同时出现在画面上。"
-       }
-      ]
-     },
-    {
-     "id": "notes--t4",
-     "type": "paragraph",
-     "children": [
-      {
-       "type": "text",
-       "text": "DeepSWE 的正文写 DeepSeek-V4.1-Flash 从 67.8% 到 71.8%，图 5 的均值标成 67.9% 与 71.9%；NL2Repo-Bench 的图上标 49.1% 与 55.0%，并写 +5.8，按显示值直接相减则是 5.9。视频采用正文的 67.8 → 71.8，并把 NL2Repo 的 +5.8 作为论文报告的差值。"
-      }
-     ]
-    }
-   ]
-  },
-  "notes--slides": {
-   "id": "notes--slides",
-   "type": "text",
-   "only": [
-    "slides"
-   ],
-   "content": [
-    {
-     "id": "notes--s0",
-     "type": "paragraph",
-     "children": [
-      {
-       "type": "text",
-       "text": "来源、数字口径与实验条件见网页版 · arXiv 2611.05345"
-      }
-     ]
-    }
-   ]
   }
  },
  "steps": {
@@ -697,7 +601,7 @@
   "close--step-1": {
    "id": "close--step-1",
    "sectionId": "p-close",
-   "title": "accepted length 至多约 2% 的下降与适用边界",
+   "title": "accepted length 至多约 2% 的下降",
    "visuals": [
     {
      "blockId": "close--scene",
@@ -723,21 +627,6 @@
    "narrationIds": [
     "ending--step-0--n0"
    ]
-  },
-  "notes--step-0": {
-   "id": "notes--step-0",
-   "sectionId": "p-notes",
-   "visuals": [
-    {
-     "blockId": "notes--text",
-     "visible": true
-    },
-    {
-     "blockId": "notes--slides",
-     "visible": true
-    }
-   ],
-   "narrationIds": []
   }
  },
  "narrations": {
@@ -917,7 +806,7 @@
    "content": [
     {
      "type": "text",
-     "text": "代价是 accepted length 至多下降约百分之二。换 target、换领域，或无法稳定标出 decision point 时，需要重新验证。"
+     "text": "代价是 accepted length 至多下降约百分之二。"
     }
    ]
   },

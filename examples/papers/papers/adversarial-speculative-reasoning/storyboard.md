@@ -116,7 +116,7 @@ ABT：speculative decoding 用 draft model 加速 target model，而且 exact ve
 | | 1 | DeepSeek-V4.1-Flash 的无关偏好与通过率点图，合并 67.5% 对 67.8% | 无关偏好没有收益 |
 | | 2 | 因果链“decision point→拒绝→关键决策首 token 落 slot 0”，下方对比接受与拒绝后的编码路径 | 提升来自关键决策的位置 |
 | close | 0 | 目标模型冻结、草稿只训练 0.06–0.28%；关键决策位于槽位 0；结论句“上下文精度的分配器” | 同一模型重排精度 |
-| | 1 | accepted length 至多下降约 2%；两个约 750B 模型、长程编程任务、需要可靠 decision point 与可学习偏好；最后回到结论 | 代价与适用边界 |
+| | 1 | accepted length 至多下降约 2%；两个约 750B 模型、长程编程任务；最后回到结论 | 结果与代价 |
 | ending | 0 | 结尾卡“让关键决策落在最精确 verification slot” | 固定结尾 |
 
 ## H. 数字来源
@@ -132,7 +132,7 @@ ABT：speculative decoding 用 draft model 加速 target model，而且 exact ve
 - 参数：2.15B / (753B + 2.46B) = 0.28%；0.449B / (749B + 14.2B) = 0.06%。
 - 解码吞吐代理：accepted length 2.28→2.28 与 2.50→2.46；后者下降 1.6%，论文概括为至多约 2%。
 
-图 5 的 DeepSeek-V4.1 DeepSWE 均值标为 67.9/71.9，正文写 67.8/71.8；NL2Repo 的 +5.8 与显示值直接相减的 5.9 不同。视频采用正文与图内标注，网页来源页保留差异。
+图 5 的 DeepSeek-V4.1 DeepSWE 均值标为 67.9/71.9，正文写 67.8/71.8；NL2Repo 的 +5.8 与显示值直接相减的 5.9 不同。视频采用正文与图内标注，差异留在 `derive.py` 和数据文件中，不另设来源页。
 
 ## I. 文件与流程
 
@@ -160,7 +160,7 @@ ABT：speculative decoding 用 draft model 加速 target model，而且 exact ve
 - 方法页保留旧块作为原因轨迹，并在新块槽位 0 标“目标重采样”；讲稿明确旧后缀丢弃。
 - 证据页速度标题改为“接受长度基本不变”，补上 DeepSWE 与 NL2Repo 的置信区间。
 - 训练页把可训练参数与目标模型、草稿模型组成的系统总参数并列。
-- 结尾适用范围补“决策点不稳需重新验证”。
+- 结尾适用范围补“决策点不稳需重新验证”（第 5 轮按作者要求删除）。
 - 讲稿加入 nats 定义和极端偏差事件率口径。
 
 ### 第 2 轮（2026-11-06，新冷读 agent）
@@ -174,7 +174,7 @@ ABT：speculative decoding 用 draft model 加速 target model，而且 exact ve
 - training 2 同时显示可训练参数、系统参数与占比。
 - evidence 1、2 的来源行加入置信区间和 p 值。
 - method 2 增加“已接受前缀保留”“目标重采样”“旧后缀丢弃”的状态说明。
-- 开场、结尾与来源页改用较短的英文题名，避免右侧裁切；来源页在幻灯片形态保留“见网页版”一行。
+- 开场与结尾改用较短的英文题名，避免右侧裁切。
 
 ### 第 3 轮（2026-11-06，术语审计与冷读）
 
@@ -187,3 +187,22 @@ ABT：speculative decoding 用 draft model 加速 target model，而且 exact ve
 - 把 exactness 限定为给定 KV context 时 output distribution 不变，context precision 描述写入 KV cache 时的数值精度。
 - 统一 `preferred direction`、`adversarial direction`、`unbiased draft`、`decision correctness` 与 `fork pair` 的原词和中文含义。
 - 标题、正文、可访问性说明和场景标签统一从 `TERMS` 与 `PREFERENCE_LABEL` 读取。
+
+### 第 4 轮（2026-11-06，结构审查）
+
+逐页核对连接对象在静止帧中的端点，并检查亮色、暗色和回退步骤：
+
+- `problem` 的 KV 回读箭头改为从缓存轨道右端内部出发，箭头尖部落在判断栏左边界。
+- `method` 的拒绝掉头线从旧 block 的 decision point 出发，沿标题上方绕行，箭头落到新 block 的 slot 0；不再穿过或贴住标题。
+- `training` 的两条 fork line 端点下移到分支框顶边，描边与边界相接。
+- `controls` 的两条数据折线经过各自三个端点；三段因果链的箭头位于节点之间的固定轨道。
+- 直接进入与向后返回到关键步骤的截图 SSIM 均为 1.0。
+- 结构截图暴露 viewer app 主入口漏掉 `@lincyaw/host/design.css`，导致设计令牌全部缺失；主入口现显式引入该样式，并在隔离缓存中重新构建验证。
+
+### 第 5 轮（2026-11-06，发布会精简）
+
+作者明确要求发布会稿不放 defense 和“来源与说明”。
+
+- 删除独立的来源页，保留论文图注、图内来源行和可复现数据文件作为依据。
+- 删除结论页的“适用范围 / 换目标或领域需重新验证”提示和对应旁白。
+- 结论页只保留模型规模、任务、参数占比、accepted length 代价与一句话结论。

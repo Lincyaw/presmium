@@ -148,9 +148,9 @@ export default gsapScene(({ root, gsap, at, durations }) => {
         <b>何时提交</b>
       </div>
       <svg class="readback layer" ${LAYER}>
-        <path class="readback-path" d="M138,58 C150,57 149,40 112,40"
+        <path class="readback-path" d="M136,60 C150,59 149,40 109,40"
           fill="none" stroke="var(--c-draft)" stroke-width="0.55" stroke-dasharray="1.2 0.9"/>
-        <path class="readback-head" d="M114.2,38 L111.7,40 L114.2,42" fill="none"
+        <path class="readback-head" d="M111.2,38 L108.7,40 L111.2,42" fill="none"
           stroke="var(--c-draft)" stroke-width="0.55"/>
       </svg>
       <div class="kv">

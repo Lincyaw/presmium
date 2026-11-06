@@ -14,6 +14,7 @@ import { createPageApp } from './page-app.ts'
 import { blockPreviewReporter } from './block-report.ts'
 import { installCaptureHook } from './capture.ts'
 import { forgetIndex } from './site/search.tsx'
+import '@lincyaw/host/design.css'
 import './base.css'
 import './site.css'
 

@@ -126,8 +126,8 @@ export default gsapScene(({ root, gsap, at, durations }) => {
     <div class="branch-origin"></div>
     <div class="re-sample">从同一点分叉</div>
     <svg class="layer" ${LAYER}>
-      <path class="fork-line fork-left" pathLength="1" d="M 67.8 35 C 67.8 43 50 42 43.2 48"/>
-      <path class="fork-line fork-right" pathLength="1" d="M 67.8 35 C 67.8 43 105 42 116.8 48"/>
+      <path class="fork-line fork-left" pathLength="1" d="M 67.8 35 C 67.8 43 50 42 43.2 48.5"/>
+      <path class="fork-line fork-right" pathLength="1" d="M 67.8 35 C 67.8 43 105 42 116.8 48.5"/>
     </svg>
     <div class="branch pref"><div class="k">preferred side（可取侧）</div><b>先运行边界测试</b><span>用实际结果决定实现</span></div>
     <div class="branch fail"><div class="k">adversarial side（对抗侧）</div><b>直接提交猜测</b><span>跳过验证继续修改</span></div>

@@ -108,7 +108,7 @@ export default gsapScene(({ root, gsap, at, durations }) => {
 
     <div class="old-caption">已接受前缀保留在上下文 · 旧 verification block 停在 slot 5</div>
     <svg class="layer" ${LAYER}>
-      <path class="restart-path" d="M53,23 C40,30 2,32 2,42 C2,45 8,46 20,46"/>
+      <path class="restart-path" d="M53,23 C48,27 49,31 42,32 L3,32 C1.8,32 1.8,42 2,46 L18.5,46"/>
       <path class="restart-head" d="M20,46 L15.8,44.2 L16.8,48 Z"/>
     </svg>
     <div class="fresh">

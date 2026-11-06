@@ -53,11 +53,10 @@ export default gsapScene(({ root, gsap, at, durations }) => {
     .cost span { display: block; font-size: ${TYPE.small}cqw; font-weight: 700; color: var(--pm-color-muted); }
     .cost b { display: block; font-size: 5.2cqw; line-height: 1; color: var(--c-accept); white-space: nowrap; }
     .cost small { display: block; margin-top: 0.6cqh; font-size: ${TYPE.tiny}cqw; color: var(--pm-color-muted); }
-    .evidence { position: absolute; left: 8cqw; top: 57cqh; width: 84cqw; display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 1.3cqw; }
+    .evidence { position: absolute; left: 8cqw; top: 57cqh; width: 84cqw; display: grid; grid-template-columns: 1fr 1fr; gap: 1.3cqw; }
     .fact { padding: 1.1cqw 1.3cqw; border-radius: 0.7cqw; background: var(--pm-color-sunk); }
     .fact span { display: block; font-size: ${TYPE.tiny}cqw; font-weight: 750; color: var(--pm-color-muted); }
     .fact b { display: block; margin-top: 0.35cqh; font-size: ${TYPE.label}cqw; line-height: 1.2; white-space: nowrap; }
-    .fact.scope b { color: var(--pm-color-warn); }
     .takeaway { position: absolute; left: 8cqw; top: 70cqh; width: 84cqw; }
     .takeaway__lead { font-size: ${TYPE.small}cqw; font-weight: 700; color: var(--pm-color-muted); }
     .takeaway__key { margin-top: 0.35cqh; font-size: 4.4cqw; font-weight: 850; line-height: 1.08; white-space: nowrap; }
@@ -99,7 +98,6 @@ export default gsapScene(({ root, gsap, at, durations }) => {
     <div class="evidence">
       <div class="fact"><span>证据</span><b>2 × 约 ${modelScale}B 模型</b></div>
       <div class="fact"><span>任务</span><b>长程编程</b></div>
-      <div class="fact scope"><span>适用范围</span><b>换目标 / 领域 / 决策点不稳 → 重新验证</b></div>
     </div>
     <div class="takeaway">
       <div class="takeaway__lead">speculative decoding</div>
