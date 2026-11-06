@@ -1196,8 +1196,11 @@
      "voice": "zh_female_tianmeitaozi_uranus_bigtts"
     }
    },
-   "narrationStart": "with-animation",
-   "trailingPauseMs": 350
+    "narrationStart": "with-animation",
+    "trailingPauseMs": 350
+  },
+  "captions": {
+   "scale": 0.9
   },
   "stepOverrides": {
    "ending--step-0": {

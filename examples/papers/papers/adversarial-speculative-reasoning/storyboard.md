@@ -213,4 +213,5 @@ ABT：speculative decoding 用 draft model 加速 target model，而且 exact ve
 - 实际视频 5:48，21 个讲解步骤，低于 6 分钟上限。
 - 结论页第二步由 12 秒缩到 7 秒，最长段间静默从 7.2 秒降到 2.2 秒；旁白不需要重新生成。
 - 导出 1920×1080、30fps、H.264/AAC MP4，烧入 88 条中文字幕；字幕无重叠、无越界。
+- 作者复看后把文档级字幕比例从默认 100% 调到 90%，重新导出成片。
 - `contact sheet` 在 FFmpeg 7 下原先只取到 42 帧中的 36 帧；导出器改用扁平帧选择与 `-fps_mode passthrough` 后，42 帧完整写出。
