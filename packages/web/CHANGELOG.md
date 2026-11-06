@@ -1,5 +1,12 @@
 # @lincyaw/web
 
+## 1.0.0-rc.75
+
+### Patch Changes
+
+- 010a26b: Reuse completed viewer and document bundles when concurrent preview processes install the same immutable build, avoiding spurious `ENOTEMPTY` failures.
+- @lincyaw/design@1.0.0-rc.75
+
 ## 1.0.0-rc.74
 
 ### Patch Changes
