@@ -1,5 +1,9 @@
 # @lincyaw/addon-exec-jupyter
 
+## 1.0.0-rc.80
+
+No changes in this release.
+
 ## 1.0.0-rc.79
 
 No changes in this release.

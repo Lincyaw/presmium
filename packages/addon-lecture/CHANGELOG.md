@@ -1,5 +1,11 @@
 # @lincyaw/addon-lecture
 
+## 1.0.0-rc.80
+
+### Patch Changes
+
+- 0b556a0: Remove the automatic AI-generated voiceover badge from exported lecture videos.
+
 ## 1.0.0-rc.79
 
 No changes in this release.
