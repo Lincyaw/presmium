@@ -1,0 +1,298 @@
+{
+  "key": "abd8b72a0b99f45da78db0d3940a160f",
+  "audio": "abd8b72a0b99f45da78db0d3940a160f.ogg",
+  "mime": "audio/ogg",
+  "duration": 18.997708333333332,
+  "words": [
+    {
+      "text": "论",
+      "start": 0,
+      "end": 0.235
+    },
+    {
+      "text": "文",
+      "start": 0.235,
+      "end": 0.505
+    },
+    {
+      "text": "让",
+      "start": 0.505,
+      "end": 0.755
+    },
+    {
+      "text": "adversarial",
+      "start": 0.945,
+      "end": 1.855
+    },
+    {
+      "text": "draft（",
+      "start": 1.855,
+      "end": 1.885
+    },
+    {
+      "text": "对",
+      "start": 2.925,
+      "end": 3.095
+    },
+    {
+      "text": "抗",
+      "start": 3.095,
+      "end": 3.355
+    },
+    {
+      "text": "草",
+      "start": 3.355,
+      "end": 3.625
+    },
+    {
+      "text": "稿",
+      "start": 3.625,
+      "end": 3.845
+    },
+    {
+      "text": "）",
+      "start": 3.845,
+      "end": 3.875
+    },
+    {
+      "text": "在",
+      "start": 4.035,
+      "end": 4.315
+    },
+    {
+      "text": "decision",
+      "start": 4.315,
+      "end": 4.825
+    },
+    {
+      "text": "point",
+      "start": 4.825,
+      "end": 5.335
+    },
+    {
+      "text": "提",
+      "start": 5.555,
+      "end": 5.705
+    },
+    {
+      "text": "出",
+      "start": 5.705,
+      "end": 5.915
+    },
+    {
+      "text": "应",
+      "start": 5.915,
+      "end": 6.135
+    },
+    {
+      "text": "拒",
+      "start": 6.135,
+      "end": 6.315
+    },
+    {
+      "text": "绝",
+      "start": 6.315,
+      "end": 6.475
+    },
+    {
+      "text": "的",
+      "start": 6.475,
+      "end": 6.565
+    },
+    {
+      "text": "判",
+      "start": 6.565,
+      "end": 6.765
+    },
+    {
+      "text": "断。",
+      "start": 6.765,
+      "end": 7.025
+    },
+    {
+      "text": "target",
+      "start": 7.645042,
+      "end": 8.035042
+    },
+    {
+      "text": "model",
+      "start": 8.035042,
+      "end": 8.475042
+    },
+    {
+      "text": "拒",
+      "start": 8.525042,
+      "end": 8.695042
+    },
+    {
+      "text": "绝",
+      "start": 8.695042,
+      "end": 8.865042
+    },
+    {
+      "text": "后",
+      "start": 8.865042,
+      "end": 9.085042
+    },
+    {
+      "text": "重",
+      "start": 9.085042,
+      "end": 9.285042
+    },
+    {
+      "text": "新",
+      "start": 9.285042,
+      "end": 9.485042
+    },
+    {
+      "text": "采",
+      "start": 9.485042,
+      "end": 9.735042
+    },
+    {
+      "text": "样，",
+      "start": 9.735042,
+      "end": 9.955042
+    },
+    {
+      "text": "output",
+      "start": 10.505084,
+      "end": 11.055084
+    },
+    {
+      "text": "distribution（",
+      "start": 11.725084,
+      "end": 11.755084
+    },
+    {
+      "text": "输",
+      "start": 12.395084,
+      "end": 12.715084
+    },
+    {
+      "text": "出",
+      "start": 12.715084,
+      "end": 12.905084
+    },
+    {
+      "text": "分",
+      "start": 12.905084,
+      "end": 13.195084
+    },
+    {
+      "text": "布",
+      "start": 13.195084,
+      "end": 13.385084
+    },
+    {
+      "text": "）",
+      "start": 13.385084,
+      "end": 13.415084
+    },
+    {
+      "text": "完",
+      "start": 13.415084,
+      "end": 13.615084
+    },
+    {
+      "text": "全",
+      "start": 13.615084,
+      "end": 13.8150835
+    },
+    {
+      "text": "不",
+      "start": 13.8150835,
+      "end": 14.015083
+    },
+    {
+      "text": "变，",
+      "start": 14.015083,
+      "end": 14.325084
+    },
+    {
+      "text": "verification",
+      "start": 14.925083,
+      "end": 15.765083
+    },
+    {
+      "text": "block（",
+      "start": 16.175083,
+      "end": 16.205084
+    },
+    {
+      "text": "验",
+      "start": 16.905083,
+      "end": 17.035084
+    },
+    {
+      "text": "证",
+      "start": 17.035084,
+      "end": 17.265083
+    },
+    {
+      "text": "块",
+      "start": 17.265083,
+      "end": 17.505085
+    },
+    {
+      "text": "）",
+      "start": 17.505085,
+      "end": 17.535084
+    },
+    {
+      "text": "却",
+      "start": 17.535084,
+      "end": 17.705084
+    },
+    {
+      "text": "在",
+      "start": 17.705084,
+      "end": 17.845083
+    },
+    {
+      "text": "这",
+      "start": 17.845083,
+      "end": 17.995083
+    },
+    {
+      "text": "里",
+      "start": 17.995083,
+      "end": 18.115084
+    },
+    {
+      "text": "断",
+      "start": 18.115084,
+      "end": 18.305084
+    },
+    {
+      "text": "开。",
+      "start": 18.305084,
+      "end": 18.495083
+    }
+  ],
+  "engine": "volcengine",
+  "model": "seed-tts-2.0",
+  "voice": "zh_female_tianmeitaozi_uranus_bigtts",
+  "provider": "火山引擎",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "论文让 adversarial draft（对抗草稿）在 decision point 提出应拒绝的判断。target model 拒绝后重新采样，output distribution（输出分布）完全不变，verification block（验证块）却在这里断开。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "火山引擎",
+    "ProduceID": "abd8b72a0b99f45da78db0d3940a160f",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "15be2f13bb92b91168bad576bc5891249a959284c9d7a0dad2603d606be7f73b",
+  "profile": "690d5ae216b5e2235e2ea04afbb839b644f2da78da4c1c010caf76bd7d25d975",
+  "requestKey": "fac2e8b6cf484d39b403e7acf30581a5",
+  "request": {
+    "spoken": "论文让 adversarial draft（对抗草稿）在 decision point 提出应拒绝的判断。target model 拒绝后重新采样，output distribution（输出分布）完全不变，verification block（验证块）却在这里断开。",
+    "rate": 1,
+    "style": ""
+  }
+}

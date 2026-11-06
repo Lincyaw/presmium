@@ -1,0 +1,148 @@
+{
+  "key": "a38286432e8d8f8c404c033827b885d7",
+  "audio": "a38286432e8d8f8c404c033827b885d7.ogg",
+  "mime": "audio/ogg",
+  "duration": 11.44075,
+  "words": [
+    {
+      "text": "换",
+      "start": 0,
+      "end": 0.255
+    },
+    {
+      "text": "到",
+      "start": 0.255,
+      "end": 0.575
+    },
+    {
+      "text": "NL2Repo-Bench，",
+      "start": 0.775,
+      "end": 0.805
+    },
+    {
+      "text": "提",
+      "start": 2.795,
+      "end": 2.985
+    },
+    {
+      "text": "升",
+      "start": 2.985,
+      "end": 3.175
+    },
+    {
+      "text": "仍",
+      "start": 3.175,
+      "end": 3.365
+    },
+    {
+      "text": "在：",
+      "start": 3.365,
+      "end": 3.395
+    },
+    {
+      "text": "GLM-5.3",
+      "start": 5.395,
+      "end": 5.425
+    },
+    {
+      "text": "增",
+      "start": 5.565,
+      "end": 5.765
+    },
+    {
+      "text": "加",
+      "start": 5.765,
+      "end": 5.955
+    },
+    {
+      "text": "5.8",
+      "start": 6.585,
+      "end": 6.625
+    },
+    {
+      "text": "个",
+      "start": 6.625,
+      "end": 6.725
+    },
+    {
+      "text": "百",
+      "start": 6.725,
+      "end": 6.865
+    },
+    {
+      "text": "分",
+      "start": 6.865,
+      "end": 7.055
+    },
+    {
+      "text": "点，",
+      "start": 7.055,
+      "end": 7.235
+    },
+    {
+      "text": "DeepSeek-V4.1-Flash",
+      "start": 9.385042,
+      "end": 9.415042
+    },
+    {
+      "text": "增",
+      "start": 9.545042,
+      "end": 9.755041
+    },
+    {
+      "text": "加",
+      "start": 9.755041,
+      "end": 9.955042
+    },
+    {
+      "text": "1.4",
+      "start": 9.955042,
+      "end": 9.985042
+    },
+    {
+      "text": "个",
+      "start": 10.225041,
+      "end": 10.285042
+    },
+    {
+      "text": "百",
+      "start": 10.285042,
+      "end": 10.345041
+    },
+    {
+      "text": "分",
+      "start": 10.345041,
+      "end": 10.565042
+    },
+    {
+      "text": "点。",
+      "start": 10.565042,
+      "end": 10.655042
+    }
+  ],
+  "engine": "volcengine",
+  "model": "seed-tts-2.0",
+  "voice": "zh_female_tianmeitaozi_uranus_bigtts",
+  "provider": "火山引擎",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "换到 NL2Repo-Bench，提升仍在：GLM-5.3 增加 5.8 个百分点，DeepSeek-V4.1-Flash 增加 1.4 个百分点。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "火山引擎",
+    "ProduceID": "a38286432e8d8f8c404c033827b885d7",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "16bc90dc03b9379e9f0062273767617d36d909afb1ee5d98df79277e7091b8be",
+  "profile": "690d5ae216b5e2235e2ea04afbb839b644f2da78da4c1c010caf76bd7d25d975",
+  "requestKey": "63cca060fbcf064e3d22add3d5d2cd93",
+  "request": {
+    "spoken": "换到 NL2Repo-Bench，提升仍在：GLM-5.3 增加 5.8 个百分点，DeepSeek-V4.1-Flash 增加 1.4 个百分点。",
+    "rate": 1,
+    "style": ""
+  }
+}

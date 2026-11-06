@@ -1,0 +1,173 @@
+{
+  "key": "9526ad47f7cac5ad0a4f47bfff499ed7",
+  "audio": "9526ad47f7cac5ad0a4f47bfff499ed7.ogg",
+  "mime": "audio/ogg",
+  "duration": 14.220541666666668,
+  "words": [
+    {
+      "text": "DeepSWE",
+      "start": 0,
+      "end": 0.045
+    },
+    {
+      "text": "上，",
+      "start": 0.715,
+      "end": 1.025
+    },
+    {
+      "text": "GLM-5.3",
+      "start": 1.475,
+      "end": 1.505
+    },
+    {
+      "text": "从",
+      "start": 2.875,
+      "end": 3.175
+    },
+    {
+      "text": "60.6%",
+      "start": 4.205,
+      "end": 4.235
+    },
+    {
+      "text": "升",
+      "start": 4.265,
+      "end": 4.535
+    },
+    {
+      "text": "到",
+      "start": 4.535,
+      "end": 4.695
+    },
+    {
+      "text": "67.6%，",
+      "start": 4.695,
+      "end": 4.725
+    },
+    {
+      "text": "增",
+      "start": 6.195,
+      "end": 6.365
+    },
+    {
+      "text": "加",
+      "start": 6.365,
+      "end": 6.555
+    },
+    {
+      "text": "七",
+      "start": 6.555,
+      "end": 6.735
+    },
+    {
+      "text": "个",
+      "start": 6.735,
+      "end": 6.815
+    },
+    {
+      "text": "百",
+      "start": 6.815,
+      "end": 6.875
+    },
+    {
+      "text": "分",
+      "start": 6.875,
+      "end": 6.935
+    },
+    {
+      "text": "点；",
+      "start": 6.935,
+      "end": 6.995
+    },
+    {
+      "text": "DeepSeek-V4.1-Flash",
+      "start": 7.0000415,
+      "end": 7.0450416
+    },
+    {
+      "text": "从",
+      "start": 9.505041,
+      "end": 9.835041
+    },
+    {
+      "text": "67.8%",
+      "start": 10.995041,
+      "end": 11.025042
+    },
+    {
+      "text": "升",
+      "start": 11.1050415,
+      "end": 11.385042
+    },
+    {
+      "text": "到",
+      "start": 11.385042,
+      "end": 11.575041
+    },
+    {
+      "text": "71.8%，",
+      "start": 12.685041,
+      "end": 12.715042
+    },
+    {
+      "text": "增",
+      "start": 12.995041,
+      "end": 13.155042
+    },
+    {
+      "text": "加",
+      "start": 13.155042,
+      "end": 13.335041
+    },
+    {
+      "text": "四",
+      "start": 13.335041,
+      "end": 13.505041
+    },
+    {
+      "text": "个",
+      "start": 13.505041,
+      "end": 13.595041
+    },
+    {
+      "text": "百",
+      "start": 13.595041,
+      "end": 13.715042
+    },
+    {
+      "text": "分",
+      "start": 13.715042,
+      "end": 13.795042
+    },
+    {
+      "text": "点。",
+      "start": 13.795042,
+      "end": 13.8550415
+    }
+  ],
+  "engine": "volcengine",
+  "model": "seed-tts-2.0",
+  "voice": "zh_female_tianmeitaozi_uranus_bigtts",
+  "provider": "火山引擎",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "DeepSWE 上，GLM-5.3 从 60.6% 升到 67.6%，增加七个百分点；DeepSeek-V4.1-Flash 从 67.8% 升到 71.8%，增加四个百分点。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "火山引擎",
+    "ProduceID": "9526ad47f7cac5ad0a4f47bfff499ed7",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "6fff9514a8af7a73e38810227e14fff06c0727f856fce39047409fd3ee685dba",
+  "profile": "690d5ae216b5e2235e2ea04afbb839b644f2da78da4c1c010caf76bd7d25d975",
+  "requestKey": "81d4ee3e2fbac70771c557790cbc6ccf",
+  "request": {
+    "spoken": "DeepSWE 上，GLM-5.3 从 60.6% 升到 67.6%，增加七个百分点；DeepSeek-V4.1-Flash 从 67.8% 升到 71.8%，增加四个百分点。",
+    "rate": 1,
+    "style": ""
+  }
+}

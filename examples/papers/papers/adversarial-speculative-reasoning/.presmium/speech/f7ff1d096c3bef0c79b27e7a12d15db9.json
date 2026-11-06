@@ -1,0 +1,238 @@
+{
+  "key": "f7ff1d096c3bef0c79b27e7a12d15db9",
+  "audio": "f7ff1d096c3bef0c79b27e7a12d15db9.ogg",
+  "mime": "audio/ogg",
+  "duration": 12.821833333333334,
+  "words": [
+    {
+      "text": "大",
+      "start": 0,
+      "end": 0.195
+    },
+    {
+      "text": "多",
+      "start": 0.195,
+      "end": 0.365
+    },
+    {
+      "text": "数",
+      "start": 0.365,
+      "end": 0.545
+    },
+    {
+      "text": "token",
+      "start": 0.545,
+      "end": 0.955
+    },
+    {
+      "text": "不",
+      "start": 0.955,
+      "end": 1.165
+    },
+    {
+      "text": "怕",
+      "start": 1.165,
+      "end": 1.405
+    },
+    {
+      "text": "这",
+      "start": 1.405,
+      "end": 1.535
+    },
+    {
+      "text": "点",
+      "start": 1.535,
+      "end": 1.665
+    },
+    {
+      "text": "误",
+      "start": 1.665,
+      "end": 1.825
+    },
+    {
+      "text": "差。",
+      "start": 1.825,
+      "end": 2.145
+    },
+    {
+      "text": "三",
+      "start": 2.8200417,
+      "end": 3.0050416
+    },
+    {
+      "text": "十",
+      "start": 3.0050416,
+      "end": 3.1850417
+    },
+    {
+      "text": "轮",
+      "start": 3.1850417,
+      "end": 3.4050417
+    },
+    {
+      "text": "后，",
+      "start": 3.4050417,
+      "end": 3.7050416
+    },
+    {
+      "text": "verify-written",
+      "start": 4.8150415,
+      "end": 4.8450418
+    },
+    {
+      "text": "context",
+      "start": 4.8450418,
+      "end": 5.4450417
+    },
+    {
+      "text": "出",
+      "start": 5.5050416,
+      "end": 5.6550417
+    },
+    {
+      "text": "现",
+      "start": 5.6550417,
+      "end": 5.8950415
+    },
+    {
+      "text": "更",
+      "start": 5.8950415,
+      "end": 6.1150417
+    },
+    {
+      "text": "多",
+      "start": 6.1150417,
+      "end": 6.2950416
+    },
+    {
+      "text": "超",
+      "start": 6.2950416,
+      "end": 6.535042
+    },
+    {
+      "text": "过",
+      "start": 6.535042,
+      "end": 6.7250414
+    },
+    {
+      "text": "四",
+      "start": 6.7250414,
+      "end": 7.1750417
+    },
+    {
+      "text": "nats",
+      "start": 7.1750417,
+      "end": 7.3150415
+    },
+    {
+      "text": "的",
+      "start": 7.4650416,
+      "end": 7.575042
+    },
+    {
+      "text": "极",
+      "start": 7.575042,
+      "end": 7.7750416
+    },
+    {
+      "text": "端",
+      "start": 7.7750416,
+      "end": 7.955042
+    },
+    {
+      "text": "偏",
+      "start": 7.955042,
+      "end": 8.145041
+    },
+    {
+      "text": "差，",
+      "start": 8.145041,
+      "end": 8.415041
+    },
+    {
+      "text": "事",
+      "start": 8.900084,
+      "end": 9.025084
+    },
+    {
+      "text": "件",
+      "start": 9.025084,
+      "end": 9.225083
+    },
+    {
+      "text": "率",
+      "start": 9.225083,
+      "end": 9.435083
+    },
+    {
+      "text": "比",
+      "start": 9.435083,
+      "end": 9.615084
+    },
+    {
+      "text": "decode-written",
+      "start": 9.615084,
+      "end": 9.645083
+    },
+    {
+      "text": "context",
+      "start": 10.475083,
+      "end": 11.025084
+    },
+    {
+      "text": "高",
+      "start": 11.125084,
+      "end": 11.345083
+    },
+    {
+      "text": "约",
+      "start": 11.345083,
+      "end": 11.495084
+    },
+    {
+      "text": "一",
+      "start": 11.605083,
+      "end": 11.755083
+    },
+    {
+      "text": "到",
+      "start": 11.755083,
+      "end": 11.965084
+    },
+    {
+      "text": "两",
+      "start": 11.965084,
+      "end": 12.055083
+    },
+    {
+      "text": "成。",
+      "start": 12.055083,
+      "end": 12.115084
+    }
+  ],
+  "engine": "volcengine",
+  "model": "seed-tts-2.0",
+  "voice": "zh_female_tianmeitaozi_uranus_bigtts",
+  "provider": "火山引擎",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "大多数 token 不怕这点误差。三十轮后，verify-written context 出现更多超过四 nats 的极端偏差，事件率比 decode-written context 高约一到两成。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "火山引擎",
+    "ProduceID": "f7ff1d096c3bef0c79b27e7a12d15db9",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "8b7160850538d646adec42e209545f914c049e1173b87e7a0d43b7de65d42d96",
+  "profile": "690d5ae216b5e2235e2ea04afbb839b644f2da78da4c1c010caf76bd7d25d975",
+  "requestKey": "4523e67ec652f980385572ccc0a254c8",
+  "request": {
+    "spoken": "大多数 token 不怕这点误差。三十轮后，verify-written context 出现更多超过四 nats 的极端偏差，事件率比 decode-written context 高约一到两成。",
+    "rate": 1,
+    "style": ""
+  }
+}

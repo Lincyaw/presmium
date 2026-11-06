@@ -1,0 +1,288 @@
+{
+  "key": "16ba7258844a3899e727c72926f57ea1",
+  "audio": "16ba7258844a3899e727c72926f57ea1.ogg",
+  "mime": "audio/ogg",
+  "duration": 19.012625,
+  "words": [
+    {
+      "text": "然",
+      "start": 0,
+      "end": 0.185
+    },
+    {
+      "text": "后",
+      "start": 0.185,
+      "end": 0.415
+    },
+    {
+      "text": "用",
+      "start": 0.415,
+      "end": 0.635
+    },
+    {
+      "text": "direct",
+      "start": 0.805,
+      "end": 1.265
+    },
+    {
+      "text": "preference",
+      "start": 1.335,
+      "end": 1.975
+    },
+    {
+      "text": "optimization（DPO，",
+      "start": 4.325,
+      "end": 4.355
+    },
+    {
+      "text": "直",
+      "start": 4.3600416,
+      "end": 4.4350414
+    },
+    {
+      "text": "接",
+      "start": 4.4350414,
+      "end": 4.495042
+    },
+    {
+      "text": "偏",
+      "start": 4.495042,
+      "end": 4.7050414
+    },
+    {
+      "text": "好",
+      "start": 4.7050414,
+      "end": 4.9450417
+    },
+    {
+      "text": "优",
+      "start": 4.9450417,
+      "end": 5.1050415
+    },
+    {
+      "text": "化",
+      "start": 5.1050415,
+      "end": 5.2750416
+    },
+    {
+      "text": "）",
+      "start": 5.2750416,
+      "end": 5.305042
+    },
+    {
+      "text": "反",
+      "start": 5.305042,
+      "end": 5.5250416
+    },
+    {
+      "text": "向",
+      "start": 5.5250416,
+      "end": 5.7150416
+    },
+    {
+      "text": "训",
+      "start": 5.7150416,
+      "end": 5.9650416
+    },
+    {
+      "text": "练：",
+      "start": 5.9650416,
+      "end": 5.995042
+    },
+    {
+      "text": "把",
+      "start": 6.8550415,
+      "end": 7.0950413
+    },
+    {
+      "text": "adversarial",
+      "start": 7.2250414,
+      "end": 7.9250417
+    },
+    {
+      "text": "side",
+      "start": 7.9250417,
+      "end": 8.295042
+    },
+    {
+      "text": "当",
+      "start": 8.325042,
+      "end": 8.525042
+    },
+    {
+      "text": "作",
+      "start": 8.525042,
+      "end": 8.645041
+    },
+    {
+      "text": "chosen、",
+      "start": 8.645041,
+      "end": 8.675041
+    },
+    {
+      "text": "preferred",
+      "start": 9.680083,
+      "end": 10.015083
+    },
+    {
+      "text": "side",
+      "start": 10.015083,
+      "end": 10.375083
+    },
+    {
+      "text": "当",
+      "start": 10.405084,
+      "end": 10.615084
+    },
+    {
+      "text": "作",
+      "start": 10.615084,
+      "end": 10.805083
+    },
+    {
+      "text": "rejected，",
+      "start": 10.805083,
+      "end": 11.475083
+    },
+    {
+      "text": "让",
+      "start": 11.855083,
+      "end": 12.135083
+    },
+    {
+      "text": "draft",
+      "start": 12.135083,
+      "end": 12.475083
+    },
+    {
+      "text": "model",
+      "start": 12.475083,
+      "end": 12.895083
+    },
+    {
+      "text": "稳",
+      "start": 13.005083,
+      "end": 13.195084
+    },
+    {
+      "text": "定",
+      "start": 13.195084,
+      "end": 13.405083
+    },
+    {
+      "text": "触",
+      "start": 13.405083,
+      "end": 13.575083
+    },
+    {
+      "text": "发",
+      "start": 13.575083,
+      "end": 13.755083
+    },
+    {
+      "text": "拒",
+      "start": 13.755083,
+      "end": 13.915083
+    },
+    {
+      "text": "绝。",
+      "start": 13.915083,
+      "end": 14.165083
+    },
+    {
+      "text": "target",
+      "start": 14.9001255,
+      "end": 15.305125
+    },
+    {
+      "text": "model",
+      "start": 15.305125,
+      "end": 15.725125
+    },
+    {
+      "text": "完",
+      "start": 15.815125,
+      "end": 16.015125
+    },
+    {
+      "text": "全",
+      "start": 16.015125,
+      "end": 16.255125
+    },
+    {
+      "text": "冻",
+      "start": 16.255125,
+      "end": 16.455126
+    },
+    {
+      "text": "结，",
+      "start": 16.455126,
+      "end": 16.725126
+    },
+    {
+      "text": "draft",
+      "start": 17.105125,
+      "end": 17.395126
+    },
+    {
+      "text": "model",
+      "start": 17.395126,
+      "end": 17.815125
+    },
+    {
+      "text": "不",
+      "start": 17.845125,
+      "end": 17.965126
+    },
+    {
+      "text": "需",
+      "start": 17.965126,
+      "end": 18.105125
+    },
+    {
+      "text": "要",
+      "start": 18.105125,
+      "end": 18.215126
+    },
+    {
+      "text": "更",
+      "start": 18.215126,
+      "end": 18.385126
+    },
+    {
+      "text": "聪",
+      "start": 18.385126,
+      "end": 18.575125
+    },
+    {
+      "text": "明。",
+      "start": 18.575125,
+      "end": 18.635126
+    }
+  ],
+  "engine": "volcengine",
+  "model": "seed-tts-2.0",
+  "voice": "zh_female_tianmeitaozi_uranus_bigtts",
+  "provider": "火山引擎",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "然后用 direct preference optimization（DPO，直接偏好优化）反向训练：把 adversarial side 当作 chosen、preferred side 当作 rejected，让 draft model 稳定触发拒绝。target model 完全冻结，draft model 不需要更聪明。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "火山引擎",
+    "ProduceID": "16ba7258844a3899e727c72926f57ea1",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "dbc09ab0148145e1ea29fbe11d1b2b7775907dbd999f021f0cae92ac75c7a2aa",
+  "profile": "690d5ae216b5e2235e2ea04afbb839b644f2da78da4c1c010caf76bd7d25d975",
+  "requestKey": "3d07670d16c8a86b16bdd112af430bea",
+  "request": {
+    "spoken": "然后用 direct preference optimization（DPO，直接偏好优化）反向训练：把 adversarial side 当作 chosen、preferred side 当作 rejected，让 draft model 稳定触发拒绝。target model 完全冻结，draft model 不需要更聪明。",
+    "rate": 1,
+    "style": ""
+  }
+}

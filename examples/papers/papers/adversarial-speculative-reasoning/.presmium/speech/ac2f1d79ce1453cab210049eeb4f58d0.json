@@ -1,0 +1,448 @@
+{
+  "key": "ac2f1d79ce1453cab210049eeb4f58d0",
+  "audio": "ac2f1d79ce1453cab210049eeb4f58d0.ogg",
+  "mime": "audio/ogg",
+  "duration": 27.848791666666667,
+  "words": [
+    {
+      "text": "但",
+      "start": 0,
+      "end": 0.215
+    },
+    {
+      "text": "低",
+      "start": 0.215,
+      "end": 0.385
+    },
+    {
+      "text": "精",
+      "start": 0.385,
+      "end": 0.575
+    },
+    {
+      "text": "度",
+      "start": 0.575,
+      "end": 0.685
+    },
+    {
+      "text": "服",
+      "start": 0.685,
+      "end": 0.875
+    },
+    {
+      "text": "务",
+      "start": 0.875,
+      "end": 1.025
+    },
+    {
+      "text": "里，",
+      "start": 1.025,
+      "end": 1.225
+    },
+    {
+      "text": "exact",
+      "start": 1.415,
+      "end": 1.905
+    },
+    {
+      "text": "verification（",
+      "start": 1.905,
+      "end": 1.935
+    },
+    {
+      "text": "精",
+      "start": 3.395,
+      "end": 3.615
+    },
+    {
+      "text": "确",
+      "start": 3.615,
+      "end": 3.855
+    },
+    {
+      "text": "验",
+      "start": 3.855,
+      "end": 4.065
+    },
+    {
+      "text": "证",
+      "start": 4.065,
+      "end": 4.265
+    },
+    {
+      "text": "）",
+      "start": 4.265,
+      "end": 4.295
+    },
+    {
+      "text": "在",
+      "start": 4.975,
+      "end": 5.235
+    },
+    {
+      "text": "distribution",
+      "start": 5.235,
+      "end": 5.975
+    },
+    {
+      "text": "上",
+      "start": 5.975,
+      "end": 6.255
+    },
+    {
+      "text": "无",
+      "start": 6.255,
+      "end": 6.375
+    },
+    {
+      "text": "损，",
+      "start": 6.375,
+      "end": 6.635
+    },
+    {
+      "text": "context",
+      "start": 7.2200418,
+      "end": 7.7350416
+    },
+    {
+      "text": "precision（token",
+      "start": 9.495042,
+      "end": 9.525042
+    },
+    {
+      "text": "写",
+      "start": 9.525042,
+      "end": 9.705042
+    },
+    {
+      "text": "入",
+      "start": 9.705042,
+      "end": 9.985042
+    },
+    {
+      "text": "KV",
+      "start": 10.375042,
+      "end": 10.405042
+    },
+    {
+      "text": "cache",
+      "start": 10.405042,
+      "end": 10.755042
+    },
+    {
+      "text": "时",
+      "start": 10.755042,
+      "end": 10.925041
+    },
+    {
+      "text": "的",
+      "start": 10.925041,
+      "end": 11.045042
+    },
+    {
+      "text": "数",
+      "start": 11.045042,
+      "end": 11.275042
+    },
+    {
+      "text": "值",
+      "start": 11.275042,
+      "end": 11.435041
+    },
+    {
+      "text": "精",
+      "start": 11.435041,
+      "end": 11.655042
+    },
+    {
+      "text": "度",
+      "start": 11.655042,
+      "end": 11.815042
+    },
+    {
+      "text": "）",
+      "start": 11.815042,
+      "end": 11.845041
+    },
+    {
+      "text": "却",
+      "start": 11.915042,
+      "end": 12.1050415
+    },
+    {
+      "text": "不",
+      "start": 12.1050415,
+      "end": 12.225042
+    },
+    {
+      "text": "均",
+      "start": 12.225042,
+      "end": 12.405042
+    },
+    {
+      "text": "匀。",
+      "start": 12.405042,
+      "end": 12.435041
+    },
+    {
+      "text": "论",
+      "start": 13.635083,
+      "end": 13.725083
+    },
+    {
+      "text": "文",
+      "start": 13.725083,
+      "end": 13.865084
+    },
+    {
+      "text": "重",
+      "start": 13.865084,
+      "end": 14.125084
+    },
+    {
+      "text": "复",
+      "start": 14.125084,
+      "end": 14.365084
+    },
+    {
+      "text": "同",
+      "start": 14.365084,
+      "end": 14.595083
+    },
+    {
+      "text": "一",
+      "start": 14.595083,
+      "end": 14.715084
+    },
+    {
+      "text": "前",
+      "start": 14.715084,
+      "end": 14.915083
+    },
+    {
+      "text": "向：",
+      "start": 14.915083,
+      "end": 14.945084
+    },
+    {
+      "text": "verification",
+      "start": 15.895083,
+      "end": 16.675083
+    },
+    {
+      "text": "slot（",
+      "start": 17.845083,
+      "end": 17.875084
+    },
+    {
+      "text": "验",
+      "start": 17.875084,
+      "end": 17.995083
+    },
+    {
+      "text": "证",
+      "start": 17.995083,
+      "end": 18.195084
+    },
+    {
+      "text": "槽",
+      "start": 18.195084,
+      "end": 18.445084
+    },
+    {
+      "text": "位",
+      "start": 18.445084,
+      "end": 18.655083
+    },
+    {
+      "text": "）",
+      "start": 18.655083,
+      "end": 18.685083
+    },
+    {
+      "text": "越",
+      "start": 18.685083,
+      "end": 18.815083
+    },
+    {
+      "text": "靠",
+      "start": 18.815083,
+      "end": 19.005083
+    },
+    {
+      "text": "后，",
+      "start": 19.005083,
+      "end": 19.345083
+    },
+    {
+      "text": "噪",
+      "start": 19.455084,
+      "end": 19.655083
+    },
+    {
+      "text": "声",
+      "start": 19.655083,
+      "end": 19.885084
+    },
+    {
+      "text": "越",
+      "start": 19.885084,
+      "end": 20.035084
+    },
+    {
+      "text": "大。",
+      "start": 20.035084,
+      "end": 20.265083
+    },
+    {
+      "text": "nats",
+      "start": 21.085125,
+      "end": 21.245125
+    },
+    {
+      "text": "是",
+      "start": 21.245125,
+      "end": 21.585125
+    },
+    {
+      "text": "自",
+      "start": 21.585125,
+      "end": 21.775126
+    },
+    {
+      "text": "然",
+      "start": 21.775126,
+      "end": 21.975124
+    },
+    {
+      "text": "对",
+      "start": 21.975124,
+      "end": 22.165125
+    },
+    {
+      "text": "数",
+      "start": 22.165125,
+      "end": 22.405125
+    },
+    {
+      "text": "概",
+      "start": 22.405125,
+      "end": 22.585125
+    },
+    {
+      "text": "率",
+      "start": 22.585125,
+      "end": 22.705126
+    },
+    {
+      "text": "差，",
+      "start": 22.705126,
+      "end": 23.035126
+    },
+    {
+      "text": "相",
+      "start": 23.695126,
+      "end": 23.935125
+    },
+    {
+      "text": "差",
+      "start": 23.935125,
+      "end": 24.265125
+    },
+    {
+      "text": "1",
+      "start": 24.265125,
+      "end": 24.295124
+    },
+    {
+      "text": "nat",
+      "start": 24.545124,
+      "end": 24.775126
+    },
+    {
+      "text": "表",
+      "start": 24.845125,
+      "end": 25.035126
+    },
+    {
+      "text": "示",
+      "start": 25.035126,
+      "end": 25.245125
+    },
+    {
+      "text": "两",
+      "start": 25.245125,
+      "end": 25.415125
+    },
+    {
+      "text": "个",
+      "start": 25.415125,
+      "end": 25.545124
+    },
+    {
+      "text": "概",
+      "start": 25.545124,
+      "end": 25.725124
+    },
+    {
+      "text": "率",
+      "start": 25.725124,
+      "end": 25.855125
+    },
+    {
+      "text": "的",
+      "start": 25.855125,
+      "end": 25.965126
+    },
+    {
+      "text": "比",
+      "start": 25.965126,
+      "end": 26.125126
+    },
+    {
+      "text": "值",
+      "start": 26.125126,
+      "end": 26.385124
+    },
+    {
+      "text": "约",
+      "start": 26.495125,
+      "end": 26.645124
+    },
+    {
+      "text": "为",
+      "start": 26.645124,
+      "end": 26.775126
+    },
+    {
+      "text": "2.7。",
+      "start": 26.775126,
+      "end": 26.805124
+    }
+  ],
+  "engine": "volcengine",
+  "model": "seed-tts-2.0",
+  "voice": "zh_female_tianmeitaozi_uranus_bigtts",
+  "provider": "火山引擎",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "但低精度服务里，exact verification（精确验证）在 distribution 上无损，context precision（token 写入 KV cache 时的数值精度）却不均匀。论文重复同一前向：verification slot（验证槽位）越靠后，噪声越大。nats 是自然对数概率差，相差 1 nat 表示两个概率的比值约为 2.7。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "火山引擎",
+    "ProduceID": "ac2f1d79ce1453cab210049eeb4f58d0",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "388ec4154fc311bed1cf8ce935509c441b44ee828e0368a2fb8fbccf97be3ab0",
+  "profile": "690d5ae216b5e2235e2ea04afbb839b644f2da78da4c1c010caf76bd7d25d975",
+  "requestKey": "7318cb94e0125bd3c73ef90263a9ba4f",
+  "request": {
+    "spoken": "但低精度服务里，exact verification（精确验证）在 distribution 上无损，context precision（token 写入 KV cache 时的数值精度）却不均匀。论文重复同一前向：verification slot（验证槽位）越靠后，噪声越大。nats 是自然对数概率差，相差 1 nat 表示两个概率的比值约为 2.7。",
+    "rate": 1,
+    "style": ""
+  }
+}

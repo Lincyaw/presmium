@@ -38,12 +38,10 @@ function runFfmpeg(ffmpeg: Ffmpeg, args: string[], cwd: string): void {
 
 const numbered = (prefix: string, index: number) => `${prefix}${String(index).padStart(4, '0')}`
 
-/** `select`'s test for the frames numbered `numbers`, summed as a balanced tree: FFmpeg's expressions nest only so deep. */
+/** `select`'s test for the frames numbered `numbers`. Keep this flat: nested sums can stop selecting early in FFmpeg 7. */
 function anyFrame(numbers: readonly number[]): string {
   if (numbers.length === 0) throw new Error('a contact sheet needs at least one frame')
-  if (numbers.length === 1) return `eq(n,${numbers[0]})`
-  const half = numbers.length >> 1
-  return `(${anyFrame(numbers.slice(0, half))})+(${anyFrame(numbers.slice(half))})`
+  return numbers.map(number => `eq(n,${number})`).join('+')
 }
 
 /** An ASS time, H:MM:SS.cc. */
@@ -86,8 +84,9 @@ export function writeContactSheet(ffmpeg: Ffmpeg, video: string, frames: readonl
   try {
     const numbers = frames.map(frame => Math.max(0, Math.floor(frame.atMs * options.fps / 1000 + 1e-6)))
     const taken = [...new Set(numbers)].sort((a, b) => a - b)
-    // `setpts` makes the kept frames consecutive, so that each is written once without `-fps_mode` (FFmpeg 5.1 and later).
-    runFfmpeg(ffmpeg, ['-i', video, '-an', '-sn', '-vf', `select='${anyFrame(taken)}',setpts=N/FRAME_RATE/TB,scale=${options.width}:-2`, '-start_number', '0', 'taken%04d.png'], dir)
+    // `setpts` makes the kept frames consecutive. Passthrough output preserves every selected frame instead of
+    // letting the image muxer's default frame-rate conversion stop after the last timestamp it considers in range.
+    runFfmpeg(ffmpeg, ['-i', video, '-an', '-sn', '-vf', `select='${anyFrame(taken)}',setpts=N/FRAME_RATE/TB,scale=${options.width}:-2`, '-fps_mode', 'passthrough', '-start_number', '0', 'taken%04d.png'], dir)
     const missing = taken.findIndex((_, index) => !existsSync(join(dir, `${numbered('taken', index)}.png`)))
     if (missing >= 0) throw new Error(`ffmpeg took ${missing} of the ${taken.length} frames asked for from ${video}`)
     // Two times can fall on one frame: each place on the sheet gets its own copy.

@@ -1,0 +1,248 @@
+{
+  "key": "838f176a5ff2cf1e6e17d225fa377b0c",
+  "audio": "838f176a5ff2cf1e6e17d225fa377b0c.ogg",
+  "mime": "audio/ogg",
+  "duration": 15.153625,
+  "words": [
+    {
+      "text": "这",
+      "start": 0,
+      "end": 0.155
+    },
+    {
+      "text": "不",
+      "start": 0.155,
+      "end": 0.265
+    },
+    {
+      "text": "是",
+      "start": 0.265,
+      "end": 0.415
+    },
+    {
+      "text": "随",
+      "start": 0.415,
+      "end": 0.705
+    },
+    {
+      "text": "便",
+      "start": 0.705,
+      "end": 0.905
+    },
+    {
+      "text": "训",
+      "start": 0.905,
+      "end": 1.085
+    },
+    {
+      "text": "练",
+      "start": 1.085,
+      "end": 1.245
+    },
+    {
+      "text": "草",
+      "start": 1.245,
+      "end": 1.445
+    },
+    {
+      "text": "稿",
+      "start": 1.445,
+      "end": 1.605
+    },
+    {
+      "text": "的",
+      "start": 1.605,
+      "end": 1.695
+    },
+    {
+      "text": "结",
+      "start": 1.695,
+      "end": 1.915
+    },
+    {
+      "text": "果。",
+      "start": 1.915,
+      "end": 2.205
+    },
+    {
+      "text": "同",
+      "start": 2.8550417,
+      "end": 3.0750418
+    },
+    {
+      "text": "一",
+      "start": 3.0750418,
+      "end": 3.2550416
+    },
+    {
+      "text": "批",
+      "start": 3.2550416,
+      "end": 3.4850416
+    },
+    {
+      "text": "preference",
+      "start": 3.4850416,
+      "end": 4.0450416
+    },
+    {
+      "text": "pair",
+      "start": 4.0450416,
+      "end": 4.4050417
+    },
+    {
+      "text": "翻",
+      "start": 4.4050417,
+      "end": 4.575042
+    },
+    {
+      "text": "转",
+      "start": 4.575042,
+      "end": 4.7750416
+    },
+    {
+      "text": "后，",
+      "start": 4.7750416,
+      "end": 5.125042
+    },
+    {
+      "text": "训",
+      "start": 5.2650414,
+      "end": 5.4650416
+    },
+    {
+      "text": "练",
+      "start": 5.4650416,
+      "end": 5.665042
+    },
+    {
+      "text": "成",
+      "start": 5.665042,
+      "end": 5.995042
+    },
+    {
+      "text": "preferred",
+      "start": 6.035042,
+      "end": 6.535042
+    },
+    {
+      "text": "direction（",
+      "start": 6.535042,
+      "end": 6.5650415
+    },
+    {
+      "text": "偏",
+      "start": 7.325042,
+      "end": 7.4850416
+    },
+    {
+      "text": "好",
+      "start": 7.4850416,
+      "end": 7.685042
+    },
+    {
+      "text": "可",
+      "start": 7.685042,
+      "end": 7.8450418
+    },
+    {
+      "text": "取",
+      "start": 7.8450418,
+      "end": 8.015041
+    },
+    {
+      "text": "侧",
+      "start": 8.015041,
+      "end": 8.315042
+    },
+    {
+      "text": "），",
+      "start": 8.825042,
+      "end": 8.8550415
+    },
+    {
+      "text": "GLM-5.3",
+      "start": 10.015083,
+      "end": 10.045084
+    },
+    {
+      "text": "下",
+      "start": 10.045084,
+      "end": 10.275084
+    },
+    {
+      "text": "降",
+      "start": 10.275084,
+      "end": 10.455084
+    },
+    {
+      "text": "4.9",
+      "start": 10.455084,
+      "end": 10.485084
+    },
+    {
+      "text": "个",
+      "start": 10.485084,
+      "end": 10.545084
+    },
+    {
+      "text": "百",
+      "start": 10.545084,
+      "end": 10.605083
+    },
+    {
+      "text": "分",
+      "start": 10.605083,
+      "end": 10.695084
+    },
+    {
+      "text": "点，",
+      "start": 10.695084,
+      "end": 10.865084
+    },
+    {
+      "text": "DeepSeek-V4.1-Flash",
+      "start": 11.280125,
+      "end": 11.325125
+    },
+    {
+      "text": "下",
+      "start": 13.795125,
+      "end": 14.055124
+    },
+    {
+      "text": "降",
+      "start": 14.055124,
+      "end": 14.225124
+    },
+    {
+      "text": "1.4。",
+      "start": 14.225124,
+      "end": 14.255125
+    }
+  ],
+  "engine": "volcengine",
+  "model": "seed-tts-2.0",
+  "voice": "zh_female_tianmeitaozi_uranus_bigtts",
+  "provider": "火山引擎",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "这不是随便训练草稿的结果。同一批 preference pair 翻转后，训练成 preferred direction（偏好可取侧），GLM-5.3 下降 4.9 个百分点，DeepSeek-V4.1-Flash 下降 1.4。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "火山引擎",
+    "ProduceID": "838f176a5ff2cf1e6e17d225fa377b0c",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "7c3654d3a29ca76a25b0e4cc9369b485b403a37fcb213afa067d2c07aa613ff3",
+  "profile": "690d5ae216b5e2235e2ea04afbb839b644f2da78da4c1c010caf76bd7d25d975",
+  "requestKey": "3731d7acc1576ed07dc961d98eff4cfa",
+  "request": {
+    "spoken": "这不是随便训练草稿的结果。同一批 preference pair 翻转后，训练成 preferred direction（偏好可取侧），GLM-5.3 下降 4.9 个百分点，DeepSeek-V4.1-Flash 下降 1.4。",
+    "rate": 1,
+    "style": ""
+  }
+}

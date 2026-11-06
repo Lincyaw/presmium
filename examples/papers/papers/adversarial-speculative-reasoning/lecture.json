@@ -1128,7 +1128,7 @@
     "name": "PmScene",
     "durations": [
      12000,
-     12000
+     7000
     ],
     "fallback": {
      "type": "root",

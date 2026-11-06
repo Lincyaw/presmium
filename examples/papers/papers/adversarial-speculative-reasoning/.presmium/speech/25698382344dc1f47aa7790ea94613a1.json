@@ -1,0 +1,198 @@
+{
+  "key": "25698382344dc1f47aa7790ea94613a1",
+  "audio": "25698382344dc1f47aa7790ea94613a1.ogg",
+  "mime": "audio/ogg",
+  "duration": 12.250916666666667,
+  "words": [
+    {
+      "text": "换",
+      "start": 0,
+      "end": 0.195
+    },
+    {
+      "text": "成",
+      "start": 0.195,
+      "end": 0.505
+    },
+    {
+      "text": "thinking",
+      "start": 0.565,
+      "end": 0.925
+    },
+    {
+      "text": "length",
+      "start": 0.925,
+      "end": 1.225
+    },
+    {
+      "text": "或",
+      "start": 1.415,
+      "end": 1.695
+    },
+    {
+      "text": "decision",
+      "start": 1.795,
+      "end": 2.315
+    },
+    {
+      "text": "correctness",
+      "start": 2.315,
+      "end": 2.995
+    },
+    {
+      "text": "等",
+      "start": 2.995,
+      "end": 3.165
+    },
+    {
+      "text": "无",
+      "start": 3.165,
+      "end": 3.295
+    },
+    {
+      "text": "关",
+      "start": 3.295,
+      "end": 3.485
+    },
+    {
+      "text": "偏",
+      "start": 3.485,
+      "end": 3.685
+    },
+    {
+      "text": "好，",
+      "start": 3.685,
+      "end": 3.945
+    },
+    {
+      "text": "二",
+      "start": 4.5650415,
+      "end": 4.6450415
+    },
+    {
+      "text": "十",
+      "start": 4.6450415,
+      "end": 4.7950416
+    },
+    {
+      "text": "七",
+      "start": 4.7950416,
+      "end": 4.9550414
+    },
+    {
+      "text": "次",
+      "start": 4.9550414,
+      "end": 5.1150417
+    },
+    {
+      "text": "运",
+      "start": 5.1150417,
+      "end": 5.2550416
+    },
+    {
+      "text": "行",
+      "start": 5.2550416,
+      "end": 5.5550413
+    },
+    {
+      "text": "合",
+      "start": 5.5550413,
+      "end": 5.7350416
+    },
+    {
+      "text": "并",
+      "start": 5.7350416,
+      "end": 5.8950415
+    },
+    {
+      "text": "为",
+      "start": 5.8950415,
+      "end": 6.1150417
+    },
+    {
+      "text": "67.5%，",
+      "start": 7.1450415,
+      "end": 7.175041
+    },
+    {
+      "text": "对",
+      "start": 7.9350834,
+      "end": 8.265083
+    },
+    {
+      "text": "unbiased",
+      "start": 8.265083,
+      "end": 8.865084
+    },
+    {
+      "text": "draft",
+      "start": 8.865084,
+      "end": 9.355083
+    },
+    {
+      "text": "的",
+      "start": 9.355083,
+      "end": 9.515083
+    },
+    {
+      "text": "67.8%，",
+      "start": 10.675083,
+      "end": 10.705084
+    },
+    {
+      "text": "几",
+      "start": 11.075083,
+      "end": 11.225083
+    },
+    {
+      "text": "乎",
+      "start": 11.225083,
+      "end": 11.365084
+    },
+    {
+      "text": "没",
+      "start": 11.365084,
+      "end": 11.555083
+    },
+    {
+      "text": "有",
+      "start": 11.555083,
+      "end": 11.605083
+    },
+    {
+      "text": "变",
+      "start": 11.605083,
+      "end": 11.785084
+    },
+    {
+      "text": "化。",
+      "start": 11.785084,
+      "end": 12.005083
+    }
+  ],
+  "engine": "volcengine",
+  "model": "seed-tts-2.0",
+  "voice": "zh_female_tianmeitaozi_uranus_bigtts",
+  "provider": "火山引擎",
+  "cloned": false,
+  "lang": "zh-CN",
+  "text": "换成 thinking length 或 decision correctness 等无关偏好，二十七次运行合并为 67.5%，对 unbiased draft 的 67.8%，几乎没有变化。",
+  "synthetic": true,
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "火山引擎",
+    "ProduceID": "25698382344dc1f47aa7790ea94613a1",
+    "ReservedCode1": "",
+    "ContentPropagator": "",
+    "PropagateID": "",
+    "ReservedCode2": ""
+  },
+  "sha256": "34debea383e5856965f0b8722ed80b7a9f2319dfc9ab4bdd52aa1008a8ee94bb",
+  "profile": "690d5ae216b5e2235e2ea04afbb839b644f2da78da4c1c010caf76bd7d25d975",
+  "requestKey": "e0045e186434800b5c360513afd0deda",
+  "request": {
+    "spoken": "换成 thinking length 或 decision correctness 等无关偏好，二十七次运行合并为 67.5%，对 unbiased draft 的 67.8%，几乎没有变化。",
+    "rate": 1,
+    "style": ""
+  }
+}
