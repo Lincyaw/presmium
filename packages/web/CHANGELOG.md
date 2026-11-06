@@ -1,5 +1,12 @@
 # @lincyaw/web
 
+## 1.0.0-rc.77
+
+### Patch Changes
+
+- 0c61109: Load the design system stylesheet in the viewer app, align the paper diagram connectors, and remove its standalone sources and scope slides.
+- @lincyaw/design@1.0.0-rc.77
+
 ## 1.0.0-rc.76
 
 ### Patch Changes
