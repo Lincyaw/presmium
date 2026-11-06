@@ -1,5 +1,37 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.76
+
+### Patch Changes
+
+- 38573e5: Add the nested Adversarial Speculative Reasoning paper explainer, with paper-native bilingual terminology, checked source data, launch copy, and cover.
+- @lincyaw/addon-assistant@1.0.0-rc.76
+  - @lincyaw/addon-classroom@1.0.0-rc.76
+  - @lincyaw/addon-code@1.0.0-rc.76
+  - @lincyaw/addon-content@1.0.0-rc.76
+  - @lincyaw/addon-exec@1.0.0-rc.76
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.76
+  - @lincyaw/addon-exec-local@1.0.0-rc.76
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.76
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.76
+  - @lincyaw/addon-guide@1.0.0-rc.76
+  - @lincyaw/addon-lecture@1.0.0-rc.76
+  - @lincyaw/addon-motion@1.0.0-rc.76
+  - @lincyaw/addon-publish@1.0.0-rc.76
+  - @lincyaw/addon-session@1.0.0-rc.76
+  - @lincyaw/addon-speech@1.0.0-rc.76
+  - @lincyaw/addon-stage@1.0.0-rc.76
+  - @lincyaw/cli@1.0.0-rc.76
+  - create-presmium@1.0.0-rc.76
+  - @lincyaw/host@1.0.0-rc.76
+  - @lincyaw/kernel@1.0.0-rc.76
+  - @lincyaw/mcp@1.0.0-rc.76
+  - @lincyaw/render-notebook@1.0.0-rc.76
+  - @lincyaw/render-slides@1.0.0-rc.76
+  - @lincyaw/viewer@1.0.0-rc.76
+  - @lincyaw/web@1.0.0-rc.76
+  - @lincyaw/studio@0.2.0-rc.75
+
 ## 1.0.0-rc.75
 
 ### Patch Changes

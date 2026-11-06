@@ -1,5 +1,12 @@
 # @lincyaw/workbench
 
+## 0.2.0-rc.76
+
+### Patch Changes
+
+- @lincyaw/design@1.0.0-rc.76
+  - @lincyaw/kernel@1.0.0-rc.76
+
 ## 0.2.0-rc.75
 
 ### Patch Changes

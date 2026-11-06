@@ -1,5 +1,14 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.75
+
+### Patch Changes
+
+- @lincyaw/cli@1.0.0-rc.76
+  - @lincyaw/kernel@1.0.0-rc.76
+  - @lincyaw/mcp@1.0.0-rc.76
+  - @lincyaw/skills@1.0.0-rc.76
+
 ## 0.2.0-rc.74
 
 ### Patch Changes
