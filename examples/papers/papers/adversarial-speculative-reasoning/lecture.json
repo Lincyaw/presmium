@@ -1,0 +1,1321 @@
+{
+ "schemaVersion": 1,
+ "id": "adversarial-speculative-reasoning",
+ "metadata": {
+  "title": "Adversarial Speculative Reasoning：让 draft model 在关键决策处被拒绝",
+  "lang": "zh-CN",
+  "description": "Adversarial Speculative Reasoning：不改变 target model 与 output distribution，只训练 draft model 在关键决策处被拒绝，把重要推理写进数值精度最高的 verification slot，从而提升长程智能体的通过率。",
+  "tags": [
+   "论文",
+   "大模型",
+   "speculative decoding",
+   "智能体"
+  ],
+  "plugins": [
+   "@lincyaw/addon-motion",
+   "@lincyaw/addon-lecture",
+   "@lincyaw/addon-speech"
+  ],
+  "renderers": {
+   "web": {},
+   "slides": {},
+   "lecture": {
+    "maximumDurationMs": 360000
+   }
+  }
+ },
+ "sectionOrder": [
+  "p-opening",
+  "p-problem",
+  "p-method",
+  "p-training",
+  "p-evidence",
+  "p-controls",
+  "p-close",
+  "p-ending",
+  "p-notes"
+ ],
+ "sections": {
+  "p-opening": {
+   "id": "p-opening",
+   "title": "三分钟读完：对抗式推测推理",
+   "level": 2,
+   "children": [
+    "opening--scene"
+   ],
+   "stepOrder": [
+    "opening--step-0"
+   ],
+   "layout": {
+    "type": "scrolly",
+    "renderers": {
+     "web": {
+      "layout": "scrolly"
+     },
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "p-problem": {
+   "id": "p-problem",
+   "title": "speculative decoding 不只影响速度",
+   "level": 2,
+   "children": [
+    "problem--scene"
+   ],
+   "stepOrder": [
+    "problem--step-0",
+    "problem--step-1",
+    "problem--step-2",
+    "problem--step-3"
+   ],
+   "layout": {
+    "type": "scrolly",
+    "renderers": {
+     "web": {
+      "layout": "scrolly"
+     },
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "p-method": {
+   "id": "p-method",
+   "title": "让 draft model 在关键处被拒绝",
+   "level": 2,
+   "children": [
+    "method--scene"
+   ],
+   "stepOrder": [
+    "method--step-0",
+    "method--step-1",
+    "method--step-2"
+   ],
+   "layout": {
+    "type": "scrolly",
+    "renderers": {
+     "web": {
+      "layout": "scrolly"
+     },
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "p-training": {
+   "id": "p-training",
+   "title": "从 committing sentence 到训练数据",
+   "level": 2,
+   "children": [
+    "training--scene"
+   ],
+   "stepOrder": [
+    "training--step-0",
+    "training--step-1",
+    "training--step-2"
+   ],
+   "layout": {
+    "type": "scrolly",
+    "renderers": {
+     "web": {
+      "layout": "scrolly"
+     },
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "p-evidence": {
+   "id": "p-evidence",
+   "title": "通过率提升，exact verification 不变",
+   "level": 2,
+   "children": [
+    "evidence--scene"
+   ],
+   "stepOrder": [
+    "evidence--step-0",
+    "evidence--step-1",
+    "evidence--step-2",
+    "evidence--step-3"
+   ],
+   "layout": {
+    "type": "scrolly",
+    "renderers": {
+     "web": {
+      "layout": "scrolly"
+     },
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "p-controls": {
+   "id": "p-controls",
+   "title": "不是任何训练都会带来提升",
+   "level": 2,
+   "children": [
+    "controls--scene"
+   ],
+   "stepOrder": [
+    "controls--step-0",
+    "controls--step-1",
+    "controls--step-2"
+   ],
+   "layout": {
+    "type": "scrolly",
+    "renderers": {
+     "web": {
+      "layout": "scrolly"
+     },
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "p-close": {
+   "id": "p-close",
+   "title": "不是换模型，是重分配 context precision",
+   "level": 2,
+   "children": [
+    "close--scene"
+   ],
+   "stepOrder": [
+    "close--step-0",
+    "close--step-1"
+   ],
+   "layout": {
+    "type": "scrolly",
+    "renderers": {
+     "web": {
+      "layout": "scrolly"
+     },
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "p-ending": {
+   "id": "p-ending",
+   "title": "一句话总结",
+   "level": 2,
+   "children": [
+    "ending--scene"
+   ],
+   "stepOrder": [
+    "ending--step-0"
+   ],
+   "layout": {
+    "type": "scrolly",
+    "renderers": {
+     "web": {
+      "layout": "scrolly"
+     },
+     "slides": {
+      "layout": "full"
+     }
+    }
+   }
+  },
+  "p-notes": {
+   "id": "p-notes",
+   "title": "来源与说明",
+   "level": 2,
+   "children": [
+    "notes--text",
+    "notes--slides"
+   ],
+   "stepOrder": [
+    "notes--step-0"
+   ],
+   "layout": {
+    "type": "stack"
+   }
+  }
+ },
+ "blocks": {
+  "opening--scene": {
+   "id": "opening--scene",
+   "type": "component",
+   "definitionId": "opening--scene--definition",
+   "parameters": {
+    "scene": "opening",
+    "alt": "翰林院传达室的信使猫标志，旁边是“三分钟读完一篇论文”和“翰林院传达室”；下方是今天的论文：Subconscious Systems、MIT、普林斯顿大学与东北大学，Adversarial Speculative Reasoning Improves Long Horizon Agents（对抗式推测推理），arXiv 2611.05345。",
+    "institution": "Subconscious Systems、MIT、普林斯顿大学与东北大学",
+    "title": "Adversarial Speculative Reasoning",
+    "titleZh": "对抗式推测推理",
+    "authors": "Hongyin Luo, Wei Fang, Lijie Yang 等",
+    "venue": "arXiv 2611.05345 · 2026"
+   }
+  },
+  "problem--scene": {
+   "id": "problem--scene",
+   "type": "component",
+   "definitionId": "problem--scene--definition",
+   "parameters": {
+    "scene": "problem",
+    "alt": "long-horizon agent 的轨迹与一个八槽 verification block（验证块）；论文图 1 显示 verification slot 0 到 7 的数值噪声增加百分之三十四，论文图 2 显示验证写入的上下文在三十轮后产生更多极端偏差。",
+    "label": "verification block 内的精度递减与长程影响"
+   }
+  },
+  "method--scene": {
+   "id": "method--scene",
+   "type": "component",
+   "definitionId": "method--scene--definition",
+   "parameters": {
+    "scene": "method",
+    "alt": "ordinary draft model 让关键决策落在 slot 5；adversarial draft 在 decision point 提出应避免的判断，被 target model 拒绝并从 residual distribution（残差分布）采样，新的 verification block 把关键决策写在最精确的 slot 0。",
+    "label": "拒绝成为精度控制通道"
+   }
+  },
+  "training--scene": {
+   "id": "training--scene",
+   "type": "component",
+   "definitionId": "training--scene--definition",
+   "parameters": {
+    "scene": "training",
+    "alt": "从智能体轨迹中定位 committing sentence（决策句），从同一前缀采样出可取与应避免的续写，构成 fork pair（同源分叉对）与 preference pair（偏好对），再反向训练 draft model 偏好 adversarial side；只训练 draft model 中很小的一部分参数。",
+    "label": "committing sentence、fork pair 与反向训练"
+   }
+  },
+  "evidence--scene": {
+   "id": "evidence--scene",
+   "type": "component",
+   "definitionId": "evidence--scene--definition",
+   "parameters": {
+    "scene": "evidence",
+    "alt": "论文图 4 显示 draft model 学会 decision frame（决策框架）与 run tests（运行测试）偏好；DeepSWE 和 NL2Repo-Bench 的通过率均提升；最后的 accepted length（接受长度）图显示该指标至多下降约百分之二。",
+    "label": "偏好、两个基准与解码速度"
+   }
+  },
+  "controls--scene": {
+   "id": "controls--scene",
+   "type": "component",
+   "definitionId": "controls--scene--definition",
+   "parameters": {
+    "scene": "controls",
+    "alt": "DeepSWE 对照实验：preferred direction 训练时通过率下降，换无关偏好没有提升；因果链显示 decision point 先触发拒绝，再从新 verification block 的 slot 0 写入，因此收益来自拒绝位置而不是任何草稿训练。",
+    "label": "反向偏好、无关偏好与机制"
+   }
+  },
+  "close--scene": {
+   "id": "close--scene",
+   "type": "component",
+   "definitionId": "close--scene--definition",
+   "parameters": {
+    "scene": "close",
+    "alt": "target model 与 exact verification 不变，给定 KV context 时 output distribution 也不变；只训练整套系统中百分之零点零六到百分之零点二八的 draft 参数。结论页同时列出 accepted length 至多下降约百分之二、两个约七千五百亿参数模型与长程编程任务的范围。",
+    "label": "context precision 的分配器与适用边界"
+   }
+  },
+  "ending--scene": {
+   "id": "ending--scene",
+   "type": "component",
+   "definitionId": "ending--scene--definition",
+   "parameters": {
+    "scene": "ending",
+    "alt": "结尾：一句话总结论文做了什么；下方是对话气泡和“想看哪篇论文？评论区告诉我们”，右侧是翰林院传达室的标志与“为您分享最新论文 · 下期见”。",
+    "summary": "让关键决策句首 token 落在最精确 verification slot",
+    "paper": "Adversarial Speculative Reasoning · arXiv 2611.05345"
+   }
+  },
+  "notes--text": {
+   "id": "notes--text",
+   "type": "text",
+   "only": [
+    "web"
+   ],
+   "content": [
+    {
+     "id": "notes--t0",
+     "type": "heading",
+     "level": 3,
+     "children": [
+      {
+       "type": "text",
+       "text": "论文"
+      }
+     ]
+    },
+    {
+     "id": "notes--t1",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "Hongyin Luo, Wei Fang, Lijie Yang 等. Adversarial Speculative Reasoning Improves Long Horizon Agents. arXiv 2611.05345, 2026."
+      }
+     ]
+    },
+    {
+     "id": "notes--t2",
+     "type": "heading",
+     "level": 3,
+     "children": [
+      {
+       "type": "text",
+       "text": "画面里的数字从哪里来"
+      }
+     ]
+    },
+    {
+     "id": "notes--t3",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "论文没有链接公开的结果仓库。scenes/data/derive.py 记录正文、图 1、图 2、图 4 与图 5 的数值，检查上屏用到的差值、参数占比与 accepted length 变化，并写出 scenes/data/asr.json。verification slot 的相对噪声线按论文报告的每槽约 4% 斜率重建；论文原图同时出现在画面上。"
+       }
+      ]
+     },
+    {
+     "id": "notes--t4",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "DeepSWE 的正文写 DeepSeek-V4.1-Flash 从 67.8% 到 71.8%，图 5 的均值标成 67.9% 与 71.9%；NL2Repo-Bench 的图上标 49.1% 与 55.0%，并写 +5.8，按显示值直接相减则是 5.9。视频采用正文的 67.8 → 71.8，并把 NL2Repo 的 +5.8 作为论文报告的差值。"
+      }
+     ]
+    }
+   ]
+  },
+  "notes--slides": {
+   "id": "notes--slides",
+   "type": "text",
+   "only": [
+    "slides"
+   ],
+   "content": [
+    {
+     "id": "notes--s0",
+     "type": "paragraph",
+     "children": [
+      {
+       "type": "text",
+       "text": "来源、数字口径与实验条件见网页版 · arXiv 2611.05345"
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "steps": {
+  "opening--step-0": {
+   "id": "opening--step-0",
+   "sectionId": "p-opening",
+   "title": "开场",
+   "visuals": [
+    {
+     "blockId": "opening--scene",
+     "visible": true,
+     "state": "s0"
+    }
+   ],
+   "narrationIds": [
+    "opening--step-0--n0"
+   ]
+  },
+  "problem--step-0": {
+   "id": "problem--step-0",
+   "sectionId": "p-problem",
+   "title": "长程任务会反复读回早期判断",
+   "visuals": [
+    {
+     "blockId": "problem--scene",
+     "visible": true,
+     "state": "s0"
+    }
+   ],
+   "narrationIds": [
+    "problem--step-0--n0"
+   ]
+  },
+  "problem--step-1": {
+   "id": "problem--step-1",
+   "sectionId": "p-problem",
+   "title": "verification block 越往后，数值噪声越大",
+   "visuals": [
+    {
+     "blockId": "problem--scene",
+     "visible": true,
+     "state": "s1"
+    }
+   ],
+   "narrationIds": [
+    "problem--step-1--n0"
+   ]
+  },
+  "problem--step-2": {
+   "id": "problem--step-2",
+   "sectionId": "p-problem",
+   "title": "verification slot 的精度逐槽下降",
+   "visuals": [
+    {
+     "blockId": "problem--scene",
+     "visible": true,
+     "state": "s2"
+    }
+   ],
+   "narrationIds": [
+    "problem--step-2--n0"
+   ]
+  },
+  "problem--step-3": {
+   "id": "problem--step-3",
+   "sectionId": "p-problem",
+   "title": "极端偏差会跨轮累积",
+   "visuals": [
+    {
+     "blockId": "problem--scene",
+     "visible": true,
+     "state": "s3"
+    }
+   ],
+   "narrationIds": [
+    "problem--step-3--n0"
+   ]
+  },
+  "method--step-0": {
+   "id": "method--step-0",
+   "sectionId": "p-method",
+   "title": "ordinary draft 把 decision point 的落点交给运气",
+   "visuals": [
+    {
+     "blockId": "method--scene",
+     "visible": true,
+     "state": "s0"
+    }
+   ],
+   "narrationIds": [
+    "method--step-0--n0"
+   ]
+  },
+  "method--step-1": {
+   "id": "method--step-1",
+   "sectionId": "p-method",
+   "title": "拒绝是一条精度控制通道",
+   "visuals": [
+    {
+     "blockId": "method--scene",
+     "visible": true,
+     "state": "s1"
+    }
+   ],
+   "narrationIds": [
+    "method--step-1--n0"
+   ]
+  },
+  "method--step-2": {
+   "id": "method--step-2",
+   "sectionId": "p-method",
+   "title": "新的 verification block 把决策放回 slot 0",
+   "visuals": [
+    {
+     "blockId": "method--scene",
+     "visible": true,
+     "state": "s2"
+    }
+   ],
+   "narrationIds": [
+    "method--step-2--n0"
+   ]
+  },
+  "training--step-0": {
+   "id": "training--step-0",
+   "sectionId": "p-training",
+   "title": "从推理轨迹里找到 committing sentence",
+   "visuals": [
+    {
+     "blockId": "training--scene",
+     "visible": true,
+     "state": "s0"
+    }
+   ],
+   "narrationIds": [
+    "training--step-0--n0"
+   ]
+  },
+  "training--step-1": {
+   "id": "training--step-1",
+   "sectionId": "p-training",
+   "title": "同一个前缀构成 fork pair 与 preference pair",
+   "visuals": [
+    {
+     "blockId": "training--scene",
+     "visible": true,
+     "state": "s1"
+    }
+   ],
+   "narrationIds": [
+    "training--step-1--n0"
+   ]
+  },
+  "training--step-2": {
+   "id": "training--step-2",
+   "sectionId": "p-training",
+   "title": "反向 DPO 只训练 draft model",
+   "visuals": [
+    {
+     "blockId": "training--scene",
+     "visible": true,
+     "state": "s2"
+    }
+   ],
+   "narrationIds": [
+    "training--step-2--n0"
+   ]
+  },
+  "evidence--step-0": {
+   "id": "evidence--step-0",
+   "sectionId": "p-evidence",
+   "title": "draft model 确实学会 preference",
+   "visuals": [
+    {
+     "blockId": "evidence--scene",
+     "visible": true,
+     "state": "s0"
+    }
+   ],
+   "narrationIds": [
+    "evidence--step-0--n0"
+   ]
+  },
+  "evidence--step-1": {
+   "id": "evidence--step-1",
+   "sectionId": "p-evidence",
+   "title": "DeepSWE 上的主要提升",
+   "visuals": [
+    {
+     "blockId": "evidence--scene",
+     "visible": true,
+     "state": "s1"
+    }
+   ],
+   "narrationIds": [
+    "evidence--step-1--n0"
+   ]
+  },
+  "evidence--step-2": {
+   "id": "evidence--step-2",
+   "sectionId": "p-evidence",
+   "title": "NL2Repo-Bench 同步提升",
+   "visuals": [
+    {
+     "blockId": "evidence--scene",
+     "visible": true,
+     "state": "s2"
+    }
+   ],
+   "narrationIds": [
+    "evidence--step-2--n0"
+   ]
+  },
+  "evidence--step-3": {
+   "id": "evidence--step-3",
+   "sectionId": "p-evidence",
+   "title": "accepted length（接受长度）基本不变",
+   "visuals": [
+    {
+     "blockId": "evidence--scene",
+     "visible": true,
+     "state": "s3"
+    }
+   ],
+   "narrationIds": [
+    "evidence--step-3--n0"
+   ]
+  },
+  "controls--step-0": {
+   "id": "controls--step-0",
+   "sectionId": "p-controls",
+   "title": "preferred direction 训练反而降低通过率",
+   "visuals": [
+    {
+     "blockId": "controls--scene",
+     "visible": true,
+     "state": "s0"
+    }
+   ],
+   "narrationIds": [
+    "controls--step-0--n0"
+   ]
+  },
+  "controls--step-1": {
+   "id": "controls--step-1",
+   "sectionId": "p-controls",
+   "title": "无关偏好不改变通过率",
+   "visuals": [
+    {
+     "blockId": "controls--scene",
+     "visible": true,
+     "state": "s1"
+    }
+   ],
+   "narrationIds": [
+    "controls--step-1--n0"
+   ]
+  },
+  "controls--step-2": {
+   "id": "controls--step-2",
+   "sectionId": "p-controls",
+   "title": "提升来自关键决策的位置",
+   "visuals": [
+    {
+     "blockId": "controls--scene",
+     "visible": true,
+     "state": "s2"
+    }
+   ],
+   "narrationIds": [
+    "controls--step-2--n0"
+   ]
+  },
+  "close--step-0": {
+   "id": "close--step-0",
+   "sectionId": "p-close",
+   "title": "同一模型，重新分配 context precision",
+   "visuals": [
+    {
+     "blockId": "close--scene",
+     "visible": true,
+     "state": "s0"
+    }
+   ],
+   "narrationIds": [
+    "close--step-0--n0"
+   ]
+  },
+  "close--step-1": {
+   "id": "close--step-1",
+   "sectionId": "p-close",
+   "title": "accepted length 至多约 2% 的下降与适用边界",
+   "visuals": [
+    {
+     "blockId": "close--scene",
+     "visible": true,
+     "state": "s1"
+    }
+   ],
+   "narrationIds": [
+    "close--step-1--n0"
+   ]
+  },
+  "ending--step-0": {
+   "id": "ending--step-0",
+   "sectionId": "p-ending",
+   "title": "一句话总结",
+   "visuals": [
+    {
+     "blockId": "ending--scene",
+     "visible": true,
+     "state": "s0"
+    }
+   ],
+   "narrationIds": [
+    "ending--step-0--n0"
+   ]
+  },
+  "notes--step-0": {
+   "id": "notes--step-0",
+   "sectionId": "p-notes",
+   "visuals": [
+    {
+     "blockId": "notes--text",
+     "visible": true
+    },
+    {
+     "blockId": "notes--slides",
+     "visible": true
+    }
+   ],
+   "narrationIds": []
+  }
+ },
+ "narrations": {
+  "opening--step-0--n0": {
+   "id": "opening--step-0--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "三分钟读完一篇论文。大家好，这里是翰林院传达室，今天给大家带来 Subconscious Systems、MIT、普林斯顿大学与东北大学的《Adversarial Speculative Reasoning》，中文译为对抗式推测推理。"
+    }
+   ]
+  },
+  "problem--step-0--n0": {
+   "id": "problem--step-0--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "这个编程智能体跑了 90 轮。每一步判断都会写进 KV 缓存，后面的推理会一直读回这些 token。"
+    }
+   ]
+  },
+  "problem--step-1--n0": {
+   "id": "problem--step-1--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "speculative decoding（推测解码）让 draft model（草稿模型）先猜一段 token，target model（目标模型）一次验证。接受则提交，拒绝则从 residual distribution（残差分布）重采样，最终 output distribution 仍与 target model 的 distribution 相同。"
+    }
+   ]
+  },
+  "problem--step-2--n0": {
+   "id": "problem--step-2--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "但低精度服务里，exact verification（精确验证）在 distribution 上无损，context precision（token 写入 KV cache 时的数值精度）却不均匀。论文重复同一前向：verification slot（验证槽位）越靠后，噪声越大。nats 是自然对数概率差，相差 1 nat 表示两个概率的比值约为 2.7。"
+    }
+   ]
+  },
+  "problem--step-3--n0": {
+   "id": "problem--step-3--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "大多数 token 不怕这点误差。三十轮后，verify-written context 出现更多超过四 nats 的极端偏差，事件率比 decode-written context 高约一到两成。"
+    }
+   ]
+  },
+  "method--step-0--n0": {
+   "id": "method--step-0--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "ordinary, high-acceptance draft model（普通高接受率草稿模型）只追求接受率。decision point（决策点）的首个 token 落进哪个 slot，由前面接受了多少 token 决定，基本靠运气。"
+    }
+   ]
+  },
+  "method--step-1--n0": {
+   "id": "method--step-1--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "论文让 adversarial draft（对抗草稿）在 decision point 提出应拒绝的判断。target model 拒绝后重新采样，output distribution（输出分布）完全不变，verification block（验证块）却在这里断开。"
+    }
+   ]
+  },
+  "method--step-2--n0": {
+   "id": "method--step-2--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "被拒绝 token 及其后的旧 draft token 全部丢弃，target model 重采样的首个 token 成为新 block 的 slot 0，也就是 committing sentence 的首个 token；只有它使用最精确的 slot，后续 token 依次进入 slot 1、2。验证从这里重新开始，普通 token 仍保持高 draft acceptance rate。"
+    }
+   ]
+  },
+  "training--step-0--n0": {
+   "id": "training--step-0--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "论文先让 target model 担任 judge，在推理轨迹里找 committing sentence，也就是决策句：确认观察、说明下一步或正式落下决定的那一句。"
+    }
+   ]
+  },
+  "training--step-1--n0": {
+   "id": "training--step-1--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "从 committing sentence 前的前缀重新采样，得到共享前缀的 fork pair（同源分叉对）：preferred side 先运行验证测试，adversarial side 跳过验证直接猜测。两条续写构成 preference pair，训练只看决策之后的变化。"
+    }
+   ]
+  },
+  "training--step-2--n0": {
+   "id": "training--step-2--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "然后用 direct preference optimization（DPO，直接偏好优化）反向训练：把 adversarial side 当作 chosen、preferred side 当作 rejected，让 draft model 稳定触发拒绝。target model 完全冻结，draft model 不需要更聪明。"
+    }
+   ]
+  },
+  "evidence--step-0--n0": {
+   "id": "evidence--step-0--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "先确认 draft model 学会 preference。held-out tasks 上，decision frame（principle、evidence、likely 等决策表述）的 held-out preference accuracy 是 0.635；run tests 是 0.85。decision correctness 接近随机，说明它学到行为方向，不是判断最终对错。"
+    }
+   ]
+  },
+  "evidence--step-1--n0": {
+   "id": "evidence--step-1--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "DeepSWE 上，GLM-5.3 从 60.6% 升到 67.6%，增加七个百分点；DeepSeek-V4.1-Flash 从 67.8% 升到 71.8%，增加四个百分点。"
+    }
+   ]
+  },
+  "evidence--step-2--n0": {
+   "id": "evidence--step-2--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "换到 NL2Repo-Bench，提升仍在：GLM-5.3 增加 5.8 个百分点，DeepSeek-V4.1-Flash 增加 1.4 个百分点。"
+    }
+   ]
+  },
+  "evidence--step-3--n0": {
+   "id": "evidence--step-3--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "accepted length（接受长度）基本不变。GLM-5.3 仍是 2.28；DeepSeek-V4.1-Flash 从 2.50 降到 2.46，约下降 1.6%，论文概括为至多百分之二。"
+    }
+   ]
+  },
+  "controls--step-0--n0": {
+   "id": "controls--step-0--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "这不是随便训练草稿的结果。同一批 preference pair 翻转后，训练成 preferred direction（偏好可取侧），GLM-5.3 下降 4.9 个百分点，DeepSeek-V4.1-Flash 下降 1.4。"
+    }
+   ]
+  },
+  "controls--step-1--n0": {
+   "id": "controls--step-1--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "换成 thinking length 或 decision correctness 等无关偏好，二十七次运行合并为 67.5%，对 unbiased draft 的 67.8%，几乎没有变化。"
+    }
+   ]
+  },
+  "controls--step-2--n0": {
+   "id": "controls--step-2--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "preferred direction 结果下降，无关方向结果不动。只有 adversarial direction 把拒绝放在 decision point，收益才出现。"
+    }
+   ]
+  },
+  "close--step-0--n0": {
+   "id": "close--step-0--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "target model 和 verification rule 没变，给定 KV context 时 output distribution 也没变；改变的是关键 token 写入 KV cache 时的 context precision。只训练整套系统约 0.06% 到 0.28% 的 draft 参数，draft model 于是成了 precision 的分配器。"
+    }
+   ]
+  },
+  "close--step-1--n0": {
+   "id": "close--step-1--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "代价是 accepted length 至多下降约百分之二。换 target、换领域，或无法稳定标出 decision point 时，需要重新验证。"
+    }
+   ]
+  },
+  "ending--step-0--n0": {
+   "id": "ending--step-0--n0",
+   "content": [
+    {
+     "type": "text",
+     "text": "一句话总结：让关键决策句的首个 token 落在最精确的 verification slot。想看哪篇论文，欢迎在评论区留言。翰林院传达室为您分享最新论文，我们下期见。"
+    }
+   ]
+  }
+ },
+ "assets": {},
+ "definitions": {
+  "opening--scene--definition": {
+   "id": "opening--scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/opening.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "s0"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     10000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "翰林院传达室的信使猫标志，旁边是“三分钟读完一篇论文”和“翰林院传达室”；下方是今天的论文：Subconscious Systems、MIT、普林斯顿大学与东北大学，Adversarial Speculative Reasoning Improves Long Horizon Agents（对抗式推测推理），arXiv 2611.05345。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "problem--scene--definition": {
+   "id": "problem--scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/problem.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "s0"
+    },
+    {
+     "id": "s1"
+    },
+    {
+     "id": "s2"
+    },
+    {
+     "id": "s3"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     10000,
+     11000,
+     12000,
+     12000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "long-horizon agent 的轨迹汇入一个八槽 verification block；下方是论文图 1，显示 verification slot 越靠后，重复前向的数值噪声越大，slot 0 到 7 的相对噪声增加百分之三十四。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "method--scene--definition": {
+   "id": "method--scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/method.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "s0"
+    },
+    {
+     "id": "s1"
+    },
+    {
+     "id": "s2"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     10000,
+     11000,
+     12000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "ordinary draft model 让 decision point 的首 token 落在 slot 5；adversarial draft 在 decision point 提出应避免的判断，被 target model 拒绝并从 residual distribution 采样，新的 verification block 让关键决策首 token 从最精确的 slot 0 开始写入。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "training--scene--definition": {
+   "id": "training--scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/training.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "s0"
+    },
+    {
+     "id": "s1"
+    },
+    {
+     "id": "s2"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     10000,
+     11000,
+     11000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "从智能体轨迹中定位 committing sentence，从同一前缀采样出 preferred side 与 adversarial side，构成 fork pair 与 preference pair；再用反向 DPO 只训练 draft model 中很小的一部分参数。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "evidence--scene--definition": {
+   "id": "evidence--scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/evidence.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "s0"
+    },
+    {
+     "id": "s1"
+    },
+    {
+     "id": "s2"
+    },
+    {
+     "id": "s3"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     10000,
+     11000,
+     11000,
+     10000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "论文图 5 显示 DeepSWE 与 NL2Repo-Bench 上的通过率提升；held-out preference accuracy 说明 draft model 学到 decision frame 与 run tests 的行为方向，但 decision correctness 接近随机。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "controls--scene--definition": {
+   "id": "controls--scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/controls.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "s0"
+    },
+    {
+     "id": "s1"
+    },
+    {
+     "id": "s2"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     10000,
+     11000,
+     11000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "DeepSWE 对照实验：训练成 preferred direction 时通过率下降，无关偏好没有提升，只有 adversarial direction 带来正收益；结论是收益来自 decision point 的拒绝位置，而不是任何 draft model 训练。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "close--scene--definition": {
+   "id": "close--scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/close.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "s0"
+    },
+    {
+     "id": "s1"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     12000,
+     12000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "target model 与 exact verification 不变，给定 KV context 时 output distribution 也不变；只训练整套系统中百分之零点零六到百分之零点二八的 draft 参数。关键决策首 token 位于 verification block 的 slot 0，结论是 speculative decoding 也是 context precision 的分配器。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  },
+  "ending--scene--definition": {
+   "id": "ending--scene--definition",
+   "kind": "scene",
+   "schemaVersion": 1,
+   "implementation": {
+    "type": "file",
+    "path": "scenes/ending.ts"
+   },
+   "parameterSchema": {
+    "type": "object"
+   },
+   "states": [
+    {
+     "id": "s0"
+    }
+   ],
+   "data": {
+    "plugin": "presmium.motion",
+    "name": "PmScene",
+    "durations": [
+     10000
+    ],
+    "fallback": {
+     "type": "root",
+     "children": [
+      {
+       "type": "paragraph",
+       "children": [
+        {
+         "type": "text",
+         "value": "结尾：一句话总结论文做了什么；下方是对话气泡和“想看哪篇论文？评论区告诉我们”，右侧是翰林院传达室的标志与“为您分享最新论文 · 下期见”。"
+        }
+       ]
+      }
+     ]
+    },
+    "language": "typescript"
+   }
+  }
+ },
+ "production": {
+  "defaults": {
+   "voiceSource": {
+    "type": "tts",
+    "voice": {
+     "engine": "volcengine",
+     "voice": "zh_female_tianmeitaozi_uranus_bigtts"
+    }
+   },
+   "narrationStart": "with-animation",
+   "trailingPauseMs": 350
+  },
+  "stepOverrides": {
+   "ending--step-0": {
+    "minimumHoldMs": 0,
+    "trailingPauseMs": 1500
+   }
+  },
+  "mediaClips": []
+ }
+}
