@@ -1,5 +1,38 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.78
+
+### Patch Changes
+
+- c6566b1: Keep every selected frame in exported contact sheets, and add the narrated Adversarial Speculative Reasoning paper video.
+- Updated dependencies [c6566b1]
+  - @lincyaw/addon-lecture@1.0.0-rc.78
+  - @lincyaw/addon-assistant@1.0.0-rc.78
+  - @lincyaw/addon-classroom@1.0.0-rc.78
+  - @lincyaw/addon-code@1.0.0-rc.78
+  - @lincyaw/addon-content@1.0.0-rc.78
+  - @lincyaw/addon-exec@1.0.0-rc.78
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.78
+  - @lincyaw/addon-exec-local@1.0.0-rc.78
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.78
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.78
+  - @lincyaw/addon-guide@1.0.0-rc.78
+  - @lincyaw/addon-motion@1.0.0-rc.78
+  - @lincyaw/addon-publish@1.0.0-rc.78
+  - @lincyaw/addon-session@1.0.0-rc.78
+  - @lincyaw/addon-speech@1.0.0-rc.78
+  - @lincyaw/addon-stage@1.0.0-rc.78
+  - @lincyaw/cli@1.0.0-rc.78
+  - create-presmium@1.0.0-rc.78
+  - @lincyaw/host@1.0.0-rc.78
+  - @lincyaw/kernel@1.0.0-rc.78
+  - @lincyaw/mcp@1.0.0-rc.78
+  - @lincyaw/render-notebook@1.0.0-rc.78
+  - @lincyaw/render-slides@1.0.0-rc.78
+  - @lincyaw/viewer@1.0.0-rc.78
+  - @lincyaw/web@1.0.0-rc.78
+  - @lincyaw/studio@0.2.0-rc.77
+
 ## 1.0.0-rc.77
 
 ### Patch Changes

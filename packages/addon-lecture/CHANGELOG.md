@@ -1,5 +1,11 @@
 # @lincyaw/addon-lecture
 
+## 1.0.0-rc.78
+
+### Patch Changes
+
+- c6566b1: Keep every selected frame in exported contact sheets, and add the narrated Adversarial Speculative Reasoning paper video.
+
 ## 1.0.0-rc.77
 
 No changes in this release.

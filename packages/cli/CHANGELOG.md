@@ -1,5 +1,15 @@
 # @lincyaw/cli
 
+## 1.0.0-rc.78
+
+### Patch Changes
+
+- @lincyaw/compiler@1.0.0-rc.78
+  - @lincyaw/kernel@1.0.0-rc.78
+  - @lincyaw/server@1.0.0-rc.78
+  - @lincyaw/skills@1.0.0-rc.78
+  - @lincyaw/workspace@1.0.0-rc.78
+
 ## 1.0.0-rc.77
 
 ### Patch Changes
