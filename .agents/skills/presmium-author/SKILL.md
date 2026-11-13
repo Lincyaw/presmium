@@ -31,6 +31,7 @@ Terms used throughout:
 | Show something moving or explain a process | `presmium-animate` |
 | Make one large piece with several agents in parallel | `presmium-animate/references/team.md` |
 | Generate voiceover, choose voices, set captions, record or make the video | [Lecture production](references/lecture.md) |
+| Turn a paper link into an animation, voiceover, cover and brief introduction, then post to Xiaohongshu | `presmium-paper-to-xiaohongshu` |
 | Build a site, slides, PDF, PowerPoint, notebook, translation or student version; prepare offline | [Publishing](references/publishing.md) |
 | Write or restyle a site's homepage (`site/home.json`), choose its theme | [Publishing, Write the homepage](references/publishing.md#write-the-homepage) |
 | Run a class with quizzes, polls and students following along | [Classroom](references/classroom.md) |

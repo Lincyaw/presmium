@@ -6,6 +6,8 @@ How to decide what an animation says before deciding how it moves: the sentence 
 
 Each stage ends in a check; don't start the next stage before the check passes. Writing code is stage 6, not stage 1.
 
+When the person explicitly requests automatic completion or no stops, choose the storyline and perform the animatic and preview reviews internally instead of waiting at the creative approval gates below. Preserve the checks and any explicit request to review a particular stage; this exception concerns creative choices, not new spending or publication authority. The configured paper-to-Xiaohongshu workflow is in `presmium-paper-to-xiaohongshu`.
+
 | Stage | Write | Check |
 |---|---|---|
 | 0. Brief | The kind of piece (below), which decides the defaults; audience and what they already know; what they believe before and should believe after; the form that matters most (web page, slides or video); the length, as a range. Ask only what only the person can answer, one to three questions a round and never the same one twice; state the rest as one line of assumptions (length, aspect, music or voice, each paid item with its free option). Keep the requirements as a table: requirement, evidence, what it affects, recommendation, still to confirm | Before and after fit on one line each |

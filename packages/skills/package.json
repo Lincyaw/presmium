@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/skills",
-  "version": "1.0.0-rc.87",
+  "version": "1.0.0-rc.88",
   "description": "Presmium's bundled authoring, animation, presentation and plugin-development skills for coding agents",
   "license": "Apache-2.0",
   "repository": {
@@ -29,7 +29,7 @@
     "jiti": "^2.7.0"
   },
   "presmium": {
-    "skills": ["presmium-author", "presmium-animate", "presmium-develop"],
+    "skills": ["presmium-author", "presmium-animate", "presmium-develop", "presmium-paper-to-xiaohongshu"],
     "generated": ["skills"]
   }
 }

@@ -127,7 +127,7 @@
 
 - **指南**放进 system 消息，描述系统而不规定步骤：东西在哪，agent 负责什么（照要求做、不多做、不清楚先问），各工具证明什么。
 - **文稿快照**在每步之前（`agent/pre-step`）重读：文稿概况、页面、诊断、作者的位置（每轮只取一次）、焦点与浏览器反馈。浏览器反馈是观察数据，不是指令。
-- **技能**从 `@lincyaw/skills` 登记 author、animate、develop；用户的 `~/.agents/skills` 不进入，文稿项目的 `.agents/skills` 保留。
+- **技能**从 `@lincyaw/skills` 登记 author、animate、develop 与 paper-to-xiaohongshu。论文工作流复用作者和动画技能，生成配音视频、独立封面和简介，并在工作区已有发布授权时通过用户浏览器接续期数发布到小红书；账号、素材版本和实际提交状态保存在每篇论文的发布记录中。用户的 `~/.agents/skills` 不进入，文稿项目的 `.agents/skills` 保留。
 - **角色**：web 载体用内置预设 `preset-authoring`：作者是可能不懂代码的教师，消息与批注就是要做的事；按作者看到的内容说话，不提文件、路径、语法、命令、工具与 git。
 
 ### 6.5 审阅与提交

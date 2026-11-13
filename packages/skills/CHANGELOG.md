@@ -1,5 +1,15 @@
 # @lincyaw/skills
 
+## 1.0.0-rc.88
+
+### Minor Changes
+
+- Add a discoverable paper-to-Xiaohongshu skill that orchestrates animation, cached voiceover, independent covers, concise series posts, account-based episode numbering and verified resumable publication through native MCP and browser tools.
+
+### Patch Changes
+
+- @lincyaw/kernel@1.0.0-rc.88
+
 ## 1.0.0-rc.87
 
 ### Patch Changes

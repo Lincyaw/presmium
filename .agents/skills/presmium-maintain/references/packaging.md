@@ -36,7 +36,7 @@ syntax or Markdown fallback.
 ## Skills
 
 Skills live in `.agents/skills`; `.claude/skills` links to it and `AGENTS.md` to `CLAUDE.md`. The author,
-animate and develop skills are packed into `@lincyaw/skills`, registered by Studio and exposed by
+animate, develop and paper-to-Xiaohongshu workflow skills are packed into `@lincyaw/skills`, registered by Studio and exposed by
 MCP (`list_skills`, `read_skill`, `presmium://skills`); `presmium skills install <dir>` installs missing
 ones. New projects get those listed in `packages/create-presmium/src/templates.ts`. Shipped skills are
 self-contained (no `docs/`, `packages/`, `scripts/` or `e2e/` references); `presmium-maintain` is not
