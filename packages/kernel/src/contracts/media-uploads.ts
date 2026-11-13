@@ -20,7 +20,7 @@ export interface DocumentMediaUploads {
 }
 export type DocumentMediaLocation = { path: string, upload?: never } | { upload: string, path?: never }
 export type DocumentMediaFile = ({ path: string, upload?: never, name?: never } | { upload: string, name: string, path?: never }) & { sha256: string, byteLength: number }
-export const MEDIA_LOCATION_PROPERTIES = { path: { type: 'string', minLength: 1, maxLength: 1024 }, upload: { type: 'string', pattern: '^[a-f0-9]{64}$' } } as const
+export const MEDIA_LOCATION_PROPERTIES = { path: { type: 'string', minLength: 1, maxLength: 1024, description: 'Workspace-relative path to a regular file within the selected document, including its directory prefix; for document papers/re-search, use papers/re-search/figures/result.png. Workspace cache files outside that document are unavailable; stage the file inside the document or use a ready upload reference.' }, upload: { type: 'string', pattern: '^[a-f0-9]{64}$' } } as const
 export const MEDIA_LOCATION_CHOICES = [{ required: ['path'], not: { required: ['upload'] } }, { required: ['upload'], not: { required: ['path'] } }] as const
 export const mediaFileSchema = (maxBytes: number) => ({ type: 'object', additionalProperties: false,
   properties: { ...MEDIA_LOCATION_PROPERTIES, name: { type: 'string', minLength: 1, maxLength: 200 }, sha256: { type: 'string', pattern: '^[a-f\\d]{64}$' }, byteLength: { type: 'integer', minimum: 1, maximum: maxBytes } },

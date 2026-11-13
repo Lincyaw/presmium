@@ -1,18 +1,20 @@
 import { createMediaUploads } from './media-uploads.ts'
+import { randomBytes } from 'node:crypto'
 import { createProjectAuthoring } from './projects.ts'
 import { createDocumentHistory } from './document-history.ts'
 import { createAuthoringClients } from './authoring-clients.ts'
 import { createAuthoringWindows } from './authoring-windows.ts'
 import { readAuthoringDocument } from './document-editor.ts'
 import { createDocumentCapture } from './capture.ts'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { stripVTControlCharacters } from 'node:util'
 import { tmpdir } from 'node:os'
-import { join, relative } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 import { Compiler, operatorDir as resolveOperatorDir, pluginLogger, runBlock, workspacePlugins } from '@lincyaw/compiler'
 import type { Compilation, CompilerOptions } from '@lincyaw/compiler'
 import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, DOCUMENT_VOICE_TASKS, errorMessage, PreviewPreparing, PRODUCTION_AUDIO_AUTHORING, REVISIONS, SPEECH, VOICEOVER, VOICEOVER_EXECUTION } from '@lincyaw/kernel'
-import { irRevision, OperatorSpeechSettings, serveStateDir } from '@lincyaw/kernel/node'
+import { irRevision, OperatorSpeechSettings, readServiceState, removeServiceState, serveStateDir, tryAcquireServiceHostLease } from '@lincyaw/kernel/node'
+import type { ServiceHostLease } from '@lincyaw/kernel/node'
 import { speechSettingsRoute } from './speech-settings.ts'
 import type { ApprovalKind, CanonicalSource, ChangeReviewService, Finding, IRDocument, Logger, ProductionAudioAuthoring, ServiceToken, SiteSpec, SpeechService } from '@lincyaw/kernel'
 import { serverConfigKey, servedDocument, startServer } from '@lincyaw/server'
@@ -61,6 +63,9 @@ export interface ServeOptions {
   allow?: ApprovalKind[]
   approvalTimeoutMs?: number
   log?: Logger
+  /** A launcher may reserve the shared workspace host before starting it. Released after close. */
+  hostLease?: ServiceHostLease
+  signal?: AbortSignal
 }
 
 export interface WorkspaceServer {
@@ -91,6 +96,44 @@ function makeStateDir(root: string, env: NodeJS.ProcessEnv): string {
 }
 
 export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
+  const root = realpathSync(resolve(options.dir)), env = options.env ?? process.env
+  const advertised = readServiceState(join(serveStateDir(root, env), 'server.json'))
+  if (advertised) throw Object.assign(new Error('workspace-service-already-running'), { code: 'workspace-service-already-running', url: advertised.url })
+  const lease = options.hostLease ?? await tryAcquireServiceHostLease(root, env)
+  if (!lease) {
+    const state = readServiceState(join(serveStateDir(root, env), 'server.json'))
+    throw Object.assign(new Error('workspace-service-already-running'), { code: 'workspace-service-already-running', ...state ? { url: state.url } : {} })
+  }
+  if (lease.root !== root) throw new Error('workspace-service-lease-scope')
+  const existing = readServiceState(join(serveStateDir(root, env), 'server.json'))
+  if (existing) {
+    await lease.release()
+    throw Object.assign(new Error('workspace-service-already-running'), { code: 'workspace-service-already-running', url: existing.url })
+  }
+  let running: WorkspaceServer | undefined, closing: Promise<void> | undefined
+  const close = () => closing ??= Promise.resolve().then(async () => {
+    try { await running?.close() }
+    finally { await lease.release() }
+  })
+  const compromised = () => { void close().catch(error => (options.log ?? pluginLogger('presmium serve')).error(errorMessage(error))) }
+  try {
+    lease.signal.throwIfAborted()
+    options.signal?.throwIfAborted()
+    running = await startWorkspace(options)
+    lease.signal.throwIfAborted()
+    options.signal?.throwIfAborted()
+    lease.signal.addEventListener('abort', compromised, { once: true })
+    return { ...running, async close() {
+      lease.signal.removeEventListener('abort', compromised)
+      await close()
+    } }
+  } catch (error) {
+    await close()
+    throw error
+  }
+}
+
+async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const env = options.env ?? process.env
   const log = options.log ?? pluginLogger('presmium serve')
   const config = readWorkspaceConfig(options.dir)
@@ -106,7 +149,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   const writer = localWriter(config)
   const editor = new SourceEditor({ config, writer, locks })
   const check = options.check ?? (compilation => compilation.check())
-  const launcherToken = env.PRESMIUM_SERVICE_TOKEN || undefined
+  const launcherToken = env.PRESMIUM_SERVICE_TOKEN || randomBytes(32).toString('hex')
   const preview = { origins: options.previewOrigins ?? [] }
   // Behind a proxy that forwards a path (`--public-url https://host/user/a/preview/`), the site, the jobs' files and the
   // previews' links are all below that path; the server finds its own routes below it too.
@@ -210,9 +253,11 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     authoringServicesClosed = true
     transcriptionAdoption?.close()
     for (const load of nodeServicePending) load.controller.abort()
-    await Promise.all([mediaUploads?.close(), projectAuthoring?.close(), transcriptions?.close(), audioAuthoring?.close(), voiceAuthoring?.close(), documentHistory?.close(), authoringClients?.close(), authoringWindows?.close(), workspaceRoutesOwner?.close?.()])
+    const results = await Promise.allSettled([mediaUploads?.close(), projectAuthoring?.close(), transcriptions?.close(), audioAuthoring?.close(), voiceAuthoring?.close(), documentHistory?.close(), authoringClients?.close(), authoringWindows?.close(), workspaceRoutesOwner?.close?.()])
     await Promise.allSettled([...nodeServicePending].map(load => load.promise))
     nodeServiceLoads.clear()
+    const failure = results.find(result => result.status === 'rejected')
+    if (failure?.status === 'rejected') throw failure.reason
   }
 
   const spec: SiteSpec = siteSpec(config, docs().map(doc => siteDocument(doc)))
@@ -365,7 +410,6 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     listenAddress: options.listenAddress,
     port: options.port,
     ...options.publicUrl ? { publicUrl: options.publicUrl } : {},
-    stateFile,
     forward: async (path) => {
       lookAtDisk()
       if (path.startsWith(outputsPath)) return await jobs.origin()
@@ -381,7 +425,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     approvals: { ...config.approvals, ...Object.fromEntries((options.allow ?? []).map(kind => [kind, 'allow' as const])) },
     operatorDir: operatorDirectory,
     serverHost,
-    env,
+    env: { ...env, PRESMIUM_SERVICE_TOKEN: launcherToken },
     ...options.approvalTimeoutMs ? { approvalTimeoutMs: options.approvalTimeoutMs } : {},
     log,
     async document(dir) {
@@ -434,6 +478,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       documentsChanged,
       workbench,
       jobs,
+      previewOrigins: preview.origins,
       ...launcherToken ? { launcherToken } : {},
   }
   workspaceRoutesOwner = workspaceRoutes(routeOptions)
@@ -444,13 +489,30 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     [DOCUMENT_LOCKS, locks],
     [DOCUMENT_VOICE_TASKS, voiceAuthoring.service],
   ]
+  let hostClosing: Promise<void> | undefined
+  const closeHost = (): Promise<void> => hostClosing ??= Promise.resolve().then(async () => {
+    // Stop advertising before releasing any authoring resource; contenders keep waiting for the lease.
+    removeServiceState(stateFile)
+    const results = await Promise.allSettled([
+      () => running.close(),
+      async () => history?.agentSessionReviews.close(),
+      closeAuthoring,
+      async () => { for (const session of compileSessions.values()) session.close() },
+      () => jobs.close(),
+      async () => capture?.close(),
+      async () => workbench?.close(),
+      async () => site?.close(),
+    ].map(async cleanup => cleanup()))
+    removeServiceState(stateFile)
+    if (home) rmSync(home, { recursive: true, force: true })
+    const failure = results.find(result => result.status === 'rejected')
+    if (failure?.status === 'rejected') throw failure.reason
+  })
   try {
     await history?.agentSessionReviews.recover(docs().map(doc => doc.dir))
+    options.signal?.throwIfAborted()
   } catch (error) {
-    history?.agentSessionReviews.close()
-    await closeAuthoring()
-    await workbench.close()
-    await running.close()
+    await closeHost()
     throw error
   }
 
@@ -472,12 +534,12 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   }
   try {
     site = await startWorkspaceSite({ root, spec, basePath, bundled: options.bundled, stateDir, compile: compileForSite, stampPreviewRevision: (compilation, doc) => workbench!.stampPreviewRevision(compilation, doc), diagnostics: running.diagnostics, preview, log })
+    options.signal?.throwIfAborted()
+    // Publish only the fully assembled authoring host. Another MCP client may discover it immediately.
+    writeFileSync(stateFile, `${JSON.stringify({ url: running.url, mcp: `${running.url}/mcp`, token: running.mcpToken, pid: process.pid, launcherToken }, null, 2)}\n`, { mode: 0o600 })
+    chmodSync(stateFile, 0o600)
   } catch (error) {
-    await closeAuthoring()
-    await capture.close()
-    await workbench.close()
-    await running.close()
-    if (home) rmSync(home, { recursive: true, force: true })
+    await closeHost()
     throw error
   }
 
@@ -485,17 +547,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     url: running.url,
     root,
     mcp: { url: `${running.url}/mcp`, stateFile },
-    async close() {
-      history?.agentSessionReviews.close()
-      await closeAuthoring()
-      for (const session of compileSessions.values()) session.close()
-      await jobs.close()
-      await capture?.close()
-      await workbench?.close()
-      await site?.close()
-      await running.close()
-      if (home) rmSync(home, { recursive: true, force: true })
-    },
+    close: closeHost,
   }
 }
 

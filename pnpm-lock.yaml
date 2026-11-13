@@ -1370,6 +1370,9 @@ importers:
       '@lincyaw/dsh':
         specifier: workspace:*
         version: link:../dsh
+      '@lincyaw/kernel':
+        specifier: workspace:*
+        version: link:../kernel
       http-proxy-3:
         specifier: 2.0.1
         version: 2.0.1(supports-color@9.4.0)
@@ -8508,6 +8511,7 @@ packages:
 
   markmap-view@0.18.12:
     resolution: {integrity: sha512-D8bzT1YwIC/8rkbwm6WzigVUrpOAGv7ioEGTi1Lj+Oo8gO5sAm6hhli27jvTgUcZ9TwBeIWZ+dSUP+AupYUGlQ==}
+    deprecated: Replaced by @markmap/* in 1.0.0. See https://markmap.js.org/docs/migration
     peerDependencies:
       markmap-common: '*'
 

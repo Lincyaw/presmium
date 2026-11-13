@@ -17,6 +17,7 @@ export interface StudioMessages {
   previewPortMoved(port: number, url: string): string
   mcpToken(file: string): string
   badMcpToken(file: string): string
+  existingService(url: string): string
   noFreePort(address: string): string
   badHost(address: string): string
   wholeLog(message: string, file: string): string
@@ -58,8 +59,9 @@ presmium-studio-<散列>.log（每个安装一个）保存在 $XDG_STATE_HOME/pr
     portInUse: (port, address) => `${address} 的端口 ${port} 已被占用。请用 --port 指定另一个端口。`,
     previewPortInUse: (port, address) => `${address} 的工作区与 MCP 端口 ${port} 已被占用。请停止占用它的服务，或用 --preview-port 指定另一个固定端口。`,
     previewPortMoved: (port, url) => `presmium studio: 端口 ${port} 已被占用，这次的 MCP 地址是 ${url}。按默认地址配置的 MCP 客户端这次连不上；需要固定地址时，用 --preview-port 指定一个空闲端口。`,
-    mcpToken: file => `presmium studio: MCP 客户端使用 HTTP（Streamable HTTP），从 ${file} 读取访问令牌，设置 Authorization: Bearer <访问令牌>；同一目录重启与升级后保持不变。`,
+    mcpToken: file => `presmium studio: HTTP MCP 客户端从 ${file} 读取访问令牌（server.json 使用 token 字段），设置 Authorization: Bearer <访问令牌>。本机客户端建议用 presmium mcp 自动发现服务。`,
     badMcpToken: file => `MCP 访问令牌文件 ${file} 无效。请移走该文件后重试，并在客户端更新访问令牌。`,
+    existingService: url => `工作区服务已在 ${url} 运行。当前服务不支持复用，或指定的预览监听选项需要新服务；请先关闭它，再启动 Studio。`,
     noFreePort: address => `${address} 上没有空闲的端口。请停止占用端口的服务后重试。`,
     badHost: address => `--host 需要本机的一个 IP 地址，例如 192.168.0.21，也可以使用 0.0.0.0，而不是“${address}”。`,
     wholeLog: (message, file) => `${message}${message.endsWith('\n') ? '' : '。'}完整的日志在 ${file}`,
@@ -101,8 +103,9 @@ Options:
     portInUse: (port, address) => `Port ${port} of ${address} is in use. Give another with --port.`,
     previewPortInUse: (port, address) => `Workspace and MCP port ${port} of ${address} is in use. Stop the service using it, or choose another fixed port with --preview-port.`,
     previewPortMoved: (port, url) => `presmium studio: port ${port} is in use, so the MCP address is ${url} this time. MCP clients set up with the usual address cannot reach it; for a fixed address, choose a free port with --preview-port.`,
-    mcpToken: file => `presmium studio: MCP clients use HTTP (Streamable HTTP); read the access token from ${file} and set Authorization: Bearer <value>. It stays the same for this directory across restarts and upgrades.`,
+    mcpToken: file => `presmium studio: HTTP MCP clients read the access token from ${file} (the token field in server.json) and set Authorization: Bearer <value>. Local clients should use presmium mcp to discover the service automatically.`,
     badMcpToken: file => `MCP access token file ${file} is invalid. Move it aside and retry, then update the access token in your clients.`,
+    existingService: url => `A workspace service is running at ${url}. It cannot be reused, or the explicit preview listener options require a new service; close it before starting Studio.`,
     noFreePort: address => `There is no free port on ${address}. Stop a service that uses one, then retry.`,
     badHost: address => `--host takes one local IP address, such as 192.168.0.21, or 0.0.0.0 to listen on all IPv4 network interfaces, not “${address}”.`,
     wholeLog: (message, file) => `${message.endsWith('\n') ? message : `${message}; `}the whole log is ${file}`,

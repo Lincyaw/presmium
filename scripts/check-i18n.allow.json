@@ -1,4 +1,6 @@
 [
+  {"file": "packages/mcp/src/messages.ts", "key": "MCP_CLI_MESSAGES.workspaceLauncherMissing", "rule": "MCP", "reason": "CLI startup failure must distinguish the exact presmium mcp command, its standalone presmium-mcp executable and their connection modes so the user can run the supported entry point."},
+  {"file": "packages/mcp/src/messages.ts", "key": "MCP_CLI_MESSAGES.workspaceLauncherMissing", "rule": "编译", "reason": "Developer CLI error identifies the explicit --compiler-only execution mode; compilation is the capability the flag selects, rather than an author-facing implementation detail."},
   {"file": "packages/mcp/src/messages.ts", "key": "MCP_CLI_MESSAGES.unknownTool", "rule": "MCP", "reason": "CLI error gives the exact presmium mcp tools command used to discover available tool definitions."},
   {"file": "packages/workbench/src/speech-settings-messages.ts", "key": "SPEECH_SETTINGS_MESSAGES.keyHint", "rule": "ID", "reason": "Volcengine App ID is a required provider credential paired with an access token; naming it lets the operator find the matching console field, rather than exposing a document internal ID."},
   {"file": "packages/workbench/src/speech-settings-messages.ts", "key": "SPEECH_SETTINGS_MESSAGES.appId", "rule": "ID", "reason": "Provider configuration field must use the Volcengine console name App ID; this is not a document or component internal identifier."},
@@ -28,6 +30,8 @@
   {"file": "packages/studio/src/messages.ts", "key": "previewPortMoved", "rule": "MCP", "reason": "CLI notice gives the external MCP address of this run, which differs from the one clients were set up with."},
   {"file": "packages/studio/src/messages.ts", "key": "mcpToken", "rule": "MCP", "reason": "CLI connection instructions must name the protocol selected in external MCP clients."},
   {"file": "packages/studio/src/messages.ts", "key": "mcpToken", "rule": "HTTP", "reason": "CLI connection instructions specify Streamable HTTP and its Authorization header so external clients can connect."},
+  {"file": "packages/studio/src/messages.ts", "key": "mcpToken", "rule": "JSON", "reason": "Developer CLI connection instructions identify the real server.json state file so HTTP MCP clients read its credential correctly; this is not an author-facing document format."},
+  {"file": "packages/studio/src/messages.ts", "key": "mcpToken", "rule": "token", "reason": "The exact token field in server.json is the credential an HTTP MCP client must extract; translating or omitting the field name would produce an invalid connection setup."},
   {"file": "packages/studio/src/messages.ts", "key": "badMcpToken", "rule": "MCP", "reason": "CLI credential error identifies the external MCP connection whose access token the operator must update."},
   {"file": "packages/studio/src/messages.ts", "key": "log", "rule": "日志", "reason": "CLI line pointing to the log file (glossary 4, Diagnostics)"},
   {"file": "packages/studio/src/messages.ts", "key": "log", "rule": "Log", "reason": "CLI line pointing to the log file (glossary 4, Diagnostics)"},

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
-import { readFileSync, rmSync } from 'node:fs'
+import { readFileSync, realpathSync, rmSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { isRecord } from '../errors.ts'
 
 /** What a running Presmium server records for local clients: its address, its MCP endpoint and token, its process. */
@@ -10,6 +10,8 @@ export interface ServiceState {
   mcp: string
   token: string
   pid: number
+  /** Local launcher credential for Studio reuse; never include it in MCP tool results. */
+  launcherToken?: string
 }
 
 /** The state directory of the workspace service (`presmium serve`, and the one `presmium studio` starts) of `root`. */
@@ -37,9 +39,22 @@ export function readServiceState(file: string): ServiceState | undefined {
   try {
     const state: unknown = JSON.parse(readFileSync(file, 'utf8'))
     if (!isRecord(state) || typeof state.url !== 'string' || typeof state.mcp !== 'string' || typeof state.token !== 'string' || typeof state.pid !== 'number') return undefined
-    return alive(state.pid) ? { url: state.url, mcp: state.mcp, token: state.token, pid: state.pid } : undefined
+    return alive(state.pid) ? { url: state.url, mcp: state.mcp, token: state.token, pid: state.pid, ...typeof state.launcherToken === 'string' && state.launcherToken ? { launcherToken: state.launcherToken } : {} } : undefined
   } catch {
     return undefined
+  }
+}
+
+/** Find the nearest existing workspace host and retain its root for a later host election. */
+export function findWorkspaceServiceState(directory: string, env: NodeJS.ProcessEnv = process.env): { root: string, state: ServiceState } | undefined {
+  let root: string
+  try { root = realpathSync(resolve(directory)) } catch { return undefined }
+  for (;;) {
+    const state = readServiceState(join(serveStateDir(root, env), 'server.json'))
+    if (state) return { root, state }
+    const parent = dirname(root)
+    if (parent === root) return undefined
+    root = parent
   }
 }
 

@@ -42,13 +42,13 @@
 
 ## 流水线
 
-1. **取源码**：`tools/fetch.sh <arxiv-id> <slug>` 下载 arXiv 源码（`https://arxiv.org/e-print/<id>`）到 `.cache/<id>/`，渲染全部图的预览，列出每张图的 LaTeX 说明。读 `Sections/*.tex` 比读 PDF 准确；论文有代码与数据仓库时克隆到 `.cache/` 并找到画面要用的结果表。
+1. **取源码**：`tools/fetch.sh <arxiv-id> <slug>` 下载 arXiv 源码（`https://arxiv.org/e-print/<id>`）到 `.cache/<id>/`，渲染全部图的预览，列出每张图的 LaTeX 说明。读 `Sections/*.tex` 比读 PDF 准确；论文有代码与数据仓库时克隆到 `.cache/` 并找到画面要用的结果表。没有仓库链接的论文照常生成图预览。当前 MCP 没有远程论文下载、源码解包或 PDF 裁切动作，这一步复用已有素材工具；创建文稿、编辑、检查与截帧通过 MCP 作者动作完成。
 2. **简报与论点**：在 `storyboard.md` 写 A 到 F 节：观众、观看前后、论点（“看完后，观众明白 X，因为他们看到了 Y”）、ABT、配色、术语表、定义表。中心画面要让论点成为画面中随步骤变化、可直接看见的属性。
 3. **数据**：写 `scenes/data/derive.py`，从论文公开的数据算出每个要上屏的数字，打印与论文值的对照；对不上就先查原因，不上屏。
 4. **讲稿与分镜**：`storyboard.md` 的 G 节一行一步：结束画面、讲稿要点；每步 6 到 15 秒（25 到 60 字），一步一个意思；一个意思要讲得更长时拆成两步，各有自己的画面。用 `tools/new-paper.mjs` 生成文稿骨架（开场页与标准顺序的空页面），把讲稿写进 `lecture.json`。
 5. **原图**：`uv run --no-project --with pymupdf python -I <figure.py> <图.pdf> papers/<slug>/figures/<名>.png --crop x0,y0,x1,y1`，`figure.py` 在 `presmium-animate` 技能的 `gallery/catalog/paper-figure/tools/`（先加 `--words` 看每个词的位置再定裁切），输出的 JSON 给出每个刻度与图例词的位置，标注按它放。
 6. **场景**：协调者先写共用的数据模块和前几个场景定下画风，再把其余页面分给 agent 并行（每个 agent 只改自己的场景文件，见 `storyboard.md` 的 I 节）。规则：只用补间与 `set`，不用回调；节拍用 `clock` 的 `T(k, f)`，讲授时每个状态的时长就是这一步配音的长度，节拍跟着句子走；不用 SVG 的 `id`；要读的东西放在 77% 高度以上（下面是两行字幕的位置；坐标图的底边放在 61 个 SVG 单位，横轴标题就在这条线以上）；虚线用 `wipe` 展开。
-7. **看**：服务运行时，`pnpm exec presmium mcp call capture_slides '{"document":"papers/<slug>","section":"p-<页>"}' --out <目录>` 取每一步的结束画面（加 `"appearance":"dark"` 看暗色，`"at"` 看动画中途），`capture_reading` 看网页（`"width":390` 看手机），`capture_overview` 一次看全部页面。
+7. **看**：连接原生 MCP `presmium` 后直接调用 `capture_slides`，用 `document: "papers/<slug>"`、`section: "p-<页>"` 取每一步的结束画面（`appearance: "dark"` 看暗色，`at` 看动画中途）；`capture_reading` 看网页（`width: 390` 看手机），`capture_overview` 看全部页面。默认 `presmium mcp <本工作区绝对路径>` 在初始化前启动或复用服务。没有 MCP 客户端的脚本才使用 `presmium mcp call ... --out <目录>`。
 8. **文字检查**：逐页截图，对照“画面文字”与“中文表述”两条检查每一步：屏幕上是否只剩关键词，讲稿是否把画面讲全，有没有硬译的说法。讲稿可以导出成一份 Markdown 交给作者润色：`pnpm exec presmium script export papers/<slug>`（写到 `papers/<slug>/dist/script.md`），改完 `pnpm exec presmium script import papers/<slug>` 导回。
 9. **配音**：`pnpm voiceover papers/<slug>` 先报告音色和缺少配音的句数、字数（不花钱），确认后加 `--yes` 生成；`--voice volcengine:zh_female_tianmeitaozi_uranus_bigtts` 先换文稿的默认音色。火山引擎按字数计费，改过讲稿只重新合成变了的句子。讲稿定稿后加 `--prune --yes` 删掉讲稿不再用到的配音缓存。
 10. **对时**：`pnpm timing papers/<slug>` 量每步的字数、配音秒数与总长（参考三到六分钟）；明显过长时删讲稿里重复与旁枝的话，再重新配音。

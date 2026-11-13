@@ -156,23 +156,27 @@ export interface McpCliMessages {
   unknownTool(tool: string): string
   badToolArguments(value: string): string
   noService: string
+  workspaceLauncherMissing: string
+  workspaceStartTimeout: string
+  workspaceStateUnavailable: string
   saved(file: string): string
   notSaved(count: number): string
 }
 
 export const MCP_CLI_MESSAGES: Record<Locale, McpCliMessages> = {
   'zh-CN': {
-    usage: `用法：presmium mcp [<目录>] [--allow <种类>]
+    usage: `用法：presmium mcp [<目录>] [--allow <种类>] [--compiler-only]
       presmium mcp tools [<工具>] [--json] [--all] [--schema]
       presmium mcp call <工具> [<JSON 参数>] [--out <目录>]
 
 经标准输入输出向 Claude Code、Codex 等 AI 工具提供 MCP 服务（<目录> 是工作区的根目录、
 含有 ${DOCUMENT_ENTRY} 的目录或这个文件本身；默认为 .；名为 tools 或 call 的目录写作 ./tools、
-./call）。这个目录（或它所在的工作区）的 Presmium Studio 或 presmium serve 正在运行时转接到它，
-AI 可以修改文稿、查看版本历史和生成配音，它重新启动后自动跟上；没有运行时只编译这份文稿，提供
-阅读、检查、运行代码与导出。
+./call）。建议在客户端配置中传入绝对路径。默认复用该工作区的 Presmium Studio 或 presmium serve，
+没有时自动启动工作区服务，初始化前准备好编辑、历史、截帧与构建工具。收费、源文件写入与浏览器操作
+保留审批；需要窗口时再打开 Studio。--compiler-only 显式使用独立编译，不启动或复用工作区服务。
 
-tools 与 call 在命令行中使用当前目录正在运行的 Presmium 服务的工具，与 AI 经 presmium mcp
+已连接原生 MCP 的 AI 直接使用工具。tools 与 call 供没有 MCP 客户端的脚本与流水线使用，连接
+当前目录正在运行的 Presmium 服务，与 AI 经 presmium mcp
 得到的相同：tools 默认列出常用工具，--all 列出完整目录；tools <工具> 返回自动生成的参数摘要，
 --schema 返回完整参数格式，--json 输出 JSON。定义均直接来自服务端；call 调用一个工具，参数是一个 JSON 对象
 （默认为 {}），结果以 JSON 写到标准输出。工具返回的图片（capture_slides、capture_reading、
@@ -180,7 +184,8 @@ capture_overview）用 --out 保存为 PNG 文件，路径写到标准错误。�
 由服务端按访问权限决定是否确认；本地作者的访问令牌已经允许文稿编辑。工具失败时退出码为 1，用法错误
 或服务不可达时为 2。
 
-  --allow <种类>  只编译时提供并允许这些操作：operate（run_code、build）、spend
+  --allow <种类>  为自建服务或独立编译明确允许 operate、spend、write、agent，不改已有服务策略
+  --compiler-only  独立编译一份文稿，不提供工作区作者动作或截帧
   --out <目录>    call：把工具返回的图片保存到这个目录
   --json          tools：以 JSON 输出工具与参数摘要
   --all           tools：列出完整工具目录
@@ -197,23 +202,28 @@ capture_overview）用 --out 保存为 PNG 文件，路径写到标准错误。�
     unknownTool: tool => `当前服务没有工具“${tool}”。用 presmium mcp tools 查看可用工具。`,
     badToolArguments: value => `参数“${value}”不是 JSON 对象。请把参数写成一个 JSON 对象，用单引号括起。`,
     noService: '无法使用工具：当前目录（或它所在的工作区）没有正在运行的 Presmium Studio 或 presmium serve。请先启动其中一个，然后重试。',
+    workspaceLauncherMissing: '没有可复用的工作区服务。请使用 presmium mcp 自动启动作者服务；独立 presmium-mcp 需要已运行的 Studio/serve，或显式加 --compiler-only 只编译文稿。',
+    workspaceStartTimeout: '等待工作区作者服务超过 30 秒。请检查正在启动的工作区服务后重试。',
+    workspaceStateUnavailable: '工作区服务未能提供就绪的连接信息。请检查该工作区的服务后重试。',
     saved: file => `已保存 ${file}`,
     notSaved: count => `结果中有 ${count} 张图片，没有保存：加 --out <目录> 保存为 PNG 文件。`,
   },
   'en': {
-    usage: `Usage: presmium mcp [directory] [--allow <kinds>]
+    usage: `Usage: presmium mcp [directory] [--allow <kinds>] [--compiler-only]
        presmium mcp tools [tool] [--json] [--all] [--schema]
        presmium mcp call <tool> [<JSON arguments>] [--out <dir>]
 
 Serves MCP on stdio for AI tools such as Claude Code and Codex (the directory is a workspace root,
 a directory holding ${DOCUMENT_ENTRY}, or that entry file; default: .; write a directory named tools
-or call as ./tools or ./call). When the Presmium Studio or presmium serve of the directory (or of its
-workspace) runs, it relays to it: the AI can edit documents, read their history and generate
-voiceover, and it follows the service when it starts again. Otherwise it compiles the document
-itself, for reading, checking, running code and exporting.
+or call as ./tools or ./call). Use an absolute path in the client configuration. By default it reuses
+the workspace's Studio or presmium serve, or starts the workspace service before initialization.
+Editing, history, captures and builds are available from the first catalog. Paid operations,
+source-file writes and browser control retain approval; open Studio when a window is needed.
+--compiler-only explicitly compiles one document without starting or reusing a workspace service.
 
-tools and call use the tools of the Presmium service running for the current directory from the
-command line. tools lists the common tools; --all lists the complete catalog. tools <tool> returns
+An AI client with native MCP uses those tools directly. tools and call are for scripts and pipelines
+without an MCP client, using the service running for the current directory. tools lists the common
+tools; --all lists the complete catalog. tools <tool> returns
 automatically generated argument summaries; --schema returns complete input schemas, and --json
 outputs JSON. Definitions come directly from the server. call calls one tool with a JSON object of arguments (default: {}) and writes its result
 as JSON to standard output. The pictures a tool returns (capture_slides, capture_reading,
@@ -222,7 +232,9 @@ The server decides confirmation from access rights; the local author's access to
 document editing. The exit code is 1 when the tool fails, and 2 on a
 usage error or when the service can’t be reached.
 
-  --allow <kinds>  when compiling itself, offer and allow these operations: operate (run_code, build), spend
+  --allow <kinds>  explicitly allow operate, spend, write, agent for an owned service or compiler host;
+                   existing services keep their policy
+  --compiler-only  compile one document without workspace authoring or captures
   --out <dir>      call: save the pictures the tool returns in this directory
   --json          tools: output tool and argument summaries as JSON
   --all           tools: list the complete tool catalog
@@ -239,6 +251,9 @@ usage error or when the service can’t be reached.
     unknownTool: tool => `This service has no tool named “${tool}”. Use presmium mcp tools to list available tools.`,
     badToolArguments: value => `The arguments “${value}” are not a JSON object. Write them as one JSON object, in single quotes.`,
     noService: 'Couldn’t use the tools: no Presmium Studio or presmium serve is running for this directory (or its workspace). Start one, then retry.',
+    workspaceLauncherMissing: 'No workspace service is available. Use presmium mcp to start its authoring service automatically; standalone presmium-mcp needs a running Studio/serve, or explicit --compiler-only for document compilation.',
+    workspaceStartTimeout: 'Waited over 30 seconds for the workspace authoring service. Check the workspace service starting it, then retry.',
+    workspaceStateUnavailable: 'The workspace service did not provide ready connection information. Check the service for this workspace, then retry.',
     saved: file => `Saved ${file}`,
     notSaved: count => `The result has ${count} ${count === 1 ? 'picture' : 'pictures'}, not saved: add --out <dir> to save them as PNG files.`,
   },

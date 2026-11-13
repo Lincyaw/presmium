@@ -1,5 +1,12 @@
 # @lincyaw/web
 
+## 1.0.0-rc.81
+
+### Patch Changes
+
+- Start or reuse a ready authoring workspace before MCP initialization, share its host across local clients, and release owned resources on disconnect. Studio can reuse the local host, including authenticated preview origins. Make compiler-only mode explicit and document the native MCP workflow in author guidance and generated projects.
+- @lincyaw/design@1.0.0-rc.81
+
 ## 1.0.0-rc.80
 
 ### Patch Changes

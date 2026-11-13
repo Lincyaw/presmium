@@ -6,6 +6,8 @@ import { compactSchema, schemaArguments, schemaInputChoices, selectSchemaVariant
 const COMMON = new Set(['get_context', 'rename_page', 'edit_narration', 'list_documents'])
 const KINDS = ['read', 'operate', 'spend', 'write', 'agent'] as const
 const dispatcher = (kind: ListedTool['kind']) => kind === 'operate' ? 'edit_operation' : `${kind}_operation`
+/** Discovery and dispatchers are registered only on the compact endpoint. */
+export const isCatalogTool = (name: string): boolean => name === 'operations' || KINDS.some(kind => dispatcher(kind) === name)
 const failure = (message: string, status = 400) => Object.assign(new Error(message), { status })
 const QUERY_SCHEMA = { type: 'object', additionalProperties: false, properties: {
   name: { type: 'string' }, query: { type: 'string' }, variant: { type: 'string', minLength: 1, maxLength: 200 }, schema: { type: 'boolean' }, offset: { type: 'integer', minimum: 0 }, limit: { type: 'integer', minimum: 1, maximum: 20 },

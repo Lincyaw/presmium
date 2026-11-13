@@ -40,10 +40,11 @@ case $kind in
 esac
 echo "source in $cache/source ($(find "$cache/source" -name '*.tex' | wc -l) .tex files)"
 
-# Repositories named on the abstract page or in the source.
+# Repositories named on the abstract page or in the source. An empty list is valid;
+# awk keeps that case successful under pipefail so figure preparation still runs.
 repos=$( { grep -rhoE 'github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+' "$cache/source" --include='*.tex' 2>/dev/null || true
   grep -hoE 'github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+' "$cache/abstract.html" 2>/dev/null || true; } \
-  | sed -E 's/[.}]+$//' | grep -viE 'github\.com/(arxiv|login|features)' | sort -u)
+  | sed -E 's/[.}]+$//' | awk 'tolower($0) !~ /github[.]com\/(arxiv|login|features)/' | sort -u)
 if [ -n "$repos" ]; then
   echo; echo "repositories mentioned:"; echo "$repos" | sed 's/^/  https:\/\//'
   echo "  (clone the one with the paper's data into $cache/repo)"
@@ -57,7 +58,8 @@ from pathlib import Path
 root = Path(sys.argv[1])
 seen = []
 for tex in sorted(root.rglob('*.tex')):
-    text = tex.read_text(errors='replace')
+    # Source archives often retain old figures as commented-out environments.
+    text = re.sub(r'(?m)^\s*%.*$', '', tex.read_text(errors='replace'))
     for env in re.finditer(r'\\begin\{(figure\*?|wrapfigure|table\*?)\}(.*?)\\end\{\1\}', text, re.S):
         body = env.group(2)
         cap = re.search(r'\\caption\{', body)
@@ -68,6 +70,8 @@ for tex in sorted(root.rglob('*.tex')):
                 depth += {'{': 1, '}': -1}.get(body[i], 0); i += 1
             caption = re.sub(r'\s+', ' ', body[cap.end():i - 1]).strip()
         for g in re.finditer(r'\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}', body):
+            if g.group(1) in seen:
+                continue
             seen.append(g.group(1))
             print(f"  {g.group(1)}  [{tex.relative_to(root)}]\n      {caption[:220]}{'…' if len(caption) > 220 else ''}")
 Path(root.parent / 'figures.txt').write_text('\n'.join(seen) + '\n')
@@ -83,11 +87,13 @@ while IFS= read -r ref; do
   [ -z "$file" ] && { echo "  not found: $ref" >&2; continue; }
   name=$(basename "${file%.*}")
   case $file in
-    *.pdf) uv run --no-project --with pymupdf python -I "$figure" "$file" "$cache/previews/$name.png" --width 1400 >/dev/null 2>&1 \
-             || echo "  could not render $file" >&2 ;;
-    *) cp "$file" "$cache/previews/$name.${file##*.}" ;;
+    *.pdf) if uv run --no-project --with pymupdf python -I "$figure" "$file" "$cache/previews/$name.png" --width 1400 >/dev/null 2>&1; then
+             n=$((n + 1))
+           else
+             echo "  could not render $file" >&2
+           fi ;;
+    *) cp "$file" "$cache/previews/$name.${file##*.}"; n=$((n + 1)) ;;
   esac
-  n=$((n + 1))
 done < "$cache/figures.txt"
 echo; echo "$n previews in $cache/previews (each PDF also has its word map next to it, for choosing a crop)"
 echo "next: node tools/new-paper.mjs $slug --arxiv $id …   then crop with $figure <figure.pdf> $slug/figures/<name>.png --crop x0,y0,x1,y1"

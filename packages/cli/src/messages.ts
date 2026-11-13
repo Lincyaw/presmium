@@ -29,6 +29,7 @@ export interface CliMessages {
   newMissing: string
   studioMissing: string
   mcpMissing: string
+  workspaceServiceBusy(url?: string): string
   noProblems: string
   counts(errors: number, warnings: number, infos: number): string
   severity: Record<'error' | 'warning' | 'info', string>
@@ -187,9 +188,9 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
                           的地址用它给出；带路径时代理原样转发该路径，服务的全部内容都在它下面
           --allow <种类>  无需询问即允许的操作：operate、spend、write、agent（默认在打开的
                           Presmium 窗口中询问）
-  mcp     以标准输入输出提供 MCP 服务，供 Claude Code、Codex 等 AI 工具连接：这个目录的
-          Presmium Studio 或 presmium serve 正在运行时转接到它，AI 可以修改文稿；否则只编译
-          文稿，提供阅读、检查与导出。详见 presmium mcp --help
+  mcp     以标准输入输出提供原生 MCP，供 Claude Code、Codex 等 AI 工具一次配置连接。
+          默认启动或复用工作区服务，初始化后即可编辑与截帧；--compiler-only 显式独立编译。
+          收费、源文件写入与浏览器操作保留审批。详见 presmium mcp --help
   studio  启动 Presmium Studio（实验性）：浏览器中的编辑应用与这个目录（工作区的
           根目录或一份文稿）的工作区服务，只打印一个要打开的网址。随 Presmium 一起安装
           --port <端口>   Presmium Studio 的端口（默认为 4320，被占用时取空闲端口）
@@ -220,6 +221,7 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
     newMissing: 'presmium new: 没有安装 create-presmium。它随 presmium 一起安装，请运行 pnpm add -g @lincyaw/presmium。',
     studioMissing: 'presmium studio: 没有安装 Presmium Studio。它随 Presmium 一起安装，请运行 pnpm add -g @lincyaw/presmium。',
     mcpMissing: 'presmium mcp: 没有安装 @lincyaw/mcp。它随 Presmium 一起安装，请运行 pnpm add -g @lincyaw/presmium。',
+    workspaceServiceBusy: url => `这个工作区已有作者服务${url ? `：${url}` : '正在启动'}。请使用已运行的服务。`,
     noProblems: '没有问题',
     counts: (errors, warnings, infos) => `${errors} 个错误，${warnings} 个警告，${infos} 条信息`,
     severity: { error: '错误', warning: '警告', info: '信息' },
@@ -417,9 +419,10 @@ Commands:
                           proxy forwards that path unchanged and everything the service serves is below it
           --allow <kinds>    approvals given without asking: operate, spend, write, agent (by default
                           they are asked in an open Presmium window)
-  mcp     MCP on stdio for AI tools such as Claude Code and Codex: relays to the running Presmium
-          Studio or presmium serve of the directory, where the AI can edit documents; otherwise it
-          compiles the document for reading, checking and exporting. See presmium mcp --help
+  mcp     Native MCP on stdio for AI tools such as Claude Code and Codex, configured once.
+          Starts or reuses a workspace service with editing and captures ready at initialization;
+          --compiler-only explicitly selects standalone compilation. Paid operations, source-file
+          writes and browser control retain approval. See presmium mcp --help
   studio  Presmium Studio (experimental): the editing app in the browser and the workspace service
           of the directory (the workspace root, or a deck); prints the one address to open.
           Included with Presmium
@@ -451,6 +454,7 @@ Exit Codes: 0 no errors, 1 error findings, 2 usage or internal error.`,
     newMissing: 'presmium new: create-presmium is not installed. It comes with the presmium package: run pnpm add -g @lincyaw/presmium.',
     studioMissing: 'presmium studio: Presmium Studio is not installed. It comes with Presmium: run pnpm add -g @lincyaw/presmium.',
     mcpMissing: 'presmium mcp: @lincyaw/mcp is not installed. It comes with Presmium: run pnpm add -g @lincyaw/presmium.',
+    workspaceServiceBusy: url => `This workspace already has an authoring service${url ? `: ${url}` : ' starting'}. Use the existing service.`,
     noProblems: 'no problems',
     counts: (errors, warnings, infos) => `${errors} errors, ${warnings} warnings, ${infos} infos`,
     severity: { error: 'error', warning: 'warning', info: 'info' },

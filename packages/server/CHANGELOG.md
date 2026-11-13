@@ -1,5 +1,15 @@
 # @lincyaw/server
 
+## 1.0.0-rc.81
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+  - @lincyaw/mcp@1.0.0-rc.81
+  - @lincyaw/kernel@1.0.0-rc.81
+  - @lincyaw/compiler@1.0.0-rc.81
+
 ## 1.0.0-rc.80
 
 ### Patch Changes

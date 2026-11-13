@@ -342,7 +342,7 @@ PDF、图片与 PowerPoint 中组件显示 IR 的 `fallback`（`useStaticRender(
 | `presmium-lecture timing` | `addon-lecture` | 按导出所放的讲授计划（只读已生成的配音）逐步列出讲稿字数、配音秒数、每秒字数、动画与步骤时长，再给出合计与视频时长；`--json` 输出 JSON |
 | `presmium-speech fake`、`clone`、`consent` | `addon-speech` | 假引擎；训练克隆音色；登记同意 |
 | `presmium-classroom-server` | `classroom-server` | 课堂同步 |
-| `presmium mcp`、`presmium-mcp` | `mcp` | stdio MCP：转接这个目录正在运行的 `presmium studio`、`serve`（或 `dev`）的 `/mcp`，没有时自己编译文稿，`--allow operate` 才有操作类工具 |
+| `presmium mcp`、`presmium-mcp` | `mcp` | 原生 stdio MCP：主命令在初始化前启动或复用工作区作者服务，独立入口复用已有服务；`--compiler-only` 显式独立编译。生命周期与审批见 [Studio 第 9 节](studio.md#9-mcp-与-dsh-的工具一致) |
 | `presmium mcp tools`、`call` | `mcp` | 在命令行中列出、调用当前目录正在运行的服务的 MCP 工具：结果以 JSON 写到标准输出，图片用 `--out` 存为 PNG 文件；工具失败时退出码为 1，没有服务时为 2；名为 `tools` 或 `call` 的文稿目录写作 `presmium mcp ./tools` |
 | `presmium-language-server` | `language-server` | 语言服务 |
 
@@ -391,8 +391,9 @@ presmium serve: 浏览器 → 服务端 ─┬ /__presmium/<插件 ID>/…、/__
 - 路由用 Fetch API，经 `@hono/node-server` 转换；流式用 SSE。
 - 反向代理用 `http-proxy-3`，HTTP 与 WebSocket 都代加头，浏览器拿不到凭据。
 - 启动命令给服务端 `ServerHost`（文档、编译、检查、构建、运行代码块）。
-- `mcp` 声明 `McpHost`；服务端在 `ServerHost`、控制通道与 `APPROVALS` 上实现并挂在 `/mcp`，`presmium mcp` 在编译器上实现。每个请求一个无状态 MCP 服务器。
-- 服务端把地址、MCP 访问令牌与进程号写在状态文件中（`serve` 在用户缓存目录的 `presmium/serve/<根目录摘要>/server.json`，`dev` 在文稿的 `.presmium/server.json`，路径由 `@lincyaw/kernel/node` 的 `serveStateDir`、`devStateFile` 给出），关闭时删除。`presmium mcp` 读它转接 stdio 与 `/mcp`，消息原样传递；地址不可达时重新读取，所以服务重启后（新端口、新令牌）客户端的配置不变。
+- `mcp` 声明 `McpHost`；服务端在 `ServerHost`、控制通道与 `APPROVALS` 上实现并挂在 `/mcp`，显式 `--compiler-only` 在编译器上实现。默认主 CLI 经 workspace 的公开服务入口准备宿主，MCP 包不反向依赖 workspace。每个请求一个无状态 MCP 服务器。
+- 服务端把地址、MCP 访问令牌与进程号写在状态文件中（`serve` 在用户缓存目录的 `presmium/serve/<根目录摘要>/server.json`，`dev` 在文稿的 `.presmium/server.json`，路径由 `@lincyaw/kernel/node` 的 `serveStateDir`、`devStateFile` 给出），关闭时删除。`presmium mcp` 以工作区租约协调宿主并读取状态转接 stdio 与 `/mcp`，按进程身份发现替代服务；每个已发业务请求保持原连接，不重放。自建宿主随拥有它的 stdio 退出，借用者不关闭已有服务，后续请求可重新取得宿主。
+- 后启动的 Studio 仅在默认本机监听设置下借用工作区服务，使用状态文件中与 MCP 所有者令牌分开的 `launcherToken` 创建 Harness 会话，文件权限为 `0600`；不改 `/tokens` 的启动凭据校验。Studio 关闭只释放自己的会话与工作台，不关闭借用服务。原 stdio 所有者退出会结束该服务与借用它的 Studio；Studio 不迁移宿主。显式监听设置与旧服务缺少启动凭据时明确拒绝借用。
 - `dev`、`serve` 自带同协议的课堂同步。
 - 写文档目录经 `DOCUMENT_FILES`，例外是课堂归档与圈画。
 

@@ -62,6 +62,8 @@ export interface WorkspaceRoutesOptions {
   projectRoutes?: Record<string, Route>
   speechSettings?: Route
   changesRoutes?: Record<string, Route>
+  /** Shared mutable allow-list; a later local Studio may register its preview origin. */
+  previewOrigins?: string[]
 }
 
 function toRendererIds(body: unknown): string[] | undefined {
@@ -86,6 +88,25 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
   const transcriptions = options.transcriptions ?? ownedTranscriptions!
   const ownedAudio = options.audioAuthoringRoutes ? undefined : createDocumentAudioAuthoring({ root: config.root, editor, revisions, audio: options.audio, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   const routes: Record<string, Route> = {
+    ...options.previewOrigins ? { 'preview-origins': {
+      role: 'owner', maxBody: 8192,
+      handle: async (request: Request) => {
+        if (request.method !== 'POST') return problemResponse(405, 'POST')
+        const body: unknown = await request.json().catch(() => undefined)
+        if (!isRecord(body) || Object.keys(body).some(key => key !== 'origins') || !Array.isArray(body.origins) || body.origins.length > 16) return problemResponse(400, 'preview-origins-invalid')
+        const origins: string[] = []
+        for (const value of body.origins) {
+          if (typeof value !== 'string' || value.length > 2048) return problemResponse(400, 'preview-origins-invalid')
+          let url: URL
+          try { url = new URL(value) } catch { return problemResponse(400, 'preview-origins-invalid') }
+          if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.origin !== value) return problemResponse(400, 'preview-origins-invalid')
+          if (!origins.includes(value) && !options.previewOrigins!.includes(value)) origins.push(value)
+        }
+        if (options.previewOrigins!.length + origins.length > 128) return problemResponse(413, 'preview-origins-limit')
+        options.previewOrigins!.push(...origins)
+        return jsonResponse({ added: origins.length })
+      },
+    } satisfies Route } : {},
     ...options.speechSettings ? { 'speech-settings': options.speechSettings } : {},
     ...documentEditorRoutes({ root: config.root, editor, documentEditor: options.documentEditor, workbench }),
     ...(options.audioAuthoringRoutes ?? ownedAudio!.routes),

@@ -42,7 +42,7 @@ export async function serveDirectory(root: string, options: ServeDirectoryOption
     response.writeHead(error.status ?? 500)
     response.end()
   }
-  const shared = options.origins?.length ? cors({ origin: options.origins }) : undefined
+  const shared = options.origins ? cors({ origin: (origin, done) => done(null, origin !== undefined && options.origins!.includes(origin)) }) : undefined
   const attached = (request: { url?: string }, file: string) => (response: ServerResponse) => {
     if (new URL(request.url ?? '/', 'http://localhost').searchParams.has('download')) response.setHeader('Content-Disposition', contentDisposition(basename(file)))
   }

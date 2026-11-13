@@ -34,7 +34,7 @@ export const DOCUMENT_CHANGE_JSON_SCHEMA: Schema = {
       operation('replaceAsset', { asset: ref('Asset') }),
     ] },
     DocumentChange: {
-      ...object({ id, baseDocumentVersion: { type: 'string', minLength: 1, maxLength: 128 }, replacement: ref('TeachingDocument'), operations: { type: 'array', minItems: 1, maxItems: 1000, items: ref('DocumentOperation') }, fileChanges: { type: 'array', maxItems: 15, items: object({ path: { type: 'string', minLength: 1 }, content: { type: 'string' }, base: { type: ['string', 'null'] } }) } }, ['id', 'baseDocumentVersion']),
+      ...object({ id, baseDocumentVersion: { type: 'string', minLength: 1, maxLength: 128 }, replacement: ref('TeachingDocument'), operations: { type: 'array', minItems: 1, maxItems: 1000, items: ref('DocumentOperation') }, fileChanges: { type: 'array', maxItems: 15, items: object({ path: { type: 'string', minLength: 1, description: 'Workspace-relative path within the selected document, including its directory prefix. For document papers/re-search, use papers/re-search/scenes/story.ts. Scene implementation paths inside lecture.json are document-relative instead.' }, content: { type: 'string' }, base: { type: ['string', 'null'] } }) } }, ['id', 'baseDocumentVersion']),
       oneOf: [{ required: ['replacement'], not: { required: ['operations'] } }, { required: ['operations'], not: { required: ['replacement'] } }],
     },
   },

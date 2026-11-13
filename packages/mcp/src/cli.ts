@@ -3,10 +3,11 @@ import { stat } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
+import { PassThrough } from 'node:stream'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
 import { APPROVAL_KINDS, errorMessage, isRecord, LOCAL_AUTHOR } from '@lincyaw/kernel'
 import type { ApprovalKind } from '@lincyaw/kernel'
-import { devStateFile, fileVersion, readServiceState, serveStateDir } from '@lincyaw/kernel/node'
+import { devStateFile, fileVersion, findWorkspaceServiceState, readServiceState } from '@lincyaw/kernel/node'
 import { buildSummary, buildToDist, Compiler, findPackageDir, resolveEntry, runBlock } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import { bridgeStdio } from './bridge.ts'
@@ -16,7 +17,7 @@ import type { PresmiumMcpClient } from './client.ts'
 import type { McpHost } from './host.ts'
 import { createPresmiumMcp } from './mcp.ts'
 import { MCP_CLI_MESSAGES, systemLocale } from './messages.ts'
-import { queryToolCatalog } from './tool-catalog.ts'
+import { isCatalogTool, queryToolCatalog } from './tool-catalog.ts'
 
 const OWN_DIR = fileURLToPath(new URL('..', import.meta.url))
 const CLI_PACKAGE = '@lincyaw/cli'
@@ -84,18 +85,26 @@ export function compilerMcpHost(entry: string, allow: readonly ApprovalKind[], i
   }
 }
 
-export async function main(argv: string[], options: { bundled?: string } = {}): Promise<number | undefined> {
+export interface McpCliOptions {
+  bundled?: string
+  /** The application layer owns workspace startup, so MCP never imports its server implementation. */
+  startWorkspace?(directory: string, allow: readonly ApprovalKind[], signal: AbortSignal): Promise<{ target: BridgeTarget, close(): Promise<void> }>
+}
+
+export async function main(argv: string[], options: McpCliOptions = {}): Promise<number | undefined> {
   if (argv[0] === 'call' || argv[0] === 'tools') return toolCommand(argv[0], argv.slice(1))
   let deck: string
   let allow: ApprovalKind[]
+  let compilerOnly = false
   try {
-    const { values, positionals } = parseArgs({ args: argv, allowPositionals: true, options: { allow: { type: 'string' }, help: { type: 'boolean', short: 'h' } } })
+    const { values, positionals } = parseArgs({ args: argv, allowPositionals: true, options: { allow: { type: 'string' }, 'compiler-only': { type: 'boolean' }, help: { type: 'boolean', short: 'h' } } })
     if (values.help) {
       process.stdout.write(`${t.usage}\n`)
       return 0
     }
     if (positionals.length > 1) throw new Error(t.unexpectedArgument(positionals[1]!))
     deck = resolveEntry(positionals[0] ?? '.')
+    compilerOnly = values['compiler-only'] === true
     allow = (values.allow?.split(',').map(kind => kind.trim()).filter(Boolean) ?? []) as ApprovalKind[]
     const unknown = allow.find(kind => !APPROVAL_KINDS.includes(kind))
     if (unknown) throw new Error(t.badAllow(APPROVAL_KINDS, unknown))
@@ -106,13 +115,35 @@ export async function main(argv: string[], options: { bundled?: string } = {}): 
     return 2
   }
   const dir = deck.endsWith('.json') ? dirname(deck) : deck
-  const running = runningService(dir)
-  if (running) process.stderr.write(`${t.bridging(running.mcp)}\n`)
-  await bridgeStdio(running, {
-    locate: () => runningService(dir), unreachable: t.unreachable, invalidRequest: t.invalidRequest,
-    log: message => process.stderr.write(`presmium mcp: ${message}\n`),
+  const controller = new AbortController()
+  const stop = () => controller.abort()
+  process.once('SIGINT', stop); process.once('SIGTERM', stop)
+  process.stdin.once('end', stop); process.stdin.once('close', stop)
+  // Consume stdin while the host starts, retaining protocol bytes and observing an early EOF immediately.
+  const input = new PassThrough()
+  process.stdin.pipe(input)
+  let workspace: Awaited<ReturnType<NonNullable<McpCliOptions['startWorkspace']>>> | undefined
+  const describe = (error: unknown) => errorMessage(error) === 'mcp-workspace-start-timeout' ? t.workspaceStartTimeout : errorMessage(error) === 'mcp-workspace-state-unavailable' ? t.workspaceStateUnavailable : errorMessage(error)
+  const locate = async (ensure = true) => {
+    controller.signal.throwIfAborted()
+    if (compilerOnly) return undefined
+    if (!ensure) return runningWorkspaceService(dir)
+    if (options.startWorkspace) {
+      workspace = await options.startWorkspace(dir, allow, controller.signal)
+      return workspace.target
+    }
+    const running = runningWorkspaceService(dir)
+    if (!running) throw new Error(t.workspaceLauncherMissing)
+    return running
+  }
+  try {
+    const running = await locate()
+    if (running) process.stderr.write(`${t.bridging(running.mcp)}\n`)
+    await bridgeStdio(running, {
+    locate, input, signal: controller.signal, unreachable: t.unreachable, invalidRequest: t.invalidRequest,
+    log: message => process.stderr.write(`presmium mcp: ${describe(message)}\n`),
     connected: target => process.stderr.write(`${t.bridging(target.mcp)}\n`),
-    fallback: () => {
+    ...compilerOnly ? { fallback: () => {
       const handler = createPresmiumMcp(compilerMcpHost(deck, allow, options.bundled))
       const transport = new StreamableHTTPClientTransport(new URL('http://presmium.local/mcp'), {
         fetch: (url, init) => handler.fetch(new Request(url, init), { member: LOCAL_AUTHOR, mode: 'author', document: '' }),
@@ -122,8 +153,20 @@ export async function main(argv: string[], options: { bundled?: string } = {}): 
         const failure = results.find(result => result.status === 'rejected')
         if (failure?.status === 'rejected') throw failure.reason
       } }
-    },
+    } } : {},
   })
+  } catch (error) {
+    if (!controller.signal.aborted) {
+      process.stderr.write(`presmium mcp: ${describe(error)}\n`)
+      return 2
+    }
+  } finally {
+    controller.abort()
+    process.off('SIGINT', stop); process.off('SIGTERM', stop)
+    process.stdin.off('end', stop); process.stdin.off('close', stop)
+    process.stdin.unpipe(input); process.stdin.pause(); input.destroy()
+    await workspace?.close()
+  }
   return 0
 }
 
@@ -177,7 +220,7 @@ async function toolCommand(command: 'call' | 'tools', argv: string[]): Promise<n
   let client: PresmiumMcpClient
   try {
     const url = new URL(target.mcp)
-    if (full || command === 'call') url.searchParams.set('tools', 'all')
+    if ((full || command === 'call') && !isCatalogTool(tool)) url.searchParams.set('tools', 'all')
     client = await connectPresmiumMcp(url.href, target.token, 'presmium-cli')
   } catch (error) {
     process.stderr.write(`presmium mcp: ${t.unreachable} (${errorMessage(error)})\n`)
@@ -241,18 +284,16 @@ function parsedText(text: string): unknown {
  * or the one `presmium studio` starts), which edits documents; else the `presmium dev` of the document in `dir`.
  */
 export function runningService(dir: string, env: NodeJS.ProcessEnv = process.env): BridgeTarget | undefined {
-  let at: string
-  try {
-    at = realpathSync(resolve(dir))
-  } catch {
-    return undefined
-  }
-  for (let next = at; ; at = next) {
-    const state = readServiceState(join(serveStateDir(at, env), 'server.json'))
-    if (state) return { mcp: state.mcp, token: state.token, pid: state.pid }
-    next = dirname(at)
-    if (next === at) break
-  }
-  const dev = readServiceState(devStateFile(realpathSync(resolve(dir))))
+  const workspace = runningWorkspaceService(dir, env)
+  if (workspace) return workspace
+  let real: string
+  try { real = realpathSync(resolve(dir)) } catch { return undefined }
+  const dev = readServiceState(devStateFile(real))
   return dev ? { mcp: dev.mcp, token: dev.token, pid: dev.pid } : undefined
+}
+
+/** Authoring-capable workspace hosts, excluding a read-only document preview. */
+export function runningWorkspaceService(dir: string, env: NodeJS.ProcessEnv = process.env): BridgeTarget | undefined {
+  const found = findWorkspaceServiceState(dir, env)
+  return found ? { mcp: found.state.mcp, token: found.state.token, pid: found.state.pid } : undefined
 }

@@ -239,6 +239,7 @@ export interface PageDeleteAnswer { document: string, selected: string, retained
 
 /** @experimental One version-checked file in an authoring transaction; null creates a new file exclusively. */
 export interface SourceTransactionChange {
+  /** Workspace-relative, including the selected document directory for document-scoped changes. */
   path: string
   content: string
   base: string | null

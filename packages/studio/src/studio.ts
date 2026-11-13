@@ -8,6 +8,7 @@ import { delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { bracketIPv6, dshBin, inheritedEnv, isLauncherVariable, launchArgs, launchEnv, launchNode, launchWorkspaceServer, WEB_READY, writeProfile } from '@lincyaw/dsh/launch'
 import type { LaunchedProcess } from '@lincyaw/dsh/launch'
+import { findWorkspaceServiceState, readServiceState, serveStateDir } from '@lincyaw/kernel/node'
 import { STUDIO_MESSAGES, systemLocale } from './messages.ts'
 import { modelEnv } from './model-env.ts'
 import { startProxy } from './proxy.ts'
@@ -221,11 +222,14 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
     throw new Error(t.badHost(listenAddress))
   }
   const boundAddress = listenAddress ?? '127.0.0.1'
+  let existing = findWorkspaceServiceState(options.dir, env)
+  const canReuse = () => existing?.state.launcherToken && listenAddress === undefined && options.previewPort === undefined && options.previewUrl === undefined
+  if (existing && !canReuse()) throw new Error(t.existingService(existing.state.url))
   const wildcard = WILDCARD.test(boundAddress)
   // External MCP clients keep the default address, so it is preferred; an explicit port must be free.
   let previewPort = options.previewPort ?? DEFAULT_PREVIEW_PORT
   let movedFrom: number | undefined
-  if (previewPort !== 0 && await freePort(boundAddress, previewPort) === undefined) {
+  if (!existing && previewPort !== 0 && await freePort(boundAddress, previewPort) === undefined) {
     if (options.previewPort !== undefined) throw new Error(t.previewPortInUse(previewPort, boundAddress))
     movedFrom = previewPort
     previewPort = 0
@@ -246,12 +250,15 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
   const bundle = bundleDir()
   const profile = installProfile(home, bundle)
   writeProfile(home, profile, 'web', bundle)
-  const { token: mcpToken, file: tokenFile } = workspaceCredential(home, options.dir)
+  const credential = existing ? undefined : workspaceCredential(home, options.dir)
+  const mcpToken = credential?.token
   const log = new Log(join(home, `${profile}.log`))
-  const serviceToken = randomBytes(24).toString('base64url')
+  let serviceToken = existing?.state.launcherToken ?? randomBytes(24).toString('base64url')
   const started: LaunchedProcess[] = []
   let proxy: Proxy | undefined
+  let hostMonitor: ReturnType<typeof setInterval> | undefined
   const stopAll = async () => {
+    clearInterval(hostMonitor)
     await proxy?.close()
     proxy = undefined
     for (const launched of started.reverse()) await launched.stop()
@@ -260,11 +267,11 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
 
   try {
     const presmium = options.presmium ?? presmiumBin(env, t.presmiumMissing)
-    const server = launchWorkspaceServer({
+    const server = existing ? undefined : launchWorkspaceServer({
       presmium,
       dir: resolve(options.dir),
       serviceToken,
-      mcpToken,
+      mcpToken: mcpToken!,
       port: previewPort,
       args: [
         ...listenAddress ? ['--host', listenAddress] : [],
@@ -274,8 +281,43 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
       env,
       onOutput: text => { log.write('serve', text); options.onServiceOutput?.(text) },
     })
-    started.push(server.process)
-    const { url, root } = await server.ready
+    if (server) started.push(server.process)
+    let ready: { url: string, root: string }
+    if (existing) ready = { url: existing.state.url, root: existing.root }
+    else {
+      try { ready = await server!.ready }
+      catch (error) {
+        // Another local client may win the workspace lease after our initial discovery.
+        await server!.process.stop()
+        const deadline = Date.now() + 10_000
+        while (!existing && Date.now() < deadline) {
+          existing = findWorkspaceServiceState(options.dir, env)
+          if (!existing) await new Promise(done => setTimeout(done, 100))
+        }
+        if (!existing || !canReuse()) throw error
+        serviceToken = existing.state.launcherToken!
+        ready = { url: existing.state.url, root: existing.root }
+      }
+    }
+    const { url, root } = ready
+    const tokenFile = existing ? join(serveStateDir(root, env), 'server.json') : credential!.file
+    let serverEnded: Promise<unknown>
+    if (existing) {
+      const ownerPid = existing.state.pid
+      const response = await fetch(`${url}/__presmium/presmium.workspace/preview-origins`, {
+        method: 'POST', headers: { authorization: `Bearer ${serviceToken}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ origins }), signal: AbortSignal.timeout(10_000),
+      })
+      if (!response.ok) throw new Error(t.existingService(url))
+      // Studio borrows this host. If its owner closes it, end the workbench without stopping or replacing it.
+      serverEnded = new Promise<void>(done => {
+        hostMonitor = setInterval(() => {
+          const current = readServiceState(join(serveStateDir(root, env), 'server.json'))
+          if (!current || current.pid !== ownerPid || current.url !== url) { clearInterval(hostMonitor); done() }
+        }, 500)
+        hostMonitor.unref()
+      })
+    } else serverEnded = server!.process.exited
     const mcpUrl = new URL(`${(options.previewUrl ?? url).replace(/\/+$/, '')}/mcp`)
     if (!options.previewUrl && listenAddress) mcpUrl.hostname = bracketIPv6(primaryHost)
 
@@ -312,7 +354,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
 
     let closing: Promise<void> | undefined
     const ended = Promise.race([
-      server.process.exited.then(() => t.serviceEnded),
+      serverEnded.then(() => t.serviceEnded),
       dsh.exited.then(() => t.appEnded),
     ]).then(how => (closing ? new Promise<string>(() => {}) : how))
     return {

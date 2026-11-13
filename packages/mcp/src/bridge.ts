@@ -7,7 +7,7 @@ import { errorMessage, isRecord } from '@lincyaw/kernel'
 export interface BridgeTarget { mcp: string, token: string, pid?: number }
 export interface BridgeConnection { transport: StreamableHTTPClientTransport, close(): Promise<void> }
 export interface BridgeOptions {
-  locate(): BridgeTarget | undefined
+  locate(ensure?: boolean): BridgeTarget | undefined | Promise<BridgeTarget | undefined>
   /** Used only before the first workspace connection; never a retry destination. */
   fallback?(): BridgeConnection
   unreachable: string
@@ -16,6 +16,7 @@ export interface BridgeOptions {
   connected?(target: BridgeTarget): void
   input?: NodeJS.ReadableStream
   output?: NodeJS.WritableStream
+  signal?: AbortSignal
 }
 type Id = string | number
 type RequestMessage = JSONRPCMessage & { id: Id, method: string }
@@ -35,6 +36,7 @@ export async function bridgeStdio(first: BridgeTarget | undefined, options: Brid
   const serverRequests = new Map<string, { connection: Connection, id: Id }>(), connections = new Set<Connection>()
   let current: Connection, protocolVersion: string | undefined, ready = false, closed = false, serial = 0
   let switching: Promise<Connection> | undefined
+  let switchingEnsures = false
   const write = (message: JSONRPCMessage) => { if (!closed) output.write(serializeMessage(message)) }
   const unavailable = (id: Id) => write({ jsonrpc: '2.0', id, error: { code: -32000, message: options.unreachable } })
   const notifyListener = (operation: Pending) => {
@@ -157,11 +159,12 @@ export async function bridgeStdio(first: BridgeTarget | undefined, options: Brid
       return connection
     } catch (error) { await close(connection); throw error }
   }
-  const refresh = (): Promise<Connection> => {
+  const refresh = (ensure = true): Promise<Connection> => {
     if (closed) return Promise.resolve(current)
-    if (switching) return switching
+    if (switching) return ensure && !switchingEnsures ? switching.then(() => refresh(true)) : switching
+    switchingEnsures = ensure
     switching = (async () => {
-      const target = options.locate(), before = current
+      const target = await options.locate(ensure), before = current
       if (!target) return before
       if (!before.closed && before.target?.mcp === target.mcp && before.target?.token === target.token && before.target?.pid === target.pid) {
         resumeListeners(before)
@@ -169,8 +172,9 @@ export async function bridgeStdio(first: BridgeTarget | undefined, options: Brid
       }
       const next = await open(target)
       if (closed) { await close(next); return before }
-      current = next; before.retired = true; retire(before)
-      // Only readonly notification streams follow the service; business requests retain their original backend.
+      current = next; before.retired = true
+      // Fail outstanding business requests against the old backend; only read-only notification streams follow.
+      await close(before)
       for (const operation of pending.values()) if (operation.listen) operation.listen.announce = true
       resumeListeners(next)
       options.connected?.(target); changed()
@@ -249,8 +253,12 @@ export async function bridgeStdio(first: BridgeTarget | undefined, options: Brid
     }
   }
 
+  if (options.signal?.aborted) return
   current = await open(first)
-  const detector = setInterval(() => { void refresh().catch(error => options.log(errorMessage(error))) }, 1000)
+  const detector = setInterval(() => {
+    const reconnecting = [...pending.values()].some(operation => operation.listen)
+    void refresh(reconnecting).catch(error => options.log(errorMessage(error)))
+  }, 1000)
   detector.unref()
   let buffer = new ReadBuffer()
   const receive = (chunk: Buffer) => {
@@ -264,6 +272,7 @@ export async function bridgeStdio(first: BridgeTarget | undefined, options: Brid
     const end = () => {
       if (closed) return
       closed = true; clearInterval(detector); input.off('data', receive); input.off('end', end); input.off('close', end)
+      options.signal?.removeEventListener('abort', end)
       for (const operation of pending.values()) operation.controller.abort()
       void (async () => {
         await switching?.catch(() => undefined)
@@ -272,5 +281,7 @@ export async function bridgeStdio(first: BridgeTarget | undefined, options: Brid
       })()
     }
     input.once('end', end); input.once('close', end)
+    options.signal?.addEventListener('abort', end, { once: true })
+    if (options.signal?.aborted || 'readableEnded' in input && input.readableEnded || 'destroyed' in input && input.destroyed) end()
   })
 }

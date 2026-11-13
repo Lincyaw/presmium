@@ -23,6 +23,7 @@ import { CLI_MESSAGES, systemLocale } from './messages.ts'
 import { exportScript, importScript, ScriptError } from './script.ts'
 import { runSpeechKey, SpeechKeyFailure } from './speech-key.ts'
 import { runVoiceover, VoiceoverFailure } from './voiceover.ts'
+import { mcpWorkspaceSession } from './mcp-workspace.ts'
 
 const BUNDLED = fileURLToPath(new URL('..', import.meta.url))
 const PRESMIUM_BIN = fileURLToPath(new URL('../bin/presmium.mjs', import.meta.url))
@@ -96,7 +97,7 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
       case 'serve': return await runServeCommand(command, bundled)
     }
   } catch (error) {
-    process.stderr.write(`presmium: ${errorMessage(error)}\n`)
+    process.stderr.write(`presmium: ${typeof error === 'object' && error !== null && 'code' in error && error.code === 'workspace-service-already-running' ? t.workspaceServiceBusy('url' in error && typeof error.url === 'string' ? error.url : undefined) : errorMessage(error)}\n`)
     return 2
   }
 }
@@ -530,8 +531,11 @@ async function runMcpCommand(argv: string[], bundled: string): Promise<number> {
     return 2
   }
   console.log = console.info = console.debug = console.error
-  const { main: mcpMain } = await createJiti(import.meta.url).import<{ main(argv: string[], options: { bundled: string }): Promise<number | undefined> }>(entry)
-  return await mcpMain(argv, { bundled }) ?? 0
+  const workspace = mcpWorkspaceSession(bundled)
+  const { main: mcpMain } = await createJiti(import.meta.url).import<{ main(argv: string[], options: { bundled: string, startWorkspace: typeof workspace.startWorkspace }): Promise<number | undefined> }>(entry)
+  try { return await mcpMain(argv, { bundled, startWorkspace: workspace.startWorkspace }) ?? 0 }
+  catch (error) { return fail(errorMessage(error), 2) }
+  finally { await workspace.close() }
 }
 
 function networkLines(listenAddress: string | undefined, url: string): string {

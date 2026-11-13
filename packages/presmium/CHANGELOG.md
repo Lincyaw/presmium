@@ -1,5 +1,39 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.81
+
+### Patch Changes
+
+- 修复论文素材获取工具在没有代码仓库链接时提前退出的问题，忽略已注释的旧图、避免重复渲染，并按实际成功数报告预览；说明素材准备与 MCP 作者动作的分工。
+- Updated dependencies
+- Updated dependencies
+  - @lincyaw/mcp@1.0.0-rc.81
+  - @lincyaw/kernel@1.0.0-rc.81
+  - @lincyaw/cli@1.0.0-rc.81
+  - @lincyaw/web@1.0.0-rc.81
+  - @lincyaw/studio@0.2.0-rc.80
+  - create-presmium@1.0.0-rc.81
+  - @lincyaw/addon-assistant@1.0.0-rc.81
+  - @lincyaw/addon-classroom@1.0.0-rc.81
+  - @lincyaw/addon-code@1.0.0-rc.81
+  - @lincyaw/addon-content@1.0.0-rc.81
+  - @lincyaw/addon-exec@1.0.0-rc.81
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.81
+  - @lincyaw/addon-exec-local@1.0.0-rc.81
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.81
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.81
+  - @lincyaw/addon-guide@1.0.0-rc.81
+  - @lincyaw/addon-lecture@1.0.0-rc.81
+  - @lincyaw/addon-motion@1.0.0-rc.81
+  - @lincyaw/addon-publish@1.0.0-rc.81
+  - @lincyaw/addon-session@1.0.0-rc.81
+  - @lincyaw/addon-speech@1.0.0-rc.81
+  - @lincyaw/addon-stage@1.0.0-rc.81
+  - @lincyaw/host@1.0.0-rc.81
+  - @lincyaw/render-notebook@1.0.0-rc.81
+  - @lincyaw/render-slides@1.0.0-rc.81
+  - @lincyaw/viewer@1.0.0-rc.81
+
 ## 1.0.0-rc.80
 
 ### Patch Changes

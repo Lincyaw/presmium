@@ -214,7 +214,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   let closed = false
   const log = options.log ?? ((message: string) => console.warn(`[presmium] ${message}`))
   // The workspace service's pages: only the workbench's origins may frame them, and none when it names none.
-  const framed = ctx.preview ? siteFrameAncestors(ctx.preview.origins) : undefined
+  const framed = () => ctx.preview ? siteFrameAncestors(ctx.preview.origins) : undefined
   const latest = new Map<string, IRDocument>()
 
   const documents = () => siteOf().documents.map(entry => entry.dir)
@@ -480,7 +480,8 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   }
 
   const html = (res: ServerResponse, status: number, config: AppConfig, title: string) => {
-    res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', ...framed ? { 'Content-Security-Policy': framed } : {} })
+    const policy = framed()
+    res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', ...policy ? { 'Content-Security-Policy': policy } : {} })
     res.end(pageHtml({ entry: appEntry(current!), appUrl: `${base}${PREFIX}v/${current!.manifest.key}/`, shared: current!.manifest.shared, config, title }))
   }
 
@@ -506,7 +507,8 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
       }
       let body: string
       try { body = await pending } finally { if (templateBuilds.get(key) === pending) templateBuilds.delete(key) }
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', ...framed ? { 'Content-Security-Policy': framed } : {} })
+      const policy = framed()
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', ...policy ? { 'Content-Security-Policy': policy } : {} })
       return void res.end(body)
     }
     const { built } = await appWith(await operatorPlugins())

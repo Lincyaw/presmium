@@ -33,7 +33,7 @@ workspace 为每项能力创建一个实例，HTTP 与 MCP 共用实例与回执
 
 契约在 `packages/kernel/src/contracts/` 的同名文件，工具表在 `packages/mcp/src/mcp.ts`，每个工具的 `kind` 为 `read`、`operate`、`spend`、`write` 或 `agent`。Web 经 `packages/workbench/src/workspace-client.ts` 调用同一组路由。
 
-Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页面、音色继承、批注、组件参数、字幕时间、字幕大小），语义动作分派在 `document-authoring-actions.ts`。不带工作区的 stdio 宿主（`compilerMcpHost`）没有这些服务，能力响应报告 unavailable。
+Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页面、音色继承、批注、组件参数、字幕时间、字幕大小），语义动作分派在 `document-authoring-actions.ts`。默认 `presmium mcp` 在初始化前启动或复用工作区宿主；显式 `--compiler-only` 的独立编译宿主（`compilerMcpHost`）没有这些服务，能力响应报告 unavailable。
 
 ## 3. 能力与版本
 
@@ -43,7 +43,7 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 
 新增功能优先扩展既有语义动作与共享服务，不为同一保存结果增加平行入口。简单编辑与高级预检/应用共用事务；只在调用方需要先审阅固定影响时使用后者。默认保留少量高频快捷动作，其余按需发现。未提交文件、候选审阅与已提交历史分别处理工作文件、待接受的助手结果与版本撤销，不能互相代替。
 
-`presmium mcp` 的 stdio 连接也使用精简目录。服务晚于 agent 启动或随后重启时，同一连接自动发现并通知目录变化。业务请求绑定发送时的服务，未知结果需要先查状态或历史；传输层只重建只读订阅。已有客户端重新连接后按新目录查询动作；需要原有命名工具的 SDK 可显式连接 `/mcp?tools=all`。CLI `presmium mcp tools <工具>` 返回参数摘要，`--schema` 返回完整格式，`tools --all` 列出完整目录，`--json` 输出 JSON；`mcp call` 保留原命名工具调用。可信 dsh 宿主保留完整元数据，但给模型同一精简目录；解析真实目标及其原始 Schema 后，按 `presmium/workspace` 路由作者与候选工作区，并按目标的权限与审批元数据执行确认和审阅钩子。目标定义或绑定变化时拒绝旧调用，下一步请求前或空闲后重装模型目录。两种目录共享调用方权限，查询参数不会提升授权。
+`presmium mcp <工作区或文稿的绝对路径>` 的原生 stdio 连接使用精简目录，首次初始化等待工作区宿主就绪；启动、共享与关闭规则见 [Studio 第 9 节](studio.md#9-mcp-与-dsh-的工具一致)。自动启动不批准收费、源文件写入或浏览器控制，`--allow` 只配置本次启动的服务，已有宿主保留其策略。后续服务重启由同一连接发现并通知目录变化；业务请求绑定发送时的服务，不自动重放，未知结果先查状态或历史。传输层只重建只读订阅。已连接原生 MCP 的 agent 直接调用工具；CLI `presmium mcp tools <工具>`、`mcp call` 供没有 MCP 客户端的脚本与流水线使用。前者返回参数摘要，`--schema` 返回完整格式，`tools --all` 列出完整目录，`--json` 输出 JSON；后者也支持原命名工具调用。需要原命名工具的 SDK 可显式连接 `/mcp?tools=all`。可信 dsh 宿主保留完整元数据，但给模型同一精简目录；解析真实目标及其原始 Schema 后，按 `presmium/workspace` 路由作者与候选工作区，并按目标的权限与审批元数据执行确认和审阅钩子。目标定义或绑定变化时拒绝旧调用，下一步请求前或空闲后重装模型目录。两种目录共享调用方权限，查询参数不会提升授权。
 
 `editor_action` 封装已接入的浏览器动作：只有一个已连接客户端时省略 `clientId`，服务端提供 source、连接版本与播放绑定，并短暂等待真实应答。多客户端要求明确选择；丢失应答不会自动重发。回执为 pending 时带请求引用（窗口请求只有 `handle`），使用 `get_authoring_client_request` 查询，不把请求已接收当作执行完成。草稿的确切引用与恢复前提仍由调用方明确选择。 请求执行期间不再报告其他可执行动作；`cancel_authoring_client_request` 只取消同一调用方的确切请求，等待浏览器应答或超时，不宣称已保存的事务回滚。
 
@@ -55,6 +55,8 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 | `planId` | `ProductionPlan.binding` | 不可变播放计划 |
 
 作者流程使用 `CanonicalSource { documentId, version, fingerprint }`；构建使用由它生成的 `JobSource { version, fingerprint }`。`schemaVersion` 与 `apiVersion` 不是源版本。
+
+CLI 的 `mcp call` 与按名称查询 `mcp tools <工具>` 同时接受精简目录入口和原始动作名，自动选择对应目录；默认列出的 `operations` 与各权限分派入口可直接调用，`tools --all` 仍列出原始动作。
 
 ## 4. 读取与预算
 
@@ -71,6 +73,8 @@ Web 与服务端共用的纯规则在 `packages/kernel/src/document-*.ts`（页�
 - 偏移以 UTF-16 计，不拆代理对。续读必须带首读的 source（或 version 与 digest，FNV-1a 64）；源变化返回 409，调用方从头读。坏源返回 422，不回退到运行快照。
 
 请求上限为 2048 或 4096 个 `JSON.stringify` UTF-16 字符，回复上限 7168 个缩进 JSON 字符，低于 dsh 的剪裁阈值 8192。放不下时分片前进或返回 413，不静默截断。
+
+文件动作、文稿修改的 `fileChanges.path` 与工作区媒体导入的 `path` 都相对工作区根目录，并包含文稿目录。例如 `document: "papers/re-search"` 的场景文件写作 `papers/re-search/scenes/story.ts`，图片导入写作 `papers/re-search/figures/result.png`；路径仍须属于这份文稿，文稿外的 `.cache` 不在其导入范围。文稿中 Definition 的实现路径则相对文稿目录，仍写 `scenes/story.ts`。
 
 ### 当前文件与修复
 

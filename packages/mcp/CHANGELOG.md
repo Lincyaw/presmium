@@ -1,5 +1,19 @@
 # @lincyaw/mcp
 
+## 1.0.0-rc.81
+
+### Patch Changes
+
+- 修复 MCP 命令行默认列出的操作查询和权限分派工具无法调用或读取参数的问题，自动为精简入口与原始动作选择匹配的服务目录。
+
+  在文件修改和媒体导入的参数说明中明确路径相对工作区根目录，包含文稿目录前缀，并区分文稿内的场景实现路径，避免因路径基准不清而触发范围拒绝。
+- Start or reuse a ready authoring workspace before MCP initialization, share its host across local clients, and release owned resources on disconnect. Studio can reuse the local host, including authenticated preview origins. Make compiler-only mode explicit and document the native MCP workflow in author guidance and generated projects.
+- Updated dependencies
+- Updated dependencies
+  - @lincyaw/kernel@1.0.0-rc.81
+  - @lincyaw/compiler@1.0.0-rc.81
+  - @lincyaw/skills@1.0.0-rc.81
+
 ## 1.0.0-rc.80
 
 ### Patch Changes

@@ -98,7 +98,7 @@ pnpm build     # 导出网站到 dist/web/
 ## 编辑
 
 - 在浏览器中编辑：Presmium 已包含 Studio（实验版），在本目录运行 \`presmium studio\`，打开终端打印的网址。工作台提供页面、正文、讲稿、批注与版本历史；编辑和预览都不需要配置模型。版本历史记录在 git 中，所以本目录需要是一个 git 仓库（新建时会自动运行 git init）。
-- 交给 AI 工具：在 Claude Code、Codex 等工具中打开本目录，用自然语言描述要改的内容。\`AGENTS.md\` 与 \`.agents/skills\` 中的技能说明了文稿的结构与检查方法。项目附带的 \`.mcp.json\` 让 Claude Code 连接 MCP 服务 \`presmium mcp\`（Codex 用 \`codex mcp add presmium -- presmium mcp\` 连接）：同时开着 \`presmium studio\` 时，AI 用工作台的同一套动作修改文稿，修改实时出现在工作台中，需要你允许的操作在工作台中确认。
+- 交给 AI 工具：在 Claude Code、Codex 等工具中打开本目录，用自然语言描述要改的内容。\`AGENTS.md\` 与 \`.agents/skills\` 说明文稿结构与检查方法。项目附带的 \`.mcp.json\` 让从本目录启动的 Claude Code 连接原生 MCP 服务；Codex 用 \`codex mcp add presmium -- presmium mcp <本目录的绝对路径>\` 一次配置。\`presmium mcp\` 自动启动或复用工作区服务，初始化后即可编辑与截帧。需要作者窗口或审批窗口时运行 \`presmium studio\`；自动启动不批准收费操作或源文件写入。
 - \`lecture.json\` 由工具读写，不适合手工编辑；修改后运行 \`presmium check\` 确认文稿有效。
 
 \`AGENTS.md\` 与 \`.agents/skills\` 是给 AI 编程工具的说明。Presmium：${REPOSITORY}
@@ -117,7 +117,7 @@ presmium build     # 导出网页、幻灯片与 Notebook，产物在 dist/
 ## 编辑
 
 - 在浏览器中编辑：Presmium 已包含 Studio（实验版），在本目录运行 \`presmium studio\`，打开终端打印的网址。工作台提供页面、正文、讲稿、批注与版本历史；编辑和预览都不需要配置模型。版本历史记录在 git 中，所以本目录需要是一个 git 仓库（新建时会自动运行 git init）。
-- 交给 AI 工具：在 Claude Code、Codex 等工具中打开本目录，用自然语言描述要改的内容。\`AGENTS.md\` 与 \`.agents/skills\` 中的技能说明了文稿的结构与检查方法。项目附带的 \`.mcp.json\` 让 Claude Code 连接 MCP 服务 \`presmium mcp\`（Codex 用 \`codex mcp add presmium -- presmium mcp\` 连接）：同时开着 \`presmium studio\` 时，AI 用工作台的同一套动作修改文稿，修改实时出现在工作台中，需要你允许的操作在工作台中确认。
+- 交给 AI 工具：在 Claude Code、Codex 等工具中打开本目录，用自然语言描述要改的内容。\`AGENTS.md\` 与 \`.agents/skills\` 说明文稿结构与检查方法。项目附带的 \`.mcp.json\` 让从本目录启动的 Claude Code 连接原生 MCP 服务；Codex 用 \`codex mcp add presmium -- presmium mcp <本目录的绝对路径>\` 一次配置。\`presmium mcp\` 自动启动或复用工作区服务，初始化后即可编辑与截帧。需要作者窗口或审批窗口时运行 \`presmium studio\`；自动启动不批准收费操作或源文件写入。
 - \`lecture.json\` 由工具读写，不适合手工编辑；修改后运行 \`presmium check\` 确认文稿有效。
 
 \`AGENTS.md\` 是给 AI 编程工具的说明，技能在 \`.agents/skills\`。Presmium：${REPOSITORY}
@@ -137,7 +137,7 @@ presmium build           # 把工作区导出为网站，产物在 dist/web/
 ## 编辑
 
 - 在浏览器中编辑：Presmium 已包含 Studio（实验版），在本目录运行 \`presmium studio\`，打开终端打印的网址。工作台提供页面、正文、讲稿、批注与版本历史；编辑和预览都不需要配置模型。版本历史记录在 git 中，所以本目录需要是一个 git 仓库（新建时会自动运行 git init）。
-- 交给 AI 工具：在 Claude Code、Codex 等工具中打开本目录，用自然语言描述要改的内容。\`AGENTS.md\` 与 \`.agents/skills\` 中的技能说明了文稿的结构与检查方法。项目附带的 \`.mcp.json\` 让 Claude Code 连接 MCP 服务 \`presmium mcp\`（Codex 用 \`codex mcp add presmium -- presmium mcp\` 连接）：同时开着 \`presmium studio\` 时，AI 用工作台的同一套动作修改文稿，修改实时出现在工作台中，需要你允许的操作在工作台中确认。
+- 交给 AI 工具：在 Claude Code、Codex 等工具中打开本目录，用自然语言描述要改的内容。\`AGENTS.md\` 与 \`.agents/skills\` 说明文稿结构与检查方法。项目附带的 \`.mcp.json\` 让从本目录启动的 Claude Code 连接原生 MCP 服务；Codex 用 \`codex mcp add presmium -- presmium mcp <本目录的绝对路径>\` 一次配置。\`presmium mcp\` 自动启动或复用工作区服务，初始化后即可编辑与截帧。需要作者窗口或审批窗口时运行 \`presmium studio\`；自动启动不批准收费操作或源文件写入。
 - \`lecture.json\` 由工具读写，不适合手工编辑；修改后运行 \`presmium check\` 确认文稿有效。
 
 \`AGENTS.md\` 是给 AI 编程工具的说明，技能在 \`.agents/skills\`。Presmium：${REPOSITORY}
@@ -155,7 +155,7 @@ ${kind === 'lecture'
 - \`presmium-author\`：编写、放映与制作讲义：网页与幻灯片两种版本的写法、页面、内容块、步骤与讲稿、配音与讲授视频、课堂、检查、导出与发布。
 - \`presmium-animate\`：动画：按教学场景选择做法、用代码写的动画场景（附每个动画库的效果合集）、让动画与配音对齐。
 
-连接了 MCP 服务 \`presmium\`（\`.mcp.json\`，命令 \`presmium mcp\`）时，按 \`presmium-author\` 技能中的 “Work through the tools” 用它的作者动作修改文稿；Presmium Studio 与 presmium serve 都没有运行时，它只能阅读、检查与导出，这时直接修改 \`lecture.json\`。
+连接原生 MCP 服务 \`presmium\`（\`.mcp.json\`，命令 \`presmium mcp\`）后，按 \`presmium-author\` 技能中的 “Work through the tools” 直接调用作者动作修改文稿、检查与截帧。默认命令在初始化前启动或复用工作区服务；工作目录须为本项目，也可显式传入工作区或文稿的绝对路径。仅在明确使用 \`--compiler-only\` 或没有 MCP 宿主时直接修改 \`lecture.json\`。中断后先查保存历史或任务状态，不重发结果未知的写入；自动启动保留收费、源文件写入与浏览器操作的审批。
 
 修改后运行 \`${kind === 'lecture' ? 'presmium check' : 'presmium check <文稿目录>'}\` 并修复它报告的问题；\`presmium build\` 导出${kind === 'lecture' ? '网页、幻灯片与 Notebook' : '工作区的网站'}。
 `,
@@ -228,7 +228,7 @@ To publish on GitHub Pages, commit the project and the \`pnpm-lock.yaml\` create
 ## Editing
 
 - In the browser: Presmium includes Studio (experimental); run \`presmium studio\` in this directory and open the address it prints. The workbench has pages, text, scripts, comments and version history; editing and previewing need no model. The version history lives in git, so this directory has to be a git repository (a new project runs git init).
-- With an AI coding tool: open this directory in Claude Code, Codex or a similar tool and describe the change in plain words. \`AGENTS.md\` and the skills in \`.agents/skills\` explain the document's structure and how to check it. The project's \`.mcp.json\` connects Claude Code to the MCP server \`presmium mcp\` (connect Codex with \`codex mcp add presmium -- presmium mcp\`): while \`presmium studio\` runs, the AI edits the document with the workbench's own actions, the changes appear in the workbench as they are made, and what needs your approval is confirmed there.
+- With an AI coding tool: open this directory in Claude Code, Codex or a similar tool and describe the change. \`AGENTS.md\` and \`.agents/skills\` explain the document and checks. The project's \`.mcp.json\` connects Claude Code launched from this directory to native MCP; configure Codex once with \`codex mcp add presmium -- presmium mcp <absolute-project-path>\`. \`presmium mcp\` starts or reuses the workspace service, with editing and captures available after initialization. Open \`presmium studio\` when an action needs a browser or approval window; automatic startup does not approve paid operations or source-file writes.
 - \`lecture.json\` is read and written by tools and is not meant for editing by hand; run \`presmium check\` after a change to confirm the document is valid.
 
 \`AGENTS.md\` and \`.agents/skills\` are for AI coding tools. Presmium: ${REPOSITORY}
@@ -249,7 +249,7 @@ presmium build     # exports the web page, the slides, and the Notebook into dis
 ## Editing
 
 - In the browser: Presmium includes Studio (experimental); run \`presmium studio\` in this directory and open the address it prints. The workbench has pages, text, scripts, comments and version history; editing and previewing need no model. The version history lives in git, so this directory has to be a git repository (a new project runs git init).
-- With an AI coding tool: open this directory in Claude Code, Codex or a similar tool and describe the change in plain words. \`AGENTS.md\` and the skills in \`.agents/skills\` explain the document's structure and how to check it. The project's \`.mcp.json\` connects Claude Code to the MCP server \`presmium mcp\` (connect Codex with \`codex mcp add presmium -- presmium mcp\`): while \`presmium studio\` runs, the AI edits the document with the workbench's own actions, the changes appear in the workbench as they are made, and what needs your approval is confirmed there.
+- With an AI coding tool: open this directory in Claude Code, Codex or a similar tool and describe the change. \`AGENTS.md\` and \`.agents/skills\` explain the document and checks. The project's \`.mcp.json\` connects Claude Code launched from this directory to native MCP; configure Codex once with \`codex mcp add presmium -- presmium mcp <absolute-project-path>\`. \`presmium mcp\` starts or reuses the workspace service, with editing and captures available after initialization. Open \`presmium studio\` when an action needs a browser or approval window; automatic startup does not approve paid operations or source-file writes.
 - \`lecture.json\` is read and written by tools and is not meant for editing by hand; run \`presmium check\` after a change to confirm the document is valid.
 
 \`AGENTS.md\` is for AI coding tools, with the skills in \`.agents/skills\`. Presmium: ${REPOSITORY}
@@ -271,7 +271,7 @@ The Reader Q&A plugin the configuration lists lets readers “Ask”.
 ## Editing
 
 - In the browser: Presmium includes Studio (experimental); run \`presmium studio\` in this directory and open the address it prints. The workbench has pages, text, scripts, comments and version history; editing and previewing need no model. The version history lives in git, so this directory has to be a git repository (a new project runs git init).
-- With an AI coding tool: open this directory in Claude Code, Codex or a similar tool and describe the change in plain words. \`AGENTS.md\` and the skills in \`.agents/skills\` explain the document's structure and how to check it. The project's \`.mcp.json\` connects Claude Code to the MCP server \`presmium mcp\` (connect Codex with \`codex mcp add presmium -- presmium mcp\`): while \`presmium studio\` runs, the AI edits the document with the workbench's own actions, the changes appear in the workbench as they are made, and what needs your approval is confirmed there.
+- With an AI coding tool: open this directory in Claude Code, Codex or a similar tool and describe the change. \`AGENTS.md\` and \`.agents/skills\` explain the document and checks. The project's \`.mcp.json\` connects Claude Code launched from this directory to native MCP; configure Codex once with \`codex mcp add presmium -- presmium mcp <absolute-project-path>\`. \`presmium mcp\` starts or reuses the workspace service, with editing and captures available after initialization. Open \`presmium studio\` when an action needs a browser or approval window; automatic startup does not approve paid operations or source-file writes.
 - \`lecture.json\` is read and written by tools and is not meant for editing by hand; run \`presmium check\` after a change to confirm the document is valid.
 
 \`AGENTS.md\` is for AI coding tools, with the skills in \`.agents/skills\`. Presmium: ${REPOSITORY}
@@ -289,7 +289,7 @@ Skills (\`.agents/skills\`, self-contained):
 - \`presmium-author\`: writing, presenting, and producing documents: how to write the reading and slide versions, pages, content blocks, steps and scripts, voiceover and lecture videos, the classroom, checks, exports, and publishing.
 - \`presmium-animate\`: animation: the way to show each teaching moment, scenes written in code (with a gallery of effects for each animation library), and putting them on the voiceover.
 
-When the MCP server \`presmium\` is connected (\`.mcp.json\`, command \`presmium mcp\`), change documents with its author actions as “Work through the tools” in the \`presmium-author\` skill says; while neither Presmium Studio nor presmium serve runs, it only reads, checks and exports, so edit \`lecture.json\` directly then.
+When native MCP \`presmium\` is connected (\`.mcp.json\`, command \`presmium mcp\`), use its author actions directly for edits, checks and captures as “Work through the tools” in \`presmium-author\` says. The default command starts or reuses the workspace service before initialization. Use this project as the working directory or pass an absolute workspace or document path. Edit \`lecture.json\` directly only with explicit \`--compiler-only\` mode or without an MCP host. After an interruption, inspect saved history or task state before repeating a write with an unknown outcome. Automatic startup preserves approvals for paid operations, source-file writes and browser control.
 
 After a change, run \`${kind === 'lecture' ? 'presmium check' : 'presmium check <document directory>'}\` and fix what it reports; \`presmium build\` exports ${kind === 'lecture' ? 'the web page, the slides, and the Notebook' : 'the workspace’s website'}.
 `,
