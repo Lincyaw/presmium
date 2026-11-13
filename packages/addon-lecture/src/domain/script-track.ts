@@ -46,8 +46,8 @@ function anchorAt(utterance: Utterance, words: readonly WrittenWord[] | undefine
 }
 
 /**
- * The synthesized lecture's timeline. A step lasts as long as its longest animation, except where the
- * narration says `{cue}next` before then: the cue keeps the word it is bound to, and `cuts` list it.
+ * The synthesized lecture's timeline. Fixed animations and explicit minimum holds can outlast the voice;
+ * voice-paced scenes follow it. A `{cue}next` keeps the word it is bound to, and `cuts` list fixed timing it cuts short.
  */
 /**
  * The lecture of `plan` said with `clips`. `unsaid`: the sentences without a clip, by id, with the reason; each plays
@@ -66,7 +66,7 @@ export function scriptTrack(plan: LecturePlan, clips: ReadonlyMap<string, Clip>,
     let current = played[0]!
     let since = t
     const go = (at: number, step: number) => events.push([at, 'go', { section: section.id, step: section.webStep(step) }])
-    // A step lasts as long as its longest animation: the lecture waits for it before it moves on.
+    // Only fixed animation timing and explicit minimum holds can extend the step after its voice.
     const hold = () => {
       const until = since + (section.holds[current] ?? 0)
       if (until <= t) return

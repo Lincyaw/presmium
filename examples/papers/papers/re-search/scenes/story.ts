@@ -71,20 +71,20 @@ function tree(s: Shot): string {
   out += `<circle class="root-node" cx="${rx}" cy="${ry}" r="2" fill="var(--c-muted)"/>` + label(l[0] ?? '', rx, ry + 7)
   if (s.mode === 'balanced') out += '<circle class="search-head" cx="20" cy="44" r="1.6" fill="var(--c-accent)" stroke="var(--c-surface)" stroke-width="0.5"/>'
   if (s.mode === 'wide') out += '<circle class="clue" cx="14.2" cy="55.5" r="2.7" fill="none" stroke="var(--pm-color-ok)" stroke-width="0.8"/>'
-  return wrap(out)
+  const guide = out.match(/<path class="link"[^>]*\/>/g)?.map(path => path.replace('class="link"', 'class="tree-guide"')).join('') ?? ''
+  return wrap(guide + out)
 }
-function game(s: Shot): string {
+function game(s: Shot, problem?: Shot): string {
   const l = s.labels ?? []
   let out = line(23, 45, 55, 45) + line(55, 45, 90, 45, C[1])
   out += dot(23, 45, C[0], 8) + dot(55, 45, C[0], 8) + dot(90, 45, C[1], 8)
   out += label(l[0] ?? '', 23, 62) + label(l[1] ?? '', 55, 62) + label(l[3] ?? '', 90, 62)
   out += label('?', 23, 47) + label('Q', 55, 47) + label('A', 90, 47)
-  if (s.id === 'feedback') {
-    out += line(90, 34, 55, 34, C[1]) + label(l[2] ?? '', 73, 27)
-  } else {
-    out += `<rect x="80" y="20" width="20" height="13" rx="2" fill="var(--pm-color-category-2-soft)" stroke="${C[1]}" stroke-width="0.4"/>`
-    out += label(l[2] ?? '', 90, 28) + line(90, 33, 90, 36, C[1])
-  }
+  const paper = s.id === 'feedback' ? problem?.labels?.[2] ?? '' : l[2] ?? ''
+  out += `<rect x="80" y="20" width="20" height="13" rx="2" fill="var(--pm-color-category-2-soft)" stroke="${C[1]}" stroke-width="0.4"/>`
+  out += label(paper, 90, 28) + line(90, 33, 90, 36, C[1])
+  out = `<g class="game-base">${out}</g>`
+  if (s.id === 'feedback') out += line(90, 34, 55, 34, C[1]) + label(l[2] ?? '', 65, 27)
   return wrap(out)
 }
 function pool(s: Shot): string {
@@ -130,7 +130,7 @@ export default gsapScene(ctx => {
   const { root, gsap } = ctx
     let art = ''
     if (s.kind === 'tree') art = tree(s)
-    if (s.kind === 'game') art = game(s)
+    if (s.kind === 'game') art = game(s, shots.find(shot => shot.id === 'problem'))
     if (s.kind === 'pool') art = pool(s)
     if (s.kind === 'bars') art = bars(s)
     if (s.kind === 'card') art = card(s)
@@ -138,6 +138,7 @@ export default gsapScene(ctx => {
     if (s.kind === 'figure') art = `<div class="paper-figure figure--${s.figure}"><img src="${figures[s.figure!]}" alt="${escape(s.title)}"></div>`
     if (s.kind === 'opening' || s.kind === 'ending') art = `<div class="mark">${MARK}</div>`
     frame(ctx.root, `
+      .tree-guide { opacity:0.16; }
       .heading { position:absolute;left:5cqw;top:12cqh;right:4cqw;font-size:${TYPE.title}cqw;font-weight:800;line-height:1.2; }
       .keys { position:absolute;left:70cqw;top:30cqh;width:26cqw;display:flex;flex-direction:column;gap:4cqh; }
       .key { font-size:${TYPE.body}cqw;font-weight:650;line-height:1.5;padding-left:1.3cqw;border-left:0.28cqw solid var(--pm-color-category-1); }
@@ -159,21 +160,22 @@ export default gsapScene(ctx => {
   const tl = gsap.timeline()
   const links = [...root.querySelectorAll<SVGPathElement>('.link')]
   const nodes = [...root.querySelectorAll<SVGCircleElement>('.node')]
+  // Establish the subject at the boundary; animate only what changes within it.
+  // This is also the initial state on a direct seek, rather than a retained previous DOM.
   if (links.length) gsap.set(links, { drawSVG: '0%' })
-  gsap.set(root.querySelectorAll('.heading, .key, .source, .root-node'), { autoAlpha: 0 })
-  if (s.kind === 'bars') gsap.set(root.querySelectorAll('.value-bar'), { scaleY: 0, transformOrigin: '50% 100%' })
-  if (s.kind === 'card') {
-    gsap.set('.idea-card', { autoAlpha: 0 })
-    gsap.set('.idea-line', { scaleX: 0, transformOrigin: '0 50%' })
+  const keys = [...root.querySelectorAll('.key')]
+  if (keys.length > 1) gsap.set(keys.slice(1), { autoAlpha: 0 })
+  if (s.kind === 'bars') {
+    gsap.set(root.querySelectorAll('.value-bar'), { scaleY: 0, transformOrigin: '50% 100%' })
+    gsap.set(root.querySelectorAll('.value-label'), { autoAlpha: 0 })
+    const firstBar = root.querySelector('.value-bar'), firstValue = root.querySelector('.value-label')
+    if (firstBar) gsap.set(firstBar, { scaleY: 1 })
+    if (firstValue) gsap.set(firstValue, { autoAlpha: 1 })
   }
-  if (s.kind === 'figure') {
-    gsap.set('.paper-figure', { autoAlpha: 0 })
-    if (s.figure === 'survey') gsap.set('.paper-figure img', { clipPath: 'inset(0 0 66% 0)' })
-  }
-  const hidden = root.querySelectorAll('.node, .diagram-label, .dead-end, .search-head, .return-trail, .clue')
-  if (hidden.length) gsap.set(hidden, { autoAlpha: 0 })
-  tl.fromTo('.heading', { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power2.out', immediateRender: false }, T(0))
-  if (root.querySelector('.root-node')) tl.fromTo('.root-node', { autoAlpha: 0, scale: 0, transformOrigin: '50% 50%' }, { autoAlpha: 1, scale: 1, duration: 0.45, ease: 'back.out(1.4)', immediateRender: false }, T(0.04))
+  if (s.kind === 'card') gsap.set('.idea-line', { scaleX: 0, transformOrigin: '0 50%' })
+  if (s.kind === 'tree') gsap.set(root.querySelectorAll('.node, .dead-end, .search-head, .return-trail, .clue'), { autoAlpha: 0 })
+  if (s.kind === 'pool') gsap.set('.node', { autoAlpha: 0 })
+  if (s.kind === 'game') gsap.set('.game-base .link', { drawSVG: '100%' })
   const grow = (path: SVGPathElement, i: number, fraction: number, duration = 0.55) => {
     tl.to(path, { drawSVG: '100%', duration, ease: 'power2.inOut' }, T(fraction))
     if (nodes[i]) tl.to(nodes[i]!, { autoAlpha: 1, duration: 0.15 }, T(fraction) + duration)
@@ -196,12 +198,15 @@ export default gsapScene(ctx => {
       tl.to('.search-head', { autoAlpha: 0, duration: 0.25 }, T(0.67))
     }
     if (s.mode === 'wide') tl.fromTo('.clue', { autoAlpha: 0, scale: 0.5, transformOrigin: '50% 50%' }, { autoAlpha: 1, scale: 1, duration: 0.45, immediateRender: false }, T(0.26))
+  } else if (s.kind === 'game') {
+    links.filter(path => !path.closest('.game-base')).forEach((path, i) => grow(path, -1, 0.04 + i * 0.1, 0.55))
   } else if (s.kind === 'bars') {
     links.forEach((path, i) => grow(path, i, 0.07))
     const values = [...root.querySelectorAll('.value-bar')]
     const labels = [...root.querySelectorAll('.value-label')]
-    values.forEach((bar, i) => {
-      const time = T(0.16 + i * 0.16)
+    values.slice(1).forEach((bar, index) => {
+      const i = index + 1
+      const time = T(0.12 + i * 0.12)
       tl.fromTo(bar, { scaleY: 0, transformOrigin: '50% 100%' }, { scaleY: 1, duration: 0.95, ease: 'power2.out', immediateRender: false }, time)
       if (labels[i]) tl.to(labels[i]!, { autoAlpha: 1, duration: 0.2 }, time + 0.95)
     })
@@ -209,21 +214,11 @@ export default gsapScene(ctx => {
     links.forEach((path, i) => grow(path, -1, i < 4 ? 0.10 + i * 0.10 : 0.63, 0.65))
     tl.to('.node', { autoAlpha: 1, duration: 0.25 }, T(0.69))
   } else if (s.kind === 'card') {
-    tl.fromTo('.idea-card', { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 0.6, ease: 'power2.out', immediateRender: false }, T(0.06))
     tl.fromTo('.idea-line', { scaleX: 0, transformOrigin: '0 50%' }, { scaleX: 1, duration: 0.7, stagger: ctx.durations[index]! * 0.08 / 1000, ease: 'power2.out', immediateRender: false }, T(0.18))
-  } else if (s.kind === 'figure') {
-    tl.fromTo('.paper-figure', { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power2.out', immediateRender: false }, T(0.05))
-    if (s.figure === 'survey') {
-      tl.fromTo('.paper-figure img', { clipPath: 'inset(0 0 66% 0)' }, { clipPath: 'inset(0 0 0% 0)', duration: Math.min(1.4, ctx.durations[index]! * 0.12 / 1000), ease: 'power2.inOut', immediateRender: false }, T(0.32))
-    }
   } else {
     links.forEach((path, i) => grow(path, i, 0.10 + i / Math.max(1, links.length) * 0.45, 0.65))
-    nodes.forEach((node, i) => tl.to(node, { autoAlpha: 1, duration: 0.2 }, T(0.08 + i * 0.14)))
   }
-  if (root.querySelector('.diagram-label:not(.value-label)')) tl.to('.diagram-label:not(.value-label)', { autoAlpha: 1, duration: 0.3, stagger: 0.08 }, T(s.kind === 'tree' ? 0.64 : 0.08))
-  const keys = [...root.querySelectorAll('.key')]
-  keys.forEach((key, i) => tl.fromTo(key, { autoAlpha: 0, clipPath: 'inset(0 100% 0 0)' }, { autoAlpha: 1, clipPath: 'inset(0 0% 0 0)', duration: 0.4, ease: 'power2.out', immediateRender: false }, T(0.12 + i * 0.19)))
-  tl.fromTo('.source', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, immediateRender: false }, T(0.82))
+  keys.slice(1).forEach((key, index) => tl.fromTo(key, { autoAlpha: 0, clipPath: 'inset(0 100% 0 0)' }, { autoAlpha: 1, clipPath: 'inset(0 0% 0 0)', duration: 0.4, ease: 'power2.out', immediateRender: false }, T(0.20 + index * 0.23)))
   tl.set({}, {}, ctx.total / 1000)
   return tl
 })

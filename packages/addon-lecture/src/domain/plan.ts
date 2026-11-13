@@ -240,7 +240,7 @@ function narration(section: IRSection): { block: IRBlock, target?: IRBlock }[] {
   return list
 }
 
-export interface PlannedAnimation { blockId: string, step: number, durationMs?: number }
+export interface PlannedAnimation { blockId: string, step: number, durationMs?: number, voicePaced?: true }
 
 /** Changes that start an animation; static built-ins do not invent an animation duration. */
 export function plannedAnimations(section: IRSection): PlannedAnimation[] {
@@ -249,7 +249,8 @@ export function plannedAnimations(section: IRSection): PlannedAnimation[] {
     if (block.node.type !== 'component' || !isShown(block) || !block.node.durations && !(block.node.plugin === 'presmium.motion' && block.node.name === 'PmScene')) continue
     const duration = (step: number, local: number) => {
       const ms = block.node.type === 'component' ? block.node.durations?.[local] : undefined
-      animations.push({ blockId: block.id, step, ...typeof ms === 'number' && Number.isFinite(ms) && ms >= 0 ? { durationMs: ms } : {} })
+      animations.push({ blockId: block.id, step, ...typeof ms === 'number' && Number.isFinite(ms) && ms >= 0 ? { durationMs: ms } : {},
+        ...block.node.type === 'component' && block.node.plugin === 'presmium.motion' && block.node.name === 'PmScene' ? { voicePaced: true as const } : {} })
     }
     if (block.stepStates) {
       for (const [step, state] of block.stepStates.entries()) {
@@ -262,10 +263,20 @@ export function plannedAnimations(section: IRSection): PlannedAnimation[] {
   return animations
 }
 
-/** Effective minimum step holds: declared animations and authored Production stay durations. */
-function stepHolds(section: IRSection, doc: IRDocument): number[] {
+/** Scenes follow simultaneous TTS; fixed animations and explicit Production minimum holds remain hard limits. */
+function stepHolds(section: IRSection, doc: IRDocument, paragraphs: readonly PlannedParagraph[]): number[] {
   const holds = Array.from({ length: section.steps + 1 }, () => 0)
-  for (const animation of plannedAnimations(section)) holds[animation.step] = Math.max(holds[animation.step]!, animation.durationMs ?? 0)
+  // A next cue owns the timing of a continuous narration across steps; don't reinterpret it as independent clips.
+  const continuous = paragraphs.some(paragraph => paragraph.pieces.some(piece => piece.cues.some(cue => cue.name === 'next')))
+  const paced = new Set(continuous ? [] : holds.flatMap((_, step) => {
+    const own = paragraphs.filter(paragraph => paragraph.step === step)
+    return own.length && own.every(paragraph => paragraph.sourceKind === 'tts' && paragraph.voice && !paragraph.voiceIssue && paragraph.mode !== 'after')
+      && own.some(paragraph => paragraph.pieces.some(piece => piece.text.trim())) ? [step] : []
+  }))
+  for (const animation of plannedAnimations(section)) {
+    if (animation.voicePaced && paced.has(animation.step)) continue
+    holds[animation.step] = Math.max(holds[animation.step]!, animation.durationMs ?? 0)
+  }
   for (const [step, id] of (section.stepIds ?? []).entries()) {
     const production = { ...doc.production?.defaults, ...doc.production?.sectionOverrides?.[section.id], ...doc.production?.stepOverrides[id] }
     holds[step] = Math.max(holds[step] ?? 0, production.minimumHoldMs ?? 0)
@@ -328,7 +339,7 @@ export function lecturePlan(doc: IRDocument): LecturePlan {
     // A step a `{cue}next` enters is voiced by the narration before it, so it stays in the lecture like a step with its own.
     const entered = otherForms.size ? nextEntered(section.steps, paragraphs, new Set(recordings.map(recording => recording.step))) : new Set<number>()
     const leftOut = (section.stepIds ?? []).flatMap((id, step) => otherForms.has(id) && !entered.has(step) && !paragraphs.some(paragraph => paragraph.step === step) && !recordings.some(recording => recording.step === step) && !doc.production?.mediaClips.some(clip => clip.attachment.stepId === id) ? [step] : [])
-    return { id: section.id, title: section.title, steps: section.steps, from: 'narration', paragraphs, recordings, holds: stepHolds(section, doc), ...trailingPauseMs ? { trailingPauseMs } : {}, ...leftOut.length ? { leftOut } : {}, webStep: webSteps(section) }
+    return { id: section.id, title: section.title, steps: section.steps, from: 'narration', paragraphs, recordings, holds: stepHolds(section, doc, paragraphs), ...trailingPauseMs ? { trailingPauseMs } : {}, ...leftOut.length ? { leftOut } : {}, webStep: webSteps(section) }
   })
   let n = 0
   for (const section of sections) {

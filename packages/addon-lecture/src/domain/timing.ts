@@ -147,22 +147,27 @@ export function startingStop(trackId: string, events: readonly TimedEvent[], sec
 /**
  * How long each step's voice lasts from the step's start (ms), by `section\u0000step`: until the last sentence heard in
  * the step ends, at most until the next step. Pauses and holds after the voice do not count. A step where no sentence is
- * heard has no length, nor one whose voice waits for its animation (`after-animation`: a hold at the step's start). A
- * step reached again keeps what it had the first time.
+ * heard has no length, nor one with a recording or whose voice waits for its animation. Pages with a next-step cue
+ * retain their continuous authored timing. A step reached again keeps what it had the first time.
  */
 export function voicedLengths(events: readonly TimedEvent[], utterances: readonly Utterance[], end: number): Map<string, number> {
   const stops = stepStops(events)
-  const waits = new Set(events.flatMap(event => event.type === 'pause' && event.data.hold === true ? [event.t] : []))
+  const waits = events.filter(event => event.type === 'pause' && event.data.hold === true)
+  const continuous = new Set(events.flatMap(event => event.type === 'go' && anchorOf(event.data) && typeof event.data.section === 'string' ? [event.data.section] : []))
   const seen = new Set<string>()
   const lengths = new Map<string, number>()
   for (const [i, stop] of stops.entries()) {
     const key = `${stop.section}\u0000${stop.step}`
     if (seen.has(key)) continue
     seen.add(key)
-    if (waits.has(stop.t)) continue
+    if (continuous.has(stop.section)) continue
     const until = stops[i + 1]?.t ?? end
+    const own = utterances.filter(u => !u.silent && u.d > 0 && u.t < until && u.t + u.d > stop.t)
+    if (own.some(u => u.recording)) continue
     let voiced = stop.t
-    for (const u of utterances) if (!u.silent && u.d > 0 && u.t < until && u.t + u.d > stop.t) voiced = Math.max(voiced, Math.min(until, u.t + u.d))
+    for (const u of own) voiced = Math.max(voiced, Math.min(until, u.t + u.d))
+    // A hold before the last sentence finishes is an authored animation-first wait, not a trailing rest.
+    if (waits.some(wait => wait.t >= stop.t && wait.t < voiced)) continue
     if (voiced > stop.t) lengths.set(key, voiced - stop.t)
   }
   return lengths

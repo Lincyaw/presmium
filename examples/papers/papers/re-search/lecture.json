@@ -1681,51 +1681,21 @@
       "trailingPauseMs": 350
     },
     "stepOverrides": {
-      "opening--opening": {
-        "minimumHoldMs": 19000
-      },
-      "game--problem": {
-        "minimumHoldMs": 17000
-      },
-      "game--feedback": {
-        "minimumHoldMs": 14000
-      },
-      "game--cards": {
-        "minimumHoldMs": 16000
-      },
-      "early--early-progress": {
-        "minimumHoldMs": 18000
-      },
-      "early--early-exception": {
-        "minimumHoldMs": 15000
-      },
-      "trees--deep": {
-        "minimumHoldMs": 20000
-      },
-      "trees--wide": {
-        "minimumHoldMs": 16000
-      },
-      "trees--balanced": {
-        "minimumHoldMs": 17000
-      },
-      "trees--paper-trees": {
-        "minimumHoldMs": 16000
-      },
-      "candidates--pool": {
-        "minimumHoldMs": 16000
-      },
-      "candidates--controls": {
-        "minimumHoldMs": 30000
-      },
-      "survey--survey": {
-        "minimumHoldMs": 26000
-      },
-      "scope--scope": {
-        "minimumHoldMs": 22000
-      },
-      "ending--ending": {
-        "minimumHoldMs": 16000
-      }
+      "opening--opening": {},
+      "game--problem": {},
+      "game--feedback": {},
+      "game--cards": {},
+      "early--early-progress": {},
+      "early--early-exception": {},
+      "trees--deep": {},
+      "trees--wide": {},
+      "trees--balanced": {},
+      "trees--paper-trees": {},
+      "candidates--pool": {},
+      "candidates--controls": {},
+      "survey--survey": {},
+      "scope--scope": {},
+      "ending--ending": {}
     },
     "mediaClips": []
   }

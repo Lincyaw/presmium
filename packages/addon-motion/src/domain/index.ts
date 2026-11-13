@@ -28,12 +28,21 @@ export function timelinePosition(durations: readonly number[], step: number, tim
   return starts[step]! + Math.min(Math.max(0, time), durations[step]!)
 }
 
+/** Map a driven step's playback time into the independent state timeline used to build the shown scene. */
+export function pacedTimelinePosition(durations: readonly number[], playback: readonly number[], step: number, time: number): number {
+  const length = playback[step], timeline = durations[step]
+  return timelinePosition(durations, step, Number.isFinite(time) && length !== undefined && length > 0 && timeline !== undefined && timeline > 0 ? time * timeline / length : time)
+}
+
 /**
  * The durations a scene plays with while a narrated lecture paces its steps: state k lasts as long as `voiced(k)`, the
- * voice of the first step that shows it, and never less than its authored duration. A state no step voices keeps its own.
+ * voice of the first step that shows it. The authored duration is the fallback when that step has no paced voice.
  */
 export function voicedDurations(durations: readonly number[], voiced: (state: number) => number | undefined): number[] {
-  return durations.map((ms, k) => Math.max(ms, voiced(k) ?? 0))
+  return durations.map((ms, k) => {
+    const duration = voiced(k)
+    return duration !== undefined && Number.isFinite(duration) && duration > 0 ? duration : ms
+  })
 }
 
 export { MOTION_MESSAGES } from './messages.ts'

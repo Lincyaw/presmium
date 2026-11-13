@@ -23,8 +23,8 @@ import type { CSSProperties } from 'react'
 import type { SceneProps } from '../../components/PmScene.tsx'
 import {
   MOTION_MESSAGES,
+  pacedTimelinePosition,
   stepStarts,
-  timelinePosition,
   voicedDurations,
 } from '../domain/index.ts'
 import { loadScene, preloadScenes } from './deck-scenes.ts'
@@ -78,12 +78,15 @@ export default function SceneView(props: SceneProps) {
   // While a narrated lecture plays the slide, a state lasts until the voice of the first step that shows it ends, so
   // that beats placed as fractions of a state follow the voice; elsewhere the scene keeps its authored durations.
   const stepLength = useDrivenStepLength()
-  const durations = stepLength && !expanded
+  const playbackDurations = stepLength && !expanded
     ? voicedDurations(authored, (k) => {
         const step = scope.step(k)
         return step < 0 ? undefined : stepLength(cursor.slide, step)
       })
     : authored
+  // Build on at least the authored state budget, then map each driven state independently to playback time.
+  // Short voice clips speed up existing fixed-length tweens without cutting their end or shifting later states.
+  const durations = authored.map((duration, k) => Math.max(duration, playbackDurations[k]!))
   const starts = stepStarts(durations)
   const total = starts.at(-1)!
   const viewRole = useViewRole()
@@ -92,7 +95,7 @@ export default function SceneView(props: SceneProps) {
   const clock = useService(STEP_CLOCK)
   const playbackControl = useService(PLAYBACK_CONTROL)
   const printed = useStaticRender()
-  const stepTime = useStepTime({ until: Math.max(...durations) })
+  const stepTime = useStepTime({ until: Math.max(...playbackDurations) })
   const { dark } = useAppearance()
   // On a reading page every scene is made as it comes near the window, so a long page opens without making them all;
   // slides make theirs at once, and a printed page all of them.
@@ -125,7 +128,7 @@ export default function SceneView(props: SceneProps) {
   const place = (timeline: readonly number[]) =>
     expanded && local !== undefined
       ? local
-      : timelinePosition(timeline, scope.localStepAt(hostStep), stepTime)
+      : pacedTimelinePosition(timeline, playbackDurations, scope.localStepAt(hostStep), stepTime)
   const placeNow = useRef(place)
   placeNow.current = place
   const shown = place(madeWith ?? durations)

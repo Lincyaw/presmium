@@ -4,12 +4,12 @@
 
 这段动画沿问题树展示深入、遇阻与回退，再用外部候选问题池的实验解释瓶颈。GPT-OSS 在第 30 问的恢复分数从独自提问的 4.16 提高到外部候选中自行选择的 5.20；随机选择外部问题为 4.43。收益有模型条件：GPT-5.4 接入共享问题池反而下降 0.59。
 
-本版为带中文字幕的配音动画，约 4 分 44 秒，使用火山引擎“甜美桃子 2.0”。
+本版为带中文字幕的配音动画，约 4 分 09 秒，使用火山引擎“甜美桃子 2.0”；场景时长自动跟随配音。
 
 - [封面](cover.png)（4:3；提问树为示意）
-- [配音动画](dist/re-search.mp4)
-- [中文字幕](dist/re-search.zh-CN.vtt)
-- [视频帧表](dist/re-search.contact-sheet.png)
+- [配音动画](dist/re-search-auto.mp4)
+- [中文字幕](dist/re-search-auto.zh-CN.vtt)
+- [视频帧表](dist/re-search-auto.contact-sheet.png)
 - [无声预览](dist/re-search-preview.mp4)
 - [原论文](https://arxiv.org/abs/2611.14487)
 
