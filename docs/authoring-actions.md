@@ -223,13 +223,14 @@ CLI 的 `mcp call` 与按名称查询 `mcp tools <工具>` 同时接受精简目
 
 | 工具 | kind | 作用 |
 | --- | --- | --- |
-| `get_voiceover_status` | read | 声音目标、缓存状态与 StepId；无当前 IR 时 unavailable |
+| `get_voiceover_status` | read | 自动准备当前文稿的 IR，再读声音目标、缓存状态与 StepId；不合成 |
 | `get_voiceover_jobs`、`get_voiceover_job` | read | 近期任务，带 source、revision、sequence 与当前性 |
 | `start_voiceover` | spend | `{ intent, source, revision, scope }`；只生成精确缓存缺失的单元 |
 | `cancel_voiceover` | operate | cancelling 保持到实际停止；已完成的缓存保留 |
 | `quote_voice_preview` | read | 实际文字、提供方与缓存状态；quote 两分钟有效 |
 | `preview_voice` | spend | 返回 `presmium://voice-preview/{id}?document=…` 音频资源 |
 
+- 工作区在读取配音状态、准备试听及预检或开始生成时，自动准备所选来源的编译结果；已有结果属于旧来源时重新编译。无需先打开预览或读取 IR 资源。编译期间来源变化返回冲突，旧 revision 与范围继续被拒绝，不自动重试生成。能力与音色目录仍只装配 Node 服务，不运行场景；任务查询与取消不触发编译。
 - MCP 的 `get_voiceover_status` 按步骤、未绑定页面与任务摘要续读，默认八条、最多二十条，完整 JSON 响应最多 7168 个 UTF-16 字符。将 `nextCursor` 作为下一次的 `cursor` 即可；宿主在续读位置内绑定文稿来源与 IR 版本，变化时拒绝续读。任务摘要保留原 ID、状态与进度，多个步骤的范围只返回数量，长错误仅返回预览，完整任务由 `get_voiceover_job` 读取。网页沿用原生完整状态。
 - `get_voice_catalog` 与 `get_voiceover_jobs` 使用相同的八条默认值、二十条上限与 7168 字符预算。目录续读绑定文稿来源、引擎与语言，近期任务按原任务身份续读；移除的续读条目返回冲突。目录保留可用性及服务端／内置来源。生成、轮询与取消的普通回执不回显多步骤目标数组，只给数量，并明确标记摘要；完整任务字段用 `get_voiceover_job` 的 `path` 选择，`path: []` 选择整条观察。小值直接返回，大值按最多 2048 个解码字符的 JSON 文本片段续读，完整状态值仍受 7168 字符限制。`nextCursor` 自带字段、偏移与所选值校验，模型只需保留原任务查询并传回游标；所选值变化时拒绝拼接，未选择的进度变化不影响固定范围的续读。没有新的快照账本。
 - 任务查询与取消不编译，坏 JSON 下也可用；任务不转到新源继续，状态在当前进程内。生成试听不代表客户端已播放。

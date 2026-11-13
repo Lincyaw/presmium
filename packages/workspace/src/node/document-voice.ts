@@ -13,12 +13,14 @@ export interface DocumentVoiceServices { speech?: SpeechService, voiceover?: { v
 export interface DocumentVoiceAuthoringOptions {
   editor: SourceEditor
   services(document: string, source: CanonicalSource): Promise<DocumentVoiceServices>
+  /** Prepare the current compiled document only for operations that need voice targets and timing. */
+  prepareExecution?(document: string, source: CanonicalSource, signal: AbortSignal): Promise<void>
   revision?(document: string): string | undefined
   uploads?: MediaUploadsOwner
 }
 const same = (a: CanonicalSource, b: CanonicalSource) => a.documentId === b.documentId && a.version === b.version && a.fingerprint === b.fingerprint
 
-export function createDocumentVoiceAuthoring({ editor, services, revision, uploads }: DocumentVoiceAuthoringOptions) {
+export function createDocumentVoiceAuthoring({ editor, services, prepareExecution, revision, uploads }: DocumentVoiceAuthoringOptions) {
   const pending = new Set<{ controller: AbortController, finished: Promise<unknown> }>()
   const owners = new Map<string, ReturnType<typeof createVoiceoverOwner>>()
   const clones = new Map<string, { document: string, member: string, request: string, prepared: PreparedVoiceClone }>()
@@ -67,6 +69,8 @@ export function createDocumentVoiceAuthoring({ editor, services, revision, uploa
   const execution = (document: string, member: Member) => async (expected: CanonicalSource | undefined, signal: AbortSignal) => {
     const loaded = await load(document, member, signal, expected)
     if (!loaded.voiceoverExecution) throw new RequestError(503, 'voiceover-unavailable')
+    await prepareExecution?.(document, loaded.source, signal)
+    signal.throwIfAborted(); current(document, member, loaded.source)
     return loaded.voiceoverExecution
   }
   const isCurrent = (document: string, member: Member, job: VoiceoverJob): boolean | 'unknown' => {

@@ -1,5 +1,9 @@
 # @lincyaw/addon-lecture
 
+## 1.0.0-rc.83
+
+No changes in this release.
+
 ## 1.0.0-rc.82
 
 ### Patch Changes

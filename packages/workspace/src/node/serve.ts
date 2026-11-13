@@ -442,7 +442,20 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const running = server
   serverServices = running.services
   mediaUploads = createMediaUploads({ editor, url: () => `${publicOrigin()}${basePath.replace(/\/$/, '')}` })
-  voiceAuthoring = createDocumentVoiceAuthoring({ editor, uploads: mediaUploads, services: authoringServices, revision: document => { const latest = compileSessions.get(document)?.latest; return latest ? irRevision(latest.doc) : undefined } })
+  voiceAuthoring = createDocumentVoiceAuthoring({
+    editor, uploads: mediaUploads, services: authoringServices,
+    async prepareExecution(document, source, signal) {
+      signal.throwIfAborted()
+      const session = compileSessionOf(document)
+      const matches = (compilation: Compilation) => compilation.doc.source?.documentId === source.documentId && compilation.doc.source.version === source.version && compilation.doc.source.fingerprint === source.fingerprint
+      let compilation = await session.ready()
+      signal.throwIfAborted()
+      if (!matches(compilation)) compilation = await session.recompile()
+      signal.throwIfAborted()
+      if (!matches(compilation)) throw new RequestError(409, 'document-version-changed')
+    },
+    revision: document => { const latest = compileSessions.get(document)?.latest; return latest ? irRevision(latest.doc) : undefined },
+  })
   workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, voices: voiceAuthoring.service, diagnostics: running.diagnostics, url: () => options.publicUrl ? new URL(options.publicUrl).origin : running.url, basePath, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
   history = openHistory()
   workspaceChanges = createWorkspaceChanges({ config, editor, locks, revisions: history?.revisions, changed: documentsChanged })

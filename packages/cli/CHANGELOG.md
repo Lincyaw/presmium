@@ -1,5 +1,16 @@
 # @lincyaw/cli
 
+## 1.0.0-rc.83
+
+### Patch Changes
+
+- Updated dependencies
+  - @lincyaw/workspace@1.0.0-rc.83
+  - @lincyaw/skills@1.0.0-rc.83
+  - @lincyaw/server@1.0.0-rc.83
+  - @lincyaw/compiler@1.0.0-rc.83
+  - @lincyaw/kernel@1.0.0-rc.83
+
 ## 1.0.0-rc.82
 
 ### Patch Changes

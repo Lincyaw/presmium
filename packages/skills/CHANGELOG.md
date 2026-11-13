@@ -1,5 +1,12 @@
 # @lincyaw/skills
 
+## 1.0.0-rc.83
+
+### Patch Changes
+
+- Prepare the current saved document automatically for voiceover status and generation, without requiring a preview or manual IR warm-up. Voice catalogue discovery remains independent of scene compilation and paid generation keeps its source guards and approval.
+- @lincyaw/kernel@1.0.0-rc.83
+
 ## 1.0.0-rc.82
 
 ### Patch Changes

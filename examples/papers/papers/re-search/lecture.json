@@ -1671,7 +1671,11 @@
   "production": {
     "defaults": {
       "voiceSource": {
-        "type": "none"
+        "type": "tts",
+        "voice": {
+          "engine": "volcengine",
+          "voice": "zh_female_tianmeitaozi_uranus_bigtts"
+        }
       },
       "narrationStart": "with-animation",
       "trailingPauseMs": 350

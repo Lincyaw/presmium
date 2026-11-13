@@ -72,7 +72,7 @@ export const VOICE_AUTHORING_TOOLS: ToolSpec[] = [
   },
   {
     name: 'get_voiceover_status', kind: 'read', structured: true,
-    description: 'Reads live IR voice targets, stable step IDs and cache readiness in pages of 8 rows (maximum 20, 7168 pretty-JSON characters). Continue with nextCursor as cursor; source or IR changes refuse continuation. Counts cover all steps, unbound pages and jobs. Jobs summarize multi-step scopes and long errors; get_voiceover_job reads details. Does not compile or synthesize; if IR is missing or stale, explicitly read presmium://ir?document=<directory> first. Returned source and revision bind later generation. Use job list/get for discovery without services.',
+    description: 'Prepares the current saved document when its IR is missing or stale, then reads voice targets, stable step IDs and cache readiness in pages of 8 rows (maximum 20, 7168 pretty-JSON characters). Continue with nextCursor as cursor; source or IR changes refuse continuation. Counts cover all steps, unbound pages and jobs. Jobs summarize multi-step scopes and long errors; get_voiceover_job reads details. Never synthesizes. Returned source and revision bind later generation. Use job list/get for discovery without compilation or services.',
     inputSchema: input({ query: structuredClone(VOICEOVER_STATUS_SCHEMA), ...VOICE_PAGE_SCHEMA }),
     run: async call => voiceStatusPage(await service(call).snapshot(await call.document(), call.args.query as VoiceoverStatusQuery ?? {}, call.caller.member, call.signal), call.args),
   },

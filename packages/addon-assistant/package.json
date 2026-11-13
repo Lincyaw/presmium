@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/addon-assistant",
-  "version": "1.0.0-rc.82",
+  "version": "1.0.0-rc.83",
   "description": "Presmium plugin: readers ask an AI about the lecture, with their own model service, in the browser",
   "license": "Apache-2.0",
   "repository": {

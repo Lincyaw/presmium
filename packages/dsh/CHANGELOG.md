@@ -1,5 +1,15 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.82
+
+### Patch Changes
+
+- Updated dependencies
+  - @lincyaw/mcp@1.0.0-rc.83
+  - @lincyaw/skills@1.0.0-rc.83
+  - @lincyaw/cli@1.0.0-rc.83
+  - @lincyaw/kernel@1.0.0-rc.83
+
 ## 0.2.0-rc.81
 
 ### Patch Changes
