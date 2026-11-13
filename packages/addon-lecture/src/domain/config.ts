@@ -66,6 +66,30 @@ export function maximumDuration(config: Record<string, unknown> | undefined): nu
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 'invalid'
 }
 
+/** Saved defaults for the video exporter; timing and voice remain in production. */
+export interface LectureVideoOptions {
+  burn?: string
+  contactSheet?: boolean
+  size?: [number, number]
+  fps?: number
+}
+
+export function lectureVideoOptions(config: Record<string, unknown> | undefined): LectureVideoOptions | 'invalid' {
+  const value = config?.video
+  if (value === undefined) return {}
+  if (!isRecord(value) || Object.keys(value).some(key => !['burn', 'contactSheet', 'size', 'fps'].includes(key))) return 'invalid'
+  if (value.burn !== undefined && (typeof value.burn !== 'string' || !value.burn.trim())) return 'invalid'
+  if (value.contactSheet !== undefined && typeof value.contactSheet !== 'boolean') return 'invalid'
+  if (value.size !== undefined && (!Array.isArray(value.size) || value.size.length !== 2 || !value.size.every(n => typeof n === 'number' && Number.isSafeInteger(n) && n > 0))) return 'invalid'
+  if (value.fps !== undefined && (typeof value.fps !== 'number' || !Number.isFinite(value.fps) || value.fps <= 0 || value.fps > 60)) return 'invalid'
+  return {
+    ...typeof value.burn === 'string' ? { burn: value.burn.trim() } : {},
+    ...typeof value.contactSheet === 'boolean' ? { contactSheet: value.contactSheet } : {},
+    ...Array.isArray(value.size) ? { size: [value.size[0] as number, value.size[1] as number] as [number, number] } : {},
+    ...typeof value.fps === 'number' ? { fps: value.fps } : {},
+  }
+}
+
 export function lexiconOf(config: Record<string, unknown> | undefined): Record<string, string> | undefined {
   const lexicon = isRecord(config?.lexicon) ? config.lexicon : undefined
   if (!lexicon) return undefined

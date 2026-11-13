@@ -5,23 +5,27 @@ import { MARK } from './brand.ts'
 // The opening of every film, one state: the brand card of 翰林院传达室 (Hanlin Dispatch) and the paper of the day,
 // which slides out of the courier's scroll into its place. It matches the fixed opening line of the narration,
 // "三分钟读完一篇论文。大家好，这里是翰林院传达室，今天给大家带来{单位}的{论文}。": the series line, the name, then
-// the paper. Parameters: institution, title, titleZh, authors, venue.
+// the paper. Parameters: institution, title, titleZh, authors, venue, compact (keeps paper metadata above the caption area).
 
 export default gsapScene(({ root, gsap, at, durations, parameters }) => {
   const { T } = clock(at, durations)
+  const compact = parameters.compact === true
+  const layout = compact
+    ? { badgeTop: 18, badgeSize: 18, textX: 32, seriesY: 20, nameY: 28, enY: 43, ruleY: 55, todayY: 61, paperY: 60 }
+    : { badgeTop: 22, badgeSize: 22, textX: 36, seriesY: 23, nameY: 31, enY: 46, ruleY: 66, todayY: 71, paperY: 70 }
   const p = (k: string) => escape(String(parameters[k] ?? ''))
 
   frame(root, `
-    .badge { position: absolute; left: 9cqw; top: 22cqh; width: 22cqw; height: 22cqw; border-radius: 4cqw; overflow: hidden;
+    .badge { position: absolute; left: 9cqw; top: ${layout.badgeTop}cqh; width: ${layout.badgeSize}cqw; height: ${layout.badgeSize}cqw; border-radius: 4cqw; overflow: hidden;
       background: #f7f5f0; box-shadow: 0 0 0 0.15cqw var(--c-line-strong); }
     .badge svg { width: 100%; height: 100%; display: block; }
-    .series { position: absolute; left: 36cqw; top: 23cqh; font-size: ${TYPE.lead}cqw; font-weight: 650; color: var(--c-accent); white-space: nowrap; }
-    .name { position: absolute; left: 36cqw; top: 31cqh; font-size: 6.2cqw; font-weight: 800; letter-spacing: 0.04em; white-space: nowrap; line-height: 1.1; }
-    .en { position: absolute; left: 36.3cqw; top: 46cqh; font-size: ${TYPE.body}cqw; color: var(--pm-color-muted); white-space: nowrap;
+    .series { position: absolute; left: ${layout.textX}cqw; top: ${layout.seriesY}cqh; font-size: ${TYPE.lead}cqw; font-weight: 650; color: var(--c-accent); white-space: nowrap; }
+    .name { position: absolute; left: ${layout.textX}cqw; top: ${layout.nameY}cqh; font-size: 6.2cqw; font-weight: 800; letter-spacing: 0.04em; white-space: nowrap; line-height: 1.1; }
+    .en { position: absolute; left: ${layout.textX + 0.3}cqw; top: ${layout.enY}cqh; font-size: ${TYPE.body}cqw; color: var(--pm-color-muted); white-space: nowrap;
       font-family: var(--pm-font-mono); letter-spacing: 0.08em; }
-    .rule { position: absolute; left: 9cqw; top: 66cqh; width: 82cqw; height: 0.15cqw; background: var(--c-line-strong); transform-origin: 0 50%; }
-    .today { position: absolute; left: 9cqw; top: 71cqh; font-size: ${TYPE.body}cqw; color: var(--pm-color-muted); white-space: nowrap; }
-    .paper { position: absolute; left: 20cqw; top: 70cqh; width: 71cqw; display: flex; flex-direction: column; gap: 0.6cqh; }
+    .rule { position: absolute; left: 9cqw; top: ${layout.ruleY}cqh; width: 82cqw; height: 0.15cqw; background: var(--c-line-strong); transform-origin: 0 50%; }
+    .today { position: absolute; left: 9cqw; top: ${layout.todayY}cqh; font-size: ${TYPE.body}cqw; color: var(--pm-color-muted); white-space: nowrap; }
+    .paper { position: absolute; left: 20cqw; top: ${layout.paperY}cqh; width: 71cqw; display: flex; flex-direction: column; gap: 0.6cqh; }
     .paper__inst { align-self: flex-start; font-size: ${TYPE.small}cqw; font-weight: 700; padding: 0.25cqw 1cqw; border-radius: 99cqw;
       color: var(--c-accent); background: var(--c-accent-soft); }
     .paper__t { font-size: ${TYPE.title}cqw; font-weight: 800; line-height: 1.12; white-space: nowrap; }

@@ -58,6 +58,16 @@ Documents created in Studio declare the standard production plugins and lecture 
 
 Put lecture renderer options in `metadata.renderers.lecture`. Put timing and voice choice only in `production`: document defaults, optional section overrides and step overrides. A voice source is `none`, TTS with an actual engine/voice, or a recording asset. Do not keep a second `voice` or timing decision on renderer options, a step or narration text.
 
+Save video export defaults in `metadata.renderers.lecture.video`, then use MCP `build` with target `video`:
+
+```json
+{ "video": { "burn": "zh-CN", "contactSheet": true, "size": [1280, 720], "fps": 30 } }
+```
+
+The object accepts only `burn` (a nonempty caption language), `contactSheet` (boolean), `size` (positive integer width and height), and `fps` (greater than 0 and at most 60). Omitted fields keep the defaults: no burned captions, no contact sheet, 1920 × 1080 and 30 fps. Explicit `presmium-lecture export` arguments override these saved defaults; both entry points use the same export pipeline. Encoder locations belong to the operator's environment (`PRESMIUM_FFMPEG`), never the document. A successful contact sheet appears beside the video in the job's returned files; without FFmpeg, the video remains available but the sheet is not produced. Burning captions does not generate voiceover: for an explicitly silent preview use `production.defaults.voiceSource: { "type": "none" }` and authored hold timing.
+
+Explicitly silent scripts are split into readable caption groups using their confirmed utterance duration, with `proportional` display timing. This creates no audio word alignment or manual timing evidence. A transcoder can reuse public `captionGroups`, `captionChunks` and `captionWidth` from `@lincyaw/addon-lecture/domain`; choose a smaller chunk budget or explicit line breaks when the target subtitle renderer cannot wrap CJK text.
+
 In Studio, use Settings → Voice Service (also linked from Video Production → Voiceover). The page defaults to Volcengine speech synthesis 2.0 and accepts a speech-console API Key, or an access token with its matching optional App ID. No Secret Key or console-version choice is needed. Empty inputs keep saved credentials; a new key without an App ID switches to API-key authentication. Save applies immediately; it does not select a voice or generate audio. Credentials stay in the local operator directory outside the workspace and are never returned by reads. Check Configuration only checks the saved local configuration; real provider permissions are checked by explicit playback, a confirmed sample, or batch generation after the service is enabled. Clearing the saved key restores any launch-environment fallback.
 
 Without the studio, `presmium speech key set [<dir>]` saves the Volcengine speech API key in the same file: it reads the key from standard input (typed without echo, or piped: `presmium speech key set . < key.txt`), never from an argument. `presmium speech key status [<dir>]` says whether a key is configured and whether it is saved on this machine or comes from `PRESMIUM_SPEECH_VOLCENGINE_KEY`, never showing it; `presmium speech key clear [<dir>]` removes the saved one. `<dir>` is the workspace or a document in it (default `.`); `PRESMIUM_OPERATOR_DIR` names another operator directory, as for `presmium serve`.

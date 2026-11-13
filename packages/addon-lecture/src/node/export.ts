@@ -7,7 +7,7 @@ import { ABSOLUTE_URL, aigcLabel, aigcString, deckLocale, errorMessage } from '@
 import type { CanonicalSource, IRDocument } from '@lincyaw/kernel'
 import { ffmpegInstallCommand, findFfmpeg } from '@lincyaw/kernel/node'
 import type { Ffmpeg } from '@lincyaw/kernel/node'
-import { audioSegments, clockText, defaultTrack, LECTURE_MESSAGES, parseTrack, stepStops, timedEvents, trackDuration } from '../domain/index.ts'
+import { audioSegments, clockText, defaultTrack, LECTURE_MESSAGES, lectureVideoOptions, parseTrack, stepStops, timedEvents, trackDuration } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 import { writeContactSheet } from './contact-sheet.ts'
 import type { SheetFrame, SheetOptions } from './contact-sheet.ts'
@@ -239,7 +239,6 @@ export function defaultVideoFormat(): VideoFormat {
 export async function exportVideo(options: ExportOptions): Promise<ExportResult> {
   const deckDir = resolve(options.deckDir)
   const log = options.log ?? (() => {})
-  const [width, height, fps] = [options.width ?? 1920, options.height ?? 1080, options.fps ?? 30]
   const work = join(deckDir, '.presmium', 'lecture-export')
   rmSync(work, { recursive: true, force: true })
   try {
@@ -247,6 +246,10 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
     const compilation = await new Compiler(deckDir).compile()
     const actual = compilation.doc.source
     if (options.source && (!actual || actual.documentId !== options.source.documentId || actual.version !== options.source.version || actual.fingerprint !== options.source.fingerprint)) throw new Error('job-source-changed')
+    const configured = lectureVideoOptions(compilation.doc.config.renderers.lecture)
+    if (configured === 'invalid') throw new Error(LECTURE_MESSAGES[deckLocale(compilation.doc.meta.lang)].videoOptionsInvalid)
+    const [width, height, fps] = [options.width ?? configured.size?.[0] ?? 1920, options.height ?? configured.size?.[1] ?? 1080, options.fps ?? configured.fps ?? 30]
+    const burn = options.burn ?? configured.burn, sheetOption = options.contactSheet ?? configured.contactSheet
     const report = await build(compilation, { outDir: work, to: ['web', 'lecture'] })
     const errors = report.findings.filter(f => f.severity === 'error')
     // The first reason first: a one-line summary (a workbench shows it) says what to fix.
@@ -267,7 +270,7 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
     if (!ffmpeg && format === 'mp4') throw new Error(`an MP4 video needs FFmpeg with libx264 and aac: install it (${ffmpegInstallCommand()}) or set PRESMIUM_FFMPEG to its file`)
     if (!ffmpeg) warnings.push(`FFmpeg was not found, so the browser encoded the video as WebM at a lower quality; install it for MP4 at a higher quality: ${ffmpegInstallCommand()}`)
     const captions = captionFiles(join(lectures.outDir, id), index.find(entry => entry.id === id)?.captions ?? [])
-    if (options.burn && !captions.some(c => c.lang === options.burn)) throw new Error(`lecture ${id} has no captions in ${options.burn}: ${captions.map(c => c.lang).join(', ') || 'none'}`)
+    if (burn && !captions.some(c => c.lang === burn)) throw new Error(`lecture ${id} has no captions in ${burn}: ${captions.map(c => c.lang).join(', ') || 'none'}`)
     for (const { lang } of captions) {
       if (!subtitleLanguage(lang)) warnings.push(`the subtitle track of the captions in ${lang} has no language code: its ISO 639-2 code is not known`)
     }
@@ -291,7 +294,7 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
           const [player, encoder] = [await context.newPage(), await context.newPage()]
           const failures: string[] = []
           for (const page of [player, encoder]) page.on('pageerror', error => failures.push(String(error.message)))
-          await player.goto(`${server.url}${web.base}?view=lecture&track=${encodeURIComponent(id)}&export${options.burn ? `&captions=${encodeURIComponent(options.burn)}` : ''}`)
+          await player.goto(`${server.url}${web.base}?view=lecture&track=${encodeURIComponent(id)}&export${burn ? `&captions=${encodeURIComponent(burn)}` : ''}`)
           await player.waitForFunction('Boolean(window.presmiumLecture)', undefined, { timeout: 120_000 })
           const duration = Math.max(trackDuration(track), await player.evaluate(() => (window as unknown as Hooks).presmiumLecture.duration, undefined))
           const frames = Math.max(1, Math.ceil(duration * fps / 1000))
@@ -355,8 +358,8 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
             return { lang, file: sidecar }
           })
           let sheet: ExportResult['contactSheet']
-          if (options.contactSheet) {
-            const sheetFile = resolve(options.contactSheet === true ? `${file.replace(/\.(webm|mp4)$/i, '')}.contact-sheet.png` : options.contactSheet)
+          if (sheetOption) {
+            const sheetFile = resolve(sheetOption === true ? `${file.replace(/\.(webm|mp4)$/i, '')}.contact-sheet.png` : sheetOption)
             // Any FFmpeg that runs reads the video back, also one that could not encode it.
             sheet = contactSheet(found, file, sheetFrames(track, compilation.doc, stepTitles(compilation.entry), frames * 1000 / fps), sheetFile, { lang: compilation.doc.meta.lang ?? 'zh-CN', width: Math.min(480, width), columns: 4, fps })
           }

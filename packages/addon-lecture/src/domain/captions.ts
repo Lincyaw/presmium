@@ -36,11 +36,32 @@ function markBefore(text: ArrayLike<string>, at: number, from = 0): Mark | undef
   return last >= from ? markAt(text, last) : undefined
 }
 
-/** Readable display groups; every internal time boundary belongs to an actual word. */
+/** Readable groups: actual word boundaries for voiced text, proportional display timing for authored silence. */
 export function captionGroups(utterance: Utterance): CaptionGroup[] {
   const full: CaptionGroup = { id: utterance.id, text: utterance.text, t: utterance.t, d: utterance.d,
     alignment: utterance.alignment === 'proportional' ? 'proportional' : 'none' }
   const words = utterance.words
+  if (utterance.silent && !utterance.recording && !utterance.unsaid && (utterance.alignment !== 'words' || !words?.length) && utterance.d > 0) {
+    const chunks = captionChunks(utterance.text, MAX_CHARACTERS)
+    // The display splitter trims whitespace; retain the original slices in these published groups.
+    const starts: number[] = []
+    let search = 0
+    for (const chunk of chunks) {
+      const start = utterance.text.indexOf(chunk, search)
+      if (start < 0) return [full]
+      starts.push(start); search = start + chunk.length
+    }
+    const texts = starts.map((start, index) => utterance.text.slice(index === 0 ? 0 : start, starts[index + 1] ?? utterance.text.length))
+    const widths = texts.map(text => Math.max(1, captionWidth(text))), total = widths.reduce((sum, width) => sum + width, 0)
+    let reached = 0, from = 0, time = utterance.t
+    return texts.map((text, index) => {
+      reached += widths[index]!
+      const until = index + 1 === texts.length ? utterance.t + utterance.d : utterance.t + utterance.d * reached / total
+      const group: CaptionGroup = { id: `${utterance.id}:${from}`, text, t: time, d: until - time, alignment: 'proportional' }
+      from += text.length; time = until
+      return group
+    })
+  }
   if (utterance.silent || utterance.recording || utterance.unsaid || utterance.alignment !== 'words' || !words?.length || utterance.d <= 0) return [full]
   const places = locate(words.map(word => word[2]), utterance.text)
   let previous = utterance.t, end = 0

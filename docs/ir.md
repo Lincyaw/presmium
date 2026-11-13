@@ -169,6 +169,8 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 - 合成语音是 `audio`，导入音频是 `media`（`ProductionAssetInspection`）。预览与导出共用同一放置、裁切与混音计算。
 - 一个步骤显示的内容块都限定在其他媒介（`only` 不含 `lecture`，如只给网页的来源说明），又没有讲稿、录音与挂在它上的音频片段，也不是前面讲稿中的 `{cue}next` 转入的步骤时，讲授中没有这一步：讲授轨没有转到它的事件，计划的页面没有它，字幕与章节（`chapters.vtt`）也不含它；一页的步骤都是这样时整页不在讲授中。放映与网页照常显示它。
 - 渲染端选项 `metadata.renderers.lecture.maximumDurationMs` 是讲授视频的最长时长（毫秒，大于 0）。计划时长已确认且超过它时，`presmium check` 报告错误，给出超出的秒数，以及按配音的实测语速（讲稿字数除以配音秒数，字数只计字母与数字）约需删去的讲稿字数。计划未确认（配音不全、没有选择音色、有步骤时长未知）或读取配音与音频文件失败时不比较，报告一条警告说明没有检查及原因。`presmium-lecture timing` 读同一份计划逐步列出这些数。
+- `metadata.renderers.lecture.video` 保存视频导出设置，只接受 `burn`（非空字幕语言，如 `zh-CN`）、`contactSheet`（布尔值）、`size`（两个正整数，依次为宽和高）与 `fps`（大于 0 且不超过 60）。缺省为不烧录字幕、不生成帧表、1920 × 1080、30 fps。MCP 的 `build` 目标 `video` 与 `presmium-lecture export` 共用这些设置，显式命令行参数优先；音色与时序仍由 `production` 决定，编码器路径只来自运营环境。成功生成的帧表列在视频任务的文件列表中。
+- 显式无声讲稿的字幕复用文本切分形成短组，在已确认的讲稿时长内按文本宽度分配显示时间，标记为 `proportional`；这不生成音频词时码或手工对齐证据，真实配音与手工字幕映射保持原有规则。
 
 `GET production-plan`（`ProductionPlanQuery`）、`GET tracks/script`（`planId`）、`GET production-media`（绑定加 `clipId`，只给计划白名单中的字节）、`GET production-asset`（`ProductionAssetQuery`）都只读缓存，不生成语音。
 

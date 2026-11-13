@@ -2,6 +2,7 @@ import type { Locale } from '@lincyaw/kernel/contracts'
 
 export interface LectureMessages {
   view: string
+  videoOptionsInvalid: string
   production: {
     missingSpeech: string
     /** Sentences without a usable voiceover, counted once per reason with the pages they are on. */
@@ -166,6 +167,7 @@ export function missingVoiceover<S>(missing: readonly { section: string, reason:
 
 export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
   'zh-CN': {
+    videoOptionsInvalid: 'metadata.renderers.lecture.video 须为对象，只包含 burn（非空字幕语言）、contactSheet（布尔值）、size（两个正整数）和 fps（大于 0 且不超过 60）。',
     view: '讲授',
     production: {
       missingSpeech: '读取已生成的配音需要语音服务。请在文稿的 metadata.plugins 中启用语音服务插件 addon-speech。',
@@ -290,6 +292,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
     },
   },
   'en': {
+    videoOptionsInvalid: 'metadata.renderers.lecture.video must be an object containing only burn (a nonempty caption language), contactSheet (boolean), size (two positive integers) and fps (greater than 0 and at most 60).',
     view: 'Lecture',
     production: {
       missingSpeech: 'Reading the generated voiceover needs the voice service. Enable the voice service plugin addon-speech in the document’s metadata.plugins.',

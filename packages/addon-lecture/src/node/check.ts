@@ -1,6 +1,6 @@
 import { deckLocale, errorMessage, ProductionAudioRefusal, SPEECH } from '@lincyaw/kernel'
 import type { Check, CheckContext, Finding, IRDocument, ProductionPlan, Severity } from '@lincyaw/kernel'
-import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, LECTURE_MESSAGES, lectureTiming, maximumDuration, missingVoiceover, overLimit, plannedUtterances, unchanged } from '../domain/index.ts'
+import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, LECTURE_MESSAGES, lectureTiming, lectureVideoOptions, maximumDuration, missingVoiceover, overLimit, plannedUtterances, unchanged } from '../domain/index.ts'
 import type { EventDrift, LectureMessages } from '../domain/index.ts'
 import { productionAudioMessage } from '../domain/production-audio.ts'
 import { lectureView } from './latest-ir.ts'
@@ -82,6 +82,7 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
   const findings = [...deck.findings]
   const source = { file: ctx.ir.meta.entry, line: 1 }, messages = LECTURE_MESSAGES[deckLocale(ctx.ir.meta.lang)], t = messages.production
   const limit = maximumDuration(lectureConfig(ctx.ir))
+  if (lectureVideoOptions(lectureConfig(ctx.ir)) === 'invalid') findings.push({ checkId: LECTURE_ID, severity: 'error', message: messages.videoOptionsInvalid, source })
   if (limit === 'invalid') findings.push({ checkId: LECTURE_ID, severity: 'error', message: messages.timing.limitInvalid, source })
   let prepared: SynthesizedLecture | undefined
   if (typeof limit === 'number') {

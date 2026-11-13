@@ -19,6 +19,7 @@ It is a Presmium plugin: its components work on the web page and in the slides. 
 - The `lecture` renderer derives playback from structured narration and `production` settings, using completed exact text/voice speech caches.
 - Narration text, pronunciation replacements and cue nodes refer to stable steps and blocks. Voice inheritance and playback timing have one owner in `production`.
 - Explicit generation requires actual speech capability; normal preview does not silently synthesize missing audio. Recorded playback tracks remain derived media data.
+- Video jobs and `presmium-lecture export` share saved defaults in `metadata.renderers.lecture.video`: `burn`, `contactSheet`, `size: [width, height]` and `fps`. Explicit CLI arguments override them; a generated contact sheet is included in the job's files.
 
 Synthesis needs `@lincyaw/addon-speech` and a speech engine the operator defines.
 

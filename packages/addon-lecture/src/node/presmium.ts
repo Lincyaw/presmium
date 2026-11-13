@@ -34,7 +34,7 @@ const videoExporter: Exporter = {
       signal: ctx.signal,
     })
     return {
-      files: [basename(result.file), ...result.captions.map(({ file }) => basename(file))],
+      files: [basename(result.file), ...result.captions.map(({ file }) => basename(file)), ...result.contactSheet && !('unavailable' in result.contactSheet) ? [basename(result.contactSheet.file)] : []],
       captions: Object.fromEntries(result.captions.map(({ lang, file }) => [lang, basename(file)])),
       warnings: result.warnings,
     }

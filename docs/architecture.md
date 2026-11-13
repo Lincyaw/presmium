@@ -338,7 +338,7 @@ PDF、图片与 PowerPoint 中组件显示 IR 的 `fallback`（`useStaticRender(
 |---|---|---|
 | `presmium-export` | `addon-publish` | 幻灯片导出 PDF、PNG、PowerPoint |
 | `presmium-diff` | `addon-publish` | 两个提交的视觉差异 |
-| `presmium-lecture export` | `addon-lecture` | 逐帧导出讲授视频；`--contact-sheet` 另写一张 PNG，由 FFmpeg 从视频截取每步起点后 0.3 秒与中点的画面并标注页面与步骤 |
+| `presmium-lecture export` | `addon-lecture` | 与 MCP `build(video)` 共用逐帧导出讲授视频；采用文稿的 `metadata.renderers.lecture.video` 设置（见 [ir.md](ir.md) 第 6 节），显式参数优先；`--contact-sheet` 另写一张 PNG，由 FFmpeg 从视频截取每步起点后 0.3 秒与中点的画面并标注页面与步骤 |
 | `presmium-lecture timing` | `addon-lecture` | 按导出所放的讲授计划（只读已生成的配音）逐步列出讲稿字数、配音秒数、每秒字数、动画与步骤时长，再给出合计与视频时长；`--json` 输出 JSON |
 | `presmium-speech fake`、`clone`、`consent` | `addon-speech` | 假引擎；训练克隆音色；登记同意 |
 | `presmium-classroom-server` | `classroom-server` | 课堂同步 |

@@ -4,7 +4,7 @@
   "metadata": {
     "title": "Re-Search：沿着提问树寻找答案",
     "lang": "zh-CN",
-    "description": "沿着提问树理解大模型研究构思的三种轨迹，并用候选问题与候选想法的对照实验解释生成瓶颈。当前为无配音静态预演，待确认画面后制作运动。",
+    "description": "沿着提问树理解大模型研究构思的三种轨迹，并用外部候选对照实验解释生成瓶颈。当前为带字幕无声动画预览。",
     "tags": [
       "论文",
       "大模型",
@@ -21,7 +21,16 @@
       "slides": {},
       "notebook": {},
       "lecture": {
-        "maximumDurationMs": 360000
+        "maximumDurationMs": 360000,
+        "video": {
+          "burn": "zh-CN",
+          "contactSheet": true,
+          "size": [
+            1280,
+            720
+          ],
+          "fps": 24
+        }
       }
     }
   },
@@ -225,7 +234,8 @@
       "title": "来源与说明",
       "level": 2,
       "children": [
-        "notes--text"
+        "notes--text",
+        "notes--slides"
       ],
       "stepOrder": [
         "notes--step"
@@ -255,7 +265,13 @@
             ],
             "source": "arXiv 2611.14487 · Gao 等 · 2026"
           }
-        ]
+        ],
+        "institution": "Texas A&M · Johns Hopkins",
+        "title": "Re-Search",
+        "titleZh": "研究构思的问答搜索",
+        "authors": "Gao 等",
+        "venue": "arXiv · 2026",
+        "compact": true
       }
     },
     "game--scene": {
@@ -307,7 +323,7 @@
             "keywords": [
               "想法卡",
               "每 10 问保存",
-              "三位评审 · 1—10 分"
+              "三个模型评审 · 1—10 分"
             ],
             "labels": [
               "核心贡献",
@@ -461,11 +477,12 @@
           {
             "id": "controls",
             "kind": "bars",
-            "title": "外部候选，加上挑选，才带来提升",
+            "title": "GPT-OSS 从外部候选中获益",
             "keywords": [
               "GPT-OSS · 第 30 问",
               "同一恢复评分",
-              "4.16 → 5.20"
+              "4.16 → 5.20",
+              "GPT-5.4：−0.59"
             ],
             "labels": [
               "独自提问",
@@ -498,9 +515,10 @@
             "figure": "survey",
             "title": "候选里出现正确想法，弱模型更易接近它",
             "keywords": [
-              "完整候选 / 替换一个名称",
-              "其他信息保持一致",
-              "最高提升 1.25 分"
+              "方法方向的候选清单",
+              "仅替换一个方法名",
+              "DeepSeek：4.93 → 6.18",
+              "+1.25 · 第 100 问"
             ],
             "source": "论文图 7、§5.3 · 100 问 · 完整候选相对诱饵候选"
           }
@@ -553,7 +571,9 @@
             ],
             "source": "翰林院传达室 · Re-Search"
           }
-        ]
+        ],
+        "summary": "补足候选，让弱模型搜索得更远",
+        "paper": "Re-Search · 研究构思"
       }
     },
     "notes--text": {
@@ -687,6 +707,25 @@
             {
               "type": "text",
               "text": "本稿为无配音静态预演：每个步骤直接展示结束画面，按 4.5 字/秒估算停留时间。这是排时估算，尚未生成正式音频或词级字幕对齐。画面顺序确认后，再制作补间、回退路径和正式配音。"
+            }
+          ]
+        }
+      ]
+    },
+    "notes--slides": {
+      "id": "notes--slides",
+      "type": "text",
+      "only": [
+        "slides"
+      ],
+      "content": [
+        {
+          "id": "notes--slides--paragraph",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "文献、数字来源与条件：见网页版"
             }
           ]
         }
@@ -862,7 +901,7 @@
     "candidates--controls": {
       "id": "candidates--controls",
       "sectionId": "p-candidates",
-      "title": "外部候选，加上挑选，才带来提升",
+      "title": "GPT-OSS 从外部候选中获益",
       "visuals": [
         {
           "blockId": "candidates--scene",
@@ -926,6 +965,10 @@
         {
           "blockId": "notes--text",
           "visible": true
+        },
+        {
+          "blockId": "notes--slides",
+          "visible": true
         }
       ],
       "narrationIds": []
@@ -964,7 +1007,7 @@
       "content": [
         {
           "type": "text",
-          "text": "开始提问前，以及此后每十问，模型写一张想法卡。三位评审按一到十分，评价它和论文方法有多接近，再取平均。这个分数只用于评估，不会反馈给提问模型。"
+          "text": "开始提问前，以及此后每十问，模型写一张想法卡。三个模型评审按一到十分，评价它和论文方法有多接近，再取平均。这个分数只用于评估，不会反馈给提问模型。"
         }
       ]
     },
@@ -1036,7 +1079,7 @@
       "content": [
         {
           "type": "text",
-          "text": "以 GPT-OSS 为例，三十问后的恢复分数，独自提问是四点一六；自己提四个再挑，是四点五七；外部问题随机选，是四点四三；从外部问题池认真挑选，达到五点二零。它能挑出自己不容易提出的好问题。"
+          "text": "以 GPT-OSS 为例，三十问后的恢复分数，独自提问是四点一六；自己提四个再挑，是四点五七；外部问题随机选，是四点四三；从外部问题池认真挑选，达到五点二零。它能挑出自己不容易提出的好问题。但 GPT-5.4 反而下降零点五九分，收益不能推广到所有模型。"
         }
       ]
     },
@@ -1045,7 +1088,7 @@
       "content": [
         {
           "type": "text",
-          "text": "另一个对照只改候选综述里的一个方法名称：一版包含正确想法，一版换成看似合理的诱饵。原图比较一百问后的结果，包含正确想法时，较弱模型收益更大，最高提高一点二五分。"
+          "text": "另一个对照给模型一份候选综述，也就是按维度列出多种方法的清单。这里只替换一个方法名：红三角是诱饵版本，绿方块保留正确想法。数值是一百问后的恢复分数。DeepSeek 从四点九三升到六点一八，增加一点二五分。"
         }
       ]
     },
@@ -1063,7 +1106,7 @@
       "content": [
         {
           "type": "text",
-          "text": "一句话总结：模型能用好外部提供的候选问题和想法，让搜索走得更远。想看哪篇论文，欢迎在评论区留言。翰林院传达室为您分享最新论文，我们下期见。"
+          "text": "一句话总结：补足较弱模型的候选问题和想法，让搜索走得更远。想看哪篇论文，欢迎在评论区留言。翰林院传达室为您分享最新论文，我们下期见。"
         }
       ]
     }
@@ -1076,7 +1119,7 @@
       "schemaVersion": 1,
       "implementation": {
         "type": "file",
-        "path": "scenes/story.ts"
+        "path": "scenes/opening.ts"
       },
       "parameterSchema": {
         "type": "object",
@@ -1092,6 +1135,24 @@
           },
           "alt": {
             "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
           }
         }
       },
@@ -1105,7 +1166,7 @@
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          1000
+          19000
         ],
         "fallback": {
           "type": "root",
@@ -1167,9 +1228,9 @@
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          1000,
-          1000,
-          1000
+          17000,
+          14000,
+          16000
         ],
         "fallback": {
           "type": "root",
@@ -1245,8 +1306,8 @@
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          1000,
-          1000
+          18000,
+          15000
         ],
         "fallback": {
           "type": "root",
@@ -1321,10 +1382,10 @@
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          1000,
-          1000,
-          1000,
-          1000
+          20000,
+          16000,
+          17000,
+          16000
         ],
         "fallback": {
           "type": "root",
@@ -1402,15 +1463,15 @@
         },
         {
           "id": "controls",
-          "title": "外部候选，加上挑选，才带来提升"
+          "title": "GPT-OSS 从外部候选中获益"
         }
       ],
       "data": {
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          1000,
-          1000
+          16000,
+          30000
         ],
         "fallback": {
           "type": "root",
@@ -1473,7 +1534,7 @@
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          1000
+          26000
         ],
         "fallback": {
           "type": "root",
@@ -1527,7 +1588,7 @@
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          1000
+          22000
         ],
         "fallback": {
           "type": "root",
@@ -1552,7 +1613,7 @@
       "schemaVersion": 1,
       "implementation": {
         "type": "file",
-        "path": "scenes/story.ts"
+        "path": "scenes/ending.ts"
       },
       "parameterSchema": {
         "type": "object",
@@ -1568,6 +1629,12 @@
           },
           "alt": {
             "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
           }
         }
       },
@@ -1581,7 +1648,7 @@
         "plugin": "presmium.motion",
         "name": "PmScene",
         "durations": [
-          1000
+          16000
         ],
         "fallback": {
           "type": "root",
@@ -1644,10 +1711,10 @@
         "minimumHoldMs": 16000
       },
       "candidates--controls": {
-        "minimumHoldMs": 22000
+        "minimumHoldMs": 30000
       },
       "survey--survey": {
-        "minimumHoldMs": 18000
+        "minimumHoldMs": 26000
       },
       "scope--scope": {
         "minimumHoldMs": 22000
