@@ -1,5 +1,14 @@
 # @lincyaw/mcp
 
+## 1.0.0-rc.86
+
+### Patch Changes
+
+- Updated dependencies
+  - @lincyaw/skills@1.0.0-rc.86
+  - @lincyaw/compiler@1.0.0-rc.86
+  - @lincyaw/kernel@1.0.0-rc.86
+
 ## 1.0.0-rc.85
 
 ### Patch Changes

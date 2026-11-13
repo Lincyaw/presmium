@@ -54,7 +54,7 @@
 9. **配音**：`pnpm voiceover papers/<slug>` 先报告音色和缺少配音的句数、字数（不花钱），确认后加 `--yes` 生成；`--voice volcengine:zh_female_tianmeitaozi_uranus_bigtts` 先换文稿的默认音色。火山引擎按字数计费，改过讲稿只重新合成变了的句子。讲稿定稿后加 `--prune --yes` 删掉讲稿不再用到的配音缓存。
 10. **对时**：`pnpm timing papers/<slug>` 量每步的字数、配音秒数与总长（参考三到六分钟）；明显过长时删讲稿里重复与旁枝的话，再重新配音。
 11. **导出与复看**：`pnpm film papers/<slug> --burn zh-CN --contact-sheet` 导出烧入字幕的 MP4（`papers/<slug>/dist/<轨道>.mp4`）和每步两帧的帧表（`*.contact-sheet.png`）；再请一个没参与制作的 agent 只看帧表和讲稿做冷读（`presmium-animate` 的 `references/team.md` 第 7 节），把发现与改动追加到 `storyboard.md` 的 J 节。
-12. **发布**：按“发布交付”补齐并检查发布标题、正文文案、封面与实际成片，再用 `pnpm build` 导出网站；提交源文件：文稿、场景、裁好的图、数据与 `derive.py`、配音缓存（`.presmium/speech/` 与 `speech.lock.json`，只留当前讲稿用到的条目）、发布文案和封面。成片不提交（每篇十几 MB），用 `pnpm film papers/<slug> --burn zh-CN` 导出到 `papers/<slug>/dist/`（已提交的配音缓存够用，不需要语音引擎与服务）。最终交付附上文案、封面与成片的实际路径。
+12. **发布**：按“发布交付”补齐并检查发布标题、正文文案、封面与实际成片，再用 `pnpm build` 导出网站；提交源文件：文稿、场景、裁好的图、数据与 `derive.py`、配音缓存（`.presmium/speech/` 与 `speech.lock.json`，只留当前讲稿用到的条目）、发布文案和封面。成片不提交（每篇十几 MB），用 `pnpm film papers/<slug> --burn zh-CN` 导出到 `papers/<slug>/dist/`（已提交的配音缓存够用，不需要语音引擎与服务）。最终交付附上文案、封面与成片的实际路径。获作者授权上传平台时，用自定义封面入口上传独立设计的 `cover.png`，检查平台裁切后的缩略图，不用视频首帧代替；配音成片的封面不保留“无声预览”等旧版标记。填写 `publish.md` 的标题与正文，并按实际情况标注 AI 合成内容；核实提交结果与审核状态，保存发布记录，响应丢失时先查笔记管理再决定是否重试。
 
 ## 运行服务
 

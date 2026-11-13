@@ -1,5 +1,12 @@
 # @lincyaw/skills
 
+## 1.0.0-rc.86
+
+### Patch Changes
+
+- Refresh the Re-Search publication cover and Xiaohongshu copy, and clarify independent-cover upload and publication-status verification in the paper video workflow.
+- @lincyaw/kernel@1.0.0-rc.86
+
 ## 1.0.0-rc.85
 
 ### Patch Changes

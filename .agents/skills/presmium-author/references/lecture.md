@@ -126,6 +126,8 @@ Build only when the required speech cache and provider capability actually exist
 
 For a paper-explainer video, follow the workspace's publication requirements and deliver its publication title, body copy, cover and actual exported video together. Keep promotional copy separate from the teaching source; link it to the matching cover and video with paths that exist. Check that the cover and copy agree with the final video, including its numbers and conditions. A source document or a proposed output path does not replace an exported video. The papers workspace defines its file names and delivery checks in `examples/papers/AGENTS.md`.
 
+When the workspace requires an independent publication cover, compose and export that image, then upload it through the platform's custom-cover control. A video's first frame is not a substitute. Inspect the final crop and thumbnail text; replace draft or silent-preview labels when publishing the narrated film. Use the saved publication title and body, apply the platform's relevant synthetic-content declaration, and verify the submitted post's actual state. A successful submission awaiting moderation is still under review.
+
 ```sh
 presmium-lecture timing lesson
 presmium-lecture export lesson --size 640x360 --fps 10 --contact-sheet
