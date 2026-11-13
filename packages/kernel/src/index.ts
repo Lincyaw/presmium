@@ -15,6 +15,7 @@ export { applyDocumentComponentAction, effectiveComponentParameters, createDocum
 export type { DocumentStepVoice, DocumentVoiceImpact, DocumentVoiceOptions, DocumentVoiceScope } from './document-voices.ts'
 export { prepareTranscriptionAdoption } from './transcription-adoption.ts'
 export { productionAssetIds, recordingStepIssue, recordingSourceRange } from './recording.ts'
+export { stepCaptionsVisible } from './production-captions.ts'
 export * from './ir.ts'
 export { createAnchorResolverRegistry, isRenderable, parseAnchor } from './anchors.ts'
 export type { ParsedAnchor } from './anchors.ts'

@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import { workspaceSettings } from '@lincyaw/compiler'
 import { deckLocale, errorMessage, SPEECH } from '@lincyaw/kernel'
 import type { IRDocument, RenderContext, Renderer, SpeechService } from '@lincyaw/kernel'
-import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, dropChangedSections, eventsVtt, formatTrack, LECTURE_ID, LECTURE_RENDERER, LECTURE_MESSAGES, missingVoiceover, plannedUtterances, SCRIPT_TRACK, trackDuration, trimToDeck, utteranceLine } from '../domain/index.ts'
+import { applyCaptionVisibility, captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, dropChangedSections, eventsVtt, formatTrack, LECTURE_ID, LECTURE_RENDERER, LECTURE_MESSAGES, missingVoiceover, plannedUtterances, SCRIPT_TRACK, trackDuration, trimToDeck, utteranceLine } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 import { cachedClip } from './clips.ts'
 import { latestDoc } from './latest-ir.ts'
@@ -19,6 +19,7 @@ import { fastStartAudio } from './audio-delivery.ts'
 const clipsOf = (track: LectureTrack) => new Set(track.utterances.flatMap(u => u.clip ?? []))
 
 async function publishTrack(track: LectureTrack, text: string, file: string, doc: IRDocument, ctx: RenderContext, clipFiles: ReadonlyMap<string, string>, policy: MediaPolicy = { kind: 'ignore' }, assets: ReadonlyMap<string, ProductionAssetFile> = new Map()): Promise<void> {
+  applyCaptionVisibility(doc, track)
   const out = join(ctx.outDir, track.id)
   mkdirSync(out, { recursive: true })
   const audio = publishedMedia(track.audio, track.id, policy)

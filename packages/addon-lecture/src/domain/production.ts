@@ -5,6 +5,7 @@ import type { LecturePlan } from './plan.ts'
 import { trackDuration } from './track.ts'
 import { captionTimingSources } from './caption-timing.ts'
 import { captionGroups } from './captions.ts'
+import { applyCaptionVisibility, visibleCaptionGroups } from './caption-visibility.ts'
 import type { LectureTrack } from './track.ts'
 
 const messages = {
@@ -62,6 +63,7 @@ export function productionDiagnostics(doc: IRDocument, plan: LecturePlan): Produ
 }
 
 export function projectProductionPlan(doc: IRDocument, plan: LecturePlan, track: LectureTrack, audio: ReadonlyMap<string, ProductionAudio>, failures: readonly { id: string, section: string, text: string, reason: string }[], mediaDiagnostics: readonly ProductionDiagnostic[] = [], assets: ReadonlyMap<string, ProductionAssetInspection> = new Map()): Omit<ProductionPlan, 'binding'> {
+  applyCaptionVisibility(doc, track)
   const duration = trackDuration(track), units = plannedUtterances(plan), byId = new Map(units.map(unit => [unit.id, unit]))
   const diagnostics: ProductionDiagnostic[] = [...productionDiagnostics(doc, plan), ...mediaDiagnostics]
   const messages = productionMessages(doc)
@@ -111,13 +113,13 @@ export function projectProductionPlan(doc: IRDocument, plan: LecturePlan, track:
       alignment: groups[0]?.alignment ?? 'none',
     }
     if (!utterance.recording) voice.push({ ...segment, id: `voice:${utterance.id}`, ...file ? { audio: file } : {} })
-    for (const group of track.captionOverrides?.some(own => own.section === utterance.section && own.step === utterance.step) ? [] : groups) {
+    for (const group of track.captionOverrides?.some(own => own.section === utterance.section && own.step === utterance.step) ? [] : visibleCaptionGroups(track, groups, { section: section.id, step: utterance.step ?? 0 })) {
       const covered = pages.find(page => page.sectionId === section.id)?.steps.filter(step => step.startMs !== undefined && step.endMs !== undefined && step.startMs < group.t + group.d && step.endMs > group.t).map(step => step.stepId) ?? []
       caption.push({ ...segment, id: `caption:${group.id}`, stepId: covered[0] ?? stepId, stepIds: covered.length ? covered : [stepId], label: group.text,
         ...range(group.t, group.t + group.d), alignment: group.alignment })
     }
   }
-  for (const own of track.captionOverrides ?? []) for (const group of own.groups) caption.push({ id: `caption:${group.id}`, sectionId: own.section, stepId: own.stepId, stepIds: [own.stepId], label: group.text, alignment: 'manual', status: track.audio?.some(a => a.role === 'recording' && a.stepId === own.stepId) ? 'recorded' : 'cached', ...range(group.t, group.t + group.d) })
+  for (const own of track.captionOverrides ?? []) for (const group of visibleCaptionGroups(track, own.groups, own)) caption.push({ id: `caption:${group.id}`, sectionId: own.section, stepId: own.stepId, stepIds: [own.stepId], label: group.text, alignment: 'manual', status: track.audio?.some(a => a.role === 'recording' && a.stepId === own.stepId) ? 'recorded' : 'cached', ...range(group.t, group.t + group.d) })
   for (const segment of track.audio ?? []) {
     if (segment.role === 'recording' && segment.assetId && segment.stepId) {
       const media = assets.get(segment.assetId)

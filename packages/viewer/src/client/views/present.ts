@@ -1,6 +1,6 @@
 import { FocusScope } from '@radix-ui/react-focus-scope'
 import { PAGE_READINESS, PmApprovals, PmCaption, PmCaptionProvider, PmIcon, TIMED_CAPTIONS, useService, PLAYBACK_CONTROL, presmiumService } from '@lincyaw/host'
-import { CAPTIONS_PARAM, notifyEmbedder } from '@lincyaw/kernel'
+import { CAPTIONS_PARAM, notifyEmbedder, stepCaptionsVisible } from '@lincyaw/kernel'
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@lincyaw/host'
 import { h } from '../element.ts'
@@ -56,6 +56,7 @@ export function PresentView() {
     useCaptionScale(doc)
     useStore(viewer.options.confirmedRevision)
     const pending = !presentationConfirmed(viewer)
+    const captionVisible = stepCaptionsVisible(doc.production, section?.id ?? '', section?.stepIds?.[step])
     useEffect(() => { if (pending) { overviewOpen.set(false); presmiumService(PLAYBACK_CONTROL)?.pause() } }, [pending])
     const position = useStore(viewer.position)
     const pageView = useStore(viewer.pageView)
@@ -116,7 +117,7 @@ export function PresentView() {
         'data-pending-confirmation': pending || undefined,
       }, [
         h('div', { class: 'pm-present__slide', inert: pending ? '' : undefined, 'aria-hidden': pending || undefined }, [
-          h(SlideFit, { shape: shape, overlay: h('div', { ref: setCaptionContainer, className: 'pm-present__captions', hidden: !captions || undefined }) }, h(SlideFace, { key: current.id, section: current, step: step })),
+          h(SlideFit, { shape: shape, overlay: h('div', { ref: setCaptionContainer, className: 'pm-present__captions', hidden: !captions || !captionVisible || undefined }) }, h(SlideFace, { key: current.id, section: current, step: step })),
           overview
             ? h('div', { 'class': 'pm-overview', 'role': 'dialog', 'aria-label': t.present.overview }, h('ol', { class: 'pm-overview__grid' }, sections.map(s => h('li', { key: s.id }, h('button', {
                 'type': 'button',
@@ -127,7 +128,7 @@ export function PresentView() {
               }, [h('span', { class: 'pm-overview__index' }, String(s.index)), h('span', { class: 'pm-overview__title' }, s.title)])))))
             : null,
         ]),
-        !pending && captions && !timedCaptions && narration.some(item => item.text.trim()) ? h(PmCaption, { overlay: true, label: t.present.captions, lines: narration.map(item => item.text).filter(text => text.trim()), lang: doc.meta.lang }) : null,
+        !pending && captions && captionVisible && !timedCaptions && narration.some(item => item.text.trim()) ? h(PmCaption, { overlay: true, label: t.present.captions, lines: narration.map(item => item.text).filter(text => text.trim()), lang: doc.meta.lang }) : null,
         h('div', { ref: bar, class: 'pm-present__bar', hidden: viewer.options.externalControls || undefined }, [
           button(t.present.prev, () => viewer.prev(), 'chevron-left', 'ArrowLeft', { className: 'pm-present__previous', disabled: pending }),
           button(t.present.next, () => viewer.next(), 'chevron-right', 'ArrowRight', { className: 'pm-present__next', disabled: pending }),

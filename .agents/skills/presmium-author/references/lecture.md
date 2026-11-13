@@ -56,6 +56,8 @@ Documents created in Studio declare the standard production plugins and lecture 
 
 ## Configure the intended source
 
+To keep a cover or another step free of subtitles while its narration still plays, set `captionVisible: false` through canonical `setTiming`, scoped to the document, page (`sectionId`) or step (`stepId`). It inherits from document to page to step and defaults to true; an explicit true restores captions at a narrower scope. This changes caption display in preview, playback, burned video, VTT and the production caption track. It does not change the script, voiceover cache, timing or reviewed manual caption map, and does not synthesize audio. The slides' untimed caption fallback follows the same setting.
+
 Put lecture renderer options in `metadata.renderers.lecture`. Put timing and voice choice only in `production`: document defaults, optional section overrides and step overrides. A voice source is `none`, TTS with an actual engine/voice, or a recording asset. Do not keep a second `voice` or timing decision on renderer options, a step or narration text.
 
 Save video export defaults in `metadata.renderers.lecture.video`, then use MCP `build` with target `video`:

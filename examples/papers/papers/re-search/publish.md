@@ -7,9 +7,9 @@
 本版为带中文字幕的配音动画，约 4 分 09 秒，使用火山引擎“甜美桃子 2.0”；场景时长自动跟随配音。
 
 - [封面](cover.png)（4:3；提问树为示意）
-- [配音动画](dist/re-search-auto.mp4)
-- [中文字幕](dist/re-search-auto.zh-CN.vtt)
-- [视频帧表](dist/re-search-auto.contact-sheet.png)
+- [配音动画](dist/re-search-final.mp4)
+- [中文字幕](dist/re-search-final.zh-CN.vtt)（从正文开始，片头无字幕）
+- [视频帧表](dist/re-search-final.contact-sheet.png)
 - [无声预览](dist/re-search-preview.mp4)
 - [原论文](https://arxiv.org/abs/2611.14487)
 

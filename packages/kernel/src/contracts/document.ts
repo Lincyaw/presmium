@@ -163,6 +163,8 @@ export interface StepProduction {
   narrationStart?: 'with-animation' | 'after-animation'
   minimumHoldMs?: number
   trailingPauseMs?: number
+  /** Show captions without changing the narration, voiceover or timing; inherited, default true. */
+  captionVisible?: boolean
   voiceSource?: VoiceSource
 }
 export interface ProductionDefaults extends StepProduction {}

@@ -18,6 +18,8 @@ export function captionSourceFingerprint(document: TeachingDocument, stepId: str
   const step = document.steps[stepId]
   if (!step) throw new DocumentCaptionTimingError(404, 'caption-step-missing')
   const timing = { ...document.production.defaults, ...document.production.sectionOverrides?.[step.sectionId], ...document.production.stepOverrides[stepId] }
+  // Visibility changes neither text nor alignment; restoring captions reuses the same reviewed map.
+  delete timing.captionVisible
   return fnv1a64(JSON.stringify({ document: document.id, stepId, sectionId: step.sectionId, lang: document.metadata.lang, timing,
     narrations: step.narrationIds.map(id => ({ id, content: document.narrations[id]?.content,
       start: document.production.stepOverrides[stepId]?.narrationStart ?? document.production.narrationOverrides?.[id]?.narrationStart ?? timing.narrationStart })),

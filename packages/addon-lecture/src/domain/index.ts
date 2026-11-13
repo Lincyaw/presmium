@@ -21,6 +21,7 @@ export type { Clip, CutAnimation, RecordingClip, ScriptHead } from './script-tra
 export { anchorOf, lastIndexAt, playsStep, startingStop, stepStops, textPieces, timedEvents, trackChapters, utteranceAt, voicedLengths, wordTime } from './timing.ts'
 export { burnedCaption, captionBudget, captionChunkAt, captionChunks, captionGroups, captionGroupAt, captionWidth, trackCaptionGroups } from './captions.ts'
 export type { CaptionGroup, TimedCaption } from './captions.ts'
+export { applyCaptionVisibility, captionVisibleAt, visibleCaptionGroups } from './caption-visibility.ts'
 export type { StepStop, TextPiece, TimedEvent, TrackChapter } from './timing.ts'
 export {
   audioSegments,

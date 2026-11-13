@@ -118,6 +118,7 @@ CLI 的 `mcp call` 与按名称查询 `mcp tools <工具>` 同时接受精简目
 - **音色**：`voice.set` 的 scope 为 document、page、step 或 steps，source 为 TTS、none 或 null（移除该槽位）。默认保留下层覆盖，`replaceOverrides` 明确替换。录音来源只经 `adopt_recording` 设置。
 - **组件参数**：`changes` 对路径 `set` 或 `remove`，只允许 Schema 声明的可编辑字段，未修改的字段保留。步骤参数是顶层浅覆盖，改子字段会物化整个顶层值，后继继承影响由 `read_authoring_action_impact` 分页读取。`component.definition.use` 只选择已有 Definition。
 - **字幕时间**：`caption.timing.set` 需要当前 IR 与确认时长，以 `read_production_plan` 的 `ProductionStep.captionTiming` 为基准提交步内起止时间，只改字幕映射。`reset` 不需编译。
+- **字幕显示**：规范内容动作 `setTiming` 可将 `captionVisible` 设于文稿、页或步，默认显示，窄范围覆盖宽范围。保存不生成配音；讲稿、音频和字幕映射保留，实际播放、导出与无时码幻灯片按同一设置显示。
 - **项目**：目录动作绑定 HEAD、目录树与已识别的跨文稿引用，在 `DocumentOperations` 事务内提交；会断开已识别引用的删除被拒绝。opaque 参数与场景源码按原字节保留。retitle 委托 `DocumentEditor`，无 Git 时可用。文稿绑定令牌只能 retitle 自己。
 
 提交成功后重读权威文稿与参与文件。回执带真实 source、commit（id 与 origin）、effect 与 `verification`：`saved` 已核验，`compiled/runtime: not-requested`。

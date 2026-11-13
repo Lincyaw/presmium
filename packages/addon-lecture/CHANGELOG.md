@@ -1,5 +1,13 @@
 # @lincyaw/addon-lecture
 
+## 1.0.0-rc.85
+
+### Patch Changes
+
+- Allow captions to be hidden for a document, page or step while preserving narration, cached voiceover and timing. Apply the same visibility to presentation previews, playback, burned video, translated subtitle files and production caption tracks.
+
+  Start Re-Search on the complete still cover, with opening-page captions hidden and body captions retained.
+
 ## 1.0.0-rc.84
 
 ### Patch Changes

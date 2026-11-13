@@ -1,5 +1,6 @@
 import type { LectureTrack, Utterance } from './track.ts'
 import { isWide, locate } from './words.ts'
+import { captionVisibleAt, visibleCaptionGroups } from './caption-visibility.ts'
 
 export interface CaptionGroup { id: string, text: string, t: number, d: number, alignment: 'words' | 'proportional' | 'none' | 'manual' }
 
@@ -113,8 +114,9 @@ export function captionGroupAt(groups: readonly CaptionGroup[], timeMs: number):
 
 /** Shared projection used by publication and playback; an explicit manual gap stays empty. */
 export function trackCaptionGroups(track: LectureTrack): CaptionGroup[] {
-  return [...track.utterances.filter(u => !track.captionOverrides?.some(own => own.section === u.section && own.step === u.step)).flatMap(captionGroups),
-    ...track.captionOverrides?.flatMap(own => own.groups) ?? []].sort((a, b) => a.t - b.t)
+  return [...track.utterances.filter(u => !track.captionOverrides?.some(own => own.section === u.section && own.step === u.step))
+    .flatMap(u => visibleCaptionGroups(track, captionGroups(u), u.section ? { section: u.section, step: u.step ?? 0 } : undefined)),
+    ...track.captionOverrides?.flatMap(own => visibleCaptionGroups(track, own.groups, own)) ?? []].sort((a, b) => a.t - b.t)
 }
 
 const charWidth = (char: string | undefined) => isWide(char) ? 1 : 0.55
@@ -216,6 +218,7 @@ export interface TimedCaption { text: string, t: number, d: number }
  */
 export function burnedCaption(track: LectureTrack, current: Utterance | undefined, time: number, lang: string,
   groups: (utterance: Utterance) => readonly CaptionGroup[] = captionGroups): TimedCaption | undefined {
+  if (!captionVisibleAt(track, time)) return undefined
   if (lang !== track.lang) return current && { text: current.translations?.[lang]?.text ?? '', t: current.t, d: current.d }
   const manual = track.captionOverrides?.find(own => own.startMs <= time && time < own.endMs)
   const group = manual ? captionGroupAt(manual.groups, time) : current && captionGroupAt(groups(current), time)

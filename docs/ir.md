@@ -98,6 +98,8 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 
 `CaptionTiming` 有有序 `narrationIds`、两个指纹、本步 `durationMs` 与最多 32 段 `{ id, from, to, startMs, endMs }`。`from`、`to` 是本步讲稿显示文字以换行连接后的 UTF-16 范围，连续覆盖全文，端点在 grapheme 边界；时间是相对本步起点的毫秒，不重叠，不跨步。`sourceFingerprint` 覆盖讲稿、音色与本步设置，`playbackFingerprint` 覆盖实际音频、事件与确认时长；不符时报告 `production.caption-timing-stale`，映射保留但不使用。
 
+`StepProduction.captionVisible` 控制字幕显示，按 `defaults` → `sectionOverrides` → `stepOverrides` 继承，默认 `true`。设为 `false` 保留讲稿、配音、词时码、音频及步骤时长，只在该步骤的实际播放区间隐藏字幕；预览、播放、烧录、各语言 VTT 和制作计划的字幕轨共用此投影，无时码幻灯片兜底也遵循该开关。跨步讲稿按实际步骤边界裁切显示区间。该开关不进入手工字幕的内容指纹，恢复显示可复用仍然有效的原映射。
+
 ### 2.13 译文
 
 译文是完整的 `lecture.json`，放在 `locales/<语言>/`。原文在 `metadata.translations` 登记路径，译文在 `metadata.translationOf` 登记原文路径与摘要。译文按自己的目录编译，不继承原文的插件与实现路径。摘要取规范化的原文 JSON（忽略键序、空白、BOM 与两项登记），内容变了报告过期。

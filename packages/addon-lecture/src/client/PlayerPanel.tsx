@@ -1,10 +1,11 @@
 import { PmCaption, PmDrawer, PmIconButton, PmMenu, PmTabs, PRODUCTION_PLAYBACK, TIMED_CAPTIONS, useMessages, useServer, useService, useStore } from '@lincyaw/host'
 import type { MenuItem } from '@lincyaw/host'
-import { isPreviewEmbedded, notifyEmbedder } from '@lincyaw/kernel'
+import { isPreviewEmbedded, notifyEmbedder, stepCaptionsVisible } from '@lincyaw/kernel'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
   burnedCaption,
+  captionVisibleAt,
   captionBudget,
   captionChunkAt,
   captionLanguages,
@@ -170,8 +171,10 @@ export default function PlayerPanel(_props: { view?: string }) {
       : captionGroupAt(groupedCaptions.get(u.id) ?? [], time)?.text ?? u.text
   const manual = player?.track.captionOverrides?.find(own => own.startMs <= time && time < own.endMs), manualText = manual && captionGroupAt(manual.groups, time)?.text
   const originalLanguage = !lang || lang === player?.track.lang
-  const caption = manual && originalLanguage ? manualText : selectedCaptions ? selectedCaptions.map(text).join(' ') : current ? text(current) : undefined
-  const burned = burnedCaptions && player ? burnedCaption(player.track, current, time, burnedCaptions, u => groupedCaptions.get(u.id) ?? []) : undefined
+  const section = doc.sections.find(section => section.id === (cursor?.sectionId ?? position.section))
+  const visible = stepCaptionsVisible(doc.production, section?.id ?? '', section?.stepIds?.[cursor?.step ?? position.step]) && (!player || captionVisibleAt(player.track, time))
+  const caption = !visible ? undefined : manual && originalLanguage ? manualText : selectedCaptions ? selectedCaptions.map(text).join(' ') : current ? text(current) : undefined
+  const burned = visible && burnedCaptions && player ? burnedCaption(player.track, current, time, burnedCaptions, u => groupedCaptions.get(u.id) ?? []) : undefined
   const stale = new Set(
     player && lang && lang !== player.track.lang
       ? player.track.utterances.filter((u) => isStale(u, lang)).map((u) => u.id)

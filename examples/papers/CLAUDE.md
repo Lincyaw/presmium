@@ -34,7 +34,7 @@
 | `papers/<slug>/publish.md` | 发布标题、正文文案，以及对应封面和成片的相对链接 |
 | `papers/<slug>/cover.png` | 与成片对应的发布封面，默认横版 4:3 |
 | `papers/<slug>/dist/<轨道>.mp4` | 实际导出的成片，不提交；交付时与文案、封面一起提供 |
-| `papers/<slug>/scenes/` | 这篇论文的动画场景；`opening.ts`、`ending.ts` 各一行转发到 `kit/opening.ts`、`kit/closing.ts`；`<名>.ts`（数据与配色）供各场景共用 |
+| `papers/<slug>/scenes/` | 这篇论文的动画场景；`opening.ts`、`ending.ts` 复用 `kit/opening.ts`、`kit/closing.ts`；作者要求静态封面时，可在本篇包装共享片头的最终状态；`<名>.ts`（数据与配色）供各场景共用 |
 | `papers/<slug>/scenes/data/` | `derive.py` 与它算出的 JSON |
 | `papers/<slug>/figures/` | 裁好的论文原图与它们的文字坐标（`*.json`） |
 | `papers/<slug>/.presmium/speech/` | 合成好的配音（随文稿提交，导出与网站直接用） |

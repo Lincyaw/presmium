@@ -1697,6 +1697,11 @@
       "scope--scope": {},
       "ending--ending": {}
     },
-    "mediaClips": []
+    "mediaClips": [],
+    "sectionOverrides": {
+      "p-opening": {
+        "captionVisible": false
+      }
+    }
   }
 }

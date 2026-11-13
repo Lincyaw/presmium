@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { irRevision } from '@lincyaw/kernel/node'
 import { errorMessage, jsonResponse, problemResponse } from '@lincyaw/kernel'
 import type { Route } from '@lincyaw/kernel'
-import { CLIPS_DIR, SCRIPT_TRACK, trackDuration } from '../../domain/index.ts'
+import { applyCaptionVisibility, CLIPS_DIR, SCRIPT_TRACK, trackDuration } from '../../domain/index.ts'
 import type { LectureTrack, MediaSegment } from '../../domain/index.ts'
 import { cachedClip } from '../clips.ts'
 import { latestDoc } from '../latest-ir.ts'
@@ -54,7 +54,10 @@ export function trackRoutes(served: ServedDeck): Record<string, Route> {
     }
     const audio = publishedMedia(track.audio, track.id, served.policy, isLocal)
     const video = publishedMedia(track.video, track.id, served.policy, isLocal)
-    return { ...track, ...audio ? { audio } : {}, ...video ? { video } : {} }
+    const published = { ...track, ...audio ? { audio } : {}, ...video ? { video } : {} }
+    const doc = latestDoc(deckDir)
+    if (doc) applyCaptionVisibility(doc, published)
+    return published
   }
 
   const serveTrackFile = (id: string, path: string[], request: Request): Promise<Response> | Response => {

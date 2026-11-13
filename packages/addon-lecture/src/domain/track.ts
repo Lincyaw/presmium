@@ -114,6 +114,8 @@ export interface LectureTrack {
   utterances: Utterance[]
   /** Derived author times; ordinary audio utterances remain unchanged. */
   captionOverrides?: { section: string, step: number, stepId: string, startMs: number, endMs: number, groups: import('./captions.ts').CaptionGroup[] }[]
+  /** Derived from captionVisible on actual step intervals; audio and utterances remain intact. */
+  captionHidden?: { section: string, step: number, startMs: number, endMs: number }[]
   events: TrackEvent[]
 }
 
@@ -237,6 +239,7 @@ export function parseTrack(value: unknown): { track?: LectureTrack, problems: st
           ? [[src, { src: media.src, type: media.type }]] : [])) } : {},
       blocks,
       ...Array.isArray(value.captionOverrides) ? { captionOverrides: value.captionOverrides.flatMap(value => captionOverride(value) ?? []) } : {},
+      ...Array.isArray(value.captionHidden) ? { captionHidden: value.captionHidden.filter((own): own is NonNullable<LectureTrack['captionHidden']>[number] => isRecord(own) && typeof own.section === 'string' && isNumber(own.step) && Number.isSafeInteger(own.step) && own.step >= 0 && isNumber(own.startMs) && own.startMs >= 0 && isNumber(own.endMs) && own.endMs >= own.startMs) } : {},
       utterances: utterances.sort((a, b) => a.t - b.t),
       events: sortEvents(events),
     },

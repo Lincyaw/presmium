@@ -1,5 +1,9 @@
 # @lincyaw/addon-code
 
+## 1.0.0-rc.85
+
+No changes in this release.
+
 ## 1.0.0-rc.84
 
 No changes in this release.

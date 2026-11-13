@@ -1,5 +1,40 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.85
+
+### Patch Changes
+
+- Allow captions to be hidden for a document, page or step while preserving narration, cached voiceover and timing. Apply the same visibility to presentation previews, playback, burned video, translated subtitle files and production caption tracks.
+
+  Start Re-Search on the complete still cover, with opening-page captions hidden and body captions retained.
+- Updated dependencies
+  - @lincyaw/kernel@1.0.0-rc.85
+  - @lincyaw/addon-lecture@1.0.0-rc.85
+  - @lincyaw/viewer@1.0.0-rc.85
+  - @lincyaw/addon-assistant@1.0.0-rc.85
+  - @lincyaw/addon-classroom@1.0.0-rc.85
+  - @lincyaw/addon-code@1.0.0-rc.85
+  - @lincyaw/addon-content@1.0.0-rc.85
+  - @lincyaw/addon-exec@1.0.0-rc.85
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.85
+  - @lincyaw/addon-exec-local@1.0.0-rc.85
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.85
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.85
+  - @lincyaw/addon-guide@1.0.0-rc.85
+  - @lincyaw/addon-motion@1.0.0-rc.85
+  - @lincyaw/addon-publish@1.0.0-rc.85
+  - @lincyaw/addon-session@1.0.0-rc.85
+  - @lincyaw/addon-speech@1.0.0-rc.85
+  - @lincyaw/addon-stage@1.0.0-rc.85
+  - @lincyaw/cli@1.0.0-rc.85
+  - create-presmium@1.0.0-rc.85
+  - @lincyaw/host@1.0.0-rc.85
+  - @lincyaw/mcp@1.0.0-rc.85
+  - @lincyaw/render-notebook@1.0.0-rc.85
+  - @lincyaw/render-slides@1.0.0-rc.85
+  - @lincyaw/studio@0.2.0-rc.84
+  - @lincyaw/web@1.0.0-rc.85
+
 ## 1.0.0-rc.84
 
 ### Patch Changes
