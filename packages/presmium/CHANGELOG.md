@@ -1,5 +1,38 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.82
+
+### Patch Changes
+
+- 53252f4: Add the Re-Search question-tree animation with reversible GSAP scenes, enlarged original figures, an explicit model-judge explanation and the strong-model counterexample. Include the captioned silent preview's cover and publication copy, and a compact shared opening variant that keeps paper information clear of subtitles.
+- Updated dependencies [53252f4]
+  - @lincyaw/addon-lecture@1.0.0-rc.82
+  - @lincyaw/cli@1.0.0-rc.82
+  - @lincyaw/mcp@1.0.0-rc.82
+  - @lincyaw/addon-classroom@1.0.0-rc.82
+  - @lincyaw/addon-code@1.0.0-rc.82
+  - @lincyaw/addon-content@1.0.0-rc.82
+  - @lincyaw/addon-exec@1.0.0-rc.82
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.82
+  - @lincyaw/addon-exec-local@1.0.0-rc.82
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.82
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.82
+  - @lincyaw/addon-motion@1.0.0-rc.82
+  - @lincyaw/addon-publish@1.0.0-rc.82
+  - @lincyaw/addon-session@1.0.0-rc.82
+  - @lincyaw/addon-speech@1.0.0-rc.82
+  - @lincyaw/addon-stage@1.0.0-rc.82
+  - create-presmium@1.0.0-rc.82
+  - @lincyaw/render-notebook@1.0.0-rc.82
+  - @lincyaw/studio@0.2.0-rc.81
+  - @lincyaw/web@1.0.0-rc.82
+  - @lincyaw/addon-assistant@1.0.0-rc.82
+  - @lincyaw/addon-guide@1.0.0-rc.82
+  - @lincyaw/host@1.0.0-rc.82
+  - @lincyaw/kernel@1.0.0-rc.82
+  - @lincyaw/render-slides@1.0.0-rc.82
+  - @lincyaw/viewer@1.0.0-rc.82
+
 ## 1.0.0-rc.81
 
 ### Patch Changes

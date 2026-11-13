@@ -1,5 +1,9 @@
 # @lincyaw/addon-guide
 
+## 1.0.0-rc.82
+
+No changes in this release.
+
 ## 1.0.0-rc.81
 
 No changes in this release.

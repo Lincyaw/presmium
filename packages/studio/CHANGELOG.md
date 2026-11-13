@@ -1,5 +1,12 @@
 # @lincyaw/studio
 
+## 0.2.0-rc.81
+
+### Patch Changes
+
+- @lincyaw/dsh@0.2.0-rc.81
+  - @lincyaw/kernel@1.0.0-rc.82
+
 ## 0.2.0-rc.80
 
 ### Patch Changes

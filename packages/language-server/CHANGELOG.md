@@ -1,5 +1,16 @@
 # @lincyaw/language-server
 
+## 1.0.0-rc.82
+
+### Patch Changes
+
+- @lincyaw/cli@1.0.0-rc.82
+  - @lincyaw/web@1.0.0-rc.82
+  - @lincyaw/compiler@1.0.0-rc.82
+  - @lincyaw/host@1.0.0-rc.82
+  - @lincyaw/kernel@1.0.0-rc.82
+  - @lincyaw/viewer@1.0.0-rc.82
+
 ## 1.0.0-rc.81
 
 ### Patch Changes
