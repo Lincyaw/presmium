@@ -1,5 +1,12 @@
 # @lincyaw/skills
 
+## 1.0.0-rc.90
+
+### Patch Changes
+
+- Require element and operation planning plus separate explanatory-motion acceptance for teaching animations. Rebuild the SFT data paper preview with persistent objects, narrated operations, guided original figures, and synchronized coverage counts.
+- @lincyaw/kernel@1.0.0-rc.90
+
 ## 1.0.0-rc.89
 
 ### Patch Changes

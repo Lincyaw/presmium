@@ -36,3 +36,18 @@
 - 最近核实：2026-11-14 10:26（Asia/Shanghai）；已发布列表搜索第三期共1篇，封面和05:12时长一致。
 - 平台内容类型声明：笔记含AI合成内容；公开可见，即时发布；PK封面、原创声明与定时发布均未启用。
 - 回执：[已发布记录截图](dist/xiaohongshu-published.jpg)
+
+## 改版预览（未替换线上笔记）
+
+- [完整配音预览](dist/lecture-v2-preview.mp4)
+- [核心动画预览：数量匹配与原图比较](dist/core-motion-preview.mp4)
+- [预览字幕](dist/lecture-v2-preview.zh-CN.vtt)
+- [实际成片联系表](dist/lecture-v2-preview.contact-sheet.png)
+- [转场边界检查](dist/v2-boundary-sheet.jpg)
+- 生成时间：2026-11-14（Asia/Shanghai）；原生MCP任务mwfuvgiu70f02118完成。
+- 文稿版本bd628acb13844f6e65de，内容指纹04e1719bde5ee414，渲染输入指纹be20066d56fad02f。
+- 预览：18,010,830字节，1920×1080、30fps、H.264/AAC、48kHz立体声、312.70秒，9381帧完整解码通过。
+- SHA-256：2cf3a58cd2819e171081321ee039fab31e59e720c53b35365c9b21853010cfdb。
+- 复用16段配音缓存，未新增合成用量；-40dB、0.8秒阈值未检出长静音。实际首帧无字幕，正文字幕、关键结果和全部相邻状态边界已做帧采样检查。
+- 解析动画按分镜重建，元素/操作设计与独立冷读见storyboard.md K–N。定时帧与导出帧不能代替连续观看；完整音画观感和与第一期的风格契合仍待作者看预览，不标成整体验收通过。
+- 线上原笔记和期数不变；dist/lecture.mp4保持原已发布文件及原SHA-256。改版不占新期数，未重新上传。

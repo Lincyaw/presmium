@@ -312,7 +312,23 @@
               "RL",
               "解题轨迹"
             ],
-            "source": "示意 · 论文 §3.2"
+            "source": "示意 · 论文 §3.2 · 算术过程为示意",
+            "example": {
+              "question": "12 ÷ 3 = ?",
+              "lines": [
+                "12个，分3份",
+                "12 ÷ 3",
+                "= 3"
+              ],
+              "answer": "= 4"
+            },
+            "details": [
+              "1 条给定解答",
+              "8 条采样轨迹",
+              "“更像背答案”",
+              "“更会举一反三”",
+              "常见说法"
+            ]
           },
           {
             "id": "definition",
@@ -325,7 +341,21 @@
               "生成解答，再用结果奖励更新",
               "轨迹：从问题到最终答案的完整过程"
             ],
-            "source": "论文 §2 · 图形为示意"
+            "source": "论文 §2 · 图形为示意 · 算术过程为示意",
+            "example": {
+              "question": "12 ÷ 3 = ?",
+              "lines": [
+                "12个，分3份",
+                "12 ÷ 3",
+                "= 3"
+              ],
+              "answer": "= 4"
+            },
+            "details": [
+              "给定解答 · 逐步学习",
+              "生成解答",
+              "结果奖励更新"
+            ]
           }
         ]
       }
@@ -349,7 +379,14 @@
               "科学 · 规划 · 语义理解",
               "0—100 归一化平均分"
             ],
-            "source": "论文 §3 实验设置、附录 B.4"
+            "source": "论文 §3 实验设置、附录 B.4",
+            "details": [
+              "数学训练",
+              "领域外评测",
+              "归一化",
+              "取平均",
+              "训练领域之外的迁移"
+            ]
           }
         ]
       }
@@ -377,9 +414,20 @@
             "values": [
               34.9,
               38.7,
-              40.1
+              40.1,
+              70,
+              30
             ],
-            "source": "论文 §3.1、表 tab:benchmark_results · 通用推理平均分"
+            "source": "论文 §3.1、表 tab:benchmark_results · 通用推理平均分",
+            "details": [
+              "训练轨迹",
+              "同一底座",
+              "通用推理平均分",
+              "混合来源",
+              "按题目匹配",
+              "SFT",
+              "输入轨迹示意"
+            ]
           }
         ]
       }
@@ -405,9 +453,59 @@
             ],
             "values": [
               1,
-              8
+              8,
+              38.7,
+              43.8
             ],
-            "source": "论文 §3.2 · 单题采样设置示意"
+            "source": "论文 §3.2 · 单题采样设置示意",
+            "rollouts": [
+              {
+                "correct": true,
+                "method": 0
+              },
+              {
+                "correct": false,
+                "method": 1
+              },
+              {
+                "correct": false,
+                "method": 2
+              },
+              {
+                "correct": true,
+                "method": 0
+              },
+              {
+                "correct": false,
+                "method": 1
+              },
+              {
+                "correct": false,
+                "method": 2
+              },
+              {
+                "correct": true,
+                "method": 0
+              },
+              {
+                "correct": false,
+                "method": 1
+              }
+            ],
+            "details": [
+              "单题轨迹示意",
+              "SFT 训练集",
+              "RL 数量参照",
+              "全训练集",
+              "最终答案正确",
+              "最终答案错误",
+              "中间推理",
+              "纳入训练",
+              "SFT",
+              "RL 后模型数据",
+              "按观测数量生成",
+              "匹配数量"
+            ]
           },
           {
             "id": "correct",
@@ -424,7 +522,55 @@
               39623,
               42.7
             ],
-            "source": "论文 §3.2、附录 B.3.2；plot_1_exp1_4_reasoning · 轨迹数量示意"
+            "source": "论文 §3.2、附录 B.3.2；plot_1_exp1_4_reasoning · 轨迹数量示意",
+            "rollouts": [
+              {
+                "correct": true,
+                "method": 0
+              },
+              {
+                "correct": false,
+                "method": 1
+              },
+              {
+                "correct": false,
+                "method": 2
+              },
+              {
+                "correct": true,
+                "method": 0
+              },
+              {
+                "correct": false,
+                "method": 1
+              },
+              {
+                "correct": false,
+                "method": 2
+              },
+              {
+                "correct": true,
+                "method": 0
+              },
+              {
+                "correct": false,
+                "method": 1
+              }
+            ],
+            "details": [
+              "单题轨迹示意",
+              "SFT 训练集",
+              "RL 数量参照",
+              "全训练集",
+              "最终答案正确",
+              "最终答案错误",
+              "中间推理",
+              "纳入训练",
+              "SFT",
+              "RL 后模型数据",
+              "按观测数量生成",
+              "匹配数量"
+            ]
           },
           {
             "id": "all",
@@ -442,7 +588,55 @@
               98641,
               138264
             ],
-            "source": "论文 §3.2、附录 B.3.2、G.2"
+            "source": "论文 §3.2、附录 B.3.2、G.2",
+            "rollouts": [
+              {
+                "correct": true,
+                "method": 0
+              },
+              {
+                "correct": false,
+                "method": 1
+              },
+              {
+                "correct": false,
+                "method": 2
+              },
+              {
+                "correct": true,
+                "method": 0
+              },
+              {
+                "correct": false,
+                "method": 1
+              },
+              {
+                "correct": false,
+                "method": 2
+              },
+              {
+                "correct": true,
+                "method": 0
+              },
+              {
+                "correct": false,
+                "method": 1
+              }
+            ],
+            "details": [
+              "单题轨迹示意",
+              "SFT 训练集",
+              "RL 数量参照",
+              "全训练集",
+              "最终答案正确",
+              "最终答案错误",
+              "中间推理",
+              "纳入训练",
+              "SFT",
+              "RL 后模型数据",
+              "按观测数量生成",
+              "匹配数量"
+            ]
           }
         ]
       }
@@ -469,11 +663,21 @@
             ],
             "values": [
               38.7,
+              39.9,
               42.7,
               43.7,
               43.8
             ],
-            "source": "论文原图 §3.2 · 12 项通用推理归一化平均分"
+            "source": "论文原图 §3.2 · 12 项通用推理归一化平均分",
+            "details": [
+              "按题匹配",
+              "可解题对照",
+              "正确轨迹匹配",
+              "全部轨迹匹配",
+              "通用推理平均分",
+              "RL 基线",
+              "与RL差距"
+            ]
           },
           {
             "id": "mixed",
@@ -488,9 +692,23 @@
             ],
             "values": [
               44.4,
-              43.8
+              43.8,
+              0.42,
+              0.43,
+              90,
+              10
             ],
-            "source": "论文原图 §3.2、表 tab:eval_std · ± 为评测标准误"
+            "source": "论文原图 §3.2、表 tab:eval_std · ± 为评测标准误",
+            "details": [
+              "混合数据示意",
+              "同一底座 · SFT",
+              "通用推理平均分",
+              "评测标准误",
+              "均值接近",
+              "RL 基线",
+              "RL 后模型数据",
+              "Qwen3-14B 数据"
+            ]
           }
         ]
       }
@@ -520,7 +738,16 @@
               132,
               100
             ],
-            "source": "论文 §3.3；distribution_method_usage 总方法覆盖数"
+            "source": "论文 §3.3；distribution_method_usage 总方法覆盖数",
+            "details": [
+              "方法标签",
+              "计数示意",
+              "轨迹数量",
+              "累计出现",
+              "覆盖",
+              "训练轨迹示意",
+              "全训练集覆盖类数"
+            ]
           },
           {
             "id": "coverage-figure",
@@ -533,7 +760,40 @@
               "橙色：101 → 132",
               "少见方法也能被更多看见"
             ],
-            "source": "论文原图 §3.3 · 图轴为 Covered methods"
+            "source": "论文原图 §3.3 · 图轴为 Covered methods",
+            "series": [
+              {
+                "name": "RL 后模型数据",
+                "color": "orange",
+                "values": [
+                  101,
+                  119,
+                  128,
+                  132
+                ]
+              },
+              {
+                "name": "Qwen3-14B 数据",
+                "color": "blue",
+                "values": [
+                  105,
+                  120,
+                  133,
+                  136
+                ]
+              }
+            ],
+            "values": [
+              1,
+              2,
+              4,
+              8
+            ],
+            "details": [
+              "每题训练轨迹",
+              "被覆盖的方法",
+              "长尾：训练频率末20%"
+            ]
           },
           {
             "id": "tail",
@@ -551,7 +811,44 @@
               40,
               108
             ],
-            "source": "附录表 tab:tail_usage · LLM 方法标注计数，可多标签"
+            "source": "附录表 tab:tail_usage · LLM 方法标注计数，可多标签",
+            "details": [
+              "训练轨迹示意",
+              "带长尾方法",
+              "仅头部方法样本",
+              "完整数据",
+              "正确测试轨迹",
+              "长尾方法标签",
+              "使用次数",
+              "多标签计数",
+              "对照总样本量未报告"
+            ],
+            "rollouts": [
+              {
+                "correct": true,
+                "method": 0
+              },
+              {
+                "correct": true,
+                "method": 1
+              },
+              {
+                "correct": false,
+                "method": 0
+              },
+              {
+                "correct": true,
+                "method": 0
+              },
+              {
+                "correct": false,
+                "method": 1
+              },
+              {
+                "correct": true,
+                "method": 0
+              }
+            ]
           }
         ]
       }
@@ -579,9 +876,20 @@
             ],
             "values": [
               42.6,
-              42.5
+              42.5,
+              90,
+              10,
+              50,
+              50
             ],
-            "source": "附录 B.1 · tab:qwen3_8b · 通用推理平均分"
+            "source": "附录 B.1 · tab:qwen3_8b · 通用推理平均分",
+            "details": [
+              "Qwen2.5-7B",
+              "90% / 10%",
+              "50% / 50%",
+              "最佳混合比例",
+              "通用推理平均分"
+            ]
           },
           {
             "id": "cost",
@@ -595,7 +903,12 @@
               "领域外评测",
               "训练轨迹 / 梯度预算 ≠ 端到端总成本"
             ],
-            "source": "论文 §3.2、附录 B.6、G.1 · 误差不含训练种子波动"
+            "source": "论文 §3.2、附录 B.6、G.1 · 误差不含训练种子波动",
+            "details": [
+              "匹配范围",
+              "端到端成本范围",
+              "独立训练验证"
+            ]
           }
         ]
       }
@@ -1199,7 +1512,7 @@
       "schemaVersion": 1,
       "implementation": {
         "type": "file",
-        "path": "scenes/story.ts"
+        "path": "scenes/question.ts"
       },
       "parameterSchema": {
         "type": "object",
@@ -1282,7 +1595,7 @@
       "schemaVersion": 1,
       "implementation": {
         "type": "file",
-        "path": "scenes/story.ts"
+        "path": "scenes/setup.ts"
       },
       "parameterSchema": {
         "type": "object",
@@ -1360,7 +1673,7 @@
       "schemaVersion": 1,
       "implementation": {
         "type": "file",
-        "path": "scenes/story.ts"
+        "path": "scenes/sources.ts"
       },
       "parameterSchema": {
         "type": "object",
@@ -1438,7 +1751,7 @@
       "schemaVersion": 1,
       "implementation": {
         "type": "file",
-        "path": "scenes/story.ts"
+        "path": "scenes/budget.ts"
       },
       "parameterSchema": {
         "type": "object",
@@ -1526,7 +1839,7 @@
       "schemaVersion": 1,
       "implementation": {
         "type": "file",
-        "path": "scenes/story.ts"
+        "path": "scenes/results.ts"
       },
       "parameterSchema": {
         "type": "object",
@@ -1609,7 +1922,7 @@
       "schemaVersion": 1,
       "implementation": {
         "type": "file",
-        "path": "scenes/story.ts"
+        "path": "scenes/methods.ts"
       },
       "parameterSchema": {
         "type": "object",
@@ -1697,7 +2010,7 @@
       "schemaVersion": 1,
       "implementation": {
         "type": "file",
-        "path": "scenes/story.ts"
+        "path": "scenes/scope.ts"
       },
       "parameterSchema": {
         "type": "object",

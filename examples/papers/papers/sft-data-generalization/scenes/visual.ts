@@ -28,8 +28,8 @@ export function headings(ctx: Context, tl: Timeline, shots: Shot[], T: Beat) {
   ctx.gsap.set('.shot-title,.shot-source',{autoAlpha:0})
   ctx.gsap.set('.title-0,.source-0',{autoAlpha:1})
   shots.slice(1).forEach((_,i)=>{
-    tl.set('.title-'+i+',.source-'+i,{autoAlpha:0},T(i+1))
-    tl.set('.title-'+(i+1)+',.source-'+(i+1),{autoAlpha:1},T(i+1))
+    tl.set('.title-'+i+',.source-'+i,{autoAlpha:0},T(i+1,.004))
+    tl.set('.title-'+(i+1)+',.source-'+(i+1),{autoAlpha:1},T(i+1,.004))
   })
 }
 export function draw(ctx: Context, tl: Timeline, selector: string, start: number, duration = .7) {
