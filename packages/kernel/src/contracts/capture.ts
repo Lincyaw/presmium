@@ -4,12 +4,30 @@
  * (over MCP) check animations and layout with it instead of scripting a browser.
  */
 
+import type { CanonicalSource } from '../ir.ts'
+
+/** Identity and location of one capture, kept beside its pictures as capture.json. */
+export interface CaptureEvidence {
+  id: string
+  createdAt: string
+  directory: string
+  manifestFile: string
+  /** Retained in the service cache instead of being removed with older recent captures. */
+  retained: boolean
+  /** The source actually shown in the capturing browser, when its hook reports it. */
+  source?: CanonicalSource
+  /** The document code bundle loaded by that browser; source alone does not identify scene code. */
+  codeBundle?: string
+}
+
 /** At most this many pictures a request: each is one image in a tool result. */
 export const CAPTURE_MAX_FRAMES = 12
 /** At most this many boxes a picture reports for `measure`. */
 export const CAPTURE_MAX_BOXES = 200
 
 export interface SlideCaptureRequest {
+  /** Keep this evidence in the service cache beyond its recent-capture cleanup. */
+  retain?: boolean
   /** The page (section) id, or its number from 1. */
   section: string
   /** The steps to show, from 0; every step of the page when omitted. */
@@ -26,6 +44,7 @@ export interface SlideCaptureRequest {
   /**
    * How the presentation reaches each step: `direct` (default) draws it from its step and moment; `backward` shows the
    * step after it first and goes back as a presenter does, with the page's own clock, to check that going back works.
+   * `backward` and `at` cannot be combined: use separate calls for timed frames and reverse arrival at rest.
    */
   arrive?: 'direct' | 'backward'
   /** Draw the presentation's captions over the slide (default true); false shows the whole slide, the narration being in `narration`. */
@@ -33,6 +52,7 @@ export interface SlideCaptureRequest {
 }
 
 export interface ReadingCaptureRequest {
+  retain?: boolean
   /** The page (section) id, or its number from 1. */
   section: string
   /** The window's width in CSS pixels (default 1280; 390 for a phone). */
@@ -57,6 +77,7 @@ export interface CapturedReading {
 
 export interface ReadingCaptureResult {
   document: string
+  capture?: CaptureEvidence
   width: number
   frames: CapturedReading[]
   problems: string[]
@@ -94,6 +115,7 @@ export interface CapturedSlide {
 
 export interface SlideCaptureResult {
   document: string
+  capture?: CaptureEvidence
   /** The slide's size in slide pixels. */
   shape: { width: number, height: number }
   frames: CapturedSlide[]
@@ -102,6 +124,7 @@ export interface SlideCaptureResult {
 }
 
 export interface OverviewCaptureRequest {
+  retain?: boolean
   /** Each page's last step (default), or every step of every page. */
   steps?: 'last' | 'all'
   appearance?: 'light' | 'dark'
@@ -113,6 +136,7 @@ export interface OverviewCaptureRequest {
 
 export interface OverviewCaptureResult {
   document: string
+  capture?: CaptureEvidence
   /** The directory of the pictures, named so that they sort in reading order (`03-12-page.png`: page 3, step 12 from 0). */
   dir: string
   frames: { section: string, slide: number, step: number, file: string, narration: string }[]
@@ -138,6 +162,8 @@ export interface DocumentCapture {
 
 /** The hook a viewer page opened with `?capture` installs, which the capturing browser drives. */
 export interface CaptureHook {
+  /** Identity of the source and document code actually loaded in the page. Older viewers may omit it. */
+  snapshot?(): { source?: CanonicalSource, codeBundle?: string }
   /** A slide at a step: drawn at the moment `at` (its rest frame when omitted), or reached going back from the step after. */
   show(position: { section: string, step: number, at?: number, arrive?: 'direct' | 'backward' }): Promise<{ problems: string[] }>
   /** A section of the reading page, scrolled through so that its components load, at rest. */

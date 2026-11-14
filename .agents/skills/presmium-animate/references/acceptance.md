@@ -34,7 +34,7 @@ Before scene code, save the step sequence and both linked tables below in `story
 - State what persists across the boundary and where it is at the end and start. When a cut is intentional, explain what the viewer must retain. Replacing the picture with another complete diagram does not establish object continuity.
 - Use a short “held” entry for intentionally static branding, source text or reading time. A table of final-frame keywords with unspecified actions is incomplete and must be resolved before implementation.
 
-Before polishing, make a rough timed preview of the core operations. The strip of resting frames checks structure; the moving draft checks whether the chosen objects can actually explain the claim.
+Before polishing, make a low-cost timed preview of the core operations: native captures at their planned before/during/after moments, and a short or reduced-resolution clip where continuous motion needs it. The strip of resting frames checks structure; the timed draft checks whether the chosen objects can actually explain the claim. Use this material for the independent review before paying the cost of a full final render.
 
 ## 3. Show the operation, not only the final answer
 
@@ -59,6 +59,12 @@ Entrance effects can support these operations. They cannot substitute for them. 
 
 Report these results separately in the storyboard and delivery evidence. A pass in the first three does not imply a pass in the fourth. Mark missing observations as unverified rather than turning compilation or a contact sheet into an overall approval.
 
+Review and production are sequential: close the low-cost timed-preview and independent cold-read findings, then freeze the document, scene code, assets and narration for the full narrated export. Reuse valid speech and generate only what is missing under the existing authorization. Start one full final export from that frozen candidate and inspect its actual media. Do not keep editing or reviewing an unfinished candidate while a final export runs; only an explicitly labelled rough preview may be exported during exploration. A later source or resource change retires the affected review evidence and requires its review again before another final export.
+
+Give each reviewer one coherent candidate. For captures needed beyond immediate inspection, use `retain: true` on `capture_slides`, `capture_overview` or `capture_reading`. The response's `capture` identifies the evidence by `id`, `createdAt`, `directory`, `manifestFile`, `retained` and, when available, `source` and `codeBundle`. Read the `capture.json` at `capture.manifestFile`: it records the kind, request, frames, sheets, narration and problems without inline image data. Give the reviewer that manifest and only its listed files. Across captures, match both `capture.source` and `capture.codeBundle`; the same document source alone does not establish the same loaded scene code. If an older host supplies no `capture`, or a needed binding is absent, the candidate match remains unverified.
+
+Retention keeps evidence in the service cache's retained area, outside ordinary recent-capture cleanup. It is not project-level long-term archiving or a cloud download link. Do not merge old and new samples in a scratch folder, ask a reviewer to glob it, or write a temporary copy script when native retention is available. A reference or older version used for comparison stays separately labelled. Older evidence never overrides a finding about the current candidate.
+
 | Review | Evidence and question |
 |---|---|
 | Facts | Are the values, units, baselines, uncertainty and conditions supported? Are illustrative objects distinguished from measured data? |
@@ -69,9 +75,9 @@ Report these results separately in the storyboard and delivery evidence. A pass 
 For explanatory motion:
 
 1. Review each core explanation's full timed preview at the intended pace, including the setup, operation, result and hold. Check its complete time range rather than only an entrance and a middle frame. If continuous playback cannot be observed, report that limitation; timed frame samples and source inspection provide partial evidence, not proof that playback was watched.
-2. Sample the start, the before/during/after states of each planned operation and the settled result using native `capture_slides` with `at`. Choose times from the beat plan, not the same fractions for every shot. Compare against actual narration; a correct final picture does not repair a premature answer or an unexplained transformation.
+2. Sample the start, the before/during/after states of each planned operation and the settled result using native `capture_slides` with direct arrival and `at`. Choose times from the beat plan, not the same fractions for every shot. Compare against actual narration; a correct final picture does not repair a premature answer or an unexplained transformation.
 3. Inspect both sides of every core boundary. Check that carried objects are recognizable in position, scale, colour and meaning; identify intentional cuts. Inspect the exported video around those boundaries as well as the preview.
-4. Select steps directly and in a different order, seek into their operations and return backward. Compare the same timestamps. Stable outcomes and intermediate states must come from step and time alone.
+4. Select nonadjacent steps directly and seek into their operations. Separately capture resting frames with `arrive: 'backward'` and no `at`, then compare them with direct resting frames. `capture_slides` rejects `backward` combined with `at`; these two checks do not establish timed backward playback. Report that only if separately observed. Stable outcomes and intermediate states must come from step and time alone.
 5. Give an independent cold viewer the timed material and narration, without the source or explanatory notes. Ask: “Which object was being followed? What was done to it? What changed as a result? What comparison or rule supports that result?” Have them retell the chain and predict an appropriate next change. A viewer who repeats the captions or calls it “clear” has not demonstrated this understanding.
 
 A contact sheet is useful for facts, layout and the broad story. The still-frame cold read in `team.md` remains an early check; supplement it with the dynamic review above before accepting a complete explanatory animation. Record specific unresolved moments by timestamp and object, the intended operation and the required change. Fix a missing mechanism at the storyboard stage, not by adding effects to its finished card.

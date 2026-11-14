@@ -20,6 +20,7 @@ function service(call: Call): DocumentCapture {
 const integers = (max: number) => ({ type: 'array', items: { type: 'integer', minimum: 0 }, minItems: 1, maxItems: max })
 const CAPTIONS = { type: 'boolean', description: 'Draw the presentation\'s captions over the slides (default true). false shows the whole slide; each frame\'s narration is in the result as text either way (and in narration.md beside an overview\'s pictures).' }
 const IMAGES = { type: 'boolean', description: 'Return the pictures in the result (default true); false returns only their files and boxes.' }
+const RETAIN = { type: 'boolean', description: 'Keep this capture\'s files and evidence manifest when older service-cache captures are pruned (default false).' }
 
 export const CAPTURE_TOOLS: ToolSpec[] = [
   {
@@ -31,14 +32,15 @@ export const CAPTURE_TOOLS: ToolSpec[] = [
         document: { type: 'string', description: 'The document directory (list_documents); omit it when the host serves one document.' },
         section: { type: 'string', description: 'The page: its section id (list_sections) or its number from 1.' },
         steps: { ...integers(CAPTURE_MAX_FRAMES), description: 'Steps of the page, from 0; every step when omitted.' },
-        at: { type: 'array', items: { type: 'number', minimum: 0 }, minItems: 1, maxItems: CAPTURE_MAX_FRAMES, description: 'Milliseconds into each step\'s animation; the rest frame when omitted.' },
+        at: { type: 'array', items: { type: 'number', minimum: 0 }, minItems: 1, maxItems: CAPTURE_MAX_FRAMES, description: 'Milliseconds into each step\'s animation; the rest frame when omitted. Cannot be combined with arrive:backward: capture direct moments and backward rest frames in separate calls.' },
         appearance: { enum: ['light', 'dark'], description: 'The colour scheme (default light).' },
         scale: { enum: [1, 2], description: 'Device pixels per slide pixel (default 1; 2 for fine detail).' },
         clip: { type: 'object', properties: { x: { type: 'number' }, y: { type: 'number' }, width: { type: 'number', exclusiveMinimum: 0 }, height: { type: 'number', exclusiveMinimum: 0 } }, required: ['x', 'y', 'width', 'height'], additionalProperties: false, description: 'Only this region of the slide, in slide pixels.' },
         measure: { type: 'string', minLength: 1, maxLength: 200, description: `A CSS selector inside the slide; up to ${CAPTURE_MAX_BOXES} boxes a picture.` },
         captions: CAPTIONS,
-        arrive: { enum: ['direct', 'backward'], description: 'direct (default): each step drawn from its step and moment. backward: the step after is shown first, then the presentation goes back to the step as a presenter does, with the page\'s own clock, to check that going back shows the right frame (compare with direct pictures); `at` does not apply.' },
+        arrive: { enum: ['direct', 'backward'], description: 'direct (default): each step drawn from its step and moment. backward: the step after is shown first, then the presentation goes back to the step as a presenter does, with the page\'s own clock, to check the rest frame (compare with direct pictures). Combining backward with at is refused; use separate calls.' },
         images: IMAGES,
+        retain: RETAIN,
       },
       required: ['section'],
       additionalProperties: false,
@@ -46,6 +48,15 @@ export const CAPTURE_TOOLS: ToolSpec[] = [
     kind: 'read',
     structured: true,
     run: async (call) => {
+      if (call.args.arrive === 'backward' && call.args.at !== undefined) {
+        const { at: _at, ...backward } = call.args
+        throw Object.assign(new Error('capture-arrive-moment-conflict'), { status: 400, detail: {
+          suggestedCalls: [
+            { operation: 'capture_slides', arguments: { ...call.args, arrive: 'direct' } },
+            { operation: 'capture_slides', arguments: backward },
+          ],
+        } })
+      }
       const { document: _document, images: inline = true, ...request } = call.args as unknown as SlideCaptureRequest & { document?: string, images?: boolean }
       return pictures(await service(call).slides(await call.document(), request, call.signal), inline)
     },
@@ -63,6 +74,7 @@ export const CAPTURE_TOOLS: ToolSpec[] = [
         scale: { enum: [1, 2], description: 'Device pixels per CSS pixel (default 1).' },
         measure: { type: 'string', minLength: 1, maxLength: 200, description: `A CSS selector inside the section; up to ${CAPTURE_MAX_BOXES} boxes.` },
         images: IMAGES,
+        retain: RETAIN,
       },
       required: ['section'],
       additionalProperties: false,
@@ -86,6 +98,7 @@ export const CAPTURE_TOOLS: ToolSpec[] = [
         columns: { type: 'integer', minimum: 1, maximum: 8, description: 'Thumbnails a row on a sheet (default 4).' },
       captions: CAPTIONS,
         images: IMAGES,
+        retain: RETAIN,
       },
       additionalProperties: false,
     },

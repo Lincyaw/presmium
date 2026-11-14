@@ -1,7 +1,8 @@
 import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import { basename, join } from 'node:path'
 import { CAPTIONS_PARAM, CAPTURE_HOOK, CAPTURE_MAX_BOXES, CAPTURE_MAX_FRAMES, CAPTURE_MAX_HEIGHT, CAPTURE_MAX_OVERVIEW, CAPTURE_PARAM, CAPTURE_SHEET_SIZE, errorMessage, PREVIEW_APPEARANCE_PARAM, slideShape } from '@lincyaw/kernel'
-import type { CapturedBox, CapturedSlide, CaptureHook, DocumentCapture, IRDocument, IRSection } from '@lincyaw/kernel'
+import type { CanonicalSource, CaptureEvidence, CapturedBox, CapturedSlide, CaptureHook, DocumentCapture, IRDocument, IRSection, OverviewCaptureRequest, ReadingCaptureRequest, SlideCaptureRequest } from '@lincyaw/kernel'
 import { playwrightChromium } from '@lincyaw/kernel/node'
 
 /** What capturing uses of Playwright's Chromium. */
@@ -38,6 +39,13 @@ export interface CaptureOptions {
 }
 
 interface View { width: number, height: number, scale: number, appearance: 'light' | 'dark' }
+interface CaptureInput {
+  kind: 'slides' | 'reading' | 'overview'
+  request: SlideCaptureRequest | ReadingCaptureRequest | OverviewCaptureRequest
+  source?: CanonicalSource
+}
+const sameSource = (a: CanonicalSource | undefined, b: CanonicalSource | undefined): boolean =>
+  a?.documentId === b?.documentId && a?.version === b?.version && a?.fingerprint === b?.fingerprint
 
 const PAGE_MS = 120_000
 const IDLE_MS = 120_000
@@ -98,7 +106,7 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
   }
 
   /** The document's viewer page in a form, opened with its capture hook in a new context; `run` uses it, then it closes. */
-  const open = async <T>(document: string, form: 'web' | 'slides', view: View & { captions?: boolean }, signal: AbortSignal | undefined, run: (tab: Page, problems: Set<string>, out: string) => Promise<T>): Promise<T> => {
+  const open = async <T extends { images: Uint8Array[] }>(document: string, form: 'web' | 'slides', view: View & { captions?: boolean }, signal: AbortSignal | undefined, run: (tab: Page, problems: Set<string>, out: string, newPage: () => Promise<Page>) => Promise<T>, input: CaptureInput): Promise<T & { capture: CaptureEvidence }> => {
     const page = await options.viewerPage(document).catch((error: unknown) => {
       throw new CaptureError('capture-preview-failed', 409, { reason: errorMessage(error) })
     })
@@ -106,6 +114,8 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
     signal?.throwIfAborted()
     const context = await (await launch()).newContext({ viewport: { width: view.width, height: view.height }, deviceScaleFactor: view.scale, reducedMotion: 'reduce', colorScheme: view.appearance, serviceWorkers: 'block' })
     const problems = new Set<string>()
+    let directory: string | undefined
+    let complete = false
     try {
       const tab = await context.newPage()
       tab.on('pageerror', error => problems.add(error.message))
@@ -117,9 +127,23 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
       address.searchParams.set(PREVIEW_APPEARANCE_PARAM, view.appearance)
       await tab.goto(address.href, { waitUntil: 'load', timeout: PAGE_MS })
       await tab.waitForFunction(`Boolean(window.${CAPTURE_HOOK})`, undefined, { timeout: PAGE_MS })
-      const out = join(options.dir, `${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}`)
+      const snapshot = () => tab.evaluate(hook => (window as unknown as Record<string, CaptureHook>)[hook]!.snapshot?.(), CAPTURE_HOOK)
+      const before = await snapshot()
+      if (before?.source && input.source && !sameSource(before.source, input.source)) throw new CaptureError('capture-source-changed', 409)
+      const createdAt = new Date().toISOString()
+      const id = `${createdAt.replace(/[:.]/g, '-')}-${randomUUID()}`
+      const out = join(options.dir, ...(input.request.retain ? ['retained', id] : [id]))
+      directory = out
       mkdirSync(out, { recursive: true })
-      return await run(tab, problems, out)
+      const result = await run(tab, problems, out, () => context.newPage())
+      signal?.throwIfAborted()
+      const after = await snapshot()
+      if (!sameSource(before?.source, after?.source) || before?.codeBundle !== after?.codeBundle) throw new CaptureError('capture-source-changed', 409)
+      const capture: CaptureEvidence = { id, createdAt, directory: out, manifestFile: join(out, 'capture.json'), retained: input.request.retain === true, ...before }
+      const { images: _images, ...details } = result
+      writeFileSync(capture.manifestFile, `${JSON.stringify({ capture, kind: input.kind, request: input.request, ...details }, null, 2)}\n`)
+      complete = true
+      return { ...result, capture }
     } catch (error) {
       if (error instanceof CaptureError || signal?.aborted) throw error
       // A page that loads again while it is driven loses its hook: going back reloaded it.
@@ -127,11 +151,13 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
       throw new CaptureError('capture-failed', 500, { reason: errorMessage(error), problems: [...problems] })
     } finally {
       await context.close().catch(() => undefined)
+      if (!complete && directory) rmSync(directory, { recursive: true, force: true })
       prune(options.dir)
     }
   }
 
   const slides: DocumentCapture['slides'] = async (document, request, signal) => {
+    if (request.arrive === 'backward' && request.at !== undefined) throw new CaptureError('capture-arrive-moment-conflict', 400)
     const doc = await options.compiled(document)
     const section = sectionOf(doc, request.section)
     const steps = request.steps ?? Array.from({ length: section.steps + 1 }, (_, step) => step)
@@ -167,7 +193,7 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
         }
       }
       return { document, shape: { width: shape.width, height: shape.height }, frames, problems: [...problems], images }
-    })
+    }, { kind: 'slides', request, source: doc.source })
   }
 
   const reading: DocumentCapture['reading'] = async (document, request, signal) => {
@@ -187,7 +213,7 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
       writeFileSync(file, png)
       const frame = { section: section.id, file, width: Math.round(measured.width), height: Math.round(height), cut: measured.height > CAPTURE_MAX_HEIGHT, ...request.measure ? { boxes: measured.boxes } : {} }
       return { document, width, frames: [frame], problems: [...problems], images: [png] }
-    })
+    }, { kind: 'reading', request, source: doc.source })
   }
 
   const overview: DocumentCapture['overview'] = async (document, request, signal) => {
@@ -198,7 +224,7 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
     const shape = slideShape(doc)
     const appearance = request.appearance ?? 'light'
     const columns = Math.max(1, Math.min(8, Math.round(request.columns ?? 4)))
-    return await open(document, 'slides', { width: shape.width, height: shape.height, scale: 1, appearance, captions: request.captions }, signal, async (tab, problems, out) => {
+    return await open(document, 'slides', { width: shape.width, height: shape.height, scale: 1, appearance, captions: request.captions }, signal, async (tab, problems, out, newPage) => {
       const show = (section: string, step: number) => tab.evaluate(async ([hook, position]) => await (window as unknown as Record<string, CaptureHook>)[hook]!.show(position), [CAPTURE_HOOK, { section, step }] as const)
       const first = positions[0]!
       await fit(tab, shape, first.section.id, first.step, () => show(first.section.id, first.step))
@@ -219,12 +245,13 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
       }
       // Sheets of thumbnails, each labelled with its page, step and title, for reading the whole piece at a glance.
       const sheets: string[] = [], images: Uint8Array[] = []
-      await tab.setViewportSize({ width: columns * (THUMB_WIDTH + SHEET_GAP) + SHEET_GAP, height: READING_HEIGHT })
+      const sheet = await newPage()
+      await sheet.setViewportSize({ width: columns * (THUMB_WIDTH + SHEET_GAP) + SHEET_GAP, height: READING_HEIGHT })
       for (let start = 0; start < frames.length; start += CAPTURE_SHEET_SIZE) {
         signal?.throwIfAborted()
         const cells = frames.slice(start, start + CAPTURE_SHEET_SIZE).map((frame, i) => ({ label: `${frame.slide} · ${frame.step}  ${doc.sections[frame.slide - 1]?.title ?? ''}`, png: pictures[start + i]! }))
-        await tab.setContent(sheetHtml(cells, columns, appearance), { waitUntil: 'load', timeout: PAGE_MS })
-        const png = await tab.screenshot({ type: 'png', fullPage: true })
+        await sheet.setContent(sheetHtml(cells, columns, appearance), { waitUntil: 'load', timeout: PAGE_MS })
+        const png = await sheet.screenshot({ type: 'png', fullPage: true })
         const file = join(out, `sheet-${String(sheets.length + 1).padStart(2, '0')}.png`)
         writeFileSync(file, png)
         sheets.push(file)
@@ -234,7 +261,7 @@ export function createDocumentCapture(options: CaptureOptions): { service: Docum
       const narrationFile = join(out, 'narration.md')
       writeFileSync(narrationFile, frames.map(frame => `## ${basename(frame.file)}\n\n${frame.narration || '—'}\n`).join('\n'))
       return { document, dir: out, frames, narrationFile, sheets, problems: [...problems], images }
-    })
+    }, { kind: 'overview', request, source: doc.source })
   }
 
   /** One capture at a time; the browser closes when none came for a while. */
@@ -350,7 +377,7 @@ function measureSection({ section, selector, max }: { section: string, selector:
 /** Keeps the pictures of the last few requests. */
 function prune(dir: string): void {
   try {
-    const runs = readdirSync(dir).map(name => ({ path: join(dir, name), time: statSync(join(dir, name)).mtimeMs })).sort((a, b) => b.time - a.time)
+    const runs = readdirSync(dir, { withFileTypes: true }).filter(entry => entry.isDirectory() && entry.name !== 'retained').map(entry => ({ path: join(dir, entry.name), time: statSync(join(dir, entry.name)).mtimeMs })).sort((a, b) => b.time - a.time)
     for (const run of runs.slice(KEEP)) rmSync(run.path, { recursive: true, force: true })
   } catch {}
 }

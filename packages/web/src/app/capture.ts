@@ -47,7 +47,7 @@ const problems = (failures: string[] = []) => ({ problems: [...failures, ...comp
  * driver (the lecture player) takes it, and a component draws the same frame whenever it is asked. Reached backward,
  * the slide is left to the page's own clock, as a presenter going back sees it.
  */
-export function installCaptureHook(viewer: ShownViewer): void {
+export function installCaptureHook(viewer: ShownViewer, codeBundle?: string): void {
   const elapsed = createStore<number | undefined>(Infinity)
   // The runtime starts again when plugins or viewers arrive, with a clock of its own: the current one is driven.
   let driven: { clock: StepClock, release(): void } | undefined
@@ -65,6 +65,7 @@ export function installCaptureHook(viewer: ShownViewer): void {
   }
   const slide = (section: string) => `.pm-slide[data-section="${CSS.escape(section)}"]`
   const hook: CaptureHook = {
+    snapshot: () => ({ source: viewer.doc.getSnapshot().source, ...codeBundle ? { codeBundle } : {} }),
     async show({ section, step, at, arrive }) {
       if (arrive !== 'backward') {
         drive(at)

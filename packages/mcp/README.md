@@ -57,6 +57,8 @@ The CLI accepts both compact discovery/dispatch tools and original operation nam
 | Runtime and focus | `get_runtime`, `get_focus`, `get_position`, `navigate` |
 | Run and build | `run_code`, `build`, `get_builds`, `cancel_build` |
 | Pictures | `capture_slides`: a page's steps as the presentation shows them (rest frames, `at` moments into the animation, or reached going `backward`), as PNG images, with the boxes of the elements a CSS selector `measure`s; `capture_reading`: a page of the reading version at a window `width`; `capture_overview`: every page at once, as sheets of thumbnails and a directory of frames in reading order |
+
+Capture results include `capture` with the browser's document `source`, loaded `codeBundle` when available, and a `manifestFile` pointing to `capture.json` beside this request's files. Use `retain: true` to keep review evidence in the service cache beyond its recent-capture cleanup; this does not archive it into the project. Review only the listed files from the same source and code bundle. Timed captures use `direct` with `at`; `backward` checks arrival at rest in a separate call without `at`. Combining them fails with two suggested calls rather than silently ignoring the moments.
 | Classroom | `get_classroom`, `classroom_start`, `classroom_end` |
 | Canonical reading | `get_authoring_capabilities`, `get_document_outline`, `read_document_part`, `get_document` (full document, may exceed a tool-result budget) |
 | Document changes | `edit_document`, `plan_document_change`, `apply_document_change` |

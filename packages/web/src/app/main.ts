@@ -201,7 +201,7 @@ async function bootDocument(): Promise<void> {
   viewer!.view.subscribe(syncAddress)
   viewer!.position.subscribe(syncAddress)
   syncAddress()
-  if (new URLSearchParams(location.search).has(CAPTURE_PARAM)) installCaptureHook(viewer!)
+  if (new URLSearchParams(location.search).has(CAPTURE_PARAM)) installCaptureHook(viewer!, config.bundle)
 }
 
 void (config.kind === 'document' ? bootDocument() : bootPage()).catch((error: unknown) => {

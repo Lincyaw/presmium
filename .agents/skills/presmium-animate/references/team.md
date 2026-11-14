@@ -78,9 +78,9 @@ An agent goes through these after every change, on its own pages only:
 
 1. **Check the document.** `check_document`, then `get_diagnostics`; fix the problems on these pages. A scene whose code doesn't bundle (a syntax error, a missing module) is reported by `check_document` and `presmium check` as a `presmium.preview.code` error with its file and line; it fails alone, so the other pages still preview and present, and its own page shows the failure (the capture's `problems` say why). Fix it before anything else.
 2. **Reread the words.** Read your pages' narration, titles and on-screen words in order, as someone who has seen only the pages before them, against the storyboard: is each term's first mention its definition from D, and does no term appear before that step? Does any sentence defend against a reading nobody would make, set up a position nobody holds, or list what the piece does not show (E.14)? Is any word a banned synonym or a calque? Does each step's claim follow from what earlier pages stated, without contradicting them? Rewrite what fails; a sentence kept on purpose goes in the report with its reason. This is a reading, not a search: a marker word found by searching is only a candidate, and the sentence in its place decides.
-3. **Look at every step.** `capture_slides` on each page returns every step's rest frame (12 pictures a call; name `steps` for a longer page). Each must read in 3 seconds, with nothing overlapping or cut off; `measure` with a CSS selector gives the boxes of elements when an overlap is hard to see. Capture again with `arrive: 'backward'` and compare: going back must show the same frame. When the reading page matters, `capture_reading` at 1280 and 390. Change and capture again until every frame passes.
-4. **Check the motion.** Rest frames don't show it. Capture `at` moments inside the steps where something moves, and read the timeline: every move has a reason that means something (a cause, the same object, things converging); delete the moves that have none.
-5. **Report** in this form: for each page, its number of steps and one line describing each rest frame; the picture files; the check result; the sentences kept after rereading the words, with their reasons; problems found in shared modules; where the page departs from the storyboard and why; what isn't done or isn't good enough.
+3. **Look at every step.** `capture_slides` on each page returns every step's rest frame (12 pictures a call; name `steps` for a longer page). Each must read in 3 seconds, with nothing overlapping or cut off; `measure` with a CSS selector gives the boxes of elements when an overlap is hard to see. Capture again with `arrive: 'backward'` and no `at`, then compare the resting frames. When the reading page matters, `capture_reading` at 1280 and 390. Change and capture again until every frame passes.
+4. **Check the motion.** Rest frames don't show it. Use direct arrival with `at` for the planned before/during/after moments of an operation, and read the timeline: every move has a reason that means something (a cause, the same object, things converging); delete the moves that have none. Do not combine `backward` and `at`, or describe separate backward rest and direct timed captures as a timed backward test.
+5. **Report** in this form: for each page, its number of steps and one line describing each rest frame; the retained capture manifest and files for this candidate; the check result; the sentences kept after rereading the words, with their reasons; problems found in shared modules; where the page departs from the storyboard and why; what isn't done or isn't good enough.
 
 ## 5. The coordinator during production
 
@@ -88,7 +88,7 @@ An agent goes through these after every change, on its own pages only:
 - Read every report and look at its pictures. Settle a difference between pages (one part drawn two ways, one thing named two ways) at once: decide, write it into the storyboard, tell the agents concerned.
 - Forward a pitfall one agent hit to every agent still working, at once; finding it nine times costs more.
 - After each batch of reports, read the narration of the whole document in order for terms that one page uses before another page defines them: such a term belongs to neither agent alone. Settle it in the term table and tell both.
-- When every page is done, run the cold read (section 7) before the author sees the piece.
+- When every page is done, run the independent cold read and low-cost timed-operation review (section 7 and `acceptance.md`). Close their findings, freeze the document and referenced resources, then run the full narrated export and inspect its actual media. Review and final export do not run in parallel; an explicitly labelled rough preview during exploration is the exception. Automatic workflows perform these reviews internally without adding a routine user approval gate.
 
 ## 6. Review rounds
 
@@ -115,21 +115,21 @@ A second explainer (24 pages, eight agents) added three rules in the middle of p
 
 A fresh agent that took no part sees only the pictures and the narration, in order, and reports what a first-time viewer gets. It finds what the makers can't see: contradictions between pages, one word with two meanings, names that drift, concepts used before they were introduced or never defined, sentences that carry nothing, elements nobody explained. In the explainer it found three problems that blocked the main line, more than twenty concepts left unclear and a dozen flaws in pictures, most of which the agents' own page-by-page checks had missed.
 
-**When**: after every round of production or fixes, before the author reviews. A new reviewer each round: one that saw the last version already knows the answers.
+**When**: after a round of production or fixes, before freezing the candidate for a full final export or showing the requested preview. Review low-cost material first; do not start the final render while these findings are still open. A new reviewer each round: one that saw the last version already knows the answers.
 
 **Prepare the material:**
 
-1. `capture_overview` with `steps: 'all'`, `captions: false` and `images: false` takes every step of every page at rest, the whole slide without the captions over it, into one directory of the service's state, named so that sorted names are the playing order: `03-12-game.png` is page 3, step 12 (pages from 1, steps from 0, as the tools count them). Copy the directory at once: the service keeps only its latest captures. Without `steps: 'all'` it takes each page's last step, and its sheets of thumbnails show the whole piece at a glance.
-2. A frame taken mid-motion gets reported as a flaw: these are rest frames, drawn from the step alone. Numbers in names must be zero-padded (the tool does it): with `15-1.png` and `15-10.png`, step 10 sorts right after step 1.
-3. The same directory has `narration.md`, each picture's narration under its file name: the reader looks at whole slides and reads the script as text, instead of small captions over the picture.
-4. Give nothing else: no source, storyboard, term table or notes, or the reader is no longer cold.
+1. `capture_overview` with `steps: 'all'`, `captions: false`, `images: false` and `retain: true` takes every step at rest and retains this review's evidence in the service cache. Without `steps: 'all'` it takes each page's last step. Read `capture.manifestFile` and use its exact file list; do not copy captures into a shared scratch directory or scan unrelated PNGs already there. Keep samples from a different document, scene-code or resource version out of this candidate's review set.
+2. Label rest frames and timed samples separately. A deliberate intermediate state must not be judged as a failed rest frame. For motion review, retain direct `at` samples around each operation; for reverse navigation, make separate `arrive: 'backward'` rest-frame captures without `at`.
+3. Supply the corresponding narration and the manifest identifying this candidate's source, request context and files. The overview's `narration.md` associates each rest picture with its words. Match both `capture.source` and `capture.codeBundle` across the supplied captures, as described in `acceptance.md`; source alone does not verify scene-code identity. A missing `capture` or binding leaves that match unverified: obtain coherent evidence before requesting a current-version verdict.
+4. Give no source code, storyboard, term table or explanatory notes to the cold viewer. The manifest identifies the evidence; it does not supply the intended interpretation. Supplement the still-frame passes below with the timed material and dynamic questions in `acceptance.md` before accepting explanatory motion.
 
 **First pass: understanding.** Replace the angle brackets; write the prompt in the document's language when the report should be in it.
 
 ```
 You are seeing this explainer for the first time, as a viewer and a reviewer. You are <the audience, e.g. a researcher who evaluates LLM agents and knows incident troubleshooting, but hasn't seen this design>. You took no part in making it. Don't read any source code, storyboard or notes; use only the material below.
 
-Material: <N> PNG pictures in <folder>, the rest frame of each step of the presentation. File names are <page number>-<step number>-<page key>.png (steps from 0), and their sorted order is the playing order. <folder>/narration.md has each picture's narration under its file name: read it with the picture, as a viewer hears it. Look at every picture in order with the Read tool; skip none.
+Material: <retained capture manifest and its listed rest-frame PNGs>, the rest frame of each step of one candidate. Read only those listed files, in their recorded presentation order, and the corresponding narration. Do not glob the directory or mix other captures into the verdict. Timed samples are separately identified and are not rest frames. Look at every listed rest picture in order with the Read tool; skip none.
 
 First, page by page. After each page (all pictures with the same page number), write:
 - what the page says, in one sentence of your own;
@@ -174,4 +174,4 @@ Add these to the problem list; a contradiction in the argument is a P0.
 2. A problem with the method itself, such as a rule whose reason no longer holds, goes to the author; don't decide it.
 3. The wording problems become one term table in the storyboard, which every page follows; definitions and calques go into its columns, which the next round's agents and reviewer read against.
 4. Fixes go to the agents that made the pages.
-5. After the fixes, capture everything again and give it to a new reviewer.
+5. After the fixes, make a retained capture set for the new candidate and give its manifest and material to a new reviewer. Retire the affected old evidence; do not overwrite a current conclusion with pictures from the prior round.

@@ -1,5 +1,15 @@
 # @lincyaw/mcp
 
+## 1.0.0-rc.91
+
+### Patch Changes
+
+- Retain native capture evidence with browser source, document code bundle and a per-request manifest. Reject incompatible backward and timed captures with usable recovery calls, and complete preview review before freezing and exporting a narrated animation.
+- Updated dependencies
+  - @lincyaw/kernel@1.0.0-rc.91
+  - @lincyaw/skills@1.0.0-rc.91
+  - @lincyaw/compiler@1.0.0-rc.91
+
 ## 1.0.0-rc.90
 
 ### Patch Changes
