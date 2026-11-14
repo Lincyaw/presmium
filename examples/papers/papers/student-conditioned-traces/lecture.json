@@ -1,0 +1,1535 @@
+{
+  "schemaVersion": 1,
+  "id": "7bdb3689-38e0-4d23-9d82-55a21d64a0f6",
+  "metadata": {
+    "title": "ReDiST：把推理改成学生学得会的版本",
+    "lang": "zh-CN",
+    "description": "沿一份多跳问答草稿，演示证据修订、答案辅助修复、冻结学生筛选与训练后迁移评测。",
+    "tags": [
+      "论文",
+      "推理蒸馏",
+      "训练数据",
+      "CoT"
+    ],
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-speech"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {},
+      "lecture": {
+        "maximumDurationMs": 360000,
+        "video": {
+          "burn": "zh-CN",
+          "contactSheet": true,
+          "size": [
+            1920,
+            1080
+          ],
+          "fps": 30
+        }
+      }
+    }
+  },
+  "sectionOrder": [
+    "p-opening",
+    "p-evidence",
+    "p-branches",
+    "p-reader",
+    "p-train",
+    "p-results",
+    "p-scope",
+    "p-ending",
+    "p-notes"
+  ],
+  "sections": {
+    "p-opening": {
+      "id": "p-opening",
+      "title": "把推理改成学生学得会的版本",
+      "level": 2,
+      "children": [
+        "opening--scene"
+      ],
+      "stepOrder": [
+        "opening--opening"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-evidence": {
+      "id": "p-evidence",
+      "title": "答案正确，过程仍可能不好学",
+      "level": 2,
+      "children": [
+        "evidence--scene"
+      ],
+      "stepOrder": [
+        "evidence--draft",
+        "evidence--bridge"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-branches": {
+      "id": "p-branches",
+      "title": "正确稿修订，错误稿修复",
+      "level": 2,
+      "children": [
+        "branches--scene"
+      ],
+      "stepOrder": [
+        "branches--revise",
+        "branches--repair"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-reader": {
+      "id": "p-reader",
+      "title": "让冻结的学生副本选择教学目标",
+      "level": 2,
+      "children": [
+        "reader--scene"
+      ],
+      "stepOrder": [
+        "reader--screen",
+        "reader--select"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-train": {
+      "id": "p-train",
+      "title": "选什么轨迹，与怎样训练要分开",
+      "level": 2,
+      "children": [
+        "train--scene"
+      ],
+      "stepOrder": [
+        "train--loss"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-results": {
+      "id": "p-results",
+      "title": "源任务进步，还要看迁移表现",
+      "level": 2,
+      "children": [
+        "results--scene"
+      ],
+      "stepOrder": [
+        "results--original",
+        "results--compare"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-scope": {
+      "id": "p-scope",
+      "title": "改写质量，要用学生的实际收益衡量",
+      "level": 2,
+      "children": [
+        "scope--scene"
+      ],
+      "stepOrder": [
+        "scope--scope"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-ending": {
+      "id": "p-ending",
+      "title": "让学生的草稿，变成学生能用的示范",
+      "level": 2,
+      "children": [
+        "ending--scene"
+      ],
+      "stepOrder": [
+        "ending--ending"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-notes": {
+      "id": "p-notes",
+      "title": "来源与说明",
+      "children": [
+        "notes-body",
+        "notes-slides"
+      ],
+      "stepOrder": [
+        "notes-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "opening--scene": {
+      "id": "opening--scene",
+      "type": "component",
+      "definitionId": "opening--definition",
+      "parameters": {
+        "frames": [
+          {
+            "id": "opening",
+            "title": "学生适配的推理轨迹",
+            "labels": [],
+            "source": "arXiv 2610.23831v1"
+          }
+        ],
+        "alt": "把推理改成学生学得会的版本",
+        "institution": "石溪大学 · Meta AI",
+        "title": "ReDiST",
+        "titleZh": "为学生改写推理",
+        "authors": "Shaoang Li、Yanhang Shi 等",
+        "venue": "arXiv · 2026-10-16",
+        "compact": true
+      }
+    },
+    "evidence--scene": {
+      "id": "evidence--scene",
+      "type": "component",
+      "definitionId": "evidence--definition",
+      "parameters": {
+        "frames": [
+          {
+            "id": "draft",
+            "title": "先看学生自己的推理草稿",
+            "labels": [
+              "两部作品的导演，同一国籍吗？",
+              "学生草稿"
+            ],
+            "lines": [
+              "影片甲",
+              "导演甲",
+              "甲国",
+              "影片乙",
+              "导演乙",
+              "甲国"
+            ],
+            "details": [
+              "导演甲、导演乙",
+              "同一国籍"
+            ],
+            "source": "多跳问答机制示意 · 论文 §1—3"
+          },
+          {
+            "id": "bridge",
+            "title": "把支持结论的中间关系补出来",
+            "labels": [
+              "两位导演 → 甲国",
+              "证据 → 中间关系 → 结论"
+            ],
+            "source": "机制示意 · 论文 §3.1 证据引导修订"
+          }
+        ],
+        "alt": "答案正确，过程仍可能不好学"
+      }
+    },
+    "branches--scene": {
+      "id": "branches--scene",
+      "type": "component",
+      "definitionId": "branches--definition",
+      "parameters": {
+        "frames": [
+          {
+            "id": "revise",
+            "title": "答对的草稿：用证据补强过程",
+            "labels": [
+              "同一问题与证据",
+              "答案正确",
+              "关系缺失",
+              "修订",
+              "补全关系"
+            ],
+            "details": [
+              "题目证据"
+            ],
+            "source": "论文 §3.1 · 修订分支"
+          },
+          {
+            "id": "repair",
+            "title": "答错的草稿：额外提供核实答案",
+            "labels": [
+              "",
+              "答案错误",
+              "推断有误",
+              "修复",
+              "纠正推导"
+            ],
+            "details": [
+              "核实答案 → 修复"
+            ],
+            "source": "论文 §3.1 · 修复分支"
+          }
+        ],
+        "alt": "正确稿修订，错误稿修复"
+      }
+    },
+    "reader--scene": {
+      "id": "reader--scene",
+      "type": "component",
+      "definitionId": "reader--definition",
+      "parameters": {
+        "frames": [
+          {
+            "id": "screen",
+            "title": "先检查：学生能否读回正确答案",
+            "labels": [
+              "冻结的学生副本",
+              "读取题目、证据",
+              "再读取候选轨迹"
+            ],
+            "details": [
+              "原草稿",
+              "修订候选一",
+              "修订候选二"
+            ],
+            "lines": [
+              "恢复失败",
+              "恢复成功",
+              "恢复成功"
+            ],
+            "source": "机制示意 · 论文 §3.2；符号不代表实测概率"
+          },
+          {
+            "id": "select",
+            "title": "通过筛选后，再按答案得分选择",
+            "labels": [
+              "选定教学轨迹",
+              "全失败：正确原稿／仅答案"
+            ],
+            "source": "论文 §3.2 · 成功恢复后按核实答案概率排序",
+            "details": [
+              "未通过",
+              "得分较低",
+              "最高得分"
+            ]
+          }
+        ],
+        "alt": "让冻结的学生副本选择教学目标"
+      }
+    },
+    "train--scene": {
+      "id": "train--scene",
+      "type": "component",
+      "definitionId": "train--definition",
+      "parameters": {
+        "frames": [
+          {
+            "id": "loss",
+            "title": "完整输出监督，加上适度的答案监督",
+            "labels": [
+              "选定示范",
+              "完整输出监督",
+              "答案额外监督",
+              "学生训练"
+            ],
+            "lines": [
+              "证据关系",
+              "中间推导",
+              "核实答案"
+            ],
+            "details": [
+              "完整输出本身已经包含答案"
+            ],
+            "source": "论文 §3.3 · 默认额外答案权重 α=0.15"
+          }
+        ],
+        "alt": "选什么轨迹，与怎样训练要分开"
+      }
+    },
+    "results--scene": {
+      "id": "results--scene",
+      "type": "component",
+      "definitionId": "results--definition",
+      "parameters": {
+        "frames": [
+          {
+            "id": "original",
+            "title": "读原图：训练任务和迁移任务分开看",
+            "labels": [],
+            "source": "论文图1 · Qwen3-8B · 仅在 MuSiQue 上训练"
+          },
+          {
+            "id": "compare",
+            "title": "同一方法，在两种评测上比较",
+            "labels": [
+              "MuSiQue · 源任务 EM%",
+              "2Wiki · 迁移 EM%",
+              "ReDiST：58.4 / 68.6"
+            ],
+            "details": [
+              "原始模型",
+              "仅答案",
+              "原始轨迹",
+              "ReDiST"
+            ],
+            "values": [
+              34.2,
+              56.2,
+              42.6,
+              58.4,
+              51.6,
+              47.9,
+              52.1,
+              68.6
+            ],
+            "source": "论文表1 · 1000题评测切片 · 完整训练配方比较"
+          }
+        ],
+        "alt": "源任务进步，还要看迁移表现"
+      }
+    },
+    "scope--scene": {
+      "id": "scope--scene",
+      "type": "component",
+      "definitionId": "scope--definition",
+      "parameters": {
+        "frames": [
+          {
+            "id": "scope",
+            "title": "更好的示范，要适合具体学生与任务",
+            "labels": [
+              "有依据的推理",
+              "学生选择信号",
+              "训练后评测"
+            ],
+            "details": [
+              "读回成功 ≠ 每一步都已核实",
+              "不同学生、不同评测，优势不同",
+              "只在推理时使用训练后的学生"
+            ],
+            "source": "论文 §3—4 · 四种学生、两模型家族"
+          }
+        ],
+        "alt": "改写质量，要用学生的实际收益衡量"
+      }
+    },
+    "ending--scene": {
+      "id": "ending--scene",
+      "type": "component",
+      "definitionId": "ending--definition",
+      "parameters": {
+        "frames": [
+          {
+            "id": "ending",
+            "title": "围绕学生草稿改写，再让学生参与选择",
+            "labels": [],
+            "source": "arXiv 2610.23831v1"
+          }
+        ],
+        "alt": "让学生的草稿，变成学生能用的示范",
+        "summary": "围绕学生草稿改写，再让学生参与选择",
+        "paper": "Beyond the Answer · ReDiST"
+      }
+    },
+    "notes-body": {
+      "id": "notes-body",
+      "type": "text",
+      "only": [
+        "web",
+        "notebook"
+      ],
+      "content": [
+        {
+          "id": "note-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "原论文：Beyond the Answer: Student-Conditioned Trace Construction for Reasoning Distillation，arXiv:2610.23831v1（2026-10-16），Shaoang Li、Yanhang Shi等，Stony Brook University / Meta AI。https://arxiv.org/abs/2610.23831"
+            }
+          ]
+        },
+        {
+          "id": "note-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "方法§3.1—3.3：正确草稿用证据修订，不额外传标准答案字段；错误草稿修复时额外传核实答案；冻结的学生匹配读者先检查答案恢复，再按核实答案概率排序。无候选通过时保留正确原稿，或退回仅答案监督。读回成功是代理信号，不是逐步正确性证明。"
+            }
+          ]
+        },
+        {
+          "id": "note-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "原图1：源码figures/main_distillation_motivation_2.pdf；表1：Qwen3-8B，仅MuSiQue训练。源任务EM(%) Raw34.2、Answer-only56.2、Original Trace42.6、ReDiST58.4；2Wiki EM(%)51.6、47.9、52.1、68.6。主比较为1000题切片，bootstrap区间见附录。"
+            }
+          ]
+        },
+        {
+          "id": "note-3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "主实验额外答案监督α=0.15；完整输出损失本来包含答案，不是将答案监督移出主损失。完整配方比较包含构造、筛选和损失分配等因素。不同学生优势变化：Qwen3-4B在2Wiki上NLL63.5略高ReDiST63.0，见表3。"
+            }
+          ]
+        },
+        {
+          "id": "note-4",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "作品、导演、国籍与读者筛选的图形为机制示意，非论文实验记录。符号表示规则，不是实测概率。正式配音、成片验收和平台草稿由主协调者完成。"
+            }
+          ]
+        }
+      ]
+    },
+    "notes-slides": {
+      "id": "notes-slides",
+      "type": "text",
+      "only": [
+        "slides"
+      ],
+      "content": [
+        {
+          "id": "notes-slide-text",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "数字依据与适用条件见网页版“来源与说明”。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "opening--opening": {
+      "id": "opening--opening",
+      "sectionId": "p-opening",
+      "title": "学生适配的推理轨迹",
+      "visuals": [
+        {
+          "blockId": "opening--scene",
+          "visible": true,
+          "state": "opening"
+        }
+      ],
+      "narrationIds": [
+        "opening--opening--narration"
+      ]
+    },
+    "evidence--draft": {
+      "id": "evidence--draft",
+      "sectionId": "p-evidence",
+      "title": "先看学生自己的推理草稿",
+      "visuals": [
+        {
+          "blockId": "evidence--scene",
+          "visible": true,
+          "state": "draft"
+        }
+      ],
+      "narrationIds": [
+        "evidence--draft--narration"
+      ]
+    },
+    "evidence--bridge": {
+      "id": "evidence--bridge",
+      "sectionId": "p-evidence",
+      "title": "把支持结论的中间关系补出来",
+      "visuals": [
+        {
+          "blockId": "evidence--scene",
+          "visible": true,
+          "state": "bridge"
+        }
+      ],
+      "narrationIds": [
+        "evidence--bridge--narration"
+      ]
+    },
+    "branches--revise": {
+      "id": "branches--revise",
+      "sectionId": "p-branches",
+      "title": "答对的草稿：用证据补强过程",
+      "visuals": [
+        {
+          "blockId": "branches--scene",
+          "visible": true,
+          "state": "revise"
+        }
+      ],
+      "narrationIds": [
+        "branches--revise--narration"
+      ]
+    },
+    "branches--repair": {
+      "id": "branches--repair",
+      "sectionId": "p-branches",
+      "title": "答错的草稿：额外提供核实答案",
+      "visuals": [
+        {
+          "blockId": "branches--scene",
+          "visible": true,
+          "state": "repair"
+        }
+      ],
+      "narrationIds": [
+        "branches--repair--narration"
+      ]
+    },
+    "reader--screen": {
+      "id": "reader--screen",
+      "sectionId": "p-reader",
+      "title": "先检查：学生能否读回正确答案",
+      "visuals": [
+        {
+          "blockId": "reader--scene",
+          "visible": true,
+          "state": "screen"
+        }
+      ],
+      "narrationIds": [
+        "reader--screen--narration"
+      ]
+    },
+    "reader--select": {
+      "id": "reader--select",
+      "sectionId": "p-reader",
+      "title": "通过筛选后，再按答案得分选择",
+      "visuals": [
+        {
+          "blockId": "reader--scene",
+          "visible": true,
+          "state": "select"
+        }
+      ],
+      "narrationIds": [
+        "reader--select--narration"
+      ]
+    },
+    "train--loss": {
+      "id": "train--loss",
+      "sectionId": "p-train",
+      "title": "完整输出监督，加上适度的答案监督",
+      "visuals": [
+        {
+          "blockId": "train--scene",
+          "visible": true,
+          "state": "loss"
+        }
+      ],
+      "narrationIds": [
+        "train--loss--narration"
+      ]
+    },
+    "results--original": {
+      "id": "results--original",
+      "sectionId": "p-results",
+      "title": "读原图：训练任务和迁移任务分开看",
+      "visuals": [
+        {
+          "blockId": "results--scene",
+          "visible": true,
+          "state": "original"
+        }
+      ],
+      "narrationIds": [
+        "results--original--narration"
+      ]
+    },
+    "results--compare": {
+      "id": "results--compare",
+      "sectionId": "p-results",
+      "title": "同一方法，在两种评测上比较",
+      "visuals": [
+        {
+          "blockId": "results--scene",
+          "visible": true,
+          "state": "compare"
+        }
+      ],
+      "narrationIds": [
+        "results--compare--narration"
+      ]
+    },
+    "scope--scope": {
+      "id": "scope--scope",
+      "sectionId": "p-scope",
+      "title": "更好的示范，要适合具体学生与任务",
+      "visuals": [
+        {
+          "blockId": "scope--scene",
+          "visible": true,
+          "state": "scope"
+        }
+      ],
+      "narrationIds": [
+        "scope--scope--narration"
+      ]
+    },
+    "ending--ending": {
+      "id": "ending--ending",
+      "sectionId": "p-ending",
+      "title": "围绕学生草稿改写，再让学生参与选择",
+      "visuals": [
+        {
+          "blockId": "ending--scene",
+          "visible": true,
+          "state": "ending"
+        }
+      ],
+      "narrationIds": [
+        "ending--ending--narration"
+      ]
+    },
+    "notes-step": {
+      "id": "notes-step",
+      "sectionId": "p-notes",
+      "visuals": [
+        {
+          "blockId": "notes-body",
+          "visible": true
+        },
+        {
+          "blockId": "notes-slides",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "opening--opening--narration": {
+      "id": "opening--opening--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "三分钟读完一篇论文。大家好，这里是翰林院传达室，今天给大家带来石溪大学与 Meta AI 的《超越答案：为学生构造推理轨迹》。"
+        }
+      ]
+    },
+    "evidence--draft--narration": {
+      "id": "evidence--draft--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "训练推理模型时，答案正确的轨迹就一定好用吗？看这个多跳问答示意：两部作品的导演，是不是同一国籍？左边资料分别给出作品、导演和国籍。学生草稿找到了两位导演，却直接跳到同一国籍，省略了支撑结论的中间关系。"
+        }
+      ]
+    },
+    "evidence--bridge--narration": {
+      "id": "evidence--bridge--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先沿证据确认，导演甲来自甲国，导演乙也来自甲国，再连接到同国结论。现在，学生要学习的不只是答案，还包括如何把资料里的关系串起来。这篇论文进一步问：怎样改写草稿，才能让这些中间内容更适合目标学生使用？"
+        }
+      ]
+    },
+    "branches--revise--narration": {
+      "id": "branches--revise--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "ReDiST 从目标学生自己生成的草稿出发。先选一份草稿：如果最终答案正确，就让教师根据题目证据修订，保留有依据的推理，删除无关内容，补出关键实体与关系。这条修订分支不会另外提供标准答案字段。"
+        }
+      ]
+    },
+    "branches--repair--narration": {
+      "id": "branches--repair--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "如果草稿答错，则进入修复分支，教师额外拿到核实的答案，并对照证据纠正推导。这样，原本失败的问题也有机会得到可用示范。两种分支都会产生多个编辑候选，但教师写出的版本，还要再过学生这一关。"
+        }
+      ]
+    },
+    "reader--screen--narration": {
+      "id": "reader--screen--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "作者让一个参数冻结的学生副本，读取问题、证据和每条候选轨迹，看它能不能恢复正确答案。画面中，原草稿没有通过，两个修订候选通过了。这是在目标学生身上取得选择信号，避免只凭教师觉得文字更漂亮，就认定它更好学。"
+        }
+      ]
+    },
+    "reader--select--narration": {
+      "id": "reader--select--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "接着，对通过的候选按核实答案的概率得分排序，把最高的那条送入训练。如果没有候选通过，原稿本来答对就保留它，否则退回只监督最终答案。读回成功是一个筛选依据，真正有没有教学收益，还要训练后用新题检验。"
+        }
+      ]
+    },
+    "train--loss--narration": {
+      "id": "train--loss--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "选定的中间推理和核实答案一起成为训练目标。长推理有很多词，短答案在平均损失里占比很小，所以作者在完整输出监督之外，再加一项适度的答案监督。注意，完整输出本来就包含答案；数据怎样构造、答案怎样加权，是两项不同的设计。"
+        }
+      ]
+    },
+    "results--original--narration": {
+      "id": "results--original--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "看原论文结果图，横轴是最终答案完全匹配的比例，虚线是训练前的模型。左边是训练所用的 MuSiQue 任务，旁边的 2Wiki 是另一套多跳问答评测。只训练答案，左边明显提高，迁移任务却从百分之五十一点六降到四十七点九。"
+        }
+      ]
+    },
+    "results--compare--narration": {
+      "id": "results--compare--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "再把四种方法放到两把相同的尺上。原始轨迹训练达到四十二点六和五十二点一，而 ReDiST 达到五十八点四和六十八点六，源任务和迁移任务都提高了。这里比较的是包含编辑、筛选和损失设置的完整训练配方，不能把全部收益归到单独一次改写。"
+        }
+      ]
+    },
+    "scope--scope--narration": {
+      "id": "scope--scope--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这条流程的关键，是同时考虑推理内容和学生适配。冻结读者也能利用题目证据，因此读回成功不等于每一步都正确。作者在四种学生上做了比较，优势随模型和评测变化。推理时只用训练后的学生，是否值得这样改数据，最终看目标任务与迁移任务的实际收益。"
+        }
+      ]
+    },
+    "ending--ending--narration": {
+      "id": "ending--ending--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "一句话总结：围绕学生自己的草稿补强推理，再让学生参与选择，把轨迹改成更有教学价值的示范。想看哪篇论文，欢迎在评论区留言。翰林院传达室为您分享最新论文，我们下期见。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "opening--definition": {
+      "id": "opening--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/opening.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "opening",
+          "title": "学生适配的推理轨迹"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          15000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "学生适配的推理轨迹；"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "evidence--definition": {
+      "id": "evidence--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/evidence.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "draft",
+          "title": "先看学生自己的推理草稿"
+        },
+        {
+          "id": "bridge",
+          "title": "把支持结论的中间关系补出来"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          23000,
+          24000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "先看学生自己的推理草稿；两部作品的导演，同一国籍吗？；学生草稿\n把支持结论的中间关系补出来；两位导演 → 甲国；证据 → 中间关系 → 结论"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "branches--definition": {
+      "id": "branches--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/branches.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "revise",
+          "title": "答对的草稿：用证据补强过程"
+        },
+        {
+          "id": "repair",
+          "title": "答错的草稿：额外提供核实答案"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          23000,
+          22000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "答对的草稿：用证据补强过程；同一问题与证据；答案正确；关系缺失；修订；补全关系\n答错的草稿：额外提供核实答案；；答案错误；推断有误；修复；纠正推导"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "reader--definition": {
+      "id": "reader--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/reader.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "screen",
+          "title": "先检查：学生能否读回正确答案"
+        },
+        {
+          "id": "select",
+          "title": "通过筛选后，再按答案得分选择"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          24000,
+          25000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "先检查：学生能否读回正确答案；冻结的学生副本；读取题目、证据；再读取候选轨迹\n通过筛选后，再按答案得分选择；选定教学轨迹；全失败：正确原稿／仅答案"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "train--definition": {
+      "id": "train--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/train.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "loss",
+          "title": "完整输出监督，加上适度的答案监督"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          24000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "完整输出监督，加上适度的答案监督；选定示范；完整输出监督；答案额外监督；学生训练"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "results--definition": {
+      "id": "results--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/results.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "original",
+          "title": "读原图：训练任务和迁移任务分开看"
+        },
+        {
+          "id": "compare",
+          "title": "同一方法，在两种评测上比较"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          26000,
+          29000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "读原图：训练任务和迁移任务分开看；\n同一方法，在两种评测上比较；MuSiQue · 源任务 EM%；2Wiki · 迁移 EM%；ReDiST：58.4 / 68.6"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "scope--definition": {
+      "id": "scope--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/scope.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "scope",
+          "title": "更好的示范，要适合具体学生与任务"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          23000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "更好的示范，要适合具体学生与任务；有依据的推理；学生选择信号；训练后评测"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "ending--definition": {
+      "id": "ending--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/ending.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "ending",
+          "title": "围绕学生草稿改写，再让学生参与选择"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          19000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "围绕学生草稿改写，再让学生参与选择；"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "tts",
+        "voice": {
+          "engine": "volcengine",
+          "voice": "zh_female_tianmeitaozi_uranus_bigtts"
+        }
+      },
+      "narrationStart": "with-animation",
+      "trailingPauseMs": 350
+    },
+    "sectionOverrides": {
+      "p-opening": {
+        "captionVisible": false
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

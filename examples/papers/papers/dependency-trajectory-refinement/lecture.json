@@ -1,0 +1,936 @@
+{
+  "schemaVersion": 1,
+  "id": "71038761-15e3-403f-bd7b-711547dc46fa",
+  "metadata": {
+    "title": "依赖关系怎样改写智能体轨迹",
+    "lang": "zh-CN",
+    "description": "先识别轮次依赖，再剪枝、合并与连贯改写，用可见操作解析智能体训练轨迹的整理。",
+    "tags": [
+      "论文",
+      "大模型",
+      "智能体",
+      "训练数据"
+    ],
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-speech"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "lecture": {
+        "video": {
+          "burn": "zh-CN",
+          "contactSheet": true,
+          "size": [
+            1920,
+            1080
+          ],
+          "fps": 30
+        }
+      }
+    }
+  },
+  "sectionOrder": [
+    "p-opening",
+    "p-mechanism",
+    "p-merge",
+    "p-results",
+    "p-scope",
+    "p-ending",
+    "p-notes"
+  ],
+  "sections": {
+    "p-opening": {
+      "id": "p-opening",
+      "title": "三分钟读完一篇论文：改写智能体轨迹",
+      "level": 2,
+      "children": [
+        "opening-scene"
+      ],
+      "stepOrder": [
+        "opening-step-0"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-mechanism": {
+      "id": "p-mechanism",
+      "title": "先找到每轮结果的下游用途",
+      "level": 2,
+      "children": [
+        "mechanism-scene"
+      ],
+      "stepOrder": [
+        "mechanism-step-0",
+        "mechanism-step-1",
+        "mechanism-step-2"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-merge": {
+      "id": "p-merge",
+      "title": "合并独立查询，再修复思考衔接",
+      "level": 2,
+      "children": [
+        "merge-scene"
+      ],
+      "stepOrder": [
+        "merge-step-0",
+        "merge-step-1"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-results": {
+      "id": "p-results",
+      "title": "准确率与推理成本是两个不同目标",
+      "level": 2,
+      "children": [
+        "results-scene"
+      ],
+      "stepOrder": [
+        "results-step-0",
+        "results-step-1"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-scope": {
+      "id": "p-scope",
+      "title": "轨迹的交互格式要与推理阶段匹配",
+      "level": 2,
+      "children": [
+        "scope-scene"
+      ],
+      "stepOrder": [
+        "scope-step-0"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-ending": {
+      "id": "p-ending",
+      "title": "一句话总结",
+      "level": 2,
+      "children": [
+        "ending-scene"
+      ],
+      "stepOrder": [
+        "ending-step-0"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-notes": {
+      "id": "p-notes",
+      "title": "来源与说明",
+      "level": 2,
+      "children": [
+        "notes-web",
+        "notes-slides"
+      ],
+      "stepOrder": [
+        "notes-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "opening-scene": {
+      "id": "opening-scene",
+      "type": "component",
+      "definitionId": "opening-definition",
+      "parameters": {
+        "institution": "上海科技大学",
+        "title": "Trajectory Refinement",
+        "titleZh": "按依赖改写轨迹",
+        "authors": "Zhuo Chen 等",
+        "venue": "AACL 2026 Findings · arXiv 2609.18417",
+        "compact": true
+      }
+    },
+    "mechanism-scene": {
+      "id": "mechanism-scene",
+      "type": "component",
+      "definitionId": "mechanism-definition",
+      "parameters": {
+        "frames": [
+          {
+            "title": "一次任务，留下完整轨迹",
+            "labels": [
+              "提问",
+              "找到资料",
+              "无用检索",
+              "整合证据",
+              "回答",
+              "时间顺序",
+              "机制示意"
+            ],
+            "source": "方法 §2.1 · 具体任务为机制示意"
+          },
+          {
+            "title": "同一批轮次，按结果依赖重排",
+            "labels": [
+              "结果依赖",
+              "第二轮 → 第四轮 → 回答",
+              "第三轮：无下游使用"
+            ],
+            "source": "方法 §2.2 · DAG为轮次依赖图"
+          },
+          {
+            "title": "L1：剪掉没有下游用途的分支",
+            "labels": [
+              "无下游用途",
+              "保留问题与最终回答",
+              "保留证据链"
+            ],
+            "source": "方法 §2.3 · Leaf Prune，迭代剪枝"
+          }
+        ]
+      }
+    },
+    "merge-scene": {
+      "id": "merge-scene",
+      "type": "component",
+      "definitionId": "merge-definition",
+      "parameters": {
+        "frames": [
+          {
+            "title": "L2：合并同上游、同下游的查询",
+            "labels": [
+              "比较任务",
+              "查询对象甲",
+              "查询对象乙",
+              "整合比较",
+              "同上游 · 同下游",
+              "独立查询 → 同一轮"
+            ],
+            "source": "方法 §2.3 · Strict Merge，例子为机制示意"
+          },
+          {
+            "title": "L2a：连接思考，保留工具证据",
+            "labels": [
+              "先查甲的信息",
+              "再查乙的信息",
+              "分别查询甲乙，再汇总比较",
+              "工具调用 + 返回内容：原样保留",
+              "L2 + 连贯改写 → L2a"
+            ],
+            "source": "方法 §2.4 · 只改写合并后的思考文本"
+          }
+        ]
+      }
+    },
+    "results-scene": {
+      "id": "results-scene",
+      "type": "component",
+      "definitionId": "results-definition",
+      "parameters": {
+        "frames": [
+          {
+            "title": "原图比较：L1提高平均准确率",
+            "labels": [
+              "原始轨迹 SFT",
+              "48.35%",
+              "L1 · 保守剪枝",
+              "50.04%",
+              "+1.69 个百分点"
+            ],
+            "source": "论文图1 / 表2 · Qwen3-VL-30B-A3B-Thinking · 四基准平均",
+            "values": [
+              48.35,
+              50.04
+            ]
+          },
+          {
+            "title": "原图比较：L2a降低推理成本",
+            "labels": [
+              "L2a · 平均准确率",
+              "48.10%",
+              "平均推理 token",
+              "20,940 → 10,977",
+              "减少 47.58%"
+            ],
+            "source": "论文表2 · L2a为另一配置 · 准确率48.10，基线48.35",
+            "values": [
+              20940,
+              10977
+            ]
+          }
+        ]
+      }
+    },
+    "scope-scene": {
+      "id": "scope-scene",
+      "type": "component",
+      "definitionId": "scope-definition",
+      "parameters": {
+        "frames": [
+          {
+            "title": "合并力度，需要匹配工具协议",
+            "labels": [
+              "工具调用甲",
+              "工具调用乙",
+              "推理接口",
+              "每轮一次",
+              "重复交互",
+              "训练格式 ↔ 推理协议"
+            ],
+            "source": "论文 §4 / 附录E · 更激进L3受单次调用协议影响"
+          }
+        ]
+      }
+    },
+    "ending-scene": {
+      "id": "ending-scene",
+      "type": "component",
+      "definitionId": "ending-definition",
+      "parameters": {
+        "summary": "按依赖整理轨迹，保留证据链",
+        "paper": "Dependency-Aware Trajectory Refinement"
+      }
+    },
+    "notes-web": {
+      "id": "notes-web",
+      "type": "text",
+      "only": [
+        "web"
+      ],
+      "content": [
+        {
+          "id": "notes-reference",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "href": "https://arxiv.org/abs/2609.18417v1",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Dependency-Aware Trajectory Refinement for Efficient Multi-Turn Agent Fine-Tuning, Zhuo Chen等，arXiv2609.18417v1。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "notes-evidence",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "机制依据第2节；结果为表2和原图1，Qwen3-VL-30B-A3B-Thinking，6196条轨迹，四个多模态工具问答基准平均。L1与L2a是不同配置；准确率差1.69个百分点，L2a推理token减幅47.58%。具体五轮任务与查询甲乙为机制示意。"
+            }
+          ]
+        }
+      ]
+    },
+    "notes-slides": {
+      "id": "notes-slides",
+      "type": "text",
+      "only": [
+        "slides"
+      ],
+      "content": [
+        {
+          "id": "notes-short",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "完整来源与条件见网页版。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "opening-step-0": {
+      "id": "opening-step-0",
+      "sectionId": "p-opening",
+      "visuals": [
+        {
+          "blockId": "opening-scene",
+          "visible": true,
+          "state": "s0"
+        }
+      ],
+      "narrationIds": [
+        "opening-narration-0"
+      ]
+    },
+    "mechanism-step-0": {
+      "id": "mechanism-step-0",
+      "sectionId": "p-mechanism",
+      "visuals": [
+        {
+          "blockId": "mechanism-scene",
+          "visible": true,
+          "state": "s0"
+        }
+      ],
+      "narrationIds": [
+        "mechanism-narration-0"
+      ]
+    },
+    "mechanism-step-1": {
+      "id": "mechanism-step-1",
+      "sectionId": "p-mechanism",
+      "visuals": [
+        {
+          "blockId": "mechanism-scene",
+          "visible": true,
+          "state": "s1"
+        }
+      ],
+      "narrationIds": [
+        "mechanism-narration-1"
+      ]
+    },
+    "mechanism-step-2": {
+      "id": "mechanism-step-2",
+      "sectionId": "p-mechanism",
+      "visuals": [
+        {
+          "blockId": "mechanism-scene",
+          "visible": true,
+          "state": "s2"
+        }
+      ],
+      "narrationIds": [
+        "mechanism-narration-2"
+      ]
+    },
+    "merge-step-0": {
+      "id": "merge-step-0",
+      "sectionId": "p-merge",
+      "visuals": [
+        {
+          "blockId": "merge-scene",
+          "visible": true,
+          "state": "s0"
+        }
+      ],
+      "narrationIds": [
+        "merge-narration-0"
+      ]
+    },
+    "merge-step-1": {
+      "id": "merge-step-1",
+      "sectionId": "p-merge",
+      "visuals": [
+        {
+          "blockId": "merge-scene",
+          "visible": true,
+          "state": "s1"
+        }
+      ],
+      "narrationIds": [
+        "merge-narration-1"
+      ]
+    },
+    "results-step-0": {
+      "id": "results-step-0",
+      "sectionId": "p-results",
+      "visuals": [
+        {
+          "blockId": "results-scene",
+          "visible": true,
+          "state": "s0"
+        }
+      ],
+      "narrationIds": [
+        "results-narration-0"
+      ]
+    },
+    "results-step-1": {
+      "id": "results-step-1",
+      "sectionId": "p-results",
+      "visuals": [
+        {
+          "blockId": "results-scene",
+          "visible": true,
+          "state": "s1"
+        }
+      ],
+      "narrationIds": [
+        "results-narration-1"
+      ]
+    },
+    "scope-step-0": {
+      "id": "scope-step-0",
+      "sectionId": "p-scope",
+      "visuals": [
+        {
+          "blockId": "scope-scene",
+          "visible": true,
+          "state": "s0"
+        }
+      ],
+      "narrationIds": [
+        "scope-narration-0"
+      ]
+    },
+    "ending-step-0": {
+      "id": "ending-step-0",
+      "sectionId": "p-ending",
+      "visuals": [
+        {
+          "blockId": "ending-scene",
+          "visible": true,
+          "state": "s0"
+        }
+      ],
+      "narrationIds": [
+        "ending-narration-0"
+      ]
+    },
+    "notes-step": {
+      "id": "notes-step",
+      "sectionId": "p-notes",
+      "visuals": [
+        {
+          "blockId": "notes-web",
+          "visible": true
+        },
+        {
+          "blockId": "notes-slides",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "opening-narration-0": {
+      "id": "opening-narration-0",
+      "content": [
+        {
+          "type": "text",
+          "text": "三分钟读完一篇论文。大家好，这里是翰林院传达室，今天给大家带来上海科技大学的《依赖感知的智能体轨迹精炼》。"
+        }
+      ]
+    },
+    "mechanism-narration-0": {
+      "id": "mechanism-narration-0",
+      "content": [
+        {
+          "type": "text",
+          "text": "智能体的一次任务，会留下提问、工具调用、返回结果和最终回答，这份完整记录就叫轨迹。图中每个编号是一轮。这个示意里，第二轮找到了资料，第三轮检索没有提供新信息，第四轮整合证据，第五轮回答。把整份记录直接用于监督微调，也会让模型模仿这些多余步骤。"
+        }
+      ]
+    },
+    "mechanism-narration-1": {
+      "id": "mechanism-narration-1",
+      "content": [
+        {
+          "type": "text",
+          "text": "论文先让大模型标注轮次之间的依赖关系。跟着相同的编号看：轮次按实际使用的结果重新排开。绿色连线表示，后一步用了前一步产生的事实或中间结论。第二轮的信息传给第四轮，再支持最终回答。第三轮虽然发生在中间，结果却没有被后面使用。时间相邻和证据依赖，在这里分开了。"
+        }
+      ]
+    },
+    "mechanism-narration-2": {
+      "id": "mechanism-narration-2",
+      "content": [
+        {
+          "type": "text",
+          "text": "接下来执行剪枝，也就是论文的L1。先找没有下游用途的叶子轮次，保留用户问题和最终回答，再把第三轮移出。剩下的轮次仍连着完整证据链。如果删掉一个叶子后，上游也失去用途，就继续检查。决定去留的依据，是结果有没有被使用。"
+        }
+      ]
+    },
+    "merge-narration-0": {
+      "id": "merge-narration-0",
+      "content": [
+        {
+          "type": "text",
+          "text": "另一种操作是严格合并，也就是L2。看这个新例子：同一个问题，需要分别查询两个对象的信息，结果都交给同一轮做比较。两个查询拥有相同上游和相同下游，就可以放进同一轮。画面里两个查询汇到一起，查询本身和返回内容都保留，只减少轮次边界。"
+        }
+      ]
+    },
+    "merge-narration-1": {
+      "id": "merge-narration-1",
+      "content": [
+        {
+          "type": "text",
+          "text": "合并以后，原来两段思考直接拼接，读起来可能断裂。论文增加一次语言改写，把思考连接成连贯段落，并保留任务切换和工具引用。下方的工具调用与返回内容原样保留。这套严格合并加思考改写的配置，叫L2a。整理后的轨迹再进入监督微调。"
+        }
+      ]
+    },
+    "results-narration-0": {
+      "id": "results-narration-0",
+      "content": [
+        {
+          "type": "text",
+          "text": "来看论文原图。横轴是每条测试轨迹平均使用的token，越往左成本越低；纵轴是四个多模态问答基准的平均准确率，越高越好。实验在同一基座上，用六千一百九十六条轨迹训练。灰色方块是原始轨迹SFT。保守剪枝L1把平均准确率从百分之四十八点三五提高到五十点零四。"
+        }
+      ]
+    },
+    "results-narration-1": {
+      "id": "results-narration-1",
+      "content": [
+        {
+          "type": "text",
+          "text": "再把视线移到L2a。它的平均准确率为百分之四十八点一零，接近原始SFT；平均推理token从两万零九百四十，降到一万零九百七十七，减少约百分之四十八。这是更偏向效率的配置。L1的最高准确率和L2a的成本优势，来自两种不同的编辑方案。"
+        }
+      ]
+    },
+    "scope-narration-0": {
+      "id": "scope-narration-0",
+      "content": [
+        {
+          "type": "text",
+          "text": "还有一个实际条件：改写后的交互格式，要符合推理时的工具协议。论文中，更激进的合并把多个调用塞进同一轮；在每轮只允许一次工具调用的设置下，部分样本反而出现重复交互，推理成本上升。选择编辑力度时，需要一起核对数据依赖和实际调用方式。"
+        }
+      ]
+    },
+    "ending-narration-0": {
+      "id": "ending-narration-0",
+      "content": [
+        {
+          "type": "text",
+          "text": "一句话总结：先找清每轮结果被谁使用，再剪枝、合并和改写，才能让训练轨迹更精简。想看哪篇论文，欢迎在评论区留言。翰林院传达室为您分享最新论文，我们下期见。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "opening-definition": {
+      "id": "opening-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/opening.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "s0"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          13000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "品牌封面与论文信息"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "mechanism-definition": {
+      "id": "mechanism-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/mechanism.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "s0"
+        },
+        {
+          "id": "s1"
+        },
+        {
+          "id": "s2"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          22000,
+          22000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "同一组轮次从时间顺序重排为依赖图，删除无用途的第三轮"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "merge-definition": {
+      "id": "merge-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/merge.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "s0"
+        },
+        {
+          "id": "s1"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          21000,
+          21000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "同父同子的查询滑合；连贯重写思考而保留工具证据"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "results-definition": {
+      "id": "results-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/results.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "s0"
+        },
+        {
+          "id": "s1"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          22000,
+          21000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "论文图1：先读轴和基线，再分别比较L1准确率与L2a成本"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "scope-definition": {
+      "id": "scope-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/scope.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "s0"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "合并工具包经过单次调用接口，超额工具包退回"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "ending-definition": {
+      "id": "ending-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/ending.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "s0"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          17000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "按依赖整理轨迹，保留证据与交互格式"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "tts",
+        "voice": {
+          "engine": "volcengine",
+          "voice": "zh_female_tianmeitaozi_uranus_bigtts"
+        }
+      },
+      "narrationStart": "with-animation",
+      "trailingPauseMs": 220
+    },
+    "sectionOverrides": {
+      "p-opening": {
+        "captionVisible": false
+      }
+    },
+    "stepOverrides": {
+      "ending-step-0": {
+        "trailingPauseMs": 1000
+      }
+    },
+    "mediaClips": [],
+    "captions": {
+      "scale": 1
+    }
+  }
+}

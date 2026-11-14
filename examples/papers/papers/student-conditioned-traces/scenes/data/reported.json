@@ -1,0 +1,23 @@
+{
+  "source": "arXiv:2610.23831v1 Table 1, Qwen3-8B; MuSiQue-only gradient updates",
+  "metric": "Exact Match (%)",
+  "methods": [
+    "Raw",
+    "Answer-only",
+    "Original trace",
+    "ReDiST"
+  ],
+  "source_musique": [
+    34.2,
+    56.2,
+    42.6,
+    58.4
+  ],
+  "transfer_2wiki": [
+    51.6,
+    47.9,
+    52.1,
+    68.6
+  ],
+  "gain_vs_original_trace_2wiki_pp": 16.5
+}

@@ -1,0 +1,11 @@
+{
+  "source": "arXiv:2602.22508v3 Table 2; Figure 4 right, Section 5.2",
+  "metric": "math avg@8 (%)",
+  "unedited": 83.1,
+  "token_matched": 83.2,
+  "whole_rewrite": 73.9,
+  "agentic_edit": 85.4,
+  "planning_unedited": 11.5,
+  "planning_agentic": 87.5,
+  "gain_pp": 2.3
+}

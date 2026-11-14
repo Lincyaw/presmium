@@ -1,5 +1,12 @@
 # @lincyaw/skills
 
+## 1.0.0-rc.93
+
+### Patch Changes
+
+- Add eight narrated examples on rewriting reasoning traces and strengthen the paper-to-Xiaohongshu workflow with independent animation review, early transition checks, batch drafts and verified native scheduling.
+- @lincyaw/kernel@1.0.0-rc.93
+
 ## 1.0.0-rc.92
 
 ### Patch Changes
