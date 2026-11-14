@@ -1,0 +1,264 @@
+{
+  "paper": "arxiv:2611.14912v1",
+  "sources": {
+    "source_scores": "app_exp.tex / tab:benchmark_results",
+    "matched_budget_scores": "figures/plot_1_exp1_4_reasoning.png, orange bars",
+    "mixed_scores": "app_exp.tex / tab:eval_std; experiments.tex / fig:plot_3_mix2",
+    "counts": "app_exp.tex B.3.2; experiments.tex 3.2",
+    "coverage": "figures/distribution_method_usage.png (total covered methods, not tail count)",
+    "tail_usage": "app_exp.tex / tab:tail_usage"
+  },
+  "source_task_scores": [
+    {
+      "task": "GPQA-Diamond",
+      "scores": [
+        22.7,
+        30.3,
+        21.7,
+        23.7,
+        25.3,
+        21.7,
+        28.8,
+        27.3,
+        27.3
+      ]
+    },
+    {
+      "task": "HEAD-QA",
+      "scores": [
+        33.6,
+        33.6,
+        32.9,
+        33.3,
+        33.1,
+        33.0,
+        32.1,
+        31.6,
+        31.4
+      ]
+    },
+    {
+      "task": "ARC",
+      "scores": [
+        42.1,
+        42.0,
+        40.3,
+        40.8,
+        41.6,
+        42.9,
+        40.3,
+        40.0,
+        37.8
+      ]
+    },
+    {
+      "task": "ACPBench",
+      "scores": [
+        23.3,
+        50.1,
+        58.0,
+        56.6,
+        53.4,
+        50.7,
+        43.7,
+        46.6,
+        45.3
+      ]
+    },
+    {
+      "task": "BIG-Bench Hard",
+      "scores": [
+        10.9,
+        42.9,
+        33.8,
+        34.4,
+        37.3,
+        35.6,
+        34.1,
+        37.7,
+        42.1
+      ]
+    },
+    {
+      "task": "C-Eval",
+      "scores": [
+        40.1,
+        43.6,
+        42.4,
+        36.4,
+        47.8,
+        28.2,
+        52.9,
+        53.8,
+        36.5
+      ]
+    },
+    {
+      "task": "COPAL-ID",
+      "scores": [
+        61.7,
+        60.8,
+        60.1,
+        59.7,
+        60.3,
+        61.4,
+        59.0,
+        59.4,
+        59.0
+      ]
+    },
+    {
+      "task": "GroundCocoa",
+      "scores": [
+        34.7,
+        34.8,
+        35.6,
+        36.8,
+        37.0,
+        36.7,
+        34.6,
+        34.2,
+        33.2
+      ]
+    },
+    {
+      "task": "MMLU-Pro",
+      "scores": [
+        9.2,
+        45.7,
+        19.4,
+        17.9,
+        21.3,
+        3.8,
+        0.7,
+        1.2,
+        1.1
+      ]
+    },
+    {
+      "task": "MMLU-Pro+",
+      "scores": [
+        21.0,
+        31.8,
+        13.8,
+        15.1,
+        15.1,
+        2.5,
+        1.6,
+        1.1,
+        0.8
+      ]
+    },
+    {
+      "task": "OpenBookQA",
+      "scores": [
+        28.6,
+        33.2,
+        30.6,
+        32.8,
+        32.4,
+        32.2,
+        30.2,
+        30.0,
+        27.2
+      ]
+    },
+    {
+      "task": "PIQA",
+      "scores": [
+        77.1,
+        76.1,
+        76.2,
+        76.3,
+        76.7,
+        76.5,
+        77.3,
+        77.1,
+        77.5
+      ]
+    }
+  ],
+  "source_reported_mean": {
+    "base": 33.8,
+    "rl": 43.8,
+    "sft_rl_source": 38.7,
+    "mix_90_10": 38.7,
+    "mix_70_30": 40.1,
+    "mix_50_50": 35.4,
+    "mix_30_70": 36.3,
+    "mix_10_90": 36.7,
+    "sft_qwen3_source": 34.9
+  },
+  "source_mean_from_rounded_task_scores": {
+    "base": 33.75,
+    "rl": 43.7417,
+    "sft_rl_source": 38.7333,
+    "mix_90_10": 38.65,
+    "mix_70_30": 40.1083,
+    "mix_50_50": 35.4333,
+    "mix_30_70": 36.275,
+    "mix_10_90": 36.6667,
+    "sft_qwen3_source": 34.9333
+  },
+  "rounding_difference": {
+    "base": -0.05,
+    "rl": -0.0583,
+    "sft_rl_source": 0.0333,
+    "mix_90_10": -0.05,
+    "mix_70_30": 0.0083,
+    "mix_50_50": 0.0333,
+    "mix_30_70": -0.025,
+    "mix_10_90": -0.0333,
+    "sft_qwen3_source": 0.0333
+  },
+  "training_pairs": {
+    "correct": 39623,
+    "final_answer_incorrect": 98641,
+    "total": 138264
+  },
+  "matched_budget_rl_source_scores": [
+    38.7,
+    39.9,
+    42.7,
+    43.7
+  ],
+  "rl_reference": 43.8,
+  "mixed_90_10": {
+    "score": 44.4,
+    "evaluation_stderr": 0.42,
+    "rl_score": 43.8,
+    "rl_stderr": 0.43,
+    "mean_difference": 0.6
+  },
+  "qwen3_8b": {
+    "best_mix": [
+      50,
+      50
+    ],
+    "sft": 42.6,
+    "rl": 42.5,
+    "mean_difference": 0.1
+  },
+  "rl_source_total_method_coverage": {
+    "k": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "covered": [
+      101,
+      119,
+      128,
+      132
+    ],
+    "identified_methods": 138,
+    "minimum_occurrences": 100
+  },
+  "tail_usage_mmlu_pro_in_correct_rollouts": {
+    "reduced_tail": 40,
+    "full_data": 108,
+    "difference": 68
+  },
+  "notes": "Task scores are rounded in the paper. Keep the reported aggregate in the film; recomputed means are a consistency check. Rollout count is not API calls or end-to-end total compute. Tail usage is a multilabel LLM annotation count, not accuracy."
+}

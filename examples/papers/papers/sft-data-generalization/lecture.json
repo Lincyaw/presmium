@@ -1,0 +1,1876 @@
+{
+  "schemaVersion": 1,
+  "id": "4d46d8e0-8154-42dc-bea7-dda6f6b42ebb",
+  "metadata": {
+    "title": "SFT 也能泛化：训练数据的作用",
+    "lang": "zh-CN",
+    "description": "沿着同一道题的解题轨迹，比较数据来源、训练预算与解法覆盖如何改变 SFT 的跨领域泛化表现。",
+    "tags": [
+      "论文",
+      "大模型",
+      "SFT",
+      "强化学习",
+      "泛化"
+    ],
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-speech"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {},
+      "lecture": {
+        "maximumDurationMs": 360000,
+        "video": {
+          "burn": "zh-CN",
+          "contactSheet": true,
+          "size": [
+            1920,
+            1080
+          ],
+          "fps": 30
+        }
+      }
+    }
+  },
+  "sectionOrder": [
+    "p-opening",
+    "p-question",
+    "p-setup",
+    "p-source",
+    "p-budget",
+    "p-results",
+    "p-methods",
+    "p-scope",
+    "p-ending",
+    "p-notes"
+  ],
+  "sections": {
+    "p-opening": {
+      "id": "p-opening",
+      "title": "SFT 泛化差异背后的训练数据",
+      "level": 2,
+      "children": [
+        "opening--scene"
+      ],
+      "stepOrder": [
+        "opening--opening"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-question": {
+      "id": "p-question",
+      "title": "先看解题过程，再比较训练方式",
+      "level": 2,
+      "children": [
+        "question--scene"
+      ],
+      "stepOrder": [
+        "question--puzzle",
+        "question--learning-signal"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-setup": {
+      "id": "p-setup",
+      "title": "在数学题上训练，观察其他领域",
+      "level": 2,
+      "children": [
+        "setup--scene"
+      ],
+      "stepOrder": [
+        "setup--setup"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-source": {
+      "id": "p-source",
+      "title": "换数据来源，分数就会改变",
+      "level": 2,
+      "children": [
+        "source--scene"
+      ],
+      "stepOrder": [
+        "source--sources"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-budget": {
+      "id": "p-budget",
+      "title": "把训练数据放到同一把尺上",
+      "level": 2,
+      "children": [
+        "budget--scene"
+      ],
+      "stepOrder": [
+        "budget--one-eight",
+        "budget--correct",
+        "budget--all"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-results": {
+      "id": "p-results",
+      "title": "看原图：差距随匹配口径收窄",
+      "level": 2,
+      "children": [
+        "results--scene"
+      ],
+      "stepOrder": [
+        "results--budget-figure",
+        "results--mixed"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-methods": {
+      "id": "p-methods",
+      "title": "为什么多看轨迹可能帮助迁移",
+      "level": 2,
+      "children": [
+        "methods--scene"
+      ],
+      "stepOrder": [
+        "methods--coverage",
+        "methods--coverage-figure",
+        "methods--tail"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-scope": {
+      "id": "p-scope",
+      "title": "结论依赖哪些实验条件",
+      "level": 2,
+      "children": [
+        "scope--scene"
+      ],
+      "stepOrder": [
+        "scope--models",
+        "scope--cost"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-ending": {
+      "id": "p-ending",
+      "title": "比较泛化，先看训练数据",
+      "level": 2,
+      "children": [
+        "ending--scene"
+      ],
+      "stepOrder": [
+        "ending--ending"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-notes": {
+      "id": "p-notes",
+      "title": "来源与说明",
+      "level": 2,
+      "children": [
+        "notes-body",
+        "notes-slides"
+      ],
+      "stepOrder": [
+        "notes-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "opening--scene": {
+      "id": "opening--scene",
+      "type": "component",
+      "definitionId": "opening--definition",
+      "parameters": {
+        "scene": "opening",
+        "alt": "SFT 泛化差异背后的训练数据",
+        "frames": [
+          {
+            "id": "opening",
+            "kind": "opening",
+            "title": "数据配齐后，SFT 也能泛化",
+            "labels": [],
+            "source": "arXiv 2611.14912v1"
+          }
+        ],
+        "institution": "NUS · Yale · Cisco Foundation AI",
+        "title": "SFT Data",
+        "titleZh": "数据配齐后，也能泛化",
+        "authors": "Hou、Zhang、Cheng 等",
+        "venue": "arXiv · 2026",
+        "compact": true
+      }
+    },
+    "question--scene": {
+      "id": "question--scene",
+      "type": "component",
+      "definitionId": "question--definition",
+      "parameters": {
+        "scene": "question",
+        "alt": "先看解题过程，再比较训练方式",
+        "frames": [
+          {
+            "id": "puzzle",
+            "kind": "puzzle",
+            "title": "同题比较，轨迹数量一样吗？",
+            "labels": [
+              "同一道题",
+              "SFT",
+              "RL",
+              "解题轨迹"
+            ],
+            "source": "示意 · 论文 §3.2"
+          },
+          {
+            "id": "definition",
+            "kind": "definitions",
+            "title": "先分清两种学习信号",
+            "labels": [
+              "SFT · 监督微调",
+              "沿着给定解答学习",
+              "RL · 强化学习",
+              "生成解答，再用结果奖励更新",
+              "轨迹：从问题到最终答案的完整过程"
+            ],
+            "source": "论文 §2 · 图形为示意"
+          }
+        ]
+      }
+    },
+    "setup--scene": {
+      "id": "setup--scene",
+      "type": "component",
+      "definitionId": "setup--definition",
+      "parameters": {
+        "scene": "setup",
+        "alt": "在数学题上训练，观察其他领域",
+        "frames": [
+          {
+            "id": "setup",
+            "kind": "setup",
+            "title": "训练做数学，测试能否迁移",
+            "labels": [
+              "Qwen2.5-7B",
+              "DAPO 数学题",
+              "12 项通用推理",
+              "科学 · 规划 · 语义理解",
+              "0—100 归一化平均分"
+            ],
+            "source": "论文 §3 实验设置、附录 B.4"
+          }
+        ]
+      }
+    },
+    "source--scene": {
+      "id": "source--scene",
+      "type": "component",
+      "definitionId": "source--definition",
+      "parameters": {
+        "scene": "source",
+        "alt": "换数据来源，分数就会改变",
+        "frames": [
+          {
+            "id": "sources",
+            "kind": "sources",
+            "title": "更强的老师，不一定提供更合适的数据",
+            "labels": [
+              "Qwen3-14B 数据",
+              "RL 后模型数据",
+              "同一个待训练模型",
+              "34.9",
+              "38.7",
+              "混合后 40.1"
+            ],
+            "values": [
+              34.9,
+              38.7,
+              40.1
+            ],
+            "source": "论文 §3.1、表 tab:benchmark_results · 通用推理平均分"
+          }
+        ]
+      }
+    },
+    "budget--scene": {
+      "id": "budget--scene",
+      "type": "component",
+      "definitionId": "budget--definition",
+      "parameters": {
+        "scene": "budget",
+        "alt": "把训练数据放到同一把尺上",
+        "frames": [
+          {
+            "id": "one-eight",
+            "kind": "budget",
+            "mode": "prompt",
+            "title": "题目相同，轨迹数量仍不相同",
+            "labels": [
+              "同一道题",
+              "SFT：保留 1 条正确轨迹",
+              "RL：每题采样 8 条",
+              "RL 基线 43.8"
+            ],
+            "values": [
+              1,
+              8
+            ],
+            "source": "论文 §3.2 · 单题采样设置示意"
+          },
+          {
+            "id": "correct",
+            "kind": "budget",
+            "mode": "correct",
+            "title": "先匹配正确轨迹数量",
+            "labels": [
+              "按正确轨迹数匹配",
+              "39,623 条正确轨迹",
+              "SFT · RL 后模型数据",
+              "SFT 通用推理 42.7"
+            ],
+            "values": [
+              39623,
+              42.7
+            ],
+            "source": "论文 §3.2、附录 B.3.2；plot_1_exp1_4_reasoning · 轨迹数量示意"
+          },
+          {
+            "id": "all",
+            "kind": "budget",
+            "mode": "all",
+            "title": "再匹配全部训练轨迹",
+            "labels": [
+              "39,623 正确",
+              "98,641 最终答案错误",
+              "138,264 条训练轨迹",
+              "训练轨迹总量匹配"
+            ],
+            "values": [
+              39623,
+              98641,
+              138264
+            ],
+            "source": "论文 §3.2、附录 B.3.2、G.2"
+          }
+        ]
+      }
+    },
+    "results--scene": {
+      "id": "results--scene",
+      "type": "component",
+      "definitionId": "results--definition",
+      "parameters": {
+        "scene": "results",
+        "alt": "看原图：差距随匹配口径收窄",
+        "frames": [
+          {
+            "id": "budget-figure",
+            "kind": "figure",
+            "figure": "budget",
+            "title": "从按题匹配，到全部轨迹匹配",
+            "labels": [
+              "第2组：可解题对照",
+              "38.7 → 42.7 → 43.7",
+              "RL 基线 43.8",
+              "橙色：RL 后模型数据",
+              "蓝色：Qwen3-14B 数据"
+            ],
+            "values": [
+              38.7,
+              42.7,
+              43.7,
+              43.8
+            ],
+            "source": "论文原图 §3.2 · 12 项通用推理归一化平均分"
+          },
+          {
+            "id": "mixed",
+            "kind": "figure",
+            "figure": "mix",
+            "title": "来源与数量结合，均值可略高",
+            "labels": [
+              "1号柱：90% RL 后模型数据",
+              "10% Qwen3-14B 数据",
+              "44.4 ± 0.42",
+              "RL：43.8 ± 0.43"
+            ],
+            "values": [
+              44.4,
+              43.8
+            ],
+            "source": "论文原图 §3.2、表 tab:eval_std · ± 为评测标准误"
+          }
+        ]
+      }
+    },
+    "methods--scene": {
+      "id": "methods--scene",
+      "type": "component",
+      "definitionId": "methods--definition",
+      "parameters": {
+        "scene": "methods",
+        "alt": "为什么多看轨迹可能帮助迁移",
+        "frames": [
+          {
+            "id": "coverage",
+            "kind": "coverage",
+            "title": "更多轨迹，覆盖更多解题方法",
+            "labels": [
+              "138 类方法",
+              "至少出现 100 次算覆盖",
+              "1 条/题：101 类",
+              "8 条/题：132 类",
+              "点的位置为示意"
+            ],
+            "values": [
+              138,
+              101,
+              132,
+              100
+            ],
+            "source": "论文 §3.3；distribution_method_usage 总方法覆盖数"
+          },
+          {
+            "id": "coverage-figure",
+            "kind": "figure",
+            "figure": "coverage",
+            "title": "原图里的覆盖数，是全部方法",
+            "labels": [
+              "横轴：每题轨迹数",
+              "纵轴：被覆盖的方法数",
+              "橙色：101 → 132",
+              "少见方法也能被更多看见"
+            ],
+            "source": "论文原图 §3.3 · 图轴为 Covered methods"
+          },
+          {
+            "id": "tail",
+            "kind": "tail",
+            "title": "少见方法，也出现在领域外的正确推理中",
+            "labels": [
+              "MMLU-Pro",
+              "仅头部方法样本",
+              "完整数据",
+              "40",
+              "108",
+              "正确轨迹中的长尾方法使用次数"
+            ],
+            "values": [
+              40,
+              108
+            ],
+            "source": "附录表 tab:tail_usage · LLM 方法标注计数，可多标签"
+          }
+        ]
+      }
+    },
+    "scope--scene": {
+      "id": "scope--scene",
+      "type": "component",
+      "definitionId": "scope--definition",
+      "parameters": {
+        "scene": "scope",
+        "alt": "结论依赖哪些实验条件",
+        "frames": [
+          {
+            "id": "models",
+            "kind": "scope",
+            "mode": "models",
+            "title": "另一种模型也接近，最佳比例却变了",
+            "labels": [
+              "Qwen3-8B-Base",
+              "SFT：42.6",
+              "RL：42.5",
+              "最佳混合：50% / 50%",
+              "RL 后模型数据",
+              "Qwen3-14B 数据"
+            ],
+            "values": [
+              42.6,
+              42.5
+            ],
+            "source": "附录 B.1 · tab:qwen3_8b · 通用推理平均分"
+          },
+          {
+            "id": "cost",
+            "kind": "scope",
+            "mode": "cost",
+            "title": "训练预算可比，整套成本仍需分开看",
+            "labels": [
+              "已有 RL 模型",
+              "生成训练轨迹",
+              "SFT 训练",
+              "领域外评测",
+              "训练轨迹 / 梯度预算 ≠ 端到端总成本"
+            ],
+            "source": "论文 §3.2、附录 B.6、G.1 · 误差不含训练种子波动"
+          }
+        ]
+      }
+    },
+    "ending--scene": {
+      "id": "ending--scene",
+      "type": "component",
+      "definitionId": "ending--definition",
+      "parameters": {
+        "scene": "ending",
+        "alt": "比较泛化，先看训练数据",
+        "frames": [
+          {
+            "id": "ending",
+            "kind": "ending",
+            "title": "比较泛化，先把训练数据放到同一把尺上",
+            "labels": [],
+            "source": "arXiv 2611.14912v1"
+          }
+        ],
+        "summary": "比较泛化，先看数据来源、数量与解法覆盖",
+        "paper": "Rethinking “RL Generalizes, SFT Memorizes”"
+      }
+    },
+    "notes-body": {
+      "id": "notes-body",
+      "type": "text",
+      "only": [
+        "web",
+        "notebook"
+      ],
+      "content": [
+        {
+          "id": "notes-paragraph-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "原论文：Rethinking “RL Generalizes, SFT Memorizes”: The Role of SFT Data，arXiv:2611.14912v1，2026-11-11。作者 Yunlong Hou、Fengzhuo Zhang、Yuan Cheng、Jiachun Pan、Xingyao Li、Zhuoran Yang；机构 NUS、Yale、Cisco Foundation AI。"
+            }
+          ]
+        },
+        {
+          "id": "notes-paragraph-1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "主文模型 Qwen2.5-7B；附录 Qwen3-8B-Base。在 DAPO 数学题训练，通用推理为12项任务归一化至0—100后平均。不是单个任务正确率。"
+            }
+          ]
+        },
+        {
+          "id": "notes-paragraph-2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "数据口径：39,623条正确轨迹+98,641条最终答案错误轨迹=138,264条。这里不是数据生成API调用次数或端到端总成本，不以题数乘8推出未报告的总量。"
+            }
+          ]
+        },
+        {
+          "id": "notes-paragraph-3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "主要分数来自主文图 plot_1_exp1_4_reasoning、plot_3_mix2_reasoning 与附录表 tab:benchmark_results、tab:eval_std、tab:qwen3_8b。±为评测集标准误，不含训练种子变异。"
+            }
+          ]
+        },
+        {
+          "id": "notes-paragraph-4",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "方法共138类，LLM标注可多标签；出现至少100次算覆盖；频率末20%称长尾。distribution_method_usage 的101→132是总方法覆盖，不是长尾方法数。MMLU-Pro的40→108为正确轨迹内方法使用计数，不是新增答对题数。"
+            }
+          ]
+        },
+        {
+          "id": "notes-paragraph-5",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "原图取自源码；单题轨迹、方法点图与流程图为示意。最佳混合比例随模型与规模变化。优质SFT数据大量取自已有RL模型；不证明完全无需RL或SFT普遍优于RL。"
+            }
+          ]
+        }
+      ]
+    },
+    "notes-slides": {
+      "id": "notes-slides",
+      "type": "text",
+      "only": [
+        "slides"
+      ],
+      "content": [
+        {
+          "id": "notes-slide-paragraph",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "数字依据与适用条件见网页版“来源与说明”。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "opening--opening": {
+      "id": "opening--opening",
+      "sectionId": "p-opening",
+      "title": "数据配齐后，SFT 也能泛化",
+      "visuals": [
+        {
+          "blockId": "opening--scene",
+          "visible": true,
+          "state": "opening"
+        }
+      ],
+      "narrationIds": [
+        "opening--opening--narration"
+      ]
+    },
+    "question--puzzle": {
+      "id": "question--puzzle",
+      "sectionId": "p-question",
+      "title": "同题比较，轨迹数量一样吗？",
+      "visuals": [
+        {
+          "blockId": "question--scene",
+          "visible": true,
+          "state": "puzzle"
+        }
+      ],
+      "narrationIds": [
+        "question--puzzle--narration"
+      ]
+    },
+    "setup--setup": {
+      "id": "setup--setup",
+      "sectionId": "p-setup",
+      "title": "训练做数学，测试能否迁移",
+      "visuals": [
+        {
+          "blockId": "setup--scene",
+          "visible": true,
+          "state": "setup"
+        }
+      ],
+      "narrationIds": [
+        "setup--setup--narration"
+      ]
+    },
+    "source--sources": {
+      "id": "source--sources",
+      "sectionId": "p-source",
+      "title": "更强的老师，不一定提供更合适的数据",
+      "visuals": [
+        {
+          "blockId": "source--scene",
+          "visible": true,
+          "state": "sources"
+        }
+      ],
+      "narrationIds": [
+        "source--sources--narration"
+      ]
+    },
+    "budget--one-eight": {
+      "id": "budget--one-eight",
+      "sectionId": "p-budget",
+      "title": "题目相同，轨迹数量仍不相同",
+      "visuals": [
+        {
+          "blockId": "budget--scene",
+          "visible": true,
+          "state": "one-eight"
+        }
+      ],
+      "narrationIds": [
+        "budget--one-eight--narration"
+      ]
+    },
+    "budget--correct": {
+      "id": "budget--correct",
+      "sectionId": "p-budget",
+      "title": "先匹配正确轨迹数量",
+      "visuals": [
+        {
+          "blockId": "budget--scene",
+          "visible": true,
+          "state": "correct"
+        }
+      ],
+      "narrationIds": [
+        "budget--correct--narration"
+      ]
+    },
+    "budget--all": {
+      "id": "budget--all",
+      "sectionId": "p-budget",
+      "title": "再匹配全部训练轨迹",
+      "visuals": [
+        {
+          "blockId": "budget--scene",
+          "visible": true,
+          "state": "all"
+        }
+      ],
+      "narrationIds": [
+        "budget--all--narration"
+      ]
+    },
+    "results--budget-figure": {
+      "id": "results--budget-figure",
+      "sectionId": "p-results",
+      "title": "从按题匹配，到全部轨迹匹配",
+      "visuals": [
+        {
+          "blockId": "results--scene",
+          "visible": true,
+          "state": "budget-figure"
+        }
+      ],
+      "narrationIds": [
+        "results--budget-figure--narration"
+      ]
+    },
+    "results--mixed": {
+      "id": "results--mixed",
+      "sectionId": "p-results",
+      "title": "来源与数量结合，均值可略高",
+      "visuals": [
+        {
+          "blockId": "results--scene",
+          "visible": true,
+          "state": "mixed"
+        }
+      ],
+      "narrationIds": [
+        "results--mixed--narration"
+      ]
+    },
+    "methods--coverage": {
+      "id": "methods--coverage",
+      "sectionId": "p-methods",
+      "title": "更多轨迹，覆盖更多解题方法",
+      "visuals": [
+        {
+          "blockId": "methods--scene",
+          "visible": true,
+          "state": "coverage"
+        }
+      ],
+      "narrationIds": [
+        "methods--coverage--narration"
+      ]
+    },
+    "methods--coverage-figure": {
+      "id": "methods--coverage-figure",
+      "sectionId": "p-methods",
+      "title": "原图里的覆盖数，是全部方法",
+      "visuals": [
+        {
+          "blockId": "methods--scene",
+          "visible": true,
+          "state": "coverage-figure"
+        }
+      ],
+      "narrationIds": [
+        "methods--coverage-figure--narration"
+      ]
+    },
+    "methods--tail": {
+      "id": "methods--tail",
+      "sectionId": "p-methods",
+      "title": "少见方法，也出现在领域外的正确推理中",
+      "visuals": [
+        {
+          "blockId": "methods--scene",
+          "visible": true,
+          "state": "tail"
+        }
+      ],
+      "narrationIds": [
+        "methods--tail--narration"
+      ]
+    },
+    "scope--models": {
+      "id": "scope--models",
+      "sectionId": "p-scope",
+      "title": "另一种模型也接近，最佳比例却变了",
+      "visuals": [
+        {
+          "blockId": "scope--scene",
+          "visible": true,
+          "state": "models"
+        }
+      ],
+      "narrationIds": [
+        "scope--models--narration"
+      ]
+    },
+    "scope--cost": {
+      "id": "scope--cost",
+      "sectionId": "p-scope",
+      "title": "训练预算可比，整套成本仍需分开看",
+      "visuals": [
+        {
+          "blockId": "scope--scene",
+          "visible": true,
+          "state": "cost"
+        }
+      ],
+      "narrationIds": [
+        "scope--cost--narration"
+      ]
+    },
+    "ending--ending": {
+      "id": "ending--ending",
+      "sectionId": "p-ending",
+      "title": "比较泛化，先把训练数据放到同一把尺上",
+      "visuals": [
+        {
+          "blockId": "ending--scene",
+          "visible": true,
+          "state": "ending"
+        }
+      ],
+      "narrationIds": [
+        "ending--ending--narration"
+      ]
+    },
+    "notes-step": {
+      "id": "notes-step",
+      "sectionId": "p-notes",
+      "visuals": [
+        {
+          "blockId": "notes-body",
+          "visible": true
+        },
+        {
+          "blockId": "notes-slides",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    },
+    "question--learning-signal": {
+      "id": "question--learning-signal",
+      "sectionId": "p-question",
+      "title": "先分清两种学习信号",
+      "visuals": [
+        {
+          "blockId": "question--scene",
+          "visible": true,
+          "state": "definition"
+        }
+      ],
+      "narrationIds": [
+        "question--definition--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "opening--opening--narration": {
+      "id": "opening--opening--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "三分钟读完一篇论文。大家好，这里是翰林院传达室。今天给大家带来新加坡国立大学、耶鲁大学与思科团队的论文，重新审视监督微调与强化学习的泛化差异。"
+        }
+      ]
+    },
+    "question--puzzle--narration": {
+      "id": "question--puzzle--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "常见的说法是，强化学习更会举一反三，监督微调更像背答案。但如果一个模型每道题只看一份解答，另一个每道题生成八次过程，这样的差距，能全部归因于训练方式吗？"
+        }
+      ]
+    },
+    "question--definition--narration": {
+      "id": "question--definition--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "监督微调，也就是SFT，沿着给定的解答逐步学习。强化学习，也就是RL，先生成解答，再根据答案对错等可验证结果更新。这里的一条轨迹，指从题目到最终答案的一整段解题过程。"
+        }
+      ]
+    },
+    "setup--setup--narration": {
+      "id": "setup--setup--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "作者主要使用千问二点五系列的七B模型，在DAPO数学题上训练，再测试科学、规划和语义理解等十二项通用推理任务。这里说的泛化，就是训练领域之外的迁移；分数是各项指标归一化到零至一百分后取平均。"
+        }
+      ]
+    },
+    "source--sources--narration": {
+      "id": "source--sources--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先固定按题目匹配的数据规模，只换解答来源。使用更强的千问三系列的十四B模型生成的数据，监督微调得到三十四点九分；换成由同一底座经过强化学习后的模型提供数据，达到三十八点七。适当混合两种来源，还能提高到四十点一。"
+        }
+      ]
+    },
+    "budget--one-eight--narration": {
+      "id": "budget--one-eight--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "不过，这时监督微调仍然落后于强化学习的四十三点八分。作者继续检查比较口径：最初监督微调每题只保留一条正确轨迹，而强化学习每题采样八条。题目相同，并不代表进入训练的轨迹数量相同。"
+        }
+      ]
+    },
+    "budget--correct--narration": {
+      "id": "budget--correct--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一步，让监督微调在每道题上使用的正确轨迹数，与强化学习中观察到的数量一致。这个训练集有三万九千六百二十三条正确轨迹。使用强化学习后模型提供的数据时，通用推理分数提高到四十二点七。"
+        }
+      ]
+    },
+    "budget--all--narration": {
+      "id": "budget--all--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二步，再加入九万八千六百四十一条最终答案错误的轨迹，总共十三万八千二百六十四条。论文在这个设置下对整条轨迹做监督学习；作者认为，错误答案之前仍可能包含有用的中间推理。这是实验条件，不是一条通用的数据清洗建议。"
+        }
+      ]
+    },
+    "results--budget-figure--narration": {
+      "id": "results--budget-figure--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这张原图的横轴，依次按题目、可解题、正确轨迹和全部轨迹匹配；纵轴是通用推理平均分。橙色柱使用强化学习后模型的数据：从起点三十八点七，到正确轨迹匹配的四十二点七，再到全部轨迹匹配的四十三点七，接近粉色的强化学习基线四十三点八。"
+        }
+      ]
+    },
+    "results--mixed--narration": {
+      "id": "results--mixed--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "把来源和数量一起调整，在轨迹总量匹配后，看一号混合柱：九成强化学习后模型的数据，加一成千问三数据，平均分达到四十四点四，强化学习为四十三点八。两边都有评测标准误，因此这里稳妥的结论是能够接近，部分配置的均值略高。"
+        }
+      ]
+    },
+    "methods--coverage--narration": {
+      "id": "methods--coverage--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "为什么多看轨迹会有帮助？作者用模型标注解题方法，共整理出一百三十八类，并把至少出现一百次的方法算作覆盖。图中每个点代表一类方法，位置只是示意。对强化学习后模型的数据，每题从一条增加到八条时，总覆盖从一百零一类提高到一百三十二类。"
+        }
+      ]
+    },
+    "methods--coverage-figure--narration": {
+      "id": "methods--coverage-figure--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "原图中，横轴是每道题的训练轨迹数，纵轴是被覆盖的方法数。橙色表示强化学习后模型的数据，蓝色表示千问三数据，两种来源的覆盖都扩大了。作者进一步关注其中低频的长尾方法，也就是训练数据中，频率排名末尾两成的方法。"
+        }
+      ]
+    },
+    "methods--tail--narration": {
+      "id": "methods--tail--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "作者还筛掉带长尾方法的轨迹，只保留头部方法样本，再与完整数据比较。以MMLU-Pro为例，正确轨迹中长尾方法的使用次数，从四十次变为一百零八次。这是模型标注的多标签计数，支持少见解法能提供迁移信号；正文没有报告该对照的总样本量。"
+        }
+      ]
+    },
+    "scope--models--narration": {
+      "id": "scope--models--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "附录还用千问三系列的八B底座复现：监督微调四十二点六分，强化学习四十二点五分，仍然非常接近；但最佳混合比例变成一半一半。数据来源与规模值得控制，具体比例却不是可以照搬的固定配方。"
+        }
+      ]
+    },
+    "scope--cost--narration": {
+      "id": "scope--cost--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "最后记住两点：这里匹配的是训练轨迹数量和用于更新模型参数的那部分计算，不能据此说端到端总算力相等；表现好的监督数据还大量来自已经训练好的强化学习模型。论文也没有用多次独立训练证明稳定优势。它说明数据条件会改变比较结论。"
+        }
+      ]
+    },
+    "ending--ending--narration": {
+      "id": "ending--ending--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "一句话总结：比较泛化，先把训练数据的来源、数量和解法覆盖放到同一把尺上。想看哪篇论文，欢迎在评论区留言。翰林院传达室为您分享最新论文，我们下期见。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "opening--definition": {
+      "id": "opening--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/opening.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "scene": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "opening",
+          "title": "数据配齐后，SFT 也能泛化"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          16905
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "数据配齐后，SFT 也能泛化；arXiv 2611.14912v1"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "question--definition": {
+      "id": "question--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/story.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "scene": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "puzzle",
+          "title": "同题比较，轨迹数量一样吗？"
+        },
+        {
+          "id": "definition",
+          "title": "先分清两种学习信号"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          18095,
+          19762
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "同题比较，轨迹数量一样吗？；同一道题；SFT；RL；解题轨迹；示意 · 论文 §3.2\n先分清两种学习信号；SFT · 监督微调；沿着给定解答学习；RL · 强化学习；生成解答，再用结果奖励更新；轨迹：从问题到最终答案的完整过程；论文 §2 · 图形为示意"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "setup--definition": {
+      "id": "setup--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/story.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "scene": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "setup",
+          "title": "训练做数学，测试能否迁移"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "训练做数学，测试能否迁移；Qwen2.5-7B；DAPO 数学题；12 项通用推理；科学 · 规划 · 语义理解；0—100 归一化平均分；论文 §3 实验设置、附录 B.4"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "source--definition": {
+      "id": "source--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/story.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "scene": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "sources",
+          "title": "更强的老师，不一定提供更合适的数据"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "更强的老师，不一定提供更合适的数据；Qwen3-14B 数据；RL 后模型数据；同一个待训练模型；34.9；38.7；混合后 40.1；论文 §3.1、表 tab:benchmark_results · 通用推理平均分"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "budget--definition": {
+      "id": "budget--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/story.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "scene": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "one-eight",
+          "title": "题目相同，轨迹数量仍不相同"
+        },
+        {
+          "id": "correct",
+          "title": "先匹配正确轨迹数量"
+        },
+        {
+          "id": "all",
+          "title": "再匹配全部训练轨迹"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "题目相同，轨迹数量仍不相同；同一道题；SFT：保留 1 条正确轨迹；RL：每题采样 8 条；RL 基线 43.8；论文 §3.2 · 单题采样设置示意\n先匹配正确轨迹数量；按正确轨迹数匹配；39,623 条正确轨迹；SFT · RL 后模型数据；SFT 通用推理 42.7；论文 §3.2、附录 B.3.2；plot_1_exp1_4_reasoning · 轨迹数量示意\n再匹配全部训练轨迹；39,623 正确；98,641 最终答案错误；138,264 条训练轨迹；训练轨迹总量匹配；论文 §3.2、附录 B.3.2、G.2"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "results--definition": {
+      "id": "results--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/story.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "scene": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "budget-figure",
+          "title": "从按题匹配，到全部轨迹匹配"
+        },
+        {
+          "id": "mixed",
+          "title": "来源与数量结合，均值可略高"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "从按题匹配，到全部轨迹匹配；第2组：可解题对照；38.7 → 42.7 → 43.7；RL 基线 43.8；橙色：RL 后模型数据；蓝色：Qwen3-14B 数据；论文原图 §3.2 · 12 项通用推理归一化平均分\n来源与数量结合，均值可略高；1号柱：90% RL 后模型数据；10% Qwen3-14B 数据；44.4 ± 0.42；RL：43.8 ± 0.43；论文原图 §3.2、表 tab:eval_std · ± 为评测标准误"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "methods--definition": {
+      "id": "methods--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/story.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "scene": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "coverage",
+          "title": "更多轨迹，覆盖更多解题方法"
+        },
+        {
+          "id": "coverage-figure",
+          "title": "原图里的覆盖数，是全部方法"
+        },
+        {
+          "id": "tail",
+          "title": "少见方法，也出现在领域外的正确推理中"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "更多轨迹，覆盖更多解题方法；138 类方法；至少出现 100 次算覆盖；1 条/题：101 类；8 条/题：132 类；点的位置为示意；论文 §3.3；distribution_method_usage 总方法覆盖数\n原图里的覆盖数，是全部方法；横轴：每题轨迹数；纵轴：被覆盖的方法数；橙色：101 → 132；少见方法也能被更多看见；论文原图 §3.3 · 图轴为 Covered methods\n少见方法，也出现在领域外的正确推理中；MMLU-Pro；仅头部方法样本；完整数据；40；108；正确轨迹中的长尾方法使用次数；附录表 tab:tail_usage · LLM 方法标注计数，可多标签"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "scope--definition": {
+      "id": "scope--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/story.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "scene": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "models",
+          "title": "另一种模型也接近，最佳比例却变了"
+        },
+        {
+          "id": "cost",
+          "title": "训练预算可比，整套成本仍需分开看"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "另一种模型也接近，最佳比例却变了；Qwen3-8B-Base；SFT：42.6；RL：42.5；最佳混合：50% / 50%；RL 后模型数据；Qwen3-14B 数据；附录 B.1 · tab:qwen3_8b · 通用推理平均分\n训练预算可比，整套成本仍需分开看；已有 RL 模型；生成训练轨迹；SFT 训练；领域外评测；训练轨迹 / 梯度预算 ≠ 端到端总成本；论文 §3.2、附录 B.6、G.1 · 误差不含训练种子波动"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "ending--definition": {
+      "id": "ending--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/ending.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "scene": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "ending",
+          "title": "比较泛化，先把训练数据放到同一把尺上"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          17381
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "比较泛化，先把训练数据放到同一把尺上；arXiv 2611.14912v1"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "tts",
+        "voice": {
+          "engine": "volcengine",
+          "voice": "zh_female_tianmeitaozi_uranus_bigtts"
+        }
+      },
+      "narrationStart": "with-animation",
+      "trailingPauseMs": 350
+    },
+    "sectionOverrides": {
+      "p-opening": {
+        "captionVisible": false
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

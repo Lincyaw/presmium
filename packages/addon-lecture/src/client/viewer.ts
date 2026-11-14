@@ -1,5 +1,6 @@
 import type { ViewerPlugin } from '@lincyaw/viewer'
 import { currentLocale } from '@lincyaw/host'
+import { CAPTURE_PARAM } from '@lincyaw/kernel'
 import { LECTURE_MESSAGES } from '../domain/index.ts'
 import LectureView from './LectureView.tsx'
 import PlayerPanel from './PlayerPanel.tsx'
@@ -31,7 +32,9 @@ const plugin: ViewerPlugin = (ctx) => {
     else void player.play()
   } })
   ctx.registerLayer({ id: 'presmium.lecture.play', component: PlayLectureButton, views: ['present'], scope: 'bar' })
-  ctx.registerLayer({ id: 'presmium.lecture.recorder', component: RecorderPanel, views: ['present'], scope: 'view' })
+  // Captures and video exports contain the presentation, without author recording controls.
+  const capturing = typeof location !== 'undefined' && new URLSearchParams(location.search).has(CAPTURE_PARAM)
+  if (!capturing && !exporting) ctx.registerLayer({ id: 'presmium.lecture.recorder', component: RecorderPanel, views: ['present'], scope: 'view' })
 }
 
 export default plugin

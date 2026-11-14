@@ -1,5 +1,11 @@
 # @lincyaw/addon-lecture
 
+## 1.0.0-rc.89
+
+### Patch Changes
+
+- Keep author recording controls out of captured slides and exported videos. Add the narrated SFT training-data paper animation, independent cover, and publication materials to the paper-sharing series.
+
 ## 1.0.0-rc.88
 
 No changes in this release.
