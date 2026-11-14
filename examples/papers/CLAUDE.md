@@ -12,6 +12,8 @@
 
 期数、去重、上传、实际状态和中断恢复统一按该技能的 `references/publication.md` 执行；以原文稳定标识关联本地文稿和原笔记，不能把“第二期已发”固化成下一期的永久数字。发布简介、素材和记录分区保存到每篇的 `publish.md`。创建或验证技能本身时不生成云端用量，也不重新发布已有论文。
 
+本系列使用账号已有的“论文解读”合集。新一期发布时加入它，修改或替换已有视频时保留并核对归属；第1、2、3期已经加入并逐条核对。复用现有合集，不创建同名合集；不改动其中其他笔记。
+
 ## 标准
 
 - **时长**：以三分钟左右为目标，一般不超过六分钟；这不是硬性规定，按内容调整。观众需要的解释（概念的定义、基线是什么、指标是什么意思、结论的前提）不为了缩短而删：删掉之后观众容易跟丢。讲稿按火山引擎甜美桃子实测约 4.5 字每秒估算，三分钟约 800 字（按读音计，`10²³` 读作“十的二十三次方”算 7 个字）；配音生成后用 `pnpm timing <slug>` 量每步与总长；明显过长时删重复与旁枝，不删定义，也不加快语速。
@@ -52,14 +54,14 @@
 1. **取源码**：`tools/fetch.sh <arxiv-id> <slug>` 下载 arXiv 源码（`https://arxiv.org/e-print/<id>`）到 `.cache/<id>/`，渲染全部图的预览，列出每张图的 LaTeX 说明。读 `Sections/*.tex` 比读 PDF 准确；论文有代码与数据仓库时克隆到 `.cache/` 并找到画面要用的结果表。没有仓库链接的论文照常生成图预览。当前 MCP 没有远程论文下载、源码解包或 PDF 裁切动作，这一步复用已有素材工具；创建文稿、编辑、检查与截帧通过 MCP 作者动作完成。
 2. **简报与论点**：在 `storyboard.md` 写 A 到 F 节：观众、观看前后、论点（“看完后，观众明白 X，因为他们看到了 Y”）、ABT、配色、术语表、定义表。中心画面要让论点成为画面中随步骤变化、可直接看见的属性。
 3. **数据**：写 `scenes/data/derive.py`，从论文公开的数据算出每个要上屏的数字，打印与论文值的对照；对不上就先查原因，不上屏。
-4. **讲稿与分镜**：`storyboard.md` 的 G 节一行一步：结束画面、讲稿要点；每步 6 到 15 秒（25 到 60 字），一步一个意思；一个意思要讲得更长时拆成两步，各有自己的画面。用 `tools/new-paper.mjs` 生成文稿骨架（开场页与标准顺序的空页面），把讲稿写进 `lecture.json`。
+4. **讲稿与分镜**：`storyboard.md` 的 G 节一行一步，写清结束画面与讲稿要点，并按 `presmium-animate/references/acceptance.md` 填元素与操作表：对象含义、编码、初末状态、动作路径、讲稿触发点、结果时机与跨步保留关系。先完成这些设计再写场景；只有结束帧关键词不算分镜完成。每步承载一个意思，长度随内容安排。用 `tools/new-paper.mjs` 生成文稿骨架（开场页与标准顺序的空页面），把讲稿写进 `lecture.json`。
 5. **原图**：`uv run --no-project --with pymupdf python -I <figure.py> <图.pdf> papers/<slug>/figures/<名>.png --crop x0,y0,x1,y1`，`figure.py` 在 `presmium-animate` 技能的 `gallery/catalog/paper-figure/tools/`（先加 `--words` 看每个词的位置再定裁切），输出的 JSON 给出每个刻度与图例词的位置，标注按它放。
 6. **场景**：协调者先写共用的数据模块和前几个场景定下画风，再把其余页面分给 agent 并行（每个 agent 只改自己的场景文件，见 `storyboard.md` 的 I 节）。规则：只用补间与 `set`，不用回调；节拍用 `clock` 的 `T(k, f)`，讲授时每个状态的时长就是这一步配音的长度，节拍跟着句子走；不用 SVG 的 `id`；要读的东西放在 77% 高度以上（下面是两行字幕的位置；坐标图的底边放在 61 个 SVG 单位，横轴标题就在这条线以上）；虚线用 `wipe` 展开。
-7. **看**：连接原生 MCP `presmium` 后直接调用 `capture_slides`，用 `document: "papers/<slug>"`、`section: "p-<页>"` 取每一步的结束画面（`appearance: "dark"` 看暗色，`at` 看动画中途）；`capture_reading` 看网页（`width: 390` 看手机），`capture_overview` 看全部页面。默认 `presmium mcp <本工作区绝对路径>` 在初始化前启动或复用服务。没有 MCP 客户端的脚本才使用 `presmium mcp call ... --out <目录>`。
-8. **文字检查**：逐页截图，对照“画面文字”与“中文表述”两条检查每一步：屏幕上是否只剩关键词，讲稿是否把画面讲全，有没有硬译的说法。讲稿可以导出成一份 Markdown 交给作者润色：`pnpm exec presmium script export papers/<slug>`（写到 `papers/<slug>/dist/script.md`），改完 `pnpm exec presmium script import papers/<slug>` 导回。
-9. **配音**：`pnpm voiceover papers/<slug>` 先报告音色和缺少配音的句数、字数（不花钱），确认后加 `--yes` 生成；`--voice volcengine:zh_female_tianmeitaozi_uranus_bigtts` 先换文稿的默认音色。火山引擎按字数计费，改过讲稿只重新合成变了的句子。讲稿定稿后加 `--prune --yes` 删掉讲稿不再用到的配音缓存。
+7. **看**：连接原生 MCP `presmium` 后直接调用 `capture_slides`，用 `document: "papers/<slug>"`、`section: "p-<页>"` 取结束帧和 direct 加 `at` 的操作前中后画面；倒退检查另用不带 `at` 的 `arrive: "backward"`，不把两者合并或记成倒退定时验证。`appearance: "dark"` 看暗色，`capture_reading` 看网页（`width: 390` 看手机），`capture_overview` 看全部页面。重要验收用 `retain: true`，通过 `capture.manifestFile` 交接本轮文件，同时核对 `source` 与 `codeBundle`，不混旧图。默认 `presmium mcp <本工作区绝对路径>` 在初始化前启动或复用服务；没有 MCP 客户端的脚本才使用 `presmium mcp call ... --out <目录>`。
+8. **预演与检查**：先做低成本关键操作预演和独立冷读，检查关键词、讲稿与画面对应、中文表述，以及同一对象的“设置→操作→结果→停留”；审阅者须能复述操作与比较依据。按技能分别记录事实、布局、运行与解析动效，联系表不能单独通过动效验收。闭环发现的问题后冻结文稿、代码、素材和讲稿，再做完整配音导出，不边审阅边跑正式成片。讲稿可以导出成 Markdown 润色：`pnpm exec presmium script export papers/<slug>`，改完用 `pnpm exec presmium script import papers/<slug>` 导回。
+9. **配音**：先通过 MCP 查询音色、缺失句数、字数和缓存；本系列常规配音已有授权时直接生成当前缺失部分，不重复询问。没有 MCP 客户端时，`pnpm voiceover papers/<slug>` 先报告用量，再按已有授权加 `--yes` 生成；`--voice volcengine:zh_female_tianmeitaozi_uranus_bigtts` 先换默认音色。火山引擎按字数计费，只补生成改过的句子；新服务或超出授权的用量仍需相应授权。讲稿定稿后可加 `--prune --yes` 删掉不再使用的配音缓存。
 10. **对时**：`pnpm timing papers/<slug>` 量每步的字数、配音秒数与总长（参考三到六分钟）；明显过长时删讲稿里重复与旁枝的话，再重新配音。
-11. **导出与复看**：`pnpm film papers/<slug> --burn zh-CN --contact-sheet` 导出烧入字幕的 MP4（`papers/<slug>/dist/<轨道>.mp4`）和每步两帧的帧表（`*.contact-sheet.png`）；再请一个没参与制作的 agent 只看帧表和讲稿做冷读（`presmium-animate` 的 `references/team.md` 第 7 节），把发现与改动追加到 `storyboard.md` 的 J 节。
+11. **导出与复看**：冻结且预演检查闭环后，经 MCP 导出烧入字幕的 MP4 与联系表；没有 MCP 客户端时用 `pnpm film papers/<slug> --burn zh-CN --contact-sheet`。检查实际音画、首帧、字幕、关键结果、操作边界与结尾，逐项记录已观察范围。完整连续观看未验证时照实写，不能用解码、联系表或源码替代；发现问题回到相应分镜或操作设计修订，再导出受影响版本。
 12. **发布**：按“发布交付”补齐并检查发布标题、正文文案、封面与实际成片，再用 `pnpm build` 导出网站；提交源文件：文稿、场景、裁好的图、数据与 `derive.py`、配音缓存（`.presmium/speech/` 与 `speech.lock.json`，只留当前讲稿用到的条目）、发布文案和封面。成片不提交（每篇十几 MB），用 `pnpm film papers/<slug> --burn zh-CN` 导出到 `papers/<slug>/dist/`（已提交的配音缓存够用，不需要语音引擎与服务）。最终交付附上文案、封面与成片的实际路径。获作者授权上传平台时，用自定义封面入口上传独立设计的 `cover.png`，检查平台裁切后的缩略图，不用视频首帧代替；配音成片的封面不保留“无声预览”等旧版标记。填写 `publish.md` 的标题与正文，并按实际情况标注 AI 合成内容；核实提交结果与审核状态，保存发布记录，响应丢失时先查笔记管理再决定是否重试。
 
 ## 运行服务
@@ -71,4 +73,4 @@ pnpm exec presmium serve . --port 4410 --allow spend,operate,write   # 火山引
 
 只预览不配音时 `pnpm serve` 即可；已提交的配音缓存不需要语音引擎也能播放与导出。
 
-`presmium serve` 的作者动作（Studio 或 MCP 的修改）把每次保存记成一个 git 提交（“编辑文稿”，用仓库的 git 身份），提交在当前分支上。推送前把它们并进本次的提交（`git reset --soft <开始前的提交>` 后重新提交），不把这些历史提交原样推上去。
+`presmium serve` 的作者动作（Studio 或 MCP 的修改）把每次保存记成一个 git 提交（“编辑文稿”，用仓库的 git 身份），提交在当前分支上。先核对远端，再把本次尚未推送的保存提交整理进本次提交；保留已推送的历史，不纳入其他任务的改动。

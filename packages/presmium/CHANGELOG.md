@@ -1,5 +1,37 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.92
+
+### Patch Changes
+
+- Record the revised third paper video submitted to its existing Xiaohongshu note and the first three episodes in the existing collection. Preserve configured collections during publication and video replacement, use visible upload controls with native file pickers when needed, and align the series workflow with explanatory-animation acceptance.
+- @lincyaw/cli@1.0.0-rc.92
+  - @lincyaw/mcp@1.0.0-rc.92
+  - @lincyaw/addon-classroom@1.0.0-rc.92
+  - @lincyaw/addon-code@1.0.0-rc.92
+  - @lincyaw/addon-content@1.0.0-rc.92
+  - @lincyaw/addon-exec@1.0.0-rc.92
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.92
+  - @lincyaw/addon-exec-local@1.0.0-rc.92
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.92
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.92
+  - @lincyaw/addon-lecture@1.0.0-rc.92
+  - @lincyaw/addon-motion@1.0.0-rc.92
+  - @lincyaw/addon-publish@1.0.0-rc.92
+  - @lincyaw/addon-session@1.0.0-rc.92
+  - @lincyaw/addon-speech@1.0.0-rc.92
+  - @lincyaw/addon-stage@1.0.0-rc.92
+  - create-presmium@1.0.0-rc.92
+  - @lincyaw/render-notebook@1.0.0-rc.92
+  - @lincyaw/studio@0.2.0-rc.91
+  - @lincyaw/web@1.0.0-rc.92
+  - @lincyaw/addon-assistant@1.0.0-rc.92
+  - @lincyaw/addon-guide@1.0.0-rc.92
+  - @lincyaw/host@1.0.0-rc.92
+  - @lincyaw/kernel@1.0.0-rc.92
+  - @lincyaw/render-slides@1.0.0-rc.92
+  - @lincyaw/viewer@1.0.0-rc.92
+
 ## 1.0.0-rc.91
 
 ### Patch Changes

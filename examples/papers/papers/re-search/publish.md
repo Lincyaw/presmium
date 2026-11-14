@@ -17,3 +17,12 @@
 - [中文字幕](dist/re-search-final.zh-CN.vtt)（从正文开始，片头无字幕）
 - [视频帧表](dist/re-search-final.contact-sheet.png)
 - [原论文](https://arxiv.org/abs/2611.14487)
+
+## 2026-11-14 合集核对
+
+- 在线标题：论文分享第二期：Re-Search
+- 账号：翰林院传达室（5164643939）
+- 期数：2
+- 笔记：https://www.xiaohongshu.com/explore/6af71eb1000000002a01d5d5
+- 合集：论文解读（原有合集；用户已加入，本轮原笔记编辑页已核对选中值）
+- 核对时状态：已发布；本轮未修改或重新上传这期视频。
