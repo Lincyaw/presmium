@@ -12,7 +12,7 @@ function stepElement(viewer: ReturnType<typeof useViewer>, sectionId: string, st
   const root = heading?.closest('.pm-section')
   if (!root || !section) return heading
   if (root.classList.contains('pm-section--scrolly'))
-    return root.querySelector<HTMLElement>(`.pm-step[data-step="${step}"]`) ?? heading
+    return step === 0 ? heading : root.querySelector<HTMLElement>(`.pm-step[data-step="${step}"]`) ?? heading
   if (step === 0) return heading
   const candidates = [...irBlocks(section.blocks)]
     .filter(block => block.role === 'visual' && blockVisible(block, step) && !(block.node.type === 'component' && block.node.layer === 'overlay'))

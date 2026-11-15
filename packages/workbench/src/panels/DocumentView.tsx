@@ -210,10 +210,11 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
     <div ref={container.ref} className="pmw-document" data-roomy={roomy || undefined} data-narrow={narrow || undefined} data-workspace={producing ? 'production' : presenting ? 'presentation' : reading ? 'reading' : 'content'} data-presenting={presenting || undefined} data-aside={aside ?? undefined} data-navigation={navigation || undefined}>
       {reading && <PmToolbar variant="workspace" className="pmw-toolbar" label={t.commands}>
         <span className="pmw-toolbar__title">{t.readDocument}</span>
-        {actions}
+        <span className="pmw-spacer" />
         <PmToolbarButton asChild><PmIconButton small icon="edit" label={t.editDocument} disabled={changingView} onClick={() => void exitPresent()} /></PmToolbarButton>
         <PmToolbarButton asChild><PmIconButton small icon="refresh" label={t.reloadPreview} loading={changingView} onClick={() => void compilePresentation(() => workbench.reloadPreview(), true)} /></PmToolbarButton>
         <PmToolbarButton asChild><PmIconButton small icon="slides" label={t.present} disabled={changingView} onClick={() => void compilePresentation(() => { workbench.setWebView('present'); setWorkspace('presentation') })} /></PmToolbarButton>
+        {actions}
       </PmToolbar>}
       {!producing && !presenting && !reading && <DocumentToolbar narrow={narrow} presentButton={presentButton} framed={framed} onBack={onBack} actions={actions} aside={aside} navigation={navigation} changingView={changingView} onProduction={() => void openProduction()} onRead={() => void compilePresentation(() => {
         workbench.setMode('viewing')
