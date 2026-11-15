@@ -32,7 +32,9 @@ fn status(app: &AppHandle, label: &str, enabled: bool) {
 }
 
 fn report(app: &AppHandle, message: &str) {
-    app.dialog().message(message).title(super::messages::current().updates_title).show(|_| {});
+    let mut dialog = app.dialog().message(message).title(super::messages::current().updates_title);
+    if let Some(window) = app.get_webview_window(super::MAIN) { dialog = dialog.parent(&window); }
+    dialog.show(|_| {});
 }
 
 fn record_failure(app: &AppHandle, error: &str) {
@@ -45,9 +47,10 @@ fn record_failure(app: &AppHandle, error: &str) {
 async fn confirm(app: AppHandle, message: String, accept: &'static str) -> bool {
     tauri::async_runtime::spawn_blocking(move || {
         let t = super::messages::current();
-        app.dialog().message(message).title(t.updates_title)
-            .buttons(MessageDialogButtons::OkCancelCustom(accept.into(), t.update_later.into()))
-            .blocking_show()
+        let mut dialog = app.dialog().message(message).title(t.updates_title)
+            .buttons(MessageDialogButtons::OkCancelCustom(accept.into(), t.update_later.into()));
+        if let Some(window) = app.get_webview_window(super::MAIN) { dialog = dialog.parent(&window); }
+        dialog.blocking_show()
     }).await.unwrap_or(false)
 }
 
