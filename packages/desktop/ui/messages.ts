@@ -1,6 +1,6 @@
 export type Locale = 'zh-CN' | 'en'
 
-export type LaunchError = 'not-directory' | 'start-failed' | 'start-timeout' | 'studio-ended'
+export type LaunchError = 'not-directory' | 'start-failed' | 'start-timeout' | 'studio-ended' | 'examples-failed'
 
 export interface LauncherMessages {
   lead: string
@@ -25,6 +25,7 @@ export const LAUNCHER_MESSAGES: Record<Locale, LauncherMessages> = {
       'start-failed': 'Presmium Studio 未能启动。',
       'start-timeout': 'Presmium Studio 启动时间过长，已停止。',
       'studio-ended': 'Presmium Studio 意外停止了。',
+      'examples-failed': '示例工作区未能准备好。请查看详细信息，或打开其他工作区。',
     },
   },
   en: {
@@ -39,6 +40,7 @@ export const LAUNCHER_MESSAGES: Record<Locale, LauncherMessages> = {
       'start-failed': 'Presmium Studio could not start.',
       'start-timeout': 'Presmium Studio took too long to start and was stopped.',
       'studio-ended': 'Presmium Studio stopped unexpectedly.',
+      'examples-failed': 'The example workspace could not be prepared. View the details or open another workspace.',
     },
   },
 }
