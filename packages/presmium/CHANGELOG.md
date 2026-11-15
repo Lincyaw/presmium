@@ -1,5 +1,40 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.94
+
+### Patch Changes
+
+- 58b020f: 统一应用顶栏、文稿与视频制作工具栏和面板标题的尺寸、对齐及容器响应式布局。MCP 操作在既有顶栏显示紧凑状态，并定位、高亮实际操作的页面与元素；手动操作可暂停跟随。
+
+  修复 macOS 桌面版内置 Node 的 JIT 与原生扩展签名权限，补充启动诊断和签名后的运行检查；应用通过输入管道管理 Studio 生命周期，macOS 强制退出时清理后台服务。
+- Updated dependencies [58b020f]
+  - @lincyaw/studio@0.2.0-rc.93
+  - @lincyaw/kernel@1.0.0-rc.94
+  - @lincyaw/mcp@1.0.0-rc.94
+  - @lincyaw/host@1.0.0-rc.94
+  - @lincyaw/web@1.0.0-rc.94
+  - @lincyaw/addon-assistant@1.0.0-rc.94
+  - @lincyaw/addon-classroom@1.0.0-rc.94
+  - @lincyaw/addon-code@1.0.0-rc.94
+  - @lincyaw/addon-content@1.0.0-rc.94
+  - @lincyaw/addon-exec@1.0.0-rc.94
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.94
+  - @lincyaw/addon-exec-local@1.0.0-rc.94
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.94
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.94
+  - @lincyaw/addon-guide@1.0.0-rc.94
+  - @lincyaw/addon-lecture@1.0.0-rc.94
+  - @lincyaw/addon-motion@1.0.0-rc.94
+  - @lincyaw/addon-publish@1.0.0-rc.94
+  - @lincyaw/addon-session@1.0.0-rc.94
+  - @lincyaw/addon-speech@1.0.0-rc.94
+  - @lincyaw/addon-stage@1.0.0-rc.94
+  - @lincyaw/cli@1.0.0-rc.94
+  - create-presmium@1.0.0-rc.94
+  - @lincyaw/render-notebook@1.0.0-rc.94
+  - @lincyaw/render-slides@1.0.0-rc.94
+  - @lincyaw/viewer@1.0.0-rc.94
+
 ## 1.0.0-rc.93
 
 ### Patch Changes
