@@ -1,5 +1,15 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.97
+
+### Patch Changes
+
+- 3ab31ee: 移除动画预览工具栏中用途不直观的属性按钮，保留其他组件的参数编辑入口。阅读与运行切换后工具按钮保持在右侧，动画与文字左右布局默认铺满可用画布；页首从标题开始显示，窄屏恢复步骤时正文避开固定动画。
+- @lincyaw/cli@1.0.0-rc.98
+  - @lincyaw/kernel@1.0.0-rc.98
+  - @lincyaw/mcp@1.0.0-rc.98
+  - @lincyaw/skills@1.0.0-rc.98
+
 ## 0.2.0-rc.96
 
 ### Patch Changes
