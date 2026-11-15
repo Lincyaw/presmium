@@ -57,7 +57,6 @@
 }
 .pm-scene__scrub {
   flex: 1;
-  accent-color: var(--pm-color-accent);
 }
 .pm-scene__steps { display: flex; gap: var(--pm-space-1); overflow-x: auto; padding-block: var(--pm-space-1); }
 .pm-scene__step { flex: none; min-width: var(--pm-size-tool); min-height: var(--pm-size-tool); padding: 0 var(--pm-space-1); border: 0; border-radius: var(--pm-radius-chip); background: transparent; color: var(--pm-color-muted); font-family: var(--pm-font-mono); font-size: var(--pm-text-xs); cursor: pointer; }
