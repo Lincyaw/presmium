@@ -1,5 +1,15 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.96
+
+### Patch Changes
+
+- 重新打包统一后的动画与文字批注交互，使 Studio 安装版本包含共用批注卡片、就地回复和步骤草稿恢复。
+- @lincyaw/cli@1.0.0-rc.97
+  - @lincyaw/kernel@1.0.0-rc.97
+  - @lincyaw/mcp@1.0.0-rc.97
+  - @lincyaw/skills@1.0.0-rc.97
+
 ## 0.2.0-rc.95
 
 ### Patch Changes
