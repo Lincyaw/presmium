@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 /** One authenticated Studio socket carries these existing workspace subscriptions. */
 export const WORKSPACE_EVENTS_PATH = '/api/presmium/events'
-export const WORKSPACE_EVENT_TOPICS = ['document', 'diagnostics', 'review', 'ir', 'jobs'] as const
+export const WORKSPACE_EVENT_TOPICS = ['document', 'diagnostics', 'review', 'ir', 'jobs', 'agent-activity'] as const
 const subscriptionId = z.string().min(1).max(80)
 
 const viewerSite = z.strictObject({ type: z.literal('subscribe'), id: subscriptionId, topic: z.literal('viewer-site'), document: z.string().max(1024), app: z.string().max(200), lang: z.string().max(80), form: z.enum(['web', 'slides']) })

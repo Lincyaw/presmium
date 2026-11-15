@@ -382,6 +382,42 @@ export class Workbench {
     for (const listener of this.#listeners) listener()
   }
 
+  setAgentActivities(activities: import('@lincyaw/kernel').AgentActivity[]): void { this.#set({ agentActivities: activities }) }
+  setAgentFollowing(following: boolean): void { this.#set({ agentFollowing: following }) }
+
+  /** Presence never owns drafts or playback. Human input aborts this read-only navigation. */
+  async followAgentActivity(activity: import('@lincyaw/kernel').AgentActivity, signal: AbortSignal): Promise<void> {
+    const state = this.#state, source = state.authoring
+    if (activity.document === undefined || !state.agentFollowing || state.mode !== 'editing' || source?.loading || source?.dirty || source?.saving || source?.composing || source?.recovering || source?.restored || source?.error
+      || !this.authoringWindowSnapshot(0).actions.includes('document.open')) return
+    signal.throwIfAborted()
+    let navigationScope: number | undefined
+    const cancel = () => {
+      if (navigationScope !== undefined && navigationScope === this.#documentScope && this.#state.document === activity.document
+        && (this.#state.authoring?.loading || !this.#state.authoring?.content)) this.closeDocument()
+    }
+    signal.addEventListener('abort', cancel, { once: true })
+    try {
+      const opening = this.openDocument(activity.document, { signal })
+      navigationScope = this.#documentScope
+      await opening
+    } finally { signal.removeEventListener('abort', cancel) }
+    signal.throwIfAborted()
+    if (!this.#state.agentFollowing || this.#state.document !== activity.document) return
+    const content = this.#state.authoring?.content, target = activity.targets[0]
+    if (!content || !target) return
+    const contains = (ids: string[], block: string): boolean => ids.some(id => {
+      const value = content.blocks[id]
+      return id === block || Boolean(value && 'children' in value && value.children && contains(value.children, block))
+    })
+    const section = target.section ?? (target.step ? content.steps[target.step]?.sectionId : undefined)
+      ?? (target.block ? content.sectionOrder.find(id => contains(content.sections[id]!.children, target.block!)) : undefined)
+    if (section && content.sections[section]) {
+      if (target.step && content.steps[target.step]?.sectionId === section) await this.selectDocumentStep(section, target.step)
+      else this.goToSection(section)
+    }
+  }
+
   get #messages() {
     return MESSAGES[this.#state.locale]
   }

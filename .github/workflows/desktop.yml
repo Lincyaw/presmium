@@ -72,6 +72,9 @@ jobs:
             mkdir -p "$bundle/dmg"
             # Without a Developer ID the app is signed ad hoc ("-" in tauri.conf.json); an unsigned app is reported as damaged.
             codesign --verify --deep --strict --verbose=2 "$bundle/macos/Presmium Studio.app"
+            # Version output bypasses V8 initialization; execute JS after signing to check Node's JIT entitlement.
+            "$bundle/macos/Presmium Studio.app/Contents/MacOS/presmium-node" -e 'console.log("Bundled Node initialized V8")'
+            "$bundle/macos/Presmium Studio.app/Contents/MacOS/presmium-node" -e 'require(process.argv[1]); console.log("Bundled Node loaded sharp")' "$PWD/$bundle/macos/Presmium Studio.app/Contents/Resources/runtime/node_modules/sharp"
             # Compressing straight from the folder leaves about half the file as unused gaps between chunks;
             # converting a plain image writes the chunks back to back. LZMA (ULMO) needs macOS 10.15 or later.
             hdiutil create -volname "Presmium Studio" -srcfolder "$bundle/macos/Presmium Studio.app" -ov -format UDRW "$RUNNER_TEMP/presmium.dmg"

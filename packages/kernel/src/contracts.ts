@@ -1,4 +1,5 @@
 export * from './contracts/agent.ts'
+export * from './contracts/agent-activity.ts'
 export * from './contracts/authoring.ts'
 export * from './contracts/capture.ts'
 export * from './contracts/document-reads.ts'

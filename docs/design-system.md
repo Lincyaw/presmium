@@ -62,7 +62,26 @@
 | 浮层 | `--pm-shadow-float`、`--pm-z-popover`、`--pm-z-dialog`、`--pm-z-dialog-popover`、`--pm-z-tooltip` |
 | 时长 | `--pm-duration-fast`、`--pm-duration`、`--pm-duration-slow`、`--pm-ease`；循环 `--pm-duration-spin`、`--pm-duration-pulse` |
 
-外壳断点：1280 px 及以上三栏；768 到 1279 px 属性改为抽屉；768 px 以下单主区。可用画布低于 `--pm-canvas-min-width` 时先收起辅助面板。
+外壳按第 2.1 节的容器断点与最小尺寸预算布局。可用画布低于 `--pm-canvas-min-width` 时先收起辅助面板。
+
+### 2.1 应用外壳与对齐
+
+工作台的文稿、阅读、放映与视频制作共用同一个外壳。全局栏始终占满窗口；工作区工具栏始终占满中央编辑区；停靠标题栏占满所在窗格。工具栏不能跟着纸页的最大宽度内缩，进入视频制作也不改变全局栏的宽度或高度。
+
+| 层级 | 公共入口 | 几何与内容 |
+|---|---|---|
+| 全局应用栏 | `pm-ui-appbar` | `--pm-appbar-height`，品牌与位置在左，操作反馈与全局操作在右；常规栏高 40 px，粗指针取触屏栏高 |
+| 工作区工具栏 | `PmToolbar variant="workspace"`、`PmPanelHeader variant="workspace"` | 同一个 `--pm-toolbar-height`（40 px），border-box、横向 `--pm-space-3`、纵向零内边距；文稿和视频制作的左右边缘与控件中心线一致 |
+| 停靠窗格标题栏 | `PmPanelHeader variant="dock"`（默认） | `--pm-pane-header-height`（36 px），同样的横向内边距；标题、说明、操作三个槽位，说明不足时省略并保留完整可访问名称 |
+| 内嵌控制条 | `PmToolbar variant="inline"`（默认） | `--pm-size-tool`（30 px）起，不加工作区底色、分隔线或内边距；用于步骤、播放和时间线内部控件 |
+
+栏内标题与控件统一用界面字体、`--pm-text-sm`、`--pm-leading-ui`；标题用 `--pm-weight-semibold`，辅助说明用 `--pm-text-xs` 与 `muted`。品牌、正文与论文图表保持各自的语义字体层级。图标按公共尺寸令牌居中，不用页面自己的字号调整图标。长标题让出操作区并截断；窄编辑区把次要命令收入菜单，避免用横向滚动掩盖布局错误。
+
+分栏按**容器的实际宽度**选择：`--pm-layout-roomy-width` 以上可并排文稿导航与属性；低于它时辅助面板覆盖中央区且互斥；低于 `--pm-layout-narrow-width` 时使用紧凑命令。视频制作仅在实际宽度达到 `--pm-production-wide-width` 时并排页面、画面和属性，其余宽度用标签切换。公共 `useContainerLayout` 观察实际容器，断点来自设计令牌。外壳计算剩余空间和中央 Panel 的最小宽度都读取 `--pm-canvas-min-width`，不再分别写一套数值；窗口放不下画布、会话窗格及分隔线的最小宽度之和时提前采用单窗格，避免向分栏组件提交无解的尺寸约束。
+
+操作反馈置于现有应用栏，显示呼吸点和短状态，跟随开关为单个图标，完整动作与位置经 Tooltip 和可访问名称给出。活动出现、完成或消失均不增加一行，也不移动画布。正在处理、已完成、失败、已取消都有文字状态；仅处理中的装饰层呼吸，正文与控件本身不闪烁。高亮层穿透指针，不锁定编辑器；作者输入、滚动或导航立即暂停自动跟随，保留未提交内容。系统要求减少动态效果时保留静态边框与文字。
+
+视觉验收覆盖亮暗外观、宽窗与 768 px 以下窗口，并在同一宽窗内打开侧栏、拖窄中央编辑区。比较文稿与视频制作的外壳边界、工作区栏高、标题基线、控件尺寸、分隔线和面板内边距；操作反馈不得造成画面跳动。框架插件开关或连接失败只改变内容与状态，不另造外壳样式。
 
 ## 3. 公共控件目录
 
@@ -85,6 +104,7 @@
 | Popover | `PmPopover`（workbench、host） | 非模态浮层，共用 `pm-ui-popover` |
 | Menu | `PmMenu`（Radix Dropdown Menu） | 图标、危险项、禁用项、快捷键、分隔、勾选；workbench 的 `description` 与 `toolbarItem` |
 | Badge、Card | `PmBadge`（`tone`）、`PmCard`（`default`、`interactive`、`dashed`） | |
+| 操作反馈 | `PmAgentActivity`、`data-pm-agent-target` | 真实操作状态、紧凑提示、目标装饰边框；动态效果遵守第 4.6 节，不承载写入或导航权限 |
 | Notice、Empty、Skeleton | `PmNotice`、`PmEmpty`、`PmSkeleton`（`document`、`list`、`preview`） | 见第 4.5 节 |
 | Range | `PmRange`（workbench，原生 range） | 拖动先本地预览，释放时提交一次；`Esc`、失焦丢弃手势；旁边读出数值时放在 `.pm-ui-range-row` 中（数值用 `<output>`，后面可以再跟按钮，放不下时换行），如字幕大小与音频片段的音量 |
 | Timeline | `PmTimeline`（workbench） | 画面、配音、字幕三轨与稳定步骤身份；未知或估算时长不开放任意定位；只有真实样本才画波形；缩放只改视图；`excluded` 表示本页不在时间线中（讲授中没有这一页），状态与提示由调用方给出，不列片段；`notice` 是关于所选步骤的提示，显示在轨道下方（如这一步不在讲授中） |

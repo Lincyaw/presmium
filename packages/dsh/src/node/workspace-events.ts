@@ -27,6 +27,7 @@ const ROUTES = {
   review: { path: `${WORKSPACE_ROUTES}review`, event: 'review' },
   ir: { path: `${WORKSPACE_ROUTES}ir/events`, event: 'revision' },
   jobs: { path: `${WORKSPACE_ROUTES}jobs/events`, event: 'job' },
+  'agent-activity': { path: `${WORKSPACE_ROUTES}agent-activity/events`, event: 'agent-activity' },
 } as const
 const MAX_SUBSCRIPTIONS = 16
 const MAX_BUFFERED_BYTES = 2 << 20

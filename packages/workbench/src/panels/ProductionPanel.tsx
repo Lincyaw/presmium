@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
+import { useContainerLayout } from '../container-layout.ts'
 import { keyBelongsToTarget, PRODUCTION_PLAYBACK_RATES, sameProductionBinding, watchFocusSource } from '@lincyaw/kernel'
 import type { ProductionPlaybackCommand } from '@lincyaw/kernel'
 import { PmBadge, PmButton, PmCard, PmDialog, PmEmpty, PmIconButton, PmNotice, PmPanelHeader, PmPopover, PmSearchList, PmSelect, PmSegmented, PmSplitGroup, PmSplitHandle, PmSplitPanel, PmTabs, PmTabPanel, PmToolbar, PmToolbarButton } from '../components.tsx'
@@ -33,7 +35,7 @@ const PLAYBACK_KEYS: Record<string, PlaybackKey> = { ' ': 'play-pause', ArrowLef
  * While it is `active`, Space plays or pauses and the left and right arrows select the previous or next step, from the
  * workbench and from its preview alike; text entry, menus, dialogs and controls the keyboard moved to keep their keys.
  */
-export function ProductionPanel({ onClose, closing, active = true }: { onClose(): void, closing: boolean, active?: boolean }) {
+export function ProductionPanel({ onClose, closing, active = true, actions }: { onClose(): void, closing: boolean, active?: boolean, actions?: ReactNode }) {
   const workbench = useWorkbench(), t = useMessages(), locale = useWorkbenchState(state => state.locale), p = PRODUCTION_MESSAGES[locale]
   const voicePlayback = useProductionVoicePlayback()
   const serviceVersion = useWorkbenchState(state => state.voiceServiceVersion)
@@ -46,7 +48,8 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
   const captionDraftSteps = useWorkbenchState(state => state.captionTimingDraftSteps), captionStorageFailure = useWorkbenchState(state => state.captionTimingDraftStorageFailure)
   const frameCurrent = useWorkbenchState(state => Boolean(state.presentationSnapshot && state.previewIrRevision === state.presentationSnapshot.revision))
   const blocked = useWorkbenchState(state => Boolean(state.authoring?.loading || state.authoring?.composing) || isAgentChanging(state))
-  const [wide, setWide] = useState(() => matchMedia('(min-width: 1100px)').matches), [tab, setTab] = useState('preview')
+  const container = useContainerLayout(), wide = container.productionWide
+  const [tab, setTab] = useState('preview')
   const [libraryTab, setLibraryTab] = useState('pages'), [inspectorTab, setInspectorTab] = useState('script'), [outputsOpen, setOutputsOpen] = useState(false)
   const [generateStep, setGenerateStep] = useState<string>(), [failure, setFailure] = useState<string>()
   const [planBusy, setPlanBusy] = useState(false), [planFailure, setPlanFailure] = useState<string>(), [planReload, setPlanReload] = useState(0)
@@ -69,11 +72,6 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
   const canPlay = Boolean(playbackConnected && plan?.canPreview && live?.status === 'ready' && !timingDraft)
   const backgroundBody = !wide && tab === 'timeline', backgroundVisuals = !wide && tab !== 'preview'
   useEffect(() => workbench.observeVoiceoverJobs(), [workbench, source?.identity])
-  useEffect(() => {
-    const media = matchMedia('(min-width: 1100px)'), update = () => setWide(media.matches)
-    media.addEventListener('change', update)
-    return () => media.removeEventListener('change', update)
-  }, [])
   useEffect(() => () => { owner.current.active = false; owner.current.generation++; controlRequest.current?.abort(); workbench.closeProduction(); workbench.cancelPreviewPreparation() }, [workbench])
   useEffect(() => {
     const controller = new AbortController()
@@ -178,10 +176,11 @@ export function ProductionPanel({ onClose, closing, active = true }: { onClose()
   const mediaEditor = <ProductionMediaClips key={`${source.identity}:${stepId}`} identity={source.identity} version={source.version ?? ''} document={document} sectionId={sectionId} stepId={stepId}
     binding={planCurrent ? plan?.binding : undefined} stepDurationMs={(() => { const step = planCurrent ? plan?.pages.find(page => page.sectionId === sectionId)?.steps.find(step => step.stepId === stepId) : undefined; return step?.timing === 'confirmed' && step.startMs !== undefined && step.endMs !== undefined ? step.endMs - step.startMs : undefined })()}
     disabled={blocked || closing || !declared || !source.version || Boolean(source.dirty || source.saving || source.restored || source.error)} onChanged={() => setMediaRefresh(true)} />
-  return <section className="pmw-production" aria-label={p.title}>
-    <PmPanelHeader title={p.title} meta={wide ? document.metadata.title : undefined}
+  return <section ref={container.ref} className="pmw-production" aria-label={p.title}>
+    <PmPanelHeader variant="workspace" title={p.title} meta={wide ? document.metadata.title : undefined}
       leading={<PmIconButton small icon="arrow-left" label={p.back} loading={closing} onClick={onClose} />}
       actions={<>
+        {actions}
         <PmBadge tone={sourceCurrent && frameCurrent ? 'ok' : preparing || sourceCurrent ? 'accent' : 'warn'}>{sourceCurrent && frameCurrent ? p.current : preparing || sourceCurrent ? p.preparing : p.outdated}</PmBadge>
         {issueCount > 0 && <PmPopover open={issuesOpen} onOpenChange={setIssuesOpen} label={p.issues(issueCount)} trigger={wide ? <PmButton small icon="warning" title={summary} aria-label={p.issues(issueCount)}>{p.issueCount(issueCount)}</PmButton> : <PmIconButton small icon="warning" label={p.issues(issueCount)} hint={summary} />}>
           <div className="pmw-production__feedback">

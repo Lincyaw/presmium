@@ -32,17 +32,17 @@ export function PmSplitHandle({ label, className, ...props }: ComponentProps<typ
 }
 
 /** Shared chrome for docked editors; content and actions remain owned by the caller. */
-export function PmPanelHeader({ title, meta, leading, actions }: { title: string, meta?: ReactNode, leading?: ReactNode, actions?: ReactNode }) {
-  return <header className="pm-ui-panel-header">
-    {leading}<h2 className="pm-ui-panel-header__title">{title}</h2>
+export function PmPanelHeader({ title, titleId, meta, leading, actions, variant = 'dock', className }: { title: string, titleId?: string, meta?: ReactNode, leading?: ReactNode, actions?: ReactNode, variant?: 'workspace' | 'dock', className?: string }) {
+  return <header className={cls('pm-ui-panel-header', className)} data-variant={variant}>
+    {leading}<h2 id={titleId} className="pm-ui-panel-header__title">{title}</h2>
     {meta && <span className="pm-ui-panel-header__meta">{meta}</span>}
     {actions && <div className="pm-ui-panel-header__actions">{actions}</div>}
   </header>
 }
 
 /** One tab stop, with arrow/Home/End navigation supplied by Radix. */
-export function PmToolbar({ label, children, className, scroll }: { label: string, children: ReactNode, className?: string, scroll?: boolean }) {
-  return <Toolbar.Root className={cls(scroll && 'pm-ui-toolbar-scroll', className)} aria-label={label} loop>{children}</Toolbar.Root>
+export function PmToolbar({ label, children, className, scroll, variant = 'inline' }: { label: string, children: ReactNode, className?: string, scroll?: boolean, variant?: 'workspace' | 'inline' }) {
+  return <Toolbar.Root className={cls('pm-ui-toolbar', scroll && 'pm-ui-toolbar-scroll', className)} data-variant={variant} aria-label={label} loop>{children}</Toolbar.Root>
 }
 export const PmToolbarButton = Toolbar.Button
 
@@ -148,6 +148,13 @@ export function PmSearchList({ label, searchLabel, searchPlaceholder, items, val
 }
 
 export type Tone = 'neutral' | 'accent' | 'ok' | 'warn' | 'danger' | 'outline'
+
+/** Labelled presence: the dot breathes only while a real operation is running. */
+export function PmAgentActivity({ state, label, compact, detail }: { state: 'running' | 'done' | 'failed' | 'cancelled', label: string, compact?: boolean, detail?: string }) {
+  return <span className="pm-ui-agent-activity" data-state={state} data-compact={compact || undefined} role="status" aria-label={detail} aria-live="polite" aria-atomic="true">
+    <span className="pm-ui-agent-activity__dot" aria-hidden="true" /><span className="pm-ui-agent-activity__label">{label}</span>
+  </span>
+}
 
 export function PmBadge({ tone = 'neutral', pill, children }: { tone?: Tone, pill?: boolean, children?: ReactNode }) {
   return <span className={cls('pm-ui-badge', tone !== 'neutral' && `pm-ui-badge--${tone}`, pill && 'pm-ui-badge--pill')}>{children}</span>

@@ -220,7 +220,7 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 4. 等标准输出的 `dsh web: <网址>`：启动令牌只从这里取得，它也是 dsh 的就绪信号；3 分钟等不到时报错并给出日志位置。
 5. 打印 `studio  <网址>`、`mcp  <固定网址>` 与 MCP 令牌文件的位置。
 
-输出写进 `$DSH_HOME/presmium-studio-<散列>.log`，标准错误转发工作区服务的阶段与耗时。三个进程各有父进程退出的看门狗，`kill -9` 启动器后不留进程。
+输出写进 `$DSH_HOME/presmium-studio-<散列>.log`，标准错误转发工作区服务的阶段与耗时。Unix 子服务通过父进程看门狗与进程组退出；Windows 的进程树清理不采用 Unix 进程组保证，需要按该平台验收。
 
 `@lincyaw/dsh` 直接依赖 Harness 使用的 `node-addon-require-builtin`。
 启动器通过该包公开的 `package.json` 导出定位其依赖目录，加入 Harness 子进程的 `NODE_PATH`，并保留调用者已有的搜索路径。
@@ -238,12 +238,14 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 `packages/desktop` 用 Tauri 2 把 Studio 做成 Windows、macOS 与 Linux 的桌面应用，不改 Studio 与 dsh。安装包带构建时的 Node（sidecar `presmium-node`）与 `pnpm deploy` 得到的 `@lincyaw/presmium`（资源 `runtime/`），用户不需要另装 Node 或 pnpm。
 
 1. 启动页列出最近打开的工作区，“打开工作区…”选择文件夹；应用启动时重新打开上次的工作区。菜单“工作区 → 打开工作区…”随时切换。
-2. 打开工作区时应用运行 `presmium-node runtime/…/presmium.mjs studio <目录>`，读到 `studio  <网址>` 后窗口转到该网址，3 分钟等不到时停止并报错。同一时间只有一个 Studio；切换工作区或退出应用时先停止它（Unix 上发 `SIGTERM`，宽限后强制结束），Linux 上应用被强制结束时内核同时停止 Studio。
+2. 打开工作区时应用运行 `presmium-node runtime/…/presmium.mjs studio <目录>`，读到 `studio  <网址>` 后窗口转到该网址，3 分钟等不到时停止并报错。同一时间只有一个 Studio；切换工作区或退出应用时先停止它（Unix 上发 `SIGTERM`，宽限后强制结束）。桌面应用保持 Studio 的标准输入管道，并设置内部变量 `PRESMIUM_STUDIO_PARENT_PIPE=1`；管道关闭时 Studio 退出，释放自己的服务，启动阶段也适用。该变量在启动子服务前移除。Linux 另由内核在应用被强制结束时停止 Studio。
 3. dsh 的登录 cookie 是 `SameSite=Strict`。窗口从启动页（另一个站点）转到启动网址时，跳转可能不带 cookie；首次加载得到 dsh 的纯文本登录错误时，应用从 Studio 自己的页面重新加载一次。
 4. Studio 意外结束时窗口回到启动页，说明原因并提供“详细信息”（这次启动的输出）。
 5. 启动页只能调用应用自己的命令；Studio 的页面（回环地址上的 http）没有应用的任何权限。指向本机的新窗口留在应用中，其他链接在系统浏览器中打开；下载存入“下载”文件夹并在文件管理器中显示。
 6. 菜单与启动页的语言按系统语言（zh-CN 或 en）；Studio 页面的语言由 Studio 自己决定。
 7. `.github/workflows/desktop.yml` 构建六个平台的安装包（Windows 的 NSIS `.exe`，macOS 的 `.dmg`，Linux 的 `.deb` 与 `.rpm`）。推送到 `main` 构建成功后，安装包替换滚动预发布 [`desktop-latest`](https://github.com/Lincyaw/presmium/releases/tag/desktop-latest) 的内容；发布 GitHub Release 时附加到该 Release。没有签名证书时，macOS 应用只做临时签名（ad hoc，`signingIdentity` 为 `-`），没有经过苹果公证；完全不签名的应用下载后会被 macOS 报为“已损坏”。
+
+macOS 签名使用 `packages/desktop/src-tauri/Entitlements.plist`，保留 Hardened Runtime，为内置 Node 的 V8 引擎声明 `com.apple.security.cs.allow-jit`，并用 `com.apple.security.cs.disable-library-validation` 允许 Node 加载 sharp 等原生扩展及工作区插件。构建流程在签名后实际执行 JavaScript 并加载 sharp。启动日志记录无法创建进程的原因和后台进程的退出状态；即使 Node 在 JavaScript 初始化前崩溃，也能从“详细信息”定位。
 
 ## 12. 升级闸门
 

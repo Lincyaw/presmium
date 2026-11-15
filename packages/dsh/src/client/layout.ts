@@ -1,11 +1,11 @@
 import { defineStore } from '@deepseek-ai/dsh-client-store'
+import { designLength } from '@lincyaw/design'
 
-export const CENTRE_MIN = 400
+export const centreMinWidth = () => designLength('--pm-canvas-min-width')
 export const RIGHTBAR_MIN = 300
 export const RIGHTBAR_MAX_RATIO = 0.7
 export const RIGHTBAR_DEFAULT_RATIO = 0.45
 export const SIDE_COLLAPSE = 1024
-export const NARROW = 768
 export const SIDE_DEFAULT = 264
 export const SIDE_MIN = 200
 export const SIDE_MAX = 420
@@ -15,11 +15,14 @@ export const CONVERSATION_MAX = 640
 /** The width of one resize handle between two columns: a hairline, with a wider area to grab. */
 export const HANDLE = 1
 
+/** A split view needs both panes and its divider; use one pane before constraints become impossible. */
+export const singlePaneWidth = () => Math.max(designLength('--pm-layout-narrow-width'), centreMinWidth() + CONVERSATION_MIN + HANDLE)
+
 export const clamp = (px: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(px)))
 
 /** The width left for the rightbar column: the viewport less the side panel, the conversation, the centre's minimum and `handles` resize handles. */
 export function rightbarRoom(viewport: number, side: number, conversation: number, handles: number): number {
-  return viewport - side - conversation - CENTRE_MIN - handles * HANDLE
+  return viewport - side - conversation - centreMinWidth() - handles * HANDLE
 }
 
 /** What the side panel shows: the chat history (DeepSeek Harness's sessions). */
@@ -61,7 +64,7 @@ function showHistory(d: LayoutState): void {
   d.layoutInfo.isSideOpen = true
   d.layoutInfo.narrowPane = 'sessions'
   if (d.layoutInfo.viewportWidth < SIDE_COLLAPSE) {
-    d.layoutInfo.isSideExpanded = d.layoutInfo.viewportWidth >= NARROW
+    d.layoutInfo.isSideExpanded = d.layoutInfo.viewportWidth >= singlePaneWidth()
     d.layoutInfo.isConversationOpen = false
   } else d.layoutInfo.isConversationOpen = true
 }
@@ -121,7 +124,7 @@ export function createLayoutStore() {
       showHistory,
       toggleConversations: (d: LayoutState) => {
         const info = d.layoutInfo
-        if (info.viewportWidth < NARROW) {
+        if (info.viewportWidth < singlePaneWidth()) {
           if (info.narrowPane === 'conversation') showHistory(d)
           else revealConversation(d)
         } else {
@@ -157,7 +160,7 @@ export function createLayoutStore() {
         else d.layoutInfo.isSideOpen = true
         d.layoutInfo.activity = activity
         if (d.layoutInfo.viewportWidth < SIDE_COLLAPSE) {
-          d.layoutInfo.isSideExpanded = d.layoutInfo.viewportWidth >= NARROW
+          d.layoutInfo.isSideExpanded = d.layoutInfo.viewportWidth >= singlePaneWidth()
           if (d.layoutInfo.isSideExpanded) d.layoutInfo.isConversationOpen = false
         }
         d.layoutInfo.narrowPane = activity

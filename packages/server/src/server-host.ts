@@ -48,6 +48,7 @@ export function servedDocument(compilation: Compilation): ServedDocument {
 }
 
 export interface ServerHost {
+  agentActivity?: import('@lincyaw/kernel').AgentActivityObserver
   projectAuthoring?: ProjectAuthoring
   authoring?: DocumentAuthoring
   documentHistory?: DocumentHistory

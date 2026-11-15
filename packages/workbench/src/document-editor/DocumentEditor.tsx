@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
+import { markAgentTargets } from './agent-targets.ts'
 import type { Transaction } from '@tiptap/pm/state'
 import { TextSelection } from '@tiptap/pm/state'
 import { closeHistory } from '@tiptap/pm/history'
@@ -35,6 +36,7 @@ export interface DocumentEditorCommands {
 }
 
 export interface DocumentEditorProps {
+  agentActivities?: import('@lincyaw/kernel').AgentActivity[]
   identity: string
   document: TeachingDocument
   version?: string
@@ -98,6 +100,16 @@ export function DocumentEditor(props: DocumentEditorProps) {
   }
   active.current = projection
   current.current = props
+  useEffect(() => {
+    const root = editor.current?.prosemirrorView.dom
+    if (!root || !props.agentActivities?.length) return
+    let unmark = () => {}
+    const paint = () => { unmark(); unmark = markAgentTargets(root, active.current, current.current.document, current.current.agentActivities ?? []) }
+    paint()
+    const observer = new MutationObserver(paint)
+    observer.observe(root, { childList: true, subtree: true })
+    return () => { observer.disconnect(); unmark() }
+  }, [props.agentActivities, projection, props.version])
   const cancelFocus = () => { if (focusFrame.current !== undefined) cancelAnimationFrame(focusFrame.current); focusFrame.current = undefined }
   const reportPosition = () => {
     const value = editor.current

@@ -27,6 +27,24 @@ function portOf(value: string | undefined): number | undefined {
   return n
 }
 
+/** Desktop owns the input pipe; closing it must stop Studio even when the app cannot run cleanup. */
+function watchParentPipe(onEnd: () => void): () => void {
+  if (process.env.PRESMIUM_STUDIO_PARENT_PIPE !== '1') return () => {}
+  delete process.env.PRESMIUM_STUDIO_PARENT_PIPE
+  let ended = false
+  const end = () => {
+    if (ended) return
+    ended = true
+    onEnd()
+  }
+  process.stdin.on('end', end).on('close', end).on('error', end)
+  process.stdin.resume()
+  return () => {
+    process.stdin.off('end', end).off('close', end).off('error', end)
+    process.stdin.pause()
+  }
+}
+
 export async function main(argv: string[], options: MainOptions = {}): Promise<number> {
   let values: { port?: string, host?: string, 'public-url'?: string, 'preview-url'?: string, 'preview-port'?: string, help?: boolean }
   let dir: string
@@ -53,10 +71,14 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
   const model = modelEnv(process.env)
   if (model.warning) process.stderr.write(`presmium studio: ${model.warning}\n`)
 
+  // During startup, exiting closes the watchdog pipes; once ready, use Studio's graceful close path.
+  let parentStop: () => void = () => process.exit(0)
+  const unwatchParent = watchParentPipe(() => parentStop())
   let studio
   try {
     studio = await startStudio({ dir, port: portOf(values.port), onServiceOutput: text => process.stderr.write(text), ...values.host ? { listenAddress: values.host } : {}, ...values['public-url'] ? { publicUrl: urlOf('--public-url', values['public-url']) } : {}, ...values['preview-url'] ? { previewUrl: urlOf('--preview-url', values['preview-url']) } : {}, ...values['preview-port'] ? { previewPort: portOf(values['preview-port']) } : {}, ...options.presmium ? { presmium: options.presmium } : {} })
   } catch (error) {
+    unwatchParent()
     process.stderr.write(`presmium studio: ${error instanceof Error ? error.message : String(error)}\n`)
     return 2
   }
@@ -75,8 +97,10 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
   const signals = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const
   let stop = () => {}
   const stopped = new Promise<void>(done => stop = done)
+  parentStop = stop
   for (const signal of signals) process.once(signal, stop)
   const ended = await Promise.race([stopped.then(() => undefined), studio.ended])
+  unwatchParent()
   for (const signal of signals) process.off(signal, stop)
   await studio.close()
   if (ended === undefined) return 0

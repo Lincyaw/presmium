@@ -54,6 +54,8 @@ export interface AgentAnswer {
 }
 
 export interface WorkbenchState {
+  agentActivities?: import('@lincyaw/kernel').AgentActivity[]
+  agentFollowing?: boolean
   locale: Locale
   authoring?: DocumentSessionState
   /** Unaccepted numeric form input is retained separately from saved canonical timing. */

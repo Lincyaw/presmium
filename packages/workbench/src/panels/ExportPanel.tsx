@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { CompileJob, OutputTarget } from '@lincyaw/kernel'
 import type { IconName } from '@lincyaw/design'
-import { PmBadge, PmButton, PmDialog, PmEmpty, PmIcon, PmIconButton, PmNotice } from '../components.tsx'
+import { PmBadge, PmButton, PmDialog, PmEmpty, PmIcon, PmIconButton, PmNotice, PmPanelHeader } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { failureReason, timeAgo } from '../messages.ts'
 
@@ -42,10 +42,7 @@ export function ExportPanel({ documentOnly = false, embedded = false, onClose }:
   const busy = (id: string) => jobs.some(job => job.target === id && (job.state === 'queued' || job.state === 'running'))
   return (
     <section className="pmw-pane" aria-labelledby={embedded ? undefined : 'pmw-export-title'} aria-label={embedded ? t.exportPane : undefined}>
-      {!embedded && <header className="pmw-pane__header">
-        <h2 id="pmw-export-title" className="pmw-pane__title">{documentOnly ? t.documentExport : t.exportPane}</h2>
-        <PmIconButton small icon="close" label={t.close} onClick={onClose} />
-      </header>}
+      {!embedded && <PmPanelHeader className="pmw-pane__header" titleId="pmw-export-title" title={documentOnly ? t.documentExport : t.exportPane} actions={<PmIconButton small icon="close" label={t.close} onClick={onClose} />} />}
       {failure && <PmNotice tone="danger">{t.outputFailed(t.jobFailureReasons[failure] ?? failureReason(t, failure))}</PmNotice>}
       {preparing && <PmNotice>{preparing.canCancel ? t.outputConfirmingSave : t.outputStarting} {preparing.canCancel && <PmButton small onClick={() => workbench.cancelJobPreparation()}>{t.cancelOutput}</PmButton>}</PmNotice>}
       {!embedded && <h3 id="pmw-export-make" className="pmw-export__subtitle">{t.makeLabel}</h3>}

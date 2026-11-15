@@ -4,6 +4,15 @@
   "prototypeUrl": "https://www.figma.com/proto/CjQ5JFn3PuGXx0NgwYrCR8?node-id=9-2&starting-point-node-id=9%3A2",
   "pageId": "5:227",
   "designSystem": {
+    "appChrome": {
+      "headers": "313:7410",
+      "toolbar": "323:7659",
+      "alignmentReview": "323:7662",
+      "agentActivity": "319:905",
+      "agentTarget": "319:918",
+      "agentReview": "319:923",
+      "contract": "Application bars span the window; workspace bars span the central pane; dock headers span their pane. Workspace and inline Toolbar variants and Workspace/Dock PanelHeader variants use the same design tokens. Activity stays in the existing app bar; manual input pauses following."
+    },
     "pageId": "21:2",
     "overview": {
       "nodeId": "25:144",

@@ -6,6 +6,8 @@ Presmium Studio as a desktop app for Windows, macOS and Linux, built with [Tauri
 
 Open the app, choose **Open Workspace…** and pick a folder with Presmium documents (or an empty one). The app starts Studio on it and shows Studio in its window; the next start reopens the same workspace. **Workspace → Open Workspace…** switches to another one. Closing the window stops Studio.
 
+Studio also watches the app's input pipe (`PRESMIUM_STUDIO_PARENT_PIPE=1`), so closing that pipe requests shutdown, including during startup. macOS forced-quit cleanup is verified with the built app. Windows process-tree cleanup needs platform acceptance; the Unix watchdog's process-group behavior is not a Windows guarantee. Ordinary terminal launches keep their normal input behaviour.
+
 Installers for each platform are attached to the GitHub Releases of this repository. Builds without signing secrets are unsigned: on macOS open the app the first time with Control-click → Open; on Windows choose "More info → Run anyway".
 
 ## Build
@@ -27,3 +29,5 @@ Requirements: Rust (stable), Node 22.19 or later, pnpm, and the platform's Tauri
 | Launcher | `build/ui` | The start page (`ui/`), with `@lincyaw/design` |
 
 `node scripts/prepare.mjs node|ui|runtime` runs one part. Each platform is built on that platform; `.github/workflows/desktop.yml` builds Linux, macOS and Windows on x64 and arm64.
+
+macOS signing keeps Hardened Runtime enabled and uses `src-tauri/Entitlements.plist` for the bundled Node's V8 JIT and loading native extensions such as sharp and workspace plugins. CI executes JavaScript and loads sharp with the signed `Contents/MacOS/presmium-node`. Also open a workspace in the built app: `--version` alone does not initialize V8. The launcher's **Details** opens the startup log, including process creation failures and unexpected exit status.

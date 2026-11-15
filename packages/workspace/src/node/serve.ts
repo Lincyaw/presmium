@@ -4,6 +4,7 @@ import { createProjectAuthoring } from './projects.ts'
 import { createDocumentHistory } from './document-history.ts'
 import { createAuthoringClients } from './authoring-clients.ts'
 import { createAuthoringWindows } from './authoring-windows.ts'
+import { createAgentActivity } from './agent-activity.ts'
 import { readAuthoringDocument } from './document-editor.ts'
 import { createDocumentCapture } from './capture.ts'
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
@@ -171,6 +172,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   let projectAuthoring: ReturnType<typeof createProjectAuthoring> | undefined
   let authoringClients: ReturnType<typeof createAuthoringClients> | undefined
   let authoringWindows: ReturnType<typeof createAuthoringWindows> | undefined
+  const agentActivity = createAgentActivity()
   let transcriptions: ReturnType<typeof createDocumentTranscriptions> | undefined
   let transcriptionAdoption: ReturnType<typeof createTranscriptionAdoption> | undefined
   let mediaUploads: ReturnType<typeof createMediaUploads> | undefined
@@ -253,7 +255,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
     authoringServicesClosed = true
     transcriptionAdoption?.close()
     for (const load of nodeServicePending) load.controller.abort()
-    const results = await Promise.allSettled([mediaUploads?.close(), projectAuthoring?.close(), transcriptions?.close(), audioAuthoring?.close(), voiceAuthoring?.close(), documentHistory?.close(), authoringClients?.close(), authoringWindows?.close(), workspaceRoutesOwner?.close?.()])
+    const results = await Promise.allSettled([agentActivity.close(), mediaUploads?.close(), projectAuthoring?.close(), transcriptions?.close(), audioAuthoring?.close(), voiceAuthoring?.close(), documentHistory?.close(), authoringClients?.close(), authoringWindows?.close(), workspaceRoutesOwner?.close?.()])
     await Promise.allSettled([...nodeServicePending].map(load => load.promise))
     nodeServiceLoads.clear()
     const failure = results.find(result => result.status === 'rejected')
@@ -319,6 +321,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const ready = new Promise<void>(resolve => started = resolve)
 
   const serverHost: ServerHost = {
+    agentActivity: agentActivity.service,
     workspaceRoot: root,
     get authoring() { return documentEditor },
     get documentHistory() { return documentHistory?.service },
@@ -484,7 +487,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
       audioAuthoringRoutes: audioAuthoring.routes,
       imageAuthoringRoutes: imageAuthoring.routes,
       historyRoutes: documentHistory.routes,
-      authoringClientRoutes: { ...authoringClients.routes, ...authoringWindows.routes },
+      authoringClientRoutes: { ...authoringClients.routes, ...authoringWindows.routes, ...agentActivity.routes },
       projectRoutes: projectAuthoring.routes,
       locks,
       ...history ? { revisions: history.revisions, operations: history.operations, reviews: history.agentSessionReviews } : {},

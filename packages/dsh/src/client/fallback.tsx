@@ -1,4 +1,4 @@
-import { DocumentView, HistoryPanel, HomePanel, PreviewPanel, useWorkbench, useWorkbenchState, WorkbenchProvider, WorkbenchApprovals } from '@lincyaw/workbench'
+import { AgentActivityBar, DocumentView, HistoryPanel, HomePanel, PreviewPanel, useWorkbench, useWorkbenchState, WorkbenchProvider, WorkbenchApprovals } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
 import { useRef } from 'react'
 import type { ComponentType } from 'react'
@@ -17,9 +17,9 @@ function Centre() {
   return (
     <div className="pmw-fallback pm-ui" data-pmw-fallback="">
       <RuntimeDiagnosticsNotice workbench={workbench} />
-      {document_ === undefined && <HomePanel />}
+      {document_ === undefined && <HomePanel actions={<AgentActivityBar />} />}
       {retainedDocument.current && <div className="pmw-fallback__doc" hidden={document_ === undefined}>
-        <DocumentView active={document_ !== undefined} />
+        <DocumentView active={document_ !== undefined} actions={<AgentActivityBar />} />
       </div>}
     </div>
   )

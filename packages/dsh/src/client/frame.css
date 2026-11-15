@@ -43,11 +43,7 @@ body,
   align-items: center;
   gap: var(--pm-space-px);
   min-width: 0;
-  height: var(--pm-appbar-height);
   padding: 0 var(--pm-space-2) 0 var(--pm-space-3);
-  border-bottom: var(--pm-size-hairline) solid var(--pm-color-line);
-  background: var(--pm-color-chrome);
-  font-size: var(--pm-text-sm);
 }
 
 .pmw-appbar__brand {
@@ -170,12 +166,6 @@ span.pmw-appbar__place {
 .pmw-appbar__brand > .pmw-logo {
   width: var(--pm-size-logo);
   height: var(--pm-size-logo);
-}
-
-.pmw-appbar__more > .pm-ui-icon-button {
-  width: var(--pm-size-tool);
-  height: var(--pm-size-tool);
-  border-radius: var(--pm-radius-tool);
 }
 
 .pmw-appbar__busy {

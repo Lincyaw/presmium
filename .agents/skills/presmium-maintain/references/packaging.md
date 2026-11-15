@@ -113,3 +113,20 @@ document, its preview, closing the window and killing the app (no `presmium-node
 its own (the launcher shows the error). `.github/workflows/desktop.yml` builds the installers of six platforms
 and, after a push to main, replaces the assets of the rolling prerelease `desktop-latest` (a published GitHub
 Release gets its own copies); it does no window acceptance. Details are in `packages/desktop/README.md`.
+On macOS, execute JavaScript and load sharp with the signed app's `Contents/MacOS/presmium-node`; `--version`
+does not initialize V8 or load native extensions. Keep Hardened Runtime enabled and the bundled Node's
+`allow-jit` and `disable-library-validation` entitlements in `src-tauri/Entitlements.plist` for V8 and native
+extensions (including workspace plugins). Read the launcher's Details log for spawn errors and
+unexpected exit status before changing workspace content.
+The desktop keeps Studio's stdin pipe open and sets `PRESMIUM_STUDIO_PARENT_PIPE=1`; Studio removes the flag
+before launching children and exits when the pipe closes, including during startup. Verify forced termination
+as well as normal window closing; a successful normal exit does not prove crash cleanup works.
+macOS forced-quit cleanup is accepted in the built app; do not generalize the Unix watchdog's process groups
+to Windows. Windows process-tree supervision requires platform-specific implementation and acceptance.
+
+For workbench chrome, use the app bar, workspace Toolbar/Header and dock Header contracts in
+`docs/design-system.md`. Document and Video Production must share outer width, toolbar height, horizontal
+insets and title baselines. Measure the actual pane for responsive layout, including a wide window with the
+conversation open. MCP presence stays inside the existing app bar; verify a real non-first-step edit, target
+highlights, reduced motion, paused following, and canceled cross-document navigation. Never insert artificial
+operation delays for the effect.

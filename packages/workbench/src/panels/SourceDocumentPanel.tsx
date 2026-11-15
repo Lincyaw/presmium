@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { hasRole } from '@lincyaw/kernel'
 import { PmButton, PmNotice, PmSkeleton } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
@@ -15,6 +15,8 @@ import { isAgentChanging } from '../workbench-state.ts'
 export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onOpenComments }: { commentsPortal?: HTMLElement | null, onCommentDraftRestore?(): void, onOpenComments?(): void }) {
   const workbench = useWorkbench(), t = useMessages()
   const source = useWorkbenchState(state => state.authoring)
+  const activities = useWorkbenchState(state => state.agentActivities)
+  const agentActivities = useMemo(() => activities?.filter(activity => activity.document === source?.directory), [activities, source?.directory])
   const sourceAcknowledged = () => {
     const current = workbench.getState().authoring
     return Boolean(current && current.identity === source?.identity && current.reset === source?.reset
@@ -158,7 +160,7 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onO
     {!source?.content || !source.identity ? source?.loading
       ? <div className="pmw-source-document__sheet pmw-source-document__sheet--loading"><PmSkeleton label={messages.loading} /></div>
       : <PmNotice tone="warn"><span>{messages.unavailable}</span><span className="pmw-notice__actions"><PmButton small onClick={() => void workbench.retryDocument()}>{t.retry}</PmButton></span></PmNotice> : <div className="pmw-source-document__sheet">
-      <DocumentEditor acknowledged={sourceAcknowledged()} getDocumentAcknowledged={sourceAcknowledged} onCommentDraftRestore={onCommentDraftRestore} onOpenComments={onOpenComments} commentDrafts={workbench.documentCommentDrafts(source.identity)} identity={source.identity} document={source.content} version={source.version} member={source.member} getDocument={() => workbench.getDocument(source.identity)}
+      <DocumentEditor agentActivities={agentActivities} acknowledged={sourceAcknowledged()} getDocumentAcknowledged={sourceAcknowledged} onCommentDraftRestore={onCommentDraftRestore} onOpenComments={onOpenComments} commentDrafts={workbench.documentCommentDrafts(source.identity)} identity={source.identity} document={source.content} version={source.version} member={source.member} getDocument={() => workbench.getDocument(source.identity)}
         getDocumentVersion={() => { const current = workbench.getState().authoring; return current && current.identity === source.identity && current.reset === source.reset ? current.version : undefined }} reset={source.reset} locale={locale} readOnly={readOnly}
         uploadImage={(file, signal) => workbench.importDocumentImage(file, source.identity!, signal)}
         getPositionToken={() => workbench.getState().documentPositionToken}

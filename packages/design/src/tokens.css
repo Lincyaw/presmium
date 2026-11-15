@@ -160,6 +160,9 @@
   --pm-control-number-width: 5rem;
   --pm-control-time-width: 7rem;
   --pm-canvas-min-width: 30rem;
+  --pm-layout-narrow-width: 48rem;
+  --pm-layout-roomy-width: 80rem;
+  --pm-production-wide-width: 68.75rem;
   --pm-opacity-disabled: 0.55;
   --pm-dialog-width: 40rem;
   --pm-drawer-width: 25rem;

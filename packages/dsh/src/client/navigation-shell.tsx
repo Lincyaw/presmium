@@ -3,7 +3,7 @@ import type { Workbench } from '@lincyaw/workbench'
 import type { ReactNode } from 'react'
 import { isBootEntryLoaded, UI_SIDEBAR } from './contract.ts'
 import type { LayoutActions, LayoutState } from './layout.ts'
-import { NARROW, SIDE_COLLAPSE } from './layout.ts'
+import { singlePaneWidth, SIDE_COLLAPSE } from './layout.ts'
 import { useClientMessages } from './messages.ts'
 
 interface SidebarProps {
@@ -55,7 +55,7 @@ export function registerNavigationShell(ctx: DshClientContext, workbench: Workbe
         <PmIconButton icon="plus" label={t.newConversation} small onClick={() => void startSession()} />
         <PmIconButton icon="history" label={t.conversationHistory} small onClick={() => actions.showHistory()} />
         <PmIconButton icon="close" label={t.hideConversation} small onClick={() => {
-          if (layout.getSnapshot().layoutInfo.viewportWidth < NARROW) actions.showNarrowPane(workbench.state.document === undefined ? 'documents' : 'preview')
+          if (layout.getSnapshot().layoutInfo.viewportWidth < singlePaneWidth()) actions.showNarrowPane(workbench.state.document === undefined ? 'documents' : 'preview')
           else actions.setConversationOpen(false)
         }} />
       </div>

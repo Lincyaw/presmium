@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { errorMessage } from '@lincyaw/kernel'
 import type { DocumentSummary, ProjectPlan } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmEmpty, PmInput, PmSelect, PmIcon, PmMenu, PmNotice } from '../components.tsx'
@@ -10,7 +11,7 @@ type Editing =
   | { op: 'rename' | 'delete', doc: DocumentSummary }
 
 /** The documents of the workspace: open one, make a new one, rename, copy or delete one. */
-export function HomePanel() {
+export function HomePanel({ actions }: { actions?: ReactNode } = {}) {
   const t = useMessages()
   const workbench = useWorkbench()
   const answer = useWorkbenchState(state => state.documents)
@@ -46,6 +47,7 @@ export function HomePanel() {
     <section className="pmw-home" aria-labelledby="pmw-home-title">
       <header className="pmw-home__bar">
         <h1 id="pmw-home-title" className="pmw-home__title">{answer?.title ?? t.documents}</h1>
+        {actions}
         {operable && <PmButton variant="primary" icon="plus" disabled={working} onClick={() => { handingOff.current = false; setError(undefined); setEditing({ op: 'create' }) }}>{t.newDocument}</PmButton>}
       </header>
       {failure && <PmNotice tone="danger">{bundleDisabled ? t.bundleDisabled : failure}</PmNotice>}

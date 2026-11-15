@@ -71,6 +71,7 @@ export interface McpRuntimeWindow {
 }
 
 export interface McpHost {
+  agentActivity?: import('@lincyaw/kernel').AgentActivityObserver
   projectAuthoring?: ProjectAuthoring
   authoring?: DocumentAuthoring
   documentHistory?: DocumentHistory

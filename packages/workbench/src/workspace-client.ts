@@ -65,6 +65,7 @@ export interface WorkspaceCapabilities {
 }
 
 export interface WorkspaceClient {
+  subscribeAgentActivity?(received: (snapshot: import('@lincyaw/kernel').AgentActivitySnapshot) => void, failed: () => void): () => void
   readSpeechSettings?(signal?: AbortSignal): Promise<SpeechSettingsAnswer>
   changeSpeechSettings?(change: SpeechSettingsChange, signal?: AbortSignal): Promise<SpeechSettingsAnswer>
   openSpeechSettings?(): boolean
@@ -337,6 +338,7 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
   }
   const projectIntents = new Map<string, { id: string, plan?: ProjectPlan }>()
   return client = {
+    subscribeAgentActivity: (received, failed) => subscribe(url('agent-activity/events', ''), 'agent-activity', received, failed),
     ...subscription?.openAuthoringClient ? { openAuthoringClient: subscription.openAuthoringClient } : {},
     ...subscription?.openAuthoringWindow ? { openAuthoringWindow: subscription.openAuthoringWindow } : {},
     ...subscription ? { subscribePreviewEvents: ((target, received) => {

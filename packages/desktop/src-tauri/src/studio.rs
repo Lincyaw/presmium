@@ -92,7 +92,7 @@ pub fn start(
     if let Some(dir) = runtime.log.parent() {
         let _ = std::fs::create_dir_all(dir);
     }
-    let log = File::create(&runtime.log).map_err(|_| LaunchError::StartFailed)?;
+    let mut log = File::create(&runtime.log).map_err(|_| LaunchError::StartFailed)?;
     let errors = log.try_clone().map_err(|_| LaunchError::StartFailed)?;
 
     let mut command = Command::new(&runtime.node);
@@ -101,7 +101,9 @@ pub fn start(
         .arg("studio")
         .arg(workspace)
         .current_dir(workspace)
-        .stdin(Stdio::null())
+        // Studio watches this pipe: even a forced quit closes it and releases its services.
+        .env("PRESMIUM_STUDIO_PARENT_PIPE", "1")
+        .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::from(errors));
     // Tools the agent runs (`node`, `presmium`) find the bundled Node first.
@@ -128,7 +130,10 @@ pub fn start(
             Ok(())
         });
     }
-    let mut child = spawn(command).map_err(|_| LaunchError::StartFailed)?;
+    let mut child = spawn(command).map_err(|error| {
+        let _ = writeln!(log, "Could not start {}: {error}", runtime.node.display());
+        LaunchError::StartFailed
+    })?;
     let stdout = child.stdout.take().ok_or(LaunchError::StartFailed)?;
     let child = Arc::new(Mutex::new(child));
     let stopping = Arc::new(Mutex::new(false));
@@ -136,6 +141,7 @@ pub fn start(
     let (address, received) = mpsc::channel::<String>();
     {
         let stopping = stopping.clone();
+        let child = child.clone();
         let mut log = log;
         thread::spawn(move || {
             let mut address = Some(address);
@@ -149,6 +155,11 @@ pub fn start(
             }
             // Studio closed its output: it has ended (or is about to). `stop` reaps it.
             if !*stopping.lock().unwrap() {
+                match child.lock().unwrap().try_wait() {
+                    Ok(Some(status)) => { let _ = writeln!(log, "Studio exited: {status}"); }
+                    Ok(None) => { let _ = writeln!(log, "Studio closed its output before exiting"); }
+                    Err(error) => { let _ = writeln!(log, "Could not read Studio exit status: {error}"); }
+                }
                 on_exit();
             }
         });

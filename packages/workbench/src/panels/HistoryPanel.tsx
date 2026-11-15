@@ -1,6 +1,6 @@
 import { hasRole } from '@lincyaw/kernel'
 import type { HistoryRevision } from '@lincyaw/kernel'
-import { PmBadge, PmButton, PmEmpty, PmIcon, PmIconButton, PmNotice } from '../components.tsx'
+import { PmBadge, PmButton, PmEmpty, PmIcon, PmIconButton, PmNotice, PmPanelHeader } from '../components.tsx'
 import type { IconName } from '@lincyaw/design'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { timeAgo } from '../messages.ts'
@@ -43,10 +43,7 @@ export function HistoryPanel({ onClose, revisionAction }: HistoryPanelProps) {
   const icon = (revision: HistoryRevision): IconName => (revision.origin.kind === 'agent' ? 'sparkle' : revision.origin.kind === 'document' ? 'document' : 'edit')
   return (
     <section className="pmw-pane" aria-labelledby="pmw-history-title">
-      <header className="pmw-pane__header">
-        <h2 id="pmw-history-title" className="pmw-pane__title">{t.versionHistory}</h2>
-        <PmIconButton small icon="close" label={t.close} onClick={onClose} />
-      </header>
+      <PmPanelHeader className="pmw-pane__header" titleId="pmw-history-title" title={t.versionHistory} actions={<PmIconButton small icon="close" label={t.close} onClick={onClose} />} />
       {outside && outside.length > 0 && (
         <PmNotice tone="warn">
           <span>{t.outside(outside.length)}</span>

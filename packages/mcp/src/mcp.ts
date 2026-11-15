@@ -33,6 +33,7 @@ import { CAPTURE_TOOLS, ToolContent } from './capture.ts'
 import { compactSchema } from './schemas.ts'
 import { compactToolCatalog, queryToolCatalog, resolveCatalogCall } from './tool-catalog.ts'
 import type { ListedTool } from './client.ts'
+import { activityNeedsDocument, activityOperation, activityTargets } from './activity.ts'
 
 const MCP_VERSION: string = (createRequire(import.meta.url)('../package.json') as { version: string }).version
 const POSITION_URI = 'presmium://position'
@@ -683,7 +684,16 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
     const contextual = ['get_context', 'edit_narration', 'editor_action'].includes(tool.name)
     const own = call(args, signal, spec ? directAuthoring(spec, args) : false, contextual)
     const lang = spec && SKILL_TOOLS.includes(spec) ? undefined : async () => { const dir = await own.document(); return (await host.documents()).find(doc => doc.dir === dir)?.lang }
-    return toolResult(() => spec ? spec.run(own) : pluginTool(own, tool as AgentTool), spec?.structured ?? false, lang, spec ? undefined : (tool as AgentTool).errors)
+    return toolResult(async () => {
+      const document = host.agentActivity ? await own.document().catch(() => undefined) : undefined
+      const source = host.agentActivity && document !== undefined && activityNeedsDocument(args) ? await host.authoring?.read(document, caller.member).catch(() => undefined) : undefined
+      const finish = host.agentActivity?.begin({ operation: activityOperation(tool.name, tool.kind === 'read'), document, targets: activityTargets(args, source?.content) }, caller.member)
+      try {
+        const result = await (spec ? spec.run(own) : pluginTool(own, tool as AgentTool))
+        finish?.(signal.aborted ? 'cancelled' : 'done')
+        return result
+      } catch (error) { finish?.(signal.aborted ? 'cancelled' : 'failed'); throw error }
+    }, spec?.structured ?? false, lang, spec ? undefined : (tool as AgentTool).errors)
   }
   const toolSchema = (tool: ToolSpec | AgentTool) => compactSchema(builtIn.includes(tool as ToolSpec)
     ? (tool as ToolSpec).inputSchema ?? schemaOf((tool as ToolSpec).properties, (tool as ToolSpec).required) : pluginSchema(tool as AgentTool))

@@ -1,5 +1,5 @@
 import { useEffect, useId } from 'react'
-import { PmEmpty, PmIconButton } from '../components.tsx'
+import { PmEmpty, PmIconButton, PmPanelHeader } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { DocumentStepNarration } from '../document-editor/DocumentStepNarration.tsx'
 
@@ -18,7 +18,7 @@ export function DocumentNarrationPanel({ onClose }: { onClose(): void }) {
   }
   useEffect(() => { pause() }, [workbench, source?.identity])
   return <section className="pmw-pane" aria-labelledby={panelId}>
-    <header className="pmw-pane__header"><h2 id={panelId} className="pmw-pane__title">{t.documentNarration}</h2><PmIconButton small icon="close" label={t.close} onClick={onClose} /></header>
+    <PmPanelHeader className="pmw-pane__header" titleId={panelId} title={t.documentNarration} actions={<PmIconButton small icon="close" label={t.close} onClick={onClose} />} />
     {section && sectionId && stepId ? <>
       <p className="pmw-pane__footer">{section.title}</p>
       <DocumentStepNarration sectionId={sectionId} stepId={stepId} expanded showLabel={false} panelId={`${panelId}-fields`} onPause={pause} />

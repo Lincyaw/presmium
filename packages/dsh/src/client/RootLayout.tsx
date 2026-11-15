@@ -1,11 +1,11 @@
 import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
-import { DocumentView, HomePanel, PmDialog, PmIcon, PmMenu, SHORTCUTS, useWorkbenchState, WorkbenchApprovals, WorkbenchProvider } from '@lincyaw/workbench'
+import { AgentActivityBar, DocumentView, HomePanel, PmDialog, PmIcon, PmMenu, SHORTCUTS, useWorkbenchState, WorkbenchApprovals, WorkbenchProvider } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import { Logo } from './brand.tsx'
 import { mainViewAgentSession } from './document-context.ts'
-import { clamp, CONVERSATION_MAX, CONVERSATION_MIN, NARROW, RIGHTBAR_MAX_RATIO, RIGHTBAR_MIN, rightbarRoom, SIDE_COLLAPSE, SIDE_MAX, SIDE_MIN } from './layout.ts'
+import { centreMinWidth, clamp, CONVERSATION_MAX, CONVERSATION_MIN, singlePaneWidth, RIGHTBAR_MAX_RATIO, RIGHTBAR_MIN, rightbarRoom, SIDE_COLLAPSE, SIDE_MAX, SIDE_MIN } from './layout.ts'
 import type { LayoutActions, LayoutState, NarrowPane } from './layout.ts'
 import { useClientMessages } from './messages.ts'
 import { isSamePath } from './paths.ts'
@@ -45,7 +45,7 @@ export function rootLayoutFor(options: RootLayoutOptions) {
 /** The columns' widths for the viewport: 0 for a column that is not shown. */
 function solveGeometry(info: LayoutState['layoutInfo']) {
   const viewport = info.viewportWidth
-  const narrow = viewport < NARROW
+  const narrow = viewport < singlePaneWidth()
   const collapsed = viewport < SIDE_COLLAPSE
   const side = narrow ? 0 : (collapsed ? info.isSideExpanded : info.isSideOpen) ? info.sideWidth : 0
   const conversation = narrow || !info.isConversationOpen ? 0 : collapsed ? Math.min(info.conversationWidth, Math.max(300, Math.round(viewport * 0.4))) : info.conversationWidth
@@ -221,7 +221,7 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
           <div className="pmw-frame__sidebar" data-pmw-slot="sidebar" data-shown={(narrow ? pane === 'sessions' : sideShown) || undefined}>{sidebar}</div>
         </Panel>
         {sideShown && <Separator className="pmw-frame__handle" data-side="side" aria-label={t.resize} />}
-        <Panel id="centre" minSize={narrow ? 0 : 200} className="pmw-frame__centre-panel" hidden={narrow && (pane === 'sessions' || pane === 'conversation') && panel === null}>
+        <Panel id="centre" minSize={narrow ? 0 : centreMinWidth()} className="pmw-frame__centre-panel" hidden={narrow && (pane === 'sessions' || pane === 'conversation') && panel === null}>
           <main id="pmw-centre" className="pmw-frame__centre" aria-label={documentTitle ?? t.centre}>{centre}</main>
         </Panel>
         {!narrow && info.isRightbarOpen && !info.isRightbarFullscreen && geometry.track > 0 && (
@@ -293,7 +293,7 @@ function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, nar
   }
 
   return (
-    <nav className="pmw-appbar" aria-label={t.activity}>
+    <nav className="pm-ui-appbar pmw-appbar" aria-label={t.activity}>
       <span className="pmw-appbar__brand"><Logo /><span className="pmw-brand-name">{t.product}</span></span>
       <ol className="pmw-appbar__places">
         <li>
@@ -311,6 +311,7 @@ function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, nar
         {panelLabel && <li><span className="pmw-appbar__place" aria-current="page"><span className="pmw-appbar__label">{panelLabel}</span></span></li>}
       </ol>
       <span className="pmw-spacer" />
+      <AgentActivityBar />
       <span className="pmw-appbar__approvals" data-activity="approvals"><WorkbenchApprovals density={narrow ? 'touch' : 'compact'} /></span>
       <button type="button" className="pmw-appbar__button pmw-appbar__assistant" data-activity="assistant" title={t.assistant} aria-pressed={chatShown} onClick={toggleAssistant}>
         <PmIcon name="sparkle" /><span className="pmw-appbar__label">{t.assistant}</span>

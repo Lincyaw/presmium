@@ -4,6 +4,7 @@ import { randomUUID } from '@lincyaw/kernel'
 import { PmIconButton } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { isAgentChanging } from '../workbench-state.ts'
+import { latestAgentActivity } from '../agent-activity.ts'
 import { NarrationEditor } from './NarrationEditor.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
 import { narrationFieldFocus, narrationsToNative, nativeToNarrations } from './narration.ts'
@@ -62,6 +63,8 @@ export function DocumentStepNarration({ blockId, sectionId, stepId, expanded, ad
   const locale = useWorkbenchState(state => state.locale), t = DOCUMENT_EDITOR_MESSAGES[locale]
   const readOnly = useWorkbenchState(state => workbench.client.capabilities?.readOnly === true || Boolean(state.authoring?.loading) || isAgentChanging(state))
   const timingStorageFailure = useWorkbenchState(state => state.documentTimingDraftStorageFailure)
+  const activities = useWorkbenchState(state => state.agentActivities)
+  const activity = latestAgentActivity(activities?.filter(value => value.document === source?.directory && value.targets.some(target => target.step === stepId)))
   if (workbench.client.capabilities?.narration === false) return null
   const document = source?.content, section = document?.sections[sectionId], step = document?.steps[stepId]
   if (!source?.identity || !document || !section || !step) return null
@@ -72,7 +75,7 @@ export function DocumentStepNarration({ blockId, sectionId, stepId, expanded, ad
     const id = section.stepOrder[index + offset]
     if (id) { onPause(); workbench.selectDocumentStep(sectionId, id) }
   }
-  return <section className="pm-ui-block-preview__narration" aria-label={fieldLabel} data-step-narration={stepId}>
+  return <section className="pm-ui-block-preview__narration" aria-label={fieldLabel} data-step-narration={stepId} data-pm-agent-target={activity?.state}>
     <header className="pm-ui-block-preview__narration-header">
       <span className="pm-ui-block-preview__step-label">{label}</span>
       <span className="pm-ui-block-preview__actions">
