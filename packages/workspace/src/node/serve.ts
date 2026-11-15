@@ -16,6 +16,7 @@ import type { Compilation, CompilerOptions } from '@lincyaw/compiler'
 import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, DOCUMENT_VOICE_TASKS, errorMessage, PreviewPreparing, PRODUCTION_AUDIO_AUTHORING, REVISIONS, SPEECH, VOICEOVER, VOICEOVER_EXECUTION } from '@lincyaw/kernel'
 import { irRevision, OperatorSpeechSettings, readServiceState, removeServiceState, serveStateDir, tryAcquireServiceHostLease } from '@lincyaw/kernel/node'
 import type { ServiceHostLease } from '@lincyaw/kernel/node'
+import { createMcpSettings } from './mcp-settings.ts'
 import { speechSettingsRoute } from './speech-settings.ts'
 import type { ApprovalKind, CanonicalSource, ChangeReviewService, Finding, IRDocument, Logger, ProductionAudioAuthoring, ServiceToken, SiteSpec, SpeechService } from '@lincyaw/kernel'
 import { serverConfigKey, servedDocument, startServer } from '@lincyaw/server'
@@ -476,7 +477,9 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   transcriptionAdoption = createTranscriptionAdoption({ documentEditor, transcriptions })
   audioAuthoring = createDocumentAudioAuthoring({ root, editor, uploads: mediaUploads, revisions: history?.revisions, services: authoringServices, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   imageAuthoring = createDocumentImageAuthoring({ root, editor, uploads: mediaUploads, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
+  const mcpSettings = await createMcpSettings({ root, stateFile, server: running, command: env.PRESMIUM_COMMAND })
   const routeOptions = {
+      mcpSettings: mcpSettings.route,
       speechSettings: speechSettingsRoute(speechSettings),
       changesRoutes: workspaceChanges.routes,
       config,

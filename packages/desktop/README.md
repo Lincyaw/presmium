@@ -18,7 +18,7 @@ pnpm --filter presmium-desktop dev     # run the app without bundling it
 pnpm --filter presmium-desktop build   # installers for this machine in src-tauri/target/release/bundle/
 ```
 
-Requirements: Rust (stable), Node 22.19 or later, pnpm, and the platform's Tauri prerequisites; on Linux the WebKitGTK 4.1 development packages (`libwebkit2gtk-4.1-dev` and `libgtk-3-dev` on Debian and Ubuntu).
+Requirements: Rust 1.90 or later (stable), Node 22.19 or later, pnpm, and the platform's Tauri prerequisites; on Linux the WebKitGTK 4.1 development packages (`libwebkit2gtk-4.1-dev` and `libgtk-3-dev` on Debian and Ubuntu).
 
 `scripts/prepare.mjs` gathers what the bundle carries for this platform into `build/` and `src-tauri/binaries/`:
 
@@ -31,3 +31,16 @@ Requirements: Rust (stable), Node 22.19 or later, pnpm, and the platform's Tauri
 `node scripts/prepare.mjs node|ui|runtime` runs one part. Each platform is built on that platform; `.github/workflows/desktop.yml` builds Linux, macOS and Windows on x64 and arm64.
 
 macOS signing keeps Hardened Runtime enabled and uses `src-tauri/Entitlements.plist` for the bundled Node's V8 JIT and loading native extensions such as sharp and workspace plugins. CI executes JavaScript and loads sharp with the signed `Contents/MacOS/presmium-node`. Also open a workspace in the built app: `--version` alone does not initialize V8. The launcher's **Details** opens the startup log, including process creation failures and unexpected exit status.
+
+
+## Updates
+
+The application checks for updates on startup and every six hours. **Check for Updates…** is also available
+from the application menu. Downloading leaves the workspace open. After signature verification, save your work
+and choose **Restart and Install**; **Later** keeps the verified candidate for another attempt.
+The installed app version follows `@lincyaw/presmium`. Older clients without the updater need one manual upgrade.
+
+Local builds produce ordinary installers without requiring the release private key. CI enables signed updater artifacts and signs packages with the repository Actions secret `TAURI_SIGNING_PRIVATE_KEY`; the matching public key is in
+`src-tauri/tauri.conf.json`. Never include the private key in source or release assets. The optional password is
+`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Only after all six platform builds and final package signatures succeed
+is the update feed at the `desktop-updates` release promoted. Version-release packages are immutable.

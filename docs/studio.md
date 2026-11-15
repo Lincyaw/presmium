@@ -163,7 +163,7 @@
 
 ### 7.1 根布局与退路
 
-根布局声明 `root`，子槽位与 `ui-layout` 相同（`sidebar`、`main`、`rightbar`、`shell.*`），所以 dsh 的插件不改就能挂上；它重新提供 `ctx.layout`。顶部应用栏是标志与位置路径，右侧有待确认、AI 助手、更多、设置与帮助；侧栏是对话记录；中央是文稿列表与三个入口；AI 助手按需展开。只有一个工作区，对话中的工作区选择隐藏。
+根布局声明 `root`，子槽位与 `ui-layout` 相同（`sidebar`、`main`、`rightbar`、`shell.*`），所以 dsh 的插件不改就能挂上；它重新提供 `ctx.layout`。顶部应用栏是标志与位置路径，右侧有待确认、AI 助手、设置与帮助；设置菜单统一通用、模型与语音服务、MCP 连接、插件和自动化任务的入口；侧栏是对话记录；中央是文稿列表与三个入口；AI 助手按需展开。只有一个工作区，对话中的工作区选择隐藏。
 
 **退路**：重新打开 `ui-layout` 与 `ui-sidebar` 时，文稿与版本历史作为右侧坞标签页与 `main` 的全局面板出现。
 
@@ -187,6 +187,10 @@
 - **漂移**：源码改动后先按块 ID 找，再按摘录重新定位，都找不到就标为“已失效”，不悄悄指到别处。位置锚点的步骤失效时留在块上，块本身失效时才变为无锚点。
 
 ## 9. MCP 与 dsh 的工具一致
+
+“设置 → MCP 连接”选择给外部 AI 客户端使用的连接方式，默认 stdio。stdio 配置使用当前安装自带的 Node、Presmium 命令与工作区绝对路径，无需用户另装全局命令；连接按需发现并共享工作区服务。HTTP 模式在本机回环地址增加独立 MCP 监听，端口 0 自动分配，也可填写固定端口；先成功绑定并保存偏好，再关闭旧监听，端口不可用时保留原配置。切换不改变编辑器地址，也不关闭原有 stdio 会话。偏好保存在工作区 `.presmium/mcp-settings.json`；固定端口重启后被占用不会阻止工作区启动，设置页提示重新选择。此设置控制外部连接的偏好与附加端口，工作区内部服务仍为编辑器与 stdio 运行。
+
+设置页能复制通用 MCP 客户端配置，或复制给 AI 的配置提示词。复制前读取当前设置；配置导出是仅所有者可执行的显式操作，HTTP 导出只含 MCP 访问令牌，不使用启动凭据。HTTP 提示词只提供服务状态文件路径与读取 `token` 字段的方法，不包含凭据值。远程浏览器中说明这些本机路径属于运行 Presmium 的电脑，不能直接当作远程 AI 电脑的启动路径。
 
 Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:4321/mcp`，使用 Streamable HTTP。直接使用 HTTP 的客户端配置启动时打印的地址与 `Authorization: Bearer <令牌>`；从打印的文件路径读取凭据，服务状态 JSON 取 `token` 字段，纯文本令牌文件直接读取。同一启动目录重启或升级后，自建服务的地址和令牌保持不变。借用已有服务时保留该服务的地址和令牌。启动器不在日志中打印令牌本身。
 
@@ -244,6 +248,10 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 5. 启动页只能调用应用自己的命令；Studio 的页面（回环地址上的 http）没有应用的任何权限。指向本机的新窗口留在应用中，其他链接在系统浏览器中打开；下载存入“下载”文件夹并在文件管理器中显示。
 6. 菜单与启动页的语言按系统语言（zh-CN 或 en）；Studio 页面的语言由 Studio 自己决定。
 7. `.github/workflows/desktop.yml` 构建六个平台的安装包（Windows 的 NSIS `.exe`，macOS 的 `.dmg`，Linux 的 `.deb` 与 `.rpm`）。推送到 `main` 构建成功后，安装包替换滚动预发布 [`desktop-latest`](https://github.com/Lincyaw/presmium/releases/tag/desktop-latest) 的内容；发布 GitHub Release 时附加到该 Release。没有签名证书时，macOS 应用只做临时签名（ad hoc，`signingIdentity` 为 `-`），没有经过苹果公证；完全不签名的应用下载后会被 macOS 报为“已损坏”。
+
+桌面应用版本跟随主包版本。原生菜单“检查更新…”随时可用，正式构建启动时及每 6 小时自动检查；后台网络失败保持安静。发现新版后先询问下载，下载与编辑并行，完整校验通过后再提示作者保存文稿、处理未提交表单与录音并重启安装。作者选择稍后时保留当前候选包；下次重新核对签名，旧候选缓存会清理。安装前停止应用拥有的 Studio，借用的服务保留；Studio 页面不取得原生更新权限。
+
+更新使用 Tauri updater 的版本绑定签名，公钥随应用发布，私钥由仓库 Actions 加密密钥 `TAURI_SIGNING_PRIVATE_KEY` 提供，密码可由 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` 提供。六个平台全部成功后，将最终包（DEB 重压缩后重新签名，并用应用内的公钥验证最终字节及版本）上传到对应版本 Release；已发布的同名文件不能改写为其他字节。固定 `desktop-updates/latest.json` 最后发布，列全 macOS app、Windows NSIS、Linux DEB/RPM 的架构与格式；较旧构建不得覆盖较新的更新。`desktop-latest` 是独立的滚动预览，不推进自动更新。尚无更新功能的旧版须手动安装一次支持更新的版本。
 
 macOS 签名使用 `packages/desktop/src-tauri/Entitlements.plist`，保留 Hardened Runtime，为内置 Node 的 V8 引擎声明 `com.apple.security.cs.allow-jit`，并用 `com.apple.security.cs.disable-library-validation` 允许 Node 加载 sharp 等原生扩展及工作区插件。构建流程在签名后实际执行 JavaScript 并加载 sharp。启动日志记录无法创建进程的原因和后台进程的退出状态；即使 Node 在 JavaScript 初始化前崩溃，也能从“详细信息”定位。
 

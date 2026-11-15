@@ -39,11 +39,13 @@
     "components": {
       "Button": {
         "nodeId": "22:251",
-        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=22-251"
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=22-251",
+        "defaultDensity": "compact"
       },
       "IconButton": {
         "nodeId": "22:311",
-        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=22-311"
+        "url": "https://www.figma.com/design/CjQ5JFn3PuGXx0NgwYrCR8?node-id=22-311",
+        "defaultDensity": "compact"
       },
       "FieldControl": {
         "nodeId": "22:395",

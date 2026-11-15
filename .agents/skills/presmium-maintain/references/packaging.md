@@ -130,3 +130,13 @@ insets and title baselines. Measure the actual pane for responsive layout, inclu
 conversation open. MCP presence stays inside the existing app bar; verify a real non-first-step edit, target
 highlights, reduced motion, paused following, and canceled cross-document navigation. Never insert artificial
 operation delays for the effect.
+
+
+Desktop updates use the public Tauri updater API in the native process, outside the unprivileged Studio page.
+The app version comes from `packages/presmium/package.json`. Keep version-bound signatures and the committed
+public key; private signing material stays outside the repository. Local builds leave updater artifact generation disabled; CI explicitly enables it and requires `TAURI_SIGNING_PRIVATE_KEY`
+(and the optional password secret). Never print or commit this key. `collect-updates.mjs` signs final bytes,
+including recompressed DEB packages. `publish-updates.mjs` requires all six architecture builds and all eight
+package-format entries, uploads immutable files to the version Release, then promotes `desktop-updates/latest.json`.
+A rolling preview does not promote updates. Verify discovery, download, invalid signatures, Later, saved-and-restart,
+and reopening the workspace in the built app; do not claim Windows/Linux installation acceptance from a macOS run.

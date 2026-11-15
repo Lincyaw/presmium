@@ -62,6 +62,8 @@ export interface PresmiumServer {
   control: ControlChannel
   diagnostics: DiagnosticStore
   serverHost?: ServerHost
+  /** Optional loopback-only external MCP listener, sharing this host's authentication and tools. */
+  listenMcp(port: number): Promise<{ url: string, close(): Promise<void> }>
   unmount(dir: string, options?: { preserveFocus?: boolean }): Promise<void>
   close(): Promise<void>
 }
@@ -205,13 +207,13 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     return { status: decision.kind === 'answer' ? decision.response.status : 404 }
   }
 
-  const serveMcp = async (request: Request): Promise<Response> => {
+  const serveMcp = async (request: Request, endpoint = request.url): Promise<Response> => {
     const given = bearer(request.headers.get('authorization'))
     const caller = mcpTokens.callerOf(given)
     if (!caller) return problemResponse(401, 'MCP needs an Authorization: Bearer token')
     const limited = await limitBody(request, MAX_BODY)
     if (limited instanceof Response) return limited
-    const access = { ...caller, endpoint: options.publicUrl ? `${options.publicUrl.replace(/\/+$/, '')}/mcp` : request.url }
+    const access = { ...caller, endpoint: options.publicUrl ? `${options.publicUrl.replace(/\/+$/, '')}/mcp` : endpoint }
     const response = await (options.mcp ? options.mcp(limited, access) : mcp!.fetch(limited, access))
     return mcpTokens.tieToGrant(given!, response)
   }
@@ -254,8 +256,10 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
 
   const proxy = createProxy()
   const http = nodeServer({ decide, decideUpgrade, fetch: handle, proxy })
+  const mcpListeners = new Set<() => Promise<void>>()
   let closing: Promise<void> | undefined
   const close = (): Promise<void> => closing ??= Promise.resolve().then(async () => {
+    await Promise.all([...mcpListeners].map(close => close().catch(error => log.error(`MCP listener failed to close: ${errorMessage(error)}`))))
     if (options.stateFile) removeServiceState(options.stateFile)
     mounts.stop()
     mcpTokens.revokeAgentSessions()
@@ -292,6 +296,35 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     control,
     serverHost: options.serverHost,
     diagnostics,
+    async listenMcp(requestedPort) {
+      if (closing) throw new Error('server-closing')
+      if (!Number.isInteger(requestedPort) || requestedPort < 0 || requestedPort > 65535) throw new Error('mcp-port-invalid')
+      if (requestedPort === port && isLoopback(listenAddress)) return { url: `${url}/mcp`, close: async () => {} }
+      const listener = nodeServer({
+        decide: async req => {
+          const member = authenticate(req, machineHosts('127.0.0.1'))
+          if ('status' in member) return refuse(member)
+          return new URL(req.url ?? '/', 'http://presmium').pathname === '/mcp'
+            ? { kind: 'fetch' } : refuse({ status: 404, message: 'not found' })
+        },
+        decideUpgrade: async () => ({ status: 404 }),
+        fetch: request => serveMcp(request, `${url}/mcp`),
+        proxy,
+      })
+      let stopped = false
+      const stop = async () => {
+        if (stopped) return
+        stopped = true
+        mcpListeners.delete(stop)
+        await listener.close()
+      }
+      try {
+        const boundPort = await listen(listener.server, requestedPort, '127.0.0.1')
+        if (closing) throw new Error('server-closing')
+        mcpListeners.add(stop)
+        return { url: `http://127.0.0.1:${boundPort}/mcp`, close: stop }
+      } catch (error) { await stop(); throw error }
+    },
     async unmount(dir, unmountOptions = {}) {
       if (!unmountOptions.preserveFocus) focus.forget(dir)
       await mounts.unmount(dir)

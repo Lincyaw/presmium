@@ -60,6 +60,14 @@ jobs:
       - name: Build installers
         shell: bash
         run: |
+          updater_args=(--config '{"bundle":{"createUpdaterArtifacts":true}}')
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            if [ "${{ github.event_name }}" != pull_request ]; then
+              echo "Configure TAURI_SIGNING_PRIVATE_KEY before publishing desktop updates" >&2
+              exit 1
+            fi
+            updater_args=(--config '{"bundle":{"createUpdaterArtifacts":false}}')
+          fi
           # Without a certificate the build is unsigned; Tauri would try to import an empty one.
           if [ -z "$APPLE_CERTIFICATE" ]; then
             unset APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID
@@ -67,7 +75,7 @@ jobs:
           # On macOS Tauri's DMG step mounts the image to lay it out, and detaching that mount times out on
           # the runners; the app is packed into a plain disk image below instead.
           if [ "$RUNNER_OS" = macOS ]; then
-            pnpm --filter presmium-desktop build --bundles app
+            pnpm --filter presmium-desktop build --bundles app "${updater_args[@]}"
             bundle=packages/desktop/src-tauri/target/release/bundle
             mkdir -p "$bundle/dmg"
             # Without a Developer ID the app is signed ad hoc ("-" in tauri.conf.json); an unsigned app is reported as damaged.
@@ -81,7 +89,7 @@ jobs:
             hdiutil convert "$RUNNER_TEMP/presmium.dmg" -format ULMO -ov -o "$bundle/dmg/Presmium Studio.dmg"
             rm "$RUNNER_TEMP/presmium.dmg"
           else
-            pnpm --filter presmium-desktop build
+            pnpm --filter presmium-desktop build "${updater_args[@]}"
           fi
           # Tauri's deb is gzip with no setting for it; xz makes it about a third smaller.
           if [ "$RUNNER_OS" = Linux ]; then
@@ -93,6 +101,8 @@ jobs:
             done
           fi
         env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ github.event_name != 'pull_request' && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
@@ -106,10 +116,19 @@ jobs:
           cd packages/desktop/src-tauri/target/release/bundle
           for file in deb/*.deb rpm/*.rpm dmg/*.dmg nsis/*.exe; do
             [ -f "$file" ] || continue
+            # Signed DEB/RPM/NSIS files are collected below once, with stable versioned names.
+            if [ "${{ github.event_name }}" != pull_request ] && [[ "$file" != dmg/* ]]; then continue; fi
             name=$(basename "$file"); name=${name// /-}
             cp "$file" "$GITHUB_WORKSPACE/installers/${name%.*}-${{ matrix.target }}.${name##*.}"
           done
           ls -la "$GITHUB_WORKSPACE/installers"
+      - name: Sign final update packages
+        if: github.event_name != 'pull_request'
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ github.event_name != 'pull_request' && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
+        run: pnpm --filter presmium-desktop exec node scripts/collect-updates.mjs ${{ matrix.target }}
       - uses: actions/upload-artifact@v4
         with:
           name: presmium-desktop-${{ matrix.target }}
@@ -126,7 +145,19 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+    concurrency:
+      group: desktop-update-feed
+      cancel-in-progress: false
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm --filter presmium-desktop install --frozen-lockfile --ignore-scripts
       - uses: actions/download-artifact@v4
         with:
           pattern: presmium-desktop-*
@@ -139,7 +170,7 @@ jobs:
           RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
         run: |
           if [ -n "$RELEASE_TAG" ]; then
-            gh release upload "$RELEASE_TAG" installers/* --clobber
+            pnpm --filter presmium-desktop exec node scripts/publish-updates.mjs "$GITHUB_WORKSPACE/installers"
             exit 0
           fi
           # The prerelease and its tag stay put (the token may not move tags); each build replaces the assets.
@@ -150,5 +181,6 @@ jobs:
           for old in $(gh release view desktop-latest --json assets --jq '.assets[].name'); do
             [ -e "installers/$old" ] || gh release delete-asset desktop-latest "$old" --yes
           done
+          find installers -name 'updater-*.json' -delete
           gh release upload desktop-latest installers/* --clobber
           gh release edit desktop-latest --notes "$notes"

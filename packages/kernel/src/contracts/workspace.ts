@@ -459,3 +459,16 @@ export interface ReviewUpdate {
   review?: ReviewSnapshot
   ended?: ReviewEnd
 }
+
+/** Local host connection preferences; credential values are returned only by an explicit export. */
+export interface McpConnectionSettings {
+  transport: 'stdio' | 'http'
+  port: number
+  revision: string
+  root: string
+  stateFile: string
+  stdio?: { command: string, args: string[] }
+  url?: string
+  issue?: 'mcp-port-unavailable'
+}
+export interface McpConnectionChange { transport: 'stdio' | 'http', port: number, revision: string }

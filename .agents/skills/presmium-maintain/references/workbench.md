@@ -292,3 +292,12 @@ record pointers are unchanged, so an outstanding durability acknowledgement does
 call. Capture those pointers before any await; actual input, ownership, source or cancellation changes
 refuse instead of retrying. The retry boundary ends before recover/mark/create. Metadata pagination
 still validates its observation token, and retired candidates are checked through their exact marker.
+
+
+Global plugin and automation pages share the app bar Settings menu with preferences and MCP Connection;
+do not add another top-bar row or a second global settings entrance. The settings launcher uses the public
+`settings.launcher` contract, not a hidden sidebar DOM click. MCP settings use the existing workspace ownership
+route and primitives. Changing the optional loopback MCP listener must preserve the editor URL and stdio host;
+bind and persist the new endpoint before disposing the old one. Copy uses a fresh revision, and AI setup prompts
+contain credential file locations rather than credential values. Verify occupied ports, authentication, multiple
+windows and cleanup with real service connections.

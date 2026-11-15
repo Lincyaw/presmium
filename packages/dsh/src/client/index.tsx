@@ -1,3 +1,4 @@
+import { openAppSettings, registerSettingsLauncher } from './settings-launcher.tsx'
 import { connectAgentActivity, connectAuthoringClient, connectAuthoringWindow, localeOf, Workbench, workspaceClient } from '@lincyaw/workbench'
 import type { Locale } from '@lincyaw/workbench'
 import { workspaceSubscriptions } from './workspace-events.ts'
@@ -103,10 +104,7 @@ export function apply(ctx: DshClientContext): void {
         subscribe: listener => instance.subscribe(listener),
       })
       showEditor = () => layout.showDocument()
-      const openSettings = () => {
-        const triggers = document.querySelectorAll<HTMLElement>('[data-pmw-slot="sidebar"] button[aria-haspopup="dialog"]')
-        triggers[triggers.length - 1]?.click()
-      }
+      const openSettings = openAppSettings
       const disposePanelInfo = ctx.slots.provideRoot({ hooks: { panelInfo: layout.panelInfo } })
       const disposeRoot = ctx.slots.register({ name: 'root', locale: 'common', children: {
         ...ROOT_CHILDREN,
@@ -150,6 +148,7 @@ export function apply(ctx: DshClientContext): void {
   }
   registerBrand(ctx, workbench)
   registerAuthorSettings(ctx)
+  registerSettingsLauncher(ctx, workbench)
   registerSpeechSettings(ctx, workbench)
   ctx.inject(['layout'], inner => inner.effect(() => connectLaunchTarget(workbench,
     () => nativeLayout ? () => {} : restoreRootReturnPoint(workbench, reload.point),

@@ -3,6 +3,7 @@ import { AgentActivityBar, DocumentView, HomePanel, PmDialog, PmIcon, PmMenu, SH
 import type { Workbench } from '@lincyaw/workbench'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode, RefObject } from 'react'
+import { openMcpSettings } from './settings-opener.ts'
 import { Logo } from './brand.tsx'
 import { mainViewAgentSession } from './document-context.ts'
 import { centreMinWidth, clamp, CONVERSATION_MAX, CONVERSATION_MIN, singlePaneWidth, RIGHTBAR_MAX_RATIO, RIGHTBAR_MIN, rightbarRoom, SIDE_COLLAPSE, SIDE_MAX, SIDE_MIN } from './layout.ts'
@@ -318,15 +319,14 @@ function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, nar
         {working && <span className="pmw-appbar__busy" aria-hidden="true" />}
       </button>
       <span className="pmw-appbar__divider" aria-hidden="true" />
-      {more.length > 0 && (
-        <span className="pmw-appbar__more" data-activity="more">
-          <PmMenu label={t.more} items={more} onSelect={(id) => {
-            actions.selectPanel(activePanel === id ? null : id)
-            if (narrow) actions.showNarrowPane('documents')
-          }} />
-        </span>
-      )}
-      <button type="button" className="pmw-appbar__button" data-activity="settings" aria-label={t.settings} title={t.settings} onClick={openSettings}><PmIcon name="sliders" /></button>
+      <span className="pmw-appbar__more" data-activity="settings">
+        <PmMenu label={t.settings} icon="sliders" items={[{ id: 'presmium-settings', label: t.preferences }, { id: 'presmium-mcp', label: t.mcp }, ...more]} onSelect={id => {
+          if (id === 'presmium-settings') { openSettings(); return }
+          if (id === 'presmium-mcp') { if (!openMcpSettings()) openSettings(); return }
+          actions.selectPanel(activePanel === id ? null : id)
+          if (narrow) actions.showNarrowPane('documents')
+        }} />
+      </span>
       <button type="button" className="pmw-appbar__button" data-activity="help" aria-label={t.help} title={t.help} onClick={openHelp}><PmIcon name="help" /></button>
     </nav>
   )

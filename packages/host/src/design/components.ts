@@ -22,7 +22,7 @@ export function PmIcon({ name, size: _size, strokeWidth = 1.7, ...attrs }: { nam
   return h('svg', { ...attrs, className: cls('pm-ui-icon', attrs.className), viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, focusable: false }, ICONS[name]?.map(([tag, attributes], key) => h(tag, { ...attributes, key })))
 }
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant, small?: boolean, icon?: IconName, density?: ControlDensity, loading?: boolean }
-export const PmButton = forwardRef<HTMLButtonElement, ButtonProps>(function PmButton({ variant = 'default', small, density = small ? 'compact' : 'regular', loading, icon, className, children, disabled, ...rest }, ref) {
+export const PmButton = forwardRef<HTMLButtonElement, ButtonProps>(function PmButton({ variant = 'default', small, density = 'compact', loading, icon, className, children, disabled, ...rest }, ref) {
   return h('button', { ...rest, ref, type: rest.type ?? 'button', 'data-density': density, 'aria-busy': loading || undefined, disabled: disabled || loading || rest['aria-disabled'] === true || rest['aria-disabled'] === 'true', className: cls('pm-ui-button', variant !== 'default' && `pm-ui-button--${variant}`, className) },
     h('span', { className: cls('pm-ui-button__content', !icon && loading !== undefined && 'pm-ui-button__content--loading-text') },
       icon || loading !== undefined ? h('span', { className: 'pm-ui-button__icon', 'aria-hidden': true }, loading ? h(PmIcon, { name: 'loading', className: 'pm-ui-loading' }) : icon ? h(PmIcon, { name: icon }) : null) : null,
@@ -33,7 +33,7 @@ export function PmTooltip({ label, shortcut, children }: { label: string, shortc
     h(Tooltip.Root, {}, h(Tooltip.Trigger, { asChild: true }, children), h(Tooltip.Portal, {},
       h(Tooltip.Content, { className: 'pm-ui-tooltip pm-ui', side: 'top', sideOffset: 6, collisionPadding: 8 }, label, shortcut ? h('kbd', { className: 'pm-ui-shortcut' }, shortcut) : null))) })
 }
-export const PmIconButton = forwardRef<HTMLButtonElement, Omit<ButtonProps, 'variant'> & { variant?: IconButtonVariant, icon: IconName, label: string, hint?: string, shortcut?: string }>(function PmIconButton({ variant = 'default', icon, label, hint, shortcut, small, density = small ? 'compact' : 'regular', loading, className, disabled, ...rest }, ref) {
+export const PmIconButton = forwardRef<HTMLButtonElement, Omit<ButtonProps, 'variant'> & { variant?: IconButtonVariant, icon: IconName, label: string, hint?: string, shortcut?: string }>(function PmIconButton({ variant = 'default', icon, label, hint, shortcut, small, density = 'compact', loading, className, disabled, ...rest }, ref) {
   const button = h('button', { ...rest, ref, type: 'button', 'data-density': density, 'aria-label': label, 'aria-busy': loading || undefined, disabled: disabled || loading || rest['aria-disabled'] === true || rest['aria-disabled'] === 'true', className: cls('pm-ui-icon-button', variant !== 'default' && `pm-ui-icon-button--${variant}`, className) }, h(PmIcon, { name: loading ? 'loading' : icon, className: loading ? 'pm-ui-loading' : undefined }))
   return h(PmTooltip, { label: hint ?? label, shortcut, children: button })
 })

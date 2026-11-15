@@ -4,6 +4,7 @@
 
 mod messages;
 mod studio;
+mod updates;
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -82,6 +83,10 @@ fn runtime(app: &AppHandle) -> Option<studio::Runtime> {
 
 fn main_window(app: &AppHandle) -> Option<WebviewWindow> {
     app.get_webview_window(MAIN)
+}
+
+fn stop_studio(app: &AppHandle) {
+    if let Some(running) = app.state::<Desktop>().running.lock().unwrap().take() { running.stop(); }
 }
 
 /// Back to the launcher page, with what it should do there.
@@ -185,6 +190,10 @@ fn is_loopback(url: &Url) -> bool {
 fn menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let t = messages::current();
     let open = MenuItem::with_id(app, OPEN_WORKSPACE, t.open_workspace, true, Some("CmdOrCtrl+Shift+O"))?;
+    let check_updates = updates::menu_item(app)?;
+    #[cfg(not(target_os = "macos"))]
+    let workspace = Submenu::with_items(app, t.workspace, true, &[&open, &check_updates, &PredefinedMenuItem::separator(app)?, &PredefinedMenuItem::quit(app, Some(t.quit))?])?;
+    #[cfg(target_os = "macos")]
     let workspace = Submenu::with_items(app, t.workspace, true, &[&open, &PredefinedMenuItem::separator(app)?, &PredefinedMenuItem::quit(app, Some(t.quit))?])?;
     // macOS routes copy, paste and undo through the Edit menu; without it these shortcuts do nothing in the page.
     let edit = Submenu::with_items(app, t.edit, true, &[
@@ -204,6 +213,7 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     {
         let about = Submenu::with_items(app, t.title, true, &[
             &PredefinedMenuItem::about(app, None, None)?,
+            &check_updates,
             &PredefinedMenuItem::separator(app)?,
             &PredefinedMenuItem::services(app, None)?,
             &PredefinedMenuItem::separator(app)?,
@@ -284,10 +294,13 @@ fn main() {
         }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(Desktop::default())
+        .manage(updates::Updates::default())
         .invoke_handler(tauri::generate_handler![launcher_state, forget_workspace, choose_workspace, open_workspace, show_details])
         .menu(|app| menu(app))
         .on_menu_event(|app, event| {
+            if event.id() == updates::CHECK_UPDATES { updates::check(app.clone(), true); }
             if event.id() == OPEN_WORKSPACE {
                 let app = app.clone();
                 app.dialog().file().set_title(messages::current().open_workspace).pick_folder(move |picked| {
@@ -299,6 +312,7 @@ fn main() {
         })
         .setup(|app| {
             create_window(app.handle())?;
+            updates::start(app.handle());
             Ok(())
         })
         .build(tauri::generate_context!())
@@ -306,9 +320,8 @@ fn main() {
 
     app.run(|app, event| {
         if let RunEvent::Exit = event {
-            if let Some(running) = app.state::<Desktop>().running.lock().unwrap().take() {
-                running.stop();
-            }
+            updates::stop(app);
+            stop_studio(app);
         }
     });
 }

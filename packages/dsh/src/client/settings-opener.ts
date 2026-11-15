@@ -24,3 +24,9 @@ export function openSpeechSettings(): boolean {
   remembered('presmium-speech')
   return true
 }
+
+export function openMcpSettings(): boolean {
+  if (!remembered) return false
+  remembered('presmium-mcp')
+  return true
+}

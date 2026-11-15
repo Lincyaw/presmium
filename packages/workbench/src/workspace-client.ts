@@ -1,3 +1,4 @@
+import type { McpConnectionSettings, McpConnectionChange } from '@lincyaw/kernel'
 import type { ProjectOperation, ProjectPlan, ProjectPlanRequest, ProjectApply, ProjectApplied } from '@lincyaw/kernel'
 import type { PreviewEventSubscription } from '@lincyaw/kernel'
 import type { SpeechSettingsAnswer, SpeechSettingsChange } from '@lincyaw/kernel'
@@ -65,6 +66,9 @@ export interface WorkspaceCapabilities {
 }
 
 export interface WorkspaceClient {
+  readMcpSettings?(signal?: AbortSignal): Promise<McpConnectionSettings>
+  changeMcpSettings?(change: McpConnectionChange, signal?: AbortSignal): Promise<McpConnectionSettings>
+  exportMcpSettings?(revision: string, signal?: AbortSignal): Promise<unknown>
   subscribeAgentActivity?(received: (snapshot: import('@lincyaw/kernel').AgentActivitySnapshot) => void, failed: () => void): () => void
   readSpeechSettings?(signal?: AbortSignal): Promise<SpeechSettingsAnswer>
   changeSpeechSettings?(change: SpeechSettingsChange, signal?: AbortSignal): Promise<SpeechSettingsAnswer>
@@ -401,6 +405,9 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     subscribeDocument: (document, changed, failed) => subscribe(url('document/events', document), 'document', changed, failed),
     readPageDeletion: (document, section) => call(url('pages/delete', document, { section })),
     deletePage: (document, request) => post(url('pages/delete', document), request),
+    readMcpSettings: signal => call(url('mcp-settings'), { signal }),
+    changeMcpSettings: (change, signal) => post(url('mcp-settings'), change, signal),
+    exportMcpSettings: (revision, signal) => post(url('mcp-settings'), { action: 'export', revision }, signal),
     readSpeechSettings: signal => call(url('speech-settings'), { signal }),
     changeSpeechSettings: (change, signal) => post(url('speech-settings'), change, signal),
     readVoiceCatalog: (document, engine, lang, signal) => call(url('voice-catalog', document, { ...engine ? { engine } : {}, ...lang ? { lang } : {} }), { signal }),

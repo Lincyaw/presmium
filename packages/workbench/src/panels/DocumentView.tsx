@@ -381,7 +381,7 @@ function DocumentToolbar({ narrow, presentButton, framed, onBack, actions, aside
       <SaveStatus />
       <span className="pmw-spacer" />
       {!narrow && <>
-        {capabilities?.production !== false && <PmToolbarButton asChild><PmButton small icon="arrange" loading={changingView} disabled={busy || !hasStep} onClick={onProduction}>{p.title}</PmButton></PmToolbarButton>}
+        {capabilities?.production !== false && <PmToolbarButton asChild><PmButton small icon="arrange" loading={changingView} disabled={busy || !hasStep} onClick={onProduction}>{t.video}</PmButton></PmToolbarButton>}
         {capabilities?.narration !== false && <PmToolbarButton asChild><PmIconButton small icon="captions" label={t.documentNarration} hint={t.documentNarrationHint} aria-pressed={aside === 'narration'} disabled={!hasStep} onClick={() => onAside('narration')} /></PmToolbarButton>}
       </>}
       {!compactCommands && <PmToolbarButton asChild><PmIconButton small icon="comment" label={commentsLabel} aria-pressed={aside === 'comments'} onClick={() => onAside('comments')} /></PmToolbarButton>}

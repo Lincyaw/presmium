@@ -37,3 +37,6 @@ export { connectAuthoringWindow } from './authoring-window.ts'
 export { connectAgentActivity } from './agent-activity.ts'
 export { AgentActivityBar } from './AgentActivityBar.tsx'
 export { SHORTCUTS } from './shortcuts.ts'
+
+export { McpSettingsPanel } from './panels/McpSettingsPanel.tsx'
+export { MCP_SETTINGS_MESSAGES } from './mcp-settings-messages.ts'

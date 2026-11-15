@@ -60,6 +60,7 @@ export interface WorkspaceRoutesOptions {
   historyRoutes?: Record<string, Route>
   authoringClientRoutes?: Record<string, Route>
   projectRoutes?: Record<string, Route>
+  mcpSettings?: Route
   speechSettings?: Route
   changesRoutes?: Record<string, Route>
   /** Shared mutable allow-list; a later local Studio may register its preview origin. */
@@ -107,6 +108,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
         return jsonResponse({ added: origins.length })
       },
     } satisfies Route } : {},
+    ...options.mcpSettings ? { 'mcp-settings': options.mcpSettings } : {},
     ...options.speechSettings ? { 'speech-settings': options.speechSettings } : {},
     ...documentEditorRoutes({ root: config.root, editor, documentEditor: options.documentEditor, workbench }),
     ...(options.audioAuthoringRoutes ?? ownedAudio!.routes),
