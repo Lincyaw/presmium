@@ -110,6 +110,8 @@ the file unused.
 
 The installer also carries `build/gallery/` (a dereferenced copy of `examples/gallery`, its assets and committed speech caches, with initial Git history) and the Node initializer `build/gallery.mjs`. With no recent workspace, the launcher automatically opens `gallery-workspace` in the app's local data directory. The initializer copies atomically and links dependencies to the bundled runtime; it preserves an existing copy and author edits on upgrades. Later launches reopen the last workspace; the workspace menu switches to another directory. Editing and history still use the system's Git. Changes to the gallery or its linked skill sources trigger desktop builds.
 
+The snapshot's `tsconfig.json` is standalone: merge the repository base compiler options at packaging time, retaining the gallery's own fields. The initializer repairs the early snapshot's exact `../../tsconfig.base.json` reference only when its target is missing, preserving author compiler options. Verify a real animation scenario from outside the repository as well as the prose tutorial.
+
 Verify in the built app, not only `cargo check`: a fresh first launch automatically opens all bundled examples without choosing a folder or downloading dependencies; edits survive restart and a second preparation; switching workspaces reopens the selected directory on the next launch. Also verify the launcher, opening a workspace (sign-in included), a
 document, its preview, closing the window and killing the app (no `presmium-node` left), and Studio ending on
 its own (the launcher shows the error). `.github/workflows/desktop.yml` builds the installers of six platforms

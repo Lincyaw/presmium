@@ -1,5 +1,11 @@
 # @lincyaw/compiler
 
+## 1.0.0-rc.99
+
+### Patch Changes
+
+- @lincyaw/kernel@1.0.0-rc.99
+
 ## 1.0.0-rc.98
 
 ### Patch Changes

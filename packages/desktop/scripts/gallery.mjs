@@ -35,6 +35,12 @@ export function gallery(target) {
     }
   }
   writeFileSync(join(target, 'package.json'), JSON.stringify(pkg, null, 2) + '\n')
+  const tsconfig = JSON.parse(readFileSync(join(target, 'tsconfig.json'), 'utf8'))
+  const base = JSON.parse(readFileSync(join(root, 'tsconfig.base.json'), 'utf8'))
+  delete tsconfig.extends
+  writeFileSync(join(target, 'tsconfig.json'), JSON.stringify({ ...base, ...tsconfig,
+    compilerOptions: { ...base.compilerOptions, ...tsconfig.compilerOptions },
+  }, null, 2) + '\n')
   const course = join(target, 'tools/course.mjs')
   writeFileSync(course, readFileSync(course, 'utf8')
     .replace("const cli = fileURLToPath(new URL('../../../packages/cli/bin/presmium.mjs', import.meta.url))\n", '')

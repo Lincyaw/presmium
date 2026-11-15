@@ -253,7 +253,9 @@ ${ids.map((id, i) => `  ${JSON.stringify(id)}: module${i},`).join('\n')}
 }
 export const restartable = ${modules.restartable}
 `
-  const key = createHash('sha256').update(JSON.stringify([FORMAT, input.externals.toSorted(), entry(), generated])).digest('hex').slice(0, 16)
+  // A repaired workspace config must replace a previously cached transform failure too.
+  const typescript = [...new Set([join(input.workspaceRoot, 'tsconfig.json'), join(input.deckDir, 'tsconfig.json')])].map(file => [file, stamp(file)])
+  const key = createHash('sha256').update(JSON.stringify([FORMAT, typescript, input.externals.toSorted(), entry(), generated])).digest('hex').slice(0, 16)
   const named = Object.values(generated).flatMap(source => [...source.matchAll(IMPORTED)].map(match => JSON.parse(match[1]!) as string))
   const parts = [...components.values()].map(({ file }) => file).concat(modules.plugins, modules.viewers.map(({ file }) => file), named)
   return { key, entry, generated, restartable: modules.restartable, components: [...components.keys()], parts: [...new Set(parts)].filter(file => existsSync(file)).map(file => realpathSync(file)) }

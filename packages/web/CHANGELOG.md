@@ -1,5 +1,12 @@
 # @lincyaw/web
 
+## 1.0.0-rc.99
+
+### Patch Changes
+
+- 修复桌面示例工作区对仓库外 TypeScript 配置的引用，使动画场景在安装后可编译，并兼容修复旧示例副本。
+- @lincyaw/design@1.0.0-rc.99
+
 ## 1.0.0-rc.98
 
 ### Patch Changes
