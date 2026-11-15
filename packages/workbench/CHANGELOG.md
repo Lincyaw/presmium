@@ -1,5 +1,13 @@
 # @lincyaw/workbench
 
+## 0.2.0-rc.101
+
+### Patch Changes
+
+- 打开新工作区时自动准备本地版本历史，显示“新建文稿”并支持创建第一份文稿，不需要先手动配置版本库。
+- @lincyaw/design@1.0.0-rc.101
+  - @lincyaw/kernel@1.0.0-rc.101
+
 ## 0.2.0-rc.100
 
 ### Patch Changes

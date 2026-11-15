@@ -140,6 +140,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const config = readWorkspaceConfig(options.dir)
   if (env.PRESMIUM_AGENT_CANDIDATE === '1') config.settings['presmium.assistant'] = { ...config.settings['presmium.assistant'], review: 'auto' }
   const { root } = config
+  await Git.initialize(root).catch(error => log.warn(`the workspace history could not be prepared: ${errorMessage(error)}`))
   const operatorDirectory = resolveOperatorDir(root, options.operatorDir ?? env.PRESMIUM_OPERATOR_DIR)
   const speechSettings = new OperatorSpeechSettings(operatorDirectory, name => env[name])
   const stateDir = makeStateDir(root, env)

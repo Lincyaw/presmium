@@ -210,6 +210,8 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 
 ### 11.1 命令与目录
 
+工作区服务打开空目录时自动建立本地版本历史的空基准，首页直接提供“新建文稿”，无需先配置工作区。此准备允许 Finder 的 `.DS_Store`，已有目录的文件、版本库、分支与索引保持原样。
+
 `presmium studio [目录] [--port] [--host] [--public-url] [--preview-url] [--preview-port]`。`DSH_HOME` 是 `$XDG_STATE_HOME/presmium/studio`；每个安装有自己的 profile `presmium-studio-<散列>`，其 `node_modules` 链接到这个安装的 bundle，因为 dsh 只从 profile 解析插件。新 profile 继承最近用过的设置。
 
 ### 11.2 启动与监管

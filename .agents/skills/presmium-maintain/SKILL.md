@@ -101,6 +101,8 @@ Commands written for users use only pnpm and `presmium`.
 
 ## Verify the behavior you changed
 
+An empty workspace opened in Studio prepares its local history automatically and offers New Document immediately. Verify creating, saving and reopening its first document; preserve existing repositories and never give existing document files an empty history baseline.
+
 No new tests, no routine suites (`AGENTS.md`). Build, start the service, open a browser, measure when speed
 matters. The real run must show:
 
