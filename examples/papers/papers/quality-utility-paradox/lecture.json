@@ -904,46 +904,5 @@
     "captions": {
       "scale": 1
     }
-  },
-  "comments": {
-    "bd5907a5-52a2-4705-9fba-6bb4877b79bd": {
-      "id": "bd5907a5-52a2-4705-9fba-6bb4877b79bd",
-      "type": "thread",
-      "createdAt": "2026-11-15T14:00:56.866Z",
-      "updatedAt": "2026-11-15T14:00:56.866Z",
-      "resolved": false,
-      "anchor": {
-        "from": {
-          "blockId": "page:p-experiment",
-          "offset": 10
-        },
-        "to": {
-          "blockId": "page:p-experiment",
-          "offset": 16
-        }
-      },
-      "comments": [
-        {
-          "id": "405fdbee-c051-4de8-9f47-2e8419703fef",
-          "type": "comment",
-          "userId": "local",
-          "createdAt": "2026-11-15T14:00:56.866Z",
-          "updatedAt": "2026-11-15T14:00:56.866Z",
-          "content": [
-            {
-              "id": "398a84bd-b837-44b3-a3ba-d58ed2d1c06d",
-              "type": "paragraph",
-              "children": [
-                {
-                  "type": "text",
-                  "text": "哈哈哈"
-                }
-              ]
-            }
-          ],
-          "reactions": []
-        }
-      ]
-    }
   }
 }
