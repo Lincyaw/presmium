@@ -7,7 +7,7 @@ interface LauncherState {
   /** The system's language, as the app's menu uses it. */
   locale: Locale
   recent: string[]
-  /** The workspace to reopen, given once per app run: the last one opened, as an editor reopens its folder. */
+  /** Once per run: the last workspace, or an editable bundled gallery on first launch. */
   reopen: string | null
 }
 

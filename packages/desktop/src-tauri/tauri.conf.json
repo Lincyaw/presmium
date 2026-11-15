@@ -29,7 +29,9 @@
     ],
     "externalBin": ["binaries/presmium-node"],
     "resources": {
-      "../build/runtime/": "runtime/"
+      "../build/runtime/": "runtime/",
+      "../build/gallery/": "gallery/",
+      "../build/gallery.mjs": "gallery.mjs"
     },
     "macOS": {
       "entitlements": "Entitlements.plist",
