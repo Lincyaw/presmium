@@ -27,6 +27,8 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   const position = useWorkbenchState(state => state.position)
   const navigation = useWorkbenchState(state => state.documentPositionToken)
   const navigationIntent = useWorkbenchState(state => state.documentPositionIntent)
+  const block = source?.content?.blocks[blockId]
+  const definition = block?.type === 'component' ? source?.content?.definitions[block.definitionId] : undefined
   const sectionId = source?.content && documentBlockSection(source.content, blockId)
   const section = sectionId ? source?.content?.sections[sectionId] : undefined
   const stepId = section?.stepOrder[position && position.section === sectionId ? position.step : 0] ?? section?.stepOrder[0]
@@ -218,7 +220,7 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
     <header className="pm-ui-block-preview__header"><span className="pm-ui-block-preview__label" role={state.status === 'failed' ? 'status' : undefined}><PmIcon name="slides" />{state.status === 'failed' ? t.previewFailure : old && state.snapshot ? t.previewPrevious : state.status === 'preparing' ? p.preparing : state.status === 'loading' ? t.previewLoading : t.previewSnapshot}</span>
       <span className="pm-ui-block-preview__actions">
         {sectionId && stepId && <PlaceCommentButton blockId={blockId} sectionId={sectionId} stepId={stepId} stepIndex={section ? section.stepOrder.indexOf(stepId) + 1 : 1} onPause={pause} />}
-        {source?.content?.blocks[blockId]?.type === 'component' && <PmIconButton small icon="sliders" label={COMPONENT_PROPERTY_MESSAGES[locale].properties}
+        {source && block?.type === 'component' && definition?.kind !== 'scene' && <PmIconButton small icon="sliders" label={COMPONENT_PROPERTY_MESSAGES[locale].properties}
           data-component-properties={blockId} disabled={!source.identity || workbench.client.capabilities?.readOnly} onClick={() => { if (source.identity && !workbench.client.capabilities?.readOnly) setProperties({ identity: source.identity, stepId }) }} />}
         {workbench.client.capabilities?.narration !== false && <PmIconButton small icon="captions" label={t.stepCaptions} aria-expanded={narrationOpen} aria-controls={narrationOpen ? narrationPanel : undefined} aria-pressed={narrationOpen} disabled={!stepId} onClick={() => {
           pause()

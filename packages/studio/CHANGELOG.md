@@ -1,5 +1,42 @@
 # @lincyaw/studio
 
+## 0.2.0-rc.98
+
+### Patch Changes
+
+- @lincyaw/kernel@1.0.0-rc.99
+  - @lincyaw/dsh@0.2.0-rc.98
+
+## 0.2.0-rc.97
+
+### Patch Changes
+
+- Updated dependencies [3ab31ee]
+  - @lincyaw/dsh@0.2.0-rc.97
+  - @lincyaw/kernel@1.0.0-rc.98
+
+## 0.2.0-rc.96
+
+### Patch Changes
+
+- Updated dependencies
+  - @lincyaw/dsh@0.2.0-rc.96
+  - @lincyaw/kernel@1.0.0-rc.97
+
+## 0.2.0-rc.95
+
+### Patch Changes
+
+- @lincyaw/dsh@0.2.0-rc.95
+  - @lincyaw/kernel@1.0.0-rc.96
+
+## 0.2.0-rc.94
+
+### Patch Changes
+
+- @lincyaw/kernel@1.0.0-rc.95
+  - @lincyaw/dsh@0.2.0-rc.94
+
 ## 0.2.0-rc.93
 
 ### Patch Changes

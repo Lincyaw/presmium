@@ -1,5 +1,43 @@
 # @lincyaw/workbench
 
+## 0.2.0-rc.99
+
+### Patch Changes
+
+- @lincyaw/design@1.0.0-rc.99
+  - @lincyaw/kernel@1.0.0-rc.99
+
+## 0.2.0-rc.98
+
+### Patch Changes
+
+- 3ab31ee: 移除动画预览工具栏中用途不直观的属性按钮，保留其他组件的参数编辑入口。阅读与运行切换后工具按钮保持在右侧，动画与文字左右布局默认铺满可用画布；页首从标题开始显示，窄屏恢复步骤时正文避开固定动画。
+- @lincyaw/design@1.0.0-rc.98
+  - @lincyaw/kernel@1.0.0-rc.98
+
+## 0.2.0-rc.97
+
+### Patch Changes
+
+- @lincyaw/design@1.0.0-rc.97
+  - @lincyaw/kernel@1.0.0-rc.97
+
+## 0.2.0-rc.96
+
+### Patch Changes
+
+- b08d9f0: 动画与文字共用批注编辑卡片、发布和 Enter 操作；动画批注可就地查看、回复和解决，保留步骤定位和草稿恢复，侧栏打开时保持单一编辑入口。
+- Updated dependencies [b08d9f0]
+  - @lincyaw/design@1.0.0-rc.96
+  - @lincyaw/kernel@1.0.0-rc.96
+
+## 0.2.0-rc.95
+
+### Patch Changes
+
+- @lincyaw/design@1.0.0-rc.95
+  - @lincyaw/kernel@1.0.0-rc.95
+
 ## 0.2.0-rc.94
 
 ### Patch Changes

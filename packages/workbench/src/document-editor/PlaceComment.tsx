@@ -1,13 +1,12 @@
-import { useContext, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ContextType } from 'react'
 import type { BlockNoteEditor } from '@blocknote/core'
-import { CommentEditorSubmitExtension } from '@blocknote/core/comments'
-import { components } from '@blocknote/mantine'
-import { useCreateBlockNote, useDictionary, useEditorState, useThreads } from '@blocknote/react'
+import { CommentEditorSubmitExtension, CommentsExtension } from '@blocknote/core/comments'
+import { GenericPopover, useCreateBlockNote, useDictionary, useEditorState, useExtension, useExtensionState, useThreads } from '@blocknote/react'
 import { isDocumentPlaceAnchor, randomUUID } from '@lincyaw/kernel'
-import { PmButton, PmIconButton, PmNotice, PmPopover, PmSelect } from '../components.tsx'
+import { PmButton, PmIconButton, PmNotice, PmSelect } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
-import { COMMENT_EDITOR_CONTEXT, DraftChoices } from './DocumentComments.tsx'
+import { COMMENT_EDITOR_CONTEXT, DocumentCommentThread, DraftChoices, placeReference } from './DocumentComments.tsx'
 import { isNewCommentDraft, newCommentDraftSignature, sameCommentDraftTarget } from './comment-drafts.ts'
 import type { CommentDraftCandidate, CommentDraftRecord, CommentDraftOperation, CommentDraftComposer, NewCommentDraftTarget } from './comment-drafts.ts'
 import { discardNativeCommentDraft } from './comment-draft-actions.ts'
@@ -17,8 +16,9 @@ import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
 import { commentEditorSchema } from './schema.tsx'
 import type { DocumentEditorBlock } from './schema.tsx'
 import { createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
-
-const MantineCommentEditor = components.Comments.Editor
+import { CommentComposer } from './CommentComposer.tsx'
+import { commentFloating } from './popover.tsx'
+import { enterSubmits } from './comments.ts'
 const emptyDrafts = { candidates: [], pending: false, failed: false, reading: false } as const
 const subscribeEmpty = () => () => {}
 type CommentContext = NonNullable<ContextType<typeof COMMENT_EDITOR_CONTEXT>>
@@ -43,7 +43,11 @@ export function PlaceCommentButton(props: {
 function PlaceCommentButtonContent({ blockId, sectionId, stepId, stepIndex, onPause, context }: {
   blockId: string, sectionId: string, stepId: string, stepIndex: number, onPause(): void, context: CommentContext,
 }) {
-  const threads = useThreads(), workbench = useWorkbench()
+  const threads = useThreads(), workbench = useWorkbench(), comments = useExtension(CommentsExtension)
+  const { selectedThreadId } = useExtensionState(CommentsExtension)
+  const [trigger, setTrigger] = useState<HTMLSpanElement | null>(null)
+  const threadComposing = useRef(false)
+  const floating = useMemo(() => commentFloating(), [])
   const t = DOCUMENT_EDITOR_MESSAGES[context.locale]
   const [open, setOpen] = useState(false), [selected, setSelected] = useState<string | undefined>(stepId)
   const drafts = context.store.drafts, native = useRef<CommentDraftComposer>(), composerId = useRef(randomUUID()), revision = useRef(0)
@@ -88,28 +92,52 @@ function PlaceCommentButtonContent({ blockId, sectionId, stepId, stepIndex, onPa
       targetState: target => target && accept(target) ? 'current' : 'unavailable', restore })
     return () => { alive.current = false; revision.current++; opening.current?.ready?.(); opening.current = undefined; stop() }
   }, [drafts, context.store, blockId, sectionId, needed])
-  const count = useMemo(() => [...threads.values()].filter(thread => {
-    if (thread.deletedAt || thread.resolved) return false
+  const anchored = [...threads.values()].filter(thread => {
     const anchor = context.store.placeAnchorOf(thread.id)
-    return anchor?.blockId === blockId && anchor.stepId === stepId
-  }).length, [threads, context, blockId, stepId])
+    return !thread.deletedAt && !thread.resolved && anchor?.blockId === blockId && (anchor.stepId === undefined || anchor.stepId === stepId)
+  })
+  const selectedAnchor = selectedThreadId ? context.store.placeAnchorOf(selectedThreadId) : undefined
+  const selectedThread = selectedAnchor?.blockId === blockId ? threads.get(selectedThreadId!) : undefined
+  useEffect(() => {
+    if (!selectedThread || !selectedAnchor?.stepId) return
+    onPause(); workbench.observeDocumentStep(sectionId, selectedAnchor.stepId)
+  }, [selectedThreadId, selectedAnchor?.stepId])
   const change = (next: boolean) => {
     revision.current++; opening.current?.ready?.()
     setOpen(next)
-    if (next) setSelected(stepId)
+    if (next) { comments.stopPendingComment(); comments.selectThread(undefined); setSelected(stepId); onPause() }
   }
-  return <PmPopover open={open} label={t.stepComment(stepIndex)} name="pm-document-place-comment" placement="below-end" onOpenChange={change}
-    onInteractOutside={event => { if (isApprovalTarget(event.detail.originalEvent.target)) event.preventDefault() }}
-    trigger={<PmIconButton tooltip={false} small icon="comment-add" label={t.stepCommentHint(stepIndex, count)} onClick={onPause} />}>
-    {open && <PlaceCommentComposer key={selected ?? 'block'} context={context} blockId={blockId} sectionId={sectionId} stepId={selected}
-      onReady={ready} onSelect={next => { revision.current++; setSelected(next); if (next !== undefined) workbench.observeDocumentStep(sectionId, next) }} onClose={() => change(false)} />}
-  </PmPopover>
+  const close = (next: boolean, event?: Event) => {
+    if (next || isApprovalTarget(event?.target ?? document.activeElement) || native.current?.snapshot().composing || threadComposing.current
+      || event instanceof KeyboardEvent && (event.isComposing || event.keyCode === 229)) return
+    change(false); comments.selectThread(undefined)
+    if (event instanceof KeyboardEvent && event.key === 'Escape') trigger?.querySelector('button')?.focus()
+  }
+  const shown = !context.sidebar && !open && selectedThread && !selectedThread.deletedAt && (selectedAnchor?.stepId === undefined || selectedAnchor.stepId === stepId)
+  return <>
+    <span ref={setTrigger} className="pm-document-place-comment__trigger">
+      <PmIconButton small icon="comment-add" label={t.stepComment(stepIndex)} onClick={() => change(!open)} />
+      {anchored.length > 0 && <PmButton small icon="comment" aria-label={t.stepCommentHint(stepIndex, anchored.length)} onClick={() => {
+        change(false); comments.stopPendingComment(); onPause(); comments.selectThread(anchored[0]!.id, false)
+      }}>{anchored.length}</PmButton>}
+    </span>
+    <GenericPopover reference={trigger ? { element: trigger } : undefined} focusManagerProps={{ disabled: true }}
+      elementProps={{ style: { zIndex: 60 }, 'aria-label': open ? t.stepComment(stepIndex) : t.stepCommentHint(stepIndex, anchored.length) }}
+      useFloatingOptions={{ ...floating, placement: 'bottom-start', open: Boolean(open || shown), onOpenChange: close }}>
+      {open && <PlaceCommentComposer key={selected ?? 'block'} context={context} blockId={blockId} sectionId={sectionId} stepId={selected}
+        onReady={ready} onSelect={next => { revision.current++; setSelected(next); if (next !== undefined) workbench.observeDocumentStep(sectionId, next) }} onClose={threadId => {
+          change(false); comments.selectThread(threadId, false)
+        }} />}
+      {shown && <div className="pm-ui-comment-threads" onCompositionStart={() => { threadComposing.current = true }} onCompositionEnd={() => { threadComposing.current = false }}>{(anchored.some(thread => thread.id === selectedThread.id) ? anchored : [selectedThread]).map(thread => <DocumentCommentThread key={thread.id} thread={thread}
+        selected={selectedThreadId === thread.id} referenceText={placeReference(context.store.document, context.store.placeAnchorOf(thread.id)!, t)}
+        onFocus={() => comments.selectThread(thread.id, false)} tabIndex={0} />)}</div>}
+    </GenericPopover>
+  </>
 }
 
 function PlaceCommentComposer({ context, blockId, sectionId, stepId, onSelect, onClose, onReady }: {
-  context: CommentContext, blockId: string, sectionId: string, stepId: string | undefined, onSelect(stepId: string | undefined): void, onClose(): void, onReady(owner?: CommentDraftComposer): void,
+  context: CommentContext, blockId: string, sectionId: string, stepId: string | undefined, onSelect(stepId: string | undefined): void, onClose(threadId: string): void, onReady(owner?: CommentDraftComposer): void,
 }) {
-  const workbench = useWorkbench()
   const fallback = context.store.document
   const document = useWorkbenchState(state => state.authoring?.content) ?? fallback
   const section = document?.sections[sectionId]
@@ -126,7 +154,7 @@ function PlaceCommentComposer({ context, blockId, sectionId, stepId, onSelect, o
   const submitRef = useRef<() => Promise<void>>(() => Promise.resolve())
   const editor: BlockNoteEditor<any, any, any> = useCreateBlockNote({
     schema: commentEditorSchema, trailingBlock: false,
-    dictionary: { ...dictionary, placeholders: { ...dictionary.placeholders, emptyDocument: t.stepCommentPlaceholder } },
+    dictionary: { ...dictionary, placeholders: { ...dictionary.placeholders, emptyDocument: dictionary.placeholders.new_comment } },
     extensions: [CommentEditorSubmitExtension({ onSubmit: async () => submitRef.current() })],
   }, [blockId, stepId])
   const empty = useEditorState({ editor, selector: ({ editor }) => editor.isEmpty })
@@ -143,8 +171,9 @@ function PlaceCommentComposer({ context, blockId, sectionId, stepId, onSelect, o
   useLayoutEffect(() => {
     if (!drafts) return
     active.current = true
+    const stopEnter = enterSubmits(editor, () => submitRef.current())
     const stop = editor.onChange(() => { if (!submitting.current && !suppress.current) { input.current++; write(composing.current) } })
-    return () => { active.current = false; input.current++; stop() }
+    return () => { active.current = false; input.current++; stop(); stopEnter() }
   }, [drafts, editor, target, rich])
   useLayoutEffect(() => {
     if (!drafts) return
@@ -156,7 +185,7 @@ function PlaceCommentComposer({ context, blockId, sectionId, stepId, onSelect, o
   }, [drafts, store, target, editor])
   const composition = (value: boolean) => { composing.current = value; input.current++; write(value) }
   const submit = async () => {
-    if (submitting.current || busy || editor.isEmpty || editor.prosemirrorView.composing) return
+    if (!active.current || composing.current || submitting.current || busy || editor.isEmpty || editor.prosemirrorView.composing) return
     if (!store.auth.canCreateThread() || store.draftTargetState(target) !== 'current') { setFailure(true); return }
     setBusy(true); setFailure(false); submitting.current = true
     try {
@@ -164,13 +193,12 @@ function PlaceCommentComposer({ context, blockId, sectionId, stepId, onSelect, o
       const thread = await store.createPlaceThread({ blockId, stepId, body: editor.document })
       const actual = store.threadSnapshot(thread.id)
       if (actual) { const current = record.current; if (current) { drafts?.submitted(current, actual.comments[0]!, actual); record.current = undefined } }
-      context?.openComments?.()
-      onClose()
+      onClose(thread.id)
     } catch { setFailure(true) } finally { submitting.current = false; setBusy(false) }
   }
   submitRef.current = submit
   const draftsState = useSyncExternalStore(drafts?.subscribe ?? subscribeEmpty, drafts?.snapshot ?? (() => emptyDrafts))
-  const candidates = draftsState.candidates.filter(candidate => isNewCommentDraft(candidate.target) && sameCommentDraftTarget(candidate.target, target))
+  const candidates = draftsState.candidates.filter(candidate => isNewCommentDraft(candidate.target) && sameCommentDraftTarget(candidate.target, target) && candidate.id !== record.current?.id)
   const nativeGuard = () => {
     const version = store.version, before = input.current, own = record.current, native = editor.prosemirrorState, position = context.getPositionToken?.()
     return () => {
@@ -209,20 +237,16 @@ function PlaceCommentComposer({ context, blockId, sectionId, stepId, onSelect, o
     })
   }
   const discard = async (candidate: CommentDraftCandidate) => { await drafts?.discardProposal(candidate) }
-  return <div className="pm-document-place-comment__body pm-ui-block-editor">
-    <PmSelect label={t.stepCommentStep} value={stepId ?? ''} disabled={busy || !empty} onChange={event => onSelect(event.currentTarget.value || undefined)}>
-      <option value="">{t.stepCommentWhole}</option>
-      {section?.stepOrder.map((id, index) => <option key={id} value={id}>{t.stepCommentOption(index + 1, document?.steps[id]?.title ?? '')}</option>)}
-    </PmSelect>
-    <div className="pm-document-place-comment__editor" onCompositionStart={() => composition(true)} onCompositionEnd={() => composition(false)}>
-      <MantineCommentEditor editor={editor} editable autoFocus />
-    </div>
+  return <div onCompositionStart={() => composition(true)} onCompositionEnd={() => composition(false)}>
+    <CommentComposer editor={editor}>
+      <PmSelect label={t.stepCommentStep} value={stepId ?? ''} disabled={busy || !empty} onChange={event => onSelect(event.currentTarget.value || undefined)}>
+        <option value="">{t.stepCommentWhole}</option>
+        {section?.stepOrder.map((id, index) => <option key={id} value={id}>{t.stepCommentOption(index + 1, document?.steps[id]?.title ?? '')}</option>)}
+      </PmSelect>
+    </CommentComposer>
     {failure && <PmNotice tone="warn">{t.stepCommentFailed}</PmNotice>}
+    {draftsState.failed && <PmNotice tone="warn">{t.commentBackupFailed}</PmNotice>}
     {candidates.length > 0 && <DraftChoices candidates={candidates} preview disabled={busy} canRecover={() => store.draftTargetState(target) === 'current'}
       unavailableMessage={t.commentTargetUnavailable} onRecover={async candidate => { await recover(candidate) }} onDiscard={discard} />}
-    <div className="pm-document-place-comment__actions">
-      <PmButton small disabled={busy} onClick={onClose}>{t.stepCommentCancel}</PmButton>
-      <PmButton small variant="primary" loading={busy} disabled={busy || empty} onClick={() => void submit()}>{t.stepCommentSave}</PmButton>
-    </div>
   </div>
 }

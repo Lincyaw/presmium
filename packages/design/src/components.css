@@ -1697,6 +1697,18 @@
   overflow-wrap: anywhere;
 }
 
+.pm-ui-block-editor .pm-ui-comment-threads {
+  display: grid;
+  gap: var(--pm-space-2);
+  max-height: min(var(--pm-comment-available-height, 100dvh), calc(100dvh - var(--pm-space-8)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.pm-ui-block-editor .pm-ui-comment-target {
+  padding: var(--pm-space-2) var(--pm-space-3);
+}
+
 .pm-ui-block-editor .bn-comment-editor {
   min-width: 0;
   max-width: 100%;

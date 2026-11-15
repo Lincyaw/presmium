@@ -5,6 +5,7 @@ import { chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, readdirSync,
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
+import { gallery } from './gallery.mjs'
 
 const pkg = fileURLToPath(new URL('..', import.meta.url))
 const root = fileURLToPath(new URL('../../..', import.meta.url))
@@ -75,6 +76,11 @@ function runtime() {
   prune(join(target, 'node_modules'))
 }
 
+function examples() {
+  gallery(join(out, 'gallery'))
+  copyFileSync(join(pkg, 'runtime/gallery.mjs'), join(out, 'gallery.mjs'))
+}
+
 // Files no installed program reads: source maps, type declarations, Windows debug symbols, a package's own
 // tests and demos, and node-pty's prebuilt binaries for the other platforms. About a third of the runtime.
 const unused = /\.(map|d\.[cm]?ts|pdb)$/
@@ -118,3 +124,4 @@ const only = process.argv[2]
 if (!only || only === 'node') await nodeRuntime()
 if (!only || only === 'ui') await launcher()
 if (!only || only === 'runtime') runtime()
+if (!only || only === 'gallery') examples()

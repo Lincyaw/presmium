@@ -35,6 +35,7 @@ export const BLOCKNOTE_MESSAGES: Record<Locale, Overrides<Dictionary>> = {
     file_panel: { upload: { file_placeholder: kinds('上传图片', '上传视频', '上传音频', '上传文件'), upload_error: '无法上传文件' }, embed: { embed_button: kinds('嵌入图片', '嵌入视频', '嵌入音频', '嵌入文件'), url_placeholder: '输入网址' } },
     link_toolbar: { delete: { tooltip: '移除链接' }, edit: { text: '编辑链接' }, open: { tooltip: '在新标签页中打开' }, form: { title_placeholder: '链接文字', url_placeholder: '链接地址' } },
     comments: {
+      save_button_text: '发布',
       discard_pending_comment: '要放弃这条批注吗？',
       actions: { add_reaction: '添加回应', edit_comment: '编辑批注', delete_comment: '删除批注', more_actions: '更多' },
     },
@@ -70,6 +71,7 @@ export const BLOCKNOTE_MESSAGES: Record<Locale, Overrides<Dictionary>> = {
     file_panel: { upload: { file_placeholder: kinds('Upload Picture', 'Upload Video', 'Upload Audio', 'Upload File'), upload_error: 'Couldn’t upload the file' }, embed: { embed_button: kinds('Embed Picture', 'Embed Video', 'Embed Audio', 'Embed File'), url_placeholder: 'Enter an address' } },
     link_toolbar: { delete: { tooltip: 'Remove Link' }, edit: { text: 'Edit Link' }, open: { tooltip: 'Open in New Tab' }, form: { title_placeholder: 'Link text', url_placeholder: 'Link address' } },
     comments: {
+      save_button_text: 'Post',
       discard_pending_comment: 'Discard this comment?',
       actions: { add_reaction: 'Add Reaction', edit_comment: 'Edit Comment', delete_comment: 'Delete Comment', more_actions: 'More' },
     },

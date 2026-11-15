@@ -67,7 +67,8 @@ never synthesize values or reveal undeclared `additionalProperties` names.
 Three entry points share `lecture.json`: document editing, presentation and video production (sections 16
 to 19). The document editor is one full-document BlockNote instance with its native selection, history and
 comments; do not add per-page editors or a second selection or comment toolbar. Present and Video read
-independent snapshots and never take focus or mode while editing.
+independent snapshots and never take focus or mode while editing. Read and Run keeps its toolbar actions on the
+right; side-by-side scrolly documents fill the available reading canvas instead of the ordinary text-sheet width.
 
 - Read `docs/ir.md` and `TeachingDocument` before changing transactions. Web and agent changes go through
   the same transaction boundary with `baseDocumentVersion`. Saving does not wait for compilation; a failed
@@ -122,7 +123,10 @@ independent snapshots and never take focus or mode while editing.
   Each row recovers or discards directly. Discard All retires only the displayed exact references in one
   native store transaction, preserving current input and other windows' newer revisions.
 - Comments use native rich-text ranges with stable unit IDs and offsets; cross-block selection uses the
-  editor's public APIs, not DOM `selectionchange`. The editor's Y.Doc is not storage. Web and MCP share the
+  editor's public APIs, not DOM `selectionchange`. The editor's Y.Doc is not storage. Text and block/step anchors share the native composer, Post/Enter behavior and inline thread cards;
+  the block toolbar count includes whole-block and current-step unresolved threads. Scene previews omit the properties
+  button; other component previews keep their parameter editor. Dismissal keeps unpublished drafts
+  in the same bank; posting never opens the sidebar automatically. Web and MCP share the
   pure comment actions; owner and editor permissions apply in both. Reply and edit drafts are backed up by
   the workbench, bound to the thread, member and target; recovery is explicit, never auto-submitted.
 - Page create, rename, move, delete and duplicate work on stable section IDs through kernel page rules

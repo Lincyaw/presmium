@@ -3,7 +3,7 @@ name: Desktop app
 on:
   push:
     branches: [main]
-    paths: ['packages/**', '.agents/skills/**', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.github/workflows/desktop.yml']
+    paths: ['packages/**', 'examples/gallery/**', '.agents/skills/**', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.github/workflows/desktop.yml']
   pull_request:
     paths: ['packages/desktop/**', '.github/workflows/desktop.yml']
   release:

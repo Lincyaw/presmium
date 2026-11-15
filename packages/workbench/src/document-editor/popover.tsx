@@ -2,7 +2,7 @@ import { useLayoutEffect } from 'react'
 import { Menu } from '@mantine/core'
 import { components } from '@blocknote/mantine'
 import type { ComponentProps, FloatingUIOptions } from '@blocknote/react'
-import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/react'
+import { autoUpdate, computePosition, flip, offset, shift, size } from '@floating-ui/react'
 
 /** A length token in CSS pixels, for positioning code that only takes numbers. */
 function tokenPixels(name: string, element: Element = document.documentElement): number {
@@ -73,7 +73,9 @@ export function commentFloating(line?: () => DOMRect | undefined): NonNullable<F
   const padding = edge()
   return {
     ...line ? { placement: 'bottom-start' as const } : {},
-    middleware: [...line ? [commentLine(line)] : [], offset(COMMENT_GAP), flip({ padding, flipAlignment: false }), shift({ padding })],
+    middleware: [...line ? [commentLine(line)] : [], offset(COMMENT_GAP), flip({ padding, flipAlignment: false }), shift({ padding }), size({ padding, apply: ({ availableHeight, elements }) => {
+      elements.floating.style.setProperty('--pm-comment-available-height', `${Math.max(0, availableHeight)}px`)
+    } })],
   }
 }
 

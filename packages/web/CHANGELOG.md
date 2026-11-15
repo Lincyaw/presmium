@@ -1,5 +1,38 @@
 # @lincyaw/web
 
+## 1.0.0-rc.99
+
+### Patch Changes
+
+- 修复桌面示例工作区对仓库外 TypeScript 配置的引用，使动画场景在安装后可编译，并兼容修复旧示例副本。
+- @lincyaw/design@1.0.0-rc.99
+
+## 1.0.0-rc.98
+
+### Patch Changes
+
+- 3ab31ee: 移除动画预览工具栏中用途不直观的属性按钮，保留其他组件的参数编辑入口。阅读与运行切换后工具按钮保持在右侧，动画与文字左右布局默认铺满可用画布；页首从标题开始显示，窄屏恢复步骤时正文避开固定动画。
+- @lincyaw/design@1.0.0-rc.98
+
+## 1.0.0-rc.97
+
+### Patch Changes
+
+- @lincyaw/design@1.0.0-rc.97
+
+## 1.0.0-rc.96
+
+### Patch Changes
+
+- Updated dependencies [b08d9f0]
+  - @lincyaw/design@1.0.0-rc.96
+
+## 1.0.0-rc.95
+
+### Patch Changes
+
+- @lincyaw/design@1.0.0-rc.95
+
 ## 1.0.0-rc.94
 
 ### Patch Changes

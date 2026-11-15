@@ -115,7 +115,7 @@ export function DocumentFloatingThreadController() {
   }} />
 }
 
-function placeReference(document: TeachingDocument | undefined, anchor: DocumentPlaceAnchor, t: typeof DOCUMENT_EDITOR_MESSAGES['zh-CN']): string {
+export function placeReference(document: TeachingDocument | undefined, anchor: DocumentPlaceAnchor, t: typeof DOCUMENT_EDITOR_MESSAGES['zh-CN']): string {
   if (!document) return ''
   const block = document.blocks[anchor.blockId]
   let label: string

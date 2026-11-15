@@ -89,6 +89,37 @@ fn stop_studio(app: &AppHandle) {
     if let Some(running) = app.state::<Desktop>().running.lock().unwrap().take() { running.stop(); }
 }
 
+fn example_workspace(app: &AppHandle) -> Option<PathBuf> {
+    app.path().app_local_data_dir().ok().map(|dir| dir.join("gallery-workspace"))
+}
+
+fn prepare_examples(app: &AppHandle, runtime: &studio::Runtime, workspace: &Path) -> Result<(), studio::LaunchError> {
+    if example_workspace(app).as_deref() != Some(workspace) {
+        return Ok(());
+    }
+    let prepare = || -> std::io::Result<()> {
+        let resources = app.path().resource_dir().map_err(std::io::Error::other)?;
+        let mut command = std::process::Command::new(&runtime.node);
+        command.arg(resources.join("gallery.mjs"))
+            .arg(resources.join("gallery"))
+            .arg(workspace)
+            .arg(resources.join("runtime/node_modules"));
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            command.creation_flags(0x0800_0000);
+        }
+        let output = command.output()?;
+        if output.status.success() { return Ok(()); }
+        Err(std::io::Error::other(String::from_utf8_lossy(&output.stderr).into_owned()))
+    };
+    prepare().map_err(|error| {
+        if let Some(dir) = runtime.log.parent() { let _ = std::fs::create_dir_all(dir); }
+        let _ = std::fs::write(&runtime.log, format!("Could not prepare example workspace: {error}\n"));
+        studio::LaunchError::ExamplesFailed
+    })
+}
+
 /// Back to the launcher page, with what it should do there.
 fn show_launcher(app: &AppHandle, query: &[(&str, &str)]) {
     let desktop = app.state::<Desktop>();
@@ -104,7 +135,11 @@ fn show_launcher(app: &AppHandle, query: &[(&str, &str)]) {
 fn launcher_state(app: AppHandle, desktop: State<'_, Desktop>) -> LauncherState {
     let recent = read_recent(&app);
     let mut reopened = desktop.reopened.lock().unwrap();
-    let reopen = if *reopened { None } else { recent.first().filter(|path| Path::new(path).is_dir()).cloned() };
+    let reopen = if *reopened { None } else if recent.is_empty() {
+        example_workspace(&app).map(|path| path.to_string_lossy().to_string())
+    } else {
+        recent.first().filter(|path| Path::new(path).is_dir()).cloned()
+    };
     *reopened = true;
     LauncherState { locale: messages::locale(), recent, reopen }
 }
@@ -130,6 +165,7 @@ async fn open_workspace(app: AppHandle, path: String) -> Result<(), String> {
     let handle = app.clone();
     let started = tauri::async_runtime::spawn_blocking(move || {
         let desktop = handle.state::<Desktop>();
+        prepare_examples(&handle, &runtime, &workspace)?;
         if let Some(previous) = desktop.running.lock().unwrap().take() {
             previous.stop();
         }

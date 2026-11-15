@@ -1,5 +1,41 @@
 # @lincyaw/viewer
 
+## 1.0.0-rc.99
+
+### Patch Changes
+
+- @lincyaw/host@1.0.0-rc.99
+  - @lincyaw/kernel@1.0.0-rc.99
+
+## 1.0.0-rc.98
+
+### Patch Changes
+
+- 3ab31ee: 移除动画预览工具栏中用途不直观的属性按钮，保留其他组件的参数编辑入口。阅读与运行切换后工具按钮保持在右侧，动画与文字左右布局默认铺满可用画布；页首从标题开始显示，窄屏恢复步骤时正文避开固定动画。
+- @lincyaw/host@1.0.0-rc.98
+  - @lincyaw/kernel@1.0.0-rc.98
+
+## 1.0.0-rc.97
+
+### Patch Changes
+
+- @lincyaw/host@1.0.0-rc.97
+  - @lincyaw/kernel@1.0.0-rc.97
+
+## 1.0.0-rc.96
+
+### Patch Changes
+
+- @lincyaw/host@1.0.0-rc.96
+  - @lincyaw/kernel@1.0.0-rc.96
+
+## 1.0.0-rc.95
+
+### Patch Changes
+
+- @lincyaw/host@1.0.0-rc.95
+  - @lincyaw/kernel@1.0.0-rc.95
+
 ## 1.0.0-rc.94
 
 ### Patch Changes

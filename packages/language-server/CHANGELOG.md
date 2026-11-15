@@ -1,5 +1,62 @@
 # @lincyaw/language-server
 
+## 1.0.0-rc.99
+
+### Patch Changes
+
+- Updated dependencies
+  - @lincyaw/web@1.0.0-rc.99
+  - @lincyaw/cli@1.0.0-rc.99
+  - @lincyaw/compiler@1.0.0-rc.99
+  - @lincyaw/host@1.0.0-rc.99
+  - @lincyaw/kernel@1.0.0-rc.99
+  - @lincyaw/viewer@1.0.0-rc.99
+
+## 1.0.0-rc.98
+
+### Patch Changes
+
+- Updated dependencies [3ab31ee]
+  - @lincyaw/web@1.0.0-rc.98
+  - @lincyaw/viewer@1.0.0-rc.98
+  - @lincyaw/cli@1.0.0-rc.98
+  - @lincyaw/compiler@1.0.0-rc.98
+  - @lincyaw/host@1.0.0-rc.98
+  - @lincyaw/kernel@1.0.0-rc.98
+
+## 1.0.0-rc.97
+
+### Patch Changes
+
+- @lincyaw/cli@1.0.0-rc.97
+  - @lincyaw/compiler@1.0.0-rc.97
+  - @lincyaw/host@1.0.0-rc.97
+  - @lincyaw/kernel@1.0.0-rc.97
+  - @lincyaw/viewer@1.0.0-rc.97
+  - @lincyaw/web@1.0.0-rc.97
+
+## 1.0.0-rc.96
+
+### Patch Changes
+
+- @lincyaw/host@1.0.0-rc.96
+  - @lincyaw/web@1.0.0-rc.96
+  - @lincyaw/viewer@1.0.0-rc.96
+  - @lincyaw/cli@1.0.0-rc.96
+  - @lincyaw/compiler@1.0.0-rc.96
+  - @lincyaw/kernel@1.0.0-rc.96
+
+## 1.0.0-rc.95
+
+### Patch Changes
+
+- @lincyaw/cli@1.0.0-rc.95
+  - @lincyaw/compiler@1.0.0-rc.95
+  - @lincyaw/host@1.0.0-rc.95
+  - @lincyaw/kernel@1.0.0-rc.95
+  - @lincyaw/viewer@1.0.0-rc.95
+  - @lincyaw/web@1.0.0-rc.95
+
 ## 1.0.0-rc.94
 
 ### Patch Changes

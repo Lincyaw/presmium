@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef,
 import type { ReactNode } from 'react'
 import { CommentEditorSubmitExtension, CommentsExtension } from '@blocknote/core/comments'
 import { components } from '@blocknote/mantine'
-import { ComponentsContext, FloatingComposer, PositionPopover, useBlockNoteEditor, useComponentsContext, useCreateBlockNote, useDictionary, useEditorState, useExtension, useExtensionState } from '@blocknote/react'
+import { PositionPopover, useBlockNoteEditor, useCreateBlockNote, useDictionary, useEditorState, useExtension, useExtensionState } from '@blocknote/react'
 import type { ComponentProps } from '@blocknote/react'
 import type { BlockNoteEditor } from '@blocknote/core'
 import { isDocumentPlaceAnchor, randomUUID } from '@lincyaw/kernel'
@@ -19,6 +19,7 @@ import type { DocumentEditorBlock, NativeDocumentEditor } from './schema.tsx'
 import { PmNotice } from '../components.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
 import { commentFloating } from './popover.tsx'
+import { CommentComposer } from './CommentComposer.tsx'
 
 type CommentEditor = BlockNoteEditor<any, any, any>
 interface ComposerBinding {
@@ -167,7 +168,7 @@ export function DocumentNewCommentController() {
 const COMPOSER_LAYER = 60
 
 function DocumentNewCommentComposer({ newCommentEditor }: { newCommentEditor: CommentEditor }) {
-  const owner = useContext(NEW_DRAFT_OWNER), context = useContext(COMMENT_EDITOR_CONTEXT), nativeComponents = useComponentsContext()!
+  const owner = useContext(NEW_DRAFT_OWNER), context = useContext(COMMENT_EDITOR_CONTEXT)
   const [binding, setBinding] = useState<ComposerBinding>(), [, render] = useState(0)
   useLayoutEffect(() => {
     if (!owner || !context) return
@@ -188,10 +189,9 @@ function DocumentNewCommentComposer({ newCommentEditor }: { newCommentEditor: Co
       return () => { value.active = false }
     } catch { /* The unchanged native form remains available when no authoritative target can be confirmed. */ }
   }, [newCommentEditor, context?.store, owner?.editor, owner?.generation])
-  const value = useMemo(() => ({ ...nativeComponents, Comments: { ...nativeComponents.Comments, Editor: NewCommentEditor } }), [nativeComponents])
-  return <NEW_COMPOSER_BINDING.Provider value={{ binding, ready: () => render(value => value + 1) }}><ComponentsContext.Provider value={value}>
-    <FloatingComposer newCommentEditor={newCommentEditor} />
-  </ComponentsContext.Provider></NEW_COMPOSER_BINDING.Provider>
+  return <NEW_COMPOSER_BINDING.Provider value={{ binding, ready: () => render(value => value + 1) }}>
+    <CommentComposer editor={newCommentEditor} editorComponent={NewCommentEditor} />
+  </NEW_COMPOSER_BINDING.Provider>
 }
 const NEW_COMPOSER_BINDING = createContext<{ binding?: ComposerBinding, ready(): void } | undefined>(undefined)
 

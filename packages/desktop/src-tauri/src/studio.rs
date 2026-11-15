@@ -20,6 +20,7 @@ pub enum LaunchError {
     NotDirectory,
     StartFailed,
     StartTimeout,
+    ExamplesFailed,
 }
 
 impl LaunchError {
@@ -28,6 +29,7 @@ impl LaunchError {
             LaunchError::NotDirectory => "not-directory",
             LaunchError::StartFailed => "start-failed",
             LaunchError::StartTimeout => "start-timeout",
+            LaunchError::ExamplesFailed => "examples-failed",
         }
     }
 }

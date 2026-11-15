@@ -1,5 +1,52 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.98
+
+### Patch Changes
+
+- @lincyaw/cli@1.0.0-rc.99
+  - @lincyaw/kernel@1.0.0-rc.99
+  - @lincyaw/mcp@1.0.0-rc.99
+  - @lincyaw/skills@1.0.0-rc.99
+
+## 0.2.0-rc.97
+
+### Patch Changes
+
+- 3ab31ee: 移除动画预览工具栏中用途不直观的属性按钮，保留其他组件的参数编辑入口。阅读与运行切换后工具按钮保持在右侧，动画与文字左右布局默认铺满可用画布；页首从标题开始显示，窄屏恢复步骤时正文避开固定动画。
+- @lincyaw/cli@1.0.0-rc.98
+  - @lincyaw/kernel@1.0.0-rc.98
+  - @lincyaw/mcp@1.0.0-rc.98
+  - @lincyaw/skills@1.0.0-rc.98
+
+## 0.2.0-rc.96
+
+### Patch Changes
+
+- 重新打包统一后的动画与文字批注交互，使 Studio 安装版本包含共用批注卡片、就地回复和步骤草稿恢复。
+- @lincyaw/cli@1.0.0-rc.97
+  - @lincyaw/kernel@1.0.0-rc.97
+  - @lincyaw/mcp@1.0.0-rc.97
+  - @lincyaw/skills@1.0.0-rc.97
+
+## 0.2.0-rc.95
+
+### Patch Changes
+
+- @lincyaw/cli@1.0.0-rc.96
+  - @lincyaw/kernel@1.0.0-rc.96
+  - @lincyaw/mcp@1.0.0-rc.96
+  - @lincyaw/skills@1.0.0-rc.96
+
+## 0.2.0-rc.94
+
+### Patch Changes
+
+- @lincyaw/cli@1.0.0-rc.95
+  - @lincyaw/kernel@1.0.0-rc.95
+  - @lincyaw/mcp@1.0.0-rc.95
+  - @lincyaw/skills@1.0.0-rc.95
+
 ## 0.2.0-rc.93
 
 ### Patch Changes

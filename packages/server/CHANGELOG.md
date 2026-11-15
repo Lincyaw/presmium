@@ -1,5 +1,45 @@
 # @lincyaw/server
 
+## 1.0.0-rc.99
+
+### Patch Changes
+
+- @lincyaw/compiler@1.0.0-rc.99
+  - @lincyaw/kernel@1.0.0-rc.99
+  - @lincyaw/mcp@1.0.0-rc.99
+
+## 1.0.0-rc.98
+
+### Patch Changes
+
+- @lincyaw/compiler@1.0.0-rc.98
+  - @lincyaw/kernel@1.0.0-rc.98
+  - @lincyaw/mcp@1.0.0-rc.98
+
+## 1.0.0-rc.97
+
+### Patch Changes
+
+- @lincyaw/compiler@1.0.0-rc.97
+  - @lincyaw/kernel@1.0.0-rc.97
+  - @lincyaw/mcp@1.0.0-rc.97
+
+## 1.0.0-rc.96
+
+### Patch Changes
+
+- @lincyaw/compiler@1.0.0-rc.96
+  - @lincyaw/kernel@1.0.0-rc.96
+  - @lincyaw/mcp@1.0.0-rc.96
+
+## 1.0.0-rc.95
+
+### Patch Changes
+
+- @lincyaw/compiler@1.0.0-rc.95
+  - @lincyaw/kernel@1.0.0-rc.95
+  - @lincyaw/mcp@1.0.0-rc.95
+
 ## 1.0.0-rc.94
 
 ### Patch Changes
