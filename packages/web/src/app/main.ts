@@ -1,5 +1,5 @@
 import { currentLocale, OPERATIONS, pluginsOf, presmiumService, registerPresmiumPlugin, startHost, createStore, observe, runtimeRevision } from '@lincyaw/host'
-import { CAPTURE_PARAM, previewAppearance, reportStaleModule, safeDecodeURIComponent } from '@lincyaw/kernel'
+import { CAPTURE_PARAM, irBlocks, previewAppearance, reportStaleModule, safeDecodeURIComponent } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import { findView, loadDocumentParts, syncViewerWithOperations } from '@lincyaw/viewer'
 import type { LiveUpdate } from '@lincyaw/viewer/domain'
@@ -124,6 +124,11 @@ async function bootDocument(): Promise<void> {
   const asked = parsePositionQuery(location.search, doc)
   const initialPosition = config.form === 'slides' && !config.rendered && !config.block
   if (initialPosition && asked.section) viewer!.show({ section: asked.section, step: asked.step ?? 0 })
+  if (config.block) {
+    const section = doc.sections.find(section => [...irBlocks(section.blocks)].some(block => block.id === config.block))
+    const stepId = new URL(location.href).searchParams.get('presmium-block-step')
+    if (section) viewer!.go({ section: section.id, step: Math.max(0, section.stepIds?.indexOf(stepId ?? '') ?? -1), boundary: 'end' })
+  }
   active.set(preview?.active ?? true)
   const original = createStore(doc)
   const refresh = async (force = false) => {

@@ -75,7 +75,7 @@
 
 ### 4.2 消息
 
-消息分几组：导航（`go`、`position`、`narrate`、`updated`），指向（`pick`、`picked`、`selection`、`rect`、`highlight`、`pins`、`flash`、`marks`），外观（`appearance`、`activity`），写入（`blocks-*`、`page-*`、`source-*`、`edit*`、草稿汇总、`flush`、`document-history*`），播放（`playback-*`、`production-playback*`），以及 `report`、`shortcut`、`presentation-action`、`events-*`。保存确认绑定文稿、目标、版本、预览实例与代次，过期回调不清除其后的输入。文档编辑中的单块只读预览另用 `presmium:block-preview*` 消息，以导航代次防止多个块互相回拉位置。
+消息分几组：导航（`go`、`position`、`narrate`、`updated`），指向（`pick`、`picked`、`selection`、`rect`、`highlight`、`pins`、`flash`、`marks`），外观（`appearance`、`activity`），写入（`blocks-*`、`page-*`、`source-*`、`edit*`、草稿汇总、`flush`、`document-history*`），播放（`playback-*`、`production-playback*`），以及 `report`、`shortcut`、`presentation-action`、`events-*`。保存确认绑定文稿、目标、版本、预览实例与代次，过期回调不清除其后的输入。文档编辑中的单块只读预览另用 `presmium:block-preview*` 消息，以导航代次防止多个块互相回拉位置。单块预览的初始步骤以稳定 ID 随首次地址传入，在挂载前恢复；播放与跳步只经消息更新，不改写地址或重载帧，避免先显示整段末尾再回跳。动画进度条共用公共范围控件的尺寸与绘制规则。
 
 ### 4.3 坐标与安全
 
