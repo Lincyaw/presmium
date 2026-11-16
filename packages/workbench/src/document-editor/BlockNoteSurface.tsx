@@ -10,7 +10,7 @@ import type { Locale } from '../messages.ts'
 import { PmIcon, PmIconButton, PmNotice, PmTooltip } from '../components.tsx'
 import { DOCUMENT_NODE_VIEWS, documentEditorSchema } from './schema.tsx'
 import type { DocumentEditorBlock, DocumentEditorInput, DocumentNodeViews, NativeDocumentEditor } from './schema.tsx'
-import { documentSelection } from './selection.ts'
+import { documentSelection, nativeTextPoint } from './selection.ts'
 import type { NativeDocumentSelection } from './selection.ts'
 import { DOCUMENT_EDITOR_MESSAGES, IMAGE_IMPORT_MESSAGES, slashAliases } from './messages.ts'
 import { blockNoteDictionary } from './blocknote-messages.ts'
@@ -93,10 +93,20 @@ export interface BlockNoteSurfaceProps {
   children?: ReactNode
 }
 
+/** Text comments require a text range; opaque blocks use their preview's place-comment entry. */
+function DocumentAddCommentButton() {
+  const editor = useBlockNoteEditor(documentEditorSchema)
+  const selectedText = useEditorState({ editor, selector: ({ editor }) => {
+    const { selection } = editor.prosemirrorState
+    return !selection.empty && Boolean(nativeTextPoint(editor, selection.from) && nativeTextPoint(editor, selection.to))
+  } })
+  return selectedText ? <AddCommentButton /> : null
+}
+
 function EditorToolbar(props: FormattingToolbarProps) {
   const editor = useBlockNoteEditor(documentEditorSchema)
   const title = useEditorState({ editor, selector: ({ editor }) => editor.getSelection()?.blocks.some(block => block.type === 'presmiumPage') ?? false })
-  if (title) return <FormattingToolbar {...props}><AddCommentButton /></FormattingToolbar>
+  if (title) return <FormattingToolbar {...props}><DocumentAddCommentButton /></FormattingToolbar>
   return <FormattingToolbar {...props}>
     <BlockTypeSelect items={props.blockTypeSelectItems} />
     <BasicTextStyleButton basicTextStyle="bold" /><BasicTextStyleButton basicTextStyle="italic" />
@@ -104,7 +114,7 @@ function EditorToolbar(props: FormattingToolbarProps) {
     <TextAlignButton textAlignment="left" /><TextAlignButton textAlignment="center" /><TextAlignButton textAlignment="right" />
     <DocumentColorButton /><NestBlockButton /><UnnestBlockButton /><CreateLinkButton /><FormulaToolbarButton />
     <TableCellMergeButton />
-    <AddCommentButton />
+    <DocumentAddCommentButton />
   </FormattingToolbar>
 }
 
@@ -116,7 +126,7 @@ function PlainContentComments({ editor }: { editor: NativeDocumentEditor }) {
     return plain
   } })
   // BlockNote hides formatting controls over code; its own comment action still applies.
-  return show && editor.getExtension('comments') ? <div className="pm-document-editor__comment-tools"><FormattingToolbar><AddCommentButton /></FormattingToolbar></div> : null
+  return show && editor.getExtension('comments') ? <div className="pm-document-editor__comment-tools"><FormattingToolbar><DocumentAddCommentButton /></FormattingToolbar></div> : null
 }
 
 // Added items join the end of their group (formulas the one that holds tables, the animation request the one that holds

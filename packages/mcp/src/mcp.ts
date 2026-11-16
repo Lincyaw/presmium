@@ -859,7 +859,7 @@ async function resolveDocument(host: McpHost, named: string | undefined, bound?:
       let after: string | undefined
       for (let page = 0; page < AUTHORING_CLIENT_MAX_CLIENTS; page++) {
         const report = await host.authoringClients!.list(document.dir, after ? { after } : {}, editorMember)
-        if (report.clients.some(client => client.connected && (client.snapshot.view === 'document' || client.snapshot.mode === 'production') && client.snapshot.position)) return document.dir
+        if (report.clients.some(client => client.connected && (client.snapshot.view === 'document' || client.snapshot.view === 'scrolly' || client.snapshot.mode === 'production') && client.snapshot.position)) return document.dir
         after = report.nextAfter
         if (!after) break
       }

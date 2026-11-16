@@ -910,7 +910,7 @@ export class Workbench {
         ...source.member?.id && this.#componentPropertyDrafts.readable(source.identity, source.member.id) ? ['component-drafts.inspect' as const, 'component-drafts.read' as const] : [],
         ...clean && !state.isHistoryBusy && !state.isHistoryPreparing && source.member?.id && this.#componentPropertyDrafts.readable(source.identity, source.member.id) ? ['component-drafts.restore' as const, 'component-drafts.discard' as const] : [],
         ...this.#canPreparePresentation() ? ['preview.prepare' as const] : [],
-        ...clean && (state.webView === 'document' || ready) ? ['position.step' as const] : [],
+        ...clean && (state.webView === 'document' || state.webView === 'scrolly' && preparedCurrent && this.#previewSinks.size === 1 && state.previewIrRevision === prepared.revision || ready) ? ['position.step' as const] : [],
         ...ready ? ['playback.play' as const, 'playback.rate' as const, ...plan?.timing === 'confirmed' ? ['playback.seek' as const] : []] : []], unsubmittedContent: 'not-inspected' }
   }
 
@@ -1019,8 +1019,16 @@ export class Workbench {
       await this.pausePlayback(); current()
       if (interaction !== this.#state.documentPositionToken) throw new Error('client-position-changed')
       const present = this.#state.webView === 'present'
+      const reading = this.#state.webView === 'scrolly', connection = this.#state.previewConnection
       const result = await this.selectDocumentStep(action.sectionId, action.stepId)
       owned()
+      if (reading) await this.waitForAuthoringClientState(() => {
+        owned()
+        if (this.#state.webView !== 'scrolly' || this.#state.previewConnection !== connection || this.#previewSinks.size !== 1) throw new Error('client-preview-unavailable')
+        const state = this.authoringClientSnapshot(0)
+        return this.#lastPosition !== undefined && state?.view === 'scrolly' && sameSource(state.source, expected)
+          && state.position?.sectionId === action.sectionId && state.position.stepId === action.stepId
+      }, signal)
       const state = this.authoringClientSnapshot(0)
       if (!state || !sameSource(state.source, expected) || state.position?.sectionId !== action.sectionId || state.position.stepId !== action.stepId
         || present && (!result || result.status !== 'ready' || result.position?.sectionId !== action.sectionId || result.position.stepId !== action.stepId || result.position.playing)) throw new Error('client-step-unverified')

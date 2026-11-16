@@ -80,8 +80,9 @@ never synthesize values or reveal undeclared `additionalProperties` names.
 Three entry points share `lecture.json`: document editing, presentation and video production (sections 16
 to 19). The document editor is one full-document BlockNote instance with its native selection, history and
 comments; do not add per-page editors or a second selection or comment toolbar. Present and Video read
-independent snapshots and never take focus or mode while editing. Read and Run keeps its toolbar actions on the
-right; side-by-side scrolly documents fill the available reading canvas instead of the ordinary text-sheet width.
+independent snapshots and never take focus or mode while editing. Read and Run opens the viewer’s scrolly view for continuous vertical reading, with the animation on the left
+and its step captions on the right. It keeps toolbar actions on the right and fills the available reading canvas
+instead of the ordinary text-sheet width; narrow screens stack the columns.
 
 - Read `docs/ir.md` and `TeachingDocument` before changing transactions. Web and agent changes go through
   the same transaction boundary with `baseDocumentVersion`. Saving does not wait for compilation; a failed
@@ -137,6 +138,8 @@ right; side-by-side scrolly documents fill the available reading canvas instead 
   native store transaction, preserving current input and other windows' newer revisions.
 - Comments use native rich-text ranges with stable unit IDs and offsets; cross-block selection uses the
   editor's public APIs, not DOM `selectionchange`. The editor's Y.Doc is not storage. Text and block/step anchors share the native composer, Post/Enter behavior and inline thread cards;
+  the floating toolbar offers text comments only for a mapped native text selection. An animation or other
+  opaque block uses its preview header's place-comment entry, never a text form with an unavailable target;
   the block toolbar count includes whole-block and current-step unresolved threads. Scene previews omit the properties
   button; other component previews keep their parameter editor. Dismissal keeps unpublished drafts
   in the same bank; posting never opens the sidebar automatically. Web and MCP share the

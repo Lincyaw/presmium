@@ -9,7 +9,7 @@ export type WorkbenchMode = 'editing' | 'viewing'
  * How the web form is shown: as a page or as its presentation, whose controls can play a configured lecture.
  * Both share one preview page and switch in place with `go.view`.
  */
-export type WebView = 'document' | 'present'
+export type WebView = 'document' | 'scrolly' | 'present'
 
 /** A playback key pressed in a preview that the workbench plays: Space, and the left and right arrows. */
 export type PlaybackKey = 'play-pause' | 'previous' | 'next'
