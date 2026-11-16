@@ -70,7 +70,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       txt(14, 36, '给定几个数字', '', 3) + txt(14, 41, '组合出目标值', '', 3) +
       '<g class="sampler"><rect x="63" y="22" width="33" height="24" rx="2" fill="var(--c-surface)" stroke="' + C.q + '" stroke-width=".6"/>' +
       txt(67, 29, '采样器 q', 'strong q', 3.4) + txt(67, 36, '生成回答', '', 3) +
-      '<rect x="67" y="40" width="12" height="2.5" fill="' + C.q + '"/><rect class="qHalf" x="79" y="40" width="12" height="2.5" fill="var(--c-line-strong)"/></g>' +
+      '<rect class="qFirst" x="67" y="40" width="12" height="2.5" fill="' + C.q + '"/><rect class="qHalf" x="79" y="40" width="12" height="2.5" fill="var(--c-line-strong)"/></g>' +
       '<g class="trainer"><rect x="113" y="22" width="34" height="24" rx="2" fill="var(--c-surface)" stroke="var(--c-ink)" stroke-width=".6"/>' +
       txt(117, 29, '训练器 p', 'strong', 3.4) + txt(117, 36, '计算梯度', '', 3) +
       '<rect x="117" y="40" width="12" height="2.5" fill="var(--c-ink)"/><rect x="129" y="40" width="12" height="2.5" fill="var(--c-line-strong)"/></g>' +
