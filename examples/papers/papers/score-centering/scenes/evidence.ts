@@ -28,6 +28,7 @@ const CSS = `
   .side strong { display:block; font-size:2.65cqw; line-height:1.3; color:var(--c-ink); font-weight:800; }
   .side .detail { display:block; margin-top:2.2cqh; font-size:1.7cqw; line-height:1.6; }
   .side .value { display:block; font-size:4.2cqw; font-weight:800; color:${SC}; margin-top:2cqh; }
+  .step-count .value { font-size:2.6cqw; white-space:nowrap; }
   .side .value.orange { color:${TIS}; }
   .side .mini { display:block; font-size:1.4cqw; color:var(--c-muted); margin-top:1.5cqh; line-height:1.5; }
   .side .line { height:.16cqw; background:var(--c-line-strong); margin:2.6cqh 0; }
@@ -97,17 +98,22 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
     const wires=line(40,31,111,31,'p-sync')+line(128,38,128,49,'p-down')+line(104,56,93,56,'p-left1')+line(46,56,36,56,'p-left2')+line(20,49,20,38,'p-up')
     const choice='<g class="p-choice"><text font-size="2.7" x="75" y="19" text-anchor="middle" class="label">数值不一致 → SC</text><text font-size="1.85" x="75" y="24" text-anchor="middle" class="small">明显滞后 → TIS / MIS + SC</text></g>'
     const formula='<g class="p-check"><text font-size="2.7" x="80" y="44" text-anchor="middle" class="label">恒定奖励：平均更新 ≈ 0</text></g>'
-    frame(root,CSS,header+'<svg class="layer diagram" '+LAYER+'>'+wires+nodes+choice+formula+'<circle class="flow-token token" cx="128" cy="31" r="1.4"/><circle class="flow-update token" cx="127" cy="56" r="1.4"/></svg><div class="condition">目标系统验证：尾部覆盖率 · 同步周期 · 长上下文 · 实际吞吐</div>')
+    frame(root,CSS,header+'<svg class="layer diagram" '+LAYER+'>'+wires+nodes+choice+formula+'<circle class="flow-token token" cx="128" cy="40" r="1.4"/><circle class="flow-update token" cx="102" cy="56" r="1.4"/></svg><div class="condition">目标系统验证：尾部覆盖率 · 同步周期 · 长上下文 · 实际吞吐</div>')
     gsap.set(['.p-loss','.p-monitor','.p-choice','.p-check','.p-left1','.p-left2','.p-up','.flow-update','.condition'],{autoAlpha:0})
-    tl.fromTo('.flow-token',{attr:{cy:31}},{attr:{cy:56},duration:1,ease:'power1.inOut',immediateRender:false},T(0,.23))
+    tl.fromTo('.flow-token',{attr:{cy:40}},{attr:{cy:48},duration:1,ease:'power1.inOut',immediateRender:false},T(0,.23))
     tl.to('.p-log .node',{stroke:SC,duration:.4},T(0,.38))
+    tl.to('.flow-token',{autoAlpha:0,duration:.25},T(0,.4))
     tl.to('.p-choice',{autoAlpha:1,duration:.5},T(1,.07))
     tl.to(['.p-left1','.p-loss','.flow-update'],{autoAlpha:1,duration:.5},T(1,.25))
-    tl.to('.flow-update',{attr:{cx:69.5},duration:1,ease:'power1.inOut'},T(1,.32))
+    tl.to('.flow-update',{attr:{cx:94},duration:1,ease:'power1.inOut'},T(1,.32))
+    tl.to('.flow-update',{autoAlpha:0,duration:.25},T(1,.43))
     tl.to('.p-loss .node',{stroke:SC,duration:.5},T(1,.49))
     tl.to(['.p-left2','.p-monitor','.p-up'],{autoAlpha:1,duration:.4},T(2,.04))
+    tl.set('.flow-update',{attr:{cx:44,cy:56},autoAlpha:1},T(2,.1))
     tl.to('.flow-update',{attr:{cx:20.5},duration:.7},T(2,.12))
     tl.to('.flow-update',{attr:{cy:31},duration:.6},T(2,.25))
+    tl.to('.flow-update',{autoAlpha:0,duration:.3},T(2,.32))
+    tl.to('.p-trainer .node',{stroke:SC,duration:.4},T(2,.32))
     tl.to('.p-check',{autoAlpha:1,duration:.5},T(2,.38))
     tl.to('.condition',{autoAlpha:1,duration:.5},T(2,.64))
     tl.set({}, {}, T(3)); return tl
@@ -116,7 +122,7 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
   const fig=FIGURES[page as FigurePage]
   const extra:Record<string,string> = {
     study: '<div class="controls"><div class="control-lane"><span class="control-label">目标函数</span><div class="control-bar"><i class="control-tick c0" style="left:10%"></i></div><span class="control-value">同一 REINFORCE</span></div><div class="control-lane"><span class="control-label">优势与采样</span><div class="control-bar"><i class="control-tick c1" style="left:45%"></i></div><span class="control-value">保持一致</span></div><div class="control-lane"><span class="control-label">优化器</span><div class="control-bar"><i class="control-tick c2" style="left:80%"></i></div><span class="control-value">SGD · 每批一步</span></div></div><div class="one">仅替换修正规则</div>'+side('s1','图 2 · 离线','固定数据','+1 / 0<br>相对稳定','','Qwen3-1.7B · Countdown')+side('s2','图 2 · 在线 + TIM','不断同步','组中心化<br>相对稳定','','+1 / 0 最不稳定'),
-    noise: side('s0','Qwen3-0.6B · Countdown','受控权重偏移','横轴：训练步<br>纵轴：留出评测准确率','','固定 Δθ · 3 个种子')+side('s1','由弱到强','0.01 → 0.05','SC<br>TIS + SC<br>MIS + SC','','强偏移下保持稳定')+side('s2','DPPO · 正文近似','崩溃步数','弱 → 中 → 强','160 → 80 → 20','§5.2 · 非误差规模实测'),
+    noise: side('s0','Qwen3-0.6B · Countdown','受控权重偏移','横轴：训练步<br>纵轴：留出评测准确率','','固定 Δθ · 3 个种子')+side('s1','由弱到强','0.01 → 0.05','SC<br>TIS + SC<br>MIS + SC','','强偏移下保持稳定')+side('s2 step-count','DPPO · 正文近似','崩溃步数','弱 → 中 → 强','160 → 80 → 20','§5.2 · 非误差规模实测'),
     quant: side('s0','量化不一致','训练 bf16','采样 INT8<br>权重 / 激活 / KV','','Qwen3-0.6B · Countdown')+side('s1','相同训练设置','跟踪 SC','再比较 TIS + SC<br>与 MIS + SC','','纵轴：训练准确率')+side('s2','量化压力设置','SC 与组合','保持稳定<br>表现最好','','阴影：±1 标准误'),
     stale: '<div class="sync-ruler">'+Array.from({length:9},(_,i)=>'<i style="left:'+(i*12.5)+'%"></i>').join('')+'<span style="left:0">0</span><span style="left:48%">32</span><span style="left:96%">64</span><b class="sync-now"></b></div>'+side('s0','固定同步周期','每 64 步','采样器保持旧权重<br>训练器持续更新','','Qwen3-0.6B · Countdown')+side('s1','图 4 · 右','组合更好','TIS + SC<br>MIS + SC','','相对单独 SC')+side('s2','回到更新分解','权重 + 去均值','IS：调整分布<br>SC：去残余漂移','','信号仍按 q 计算'),
     scale: side('s0','Qwen3-30B-A3B-Base','INTELLECT-2 数学','MoE · 未回放路由<br>三个量化强度','','纵轴：训练准确率')+side('s1','FP8 W/A + FP8 KV','轻量化设置','普通 PG 也稳定','58%','800 步 · 与修正方法相近')+side('s2','FP8 W/A + FP4 KV','SC / TIS','PG：200 步内崩溃','52% / 51%','MIS：后期崩溃')+side('s3','INT8 W/A + INT4 KV','SC / TIS','其他方法：结束 <5%','30% / 12%','严重不一致 · 训练准确率'),
@@ -154,7 +160,7 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
     swap('.s0','.s1',1,.1)
     pose({x:0,y:0,w:.365,h:1},1,.06)
     ring({x:.065,y:.17,w:.215,h:.11},1,.2)
-    pose({x:.655,y:0,w:.345,h:1},1,.49)
+    pose({x:.68,y:0,w:.32,h:1},1,.49)
     ring({x:.69,y:.16,w:.225,h:.19},1,.6)
     pose(WHOLE,2,.02)
     swap('.s1','.s2',2,.28)
