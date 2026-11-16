@@ -14,7 +14,7 @@ const CSS = `
   .iorange { color:#DD8452; } .iaccent { color:var(--c-accent); }
   .iline { stroke:var(--c-line-strong); stroke-width:0.2; fill:none; }
   .ihead { fill:#4C72B0; } .itail { fill:var(--c-fit); }
-  .isvg { font-size:2.8px; } .isvg-small { font-size:2.1px; }
+
   .iflow { stroke:#087F78; stroke-width:0.55; fill:none; }
   .itoken { position:absolute; width:3.6cqw; height:3.6cqw; display:grid; place-items:center; border:0.14cqw solid var(--c-line-strong); border-radius:0.5cqw; font-size:1.5cqw; background:var(--c-surface); }
   .iresult { position:absolute; font-size:3.2cqw; font-weight:800; white-space:nowrap; }
@@ -24,10 +24,10 @@ const minimalCode = [
   'def score_centering_loss(train_logp, samp_logp,',
   '                        topk_ids, sampled_token, advantage):',
   '    train_head_logp = train_logp[topk_ids]',
-  '    tail_mass_ratio = (1 - exp(samp_logp).sum()) /',
-  '                      (1 - exp(train_head_logp).sum())',
-  '    head_prob_residual = exp(samp_logp)',
-  '                        - tail_mass_ratio * exp(train_head_logp)',
+  '    tail_mass_ratio = ((1 - exp(samp_logp).sum()) /',
+  '                       (1 - exp(train_head_logp).sum()))',
+  '    head_prob_residual = (exp(samp_logp)',
+  '                         - tail_mass_ratio * exp(train_head_logp))',
   '    logp_correction = (stop_gradient(head_prob_residual)',
   '                       * train_head_logp).sum()',
   '    return -advantage * (train_logp[sampled_token]',
@@ -74,7 +74,7 @@ export default gsapScene(({root,gsap,at,durations,parameters}) => {
     tl.to('.vc',{autoAlpha:1,scale:1,duration:.5,stagger:.025,ease:'power2.out'},T(0,.27))
     tl.to('.vh',{fill:'#4C72B0',duration:.5},T(0,.65))
     // The same vocabulary is compressed into a memory calculation; the grid stays visible at the side.
-    tl.to('.vocabulary-grid',{scale:.45,x:75,y:10,transformOrigin:'0 0',duration:1.2,ease:'power2.inOut'},T(1))
+    tl.to('.vocabulary-grid',{scale:.24,x:100,y:33,transformOrigin:'0 0',duration:1.2,ease:'power2.inOut'},T(1))
     tl.to(['.source-token','.picked','.expand-path','.vocab-label','.grid-scale'],{autoAlpha:0,duration:.4},T(1))
     tl.to('.bytes',{autoAlpha:1,duration:.5},T(1,.08))
     tl.to('.batch',{autoAlpha:1,duration:.5},T(1,.32))
@@ -94,7 +94,7 @@ export default gsapScene(({root,gsap,at,durations,parameters}) => {
     return tl
   }
   if (page === 'tail') {
-    const row=(cls:string,y:number,label:string,head:number,tail:number)=>`<g class="${cls}"><text x="13" y="${y-3}" class="isvg">${label}</text><rect x="13" y="${y}" width="${head*112}" height="8" rx="1" fill="#4C72B0"/><rect class="${cls}-tail" x="${13+head*112}" y="${y}" width="${tail*112}" height="8" rx="1" fill="var(--c-fit)"/><text x="${13+head*56}" y="${y+5.2}" text-anchor="middle" fill="white" class="isvg">头部 ${head.toFixed(1)}</text><text class="${cls}-tail-label" x="${13+head*112+tail*56}" y="${y+5.2}" text-anchor="middle" class="isvg">尾部 ${tail.toFixed(1)}</text></g>`
+    const row=(cls:string,y:number,label:string,head:number,tail:number)=>`<g class="${cls}"><text x="13" y="${y-3}" class="isvg" font-size="2.8">${label}</text><rect x="13" y="${y}" width="${head*112}" height="8" rx="1" fill="#4C72B0"/><rect class="${cls}-tail" x="${13+head*112}" y="${y}" width="${tail*112}" height="8" rx="1" fill="var(--c-fit)"/><text x="${13+head*56}" y="${y+5.2}" text-anchor="middle" fill="white" class="isvg" font-size="2.8">头部 ${head.toFixed(1)}</text><text class="${cls}-tail-label" x="${13+head*112+tail*56}" y="${y+5.2}" text-anchor="middle" class="isvg" font-size="2.8">尾部 ${tail.toFixed(1)}</text></g>`
     html=`
       <svg class="layer" ${LAYER}><g class="mass-bars">${row('qrow',26,'采样器 q',.8,.2)}${row('prow',47,'训练器 p',.7,.3)}</g></svg>
       <div class="ieq rho iorange" style="left:9cqw;top:65cqh">ρ = 0.2 / 0.3 = 2/3</div>
@@ -105,7 +105,7 @@ export default gsapScene(({root,gsap,at,durations,parameters}) => {
       <div class="ieq final-head" style="left:9cqw;top:55cqh">E<tspan>q̂</tspan>[s] = Σ<tspan>ₕ</tspan> (qᵥ − ρ pᵥ) sᵥ</div>
       <div class="ilabel approx-title" style="left:10cqw;top:24cqh">相同尾部质量，内部比例可能不同</div>
       <svg class="layer" ${LAYER}><g class="approx-bars">
-        <text x="17" y="35" class="isvg">真实 q 尾部</text><text x="88" y="35" class="isvg">重建 q̂ 尾部</text>
+        <text x="17" y="35" class="isvg" font-size="2.8">真实 q 尾部</text><text x="88" y="35" class="isvg" font-size="2.8">重建 q̂ 尾部</text>
         ${[.10,.06,.03,.01].map((v,i)=>`<rect x="${18+i*13}" y="${61-v*180}" width="8" height="${v*180}" fill="#C65D4A" rx="0.5"/>`).join('')}
         ${[.08,.06,.04,.02].map((v,i)=>`<rect x="${89+i*13}" y="${61-v*180}" width="8" height="${v*180}" fill="#4C72B0" rx="0.5"/>`).join('')}
         <line class="iline" x1="15" y1="61" x2="72" y2="61"/><line class="iline" x1="86" y1="61" x2="143" y2="61"/>
@@ -142,12 +142,12 @@ export default gsapScene(({root,gsap,at,durations,parameters}) => {
           <path d="M36 58 L36 44 L76 44" class="iline"/><path d="M119 58 L119 44 L84 44" class="iline"/>
           <rect x="16" y="58" width="40" height="10" rx="1.5" fill="var(--c-sunk)" stroke="var(--c-line-strong)" stroke-width="0.2"/>
           <rect x="96" y="58" width="46" height="10" rx="1.5" fill="var(--c-sunk)" stroke="var(--c-line-strong)" stroke-width="0.2"/>
-          <text x="36" y="64.5" text-anchor="middle" class="isvg">log p<tspan baseline-shift="sub">y</tspan></text>
-          <text x="119" y="64.5" text-anchor="middle" class="isvg">Σ q<tspan baseline-shift="sub">v</tspan> log p<tspan baseline-shift="sub">v</tspan></text>
-          <circle cx="80" cy="44" r="5" fill="var(--c-surface)" stroke="#087F78" stroke-width="0.4"/><text x="80" y="45.3" text-anchor="middle" class="isvg">−</text>
-          <path d="M80 39 L80 32" class="iline"/><text x="86" y="35" class="isvg">× (−R)</text>
+          <text x="36" y="64.5" text-anchor="middle" class="isvg" font-size="2.8">log p<tspan baseline-shift="sub">y</tspan></text>
+          <text x="119" y="64.5" text-anchor="middle" class="isvg" font-size="2.8">Σ q<tspan baseline-shift="sub">v</tspan> log p<tspan baseline-shift="sub">v</tspan></text>
+          <circle cx="80" cy="44" r="5" fill="var(--c-surface)" stroke="#087F78" stroke-width="0.4"/><text x="80" y="45.3" text-anchor="middle" class="isvg" font-size="2.8">−</text>
+          <path d="M80 39 L80 32" class="iline"/><text x="86" y="35" class="isvg" font-size="2.8">× (−R)</text>
         </g>
-        <g class="detached"><path d="M135 48 L119 58" stroke="#C65D4A" stroke-width="0.5" stroke-dasharray="1 1" fill="none"/><rect x="132" y="40" width="21" height="8" rx="1" fill="var(--c-surface)" stroke="#C65D4A" stroke-width="0.3"/><text x="142.5" y="45.2" text-anchor="middle" class="isvg-small">sg[q<tspan baseline-shift="sub">v</tspan>]</text><line x1="123" y1="49" x2="132" y2="56" stroke="#C65D4A" stroke-width="0.8"/></g>
+        <g class="detached"><path d="M135 48 L119 58" stroke="#C65D4A" stroke-width="0.5" stroke-dasharray="1 1" fill="none"/><rect x="132" y="40" width="21" height="8" rx="1" fill="var(--c-surface)" stroke="#C65D4A" stroke-width="0.3"/><text x="142.5" y="45.2" text-anchor="middle" class="isvg-small" font-size="2.1">sg[q<tspan baseline-shift="sub">v</tspan>]</text><line x1="123" y1="49" x2="132" y2="56" stroke="#C65D4A" stroke-width="0.8"/></g>
         <path class="back-sample iflow" d="M76 44 L36 44 L36 58"/>
         <path class="back-center iflow" d="M84 44 L119 44 L119 58"/>
       </svg>
