@@ -148,7 +148,7 @@ export default gsapScene(({root,gsap,at,durations,parameters}) => {
     tl.to('.qhat-total',{autoAlpha:1,duration:.4},T(1,.68))
     // Start the algebra beside the still-visible reconstruction; then clear the two reference
     // rows only once the new mathematical representation has actually been established.
-    tl.to('.mass-bars',{scale:.58,x:60,y:25,transformOrigin:'0 0',duration:.7,ease:'power2.inOut'},T(2))
+    tl.to('.mass-bars',{scale:.4,x:95,y:28,transformOrigin:'0 0',duration:.7,ease:'power2.inOut'},T(2))
     tl.to(['.rho','.scaled'],{autoAlpha:0,duration:.4},T(2))
     tl.to('.tail-sum',{autoAlpha:1,duration:.5},T(2,.02))
     tl.to('.all-zero',{autoAlpha:1,duration:.5},T(2,.2))
