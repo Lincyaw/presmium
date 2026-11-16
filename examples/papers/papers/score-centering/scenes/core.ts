@@ -220,7 +220,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
     html = txt(11, 21, '固定采样器', 'strong', 3.4) +
       line(20, 34, 143, 34) +
       '<circle class="fixedP" cx="31" cy="34" r="3.6" fill="none" stroke="var(--c-ink)" stroke-width=".7"/><rect x="96" y="31.5" width="5" height="5" fill="' + C.q + '"/>' +
-      txt(26, 29, 'p', 'fixedPLabel', 3.3) + txt(95, 29, 'q 固定', 'q', 3.3) +
+      txt(26, 29, 'p', 'fixedPLabel', 3.3) + txt(95, 29, 'q 固定', 'q fixedQLabel', 3.3) +
       '<g class="online">' + txt(11, 45, '随训练同步', 'strong', 3.4) +
       line(20, 57, 143, 57) + '<circle class="movingP" cx="31" cy="57" r="2" fill="var(--c-ink)"/>' +
       '<rect class="movingQ" x="48" y="54.5" width="5" height="5" fill="' + C.q + '"/>' +
