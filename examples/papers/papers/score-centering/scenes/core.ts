@@ -309,7 +309,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       line(64, 38, 64, 56, 'cap') + txt(56, 61, 'TIS 上界 2', 'capLabel', 3.2) +
       txt(13, 68, '乘法校正 → 大比率 → 截断偏差', '', 3.6) + '</g>' +
       txt(17, 18, '精确 IS', 'exactLabel', 3.2) +
-      txt(78, 57, '截断后再检查均值', 'clipLabel drift', 3.2)
+      txt(78, 57, 'E_q[w s] = −0.072', 'clipLabel drift', 3.2)
     start(html, '论文 §2.2、§4 · 罕见 token 部分为独立教学示例')
     hide('.answer,.rare,.clipLabel')
     tl.to('.scoreA', { attr: { d: path(95, 42, 95 + .5 / .6 * .5 * 70) }, duration: 1.5 }, T(0, .2))
