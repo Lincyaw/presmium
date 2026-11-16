@@ -180,7 +180,7 @@ export default gsapScene(({root,gsap,at,durations,parameters}) => {
         <path class="back-center iflow" d="M84 44 L119 44 L119 58"/>
       </svg>
       <div class="ilabel detach-label icoral" style="left:58cqw;top:37cqh">系数固定 · 保留 log p 的梯度</div>
-      <div class="ieq gradient" style="left:12cqw;top:69cqh">−∇L = R (s<tspan>ᵧ</tspan> − <span class="iblue">Σ qᵥ sᵥ</span>)</div>
+      <div class="ieq gradient" style="left:30cqw;top:56cqh;font-size:2.1cqw">−∇L = R (s<tspan>ᵧ</tspan> − <span class="iblue">Σ qᵥ sᵥ</span>)</div>
       <div class="imeta">论文附录 A.3 · 全词表损失</div>
     `
     frame(root,CSS,brand('Score Centering')+`<div class="ititle">${title}</div>`+html)
