@@ -25,6 +25,7 @@ concurrency:
 jobs:
   build:
     name: Desktop (${{ matrix.target }})
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'v')
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -85,7 +86,17 @@ jobs:
             "$bundle/macos/Presmium Studio.app/Contents/MacOS/presmium-node" -e 'require(process.argv[1]); console.log("Bundled Node loaded sharp")' "$PWD/$bundle/macos/Presmium Studio.app/Contents/Resources/runtime/node_modules/sharp"
             # Compressing straight from the folder leaves about half the file as unused gaps between chunks;
             # converting a plain image writes the chunks back to back. LZMA (ULMO) needs macOS 10.15 or later.
-            hdiutil create -volname "Presmium Studio" -srcfolder "$bundle/macos/Presmium Studio.app" -ov -format UDRW "$RUNNER_TEMP/presmium.dmg"
+            image_log="$RUNNER_TEMP/presmium-dmg.log"
+            for attempt in 1 2 3; do
+              if hdiutil create -volname "Presmium Studio" -srcfolder "$bundle/macos/Presmium Studio.app" -ov -format UDRW "$RUNNER_TEMP/presmium.dmg" > "$image_log" 2>&1; then
+                cat "$image_log"
+                break
+              fi
+              cat "$image_log"
+              if [ "$attempt" -eq 3 ] || ! grep -Fq 'Resource busy' "$image_log"; then exit 1; fi
+              rm -f "$RUNNER_TEMP/presmium.dmg"
+              sleep 5
+            done
             hdiutil convert "$RUNNER_TEMP/presmium.dmg" -format ULMO -ov -o "$bundle/dmg/Presmium Studio.dmg"
             rm "$RUNNER_TEMP/presmium.dmg"
           else
@@ -141,7 +152,7 @@ jobs:
   release:
     name: Publish installers
     # A push to main refreshes the rolling prerelease desktop-latest; a published release, or a dispatch with a tag, gets its own copies.
-    if: github.event_name == 'release' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
+    if: (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'v')) || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
     needs: build
     runs-on: ubuntu-24.04
     permissions:

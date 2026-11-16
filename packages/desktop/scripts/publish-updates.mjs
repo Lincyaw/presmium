@@ -51,6 +51,10 @@ if (old?.assets.some(asset => asset.name === 'latest.json')) {
   const bytes = execFileSync('gh', ['release', 'download', 'desktop-updates', '--pattern', 'latest.json', '--output', '-'], { encoding: 'utf8' })
   if (semver.gt(JSON.parse(bytes).version, version)) throw new Error('A newer update feed already exists')
 }
-if (!old) gh('release', 'create', 'desktop-updates', '--prerelease', '--latest=false', '--target', tag, '--title', 'Presmium Studio updates', '--notes', 'Signed desktop update feed.')
+if (!old) {
+  const commit = gh('api', `repos/{owner}/{repo}/commits/${tag}`, '--jq', '.sha')
+  if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(commit)) throw new Error('Cannot resolve the version tag to a full commit SHA')
+  gh('release', 'create', 'desktop-updates', '--prerelease', '--latest=false', '--target', commit, '--title', 'Presmium Studio updates', '--notes', 'Signed desktop update feed.')
+}
 gh('release', 'upload', 'desktop-updates', manifestFile, '--clobber')
 console.log(`Published verified update feed for ${version} (${expected.length} package formats)`)

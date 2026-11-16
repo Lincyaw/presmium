@@ -160,4 +160,12 @@ that draft only after all platform builds pass and all immutable assets upload; 
 promoting the feed. Its repository-scoped `GITHUB_TOKEN` avoids recursively triggering another release build.
 Direct publisher use requires `--publish-draft` and the explicit `RELEASE_TAG` environment variable to publish a draft. Before any upload or publication, that selected tag must equal the verified packages' version tag.
 
+When initializing `desktop-updates`, resolve the selected version tag to a full commit SHA for GitHub's
+`target_commitish`; a tag name is not an accepted substitute when creating that new tag. After all
+installers pass, a publisher-only retry reuses those immutable files and must not rebuild or re-sign them.
+Image creation retries only the observed macOS `Resource busy` condition, at most three attempts, preserving
+the built app. Other failures remain failures; cleanup removes only the job's own partial image.
+Release events build version tags beginning with `v`; publishing the feed or rolling-preview infrastructure
+must not recursively build another client.
+
 Pin each CI checkout to the triggering commit (`github.sha`), or the explicitly selected immutable release tag, rather than a moving branch reference. All platform artifacts must come from the same verified source.

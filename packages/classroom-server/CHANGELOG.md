@@ -1,5 +1,11 @@
 # @lincyaw/classroom-server
 
+## 1.0.0-rc.105
+
+### Patch Changes
+
+- @lincyaw/kernel@1.0.0-rc.105
+
 ## 1.0.0-rc.104
 
 ### Patch Changes
