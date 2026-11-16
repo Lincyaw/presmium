@@ -346,6 +346,8 @@ PDF、图片与 PowerPoint 中组件显示 IR 的 `fallback`（`useStaticRender(
 | `presmium mcp tools`、`call` | `mcp` | 在命令行中列出、调用当前目录正在运行的服务的 MCP 工具：结果以 JSON 写到标准输出，图片用 `--out` 存为 PNG 文件；工具失败时退出码为 1，没有服务时为 2；名为 `tools` 或 `call` 的文稿目录写作 `presmium mcp ./tools` |
 | `presmium-language-server` | `language-server` | 语言服务 |
 
+讲授视频逐帧等待步骤时钟、场景准备、浏览器绘制与字体加载，再通过 Playwright 的公开 CDP 会话调用 Chromium 的 `Page.captureScreenshot`，采用 `optimizeForSpeed` 的无损 PNG 压缩。只截取配置的视口，分辨率、帧率、字幕与编码参数不随加速改变；截图超时结束任务，关闭浏览器前释放会话。浏览器 WebM 后备与 FFmpeg 共用这条截图路径。
+
 ## 9. 已知风险
 
 ### 9.1 框架内部接口

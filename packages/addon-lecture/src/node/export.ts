@@ -170,15 +170,31 @@ interface Page {
   waitForFunction(fn: string, arg?: unknown, options?: { timeout?: number }): Promise<unknown>
   evaluate<R, A>(fn: (arg: A) => R | Promise<R>, arg: A): Promise<R>
   exposeFunction(name: string, fn: (...args: never[]) => unknown): Promise<void>
-  screenshot(options: { type: 'png' }): Promise<Buffer>
   on(event: 'console' | 'pageerror', listener: (value: { text?(): string, message?: string }) => void): void
+}
+
+interface CaptureSession {
+  send(method: 'Page.captureScreenshot', options: { format: 'png', fromSurface: true, captureBeyondViewport: false, optimizeForSpeed: true }): Promise<{ data: string }>
+  detach(): Promise<void>
 }
 
 interface Chromium {
   launch(): Promise<{
-    newContext(options: Record<string, unknown>): Promise<{ newPage(): Promise<Page> }>
+    newContext(options: Record<string, unknown>): Promise<{ newPage(): Promise<Page>, newCDPSession(page: Page): Promise<CaptureSession> }>
     close(): Promise<void>
   }>
+}
+
+/** Lossless PNG with faster compression; the viewport and its pixels stay unchanged. */
+async function capturePng(session: CaptureSession): Promise<Buffer> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    const result = await Promise.race([
+      session.send('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false, optimizeForSpeed: true }),
+      new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('video frame capture timed out')), 30_000) }),
+    ])
+    return Buffer.from(result.data, 'base64')
+  } finally { clearTimeout(timer) }
 }
 
 // ISO 639-2/T codes of the languages a lecture's captions are likely in (Matroska names a track's language so).
@@ -289,6 +305,7 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
         const pcm = join(work, 'export-audio.pcm')
         const handle = await open(ffmpeg ? pcm : file, 'w')
         let native: FfmpegEncoder | undefined
+        let capture: CaptureSession | undefined
         try {
           const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1, reducedMotion: 'reduce', serviceWorkers: 'block' })
           const [player, encoder] = [await context.newPage(), await context.newPage()]
@@ -296,6 +313,13 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
           for (const page of [player, encoder]) page.on('pageerror', error => failures.push(String(error.message)))
           await player.goto(`${server.url}${web.base}?view=lecture&track=${encodeURIComponent(id)}&export${burn ? `&captions=${encodeURIComponent(burn)}` : ''}`)
           await player.waitForFunction('Boolean(window.presmiumLecture)', undefined, { timeout: 120_000 })
+          // Match Playwright's screenshot caret hiding, once rather than preparing each screenshot again.
+          await player.evaluate(() => {
+            const style = document.createElement('style')
+            style.textContent = '* { caret-color: transparent !important; }'
+            document.head.append(style)
+          }, undefined)
+          capture = await context.newCDPSession(player)
           const duration = Math.max(trackDuration(track), await player.evaluate(() => (window as unknown as Hooks).presmiumLecture.duration, undefined))
           const frames = Math.max(1, Math.ceil(duration * fps / 1000))
           await encoder.exposeFunction('presmiumWrite', async (position: number, data: string) => {
@@ -338,11 +362,14 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
           for (let i = 0; i < frames; i++) {
             options.signal?.throwIfAborted()
             const at = Math.round(i * 1000 / fps)
-            await player.evaluate(t => (window as unknown as Hooks).presmiumLecture.advance(t), at).catch((error: unknown) => {
+            await player.evaluate(async t => {
+              await (window as unknown as Hooks).presmiumLecture.advance(t)
+              await document.fonts.ready
+            }, at).catch((error: unknown) => {
               throw new Error(`the frame at ${clockText(at)} cannot be drawn: ${errorMessage(error).replace(/^page\.evaluate: (Error: )?/, '')}`)
             })
             // PNG: a JPEG frame would blur the text before the encoder sees it.
-            const png = await player.screenshot({ type: 'png' })
+            const png = await capturePng(capture)
             if (native) await native.frame(png)
             else await encoder.evaluate(([data, n]) => (window as unknown as Hooks).presmiumEncoder.frame(data, n), [png.toString('base64'), i] as [string, number])
             if (failures.length) throw new Error(failures.join('\n'))
@@ -366,6 +393,7 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
           return { file, track: id, frames, duration: frames * 1000 / fps, captions: sidecars, ...sheet ? { contactSheet: sheet } : {}, warnings }
         } finally {
           native?.kill()
+          await capture?.detach().catch(() => {})
           await handle.close()
         }
       } finally {

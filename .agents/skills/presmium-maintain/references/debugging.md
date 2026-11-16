@@ -86,6 +86,14 @@ visible result.
   validation to reach the goal.
 - Measure with one worker and the default resource budget; report the real system load. A small document or
   the best round does not prove every case.
+- For video export, run `node scripts/bench-lecture-export.mjs <document> --start-ms <time> --frames 60 --rounds 2 --output <file>.json`.
+  It builds an isolated static lecture without generating speech. Compare step advancement, font readiness and
+  ordinary versus fast lossless PNG capture separately, alternating capture order at identical frame times.
+  Check decoded RGBA equality on animated formulas, page boundaries and original figures with captions, then
+  measure a real encoded export as well. Keep resolution, frame rate and encoder settings unchanged. Never
+  benchmark by starting a second export in the active document's fixed export directory. Each benchmark round
+  needs a fresh browser context: lecture advancement is forward-only and two players in one context share
+  position broadcasts. Do not remove scene readiness or frame barriers to improve a timing number.
 - Preview loading: Vite dependency pre-bundling finishes in one round (`DEBUG=vite:deps` shows no "new
   dependencies found").
 - Consecutive saves cancel the old compile and publish only the latest result.

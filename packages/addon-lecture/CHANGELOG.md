@@ -1,5 +1,11 @@
 # @lincyaw/addon-lecture
 
+## 1.0.0-rc.108
+
+### Patch Changes
+
+- Speed up lecture video rendering with Chromium's fast lossless PNG capture, preserving frame pixels, resolution, frame rate and encoding quality. Keep scene and font readiness barriers and bound capture timeouts.
+
 ## 1.0.0-rc.107
 
 No changes in this release.
