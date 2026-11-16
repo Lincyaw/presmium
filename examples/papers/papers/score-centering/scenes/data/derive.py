@@ -19,6 +19,7 @@ data={
  "centeredUpdate":sum(a*r*s for a,r,s in zip(q,reward,centered)),
  "onPolicyUpdate":sum(a*r*s for a,r,s in zip(p,reward,score)),
  "rho":(1-.8)/(1-.7)},
+ "rareToken":{"p":[.1,.9],"q":[.01,.99],"score":[.9,-.1],"ratio":[10,.9/.99],"tisWeight":[2,.9/.99],"clippedMean":.01*2*.9+.99*(.9/.99)*(-.1)},
  "storage":{"vocabulary":152000,"bytesPerValue":4,"bytesPerToken":152000*4,
  "rollouts":1024,"length":32768,"decimalTB":152000*4*1024*32768/1e12},
  "paper":{"source":"arXiv:2609.20807v1, section5.4; appendixA.1,A.4,B",
