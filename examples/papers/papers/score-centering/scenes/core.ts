@@ -341,7 +341,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       arrow('weightedA', 79, 34, 123, C.tis) +
       arrow('weightedB', 79, 50, 52, C.tis) +
       token(15, 34, 'A') + token(15, 50, 'B') +
-      txt(27, 35, 'w_A s_A', 'formula weightedALabel', 3.5) + txt(27, 51, 'w_B s_B', 'formula weightedBLabel', 3.5) +
+      txt(85, 29, 'w_A s_A', 'formula weightedALabel', 3.5) + txt(30, 45, 'w_B s_B', 'formula weightedBLabel', 3.5) +
       line(79, 27, 79, 57) +
       '<g class="mean">' + arrow('weightedMean', 79, 61, 89, C.drift) +
       txt(92, 62, 'm = E_q[w s]', 'formula drift', 3.4) + '</g>' +
