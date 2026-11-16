@@ -42,6 +42,7 @@ function header(): Node {
 }
 
 function render(state: LauncherState, error?: LaunchError): void {
+  root.classList.remove('launcher--starting')
   const open = element('button', { type: 'button', className: 'pm-ui-button pm-ui-button--primary' }, icon('folder'), t.open)
   open.addEventListener('click', () => void choose(state))
   const nodes: Node[] = [header(), element('p', { className: 'launcher__lead' }, t.lead)]
@@ -72,6 +73,7 @@ function render(state: LauncherState, error?: LaunchError): void {
 }
 
 function renderStarting(path: string): void {
+  root.classList.add('launcher--starting')
   root.replaceChildren(header(), element('p', { className: 'launcher__status', role: 'status' },
     element('span', { innerHTML: iconMarkup('loading'), ariaHidden: 'true', className: 'pm-ui-loading launcher__icon' }), t.starting(folderName(path))))
 }

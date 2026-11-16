@@ -1,3 +1,4 @@
+import { useStartupReady } from './startup.ts'
 import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
 import { AgentActivityBar, DocumentView, HomePanel, PmDialog, PmIcon, PmMenu, SHORTCUTS, useWorkbenchState, WorkbenchApprovals, WorkbenchProvider } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
@@ -137,6 +138,7 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
   const info = useStore(state => state.layoutInfo)
   const activePanel = usePanelInfo(panel => panel.activePanelId)
   const t = useClientMessages(workbench)
+  useStartupReady(workbench)
   const document_ = useWorkbenchState(state => state.document)
   const retainedDocument = useRef(false)
   if (document_ !== undefined) retainedDocument.current = true

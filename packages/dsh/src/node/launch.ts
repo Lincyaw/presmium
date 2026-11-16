@@ -166,16 +166,32 @@ export function writeProfile(dshHome: string, name: string, carrier: Carrier, bu
   const dir = join(dshHome, 'profiles', name)
   mkdirSync(join(dir, 'node_modules', '@lincyaw'), { recursive: true })
   mkdirSync(join(dshHome, 'agents'), { recursive: true })
-  writeFileSync(join(dir, 'package.json'), `${JSON.stringify({
+  const writeChanged = (file: string, content: string) => {
+    if (!existsSync(file) || readFileSync(file, 'utf8') !== content) writeFileSync(file, content)
+  }
+  const manifestFile = join(dir, 'package.json')
+  const saved = existsSync(manifestFile) ? JSON.parse(readFileSync(manifestFile, 'utf8')) : {}
+  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) throw new TypeError('Invalid profile package manifest')
+  const required = ['@deepseek-ai/dsh-base', CARRIERS[carrier], PACKAGE_NAME]
+  const extra = Array.isArray(saved.dsh?.profile?.bundles) ? saved.dsh.profile.bundles.filter((bundle: unknown) => typeof bundle === 'string' && !required.includes(bundle) && !Object.values(CARRIERS).includes(bundle as string)) : []
+  writeChanged(manifestFile, `${JSON.stringify({
+    ...saved,
     name: `dsh-profile-${name}`,
     private: true,
-    dependencies: {},
-    dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', CARRIERS[carrier], PACKAGE_NAME] } },
+    dependencies: saved.dependencies ?? {},
+    dsh: { ...saved.dsh, profile: { ...saved.dsh?.profile, bundles: [...required, ...extra] } },
   }, null, 2)}\n`)
-  writeFileSync(join(dir, 'cordis.yml'), '# The profile root: an empty entry list; the tree is composed from the bundles and the patches.\n[]\n')
+  const root = join(dir, 'cordis.yml')
+  // The Host normalizes this root's comments; keep its file and the author's installed plugins intact.
+  if (!existsSync(root)) writeFileSync(root, '# The profile root: an empty entry list; the tree is composed from the bundles and the patches.\n[]\n')
   if (!existsSync(join(dir, 'cordis.patch.yml'))) writeFileSync(join(dir, 'cordis.patch.yml'), '# Your patch layer for this profile (Presmium\'s settings are passed with --patch after it).\n[]\n')
   const link = join(dir, 'node_modules', PACKAGE_NAME)
-  rmSync(link, { force: true, recursive: true })
-  symlinkSync(realpathSync(bundle), link, 'junction')
+  const target = realpathSync(bundle)
+  let current: string | undefined
+  try { current = realpathSync(link) } catch {}
+  if (current !== target) {
+    rmSync(link, { force: true, recursive: true })
+    symlinkSync(target, link, 'junction')
+  }
   return dir
 }

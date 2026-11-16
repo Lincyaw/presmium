@@ -23,7 +23,7 @@ for (const [folder, extension, platform] of bundles) {
   if (files.length !== 1) throw new Error(`Expected exactly one ${extension} package in ${dir}`)
   const source = join(dir, files[0])
   execFileSync(process.execPath, [process.env.npm_execpath, '--filter', 'presmium-desktop', 'tauri', 'signer', 'sign', '--app-version', version, '--password', process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD ?? '', source], { cwd: root, stdio: 'inherit' })
-  execFileSync('cargo', ['run', '--release', '--features', 'tauri/custom-protocol', '--locked', '--manifest-path', join(root, 'packages/desktop/src-tauri/Cargo.toml'), '--example', 'verify-update', '--', version, source], { cwd: root, stdio: 'inherit' })
+  execFileSync('cargo', ['run', '--release', '--features', 'tauri/custom-protocol', '--locked', '--example', 'verify-update', '--', version, source], { cwd: join(root, 'packages/desktop/src-tauri'), stdio: 'inherit' })
   const name = `Presmium-Studio-${version}-${target}${extension}`
   copyFileSync(source, join(out, name)); copyFileSync(`${source}.sig`, join(out, `${name}.sig`))
   platforms[platform] = { signature: readFileSync(`${source}.sig`, 'utf8').trim(), url: `https://github.com/Lincyaw/presmium/releases/download/v${version}/${name}` }

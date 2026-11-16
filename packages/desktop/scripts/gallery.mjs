@@ -1,10 +1,29 @@
 // A self-contained source snapshot for the installer's first workspace.
 import { execFileSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('../../..', import.meta.url))
+
+// Tauri recopies resources into its target on each build. Git creates read-only objects;
+// these generated baseline files must remain replaceable in that build cache.
+export function makeGalleryGitWritable(target) {
+  const git = join(target, '.git')
+  if (!existsSync(target) || !existsSync(git)) return
+  if (!lstatSync(target).isDirectory() || !lstatSync(git).isDirectory()) return
+  const visit = dir => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const file = join(dir, entry.name)
+      if (entry.isDirectory()) visit(file)
+      else if (entry.isFile()) {
+        const mode = lstatSync(file).mode
+        if (!(mode & 0o200)) chmodSync(file, (mode & 0o777) | 0o200)
+      }
+    }
+  }
+  visit(git)
+}
 
 export function gallery(target) {
   const source = join(root, 'examples/gallery')
@@ -62,4 +81,5 @@ This editable gallery is prepared on the desktop app's first launch. Open a docu
   git(['add', '-A'])
   git(['commit', '-q', '-m', 'Presmium example workspace'])
   rmSync(hooks, { recursive: true })
+  makeGalleryGitWritable(target)
 }

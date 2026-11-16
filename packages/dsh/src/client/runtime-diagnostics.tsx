@@ -221,7 +221,7 @@ export function RuntimeDiagnosticsNotice({ workbench, fatal = false }: { workben
 export class WorkbenchRuntimeBoundary extends Component<{ workbench: Workbench, children: ReactNode }, { failed: boolean }> {
   state = { failed: false }
   static getDerivedStateFromError() { return { failed: true } }
-  componentDidCatch(error: Error): void { runtimeDiagnostics(this.props.workbench).capture(error) }
+  componentDidCatch(error: Error): void { runtimeDiagnostics(this.props.workbench).capture(error); window.dispatchEvent(new Event('presmium:startup-failed')) }
   render() {
     return this.state.failed ? <main className="pmw-runtime-fallback pm-ui"><RuntimeDiagnosticsNotice workbench={this.props.workbench} fatal /></main> : this.props.children
   }

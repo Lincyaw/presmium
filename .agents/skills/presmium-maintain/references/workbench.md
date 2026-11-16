@@ -11,6 +11,19 @@ dsh is configured as a tree of **rows** (one plugin each, with configuration and
 `ui-layout`). Presmium's changes are `packages/dsh/cordis.patch.yml` (host) and
 `packages/dsh/web.patch.yml` (web client).
 
+## Startup ownership
+
+Dispatch Studio before loading unrelated CLI compiler/export dependencies. Retain saved profile roots,
+installed dependencies and extra bundles; write unchanged manifests and dependency links only when needed.
+Default local UI listeners remember each canonical workspace's last successful port, falling back to 4320
+and then an available port; explicit listener options retain their semantics.
+
+The printed URL signals backend readiness. Inject the product startup layer through public `tapIndex`,
+with same-origin external assets. Release it only when the document list has loaded or reached a
+retryable failure; loading an AI session is independent. The fallback layout starts that read even before
+its Centre mounts. Use native dialog isolation and remove only the startup layer's own DOM/listeners.
+Keep retry and the untouched framework diagnostic escape available, including no-JavaScript mode.
+
 ## Event transport
 
 When Studio owns its workspace service, it defaults HTTP MCP to fixed port 4321. External MCP credentials are persisted per canonical launch directory under the Studio state home, independently of installation profiles; internal service and session tokens remain separate. When another workspace holds 4321 and no `--preview-port` was given, Studio starts on a free port and says the MCP address differs this time; an occupied explicit port fails; an explicit zero requests a temporary port. With default local listener settings, a later Studio borrows its workspace's existing service and retains its URL and MCP credential. Studio issues Harness sessions through the service's separate launcher credential; do not use the MCP owner's token as launcher authorization. Borrowing is unavailable for explicit `--host`, `--preview-port` or `--preview-url` settings and for older services lacking the launcher credential. Closing a borrower leaves the host running. Closing its original stdio owner ends the borrowed service and Studio; do not claim reference-counted ownership or automatic Studio host migration. Check real HTTP calls and lifecycle ownership when changing this boundary (`docs/studio.md`, sections 5.2, 9 and 11).

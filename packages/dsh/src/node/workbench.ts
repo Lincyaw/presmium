@@ -1,3 +1,4 @@
+import { startupAssets, startupIndex } from './startup.ts'
 import { LOCAL_AUTHOR } from '@lincyaw/kernel'
 import type { DshContext, DshOtelScalar } from './dsh-types.ts'
 import type { OperationClient, OperationRecord, PresmiumTelemetry } from './telemetry.ts'
@@ -8,10 +9,10 @@ export const inject = ['presmium', 'connection', 'webServer', 'presmiumTelemetry
 const ICON = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#0F5F5C"/><path d="M11 8h7.5a6.5 6.5 0 0 1 0 13H15v4h-4zM15 12v5h3.5a2.5 2.5 0 0 0 0-5z" fill="#F7F5F0" fill-rule="evenodd"/></svg>')}`
 
 export function brandIndex(html: string): string {
-  return html
+  return startupIndex(html
     .replace(/<title>[^<]*<\/title>/, '<title>Presmium</title>')
     .replace(/<link rel="(?:icon|manifest)"[^>]*>\s*/g, '')
-    .replace('</head>', `<link rel="icon" type="image/svg+xml" href="${ICON}" />\n</head>`)
+    .replace('</head>', `<link rel="icon" type="image/svg+xml" href="${ICON}" />\n</head>`))
 }
 
 interface WebServer {
@@ -48,6 +49,12 @@ export function readOperations(body: unknown): { client: OperationClient, record
 
 export function apply(ctx: DshContext & { webServer: WebServer, presmiumTelemetry: PresmiumTelemetry }): void {
   ctx.effect(() => ctx.webServer.tapIndex(brandIndex))
+  ctx.connection.fetch.register({ path: '/api/presmium/startup.js', methods: ['GET'], requestBody: 'buffered', async fetch() {
+    return new Response(startupAssets().script, { headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=31536000, immutable' } })
+  } })
+  ctx.connection.fetch.register({ path: '/api/presmium/startup.css', methods: ['GET'], requestBody: 'buffered', async fetch() {
+    return new Response(startupAssets().css, { headers: { 'content-type': 'text/css; charset=utf-8', 'cache-control': 'public, max-age=31536000, immutable' } })
+  } })
   ctx.connection.fetch.register({
     path: '/api/presmium/context', methods: ['POST'], requestBody: 'buffered',
     async fetch(request) {

@@ -1,4 +1,5 @@
 :root {
+  --pm-z-startup: 10000;
   color-scheme: light;
 
   /* QR codes retain contrast in both appearance modes. */

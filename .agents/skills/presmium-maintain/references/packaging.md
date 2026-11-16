@@ -102,13 +102,17 @@ acceptance. Details are in `packages/vscode/README.md`.
 `pnpm --filter presmium-desktop build` gathers the Node that runs the build as the sidecar `presmium-node`, a
 `pnpm deploy` of `@lincyaw/presmium` as the resource `runtime/`, and the launcher page, then runs `tauri build`
 for this machine's platform; `pnpm --filter presmium-desktop dev` opens it unbundled. The app starts
-`presmium studio <workspace>` itself and opens the address it prints; Studio and dsh are not changed for it.
+`presmium studio <workspace>` itself and opens the address it prints. Reopening its live current workspace
+focuses it without restarting; returning from the launcher shares the same sign-in recovery path. The
+example initializer is skipped when the existing configuration and runtime dependency link are valid.
 Linux needs the WebKitGTK 4.1 development packages to compile. `scripts/prepare.mjs` drops what nothing reads at run time (source
 maps, type declarations, `.pdb` files, package tests and demos, node-pty binaries of other platforms); CI packs the
 deb with xz and the DMG with LZMA through `hdiutil convert`, since compressing straight from the folder leaves half
 the file unused.
 
 The installer also carries `build/gallery/` (a dereferenced copy of `examples/gallery`, its assets and committed speech caches, with initial Git history) and the Node initializer `build/gallery.mjs`. With no recent workspace, the launcher automatically opens `gallery-workspace` in the app's local data directory. The initializer copies atomically and links dependencies to the bundled runtime; it preserves an existing copy and author edits on upgrades. Later launches reopen the last workspace; the workspace menu switches to another directory. Editing and history still use the system's Git. Changes to the gallery or its linked skill sources trigger desktop builds.
+
+Generated gallery Git objects are owner-writable so Tauri can replace resource copies on repeated builds. Preparation also repairs only those generated `target/{debug,release}/gallery/.git` caches, respecting `CARGO_TARGET_DIR`; it never changes an author's repository. Verify a second real build, including the updater verifier's Cargo invocation.
 
 The snapshot's `tsconfig.json` is standalone: merge the repository base compiler options at packaging time, retaining the gallery's own fields. The initializer repairs the early snapshot's exact `../../tsconfig.base.json` reference only when its target is missing, preserving author compiler options. Verify a real animation scenario from outside the repository as well as the prose tutorial.
 

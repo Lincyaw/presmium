@@ -58,3 +58,10 @@ body {
   display: inline-flex;
   flex: none;
 }
+
+.launcher--starting {
+  min-height: 100vh;
+  align-content: center;
+  justify-items: center;
+  gap: var(--pm-space-3);
+}

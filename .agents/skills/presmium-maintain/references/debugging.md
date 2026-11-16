@@ -11,6 +11,10 @@ persistent log path (default `~/.local/state/presmium/studio/presmium-studio-<ha
 
 - A backend preview `ready` only means the address is ready; the browser may still be loading or in the
   handshake.
+- Separate CLI initialization, backend address readiness and browser usability. Read the browser's
+  `data-pm-startup-ready-ms` on the document root for the final document-list handoff; it excludes
+  earlier native/backend startup. Compare cold and warm opens separately. Verify new-user Welcome,
+  retry/details on early failure, no-script escape and keyboard isolation as well as ordinary reload.
 - dsh output is only in the log file and contains the login token; never copy tokens or cookies into a report.
 - On `dsh web authentication required`, tell 401 (authentication) from 403 (Host/Origin) and use the
   current full launch URL (`docs/debugging.md` section 2).

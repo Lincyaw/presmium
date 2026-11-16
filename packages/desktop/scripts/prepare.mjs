@@ -2,10 +2,10 @@
 // `presmium-node`), the installed `@lincyaw/presmium` with Studio (`build/runtime`), and the launcher page (`build/ui`).
 import { execFileSync, spawnSync } from 'node:child_process'
 import { chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
-import { gallery } from './gallery.mjs'
+import { gallery, makeGalleryGitWritable } from './gallery.mjs'
 
 const pkg = fileURLToPath(new URL('..', import.meta.url))
 const root = fileURLToPath(new URL('../../..', import.meta.url))
@@ -121,6 +121,9 @@ async function launcher() {
 }
 
 const only = process.argv[2]
+// Repair generated caches from earlier builds too; never alter an author's workspace.
+const cargoTarget = resolve(pkg, 'src-tauri', process.env.CARGO_TARGET_DIR || 'target')
+for (const profile of ['debug', 'release']) makeGalleryGitWritable(join(cargoTarget, profile, 'gallery'))
 if (!only || only === 'node') await nodeRuntime()
 if (!only || only === 'ui') await launcher()
 if (!only || only === 'runtime') runtime()

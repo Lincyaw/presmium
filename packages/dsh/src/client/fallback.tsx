@@ -1,3 +1,4 @@
+import { useStartupReady } from './startup.ts'
 import { AgentActivityBar, DocumentView, HistoryPanel, HomePanel, PreviewPanel, useWorkbench, useWorkbenchState, WorkbenchProvider, WorkbenchApprovals } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
 import { useRef } from 'react'
@@ -11,6 +12,7 @@ export const FALLBACK_PANEL = 'presmium'
 
 function Centre() {
   const workbench = useWorkbench()
+  useStartupReady(workbench)
   const document_ = useWorkbenchState(state => state.document)
   const retainedDocument = useRef(false)
   if (document_ !== undefined) retainedDocument.current = true

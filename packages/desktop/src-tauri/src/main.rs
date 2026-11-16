@@ -85,6 +85,15 @@ fn main_window(app: &AppHandle) -> Option<WebviewWindow> {
     app.get_webview_window(MAIN)
 }
 
+fn navigate_studio(app: &AppHandle, workspace: &Path, url: Url) {
+    *app.state::<Desktop>().signing_in.lock().unwrap() = Some(url.origin().ascii_serialization());
+    let name = workspace.file_name().map(|name| name.to_string_lossy().to_string()).unwrap_or_default();
+    if let Some(window) = main_window(app) {
+        let _ = window.set_title(&format!("{name} — {}", messages::current().title));
+        let _ = window.navigate(url);
+    }
+}
+
 fn stop_studio(app: &AppHandle) {
     if let Some(running) = app.state::<Desktop>().running.lock().unwrap().take() { running.stop(); }
 }
@@ -93,9 +102,30 @@ fn example_workspace(app: &AppHandle) -> Option<PathBuf> {
     app.path().app_local_data_dir().ok().map(|dir| dir.join("gallery-workspace"))
 }
 
+fn current_workspace(app: &AppHandle, workspace: &Path) -> Option<String> {
+    let canonical = std::fs::canonicalize(workspace).ok()?;
+    let desktop = app.state::<Desktop>();
+    let running = desktop.running.lock().unwrap();
+    running.as_ref().filter(|running| std::fs::canonicalize(&running.workspace).ok().as_ref() == Some(&canonical) && running.is_alive()).map(|running| running.url.clone())
+}
+
 fn prepare_examples(app: &AppHandle, runtime: &studio::Runtime, workspace: &Path) -> Result<(), studio::LaunchError> {
     if example_workspace(app).as_deref() != Some(workspace) {
         return Ok(());
+    }
+    // Most opens need neither a Node process nor a copy. Still repair legacy configs and moved app links.
+    if workspace.join("presmium.workspace.yaml").is_file() {
+        let link = workspace.join("node_modules");
+        let linked = std::fs::symlink_metadata(&link).ok().is_some_and(|stat| {
+            if stat.file_type().is_symlink() {
+                let expected = app.path().resource_dir().ok().and_then(|dir| std::fs::canonicalize(dir.join("runtime/node_modules")).ok());
+                expected.is_some() && std::fs::canonicalize(&link).ok() == expected
+            } else { stat.is_dir() }
+        });
+        let legacy = std::fs::read_to_string(workspace.join("tsconfig.json")).ok()
+            .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
+            .is_some_and(|config| config.get("extends").and_then(|value| value.as_str()) == Some("../../tsconfig.base.json") && !workspace.join("../../tsconfig.base.json").is_file());
+        if linked && !legacy { return Ok(()); }
     }
     let prepare = || -> std::io::Result<()> {
         let resources = app.path().resource_dir().map_err(std::io::Error::other)?;
@@ -161,6 +191,16 @@ async fn choose_workspace(app: AppHandle) -> Option<String> {
 #[tauri::command]
 async fn open_workspace(app: AppHandle, path: String) -> Result<(), String> {
     let workspace = PathBuf::from(&path);
+    if let Some(url) = current_workspace(&app, &workspace) {
+        if let Some(window) = main_window(&app) {
+            let launcher = app.state::<Desktop>().launcher.lock().unwrap().clone();
+            if window.url().ok().zip(launcher).is_some_and(|(current, launcher)| current.origin() == launcher.origin()) {
+                if let Ok(url) = Url::parse(&url) { navigate_studio(&app, &workspace, url); }
+            }
+            let _ = window.set_focus();
+        }
+        return Ok(());
+    }
     let runtime = runtime(&app).ok_or_else(|| studio::LaunchError::StartFailed.code().to_string())?;
     let handle = app.clone();
     let started = tauri::async_runtime::spawn_blocking(move || {
@@ -199,15 +239,11 @@ async fn open_workspace(app: AppHandle, path: String) -> Result<(), String> {
     let (generation, running) = started.map_err(|error| error.code().to_string())?;
     let url = Url::parse(&running.url).map_err(|_| studio::LaunchError::StartFailed.code().to_string())?;
     remember(&app, &running.workspace);
-    let name = running.workspace.file_name().map(|name| name.to_string_lossy().to_string()).unwrap_or_default();
+    let workspace = running.workspace.clone();
     let desktop = app.state::<Desktop>();
     *desktop.running.lock().unwrap() = Some(running);
     desktop.current.store(generation, Ordering::SeqCst);
-    *desktop.signing_in.lock().unwrap() = Some(url.origin().ascii_serialization());
-    if let Some(window) = main_window(&app) {
-        let _ = window.set_title(&format!("{name} — {}", messages::current().title));
-        let _ = window.navigate(url);
-    }
+    navigate_studio(&app, &workspace, url);
     Ok(())
 }
 
@@ -341,7 +377,11 @@ fn main() {
                 let app = app.clone();
                 app.dialog().file().set_title(messages::current().open_workspace).pick_folder(move |picked| {
                     if let Some(path) = picked.and_then(|picked| picked.into_path().ok()) {
-                        show_launcher(&app, &[("workspace", &path.to_string_lossy())]);
+                        if current_workspace(&app, &path).is_some() {
+                            if let Some(window) = main_window(&app) { let _ = window.set_focus(); }
+                        } else {
+                            show_launcher(&app, &[("workspace", &path.to_string_lossy())]);
+                        }
                     }
                 });
             }

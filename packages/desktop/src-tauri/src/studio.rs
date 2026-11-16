@@ -50,6 +50,10 @@ pub struct Running {
 }
 
 impl Running {
+    pub fn is_alive(&self) -> bool {
+        matches!(self.child.lock().unwrap().try_wait(), Ok(None))
+    }
+
     pub fn stop(self) {
         *self.stopping.lock().unwrap() = true;
         let mut child = self.child.lock().unwrap();

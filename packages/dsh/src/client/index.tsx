@@ -77,6 +77,8 @@ export function apply(ctx: DshClientContext): void {
   }, 'presmium: light and dark')
 
   if (nativeLayout) {
+    // Its default conversation view does not mount HomePanel, so the host owns this first read.
+    void workbench.loadDocuments()
     registerFallbackLayout(ctx, workbench)
   } else {
     ctx.effect(() => {
