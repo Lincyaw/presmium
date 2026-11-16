@@ -47,7 +47,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
   let count = 3
   const css = [
     '.heading{position:absolute;left:6cqw;top:10cqh;right:5cqw;font-size:3cqw;font-weight:780;line-height:1.2}',
-    '.source{position:absolute;left:6cqw;top:72cqh;font-size:1.15cqw;color:var(--c-muted)}',
+    '.source{position:absolute;right:3cqw;top:3cqh;max-width:58cqw;font-size:.9cqw;line-height:1.4;text-align:right;color:var(--c-muted)}',
     'svg text{font-variant-numeric:tabular-nums}',
     '.q{color:' + C.q + '} .drift{color:' + C.drift + '} .signal{color:' + C.signal + '}',
     '.formula{font-family:var(--pm-font-mono);font-weight:650}',
