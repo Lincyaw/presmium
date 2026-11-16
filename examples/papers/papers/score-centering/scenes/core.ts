@@ -8,8 +8,9 @@ const C = { q: '#4C72B0', drift: '#C65D4A', signal: '#087F78', tis: '#DD8452', p
 const txt = (x: number, y: number, value: string, cls = '', size = 3.2) =>
   '<text class="' + cls + '" x="' + x + '" y="' + y + '" font-size="' + size + '">' + escape(value) + '</text>'
 const path = (x: number, y: number, end: number) => {
-  const sign = end >= x ? 1 : -1
-  return 'M ' + x + ' ' + y + ' L ' + end + ' ' + y + ' M ' + (end - sign * 2) + ' ' + (y - 1.4) + ' L ' + end + ' ' + y + ' L ' + (end - sign * 2) + ' ' + (y + 1.4)
+  const sign = end === x ? 0 : end > x ? 1 : -1
+  const wing = Math.abs(sign) * 1.4
+  return 'M ' + x + ' ' + y + ' L ' + end + ' ' + y + ' M ' + (end - sign * 2) + ' ' + (y - wing) + ' L ' + end + ' ' + y + ' L ' + (end - sign * 2) + ' ' + (y + wing)
 }
 const arrow = (cls: string, x: number, y: number, end: number, color: string, width = 0.65) =>
   '<path class="' + cls + '" d="' + path(x, y, end) + '" fill="none" stroke="' + color + '" stroke-width="' + width + '" stroke-linecap="round" stroke-linejoin="round"/>'
