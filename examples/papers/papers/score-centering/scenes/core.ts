@@ -91,6 +91,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
     show('.trainer,.toP,.reward', 0, .58)
     show('.engineLabel', 1, .12)
     tl.to('.traveller', { x: 43, duration: 1.4, ease: 'power2.inOut' }, T(1, .32))
+    tl.to('.qFirst', { attr: { width: 16 }, duration: 1.3 }, T(2, .2))
     tl.to('.qHalf', { attr: { x: 83, width: 8 }, duration: 1.3 }, T(2, .2))
     show('.tim', 2, .52)
     gsap.set('.sync', { drawSVG: '0%' })
