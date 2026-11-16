@@ -185,7 +185,7 @@ export default gsapScene(({root,gsap,at,durations,parameters}) => {
     <div class="calc corr-value">sg[系数]<br>· log p<tspan>ₕ</tspan></div>
     <div class="calc-label ret-label">样本更新</div>
     <div class="calc ret-value iteal">−R ×<br>(log p<tspan>ᵧ</tspan><br>− 修正项)</div>
-    <div class="imeta">论文 `4.1 · exp 为 jnp.exp · 教学示意数据</div>
+    <div class="imeta">论文 §4.1 · exp 为 jnp.exp · 教学示意数据</div>
   `
   frame(root,CSS+`
     .code-panel { position:absolute;left:6cqw;top:23cqh;width:66cqw;z-index:1; }
