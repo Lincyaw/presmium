@@ -37,7 +37,7 @@ const CSS = `
   .side .line { height:.16cqw; background:var(--c-line-strong); margin:2.6cqh 0; }
   .side .success { color:${SC}; }
   .diagram { position:absolute; inset:0; transform:translateY(-3cqh); }
-  
+
   .diagram .label { font-weight:750; }
   .diagram .small { fill:var(--c-muted); }
   .diagram .node { fill:var(--c-surface); stroke:var(--c-line-strong); stroke-width:.25; }
