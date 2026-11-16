@@ -1,5 +1,38 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.102
+
+### Patch Changes
+
+- 3b84588: Use compact desktop buttons and concise action labels, unify global settings, add configurable stdio/HTTP MCP connections with copyable AI setup instructions, and provide signed desktop update discovery, download and confirmed installation. Open Studio through a lightweight entry, retain configuration and local addresses, reuse a live workspace, and hand off a consistent startup screen only when the document list is ready. Keep generated desktop resources replaceable on repeated builds.
+- Updated dependencies [3b84588]
+  - @lincyaw/host@1.0.0-rc.102
+  - @lincyaw/kernel@1.0.0-rc.102
+  - @lincyaw/cli@1.0.0-rc.102
+  - @lincyaw/studio@0.2.0-rc.101
+  - @lincyaw/addon-assistant@1.0.0-rc.102
+  - @lincyaw/addon-classroom@1.0.0-rc.102
+  - @lincyaw/addon-content@1.0.0-rc.102
+  - @lincyaw/addon-exec@1.0.0-rc.102
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.102
+  - @lincyaw/addon-exec-local@1.0.0-rc.102
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.102
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.102
+  - @lincyaw/addon-guide@1.0.0-rc.102
+  - @lincyaw/addon-lecture@1.0.0-rc.102
+  - @lincyaw/addon-motion@1.0.0-rc.102
+  - @lincyaw/addon-publish@1.0.0-rc.102
+  - @lincyaw/addon-session@1.0.0-rc.102
+  - @lincyaw/addon-speech@1.0.0-rc.102
+  - @lincyaw/addon-stage@1.0.0-rc.102
+  - @lincyaw/viewer@1.0.0-rc.102
+  - @lincyaw/web@1.0.0-rc.102
+  - @lincyaw/addon-code@1.0.0-rc.102
+  - create-presmium@1.0.0-rc.102
+  - @lincyaw/mcp@1.0.0-rc.102
+  - @lincyaw/render-notebook@1.0.0-rc.102
+  - @lincyaw/render-slides@1.0.0-rc.102
+
 ## 1.0.0-rc.101
 
 ### Patch Changes

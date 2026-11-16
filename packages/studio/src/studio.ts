@@ -170,12 +170,12 @@ function freePort(listenAddress: string, port: number): Promise<number | undefin
   })
 }
 
-async function choosePort(listenAddress: string, port: number | undefined): Promise<number> {
+async function choosePort(listenAddress: string, port: number | undefined, preferred?: number): Promise<number> {
   if (port) {
     if (await freePort(listenAddress, port) === undefined) throw new Error(STUDIO_MESSAGES[systemLocale()].portInUse(port, listenAddress))
     return port
   }
-  const chosen = (port === undefined ? await freePort(listenAddress, DEFAULT_PORT) : undefined) ?? await freePort(listenAddress, 0)
+  const chosen = (port === undefined ? (preferred ? await freePort(listenAddress, preferred) : undefined) ?? await freePort(listenAddress, DEFAULT_PORT) : undefined) ?? await freePort(listenAddress, 0)
   if (chosen === undefined) throw new Error(STUDIO_MESSAGES[systemLocale()].noFreePort(listenAddress))
   return chosen
 }
@@ -234,7 +234,19 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
     movedFrom = previewPort
     previewPort = 0
   }
-  const port = await choosePort(boundAddress, options.port)
+  const home = studioHome(env)
+  mkdirSync(home, { recursive: true, mode: 0o700 })
+  // Preserve the browser origin (and its caches/return state) when the default port is held by another app.
+  const portFile = options.port === undefined && listenAddress === undefined && !options.publicUrl
+    ? join(home, 'ports', `${createHash('sha256').update(realpathSync(options.dir)).digest('hex').slice(0, 32)}.json`) : undefined
+  let preferredPort: number | undefined
+  if (portFile) {
+    try {
+      const saved = JSON.parse(readFileSync(portFile, 'utf8')) as { port?: unknown }
+      if (typeof saved.port === 'number' && Number.isInteger(saved.port) && saved.port > 0 && saved.port <= 65535) preferredPort = saved.port
+    } catch { /* A missing preference uses the normal default/free-port selection. */ }
+  }
+  const port = await choosePort(boundAddress, options.port, preferredPort)
   const dshAddress = wildcard ? '127.0.0.1' : boundAddress
   const dshPort = wildcard ? await choosePort(dshAddress, undefined) : port
   const hosts = wildcard ? networkHosts() : []
@@ -245,8 +257,6 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
       ? [...hosts.map(host => httpOrigin(host, port)), httpOrigin('127.0.0.1', port), `http://localhost:${port}`]
       : [httpOrigin(boundAddress, port), ...boundAddress === '127.0.0.1' ? [`http://localhost:${port}`] : []]
 
-  const home = studioHome(env)
-  mkdirSync(home, { recursive: true, mode: 0o700 })
   const bundle = bundleDir()
   const profile = installProfile(home, bundle)
   writeProfile(home, profile, 'web', bundle)
@@ -344,6 +354,15 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
     })
     started.push(dsh)
     const backend = (await dsh.ready(WEB_READY))[1]!
+    if (portFile) {
+      try {
+        const content = `${JSON.stringify({ port })}\n`
+        if (!existsSync(portFile) || readFileSync(portFile, 'utf8') !== content) {
+          mkdirSync(dirname(portFile), { recursive: true, mode: 0o700 })
+          writeFileSync(portFile, content, { mode: 0o600 })
+        }
+      } catch { /* Failure to retain a preferred port must not prevent opening the workspace. */ }
+    }
     if (wildcard) proxy = await startProxy({ host: boundAddress, port, target: `http://${authority(dshAddress, dshPort)}` })
     dsh.stopBuffering()
     const address = studioUrl(backend, options.publicUrl, primaryHost, port)

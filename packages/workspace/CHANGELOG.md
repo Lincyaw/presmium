@@ -1,5 +1,16 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.102
+
+### Patch Changes
+
+- 3b84588: Use compact desktop buttons and concise action labels, unify global settings, add configurable stdio/HTTP MCP connections with copyable AI setup instructions, and provide signed desktop update discovery, download and confirmed installation. Open Studio through a lightweight entry, retain configuration and local addresses, reuse a live workspace, and hand off a consistent startup screen only when the document list is ready. Keep generated desktop resources replaceable on repeated builds.
+- Updated dependencies [3b84588]
+  - @lincyaw/kernel@1.0.0-rc.102
+  - @lincyaw/server@1.0.0-rc.102
+  - @lincyaw/design@1.0.0-rc.102
+  - @lincyaw/compiler@1.0.0-rc.102
+
 ## 1.0.0-rc.101
 
 ### Patch Changes

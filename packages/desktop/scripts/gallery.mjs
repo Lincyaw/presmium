@@ -76,7 +76,7 @@ This editable gallery is prepared on the desktop app's first launch. Open a docu
   const hooks = join(target, '.git-hooks-disabled')
   mkdirSync(hooks)
   const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !/^GIT_/i.test(name)))
-  const git = args => execFileSync('git', ['-c', `core.hooksPath=${hooks}`, '-c', 'core.autocrlf=false', '-c', 'user.name=Presmium examples', '-c', 'user.email=examples@presmium.invalid', '-c', 'commit.gpgSign=false', ...args], { cwd: target, env, stdio: 'pipe' })
+  const git = args => execFileSync('git', ['-c', `core.hooksPath=${hooks}`, '-c', 'core.autocrlf=false', '-c', 'gc.auto=0', '-c', 'maintenance.auto=false', '-c', 'user.name=Presmium examples', '-c', 'user.email=examples@presmium.invalid', '-c', 'commit.gpgSign=false', ...args], { cwd: target, env, stdio: 'pipe' })
   git(['init', '-q', '-b', 'main'])
   git(['add', '-A'])
   git(['commit', '-q', '-m', 'Presmium example workspace'])
