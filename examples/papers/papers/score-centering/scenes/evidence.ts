@@ -189,7 +189,7 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
     tl.to('.noise-axis-mid',{autoAlpha:0,duration:.25},T(2,.58))
     pose({x:.68,y:0,w:.32,h:1},2,.58)
     note('.noise-axis-right',2,.63)
-    tl.to('.collapse-b',{autoAlpha:0,duration:.25},T(2,.69))
+    tl.to('.collapse-b',{autoAlpha:0,duration:.12},T(2,.58))
     note('.collapse-c',2,.69)
     ring({x:.692,y:.42,w:.035,h:.35},2,.70)
     tl.set({}, {}, T(3))
