@@ -680,8 +680,8 @@
       "definitionId": "score--definition",
       "parameters": {
         "page": "score",
-        "title": "score 是概率的梯度方向",
-        "alt": "score 是概率的梯度方向"
+        "title": "score 是对数概率的梯度方向",
+        "alt": "score 是对数概率的梯度方向"
       }
     },
     "zero--scene": {
