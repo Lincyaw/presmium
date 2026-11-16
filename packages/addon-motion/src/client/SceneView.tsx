@@ -103,7 +103,9 @@ export default function SceneView(props: SceneProps) {
   const [seen, setSeen] = useState(eager)
   useEffect(() => clock?.registerPreparation?.(cursor.slide, () => setSeen(true)), [clock, cursor.slide])
   const enabled = seen
-  const [local, setLocal] = useState<number>()
+  const initialLocalStep = scope.localPreview && Number.isFinite(hostStep) ? scope.localStepAt(hostStep) : undefined
+  const [local, setLocal] = useState<number | undefined>(() => initialLocalStep !== undefined && initialLocalStep >= 0 && initialLocalStep < durations.length
+    ? starts[initialLocalStep]! + (navigated?.boundary === 'start' ? 0 : durations[initialLocalStep]!) : undefined)
   const [playing, setPlaying] = useState(false)
   const [status, setStatus] = useState<
     'loading' | 'ready' | 'missing' | 'failed'
@@ -115,8 +117,8 @@ export default function SceneView(props: SceneProps) {
   const stage = useRef<HTMLDivElement>(null)
   const instance = useRef<Scene | undefined>(undefined)
   const frame = useRef(0)
-  const localTime = useRef<number | undefined>(undefined)
-  const previewReplay = useRef<number>()
+  const localTime = useRef<number | undefined>(local)
+  const previewReplay = useRef<number | undefined>(scope.localPreview && local !== undefined && navigated?.boundary !== 'start' ? initialLocalStep : undefined)
   const playbackLease = useRef<PlaybackLease>()
   const playbackGeneration = useRef(0)
   const activePlayback = useRef<number>()
@@ -135,13 +137,15 @@ export default function SceneView(props: SceneProps) {
   const shownNow = useRef(shown)
   shownNow.current = shown
   const activeLocalStep = scope.localStepAt(hostStep)
-  const requestedStart = scope.localPreview && navigated?.boundary === 'start' && Number.isFinite(activeLocalStep) && local === starts[activeLocalStep] ? activeLocalStep : undefined
+  // Shared endpoints (including zero-length states) keep the explicitly selected step's identity.
+  const requestedStep = scope.localPreview && Number.isFinite(activeLocalStep)
+    && local === starts[activeLocalStep]! + (navigated?.boundary === 'start' ? 0 : durations[activeLocalStep]!) ? activeLocalStep : undefined
   const selectedStep = Math.max(
     0,
     Math.min(
       durations.length - 1,
       expanded && local !== undefined
-        ? requestedStart ?? Math.max(
+        ? requestedStep ?? Math.max(
             0,
             starts.findIndex(
               (start, i) =>
@@ -503,7 +507,8 @@ export default function SceneView(props: SceneProps) {
           />
           <input
             type="range"
-            className="pm-scene__scrub"
+            className="pm-scene__scrub pm-ui-range"
+            style={{ '--pm-range-progress': `${total ? Math.max(0, Math.min(100, shown / total * 100)) : 0}%` } as CSSProperties}
             min="0"
             max={total}
             step="1"

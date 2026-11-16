@@ -1,4 +1,4 @@
-import { createContext, memo, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, memo, useContext, useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { PmBoundary, StepScope, useStaticRender, useStore } from '@lincyaw/host'
 import { blockStepState, blockVisible, componentProps, fnv1a64 } from '@lincyaw/kernel'
@@ -63,11 +63,7 @@ export const BlockView = memo(BlockViewContent)
 /** A compiled block's standalone read-only surface, using the same host scope as the full viewer. */
 export function BlockPreview({ block, section }: { block: IRBlock, section: IRSection }) {
   const viewer = useContext(VIEWER)
-  const [selected, setSelected] = useState<{ section: string, step: number }>()
-  useEffect(() => viewer?.position.subscribe(() => {
-    const position = viewer.position.getSnapshot()
-    if (position.section === section.id && section.stepIds?.[position.step]) setSelected(position)
-  }), [viewer, section.id])
-  const step = selected?.section === section.id ? selected.step : FINAL_STEP
+  const selected = useStore(viewer?.position)
+  const step = selected?.section === section.id && section.stepIds?.[selected.step] ? selected.step : FINAL_STEP
   return h(SECTION_CONTEXT.Provider, { value: { section, step, view: 'document' } }, h('div', { className: 'pm-document pm-block-preview', 'data-section': section.id }, h(BlockView, { block, section, step, expanded: true, localPreview: true })))
 }

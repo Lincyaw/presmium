@@ -75,7 +75,7 @@
 
 ### 4.2 消息
 
-消息分几组：导航（`go`、`position`、`narrate`、`updated`），指向（`pick`、`picked`、`selection`、`rect`、`highlight`、`pins`、`flash`、`marks`），外观（`appearance`、`activity`），写入（`blocks-*`、`page-*`、`source-*`、`edit*`、草稿汇总、`flush`、`document-history*`），播放（`playback-*`、`production-playback*`），以及 `report`、`shortcut`、`presentation-action`、`events-*`。保存确认绑定文稿、目标、版本、预览实例与代次，过期回调不清除其后的输入。文档编辑中的单块只读预览另用 `presmium:block-preview*` 消息，以导航代次防止多个块互相回拉位置。
+消息分几组：导航（`go`、`position`、`narrate`、`updated`），指向（`pick`、`picked`、`selection`、`rect`、`highlight`、`pins`、`flash`、`marks`），外观（`appearance`、`activity`），写入（`blocks-*`、`page-*`、`source-*`、`edit*`、草稿汇总、`flush`、`document-history*`），播放（`playback-*`、`production-playback*`），以及 `report`、`shortcut`、`presentation-action`、`events-*`。保存确认绑定文稿、目标、版本、预览实例与代次，过期回调不清除其后的输入。文档编辑中的单块只读预览另用 `presmium:block-preview*` 消息，以导航代次防止多个块互相回拉位置。单块预览的初始步骤以稳定 ID 随首次地址传入，在挂载前恢复；播放与跳步只经消息更新，不改写地址或重载帧，避免先显示整段末尾再回跳。动画进度条共用公共范围控件的尺寸与绘制规则。
 
 ### 4.3 坐标与安全
 
@@ -213,6 +213,8 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 ## 11. `presmium studio`
 
 ### 11.1 命令与目录
+
+工作区服务打开空目录时自动建立本地版本历史的空基准，首页直接提供“新建文稿”，无需先配置工作区。此准备允许 Finder 的 `.DS_Store`，已有目录的文件、版本库、分支与索引保持原样。
 
 `presmium studio [目录] [--port] [--host] [--public-url] [--preview-url] [--preview-port]`。`DSH_HOME` 是 `$XDG_STATE_HOME/presmium/studio`；每个安装有自己的 profile `presmium-studio-<散列>`，其 `node_modules` 链接到这个安装的 bundle，因为 dsh 只从 profile 解析插件。新 profile 继承最近用过的设置。
 

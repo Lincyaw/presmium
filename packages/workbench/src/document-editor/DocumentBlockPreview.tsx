@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import type { BlockPreviewCommand } from '@lincyaw/kernel'
 import { toBlockPreviewPlaybackCancelled, toBlockPreviewPlaybackRequest, toBlockPreviewPosition } from '@lincyaw/kernel'
@@ -109,6 +109,9 @@ export function DocumentBlockPreview({ blockId, fallback }: { blockId: string, f
   // A saved version changes only the runtime frame; it never resets the native editor.
   address?.searchParams.set('presmium-block-version', loadedVersion ?? '')
   address?.searchParams.set('presmium-block-refresh', `${loadedProject}:${loadedAttempt}`)
+  // Pin the first cursor to this frame's lifetime; playback and step selection keep the same URL.
+  const initialStep = useMemo(() => stepId, [address?.href, enabled])
+  if (initialStep) address?.searchParams.set('presmium-block-step', initialStep)
   const src = address?.href, origin = address?.origin
   const command = useCallback((action: 'seek' | 'pause', at?: 'start' | 'end', token = navigation) => {
     if (!origin || !state.snapshot || !sectionId || !stepId) return

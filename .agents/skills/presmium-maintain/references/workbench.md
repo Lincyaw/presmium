@@ -148,6 +148,10 @@ right; side-by-side scrolly documents fill the available reading canvas instead 
 - Generated content changes only through parameters, definition scope, chat or comments. Unknown plugin data
   stays intact with a readable diagnostic.
 
+Inline previews pin their initial stable step ID to the frame URL and restore it before mounting; later step and
+playback updates use the existing messages without changing that URL. Read the existing viewer position on the first
+render, not only subsequent subscription events. Scene scrubbers reuse the public range-control drawing.
+
 Verify full final-page content, Enter, lists and formatting, comments, step jumps in preview, Undo right
 after typing, save failure and recovery, document switching, in light and dark, desktop and narrow.
 

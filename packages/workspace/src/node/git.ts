@@ -1,5 +1,7 @@
 import { execFile, execFileSync } from 'node:child_process'
-import { realpathSync } from 'node:fs'
+import { existsSync, readdirSync, realpathSync } from 'node:fs'
+import { join } from 'node:path'
+import { promisify } from 'node:util'
 import { gitConfigArgs, gitEnvironment } from '@lincyaw/kernel'
 
 export interface GitResult {
@@ -24,6 +26,19 @@ export class Git {
     } catch {
       return false
     }
+  }
+
+  /** Prepare a new, empty authoring workspace; existing content needs its own real history baseline. */
+  static async initialize(root: string): Promise<void> {
+    if (Git.isRepository(root) || existsSync(join(root, '.git'))) return
+    if (readdirSync(root).some(name => name !== '.DS_Store')) return
+    await promisify(execFile)('git', [...gitConfigArgs(), 'init', '--quiet', '--initial-branch=main'], { cwd: root, env: gitEnvironment(process.env) })
+    const git = new Git(root)
+    const tree = await git.run(['hash-object', '-w', '-t', 'tree', '--stdin'], {}, new Uint8Array())
+    if (tree.code !== 0) throw new Error(tree.stderr)
+    const commit = (await git.output(['-c', 'user.name=Presmium', '-c', 'user.email=workspace@presmium.invalid', 'commit-tree', tree.stdout.toString('utf8').trim(), '-m', 'Initialize workspace history'])).trim()
+    const ref = (await git.output(['symbolic-ref', 'HEAD'])).trim()
+    await git.output(['update-ref', ref, commit, '0'.repeat(commit.length)])
   }
 
   run(command: string[], env: Record<string, string> = {}, input?: Uint8Array): Promise<GitResult> {

@@ -1,5 +1,21 @@
 # @lincyaw/workbench
 
+## 0.2.0-rc.101
+
+### Patch Changes
+
+- 打开新工作区时自动准备本地版本历史，显示“新建文稿”并支持创建第一份文稿，不需要先手动配置版本库。
+- @lincyaw/design@1.0.0-rc.101
+  - @lincyaw/kernel@1.0.0-rc.101
+
+## 0.2.0-rc.100
+
+### Patch Changes
+
+- 4699554: 动画预览首帧直接恢复当前步骤，避免切页时进度条先显示末尾再回跳；动画进度条复用公共范围控件，保持播放和跳步时的尺寸与绘制稳定。
+- @lincyaw/design@1.0.0-rc.100
+  - @lincyaw/kernel@1.0.0-rc.100
+
 ## 0.2.0-rc.99
 
 ### Patch Changes
