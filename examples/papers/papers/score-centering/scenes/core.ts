@@ -30,7 +30,7 @@ const apparatus = (q = .5, a = .5, b = -.5) =>
     txt(84, 25, 'p(A)=0.5　p(B)=0.5', '', 2.8) +
     txt(84, 34, 'q(A)=' + q.toFixed(1) + '　q(B)=' + (1 - q).toFixed(1), 'qValue', 2.8) +
   '</g>' +
-  '<g class="score-plane">' +
+  '<g class="score-plane" transform="translate(0 -4)">' +
     line(18, 48, 145, 48) + line(95, 39, 95, 58) +
     txt(94, 61, '0', '', 2.6) + txt(131, 61, '正方向', 'muted', 2.6) + txt(41, 61, '负方向', 'muted', 2.6) +
     token(14, 42, 'A') + token(14, 54, 'B') +
@@ -110,13 +110,13 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       '<path class="prefixBrace" d="M12 33 V35 H89 V33" fill="none" stroke="' + C.q + '" stroke-width=".6"/>' +
       txt(42, 40, '前缀 y_<t', 'prefixLabel q', 3.2) +
       token(131, 26, 'A', 'chosen') + '</g>' +
-      '<g class="curve">' + line(24, 62, 138, 62) + line(81, 17, 81, 64) +
+      '<g class="curve" transform="translate(0 -4)">' + line(24, 62, 138, 62) + line(81, 17, 81, 64) +
       '<path d="M' + pts.map(p => p.join(',')).join(' L') + '" stroke="' + C.q + '" stroke-width=".65" fill="none"/>' +
       txt(122, 68, '参数 θ', '', 3) + txt(27, 21, 'log p(A)', '', 3.4) +
       '<circle class="point" cx="81" cy="' + (61 - (Math.log(.5) + 3.1) * 11) + '" r="1.3" fill="' + C.q + '"/>' +
       '<path class="tangent" d="M61 41.3996 L101 27.6496" fill="none" stroke="' + C.drift + '" stroke-width=".7"/>' +
       txt(93, 25, '局部斜率 = 0.5', 'derivative drift', 3.2) + '</g>' +
-      '<g class="vectors">' + line(15, 45, 145, 45) + line(79, 25, 79, 60) +
+      '<g class="vectors" transform="translate(0 -4)">' + line(15, 45, 145, 45) + line(79, 25, 79, 60) +
       token(15, 32, 'A') + token(15, 56, 'B') +
       arrow('vA', 79, 32, 114, C.q) + arrow('vB', 79, 56, 44, 'var(--c-muted)') +
       txt(119, 33, '+0.5', '', 3.4) + txt(26, 57, '−0.5', '', 3.4) +
@@ -140,16 +140,16 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
     const initialQ = page === 'center' || page === 'signal' ? .6 : .5
     html = apparatus(initialQ, page === 'signal' ? .4 : .5, page === 'signal' ? -.6 : -.5) +
       '<g class="bottom">' +
-      arrow('meanArrow', 95, 66, 95, C.drift, .85) +
-      txt(10, 68, '', 'equation formula', 3.5) +
+      arrow('meanArrow', 95, 61, 95, C.drift, .85) +
+      txt(10, 63, '', 'equation formula', 3.5) +
       '</g>' +
-      txt(103, 69, '', 'answer strong', 4.1) +
+      txt(103, 64, '', 'answer strong', 4.1) +
       txt(108, 19, '', 'stage strong', 3.4) +
-      '<g class="rewardTokens">' + txt(132, 43, 'R_A=1', 'signal', 2.8) + txt(132, 55, 'R_B=0', 'muted', 2.8) + '</g>' +
-      '<g class="shiftGuide">' + arrow('shiftA', 133, 39, 126, 'var(--c-accent)', .4) +
+      '<g class="rewardTokens" transform="translate(0 -4)">' + txt(132, 43, 'R_A=1', 'signal', 2.8) + txt(132, 55, 'R_B=0', 'muted', 2.8) + '</g>' +
+      '<g class="shiftGuide" transform="translate(0 -4)">' + arrow('shiftA', 133, 39, 126, 'var(--c-accent)', .4) +
       arrow('shiftB', 63, 51, 56, 'var(--c-accent)', .4) +
       txt(126, 36, '−0.1', '', 2.6) + txt(56, 46, '−0.1', '', 2.6) + '</g>' +
-      txt(104, 64, '', 'comparison', 3)
+      txt(104, 59, '', 'comparison', 3)
     start(html)
     hide('.meanArrow,.rewardTokens,.shiftGuide')
     if (page === 'zero') {
@@ -174,7 +174,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       setText('.sBValue', '0.4 × (−0.5)', 1, .27)
       setText('.equation', '0.30 − 0.20', 1, .48)
       show('.meanArrow', 1, .6, .1)
-      tl.to('.meanArrow', { attr: { d: path(95, 66, 102) }, duration: 1.2 }, T(1, .61))
+      tl.to('.meanArrow', { attr: { d: path(95, 61, 102) }, duration: 1.2 }, T(1, .61))
       setText('.answer', '= 0.10', 1, .68)
       setText('.stage', '恒定 R = 1', 2, .12)
       setText('.equation', 'E_q[R s] = 1 × 0.10', 2, .38)
@@ -183,7 +183,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       setText('.stage', '平均 score', 0, .08)
       setText('.equation', '0.6×0.5 + 0.4×(−0.5)', 0, .3)
       show('.meanArrow', 0, .5, .1)
-      tl.to('.meanArrow', { attr: { d: path(95, 66, 102) }, duration: 1.2 }, T(0, .5))
+      tl.to('.meanArrow', { attr: { d: path(95, 61, 102) }, duration: 1.2 }, T(0, .5))
       setText('.answer', '= 0.10', 0, .63)
       show('.shiftGuide', 1, .12)
       tl.to('.scoreA', { attr: { d: path(95, 42, 123) }, duration: 1.6 }, T(1, .26))
@@ -198,7 +198,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       tl.to('.scoreB', { attr: { d: path(95, 54, 78.2) }, duration: 1.4 }, T(2, .28))
       setText('.sAValue', '0.6 × 0.4 = 0.24', 2, .14)
       setText('.sBValue', '0.4 × (−0.6) = −0.24', 2, .28)
-      tl.to('.meanArrow', { attr: { d: path(95, 66, 95) }, duration: 1 }, T(2, .47))
+      tl.to('.meanArrow', { attr: { d: path(95, 61, 95) }, duration: 1 }, T(2, .47))
       setText('.equation', 'E_q[s̃] = 0.24 − 0.24', 2, .5)
       setText('.answer', '= 0', 2, .64)
     } else {
@@ -224,10 +224,10 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       '<g class="online">' + txt(11, 45, '随训练同步', 'strong', 3.4) +
       line(20, 57, 143, 57) + '<circle class="movingP" cx="31" cy="57" r="2" fill="var(--c-ink)"/>' +
       '<rect class="movingQ" x="48" y="54.5" width="5" height="5" fill="' + C.q + '"/>' +
-      '<path class="syncLoop" d="M43 62 C30 73 16 68 20 60" fill="none" stroke="var(--c-accent)" stroke-width=".6"/>' +
+      '<path class="syncLoop" d="M43 61 C30 68 16 64 20 59" fill="none" stroke="var(--c-accent)" stroke-width=".6"/>' +
       txt(27, 51, 'p', 'movingPLabel', 3.3) + txt(47, 51, 'q', 'q movingQLabel', 3.3) + '</g>' +
       '<g class="traces">' + [31, 49, 67, 85, 103, 121].map((x, i) => '<circle class="trace trace' + i + '" cx="' + x + '" cy="57" r=".8" fill="' + C.drift + '"/>').join('') + '</g>' +
-      txt(57, 68, '偏差随同步循环累积', 'result drift strong', 3.6)
+      txt(57, 63, '偏差随同步循环累积', 'result drift strong', 3.6)
     start(html, '论文 §4 · 机制示意；横轴表示参数变化，不是实验曲线')
     hide('.online,.traces,.result')
     tl.to('.fixedP', { attr: { cx: 98.5 }, duration: 4, ease: 'power2.out' }, T(0, .18))
@@ -259,9 +259,9 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       arrow('signalPart', 65, 48, 124, C.signal, 1) +
       txt(36, 57, '漂移', 'drift strong', 3.6) + txt(86, 57, '信号', 'signal strong', 3.6) + '</g>' +
       '<g class="identity">' +
-      txt(13, 68, 'E_q[R s] =', 'formula', 3.5) +
-      txt(53, 68, 'E_q[R] s̄', 'formula drift', 3.5) + txt(91, 68, '+', '', 3.5) +
-      txt(99, 68, 'Cov_q(R,s)', 'formula signal', 3.5) + '</g>' +
+      txt(13, 63, 'E_q[R s] =', 'formula', 3.5) +
+      txt(53, 63, 'E_q[R] s̄', 'formula drift', 3.5) + txt(91, 63, '+', '', 3.5) +
+      txt(99, 63, 'Cov_q(R,s)', 'formula signal', 3.5) + '</g>' +
       txt(64, 29, '同一平均奖励', 'sameMean', 3) +
       txt(22, 20, '每个前缀分别分析', 'muted', 2.6)
     start(html, '论文 §4，公式 (3) · 向量分解示意')
@@ -287,10 +287,10 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
         txt(116, y + 1, i < 2 ? '+1' : '−1', i < 2 ? 'signal' : 'drift', 3.4)).join('') + '</g>' +
       '<rect class="prefixBox" x="57" y="18" width="78" height="23" rx="2" fill="none" stroke="' + C.q + '" stroke-width=".7"/>' +
       txt(60, 23, '已走到的前缀', 'prefixLabel q', 2.8) +
-      txt(13, 68, '全组均值：(+1+1−1−1)/4 = 0', 'wholeMean formula', 3.4) +
-      txt(76, 67, '条件均值：(+1+1)/2 = +1', 'conditional formula', 3.1) +
+      txt(13, 63, '全组均值：(+1+1−1−1)/4 = 0', 'wholeMean formula', 3.4) +
+      txt(76, 63, '条件均值：(+1+1)/2 = +1', 'conditional formula', 3.1) +
       arrow('residual', 15, 60, 44, C.drift) +
-      txt(49, 61, '前缀漂移仍存在', 'residualLabel drift', 3.2)
+      txt(49, 61, '前缀漂移', 'residualLabel drift', 3.2)
     start(html, '论文 §4 · 四条回答为教学示例；图中数值表示组中心化后的优势')
     hide('.prefixBox,.prefixLabel,.conditional,.residual,.residualLabel')
     gsap.set('.branches path', { drawSVG: '0%' })
@@ -307,16 +307,16 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
   } else if (page === 'is') {
     count = 4
     html = apparatus(.6) +
-      txt(11, 68, 'r_A=0.5/0.6　r_B=0.5/0.4', 'equation formula', 3.3) +
-      txt(104, 68, '', 'answer strong', 3.9) +
+      txt(11, 63, 'r_A=0.5/0.6　r_B=0.5/0.4', 'equation formula', 3.3) +
+      txt(104, 63, '', 'answer strong', 3.9) +
       '<g class="rare">' +
       txt(13, 22, '罕见 token C', 'strong', 3.4) + txt(13, 30, 'q_C=0.01　p_C=0.10', '', 3.3) +
       txt(78, 30, 'q_D=0.99　p_D=0.90', '', 3.3) +
       txt(13, 36, 's_C=+0.9　s_D=−0.1', 'muted', 2.7) +
       line(24, 46, 145, 46) + arrow('rareArrow', 24, 46, 34, C.tis, 1) +
       txt(27, 40, 'r_C = 10', 'ratioLabel', 3.7) +
-      line(44, 38, 44, 56, 'cap') + txt(36, 61, 'TIS 上界 2', 'capLabel', 3.2) +
-      txt(13, 68, '乘法校正 → 大比率 → 截断偏差', '', 3.6) + '</g>' +
+      line(44, 38, 44, 56, 'cap') + txt(48, 57, 'TIS 上界 2', 'capLabel', 3.2) +
+      txt(13, 63, '乘法校正 → 大比率 → 截断偏差', '', 3.6) + '</g>' +
       txt(17, 18, '精确 IS', 'exactLabel', 3.2) +
       txt(78, 57, 'E_q[w s] = −0.072', 'clipLabel drift', 3.2)
     start(html, '论文 §2.2、§4 · 罕见 token 部分为独立教学示例')
@@ -347,7 +347,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       line(79, 27, 79, 57) +
       '<g class="mean">' + arrow('weightedMean', 79, 61, 89, C.drift) +
       txt(92, 62, 'm = E_q[w s]', 'formula drift', 3.4) + '</g>' +
-      txt(14, 69, 'R ( w_y s_y − E_q[w s] )', 'formula final', 4) +
+      txt(14, 63, 'R ( w_y s_y − E_q[w s] )', 'formula final', 4) +
       txt(100, 22, '再去均值', 'recenter strong', 3.5) +
       txt(84, 57, '', 'sanity strong', 3.4)
     start(html, '论文附录 A.2 · 对加权后的 score 去均值；箭头为结构示意')
@@ -363,6 +363,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
     setText('.weightedBLabel', 'w_B s_B − m', 1, .58)
     show('.final', 1, .6)
     tl.to('.weightedMean', { attr: { d: path(79, 61, 79) }, duration: 1.3 }, T(1, .6))
+    tl.to('.mean', { autoAlpha: 0, duration: .4 }, T(2, .1))
     setText('.sanity', '精确 IS：m = 0', 2, .16)
     show('.sanity', 2, .16)
     setText('.final', 'w_v = p_v / q_v　⇒　q_v w_v = p_v', 2, .4)
