@@ -47,3 +47,5 @@ Local builds produce ordinary installers without requiring the release private k
 `src-tauri/tauri.conf.json`. Never include the private key in source or release assets. The optional password is
 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Only after all six platform builds and final package signatures succeed
 is the update feed at the `desktop-updates` release promoted. Version-release packages are immutable.
+
+To stage a release, push its version commit and immutable tag before starting the platform builds, create a release draft for that tag, and dispatch the desktop workflow with `release_tag`. After every build and signature passes, CI uploads the complete assets, publishes that draft, then promotes the feed. Artifact-only dispatches leave the release and feed unchanged. Direct use of `publish-updates.mjs` requires `--publish-draft` and an explicit `RELEASE_TAG` environment variable to publish a draft; the selected tag must match the packages' version before any upload or publication.

@@ -1,5 +1,12 @@
 # @lincyaw/viewer
 
+## 1.0.0-rc.104
+
+### Patch Changes
+
+- @lincyaw/host@1.0.0-rc.104
+  - @lincyaw/kernel@1.0.0-rc.104
+
 ## 1.0.0-rc.103
 
 ### Patch Changes

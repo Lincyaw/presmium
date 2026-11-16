@@ -152,4 +152,12 @@ package-format entries, uploads immutable files to the version Release, then pro
 A rolling preview does not promote updates. Verify discovery, download, invalid signatures, Later, saved-and-restart,
 and reopening the workspace in the built app; do not claim Windows/Linux installation acceptance from a macOS run.
 
+Before a long desktop build, integrate the latest main and push the version commit to main to reserve it.
+A failed fast-forward push requires reconciling the concurrent release and regenerating the version before
+building. Do not build a separately chosen pending version while another release can claim the same number.
+Prepare the immutable tag and release draft, then dispatch with `release_tag`. CI explicitly permits publishing
+that draft only after all platform builds pass and all immutable assets upload; it confirms publication before
+promoting the feed. Its repository-scoped `GITHUB_TOKEN` avoids recursively triggering another release build.
+Direct publisher use requires `--publish-draft` and the explicit `RELEASE_TAG` environment variable to publish a draft. Before any upload or publication, that selected tag must equal the verified packages' version tag.
+
 Pin each CI checkout to the triggering commit (`github.sha`), or the explicitly selected immutable release tag, rather than a moving branch reference. All platform artifacts must come from the same verified source.

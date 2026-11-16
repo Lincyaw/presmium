@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 const dir = resolve(process.argv[2] ?? 'installers')
+const publishDraft = process.argv.slice(3).includes('--publish-draft')
 const expected = ['darwin-aarch64-app', 'darwin-x86_64-app', 'windows-aarch64-nsis', 'windows-x86_64-nsis', 'linux-aarch64-deb', 'linux-aarch64-rpm', 'linux-x86_64-deb', 'linux-x86_64-rpm']
 const shards = readdirSync(dir).filter(file => /^updater-.+\.json$/.test(file)).map(file => JSON.parse(readFileSync(join(dir, file), 'utf8')))
 if (shards.length !== 6) throw new Error('All six platform builds must complete before publishing updates')
@@ -20,7 +21,11 @@ for (const shard of shards) for (const [target, entry] of Object.entries(shard.p
 if (expected.some(target => !platforms[target])) throw new Error('Incomplete update manifest')
 const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }).trim()
 const tag = `v${version}`
+const requestedTag = process.env.RELEASE_TAG
+if (publishDraft && !requestedTag) throw new Error('--publish-draft requires the explicitly selected RELEASE_TAG')
+if (requestedTag && requestedTag !== tag) throw new Error('The selected release tag differs from the verified package version')
 const release = JSON.parse(gh('release', 'view', tag, '--json', 'isDraft,assets'))
+if (release.isDraft && !publishDraft) throw new Error('Publishing a draft requires --publish-draft')
 // Published version assets are immutable: uploading different bytes would invalidate clients' signed feeds.
 const files = readdirSync(dir).filter(file => !file.startsWith('updater-') && file !== 'latest.json')
 for (const file of files) {
@@ -32,7 +37,10 @@ for (const file of files) {
     if (remote !== digest) throw new Error(`Refusing to replace released asset ${file}`)
   } else gh('release', 'upload', tag, join(dir, file))
 }
-if (release.isDraft) throw new Error('Publish the version release before promoting its update feed')
+if (release.isDraft) {
+  gh('release', 'edit', tag, '--draft=false')
+  if (JSON.parse(gh('release', 'view', tag, '--json', 'isDraft')).isDraft) throw new Error('The version release is still a draft')
+}
 const manifest = { version, notes: `Presmium Studio ${version}`, pub_date: new Date().toISOString(), platforms }
 const manifestFile = join(dir, 'latest.json'); writeFileSync(manifestFile, JSON.stringify(manifest, null, 2) + '\n')
 // Refuse a stale run overtaking a newer version. Tauri's semver comparator handles prereleases too.

@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Existing GitHub Release tag to build and attach installers to (leave empty for artifacts only)
+        description: Release tag to build and publish installers (drafts publish after all builds pass; empty means artifacts only)
         required: false
         type: string
 
@@ -171,7 +171,9 @@ jobs:
           RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
         run: |
           if [ -n "$RELEASE_TAG" ]; then
-            pnpm --filter presmium-desktop exec node scripts/publish-updates.mjs "$GITHUB_WORKSPACE/installers"
+            args=("$GITHUB_WORKSPACE/installers")
+            if [ "${{ github.event_name }}" = workflow_dispatch ]; then args+=(--publish-draft); fi
+            pnpm --filter presmium-desktop exec node scripts/publish-updates.mjs "${args[@]}"
             exit 0
           fi
           # The prerelease and its tag stay put (the token may not move tags); each build replaces the assets.

@@ -1,5 +1,37 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.104
+
+### Patch Changes
+
+- 1fedcf0: Package Linux prereleases with a native RPM version and release while preserving the complete application and updater version in the already-built binary. Keep DEB as the default Linux build and sign the final RPM bytes with the complete version. Use the public Tauri signing API so update collection works independently of package-manager environment variables, verify signatures without rebuilding the desktop application, pin CI sources, and publish prepared release drafts only after all platform packages pass verification.
+- @lincyaw/addon-assistant@1.0.0-rc.104
+  - @lincyaw/addon-classroom@1.0.0-rc.104
+  - @lincyaw/addon-code@1.0.0-rc.104
+  - @lincyaw/addon-content@1.0.0-rc.104
+  - @lincyaw/addon-exec@1.0.0-rc.104
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.104
+  - @lincyaw/addon-exec-local@1.0.0-rc.104
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.104
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.104
+  - @lincyaw/addon-guide@1.0.0-rc.104
+  - @lincyaw/addon-lecture@1.0.0-rc.104
+  - @lincyaw/addon-motion@1.0.0-rc.104
+  - @lincyaw/addon-publish@1.0.0-rc.104
+  - @lincyaw/addon-session@1.0.0-rc.104
+  - @lincyaw/addon-speech@1.0.0-rc.104
+  - @lincyaw/addon-stage@1.0.0-rc.104
+  - @lincyaw/cli@1.0.0-rc.104
+  - create-presmium@1.0.0-rc.104
+  - @lincyaw/host@1.0.0-rc.104
+  - @lincyaw/kernel@1.0.0-rc.104
+  - @lincyaw/mcp@1.0.0-rc.104
+  - @lincyaw/render-notebook@1.0.0-rc.104
+  - @lincyaw/render-slides@1.0.0-rc.104
+  - @lincyaw/viewer@1.0.0-rc.104
+  - @lincyaw/web@1.0.0-rc.104
+  - @lincyaw/studio@0.2.0-rc.103
+
 ## 1.0.0-rc.103
 
 ### Patch Changes
