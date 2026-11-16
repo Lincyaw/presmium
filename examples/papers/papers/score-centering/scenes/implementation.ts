@@ -120,7 +120,7 @@ export default gsapScene(({root,gsap,at,durations,parameters}) => {
       <div class="ieq all-zero" style="left:9cqw;top:39cqh">Σ<tspan>全词表</tspan> pᵥ sᵥ = <b class="iteal">0</b></div>
       <div class="ieq reduce-arrow" style="left:36cqw;top:27cqh">→ <span class="iblue">− Σ<tspan>ₕ</tspan> pᵥ sᵥ</span></div>
       <div class="ieq final-head" style="left:9cqw;top:55cqh">E<tspan>q̂</tspan>[s] = Σ<tspan>ₕ</tspan> (qᵥ − ρ pᵥ) sᵥ</div>
-      <div class="ilabel approx-title" style="left:10cqw;top:24cqh">相同尾部质量，内部比例可能不同</div>
+      <div class="ilabel approx-title" style="left:10cqw;top:20cqh">相同尾部质量，内部比例可能不同</div>
       <svg class="layer" ${LAYER}><g class="approx-bars">
         <text x="17" y="35" class="isvg" font-size="2.8">真实 q 尾部</text><text x="88" y="35" class="isvg" font-size="2.8">重建 q̂ 尾部</text>
         ${[.10,.06,.03,.01].map((v,i)=>`<rect x="${18+i*13}" y="${61-v*180}" width="8" height="${v*180}" fill="#C65D4A" rx="0.5"/>`).join('')}
