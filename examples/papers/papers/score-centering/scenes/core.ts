@@ -147,7 +147,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       '<g class="rewardTokens">' + txt(132, 43, 'R_A=1', 'signal', 2.8) + txt(132, 55, 'R_B=0', 'muted', 2.8) + '</g>' +
       '<g class="shiftGuide">' + arrow('shiftA', 133, 39, 126, 'var(--c-accent)', .4) +
       arrow('shiftB', 63, 51, 56, 'var(--c-accent)', .4) +
-      txt(98, 38, '− s̄', '', 2.6) + txt(62, 49, '− s̄', '', 2.6) + '</g>' +
+      txt(126, 36, '−0.1', '', 2.6) + txt(56, 46, '−0.1', '', 2.6) + '</g>' +
       txt(104, 64, '', 'comparison', 3)
     start(html)
     hide('.meanArrow,.rewardTokens,.shiftGuide')
