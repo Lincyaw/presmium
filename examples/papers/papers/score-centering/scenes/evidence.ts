@@ -20,6 +20,8 @@ const CSS = `
   .paper-mask { position:absolute; overflow:hidden; }
   .paper-cam { position:absolute; transform-origin:0 0; }
   .paper-cam img { display:block; width:100%; height:100%; }
+  .axis-ticks { position:absolute; inset:0; pointer-events:none; }
+  .axis-ticks span { position:absolute; font-size:1.2cqw; line-height:1; color:#283348; transform:translateX(-100%); white-space:nowrap; }
   .focus { position:absolute; border:.22cqw solid ${SC}; border-radius:.35cqw; pointer-events:none; }
   .scan { position:absolute; top:8%; height:76%; width:.12cqw; background:${TIS}; transform-origin:0 100%; }
   .source { position:absolute; left:5cqw; top:75cqh; font-size:1.1cqw; white-space:nowrap; color:var(--c-muted); }
@@ -81,6 +83,12 @@ function camera(r:Region,aspect:number) {
   return { mask: {left:(W-cw)/2+'cqw',top:(H-ch)/2+'cqw',width:cw+'cqw',height:ch+'cqw'}, image: {left:-r.x*iw+'cqw',top:-r.y*ih+'cqw',width:iw+'cqw',height:ih+'cqw'} }
 }
 
+function sharedTicks(r:Region,aspect:number,x:number,ys:readonly (readonly [number,string])[]) {
+  const c=camera(r,aspect), iw=parseFloat(c.image.width),ih=parseFloat(c.image.height)
+  const xx=parseFloat(c.mask.left)+parseFloat(c.image.left)+x*iw-.3
+  return '<div class="axis-ticks">'+ys.map(([y,label])=>'<span style="left:'+xx+'cqw;top:'+(parseFloat(c.mask.top)+parseFloat(c.image.top)+y*ih)+'cqw">'+label+'</span>').join('')+'</div>'
+}
+
 export default gsapScene(({root,gsap,at,durations,parameters})=>{
   const {T}=clock(at,durations)
   const page=String(parameters.page??'study')
@@ -128,7 +136,8 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
     scale: side('s0','Qwen3-30B-A3B-Base','INTELLECT-2 数学','MoE · 未回放路由<br>三个量化强度','','纵轴：训练准确率')+side('s1','FP8 W/A + FP8 KV','轻量化设置','普通 PG 也稳定','58%','800 步 · 与修正方法相近')+side('s2','FP8 W/A + FP4 KV','SC / TIS','PG：200 步内崩溃','52% / 51%','MIS：后期崩溃')+side('s3','INT8 W/A + INT4 KV','SC / TIS','其他方法：结束 <5%','30% / 12%','严重不一致 · 训练准确率'),
     ablation: side('s0','图 5 · 逐面板比较','32 / 128 / full','头部近似<br>与完整词表相当','','限于论文所测设置')+side('s1','同硬件 · 自定义 JAX','额外墙钟时间','k = 128','< 1%','vLLM / SGLang 开销未测')+side('s2','附录 B.3','按曲线读种子数','小模型主要比较：3<br>30B：1–5','','部分 top-k 消融：1 个种子')+'<div class="cost"><div class="cost-row"><span class="cost-label">基线</span><div class="cost-track"><div class="cost-fill" style="width:99%"></div></div></div><div class="cost-row"><span class="cost-label">SC · 128</span><div class="cost-track"><div class="cost-fill full" style="width:99%"></div><div class="cost-extra"></div></div></div></div><div class="cost-number">+ &lt;1%</div><div class="cost-note">0.6B 与 30B · 论文自定义 JAX 采样器</div>',
   }
-  frame(root,CSS,header+'<div class="paper-window"><div class="paper-mask"><div class="paper-cam"><img src="'+fig.src+'" alt="'+fig.source+'"><div class="focus"></div><div class="scan"></div></div></div></div><div class="source">'+fig.source+'</div>'+extra[page])
+  const scaleLabels=page==='stale'?sharedTicks({x:.52,y:0,w:.48,h:1},fig.aspect,.537,[[.077,'80%'],[.254,'60%'],[.431,'40%'],[.607,'20%'],[.784,'0%']]):page==='study'?sharedTicks({x:.525,y:0,w:.475,h:1},fig.aspect,.538,[[.128,'80%'],[.292,'60%'],[.455,'40%'],[.619,'20%'],[.783,'0%']]):page==='noise'?sharedTicks({x:.68,y:0,w:.32,h:1},fig.aspect,.688,[[.24,'60%'],[.417,'40%'],[.595,'20%'],[.772,'0%']]):''
+  frame(root,CSS,header+'<div class="paper-window"><div class="paper-mask"><div class="paper-cam"><img src="'+fig.src+'" alt="'+fig.source+'"><div class="focus"></div><div class="scan"></div></div></div>'+scaleLabels+'</div><div class="source">'+fig.source+'</div>'+extra[page])
   const pose=(r:Region,k:number,f=0,duration=.8)=>{ const c=camera(r,fig.aspect); tl.to('.paper-mask',{...c.mask,duration,ease:'power2.inOut'},T(k,f)); return tl.to('.paper-cam',{...c.image,duration,ease:'power2.inOut'},T(k,f)) }
   const setPose=(r:Region)=>{ const c=camera(r,fig.aspect); gsap.set('.paper-mask',c.mask); gsap.set('.paper-cam',c.image) }
   const note=(cls:string,k:number,f=.12)=>tl.to(cls,{autoAlpha:1,duration:.4},T(k,f))
@@ -136,7 +145,7 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
   const ring=(r:Region,k:number,f=.2)=>{tl.to('.focus',{left:r.x*100+'%',top:r.y*100+'%',width:r.w*100+'%',height:r.h*100+'%',autoAlpha:1,duration:.6,ease:'power2.inOut'},T(k,f))}
   const scan=(x0:number,x1:number,k:number,f=.24,end=.65)=>{tl.set('.scan',{left:x0*100+'%',autoAlpha:1},T(k,f));tl.to('.scan',{left:x1*100+'%',duration:T(k,end)-T(k,f),ease:'none'},T(k,f));tl.to('.scan',{autoAlpha:0,duration:.3},T(k,end))}
   setPose(WHOLE)
-  gsap.set(['.focus','.scan','.side','.side .value'],{autoAlpha:0})
+  gsap.set(['.focus','.scan','.side','.side .value','.axis-ticks'],{autoAlpha:0})
   gsap.set('.focus',{left:'0%',top:'0%',width:'100%',height:'100%'})
   if(page==='study') {
     gsap.set(['.paper-window','.source','.one'],{autoAlpha:0})
@@ -150,6 +159,7 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
     ring({x:.22,y:.25,w:.14,h:.12},1,.5)
     pose({x:.525,y:0,w:.475,h:1},2,.05)
     swap('.s1','.s2',2,.15)
+    note('.axis-ticks',2,.15)
     ring({x:.66,y:.16,w:.16,h:.14},2,.4)
     scan(.55,.96,2,.42,.75)
     tl.set({}, {}, T(3))
@@ -161,7 +171,9 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
     pose({x:0,y:0,w:.365,h:1},1,.06)
     ring({x:.065,y:.17,w:.215,h:.11},1,.2)
     pose({x:.68,y:0,w:.32,h:1},1,.49)
+    note('.axis-ticks',1,.55)
     ring({x:.69,y:.16,w:.225,h:.19},1,.6)
+    tl.to('.axis-ticks',{autoAlpha:0,duration:.25},T(2))
     pose(WHOLE,2,.02)
     swap('.s1','.s2',2,.28)
     note('.s2 .value',2,.61)
@@ -181,6 +193,7 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
     tl.set({}, {}, T(3))
   } else if(page==='stale') {
     setPose({x:.52,y:0,w:.48,h:1})
+    gsap.set('.axis-ticks',{autoAlpha:1})
     note('.s0',0,0)
     tl.to('.sync-now',{left:'100%',duration:T(0,.63)-T(0,.17),ease:'none'},T(0,.17))
     tl.fromTo('.sync-now',{scale:1},{scale:1.8,duration:.35,repeat:1,yoyo:true,immediateRender:false},T(0,.65))
