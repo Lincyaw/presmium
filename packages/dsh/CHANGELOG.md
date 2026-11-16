@@ -1,5 +1,15 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.105
+
+### Patch Changes
+
+- Ship the updated MCP connection guidance in the prebuilt Studio client so an older AI-owned workspace host is identified after an upgrade.
+- @lincyaw/cli@1.0.0-rc.106
+  - @lincyaw/kernel@1.0.0-rc.106
+  - @lincyaw/mcp@1.0.0-rc.106
+  - @lincyaw/skills@1.0.0-rc.106
+
 ## 0.2.0-rc.104
 
 ### Patch Changes

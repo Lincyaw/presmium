@@ -1,5 +1,18 @@
 # @lincyaw/workbench
 
+## 0.2.0-rc.107
+
+### Patch Changes
+
+- @lincyaw/design@1.0.0-rc.106
+  - @lincyaw/kernel@1.0.0-rc.106
+
+## 0.2.0-rc.106
+
+### Patch Changes
+
+- e4efe25: Explain how to reconnect an older AI-owned workspace service when MCP connection settings are unavailable after a desktop upgrade.
+
 ## 0.2.0-rc.105
 
 ### Patch Changes
