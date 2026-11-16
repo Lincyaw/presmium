@@ -179,7 +179,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       setText('.equation', 'E_q[R s] = 1 × 0.10', 2, .38)
       setText('.answer', '≠ 0', 2, .54)
     } else if (page === 'center') {
-      setText('.stage', 's̄ = 0.10', 0, .08)
+      setText('.stage', '平均 score', 0, .08)
       setText('.equation', '0.6×0.5 + 0.4×(−0.5)', 0, .3)
       show('.meanArrow', 0, .5, .1)
       tl.to('.meanArrow', { attr: { d: path(95, 66, 102) }, duration: 1.2 }, T(0, .5))
