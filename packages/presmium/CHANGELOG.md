@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- Package Linux prereleases with a native RPM version and release while preserving the complete application and updater version in the already-built binary. Keep DEB as the default Linux build and sign the final RPM bytes with the complete version.
+- Package Linux prereleases with a native RPM version and release while preserving the complete application and updater version in the already-built binary. Keep DEB as the default Linux build and sign the final RPM bytes with the complete version. Use the public Tauri signing API so update collection works independently of package-manager environment variables, verify signatures without rebuilding the desktop application, and pin CI sources to the triggering commit.
 - @lincyaw/addon-assistant@1.0.0-rc.103
   - @lincyaw/addon-classroom@1.0.0-rc.103
   - @lincyaw/addon-code@1.0.0-rc.103

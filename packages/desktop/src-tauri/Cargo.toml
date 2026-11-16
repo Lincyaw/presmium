@@ -6,6 +6,10 @@ license = "Apache-2.0"
 edition = "2021"
 rust-version = "1.90"
 
+[workspace]
+members = ["update-verifier"]
+resolver = "2"
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
@@ -29,7 +33,3 @@ codegen-units = 1
 lto = true
 opt-level = "s"
 strip = true
-
-[dev-dependencies]
-base64 = "0.23"
-minisign-verify = "0.3"

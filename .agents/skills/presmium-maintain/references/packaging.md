@@ -112,7 +112,7 @@ the file unused.
 
 The installer also carries `build/gallery/` (a dereferenced copy of `examples/gallery`, its assets and committed speech caches, with initial Git history) and the Node initializer `build/gallery.mjs`. With no recent workspace, the launcher automatically opens `gallery-workspace` in the app's local data directory. The initializer copies atomically and links dependencies to the bundled runtime; it preserves an existing copy and author edits on upgrades. Later launches reopen the last workspace; the workspace menu switches to another directory. Editing and history still use the system's Git. Changes to the gallery or its linked skill sources trigger desktop builds.
 
-Generated gallery Git objects are owner-writable so Tauri can replace resource copies on repeated builds. Preparation also repairs only those generated `target/{debug,release}/gallery/.git` caches, respecting `CARGO_TARGET_DIR`; it never changes an author's repository. Verify a second real build, including the updater verifier's Cargo invocation.
+Generated gallery Git objects are owner-writable so Tauri can replace resource copies on repeated builds. Preparation also repairs only those generated `target/{debug,release}/gallery/.git` caches, respecting `CARGO_TARGET_DIR`; it never changes an author's repository. Verify a second real app build. The signature verifier is a separate minimal Rust workspace member and must not activate the desktop build script or copy app resources.
 
 Linux builds default to DEB. Afterwards `pnpm --filter presmium-desktop bundle:rpm` uses the public Tauri bundle command without recompiling: RPM metadata uses the numeric base version and release `0.<prerelease>` (stable: `1`), retaining the binary's full SemVer. Final RPM signatures bind that full application version, not the RPM metadata version. Verify the real Linux packages and their version/release fields; do not change the compiled application version just to satisfy a package manager.
 
@@ -146,7 +146,10 @@ Desktop updates use the public Tauri updater API in the native process, outside 
 The app version comes from `packages/presmium/package.json`. Keep version-bound signatures and the committed
 public key; private signing material stays outside the repository. Local builds leave updater artifact generation disabled; CI explicitly enables it and requires `TAURI_SIGNING_PRIVATE_KEY`
 (and the optional password secret). Never print or commit this key. `collect-updates.mjs` signs final bytes,
-including recompressed DEB packages. `publish-updates.mjs` requires all six architecture builds and all eight
+including recompressed DEB packages. Collection uses the public Tauri signing API, without relying on
+`npm_execpath` (which `pnpm exec` does not provide). `publish-updates.mjs` requires all six architecture builds and all eight
 package-format entries, uploads immutable files to the version Release, then promotes `desktop-updates/latest.json`.
 A rolling preview does not promote updates. Verify discovery, download, invalid signatures, Later, saved-and-restart,
 and reopening the workspace in the built app; do not claim Windows/Linux installation acceptance from a macOS run.
+
+Pin each CI checkout to the triggering commit (`github.sha`), or the explicitly selected immutable release tag, rather than a moving branch reference. All platform artifacts must come from the same verified source.
