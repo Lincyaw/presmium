@@ -17,7 +17,8 @@ const CSS = `
   .e-title { position:absolute; left:5cqw; top:10cqh; font-size:3.1cqw; font-weight:800; line-height:1.2; }
   .e-sub { position:absolute; left:5cqw; top:17cqh; font-size:1.55cqw; color:var(--c-muted); }
   .paper-window { position:absolute; left:4cqw; top:22cqh; width:64cqw; height:29cqw; overflow:hidden; background:white; border-radius:.7cqw; box-shadow:0 0 0 .12cqw var(--c-line-strong); }
-  .paper-mask { position:absolute; overflow:hidden; }\n  .paper-cam { position:absolute; transform-origin:0 0; }
+  .paper-mask { position:absolute; overflow:hidden; }
+  .paper-cam { position:absolute; transform-origin:0 0; }
   .paper-cam img { display:block; width:100%; height:100%; }
   .focus { position:absolute; border:.22cqw solid ${SC}; border-radius:.35cqw; pointer-events:none; }
   .scan { position:absolute; top:8%; height:76%; width:.12cqw; background:${TIS}; transform-origin:0 100%; }
@@ -122,7 +123,8 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
     ablation: side('s0','图 5 · 逐面板比较','32 / 128 / full','头部近似<br>与完整词表相当','','限于论文所测设置')+side('s1','同硬件 · 自定义 JAX','额外墙钟时间','k = 128','< 1%','vLLM / SGLang 开销未测')+side('s2','附录 B.3','按曲线读种子数','小模型主要比较：3<br>30B：1–5','','部分 top-k 消融：1 个种子')+'<div class="cost"><div class="cost-row"><span class="cost-label">基线</span><div class="cost-track"><div class="cost-fill" style="width:99%"></div></div></div><div class="cost-row"><span class="cost-label">SC · 128</span><div class="cost-track"><div class="cost-fill full" style="width:99%"></div><div class="cost-extra"></div></div></div></div><div class="cost-number">+ &lt;1%</div><div class="cost-note">0.6B 与 30B · 论文自定义 JAX 采样器</div>',
   }
   frame(root,CSS,header+'<div class="paper-window"><div class="paper-mask"><div class="paper-cam"><img src="'+fig.src+'" alt="'+fig.source+'"><div class="focus"></div><div class="scan"></div></div></div></div><div class="source">'+fig.source+'</div>'+extra[page])
-  const pose=(r:Region,k:number,f=0,duration=.8)=>{ const c=camera(r,fig.aspect); tl.to('.paper-mask',{...c.mask,duration,ease:'power2.inOut'},T(k,f)); return tl.to('.paper-cam',{...c.image,duration,ease:'power2.inOut'},T(k,f)) }\n  const setPose=(r:Region)=>{ const c=camera(r,fig.aspect); gsap.set('.paper-mask',c.mask); gsap.set('.paper-cam',c.image) }
+  const pose=(r:Region,k:number,f=0,duration=.8)=>{ const c=camera(r,fig.aspect); tl.to('.paper-mask',{...c.mask,duration,ease:'power2.inOut'},T(k,f)); return tl.to('.paper-cam',{...c.image,duration,ease:'power2.inOut'},T(k,f)) }
+  const setPose=(r:Region)=>{ const c=camera(r,fig.aspect); gsap.set('.paper-mask',c.mask); gsap.set('.paper-cam',c.image) }
   const note=(cls:string,k:number,f=.12)=>tl.to(cls,{autoAlpha:1,duration:.4},T(k,f))
   const swap=(old:string,next:string,k:number,f=0)=>{tl.to(old,{autoAlpha:0,duration:.28},T(k));note(next,k,f)}
   const ring=(r:Region,k:number,f=.2)=>{tl.to('.focus',{left:r.x*100+'%',top:r.y*100+'%',width:r.w*100+'%',height:r.h*100+'%',autoAlpha:1,duration:.6,ease:'power2.inOut'},T(k,f))}
@@ -155,7 +157,8 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
     pose({x:.655,y:0,w:.345,h:1},1,.49)
     ring({x:.69,y:.16,w:.225,h:.19},1,.6)
     pose(WHOLE,2,.02)
-    swap('.s1','.s2',2,.28)\n    note('.s2 .value',2,.61)
+    swap('.s1','.s2',2,.28)
+    note('.s2 .value',2,.61)
     ring({x:.15,y:.48,w:.05,h:.22},2,.21)
     ring({x:.42,y:.45,w:.05,h:.26},2,.42)
     ring({x:.70,y:.45,w:.05,h:.26},2,.62)
@@ -185,14 +188,17 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
     note('.s0',0,0)
     ring({x:.06,y:0,w:.92,h:.07},0,.4)
     pose({x:0,y:0,w:.343,h:1},1,.08)
-    swap('.s0','.s1',1,.17)\n    note('.s1 .value',1,.52)
+    swap('.s0','.s1',1,.17)
+    note('.s1 .value',1,.52)
     ring({x:.20,y:.07,w:.13,h:.17},1,.35)
     scan(.065,.327,1,.41,.75)
     pose({x:.342,y:0,w:.326,h:1},2,.04)
-    swap('.s1','.s2',2,.2)\n    note('.s2 .value',2,.62)
+    swap('.s1','.s2',2,.2)
+    note('.s2 .value',2,.62)
     ring({x:.49,y:.08,w:.17,h:.22},2,.4)
     pose({x:.67,y:0,w:.33,h:1},3,.03)
-    swap('.s2','.s3',3,.25)\n    note('.s3 .value',3,.47)
+    swap('.s2','.s3',3,.25)
+    note('.s3 .value',3,.47)
     ring({x:.88,y:.21,w:.108,h:.33},3,.42)
     tl.set({}, {}, T(4))
   } else {
@@ -208,7 +214,8 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
     swap('.s0','.s1',1,.1)
     tl.to('.cost',{autoAlpha:1,duration:.4},T(1,.04))
     tl.fromTo('.cost-fill',{scaleX:0},{scaleX:1,duration:1,stagger:.15,immediateRender:false},T(1,.2))
-    tl.to('.cost-number',{autoAlpha:1,duration:.4},T(1,.47))\n    note('.s1 .value',1,.47)
+    tl.to('.cost-number',{autoAlpha:1,duration:.4},T(1,.47))
+    note('.s1 .value',1,.47)
     tl.to('.cost-note',{autoAlpha:1,duration:.4},T(1,.62))
     tl.to(['.cost','.cost-number','.cost-note'],{autoAlpha:0,duration:.3},T(2))
     tl.to('.paper-window',{autoAlpha:1,duration:.4},T(2))
