@@ -91,7 +91,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
     tl.to('.traveller', { x: 21, duration: 1.2, ease: 'power2.inOut' }, T(0, .4))
     show('.trainer,.toP,.reward', 0, .58)
     show('.engineLabel', 1, .12)
-    tl.to('.traveller', { x: 43, duration: 1.4, ease: 'power2.inOut' }, T(1, .32))
+    tl.to('.traveller', { x: 62, duration: 1.4, ease: 'power2.inOut' }, T(1, .32))
     tl.to('.qFirst', { attr: { width: 16 }, duration: 1.3 }, T(2, .2))
     tl.to('.qHalf', { attr: { x: 83, width: 8 }, duration: 1.3 }, T(2, .2))
     show('.tim', 2, .52)
