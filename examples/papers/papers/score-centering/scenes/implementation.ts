@@ -127,7 +127,7 @@ export default gsapScene(({root,gsap,at,durations,parameters}) => {
         ${[.08,.06,.04,.02].map((v,i)=>`<rect x="${89+i*13}" y="${61-v*180}" width="8" height="${v*180}" fill="#4C72B0" rx="0.5"/>`).join('')}
         <line class="iline" x1="15" y1="61" x2="72" y2="61"/><line class="iline" x1="86" y1="61" x2="143" y2="61"/>
       </g></svg>
-      <div class="ieq residual icoral" style="left:13cqw;top:69cqh">残余均值 = Σ (qᵥ − q̂ᵥ) sᵥ</div>
+      <div class="ieq residual icoral" style="left:13cqw;top:29cqh;font-size:2.4cqw">残余均值 = Σ (qᵥ − q̂ᵥ) sᵥ</div>
       <div class="imeta">论文附录 A.1 · 质量与尾部形状为教学算例</div>
     `
     frame(root,CSS,brand('Score Centering')+`<div class="ititle">${title}</div>`+html)
