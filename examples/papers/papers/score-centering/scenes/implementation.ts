@@ -96,9 +96,26 @@ export default gsapScene(({root,gsap,at,durations,parameters}) => {
   if (page === 'tail') {
     const row=(cls:string,y:number,label:string,head:number,tail:number)=>`<g class="${cls}"><text x="13" y="${y-3}" class="isvg" font-size="2.8">${label}</text><rect x="13" y="${y}" width="${head*112}" height="8" rx="1" fill="#4C72B0"/><rect class="${cls}-tail" x="${13+head*112}" y="${y}" width="${tail*112}" height="8" rx="1" fill="var(--c-fit)"/><text x="${13+head*56}" y="${y+5.2}" text-anchor="middle" fill="white" class="isvg" font-size="2.8">头部 ${head.toFixed(1)}</text><text class="${cls}-tail-label" x="${13+head*112+tail*56}" y="${y+5.2}" text-anchor="middle" class="isvg" font-size="2.8">尾部 ${tail.toFixed(1)}</text></g>`
     html=`
-      <svg class="layer" ${LAYER}><g class="mass-bars">${row('qrow',26,'采样器 q',.8,.2)}${row('prow',47,'训练器 p',.7,.3)}</g></svg>
-      <div class="ieq rho iorange" style="left:9cqw;top:65cqh">ρ = 0.2 / 0.3 = 2/3</div>
-      <div class="ilabel scaled iteal" style="left:79cqw;top:56cqh">ρ p<tspan>ᵥ</tspan></div>
+      <svg class="layer" ${LAYER}><g class="mass-bars">
+        ${row('qrow',24,'采样器 q',.8,.2)}
+        ${row('prow',41,'训练器 p · 保持不变',.7,.3)}
+        <g class="qhat-track">
+          <text x="13" y="55" class="isvg" font-size="2.8">重建 q̂</text>
+          <rect x="13" y="58" width="112" height="8" rx="1" fill="none" stroke="var(--c-line-strong)" stroke-width="0.3"/>
+          <line x1="125" y1="56.5" x2="125" y2="67" stroke="var(--c-line-strong)" stroke-width="0.25"/>
+          <text x="129" y="63.5" class="isvg qhat-total" font-size="2.8">总和 1</text>
+        </g>
+        <g class="qhat-head-copy">
+          <rect class="qhat-head" x="13" y="24" width="89.6" height="8" rx="1" fill="#4C72B0"/>
+          <text x="57.8" y="29.2" text-anchor="middle" class="isvg" font-size="2.8">头部 0.8</text>
+        </g>
+        <g class="modeled-tail-copy">
+          <rect class="modeled-tail" x="91.4" y="41" width="33.6" height="8" rx="1" fill="#DD8452"/>
+          <text class="modeled-tail-value" x="102.6" y="46.2" text-anchor="middle" class="isvg" font-size="2.5">0.2</text>
+        </g>
+      </g></svg>
+      <div class="ilabel rho iorange" style="left:80cqw;top:28cqh;font-size:1.75cqw">ρ = 0.2 / 0.3<br><b>= 2/3</b></div>
+      <div class="ilabel scaled iorange" style="left:80cqw;top:47cqh;font-size:1.55cqw">模型尾部<br>ρ pᵥ</div>
       <div class="ieq tail-sum" style="left:9cqw;top:27cqh">Σ<tspan>ₜ</tspan> pᵥ sᵥ</div>
       <div class="ieq all-zero" style="left:9cqw;top:39cqh">Σ<tspan>全词表</tspan> pᵥ sᵥ = <b class="iteal">0</b></div>
       <div class="ieq reduce-arrow" style="left:36cqw;top:27cqh">→ <span class="iblue">− Σ<tspan>ₕ</tspan> pᵥ sᵥ</span></div>
@@ -114,17 +131,28 @@ export default gsapScene(({root,gsap,at,durations,parameters}) => {
       <div class="imeta">论文附录 A.1 · 质量与尾部形状为教学算例</div>
     `
     frame(root,CSS,brand('Score Centering')+`<div class="ititle">${title}</div>`+html)
-    gsap.set(['.rho','.scaled','.tail-sum','.all-zero','.reduce-arrow','.final-head','.approx-title','.approx-bars','.residual'],{autoAlpha:0})
+    gsap.set(['.rho','.scaled','.qhat-track','.qhat-total','.qhat-head-copy','.modeled-tail-copy','.modeled-tail-value','.tail-sum','.all-zero','.reduce-arrow','.final-head','.approx-title','.approx-bars','.residual'],{autoAlpha:0})
     tl.fromTo('.qrow',{x:-7},{x:0,duration:.8,immediateRender:false},T(0,.08))
     tl.fromTo('.prow',{x:7},{x:0,duration:.8,immediateRender:false},T(0,.3))
-    tl.to('.rho',{autoAlpha:1,duration:.5},T(1,.18))
-    tl.to('.prow-tail',{attr:{width:22.4},duration:1.4,ease:'power2.inOut'},T(1,.4))
-    tl.to('.prow-tail-label',{autoAlpha:0,duration:.4},T(1,.4))
-    tl.to('.scaled',{autoAlpha:1,duration:.5},T(1,.58))
-    // Cancellation uses the trainer identity; no unlogged tail scores need to be stored.
-    tl.to(['.mass-bars','.rho','.scaled'],{autoAlpha:0,duration:.5},T(2))
-    tl.to('.tail-sum',{autoAlpha:1,duration:.5},T(2))
+    tl.to('.rho',{autoAlpha:1,duration:.5},T(1,.1))
+    // Work on a copied tail so that the genuine trainer distribution remains unchanged.
+    tl.to('.modeled-tail-copy',{autoAlpha:1,duration:.3},T(1,.23))
+    tl.to('.modeled-tail',{attr:{width:22.4},duration:1.4,ease:'power2.inOut'},T(1,.27))
+    tl.to('.modeled-tail-value',{autoAlpha:1,duration:.3},T(1,.36))
+    tl.to('.scaled',{autoAlpha:1,duration:.4},T(1,.38))
+    // Reconstruct a whole normalized distribution: the real q head and the modeled p tail.
+    tl.to('.qhat-track',{autoAlpha:1,duration:.4},T(1,.44))
+    tl.to('.qhat-head-copy',{autoAlpha:1,duration:.2},T(1,.48))
+    tl.to('.qhat-head-copy',{y:34,duration:1.2,ease:'power2.inOut'},T(1,.5))
+    tl.to('.modeled-tail-copy',{x:11.2,y:17,duration:1.2,ease:'power2.inOut'},T(1,.58))
+    tl.to('.qhat-total',{autoAlpha:1,duration:.4},T(1,.68))
+    // Start the algebra beside the still-visible reconstruction; then clear the two reference
+    // rows only once the new mathematical representation has actually been established.
+    tl.to('.mass-bars',{scale:.58,x:60,y:25,transformOrigin:'0 0',duration:.7,ease:'power2.inOut'},T(2))
+    tl.to(['.rho','.scaled'],{autoAlpha:0,duration:.4},T(2))
+    tl.to('.tail-sum',{autoAlpha:1,duration:.5},T(2,.02))
     tl.to('.all-zero',{autoAlpha:1,duration:.5},T(2,.2))
+    tl.to('.mass-bars',{autoAlpha:0,duration:.5},T(2,.31))
     tl.to('.reduce-arrow',{autoAlpha:1,duration:.5},T(2,.42))
     tl.to('.final-head',{autoAlpha:1,duration:.5},T(2,.63))
     tl.to(['.tail-sum','.all-zero','.reduce-arrow','.final-head'],{autoAlpha:0,duration:.4},T(3))
