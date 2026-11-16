@@ -18,7 +18,9 @@ export function McpSettingsPanel() {
       if (!workbench.client.readMcpSettings) throw new Error('unsupported')
       const value = await workbench.client.readMcpSettings(controller.signal)
       if (owner.current && !controller.signal.aborted) accept(value)
-    } catch { if (owner.current && !controller.signal.aborted) setFailure(t.unavailable) }
+    } catch (error) {
+      if (owner.current && !controller.signal.aborted) setFailure(error instanceof WorkspaceServerError && error.status === 404 ? t.outdatedService : t.unavailable)
+    }
     finally { if (owner.current && !controller.signal.aborted) setBusy(false) }
   }
   useEffect(() => { owner.current = true; void load(); return () => { owner.current = false; request.current?.abort() } }, [workbench])
