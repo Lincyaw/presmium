@@ -221,13 +221,15 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
     ring({x:.88,y:.21,w:.108,h:.33},3,.42)
     tl.set({}, {}, T(4))
   } else {
-    setPose({x:0,y:0,w:.335,h:.325})
+    // Orient on the full grid before the same camera visits three representative settings.
+    setPose(WHOLE)
     gsap.set(['.cost','.cost-number','.cost-note'],{autoAlpha:0})
     note('.s0',0,0)
+    pose({x:0,y:0,w:.335,h:.325},0,.06)
     ring({x:.185,y:.20,w:.14,h:.08},0,.18)
-    pose({x:.333,y:.326,w:.335,h:.325},0,.34)
+    pose({x:.333,y:.326,w:.335,h:.325},0,.32)
     ring({x:.51,y:.53,w:.14,h:.08},0,.44)
-    pose({x:.666,y:.653,w:.334,h:.347},0,.62)
+    pose({x:.666,y:.653,w:.334,h:.347},0,.60)
     ring({x:.84,y:.85,w:.15,h:.09},0,.74)
     tl.to('.paper-window',{autoAlpha:.12,duration:.4},T(1,.21))
     swap('.s0','.s1',1,.1)
