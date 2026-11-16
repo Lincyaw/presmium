@@ -1,0 +1,4422 @@
+{
+  "schemaVersion": 1,
+  "id": "78c73a98-c116-4a2c-9809-c4729453af5c",
+  "metadata": {
+    "title": "Score Centering：训练与采样不一致时，怎样消除强化学习的漂移",
+    "description": "从双 token 算例到逐前缀梯度分解、top-k实现与五组实验的详细配音动画。",
+    "lang": "zh-CN",
+    "tags": [
+      "论文",
+      "强化学习",
+      "Score Centering",
+      "训练与推理不一致"
+    ],
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-speech"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {},
+      "lecture": {
+        "video": {
+          "burn": "zh-CN",
+          "contactSheet": true,
+          "size": [
+            1920,
+            1080
+          ],
+          "fps": 30
+        }
+      }
+    }
+  },
+  "sectionOrder": [
+    "p-opening",
+    "p-loop",
+    "p-score",
+    "p-zero",
+    "p-mismatch",
+    "p-feedback",
+    "p-split",
+    "p-group",
+    "p-center",
+    "p-signal",
+    "p-is",
+    "p-compose",
+    "p-topk",
+    "p-tail",
+    "p-loss",
+    "p-code",
+    "p-study",
+    "p-noise",
+    "p-quant",
+    "p-stale",
+    "p-scale",
+    "p-ablation",
+    "p-practice",
+    "p-ending",
+    "p-notes"
+  ],
+  "sections": {
+    "p-opening": {
+      "id": "p-opening",
+      "title": "Score Centering：消除强化学习的漂移",
+      "level": 2,
+      "children": [
+        "opening--scene"
+      ],
+      "stepOrder": [
+        "opening--cover"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-loop": {
+      "id": "p-loop",
+      "title": "同一模型，采样与训练也会不一致",
+      "level": 2,
+      "children": [
+        "loop--scene"
+      ],
+      "stepOrder": [
+        "loop--task",
+        "loop--engines",
+        "loop--mismatch",
+        "loop--sync"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-score": {
+      "id": "p-score",
+      "title": "score 是对数概率的梯度方向",
+      "level": 2,
+      "children": [
+        "score--scene"
+      ],
+      "stepOrder": [
+        "score--prefix",
+        "score--derivative",
+        "score--vector"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-zero": {
+      "id": "p-zero",
+      "title": "同策略时，平均 score 正好为零",
+      "level": 2,
+      "children": [
+        "zero--scene"
+      ],
+      "stepOrder": [
+        "zero--equal",
+        "zero--weighted",
+        "zero--cancel"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-mismatch": {
+      "id": "p-mismatch",
+      "title": "换成 q 采样，零均值被打破",
+      "level": 2,
+      "children": [
+        "mismatch--scene"
+      ],
+      "stepOrder": [
+        "mismatch--shift",
+        "mismatch--biased",
+        "mismatch--constant"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-feedback": {
+      "id": "p-feedback",
+      "title": "同步循环会把偏差反复带回来",
+      "level": 2,
+      "children": [
+        "feedback--scene"
+      ],
+      "stepOrder": [
+        "feedback--fixed",
+        "feedback--moving",
+        "feedback--accumulate"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-split": {
+      "id": "p-split",
+      "title": "一次更新包含漂移和奖励信号",
+      "level": 2,
+      "children": [
+        "split--scene"
+      ],
+      "stepOrder": [
+        "split--update",
+        "split--identity",
+        "split--meaning"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-group": {
+      "id": "p-group",
+      "title": "整组优势为零，前缀均值仍可非零",
+      "level": 2,
+      "children": [
+        "group--scene"
+      ],
+      "stepOrder": [
+        "group--group",
+        "group--prefix",
+        "group--residual"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-center": {
+      "id": "p-center",
+      "title": "把每个 score 减去同一前缀的均值",
+      "level": 2,
+      "children": [
+        "center--scene"
+      ],
+      "stepOrder": [
+        "center--mean",
+        "center--subtract",
+        "center--zero"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-signal": {
+      "id": "p-signal",
+      "title": "消掉漂移，仍然保留奖励的区分",
+      "level": 2,
+      "children": [
+        "signal--scene"
+      ],
+      "stepOrder": [
+        "signal--reward",
+        "signal--covariance",
+        "signal--distribution"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-is": {
+      "id": "p-is",
+      "title": "重要性采样与中心化修正不同部分",
+      "level": 2,
+      "children": [
+        "is--scene"
+      ],
+      "stepOrder": [
+        "is--ratio",
+        "is--exact",
+        "is--rare",
+        "is--clip"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-compose": {
+      "id": "p-compose",
+      "title": "先加权，再减去加权 score 的均值",
+      "level": 2,
+      "children": [
+        "compose--scene"
+      ],
+      "stepOrder": [
+        "compose--weighted",
+        "compose--recenter",
+        "compose--sanity"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-topk": {
+      "id": "p-topk",
+      "title": "完整词表的存储成本太高",
+      "level": 2,
+      "children": [
+        "topk--scene"
+      ],
+      "stepOrder": [
+        "topk--vocabulary",
+        "topk--memory",
+        "topk--head",
+        "topk--tail"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-tail": {
+      "id": "p-tail",
+      "title": "保留尾部质量，再把求和化到头部",
+      "level": 2,
+      "children": [
+        "tail--scene"
+      ],
+      "stepOrder": [
+        "tail--masses",
+        "tail--scale",
+        "tail--reduce",
+        "tail--approximation"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-loss": {
+      "id": "p-loss",
+      "title": "用一个标量损失得到中心化梯度",
+      "level": 2,
+      "children": [
+        "loss--scene"
+      ],
+      "stepOrder": [
+        "loss--full",
+        "loss--detach",
+        "loss--gradient"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-code": {
+      "id": "p-code",
+      "title": "把公式逐行对应到实现",
+      "level": 2,
+      "children": [
+        "code--scene"
+      ],
+      "stepOrder": [
+        "code--inputs",
+        "code--tailratio",
+        "code--residual",
+        "code--return"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-study": {
+      "id": "p-study",
+      "title": "先分清离线、在线和奖励设置",
+      "level": 2,
+      "children": [
+        "study--scene"
+      ],
+      "stepOrder": [
+        "study--controls",
+        "study--rewards",
+        "study--online"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-noise": {
+      "id": "p-noise",
+      "title": "偏差越强，崩溃越早出现",
+      "level": 2,
+      "children": [
+        "noise--scene"
+      ],
+      "stepOrder": [
+        "noise--axes",
+        "noise--severity",
+        "noise--collapse"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-quant": {
+      "id": "p-quant",
+      "title": "量化采样器时，中心化保持稳定",
+      "level": 2,
+      "children": [
+        "quant--scene"
+      ],
+      "stepOrder": [
+        "quant--setup",
+        "quant--curves",
+        "quant--result"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-stale": {
+      "id": "p-stale",
+      "title": "明显滞后时，组合优于单独中心化",
+      "level": 2,
+      "children": [
+        "stale--scene"
+      ],
+      "stepOrder": [
+        "stale--timeline",
+        "stale--curves",
+        "stale--compose"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-scale": {
+      "id": "p-scale",
+      "title": "三十 B 实验：量化越强，差距越大",
+      "level": 2,
+      "children": [
+        "scale--scene"
+      ],
+      "stepOrder": [
+        "scale--model",
+        "scale--mild",
+        "scale--medium",
+        "scale--severe"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-ablation": {
+      "id": "p-ablation",
+      "title": "top-k 近似的证据与成本范围",
+      "level": 2,
+      "children": [
+        "ablation--scene"
+      ],
+      "stepOrder": [
+        "ablation--topk",
+        "ablation--cost",
+        "ablation--seeds"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-practice": {
+      "id": "p-practice",
+      "title": "把方法接回真实训练循环",
+      "level": 2,
+      "children": [
+        "practice--scene"
+      ],
+      "stepOrder": [
+        "practice--diagnose",
+        "practice--integrate",
+        "practice--validate"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-ending": {
+      "id": "p-ending",
+      "title": "消除漂移，保留奖励信号",
+      "level": 2,
+      "children": [
+        "ending--scene"
+      ],
+      "stepOrder": [
+        "ending--summary"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-notes": {
+      "id": "p-notes",
+      "title": "来源与说明",
+      "children": [
+        "sources"
+      ],
+      "stepOrder": [
+        "notes--sources"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "opening--scene": {
+      "id": "opening--scene",
+      "type": "component",
+      "definitionId": "opening--definition",
+      "parameters": {
+        "page": "opening",
+        "title": "Score Centering：消除强化学习的漂移",
+        "alt": "Score Centering：消除强化学习的漂移"
+      }
+    },
+    "loop--scene": {
+      "id": "loop--scene",
+      "type": "component",
+      "definitionId": "loop--definition",
+      "parameters": {
+        "page": "loop",
+        "title": "同一模型，采样与训练也会不一致",
+        "alt": "同一模型，采样与训练也会不一致"
+      }
+    },
+    "score--scene": {
+      "id": "score--scene",
+      "type": "component",
+      "definitionId": "score--definition",
+      "parameters": {
+        "page": "score",
+        "title": "score 是对数概率的梯度方向",
+        "alt": "score 是对数概率的梯度方向"
+      }
+    },
+    "zero--scene": {
+      "id": "zero--scene",
+      "type": "component",
+      "definitionId": "zero--definition",
+      "parameters": {
+        "page": "zero",
+        "title": "同策略时，平均 score 正好为零",
+        "alt": "同策略时，平均 score 正好为零"
+      }
+    },
+    "mismatch--scene": {
+      "id": "mismatch--scene",
+      "type": "component",
+      "definitionId": "mismatch--definition",
+      "parameters": {
+        "page": "mismatch",
+        "title": "换成 q 采样，零均值被打破",
+        "alt": "换成 q 采样，零均值被打破"
+      }
+    },
+    "feedback--scene": {
+      "id": "feedback--scene",
+      "type": "component",
+      "definitionId": "feedback--definition",
+      "parameters": {
+        "page": "feedback",
+        "title": "同步循环会把偏差反复带回来",
+        "alt": "同步循环会把偏差反复带回来"
+      }
+    },
+    "split--scene": {
+      "id": "split--scene",
+      "type": "component",
+      "definitionId": "split--definition",
+      "parameters": {
+        "page": "split",
+        "title": "一次更新包含漂移和奖励信号",
+        "alt": "一次更新包含漂移和奖励信号"
+      }
+    },
+    "group--scene": {
+      "id": "group--scene",
+      "type": "component",
+      "definitionId": "group--definition",
+      "parameters": {
+        "page": "group",
+        "title": "整组优势为零，前缀均值仍可非零",
+        "alt": "整组优势为零，前缀均值仍可非零"
+      }
+    },
+    "center--scene": {
+      "id": "center--scene",
+      "type": "component",
+      "definitionId": "center--definition",
+      "parameters": {
+        "page": "center",
+        "title": "把每个 score 减去同一前缀的均值",
+        "alt": "把每个 score 减去同一前缀的均值"
+      }
+    },
+    "signal--scene": {
+      "id": "signal--scene",
+      "type": "component",
+      "definitionId": "signal--definition",
+      "parameters": {
+        "page": "signal",
+        "title": "消掉漂移，仍然保留奖励的区分",
+        "alt": "消掉漂移，仍然保留奖励的区分"
+      }
+    },
+    "is--scene": {
+      "id": "is--scene",
+      "type": "component",
+      "definitionId": "is--definition",
+      "parameters": {
+        "page": "is",
+        "title": "重要性采样与中心化修正不同部分",
+        "alt": "重要性采样与中心化修正不同部分"
+      }
+    },
+    "compose--scene": {
+      "id": "compose--scene",
+      "type": "component",
+      "definitionId": "compose--definition",
+      "parameters": {
+        "page": "compose",
+        "title": "先加权，再减去加权 score 的均值",
+        "alt": "先加权，再减去加权 score 的均值"
+      }
+    },
+    "topk--scene": {
+      "id": "topk--scene",
+      "type": "component",
+      "definitionId": "topk--definition",
+      "parameters": {
+        "page": "topk",
+        "title": "完整词表的存储成本太高",
+        "alt": "完整词表的存储成本太高"
+      }
+    },
+    "tail--scene": {
+      "id": "tail--scene",
+      "type": "component",
+      "definitionId": "tail--definition",
+      "parameters": {
+        "page": "tail",
+        "title": "保留尾部质量，再把求和化到头部",
+        "alt": "保留尾部质量，再把求和化到头部"
+      }
+    },
+    "loss--scene": {
+      "id": "loss--scene",
+      "type": "component",
+      "definitionId": "loss--definition",
+      "parameters": {
+        "page": "loss",
+        "title": "用一个标量损失得到中心化梯度",
+        "alt": "用一个标量损失得到中心化梯度"
+      }
+    },
+    "code--scene": {
+      "id": "code--scene",
+      "type": "component",
+      "definitionId": "code--definition",
+      "parameters": {
+        "page": "code",
+        "title": "把公式逐行对应到实现",
+        "alt": "把公式逐行对应到实现"
+      }
+    },
+    "study--scene": {
+      "id": "study--scene",
+      "type": "component",
+      "definitionId": "study--definition",
+      "parameters": {
+        "page": "study",
+        "title": "先分清离线、在线和奖励设置",
+        "alt": "先分清离线、在线和奖励设置"
+      }
+    },
+    "noise--scene": {
+      "id": "noise--scene",
+      "type": "component",
+      "definitionId": "noise--definition",
+      "parameters": {
+        "page": "noise",
+        "title": "偏差越强，崩溃越早出现",
+        "alt": "偏差越强，崩溃越早出现"
+      }
+    },
+    "quant--scene": {
+      "id": "quant--scene",
+      "type": "component",
+      "definitionId": "quant--definition",
+      "parameters": {
+        "page": "quant",
+        "title": "量化采样器时，中心化保持稳定",
+        "alt": "量化采样器时，中心化保持稳定"
+      }
+    },
+    "stale--scene": {
+      "id": "stale--scene",
+      "type": "component",
+      "definitionId": "stale--definition",
+      "parameters": {
+        "page": "stale",
+        "title": "明显滞后时，组合优于单独中心化",
+        "alt": "明显滞后时，组合优于单独中心化"
+      }
+    },
+    "scale--scene": {
+      "id": "scale--scene",
+      "type": "component",
+      "definitionId": "scale--definition",
+      "parameters": {
+        "page": "scale",
+        "title": "三十 B 实验：量化越强，差距越大",
+        "alt": "三十 B 实验：量化越强，差距越大"
+      }
+    },
+    "ablation--scene": {
+      "id": "ablation--scene",
+      "type": "component",
+      "definitionId": "ablation--definition",
+      "parameters": {
+        "page": "ablation",
+        "title": "top-k 近似的证据与成本范围",
+        "alt": "top-k 近似的证据与成本范围"
+      }
+    },
+    "practice--scene": {
+      "id": "practice--scene",
+      "type": "component",
+      "definitionId": "practice--definition",
+      "parameters": {
+        "page": "practice",
+        "title": "把方法接回真实训练循环",
+        "alt": "把方法接回真实训练循环"
+      }
+    },
+    "ending--scene": {
+      "id": "ending--scene",
+      "type": "component",
+      "definitionId": "ending--definition",
+      "parameters": {
+        "page": "ending",
+        "title": "消除漂移，保留奖励信号",
+        "alt": "消除漂移，保留奖励信号",
+        "summary": "消除漂移，保留奖励信号",
+        "paper": "Score Centering"
+      }
+    },
+    "sources": {
+      "id": "sources",
+      "type": "text",
+      "only": [
+        "web",
+        "notebook"
+      ],
+      "content": [
+        {
+          "id": "sources-p0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Martin Marek、Max Ryabinin（Together AI）：Score Centering Stabilizes Off-policy Reinforcement Learning，arXiv:2609.20807v1，2026-09-17。原文：https://arxiv.org/abs/2609.20807。"
+            }
+          ]
+        },
+        {
+          "id": "sources-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "方法与公式：§2.2重要性采样；§4公式3至5的逐前缀漂移分解与score中心化；§4.1最小JAX实现；附录A.1尾部重建、A.2加权score中心化、A.3标量损失、A.4 top-k消融。"
+            }
+          ]
+        },
+        {
+          "id": "sources-p2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "数值教学例子采用p=(0.5,0.5)、q=(0.6,0.4)与单一二分类logit；score=(0.5,-0.5)，均值0.1，中心化后(0.4,-0.6)。奖励为(1,0)时，原更新0.3，漂移0.06，SC更新0.24，同策略更新0.25。scenes/data/derive.py重算全部数值。"
+            }
+          ]
+        },
+        {
+          "id": "sources-p3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "实验图直接从原始压缩包里的plots/*.pdf渲染，保留原图坐标、图例与阴影。图2、图3为留出评测准确率；图1、图4、图5为训练准确率。阴影是均值±1标准误。"
+            }
+          ]
+        },
+        {
+          "id": "sources-p4",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "§5.4的30B数字是训练准确率：FP8设置PG约58%；FP4 KV设置SC52%、TIS51%；INT8 W/A加INT4 KV设置SC30%、TIS12%，其余结束低于5%。图4的滞后设置是采样器每64个训练步同步一次。"
+            }
+          ]
+        },
+        {
+          "id": "sources-p5",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "论文将各修正规则放在相同组中心化REINFORCE目标下，不复现每个算法的完整配方。使用SGD、固定学习率0.01、每题8条回答；小模型最长512token、30B最长1024token。实验刻意增强不一致以在短训练中区分方法。"
+            }
+          ]
+        },
+        {
+          "id": "sources-p6",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "完整分布中心化精确消除逐前缀漂移。top-k版本按训练器尾部形状重建采样器尾部，是近似。默认k=128，k=32在所测设置表现相当；JAX匹配硬件的墙钟差在1%以内，未测vLLM/SGLang的额外开销。30B种子数不等，部分消融单种子。"
+            }
+          ]
+        },
+        {
+          "id": "sources-p7",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "本片教学动画的同步轨迹、梯度箭头与词表图用于解释机制；实验结果仅由原文实验图和正文读出。实际音频、时长、字幕与导出检查记录见storyboard.md。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "opening--cover": {
+      "id": "opening--cover",
+      "sectionId": "p-opening",
+      "title": "cover",
+      "visuals": [
+        {
+          "blockId": "opening--scene",
+          "visible": true,
+          "state": "cover"
+        }
+      ],
+      "narrationIds": [
+        "opening--cover--narration"
+      ]
+    },
+    "loop--task": {
+      "id": "loop--task",
+      "sectionId": "p-loop",
+      "title": "task",
+      "visuals": [
+        {
+          "blockId": "loop--scene",
+          "visible": true,
+          "state": "task"
+        }
+      ],
+      "narrationIds": [
+        "loop--task--narration"
+      ]
+    },
+    "loop--engines": {
+      "id": "loop--engines",
+      "sectionId": "p-loop",
+      "title": "engines",
+      "visuals": [
+        {
+          "blockId": "loop--scene",
+          "visible": true,
+          "state": "engines"
+        }
+      ],
+      "narrationIds": [
+        "loop--engines--narration"
+      ]
+    },
+    "loop--mismatch": {
+      "id": "loop--mismatch",
+      "sectionId": "p-loop",
+      "title": "mismatch",
+      "visuals": [
+        {
+          "blockId": "loop--scene",
+          "visible": true,
+          "state": "mismatch"
+        }
+      ],
+      "narrationIds": [
+        "loop--mismatch--narration"
+      ]
+    },
+    "loop--sync": {
+      "id": "loop--sync",
+      "sectionId": "p-loop",
+      "title": "sync",
+      "visuals": [
+        {
+          "blockId": "loop--scene",
+          "visible": true,
+          "state": "sync"
+        }
+      ],
+      "narrationIds": [
+        "loop--sync--narration"
+      ]
+    },
+    "score--prefix": {
+      "id": "score--prefix",
+      "sectionId": "p-score",
+      "title": "prefix",
+      "visuals": [
+        {
+          "blockId": "score--scene",
+          "visible": true,
+          "state": "prefix"
+        }
+      ],
+      "narrationIds": [
+        "score--prefix--narration"
+      ]
+    },
+    "score--derivative": {
+      "id": "score--derivative",
+      "sectionId": "p-score",
+      "title": "derivative",
+      "visuals": [
+        {
+          "blockId": "score--scene",
+          "visible": true,
+          "state": "derivative"
+        }
+      ],
+      "narrationIds": [
+        "score--derivative--narration"
+      ]
+    },
+    "score--vector": {
+      "id": "score--vector",
+      "sectionId": "p-score",
+      "title": "vector",
+      "visuals": [
+        {
+          "blockId": "score--scene",
+          "visible": true,
+          "state": "vector"
+        }
+      ],
+      "narrationIds": [
+        "score--vector--narration"
+      ]
+    },
+    "zero--equal": {
+      "id": "zero--equal",
+      "sectionId": "p-zero",
+      "title": "equal",
+      "visuals": [
+        {
+          "blockId": "zero--scene",
+          "visible": true,
+          "state": "equal"
+        }
+      ],
+      "narrationIds": [
+        "zero--equal--narration"
+      ]
+    },
+    "zero--weighted": {
+      "id": "zero--weighted",
+      "sectionId": "p-zero",
+      "title": "weighted",
+      "visuals": [
+        {
+          "blockId": "zero--scene",
+          "visible": true,
+          "state": "weighted"
+        }
+      ],
+      "narrationIds": [
+        "zero--weighted--narration"
+      ]
+    },
+    "zero--cancel": {
+      "id": "zero--cancel",
+      "sectionId": "p-zero",
+      "title": "cancel",
+      "visuals": [
+        {
+          "blockId": "zero--scene",
+          "visible": true,
+          "state": "cancel"
+        }
+      ],
+      "narrationIds": [
+        "zero--cancel--narration"
+      ]
+    },
+    "mismatch--shift": {
+      "id": "mismatch--shift",
+      "sectionId": "p-mismatch",
+      "title": "shift",
+      "visuals": [
+        {
+          "blockId": "mismatch--scene",
+          "visible": true,
+          "state": "shift"
+        }
+      ],
+      "narrationIds": [
+        "mismatch--shift--narration"
+      ]
+    },
+    "mismatch--biased": {
+      "id": "mismatch--biased",
+      "sectionId": "p-mismatch",
+      "title": "biased",
+      "visuals": [
+        {
+          "blockId": "mismatch--scene",
+          "visible": true,
+          "state": "biased"
+        }
+      ],
+      "narrationIds": [
+        "mismatch--biased--narration"
+      ]
+    },
+    "mismatch--constant": {
+      "id": "mismatch--constant",
+      "sectionId": "p-mismatch",
+      "title": "constant",
+      "visuals": [
+        {
+          "blockId": "mismatch--scene",
+          "visible": true,
+          "state": "constant"
+        }
+      ],
+      "narrationIds": [
+        "mismatch--constant--narration"
+      ]
+    },
+    "feedback--fixed": {
+      "id": "feedback--fixed",
+      "sectionId": "p-feedback",
+      "title": "fixed",
+      "visuals": [
+        {
+          "blockId": "feedback--scene",
+          "visible": true,
+          "state": "fixed"
+        }
+      ],
+      "narrationIds": [
+        "feedback--fixed--narration"
+      ]
+    },
+    "feedback--moving": {
+      "id": "feedback--moving",
+      "sectionId": "p-feedback",
+      "title": "moving",
+      "visuals": [
+        {
+          "blockId": "feedback--scene",
+          "visible": true,
+          "state": "moving"
+        }
+      ],
+      "narrationIds": [
+        "feedback--moving--narration"
+      ]
+    },
+    "feedback--accumulate": {
+      "id": "feedback--accumulate",
+      "sectionId": "p-feedback",
+      "title": "accumulate",
+      "visuals": [
+        {
+          "blockId": "feedback--scene",
+          "visible": true,
+          "state": "accumulate"
+        }
+      ],
+      "narrationIds": [
+        "feedback--accumulate--narration"
+      ]
+    },
+    "split--update": {
+      "id": "split--update",
+      "sectionId": "p-split",
+      "title": "update",
+      "visuals": [
+        {
+          "blockId": "split--scene",
+          "visible": true,
+          "state": "update"
+        }
+      ],
+      "narrationIds": [
+        "split--update--narration"
+      ]
+    },
+    "split--identity": {
+      "id": "split--identity",
+      "sectionId": "p-split",
+      "title": "identity",
+      "visuals": [
+        {
+          "blockId": "split--scene",
+          "visible": true,
+          "state": "identity"
+        }
+      ],
+      "narrationIds": [
+        "split--identity--narration"
+      ]
+    },
+    "split--meaning": {
+      "id": "split--meaning",
+      "sectionId": "p-split",
+      "title": "meaning",
+      "visuals": [
+        {
+          "blockId": "split--scene",
+          "visible": true,
+          "state": "meaning"
+        }
+      ],
+      "narrationIds": [
+        "split--meaning--narration"
+      ]
+    },
+    "group--group": {
+      "id": "group--group",
+      "sectionId": "p-group",
+      "title": "group",
+      "visuals": [
+        {
+          "blockId": "group--scene",
+          "visible": true,
+          "state": "group"
+        }
+      ],
+      "narrationIds": [
+        "group--group--narration"
+      ]
+    },
+    "group--prefix": {
+      "id": "group--prefix",
+      "sectionId": "p-group",
+      "title": "prefix",
+      "visuals": [
+        {
+          "blockId": "group--scene",
+          "visible": true,
+          "state": "prefix"
+        }
+      ],
+      "narrationIds": [
+        "group--prefix--narration"
+      ]
+    },
+    "group--residual": {
+      "id": "group--residual",
+      "sectionId": "p-group",
+      "title": "residual",
+      "visuals": [
+        {
+          "blockId": "group--scene",
+          "visible": true,
+          "state": "residual"
+        }
+      ],
+      "narrationIds": [
+        "group--residual--narration"
+      ]
+    },
+    "center--mean": {
+      "id": "center--mean",
+      "sectionId": "p-center",
+      "title": "mean",
+      "visuals": [
+        {
+          "blockId": "center--scene",
+          "visible": true,
+          "state": "mean"
+        }
+      ],
+      "narrationIds": [
+        "center--mean--narration"
+      ]
+    },
+    "center--subtract": {
+      "id": "center--subtract",
+      "sectionId": "p-center",
+      "title": "subtract",
+      "visuals": [
+        {
+          "blockId": "center--scene",
+          "visible": true,
+          "state": "subtract"
+        }
+      ],
+      "narrationIds": [
+        "center--subtract--narration"
+      ]
+    },
+    "center--zero": {
+      "id": "center--zero",
+      "sectionId": "p-center",
+      "title": "zero",
+      "visuals": [
+        {
+          "blockId": "center--scene",
+          "visible": true,
+          "state": "zero"
+        }
+      ],
+      "narrationIds": [
+        "center--zero--narration"
+      ]
+    },
+    "signal--reward": {
+      "id": "signal--reward",
+      "sectionId": "p-signal",
+      "title": "reward",
+      "visuals": [
+        {
+          "blockId": "signal--scene",
+          "visible": true,
+          "state": "reward"
+        }
+      ],
+      "narrationIds": [
+        "signal--reward--narration"
+      ]
+    },
+    "signal--covariance": {
+      "id": "signal--covariance",
+      "sectionId": "p-signal",
+      "title": "covariance",
+      "visuals": [
+        {
+          "blockId": "signal--scene",
+          "visible": true,
+          "state": "covariance"
+        }
+      ],
+      "narrationIds": [
+        "signal--covariance--narration"
+      ]
+    },
+    "signal--distribution": {
+      "id": "signal--distribution",
+      "sectionId": "p-signal",
+      "title": "distribution",
+      "visuals": [
+        {
+          "blockId": "signal--scene",
+          "visible": true,
+          "state": "distribution"
+        }
+      ],
+      "narrationIds": [
+        "signal--distribution--narration"
+      ]
+    },
+    "is--ratio": {
+      "id": "is--ratio",
+      "sectionId": "p-is",
+      "title": "ratio",
+      "visuals": [
+        {
+          "blockId": "is--scene",
+          "visible": true,
+          "state": "ratio"
+        }
+      ],
+      "narrationIds": [
+        "is--ratio--narration"
+      ]
+    },
+    "is--exact": {
+      "id": "is--exact",
+      "sectionId": "p-is",
+      "title": "exact",
+      "visuals": [
+        {
+          "blockId": "is--scene",
+          "visible": true,
+          "state": "exact"
+        }
+      ],
+      "narrationIds": [
+        "is--exact--narration"
+      ]
+    },
+    "is--rare": {
+      "id": "is--rare",
+      "sectionId": "p-is",
+      "title": "rare",
+      "visuals": [
+        {
+          "blockId": "is--scene",
+          "visible": true,
+          "state": "rare"
+        }
+      ],
+      "narrationIds": [
+        "is--rare--narration"
+      ]
+    },
+    "is--clip": {
+      "id": "is--clip",
+      "sectionId": "p-is",
+      "title": "clip",
+      "visuals": [
+        {
+          "blockId": "is--scene",
+          "visible": true,
+          "state": "clip"
+        }
+      ],
+      "narrationIds": [
+        "is--clip--narration"
+      ]
+    },
+    "compose--weighted": {
+      "id": "compose--weighted",
+      "sectionId": "p-compose",
+      "title": "weighted",
+      "visuals": [
+        {
+          "blockId": "compose--scene",
+          "visible": true,
+          "state": "weighted"
+        }
+      ],
+      "narrationIds": [
+        "compose--weighted--narration"
+      ]
+    },
+    "compose--recenter": {
+      "id": "compose--recenter",
+      "sectionId": "p-compose",
+      "title": "recenter",
+      "visuals": [
+        {
+          "blockId": "compose--scene",
+          "visible": true,
+          "state": "recenter"
+        }
+      ],
+      "narrationIds": [
+        "compose--recenter--narration"
+      ]
+    },
+    "compose--sanity": {
+      "id": "compose--sanity",
+      "sectionId": "p-compose",
+      "title": "sanity",
+      "visuals": [
+        {
+          "blockId": "compose--scene",
+          "visible": true,
+          "state": "sanity"
+        }
+      ],
+      "narrationIds": [
+        "compose--sanity--narration"
+      ]
+    },
+    "topk--vocabulary": {
+      "id": "topk--vocabulary",
+      "sectionId": "p-topk",
+      "title": "vocabulary",
+      "visuals": [
+        {
+          "blockId": "topk--scene",
+          "visible": true,
+          "state": "vocabulary"
+        }
+      ],
+      "narrationIds": [
+        "topk--vocabulary--narration"
+      ]
+    },
+    "topk--memory": {
+      "id": "topk--memory",
+      "sectionId": "p-topk",
+      "title": "memory",
+      "visuals": [
+        {
+          "blockId": "topk--scene",
+          "visible": true,
+          "state": "memory"
+        }
+      ],
+      "narrationIds": [
+        "topk--memory--narration"
+      ]
+    },
+    "topk--head": {
+      "id": "topk--head",
+      "sectionId": "p-topk",
+      "title": "head",
+      "visuals": [
+        {
+          "blockId": "topk--scene",
+          "visible": true,
+          "state": "head"
+        }
+      ],
+      "narrationIds": [
+        "topk--head--narration"
+      ]
+    },
+    "topk--tail": {
+      "id": "topk--tail",
+      "sectionId": "p-topk",
+      "title": "tail",
+      "visuals": [
+        {
+          "blockId": "topk--scene",
+          "visible": true,
+          "state": "tail"
+        }
+      ],
+      "narrationIds": [
+        "topk--tail--narration"
+      ]
+    },
+    "tail--masses": {
+      "id": "tail--masses",
+      "sectionId": "p-tail",
+      "title": "masses",
+      "visuals": [
+        {
+          "blockId": "tail--scene",
+          "visible": true,
+          "state": "masses"
+        }
+      ],
+      "narrationIds": [
+        "tail--masses--narration"
+      ]
+    },
+    "tail--scale": {
+      "id": "tail--scale",
+      "sectionId": "p-tail",
+      "title": "scale",
+      "visuals": [
+        {
+          "blockId": "tail--scene",
+          "visible": true,
+          "state": "scale"
+        }
+      ],
+      "narrationIds": [
+        "tail--scale--narration"
+      ]
+    },
+    "tail--reduce": {
+      "id": "tail--reduce",
+      "sectionId": "p-tail",
+      "title": "reduce",
+      "visuals": [
+        {
+          "blockId": "tail--scene",
+          "visible": true,
+          "state": "reduce"
+        }
+      ],
+      "narrationIds": [
+        "tail--reduce--narration"
+      ]
+    },
+    "tail--approximation": {
+      "id": "tail--approximation",
+      "sectionId": "p-tail",
+      "title": "approximation",
+      "visuals": [
+        {
+          "blockId": "tail--scene",
+          "visible": true,
+          "state": "approximation"
+        }
+      ],
+      "narrationIds": [
+        "tail--approximation--narration"
+      ]
+    },
+    "loss--full": {
+      "id": "loss--full",
+      "sectionId": "p-loss",
+      "title": "full",
+      "visuals": [
+        {
+          "blockId": "loss--scene",
+          "visible": true,
+          "state": "full"
+        }
+      ],
+      "narrationIds": [
+        "loss--full--narration"
+      ]
+    },
+    "loss--detach": {
+      "id": "loss--detach",
+      "sectionId": "p-loss",
+      "title": "detach",
+      "visuals": [
+        {
+          "blockId": "loss--scene",
+          "visible": true,
+          "state": "detach"
+        }
+      ],
+      "narrationIds": [
+        "loss--detach--narration"
+      ]
+    },
+    "loss--gradient": {
+      "id": "loss--gradient",
+      "sectionId": "p-loss",
+      "title": "gradient",
+      "visuals": [
+        {
+          "blockId": "loss--scene",
+          "visible": true,
+          "state": "gradient"
+        }
+      ],
+      "narrationIds": [
+        "loss--gradient--narration"
+      ]
+    },
+    "code--inputs": {
+      "id": "code--inputs",
+      "sectionId": "p-code",
+      "title": "inputs",
+      "visuals": [
+        {
+          "blockId": "code--scene",
+          "visible": true,
+          "state": "inputs"
+        }
+      ],
+      "narrationIds": [
+        "code--inputs--narration"
+      ]
+    },
+    "code--tailratio": {
+      "id": "code--tailratio",
+      "sectionId": "p-code",
+      "title": "tailratio",
+      "visuals": [
+        {
+          "blockId": "code--scene",
+          "visible": true,
+          "state": "tailratio"
+        }
+      ],
+      "narrationIds": [
+        "code--tailratio--narration"
+      ]
+    },
+    "code--residual": {
+      "id": "code--residual",
+      "sectionId": "p-code",
+      "title": "residual",
+      "visuals": [
+        {
+          "blockId": "code--scene",
+          "visible": true,
+          "state": "residual"
+        }
+      ],
+      "narrationIds": [
+        "code--residual--narration"
+      ]
+    },
+    "code--return": {
+      "id": "code--return",
+      "sectionId": "p-code",
+      "title": "return",
+      "visuals": [
+        {
+          "blockId": "code--scene",
+          "visible": true,
+          "state": "return"
+        }
+      ],
+      "narrationIds": [
+        "code--return--narration"
+      ]
+    },
+    "study--controls": {
+      "id": "study--controls",
+      "sectionId": "p-study",
+      "title": "controls",
+      "visuals": [
+        {
+          "blockId": "study--scene",
+          "visible": true,
+          "state": "controls"
+        }
+      ],
+      "narrationIds": [
+        "study--controls--narration"
+      ]
+    },
+    "study--rewards": {
+      "id": "study--rewards",
+      "sectionId": "p-study",
+      "title": "rewards",
+      "visuals": [
+        {
+          "blockId": "study--scene",
+          "visible": true,
+          "state": "rewards"
+        }
+      ],
+      "narrationIds": [
+        "study--rewards--narration"
+      ]
+    },
+    "study--online": {
+      "id": "study--online",
+      "sectionId": "p-study",
+      "title": "online",
+      "visuals": [
+        {
+          "blockId": "study--scene",
+          "visible": true,
+          "state": "online"
+        }
+      ],
+      "narrationIds": [
+        "study--online--narration"
+      ]
+    },
+    "noise--axes": {
+      "id": "noise--axes",
+      "sectionId": "p-noise",
+      "title": "axes",
+      "visuals": [
+        {
+          "blockId": "noise--scene",
+          "visible": true,
+          "state": "axes"
+        }
+      ],
+      "narrationIds": [
+        "noise--axes--narration"
+      ]
+    },
+    "noise--severity": {
+      "id": "noise--severity",
+      "sectionId": "p-noise",
+      "title": "severity",
+      "visuals": [
+        {
+          "blockId": "noise--scene",
+          "visible": true,
+          "state": "severity"
+        }
+      ],
+      "narrationIds": [
+        "noise--severity--narration"
+      ]
+    },
+    "noise--collapse": {
+      "id": "noise--collapse",
+      "sectionId": "p-noise",
+      "title": "collapse",
+      "visuals": [
+        {
+          "blockId": "noise--scene",
+          "visible": true,
+          "state": "collapse"
+        }
+      ],
+      "narrationIds": [
+        "noise--collapse--narration"
+      ]
+    },
+    "quant--setup": {
+      "id": "quant--setup",
+      "sectionId": "p-quant",
+      "title": "setup",
+      "visuals": [
+        {
+          "blockId": "quant--scene",
+          "visible": true,
+          "state": "setup"
+        }
+      ],
+      "narrationIds": [
+        "quant--setup--narration"
+      ]
+    },
+    "quant--curves": {
+      "id": "quant--curves",
+      "sectionId": "p-quant",
+      "title": "curves",
+      "visuals": [
+        {
+          "blockId": "quant--scene",
+          "visible": true,
+          "state": "curves"
+        }
+      ],
+      "narrationIds": [
+        "quant--curves--narration"
+      ]
+    },
+    "quant--result": {
+      "id": "quant--result",
+      "sectionId": "p-quant",
+      "title": "result",
+      "visuals": [
+        {
+          "blockId": "quant--scene",
+          "visible": true,
+          "state": "result"
+        }
+      ],
+      "narrationIds": [
+        "quant--result--narration"
+      ]
+    },
+    "stale--timeline": {
+      "id": "stale--timeline",
+      "sectionId": "p-stale",
+      "title": "timeline",
+      "visuals": [
+        {
+          "blockId": "stale--scene",
+          "visible": true,
+          "state": "timeline"
+        }
+      ],
+      "narrationIds": [
+        "stale--timeline--narration"
+      ]
+    },
+    "stale--curves": {
+      "id": "stale--curves",
+      "sectionId": "p-stale",
+      "title": "curves",
+      "visuals": [
+        {
+          "blockId": "stale--scene",
+          "visible": true,
+          "state": "curves"
+        }
+      ],
+      "narrationIds": [
+        "stale--curves--narration"
+      ]
+    },
+    "stale--compose": {
+      "id": "stale--compose",
+      "sectionId": "p-stale",
+      "title": "compose",
+      "visuals": [
+        {
+          "blockId": "stale--scene",
+          "visible": true,
+          "state": "compose"
+        }
+      ],
+      "narrationIds": [
+        "stale--compose--narration"
+      ]
+    },
+    "scale--model": {
+      "id": "scale--model",
+      "sectionId": "p-scale",
+      "title": "model",
+      "visuals": [
+        {
+          "blockId": "scale--scene",
+          "visible": true,
+          "state": "model"
+        }
+      ],
+      "narrationIds": [
+        "scale--model--narration"
+      ]
+    },
+    "scale--mild": {
+      "id": "scale--mild",
+      "sectionId": "p-scale",
+      "title": "mild",
+      "visuals": [
+        {
+          "blockId": "scale--scene",
+          "visible": true,
+          "state": "mild"
+        }
+      ],
+      "narrationIds": [
+        "scale--mild--narration"
+      ]
+    },
+    "scale--medium": {
+      "id": "scale--medium",
+      "sectionId": "p-scale",
+      "title": "medium",
+      "visuals": [
+        {
+          "blockId": "scale--scene",
+          "visible": true,
+          "state": "medium"
+        }
+      ],
+      "narrationIds": [
+        "scale--medium--narration"
+      ]
+    },
+    "scale--severe": {
+      "id": "scale--severe",
+      "sectionId": "p-scale",
+      "title": "severe",
+      "visuals": [
+        {
+          "blockId": "scale--scene",
+          "visible": true,
+          "state": "severe"
+        }
+      ],
+      "narrationIds": [
+        "scale--severe--narration"
+      ]
+    },
+    "ablation--topk": {
+      "id": "ablation--topk",
+      "sectionId": "p-ablation",
+      "title": "topk",
+      "visuals": [
+        {
+          "blockId": "ablation--scene",
+          "visible": true,
+          "state": "topk"
+        }
+      ],
+      "narrationIds": [
+        "ablation--topk--narration"
+      ]
+    },
+    "ablation--cost": {
+      "id": "ablation--cost",
+      "sectionId": "p-ablation",
+      "title": "cost",
+      "visuals": [
+        {
+          "blockId": "ablation--scene",
+          "visible": true,
+          "state": "cost"
+        }
+      ],
+      "narrationIds": [
+        "ablation--cost--narration"
+      ]
+    },
+    "ablation--seeds": {
+      "id": "ablation--seeds",
+      "sectionId": "p-ablation",
+      "title": "seeds",
+      "visuals": [
+        {
+          "blockId": "ablation--scene",
+          "visible": true,
+          "state": "seeds"
+        }
+      ],
+      "narrationIds": [
+        "ablation--seeds--narration"
+      ]
+    },
+    "practice--diagnose": {
+      "id": "practice--diagnose",
+      "sectionId": "p-practice",
+      "title": "diagnose",
+      "visuals": [
+        {
+          "blockId": "practice--scene",
+          "visible": true,
+          "state": "diagnose"
+        }
+      ],
+      "narrationIds": [
+        "practice--diagnose--narration"
+      ]
+    },
+    "practice--integrate": {
+      "id": "practice--integrate",
+      "sectionId": "p-practice",
+      "title": "integrate",
+      "visuals": [
+        {
+          "blockId": "practice--scene",
+          "visible": true,
+          "state": "integrate"
+        }
+      ],
+      "narrationIds": [
+        "practice--integrate--narration"
+      ]
+    },
+    "practice--validate": {
+      "id": "practice--validate",
+      "sectionId": "p-practice",
+      "title": "validate",
+      "visuals": [
+        {
+          "blockId": "practice--scene",
+          "visible": true,
+          "state": "validate"
+        }
+      ],
+      "narrationIds": [
+        "practice--validate--narration"
+      ]
+    },
+    "ending--summary": {
+      "id": "ending--summary",
+      "sectionId": "p-ending",
+      "title": "summary",
+      "visuals": [
+        {
+          "blockId": "ending--scene",
+          "visible": true,
+          "state": "summary"
+        }
+      ],
+      "narrationIds": [
+        "ending--summary--narration"
+      ]
+    },
+    "notes--sources": {
+      "id": "notes--sources",
+      "sectionId": "p-notes",
+      "visuals": [
+        {
+          "blockId": "sources",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "opening--cover--narration": {
+      "id": "opening--cover--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "大家好，这里是翰林院传达室。今天详细解读 Together AI 的论文《Score Centering：稳定异策略强化学习》。我们从一个反常现象开始：如果每个回答的奖励都一样，模型为什么还会不断变化？接着用具体数字推导漂移，逐行拆解实现，再一起读懂论文的五组实验。"
+        }
+      ]
+    },
+    "loop--task--narration": {
+      "id": "loop--task--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先看一次语言模型强化学习。给模型一道题，它生成多个回答，环境检查答案，再把回答及其奖励送回训练。奖励告诉我们哪些回答值得增加概率。一次更新之后，再用更新过的模型生成下一批回答。画面里绕一圈，就是这种反复采样、评分、训练的循环。"
+        }
+      ]
+    },
+    "loop--engines--narration": {
+      "id": "loop--engines--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "工程上，这个循环常由两套引擎承担。蓝色的采样器负责快速生成，记作 q。深色的训练器负责计算回答的对数概率与梯度，记作 p。这里的 p 和 q 都是概率分布：固定同一个前缀，分别询问两个引擎，下一个 token 会怎样分配概率。"
+        }
+      ]
+    },
+    "loop--mismatch--narration": {
+      "id": "loop--mismatch--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "即使用同一份模型权重，两套引擎给出的概率也可能不同。量化精度、浮点计算顺序、批处理形状，都可能让概率条稍微偏移。论文把这种差异称为训练与推理不一致，简称 TIM。它也包括采样器使用旧权重、训练器已经更新的情况。"
+        }
+      ]
+    },
+    "loop--sync--narration": {
+      "id": "loop--sync--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "采样越快，越容易采用量化、异步生成和连续批处理。把所有计算严格对齐，可能牺牲吞吐。论文关心的是，能否保留这些工程收益，同时让更新更稳定。要回答这个问题，我们先暂停整个训练循环，只放大一个前缀和下一个 token。"
+        }
+      ]
+    },
+    "score--prefix--narration": {
+      "id": "score--prefix--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "前缀就是当前位置之前已经生成的全部 token。现在把前缀固定，暂时只让下一个 token 有 A 和 B 两种选择。这是帮助计算的教学例子。模型参数改变之后，A 和 B 的概率也会改变，我们关心每种选择会把训练推向哪个方向。"
+        }
+      ]
+    },
+    "score--derivative--narration": {
+      "id": "score--derivative--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "论文里的 score，指一个 token 的对数概率对模型参数的梯度。它不是奖励分，也不是模型准确率。可以沿着一个参数方向轻轻移动，观察对数概率的变化；这条变化率，就给出了 score 在这个方向上的分量。"
+        }
+      ]
+    },
+    "score--vector--narration": {
+      "id": "score--vector--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "真实模型的 score 是高维向量。为了在屏幕上算清楚，我们只看控制 A 概率的一个二分类 logit。A 的概率为二分之一时，A 的 score 是正零点五，B 的 score 是负零点五。向右的箭头推动 A，向左的箭头降低 A。这两个箭头会贯穿后面的演示。"
+        }
+      ]
+    },
+    "zero--equal--narration": {
+      "id": "zero--equal--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先让采样器和训练器完全一致。A 和 B 的概率都是零点五。再设所有回答的奖励都是正一。因为环境没有区分好坏，正确的期望更新应当为零。这里说的是反复采样的平均方向，单次采样仍然会有随机变化。"
+        }
+      ]
+    },
+    "zero--weighted--narration": {
+      "id": "zero--weighted--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "计算平均更新时，不能直接把两个 score 不加权相加。A 出现的概率是零点五，所以向右的零点五，要乘零点五，得到零点二五。B 同样按零点五加权，得到向左的零点二五。箭头缩短的比例，就对应各自被采到的概率。"
+        }
+      ]
+    },
+    "zero--cancel--narration": {
+      "id": "zero--cancel--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "把两条加权箭头头尾相接，正负零点二五正好抵消。更一般地，用 p 对所有 token 的 score 求平均，等于所有概率之和的梯度。概率总和恒为一，而常数的梯度为零。这就是后面全部推导依赖的零均值性质。"
+        }
+      ]
+    },
+    "mismatch--shift--narration": {
+      "id": "mismatch--shift--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "现在保持训练器不动，A 和 B 在 p 下仍各占一半，两个 score 也保持正负零点五。只把采样器改为 A 概率零点六，B 概率零点四。注意，梯度依然来自 p，但出现频率已经由 q 决定。这就是训练与采样不一致。"
+        }
+      ]
+    },
+    "mismatch--biased--narration": {
+      "id": "mismatch--biased--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "按新的频率加权，A 的贡献变成正零点三，B 的贡献变成负零点二。把箭头接起来，会留下向右的零点一。于是，虽然训练器自己的平均 score 是零，采样器分布下的平均 score 却不是零。问题出在加权概率换了。"
+        }
+      ]
+    },
+    "mismatch--constant--narration": {
+      "id": "mismatch--constant--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "奖励还是恒定的正一，所以这个向右的更新没有任何好坏信息。反复采样之后，它也不会像纯随机误差那样相互抵消。这是一个有方向的系统偏差。我们已经用两个 token 算出了论文接下来要去掉的平均 score。"
+        }
+      ]
+    },
+    "feedback--fixed--narration": {
+      "id": "feedback--fixed--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这个平均 score 的方向，可以理解为让训练器模仿采样器。假如采样器一直固定，训练器向它靠近，最后会停在一个拟合结果上。这类似于用固定教师做监督学习。到这里，持续向教师靠近，并不会自动形成不断偏离的循环。"
+        }
+      ]
+    },
+    "feedback--moving--narration": {
+      "id": "feedback--moving--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "在线强化学习里的采样器会更新。训练器向带偏差的采样器靠近之后，新权重又同步回采样器；采样器在新权重上仍保留相同方向的数值偏差。下一轮，训练器继续追随这个新的偏差目标。画面里的同步箭头，把每轮的终点带成下一轮的起点。"
+        }
+      ]
+    },
+    "feedback--accumulate--narration": {
+      "id": "feedback--accumulate--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "因此，小偏差可以通过重复同步逐轮累积。图里的轨迹演示的是这种反馈机制，不是测得的训练曲线。真实训练是否崩溃，还取决于偏差强度、奖励结构和训练长度。接下来把更新拆成两部分，就能准确指出哪部分在推动这个循环。"
+        }
+      ]
+    },
+    "split--update--narration": {
+      "id": "split--update--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "固定前缀之后，普通策略梯度的更新，是奖励乘以 score 的平均值。这里的奖励也可以是优势。用协方差恒等式，可以把这条总更新箭头拆成两条：珊瑚色的一条，以及青色的一条。两者相加，仍然得到原来的总更新。"
+        }
+      ]
+    },
+    "split--identity--narration": {
+      "id": "split--identity--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "珊瑚色项是平均奖励乘以平均 score，论文称它为漂移。青色项是奖励与 score 的协方差，论文称它为信号。协方差衡量两者怎样一起变化：哪些方向更常与高奖励同时出现。这个拆分在当前前缀下成立，平均都按照采样器 q 来计算。"
+        }
+      ]
+    },
+    "split--meaning--narration": {
+      "id": "split--meaning--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "如果保留平均奖励，却打乱哪个 token 对应高奖励，漂移项看不到这种变化，因为它只依赖奖励均值。协方差项则会变化。所以漂移不负责区分好坏，却会推动训练器模仿采样器。我们想消除前者，同时保留后者。"
+        }
+      ]
+    },
+    "group--group--narration": {
+      "id": "group--group--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "常见做法是，对同一道题采样多条回答，再把每个奖励减去整组的平均奖励。这样得到的优势，在整组内加起来是零。画面先让成功和失败回答的正负优势相互抵消。这种组中心化确实可以缩小漂移，但它平均的是整道题的回答集合。"
+        }
+      ]
+    },
+    "group--prefix--narration": {
+      "id": "group--prefix--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "漂移的推导却发生在一个具体前缀。沿着回答树走到一个较有希望的前缀，接下来完成正确答案的概率可能更高；走到已经出错的前缀，剩余回答的平均优势可能偏负。条件化到某个分支之后，留下的是整组中的一个子集。"
+        }
+      ]
+    },
+    "group--residual--narration": {
+      "id": "group--residual--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "所以，整组的优势均值为零，并不能保证每个前缀的条件均值也为零。只要这里的平均优势非零，又存在平均 score 偏差，漂移就仍然存在。论文因此选择直接处理每个前缀的 score，而不依赖再把整组奖励平移一次。"
+        }
+      ]
+    },
+    "center--mean--narration": {
+      "id": "center--mean--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "回到刚才的两个 token。训练器仍是各半，采样器是零点六和零点四。我们已经算过，采样器下的平均 score 为零点一。现在把这一个均值取出来。对于这个固定前缀，它是确定的，不依赖这一轮最终抽到了 A 还是 B。"
+        }
+      ]
+    },
+    "center--subtract--narration": {
+      "id": "center--subtract--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "score 中心化的操作很直接：A 和 B 的 score，都减去零点一。于是，A 从正零点五变成正零点四，B 从负零点五变成负零点六。注意，两条箭头接受的是同一次平移，token 的概率和奖励都没有被修改。"
+        }
+      ]
+    },
+    "center--zero--narration": {
+      "id": "center--zero--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "重新按采样概率求平均：零点六乘零点四，等于正零点二四；零点四乘负零点六，等于负零点二四。两者又抵消为零。恒定奖励下的漂移被消除了。对完整采样分布精确求均值时，这个抵消在每个前缀都成立。"
+        }
+      ]
+    },
+    "signal--reward--narration": {
+      "id": "signal--reward--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "接着让环境提供真正的信息：A 的奖励为一，B 的奖励为零。此时应该增加 A 的概率。使用中心化后的 score，A 被采到的概率零点六，乘奖励一，再乘 score 零点四，得到期望更新零点二四。B 的奖励为零，不贡献这一项。"
+        }
+      ]
+    },
+    "signal--covariance--narration": {
+      "id": "signal--covariance--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "从原更新也能得到同一个结果。原更新是零点六乘零点五，等于零点三；平均奖励为零点六，乘平均 score 零点一，漂移等于零点零六。零点三减去零点零六，就剩零点二四，也就是奖励与 score 在 q 下的协方差。"
+        }
+      ]
+    },
+    "signal--distribution--narration": {
+      "id": "signal--distribution--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这里要保留一个区别。如果完全按照训练器 p 采样，同样的奖励例子会得到零点二五，而不是零点二四。中心化消除了漂移，但信号仍按 q 的分布计算。这个差异解释了后面为什么在采样器明显滞后时，把中心化与重要性采样组合会更有效。"
+        }
+      ]
+    },
+    "is--ratio--narration": {
+      "id": "is--ratio--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "重要性采样给每个 token 的更新乘上概率比 p 除以 q。在我们的例子里，A 的比率是六分之五，B 的比率是一点二五。原来由 q 决定的频率，乘以这个比率之后，就重新变成 p 的权重。这个操作是按 token 分别缩放。"
+        }
+      ]
+    },
+    "is--exact--narration": {
+      "id": "is--exact--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "在完整、未截断、支持集覆盖的条件下，精确重要性采样可以校正期望。对于固定前缀，按 q 计算加权 score，等于按 p 计算原 score，因此均值为零。论文的完整序列公式还需要整条序列的概率比；实践常采用逐 token 修正，二者要区分。"
+        }
+      ]
+    },
+    "is--rare--narration": {
+      "id": "is--rare--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "困难在于罕见事件。现在换成一个独立的 C、D 双 token 例子：C 在采样器下概率是零点零一，在训练器下是零点一。沿控制 C 的 logit 方向，C 的 score 是零点九，D 是负零点一。C 的重要性比率因此达到十，更新箭头被大幅拉长，估计方差也随之增大。"
+        }
+      ]
+    },
+    "is--clip--narration": {
+      "id": "is--clip--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "把比率上界截为二，叫截断重要性采样，简称 TIS。C 的贡献只剩零点零一乘二乘零点九，等于零点零一八；D 的贡献仍是负零点零九，两者相加得到负零点零七二，残余漂移重新出现。另一种 MIS，叫屏蔽重要性采样，它把超出指定区间的权重置零。这两种规则之后，都可以再做加权 score 的中心化。"
+        }
+      ]
+    },
+    "compose--weighted--narration": {
+      "id": "compose--weighted--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "组合时有一个容易写错的顺序：先用选定的重要性权重 w 乘 score，再求这个加权 score 在 q 下的均值。我们现在要中心化的是 w 乘 score 这个整体。不能只减掉原始 score 的均值，然后以为任何权重下都能正确抵消。"
+        }
+      ]
+    },
+    "compose--recenter--narration": {
+      "id": "compose--recenter--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "新的更新是，奖励乘以括号内的差：当前 token 的加权 score，减去所有 token 的加权 score 均值。对于恒定奖励，这个括号的期望仍为零，不论权重采用怎样的截断或屏蔽规则。这样，IS 负责调整权重，中心化负责去掉剩余漂移。"
+        }
+      ]
+    },
+    "compose--sanity--narration": {
+      "id": "compose--sanity--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "还有一个很好的自检。如果 w 恰好是没有截断的精确概率比，那么加权 score 的均值本来就是零，中心化修正项应当自动消失。若实现里这时仍出现明显的修正，优先检查分布、权重或停止梯度的位置。接下来看看怎样避免保存整个词表。"
+        }
+      ]
+    },
+    "topk--vocabulary--narration": {
+      "id": "topk--vocabulary--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "理论上，只要拿到采样器在每个前缀的完整概率分布，就能对所有 token 的 score 求期望。但语言模型的动作空间很大。把刚才两个 token 展开，Qwen3 的词表约有十五万两千项。每生成一个 token，都需要一整行这样的分布。"
+        }
+      ]
+    },
+    "topk--memory--narration": {
+      "id": "topk--memory--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "如果每个 log 概率用四字节保存，一行约六百零八千字节。再乘一千零二十四条回答，以及每条三万二千七百六十八个位置，总量约二十点四 TB。这是按论文例子重算的十进制存储量。为了求均值保存全部概率，代价太高。"
+        }
+      ]
+    },
+    "topk--head--narration": {
+      "id": "topk--head--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "论文因此只记录采样器概率最大的 k 个 token 的 log 概率。默认 k 等于一百二十八。头部集合必须由采样器选出；随后训练器按这些相同的 token 编号，取出对应概率。这两行数组要逐项对应，才能比较同一个 token。"
+        }
+      ]
+    },
+    "topk--tail--narration": {
+      "id": "topk--tail--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "如果直接把剩下的 token 全扔掉，得到的就不是完整分布的期望。论文保留尾部总概率质量，并用训练器的尾部分布补齐。下面先用头部总质量零点八与零点七的例子，演示这个尾部模型怎样归一化。"
+        }
+      ]
+    },
+    "tail--masses--narration": {
+      "id": "tail--masses--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "假设采样器头部概率加起来是零点八，训练器在同一组头部 token 上的概率和为零点七。两者尾部质量分别是零点二和零点三。这里的头尾划分始终采用采样器的 top k，而不是让两个引擎分别选各自的 top k。"
+        }
+      ]
+    },
+    "tail--scale--narration": {
+      "id": "tail--scale--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "我们想让训练器的尾部形状，承担采样器剩下的零点二概率。于是用零点二除以零点三，得到缩放系数 rho，等于三分之二。把训练器每个尾部概率都乘这个系数，尾部总和恰好变成零点二，再加真实头部的零点八，总和为一。"
+        }
+      ]
+    },
+    "tail--reduce--narration": {
+      "id": "tail--reduce--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "计算平均 score 时，头部直接使用采样器概率，尾部使用 rho 乘训练器概率。关键是，训练器全词表的加权 score 和本来为零，所以尾部那一项，可以写成负的头部那一项。合并之后，只需在 k 个头部 token 上求和，系数是 q 减 rho 乘 p。"
+        }
+      ]
+    },
+    "tail--approximation--narration": {
+      "id": "tail--approximation--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这样既保留尾部质量，又不需要显式对全部尾部 token 求和。但真实采样器的尾部形状，未必恰好等于缩放后的训练器尾部。因此，工程中的 top k 中心化属于近似方法；严格的零漂移结论适用于完整分布，近似质量还需要看消融和尾部覆盖率。"
+        }
+      ]
+    },
+    "loss--full--narration": {
+      "id": "loss--full--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "如何把减平均 score，写进自动求导框架？先看完整分布版本。普通损失是负奖励乘所采 token 的 log 概率。在括号里再减去一项：所有 token 的 log 概率，按采样概率加权求和。对这个标量损失求导，就能得到我们需要的向量修正。"
+        }
+      ]
+    },
+    "loss--detach--narration": {
+      "id": "loss--detach--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这里有一个停止梯度符号，记作 sg。它保留系数的前向数值，但反向传播不穿过这个系数。完整版本把采样概率当作固定权重；top k 版本则要把 q 减 rho 乘 p 这个整个系数停止梯度，包括其中来自训练器的 p 和 rho。"
+        }
+      ]
+    },
+    "loss--gradient--narration": {
+      "id": "loss--gradient--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "反向传播时，梯度只通过各个 log 概率分支。负损失的梯度于是等于，奖励乘以所采 token 的 score，减去同一奖励乘平均 score。这样，理论上的向量减法，落成了训练代码里的一个标量损失，不需要逐个显式保存巨大梯度向量。"
+        }
+      ]
+    },
+    "code--inputs--narration": {
+      "id": "code--inputs--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "看论文给出的最小 JAX 实现。train logp 是训练器的全词表 log 概率，samp logp 是采样器头部的 log 概率，topk ids 是对应编号。先用这些编号，从训练器数组取出同一组 token。sampled token 则是这次真正生成的 token。"
+        }
+      ]
+    },
+    "code--tailratio--narration": {
+      "id": "code--tailratio--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "下一行先把两边头部的 log 概率取指数、求和，再用一减去这个和，得到各自的尾部质量。采样器尾质量除以训练器尾质量，就是刚才的 rho。论文附录的完整代码还会给尾质量加一个下界，避免除以过小的数。"
+        }
+      ]
+    },
+    "code--residual--narration": {
+      "id": "code--residual--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "接着计算头部概率残差：采样器概率，减去 rho 乘训练器概率。把整组残差停止梯度，再乘训练器的头部 log 概率、求和，得到 logp correction。屏幕上概率柱的差值，正对应这行代码里的系数，不是另加一个可训练的奖励模型。"
+        }
+      ]
+    },
+    "code--return--narration": {
+      "id": "code--return--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "最后返回负优势，乘以所采 token 的 log 概率减修正项。组合 TIS 或 MIS 时，还要在头部和采样 token 两处加入各自权重，尾部缩放系数也变成 rho 乘尾部权重。不能只在最后一行随手乘一个比率，就得到论文的组合版本。"
+        }
+      ]
+    },
+    "study--controls--narration": {
+      "id": "study--controls--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "进入实验前，先固定比较标准。论文把各类修正规则，放在相同的组中心化 REINFORCE 目标上比较，采样器、训练器、优化器与优势保持一致，每批只做一次 SGD 更新。这里比较的是修正规则本身，不是完整复现每个算法的全部训练配方。"
+        }
+      ]
+    },
+    "study--rewards--narration": {
+      "id": "study--rewards--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "论文图二先研究一个看起来矛盾的现象。横轴是训练步，纵轴是留出题目的评测准确率，模型是 Qwen3 一点七 B，任务是 Countdown。离线时固定数据，用正一和零奖励的设置最稳定；包含负奖励的离线更新，可能把某些 log 概率不断推低。"
+        }
+      ]
+    },
+    "study--online--narration": {
+      "id": "study--online--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "再看在线设置：采样器不断从训练器同步，同时带着人为设置的不一致。此时，只有正奖励的方式反而最不稳定，组中心化相对更稳定。这个反转帮助论文把两种机制分开：离线负奖励的不稳定，以及在线偏差通过同步循环累积。本片重点是后者。"
+        }
+      ]
+    },
+    "noise--axes--narration": {
+      "id": "noise--axes--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "图三使用 Qwen3 零点六 B，在 Countdown 上做受控实验。横轴是训练步，纵轴仍是留出题目的评测准确率。三块面板逐渐增大采样器权重中的固定高斯偏移。这里是人为放大的不一致，用于在较短训练中看清不同修正规则的差异。"
+        }
+      ]
+    },
+    "noise--severity--narration": {
+      "id": "noise--severity--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "从弱偏差面板向强偏差面板移动，先看同一种方法的曲线，而不是同时追所有颜色。在偏差较小时，几个表现最好的方法接近；偏差加大后，一些曲线更早跌落。蓝色的 score 中心化，以及它与 TIS、MIS 的组合，在最强偏移设置仍保持稳定。"
+        }
+      ]
+    },
+    "noise--collapse--narration": {
+      "id": "noise--collapse--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先看左边的弱噪声面板。DPPO 大约在第一百六十步崩溃，曲线跌到接近零。再把焦点移到中间面板，偏移加大以后，崩溃提前到第八十步。最后看右边最强偏移的面板，大约第二十步就发生崩溃。这些约数取自论文正文，支持偏差逐步累积、强偏差更快暴露问题的解释。"
+        }
+      ]
+    },
+    "quant--setup--narration": {
+      "id": "quant--setup--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "图四左侧换成更贴近工程的量化不一致。训练器使用 bf16，采样器使用 int8，并量化权重、激活与 KV 缓存。模型仍是 Qwen3 零点六 B。先看清这里和上一页的指标变化：纵轴现在是训练准确率，来自采样回答的平均奖励，不是留出评测准确率。"
+        }
+      ]
+    },
+    "quant--curves--narration": {
+      "id": "quant--curves--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "横轴仍然是训练步。沿着蓝色的中心化曲线，再对照中心化加 TIS、中心化加 MIS 的曲线，可以看到这些方法在量化设置里表现最好。原图的阴影表示均值的正负一个标准误，不能把阴影宽度直接称作标准差。"
+        }
+      ]
+    },
+    "quant--result--narration": {
+      "id": "quant--result--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "因此，在论文故意增强的量化不一致下，单独中心化已经是有效的稳定方法，组合也能保持较好表现。下一页把量化换成权重滞后。即使曲线画法相似，分布差异的来源变了，最合适的修正组合也随之改变。"
+        }
+      ]
+    },
+    "stale--timeline--narration": {
+      "id": "stale--timeline--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先看同步时间尺。采样器拿着同一份权重连续工作，训练器在此期间更新；每经过六十四个训练步，才同步一次采样器。这个实验设置是固定每六十四步更新，而不是通常所说的最大允许滞后六十四步。论文刻意采用较强滞后，以便短训练也能区分方法。"
+        }
+      ]
+    },
+    "stale--curves--narration": {
+      "id": "stale--curves--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "再看图四右侧，纵轴也是训练准确率。此时，中心化与 TIS 或 MIS 的组合，比单独中心化表现更好。我们已经在两个 token 的例子里看到，去掉漂移之后，协方差信号仍然是在 q 下计算。采样器落后很多时，这个分布差异更加值得处理。"
+        }
+      ]
+    },
+    "stale--compose--narration": {
+      "id": "stale--compose--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "组合的分工也就清楚了：重要性权重先部分修正采样分布，中心化再消除加权更新里剩下的漂移。论文因此建议，当两次同步之间训练器可能远离采样器时，把两者组合使用。具体同步频率仍需根据任务时长和系统吞吐选择。"
+        }
+      ]
+    },
+    "scale--model--narration": {
+      "id": "scale--model--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "现在放大到 Qwen3 三十 B A三B Base，在 INTELLECT 二的数学数据上训练。它是混合专家模型，除了数值差异，采样器和训练器也可能选择不同专家。实验没有回放采样时的路由编号。图一的三块面板，是越来越强的采样器量化，纵轴全部是训练准确率。"
+        }
+      ]
+    },
+    "scale--mild--narration": {
+      "id": "scale--mild--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第一块采用较轻的 FP8 采样设置。连没有修正的普通策略梯度，也能在八百步内稳定训练，训练准确率达到约百分之五十八，和修正方法相近。所以，中心化的收益与不一致强度相关，不能把后面最强压力设置的差距套到所有训练环境。"
+        }
+      ]
+    },
+    "scale--medium--narration": {
+      "id": "scale--medium--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二块把 KV 缓存量化到 FP4。普通策略梯度在两百步内崩溃，MIS 后期也发生崩溃。中心化和 TIS 保持稳定，训练准确率分别约百分之五十二和百分之五十一。先对齐这一块面板的量化配置，再比较这两个接近的结果。"
+        }
+      ]
+    },
+    "scale--severe--narration": {
+      "id": "scale--severe--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "第三块采用 INT8 权重与激活，加 INT4 KV 缓存。中心化达到约百分之三十，TIS 约百分之十二，其他方法结束时都低于百分之五。这里展示的是严重不一致下的稳定性差距。跨面板比较时，也要看到量化本身已经让最终训练效果明显下降。"
+        }
+      ]
+    },
+    "ablation--topk--narration": {
+      "id": "ablation--topk--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "图五比较完整词表中心化，以及只保存三十二或一百二十八个头部 token 的近似版本。先看左上角，小模型在固定权重噪声下的三条曲线；再看中间，带滞后的 TIS 加中心化；最后看右下角，三十 B 模型在强量化下的结果。各自设置里三条曲线总体相当，论文因此把一百二十八作为保守默认值。"
+        }
+      ]
+    },
+    "ablation--cost--narration": {
+      "id": "ablation--cost--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "工程成本也有测量范围。在相同硬件上，论文自定义 JAX 采样器采用 k 等于一百二十八时，总训练墙钟时间与基线相差在百分之一以内。vLLM 和 SGLang 提供原生 top k log 概率接口，但论文没有测它们的额外开销。实际接入时仍要测吞吐与记录成本。"
+        }
+      ]
+    },
+    "ablation--seeds--narration": {
+      "id": "ablation--seeds--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "还要读清种子数。小模型的主要比较每种方法运行三个种子；三十 B 由于成本高，不同曲线有一个到五个种子，部分消融只有一个种子。三十 B 图和 top k 图使用训练准确率。把这些条件和阴影一起读，才能正确判断结果的稳定程度。"
+        }
+      ]
+    },
+    "practice--diagnose--narration": {
+      "id": "practice--diagnose--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "落到自己的系统，先在相同前缀比较训练器与采样器的概率，并记录差异来源：数值、量化、路由还是权重滞后。让采样器输出 top k 的编号与 log 概率，同时保存实际采到 token 的 log 概率。组合重要性采样时，后者即使不在头部，也仍然需要。"
+        }
+      ]
+    },
+    "practice--integrate--narration": {
+      "id": "practice--integrate--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "训练端按相同编号取出概率，计算尾部质量比例和头部修正系数，对整个系数停止梯度，再构造损失。主要是数值不一致时，可以从中心化开始；存在明显策略滞后时，按论文建议试中心化与 TIS 或 MIS 的组合。同时保持原有奖励、掩码与批次归一化逻辑一致。"
+        }
+      ]
+    },
+    "practice--validate--narration": {
+      "id": "practice--validate--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "验证时，除了准确率，还要监控均值更新、概率比、尾部覆盖率、熵和同步周期，并用恒定奖励检查是否残留系统方向。论文实验采用短序列和刻意增强的不一致，长上下文、真实异步轨迹和不同引擎的收益，需要在目标系统上验证。到这里，原理、实现与证据就接成了同一个循环。"
+        }
+      ]
+    },
+    "ending--summary--narration": {
+      "id": "ending--summary--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "一句话总结：当采样与训练不一致时，score 中心化通过减去每个前缀的平均 score，消除反复累积的漂移，并保留奖励相关的信号；策略明显滞后时，再与重要性采样组合。想看哪篇论文，欢迎在评论区留言。翰林院传达室为您分享最新论文，我们下期见。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "opening--definition": {
+      "id": "opening--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/opening.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "cover",
+          "title": "cover"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Score Centering：消除强化学习的漂移"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "loop--definition": {
+      "id": "loop--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/core.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "task",
+          "title": "task"
+        },
+        {
+          "id": "engines",
+          "title": "engines"
+        },
+        {
+          "id": "mismatch",
+          "title": "mismatch"
+        },
+        {
+          "id": "sync",
+          "title": "sync"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "同一模型，采样与训练也会不一致"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "score--definition": {
+      "id": "score--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/core.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "prefix",
+          "title": "prefix"
+        },
+        {
+          "id": "derivative",
+          "title": "derivative"
+        },
+        {
+          "id": "vector",
+          "title": "vector"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "score 是概率的梯度方向"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "zero--definition": {
+      "id": "zero--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/core.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "equal",
+          "title": "equal"
+        },
+        {
+          "id": "weighted",
+          "title": "weighted"
+        },
+        {
+          "id": "cancel",
+          "title": "cancel"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "同策略时，平均 score 正好为零"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "mismatch--definition": {
+      "id": "mismatch--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/core.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "shift",
+          "title": "shift"
+        },
+        {
+          "id": "biased",
+          "title": "biased"
+        },
+        {
+          "id": "constant",
+          "title": "constant"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "换成 q 采样，零均值被打破"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "feedback--definition": {
+      "id": "feedback--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/core.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "fixed",
+          "title": "fixed"
+        },
+        {
+          "id": "moving",
+          "title": "moving"
+        },
+        {
+          "id": "accumulate",
+          "title": "accumulate"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "同步循环会把偏差反复带回来"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "split--definition": {
+      "id": "split--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/core.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "update",
+          "title": "update"
+        },
+        {
+          "id": "identity",
+          "title": "identity"
+        },
+        {
+          "id": "meaning",
+          "title": "meaning"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一次更新包含漂移和奖励信号"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "group--definition": {
+      "id": "group--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/core.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "group",
+          "title": "group"
+        },
+        {
+          "id": "prefix",
+          "title": "prefix"
+        },
+        {
+          "id": "residual",
+          "title": "residual"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "整组优势为零，前缀均值仍可非零"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "center--definition": {
+      "id": "center--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/core.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "mean",
+          "title": "mean"
+        },
+        {
+          "id": "subtract",
+          "title": "subtract"
+        },
+        {
+          "id": "zero",
+          "title": "zero"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "把每个 score 减去同一前缀的均值"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "signal--definition": {
+      "id": "signal--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/core.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "reward",
+          "title": "reward"
+        },
+        {
+          "id": "covariance",
+          "title": "covariance"
+        },
+        {
+          "id": "distribution",
+          "title": "distribution"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "消掉漂移，仍然保留奖励的区分"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "is--definition": {
+      "id": "is--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/core.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "ratio",
+          "title": "ratio"
+        },
+        {
+          "id": "exact",
+          "title": "exact"
+        },
+        {
+          "id": "rare",
+          "title": "rare"
+        },
+        {
+          "id": "clip",
+          "title": "clip"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "重要性采样与中心化修正不同部分"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "compose--definition": {
+      "id": "compose--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/core.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "weighted",
+          "title": "weighted"
+        },
+        {
+          "id": "recenter",
+          "title": "recenter"
+        },
+        {
+          "id": "sanity",
+          "title": "sanity"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "先加权，再减去加权 score 的均值"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "topk--definition": {
+      "id": "topk--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/implementation.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "vocabulary",
+          "title": "vocabulary"
+        },
+        {
+          "id": "memory",
+          "title": "memory"
+        },
+        {
+          "id": "head",
+          "title": "head"
+        },
+        {
+          "id": "tail",
+          "title": "tail"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "完整词表的存储成本太高"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "tail--definition": {
+      "id": "tail--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/implementation.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "masses",
+          "title": "masses"
+        },
+        {
+          "id": "scale",
+          "title": "scale"
+        },
+        {
+          "id": "reduce",
+          "title": "reduce"
+        },
+        {
+          "id": "approximation",
+          "title": "approximation"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "保留尾部质量，再把求和化到头部"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "loss--definition": {
+      "id": "loss--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/implementation.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "full",
+          "title": "full"
+        },
+        {
+          "id": "detach",
+          "title": "detach"
+        },
+        {
+          "id": "gradient",
+          "title": "gradient"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "用一个标量损失得到中心化梯度"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "code--definition": {
+      "id": "code--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/implementation.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "inputs",
+          "title": "inputs"
+        },
+        {
+          "id": "tailratio",
+          "title": "tailratio"
+        },
+        {
+          "id": "residual",
+          "title": "residual"
+        },
+        {
+          "id": "return",
+          "title": "return"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "把公式逐行对应到实现"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "study--definition": {
+      "id": "study--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/evidence.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "controls",
+          "title": "controls"
+        },
+        {
+          "id": "rewards",
+          "title": "rewards"
+        },
+        {
+          "id": "online",
+          "title": "online"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "先分清离线、在线和奖励设置"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "noise--definition": {
+      "id": "noise--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/evidence.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "axes",
+          "title": "axes"
+        },
+        {
+          "id": "severity",
+          "title": "severity"
+        },
+        {
+          "id": "collapse",
+          "title": "collapse"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "偏差越强，崩溃越早出现"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "quant--definition": {
+      "id": "quant--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/evidence.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "setup",
+          "title": "setup"
+        },
+        {
+          "id": "curves",
+          "title": "curves"
+        },
+        {
+          "id": "result",
+          "title": "result"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "量化采样器时，中心化保持稳定"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "stale--definition": {
+      "id": "stale--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/evidence.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "timeline",
+          "title": "timeline"
+        },
+        {
+          "id": "curves",
+          "title": "curves"
+        },
+        {
+          "id": "compose",
+          "title": "compose"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "明显滞后时，组合优于单独中心化"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "scale--definition": {
+      "id": "scale--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/evidence.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "model",
+          "title": "model"
+        },
+        {
+          "id": "mild",
+          "title": "mild"
+        },
+        {
+          "id": "medium",
+          "title": "medium"
+        },
+        {
+          "id": "severe",
+          "title": "severe"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "三十 B 实验：量化越强，差距越大"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "ablation--definition": {
+      "id": "ablation--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/evidence.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "topk",
+          "title": "topk"
+        },
+        {
+          "id": "cost",
+          "title": "cost"
+        },
+        {
+          "id": "seeds",
+          "title": "seeds"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "top-k 近似的证据与成本范围"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "practice--definition": {
+      "id": "practice--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/evidence.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "diagnose",
+          "title": "diagnose"
+        },
+        {
+          "id": "integrate",
+          "title": "integrate"
+        },
+        {
+          "id": "validate",
+          "title": "validate"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "把方法接回真实训练循环"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "ending--definition": {
+      "id": "ending--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/ending.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "summary",
+          "title": "summary"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "消除漂移，保留奖励信号"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "tts",
+        "voice": {
+          "engine": "volcengine",
+          "voice": "zh_female_tianmeitaozi_uranus_bigtts"
+        }
+      },
+      "narrationStart": "with-animation",
+      "trailingPauseMs": 250
+    },
+    "stepOverrides": {},
+    "sectionOverrides": {
+      "p-opening": {
+        "captionVisible": false
+      }
+    },
+    "mediaClips": []
+  }
+}

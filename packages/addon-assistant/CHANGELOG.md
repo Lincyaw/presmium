@@ -1,5 +1,9 @@
 # @lincyaw/addon-assistant
 
+## 1.0.0-rc.107
+
+No changes in this release.
+
 ## 1.0.0-rc.106
 
 No changes in this release.

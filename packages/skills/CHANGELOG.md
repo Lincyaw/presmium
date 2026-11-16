@@ -1,5 +1,11 @@
 # @lincyaw/skills
 
+## 1.0.0-rc.107
+
+### Patch Changes
+
+- @lincyaw/kernel@1.0.0-rc.107
+
 ## 1.0.0-rc.106
 
 ### Patch Changes
