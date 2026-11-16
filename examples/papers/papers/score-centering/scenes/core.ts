@@ -112,7 +112,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       '<path d="M' + pts.map(p => p.join(',')).join(' L') + '" stroke="' + C.q + '" stroke-width=".65" fill="none"/>' +
       txt(122, 68, '参数 θ', '', 3) + txt(27, 21, 'log p(A)', '', 3.4) +
       '<circle class="point" cx="81" cy="' + (61 - (Math.log(.5) + 3.1) * 11) + '" r="1.3" fill="' + C.q + '"/>' +
-      '<path class="tangent" d="M61 45.52 L101 31.77" fill="none" stroke="' + C.drift + '" stroke-width=".7"/>' +
+      '<path class="tangent" d="M61 41.3996 L101 27.6496" fill="none" stroke="' + C.drift + '" stroke-width=".7"/>' +
       txt(93, 25, '局部斜率 = 0.5', 'derivative drift', 3.2) + '</g>' +
       '<g class="vectors">' + line(15, 45, 145, 45) + line(79, 25, 79, 60) +
       token(15, 32, 'A') + token(15, 56, 'B') +
