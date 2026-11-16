@@ -30,7 +30,8 @@ const CSS = `
   .side strong { display:block; font-size:2.65cqw; line-height:1.3; color:var(--c-ink); font-weight:800; }
   .side .detail { display:block; margin-top:2.2cqh; font-size:1.7cqw; line-height:1.6; }
   .side .value { display:block; font-size:4.2cqw; font-weight:800; color:${SC}; margin-top:2cqh; }
-  .step-count .value { font-size:2.6cqw; white-space:nowrap; }
+  .step-count .value { position:relative; height:7cqh; font-size:4cqw; white-space:nowrap; }
+  .step-count .value span { position:absolute; left:0; top:0; }
   .side .value.orange { color:${TIS}; }
   .side .mini { display:block; font-size:1.4cqw; color:var(--c-muted); margin-top:1.5cqh; line-height:1.5; }
   .side .line { height:.16cqw; background:var(--c-line-strong); margin:2.6cqh 0; }
@@ -83,10 +84,10 @@ function camera(r:Region,aspect:number) {
   return { mask: {left:(W-cw)/2+'cqw',top:(H-ch)/2+'cqw',width:cw+'cqw',height:ch+'cqw'}, image: {left:-r.x*iw+'cqw',top:-r.y*ih+'cqw',width:iw+'cqw',height:ih+'cqw'} }
 }
 
-function sharedTicks(r:Region,aspect:number,x:number,ys:readonly (readonly [number,string])[]) {
+function sharedTicks(r:Region,aspect:number,x:number,ys:readonly (readonly [number,string])[],extraClass='') {
   const c=camera(r,aspect), iw=parseFloat(c.image.width),ih=parseFloat(c.image.height)
   const xx=parseFloat(c.mask.left)+parseFloat(c.image.left)+x*iw-.3
-  return '<div class="axis-ticks">'+ys.map(([y,label])=>'<span style="left:'+xx+'cqw;top:'+(parseFloat(c.mask.top)+parseFloat(c.image.top)+y*ih)+'cqw">'+label+'</span>').join('')+'</div>'
+  return '<div class="axis-ticks '+extraClass+'">'+ys.map(([y,label])=>'<span style="left:'+xx+'cqw;top:'+(parseFloat(c.mask.top)+parseFloat(c.image.top)+y*ih)+'cqw">'+label+'</span>').join('')+'</div>'
 }
 
 export default gsapScene(({root,gsap,at,durations,parameters})=>{
@@ -130,13 +131,13 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
   const fig=FIGURES[page as FigurePage]
   const extra:Record<string,string> = {
     study: '<div class="controls"><div class="control-lane"><span class="control-label">目标函数</span><div class="control-bar"><i class="control-tick c0" style="left:10%"></i></div><span class="control-value">同一 REINFORCE</span></div><div class="control-lane"><span class="control-label">优势与采样</span><div class="control-bar"><i class="control-tick c1" style="left:45%"></i></div><span class="control-value">保持一致</span></div><div class="control-lane"><span class="control-label">优化器</span><div class="control-bar"><i class="control-tick c2" style="left:80%"></i></div><span class="control-value">SGD · 每批一步</span></div></div><div class="one">仅替换修正规则</div>'+side('s1','图 2 · 离线','固定数据','+1 / 0<br>相对稳定','','Qwen3-1.7B · Countdown')+side('s2','图 2 · 在线 + TIM','不断同步','组中心化<br>相对稳定','','+1 / 0 最不稳定'),
-    noise: side('s0','Qwen3-0.6B · Countdown','受控权重偏移','横轴：训练步<br>纵轴：留出评测准确率','','固定 Δθ · 3 个种子')+side('s1','由弱到强','0.01 → 0.05','SC<br>TIS + SC<br>MIS + SC','','强偏移下保持稳定')+side('s2 step-count','DPPO · 正文近似','崩溃步数','弱 → 中 → 强','160 → 80 → 20','§5.2 · 非误差规模实测'),
+    noise: side('s0','Qwen3-0.6B · Countdown','受控权重偏移','横轴：训练步<br>纵轴：留出评测准确率','','固定 Δθ · 3 个种子')+side('s1','由弱到强','0.01 → 0.05','SC<br>TIS + SC<br>MIS + SC','','强偏移下保持稳定')+side('s2 step-count','DPPO · 正文近似','崩溃步数','弱 → 中 → 强','<span class="collapse-a">约 160</span><span class="collapse-b">约 80</span><span class="collapse-c">约 20</span>','§5.2 · 非误差规模实测'),
     quant: side('s0','量化不一致','训练 bf16','采样 INT8<br>权重 / 激活 / KV','','Qwen3-0.6B · Countdown')+side('s1','相同训练设置','跟踪 SC','再比较 TIS + SC<br>与 MIS + SC','','纵轴：训练准确率')+side('s2','量化压力设置','SC 与组合','保持稳定<br>表现最好','','阴影：±1 标准误'),
     stale: '<div class="sync-ruler">'+Array.from({length:9},(_,i)=>'<i style="left:'+(i*12.5)+'%"></i>').join('')+'<span style="left:0">0</span><span style="left:48%">32</span><span style="left:96%">64</span><b class="sync-now"></b></div>'+side('s0','固定同步周期','每 64 步','采样器保持旧权重<br>训练器持续更新','','Qwen3-0.6B · Countdown')+side('s1','图 4 · 右','组合更好','TIS + SC<br>MIS + SC','','相对单独 SC')+side('s2','回到更新分解','权重 + 去均值','IS：调整分布<br>SC：去残余漂移','','信号仍按 q 计算'),
     scale: side('s0','Qwen3-30B-A3B-Base','INTELLECT-2 数学','MoE · 未回放路由<br>三个量化强度','','纵轴：训练准确率')+side('s1','FP8 W/A + FP8 KV','轻量化设置','普通 PG 也稳定','58%','800 步 · 与修正方法相近')+side('s2','FP8 W/A + FP4 KV','SC / TIS','PG：200 步内崩溃','52% / 51%','MIS：后期崩溃')+side('s3','INT8 W/A + INT4 KV','SC / TIS','其他方法：结束 <5%','30% / 12%','严重不一致 · 训练准确率'),
     ablation: side('s0','图 5 · 逐面板比较','32 / 128 / full','头部近似<br>与完整词表相当','','限于论文所测设置')+side('s1','同硬件 · 自定义 JAX','额外墙钟时间','k = 128','< 1%','vLLM / SGLang 开销未测')+side('s2','附录 B.3','按曲线读种子数','小模型主要比较：3<br>30B：1–5','','部分 top-k 消融：1 个种子')+'<div class="cost"><div class="cost-row"><span class="cost-label">基线</span><div class="cost-track"><div class="cost-fill" style="width:99%"></div></div></div><div class="cost-row"><span class="cost-label">SC · 128</span><div class="cost-track"><div class="cost-fill full" style="width:99%"></div><div class="cost-extra"></div></div></div></div><div class="cost-number">+ &lt;1%</div><div class="cost-note">0.6B 与 30B · 论文自定义 JAX 采样器</div>',
   }
-  const scaleLabels=page==='stale'?sharedTicks({x:.52,y:0,w:.48,h:1},fig.aspect,.537,[[.077,'80%'],[.254,'60%'],[.431,'40%'],[.607,'20%'],[.784,'0%']]):page==='study'?sharedTicks({x:.525,y:0,w:.475,h:1},fig.aspect,.538,[[.128,'80%'],[.292,'60%'],[.455,'40%'],[.619,'20%'],[.783,'0%']]):page==='noise'?sharedTicks({x:.68,y:0,w:.32,h:1},fig.aspect,.688,[[.24,'60%'],[.417,'40%'],[.595,'20%'],[.772,'0%']]):''
+  const scaleLabels=page==='stale'?sharedTicks({x:.52,y:0,w:.48,h:1},fig.aspect,.537,[[.077,'80%'],[.254,'60%'],[.431,'40%'],[.607,'20%'],[.784,'0%']]):page==='study'?sharedTicks({x:.525,y:0,w:.475,h:1},fig.aspect,.538,[[.128,'80%'],[.292,'60%'],[.455,'40%'],[.619,'20%'],[.783,'0%']]):page==='noise'?sharedTicks({x:.68,y:0,w:.32,h:1},fig.aspect,.688,[[.24,'60%'],[.417,'40%'],[.595,'20%'],[.772,'0%']],'noise-axis-right')+sharedTicks({x:.367,y:0,w:.31,h:1},fig.aspect,.372,[[.24,'60%'],[.417,'40%'],[.595,'20%'],[.772,'0%']],'noise-axis-mid'):''
   frame(root,CSS,header+'<div class="paper-window"><div class="paper-mask"><div class="paper-cam"><img src="'+fig.src+'" alt="'+fig.source+'"><div class="focus"></div><div class="scan"></div></div></div>'+scaleLabels+'</div><div class="source">'+fig.source+'</div>'+extra[page])
   const pose=(r:Region,k:number,f=0,duration=.8)=>{ const c=camera(r,fig.aspect); tl.to('.paper-mask',{...c.mask,duration,ease:'power2.inOut'},T(k,f)); return tl.to('.paper-cam',{...c.image,duration,ease:'power2.inOut'},T(k,f)) }
   const setPose=(r:Region)=>{ const c=camera(r,fig.aspect); gsap.set('.paper-mask',c.mask); gsap.set('.paper-cam',c.image) }
@@ -171,15 +172,26 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
     pose({x:0,y:0,w:.365,h:1},1,.06)
     ring({x:.065,y:.17,w:.215,h:.11},1,.2)
     pose({x:.68,y:0,w:.32,h:1},1,.49)
-    note('.axis-ticks',1,.55)
+    note('.noise-axis-right',1,.55)
     ring({x:.69,y:.16,w:.225,h:.19},1,.6)
+    // Follow the same DPPO collapse across the three noise settings; numbers are approximate.
+    gsap.set(['.collapse-b','.collapse-c'],{autoAlpha:0})
     tl.to('.axis-ticks',{autoAlpha:0,duration:.25},T(2))
-    pose(WHOLE,2,.02)
-    swap('.s1','.s2',2,.28)
-    note('.s2 .value',2,.61)
-    ring({x:.15,y:.48,w:.05,h:.22},2,.21)
-    ring({x:.42,y:.45,w:.05,h:.26},2,.42)
-    ring({x:.70,y:.45,w:.05,h:.26},2,.62)
+    pose({x:0,y:0,w:.365,h:1},2,.06)
+    swap('.s1','.s2',2,.10)
+    note('.s2 .value',2,.20)
+    ring({x:.164,y:.43,w:.042,h:.34},2,.20)
+    pose({x:.367,y:0,w:.31,h:1},2,.33)
+    note('.noise-axis-mid',2,.38)
+    tl.to('.collapse-a',{autoAlpha:0,duration:.25},T(2,.43))
+    note('.collapse-b',2,.43)
+    ring({x:.418,y:.42,w:.043,h:.35},2,.44)
+    tl.to('.noise-axis-mid',{autoAlpha:0,duration:.25},T(2,.58))
+    pose({x:.68,y:0,w:.32,h:1},2,.58)
+    note('.noise-axis-right',2,.63)
+    tl.to('.collapse-b',{autoAlpha:0,duration:.25},T(2,.69))
+    note('.collapse-c',2,.69)
+    ring({x:.692,y:.42,w:.035,h:.35},2,.70)
     tl.set({}, {}, T(3))
   } else if(page==='quant') {
     setPose({x:0,y:0,w:.5,h:1})
