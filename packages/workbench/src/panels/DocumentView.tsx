@@ -134,7 +134,7 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
           if (action.view === 'document') await controls.current.exitPresent(signal)
           else if (action.view === 'production') await controls.current.openProduction(signal)
           else await controls.current.compilePresentation(() => {
-            workbench.setMode('viewing'); workbench.setWebView(action.view === 'presentation' ? 'present' : 'document')
+            workbench.setMode('viewing'); workbench.setWebView(action.view === 'presentation' ? 'present' : 'scrolly')
             controls.current.setWorkspace(action.view)
           }, action.view === 'reading', signal, deadline)
         }
@@ -218,7 +218,7 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
       </PmToolbar>}
       {!producing && !presenting && !reading && <DocumentToolbar narrow={narrow} presentButton={presentButton} framed={framed} onBack={onBack} actions={actions} aside={aside} navigation={navigation} changingView={changingView} onProduction={() => void openProduction()} onRead={() => void compilePresentation(() => {
         workbench.setMode('viewing')
-        workbench.setWebView('document')
+        workbench.setWebView('scrolly')
         setWorkspace('reading')
       }, true)} onPresent={() => void compilePresentation(() => {
         workbench.setMode('viewing')
@@ -251,7 +251,7 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
   const documentId = useWorkbenchState(state => state.authoring?.content?.id)
   const reset = useWorkbenchState(state => state.authoring?.reset)
   const locale = useWorkbenchState(state => state.locale)
-  const slides = useWorkbenchState(state => state.previewRenderer === 'slides' || state.webView !== 'document')
+  const slides = useWorkbenchState(state => state.previewRenderer === 'slides' || state.webView === 'present')
   const current = useWorkbenchState(state => state.position?.section)
   const editing = useWorkbenchState(state => state.mode === 'editing' && workbench.client.capabilities?.readOnly !== true)
   const creating = useWorkbenchState(state => Boolean(state.isCreatingPage))
@@ -332,7 +332,7 @@ function StatusBar() {
   const t = useMessages()
   const doc = useWorkbenchState(state => state.authoring?.content)
   const identity = useWorkbenchState(state => state.authoring?.identity)
-  const slides = useWorkbenchState(state => state.previewRenderer === 'slides' || state.webView !== 'document')
+  const slides = useWorkbenchState(state => state.previewRenderer === 'slides' || state.webView === 'present')
   const section = useWorkbenchState(state => state.position?.section)
   const counter = useMemo(() => new DocumentWordCounter(), [])
   const words = useMemo(() => counter.count(doc, identity), [counter, doc, identity])

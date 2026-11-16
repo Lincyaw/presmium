@@ -1026,7 +1026,12 @@ export function connectPreviewFrame(page: PreviewPage): PreviewFrame | undefined
         case 'source-created': return void window.dispatchEvent(new CustomEvent('presmium:source-created', { detail: command }))
         case 'page-insert': return void window.dispatchEvent(new CustomEvent('presmium:page-insert', { detail: command }))
         case 'page-created': return void window.dispatchEvent(new CustomEvent('presmium:page-created', { detail: command }))
-        case 'go': cancelProduction(); return page.go(command)
+        case 'go': {
+          cancelProduction()
+          page.go(command)
+          position.resend()
+          return position.moved()
+        }
         case 'highlight': return highlight.show(command.target)
         case 'pick': return picking.set(command.on)
         case 'pins': return pins.set(command.targets)

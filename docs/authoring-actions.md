@@ -278,6 +278,7 @@ CLI 的 `mcp call` 与按名称查询 `mcp tools <工具>` 同时接受精简目
 - 客户端执行前报告 executing，服务端确认该连接仍拥有请求；断线、来源变化或超时都不授权执行。请求 30 秒过期，同 requestId 只读原回执；丢失回执先 `state.read`，不换 requestId 重试。
 - `source.flush` 只等待当前 source actor 保存；组词、冲突或锁定时不开放。
 - 定位与播放先暂停，不切模式、不编译；播放只面向已准备的 `ProductionBinding`。
+- 阅读客户端报告 `view: scrolly`；当前文稿、页面与步骤推断继续使用它的真实位置。阅读中的步骤定位等待同一预览连接回报目标位置，重复定位当前步骤也重新回报；没有有效预览时不开放定位。
 - `preview.prepare` 显式编译并准备已保存源，不合成或播放；编辑未保存或有模态框时不开放。
 - 草稿 inspect 每页最多 10 项，只返回元数据；read 按第 4 节分片，带完整 UTF-8 SHA-256，格式为 `presmium-document-json-v1`（正文）、`presmium-rich-text-json-v1`（批注）或 `presmium-component-parameters-json-v1`（组件属性）。当前内存稿遮蔽同 ID 的旧存储。
 - 批注 restore 只需候选 `draft`，客户端选择唯一的原生恢复入口并严格保留当前分支。`composerId` 与 `expectedCurrent` 是可选的成对高级绑定，不能只提供其一；原生目标不唯一时拒绝。inspect 默认只给出 `restorable` 标记，动作内的 `details: true` 才展开这些绑定；普通恢复与丢弃回执不重复输入的引用，恢复仍返回采用后的新引用。表单标识与保留分支的核验信息只在顶层 `details: true` 或高级请求中展开。组件属性 restore 仍显式提供候选与 `expectedCurrent`。恢复都不提交，仍由作者 Save 或 Apply。

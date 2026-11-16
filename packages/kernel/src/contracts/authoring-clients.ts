@@ -131,7 +131,7 @@ export type AuthoringClientActionResult =
 export interface AuthoringClientSnapshot {
   revision: number
   source: CanonicalSource
-  view: 'document' | 'present'
+  view: 'document' | 'scrolly' | 'present'
   mode?: AuthoringClientView
   recording?: { phase: 'idle' | 'requesting' | 'recording' | 'stopping' | 'ready' | 'failed', elapsedMs: number, candidate?: { byteLength: number, mime: string, assetId?: string }, error?: string, audition?: 'idle' | 'loading' | 'playing' | 'failed' }
   editing: { dirty: boolean, saving: boolean, composing: boolean, conflicted: boolean, locked: boolean, loading: boolean }
@@ -256,7 +256,7 @@ const binding = object({ source, irRevision: entity, planId: entity })
 const position = object({ timeMs: number, stepTimeMs: number, sectionId: entity, stepId: entity, durationMs: number, playing: bool, rate: { type: 'number', exclusiveMinimum: 0, maximum: 16 }, trying: bool, waitingFor: entity }, ['timeMs', 'durationMs', 'playing', 'rate', 'trying'])
 const playback = object({ binding, status: { enum: ['loading', 'ready', 'estimated', 'unavailable', 'failed'] }, position, error: { type: 'string', maxLength: 300 } }, ['binding', 'status'])
 export const AUTHORING_CLIENT_SNAPSHOT_SCHEMA: Schema = object({
-  revision: integer, source, view: { enum: ['document', 'present'] }, editing: object({ dirty: bool, saving: bool, composing: bool, conflicted: bool, locked: bool, loading: bool }),
+  revision: integer, source, view: { enum: ['document', 'scrolly', 'present'] }, editing: object({ dirty: bool, saving: bool, composing: bool, conflicted: bool, locked: bool, loading: bool }),
   mode: { enum: ['document', 'reading', 'presentation', 'production'] },
   recording: object({ phase: { enum: ['idle', 'requesting', 'recording', 'stopping', 'ready', 'failed'] }, elapsedMs: number,
     candidate: object({ byteLength: integer, mime: { type: 'string', maxLength: 200 }, assetId: entity }, ['byteLength', 'mime']),
