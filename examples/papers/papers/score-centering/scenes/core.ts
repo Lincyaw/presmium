@@ -302,6 +302,8 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       txt(104, 68, '', 'answer strong', 3.9) +
       '<g class="rare">' +
       txt(13, 22, '罕见 token C', 'strong', 3.4) + txt(13, 30, 'q_C=0.01　p_C=0.10', '', 3.3) +
+      txt(78, 30, 'q_D=0.99　p_D=0.90', '', 3.3) +
+      txt(13, 36, 's_C=+0.9　s_D=−0.1', 'muted', 2.7) +
       line(24, 46, 145, 46) + arrow('rareArrow', 24, 46, 34, C.tis, 1) +
       txt(27, 40, 'r_C = 10', 'ratioLabel', 3.7) +
       line(64, 38, 64, 56, 'cap') + txt(56, 61, 'TIS 上界 2', 'capLabel', 3.2) +
