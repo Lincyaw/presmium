@@ -32,9 +32,9 @@ const CSS = `
   .side .line { height:.16cqw; background:var(--c-line-strong); margin:2.6cqh 0; }
   .side .success { color:${SC}; }
   .diagram { position:absolute; inset:0; }
-  .diagram text { font-size:2.1px; }
-  .diagram .label { font-size:2.7px; font-weight:750; }
-  .diagram .small { font-size:1.85px; fill:var(--c-muted); }
+  
+  .diagram .label { font-weight:750; }
+  .diagram .small { fill:var(--c-muted); }
   .diagram .node { fill:var(--c-surface); stroke:var(--c-line-strong); stroke-width:.25; }
   .diagram .blue { fill:${SC}; }
   .diagram .wire { fill:none; stroke:var(--c-line-strong); stroke-width:.38; }
@@ -87,15 +87,15 @@ export default gsapScene(({root,gsap,at,durations,parameters})=>{
   const header=brand('Score Centering')+'<div class="e-title">'+title+'</div>'
   if(page==='practice') {
     const nodes=[
-      '<g class="p-trainer"><rect class="node" x="10" y="25" width="30" height="13" rx="2"/><text class="label" x="25" y="31" text-anchor="middle">训练器 p</text><text class="small" x="25" y="35" text-anchor="middle">当前权重</text></g>',
-      '<g class="p-sampler"><rect class="node" x="111" y="25" width="34" height="13" rx="2"/><text class="label" x="128" y="31" text-anchor="middle">采样器 q</text><text class="small" x="128" y="35" text-anchor="middle">量化 / 旧权重</text></g>',
-      '<g class="p-log"><rect class="node" x="104" y="49" width="46" height="14" rx="2"/><text class="label" x="127" y="55" text-anchor="middle">记录 token 概率</text><text class="small" x="127" y="59.5" text-anchor="middle">top-k ids / logp / sampled logp</text></g>',
-      '<g class="p-loss"><rect class="node" x="46" y="49" width="47" height="14" rx="2"/><text class="label" x="69.5" y="55" text-anchor="middle">sg[系数] × log p</text><text class="small" x="69.5" y="59.5" text-anchor="middle">尾部重建 → 中心化损失</text></g>',
-      '<g class="p-monitor"><rect class="node" x="5" y="49" width="31" height="14" rx="2"/><text class="label" x="20.5" y="55" text-anchor="middle">验证更新</text><text class="small" x="20.5" y="59.5" text-anchor="middle">漂移 / 熵 / 奖励</text></g>'
+      '<g class="p-trainer"><rect class="node" x="10" y="25" width="30" height="13" rx="2"/><text font-size="2.7" class="label" x="25" y="31" text-anchor="middle">训练器 p</text><text font-size="1.85" class="small" x="25" y="35" text-anchor="middle">当前权重</text></g>',
+      '<g class="p-sampler"><rect class="node" x="111" y="25" width="34" height="13" rx="2"/><text font-size="2.7" class="label" x="128" y="31" text-anchor="middle">采样器 q</text><text font-size="1.85" class="small" x="128" y="35" text-anchor="middle">量化 / 旧权重</text></g>',
+      '<g class="p-log"><rect class="node" x="104" y="49" width="46" height="14" rx="2"/><text font-size="2.7" class="label" x="127" y="55" text-anchor="middle">记录 token 概率</text><text font-size="1.85" class="small" x="127" y="59.5" text-anchor="middle">top-k ids / logp / sampled logp</text></g>',
+      '<g class="p-loss"><rect class="node" x="46" y="49" width="47" height="14" rx="2"/><text font-size="2.7" class="label" x="69.5" y="55" text-anchor="middle">sg[系数] × log p</text><text font-size="1.85" class="small" x="69.5" y="59.5" text-anchor="middle">尾部重建 → 中心化损失</text></g>',
+      '<g class="p-monitor"><rect class="node" x="5" y="49" width="31" height="14" rx="2"/><text font-size="2.7" class="label" x="20.5" y="55" text-anchor="middle">验证更新</text><text font-size="1.85" class="small" x="20.5" y="59.5" text-anchor="middle">漂移 / 熵 / 奖励</text></g>'
     ].join('')
     const wires=line(40,31,111,31,'p-sync')+line(128,38,128,49,'p-down')+line(104,56,93,56,'p-left1')+line(46,56,36,56,'p-left2')+line(20,49,20,38,'p-up')
-    const choice='<g class="p-choice"><text x="75" y="19" text-anchor="middle" class="label">数值不一致 → SC</text><text x="75" y="24" text-anchor="middle" class="small">明显滞后 → TIS / MIS + SC</text></g>'
-    const formula='<g class="p-check"><text x="80" y="44" text-anchor="middle" class="label">恒定奖励：平均更新 ≈ 0</text></g>'
+    const choice='<g class="p-choice"><text font-size="2.7" x="75" y="19" text-anchor="middle" class="label">数值不一致 → SC</text><text font-size="1.85" x="75" y="24" text-anchor="middle" class="small">明显滞后 → TIS / MIS + SC</text></g>'
+    const formula='<g class="p-check"><text font-size="2.7" x="80" y="44" text-anchor="middle" class="label">恒定奖励：平均更新 ≈ 0</text></g>'
     frame(root,CSS,header+'<svg class="layer diagram" '+LAYER+'>'+wires+nodes+choice+formula+'<circle class="flow-token token" cx="128" cy="31" r="1.4"/><circle class="flow-update token" cx="127" cy="56" r="1.4"/></svg><div class="condition">目标系统验证：尾部覆盖率 · 同步周期 · 长上下文 · 实际吞吐</div>')
     gsap.set(['.p-loss','.p-monitor','.p-choice','.p-check','.p-left1','.p-left2','.p-up','.flow-update','.condition'],{autoAlpha:0})
     tl.fromTo('.flow-token',{attr:{cy:31}},{attr:{cy:56},duration:1,ease:'power1.inOut',immediateRender:false},T(0,.23))
