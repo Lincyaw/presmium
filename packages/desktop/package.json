@@ -12,6 +12,7 @@
     "prepare:desktop": "node scripts/prepare.mjs",
     "dev": "node scripts/prepare.mjs && tauri dev",
     "build": "node scripts/prepare.mjs && tauri build",
+    "bundle:rpm": "node scripts/bundle-rpm.mjs",
     "tauri": "tauri"
   },
   "dependencies": {

@@ -255,6 +255,8 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 6. 菜单与启动页的语言按系统语言（zh-CN 或 en）；Studio 页面的语言由 Studio 自己决定。
 7. `.github/workflows/desktop.yml` 构建六个平台的安装包（Windows 的 NSIS `.exe`，macOS 的 `.dmg`，Linux 的 `.deb` 与 `.rpm`）。推送到 `main` 构建成功后，安装包替换滚动预发布 [`desktop-latest`](https://github.com/Lincyaw/presmium/releases/tag/desktop-latest) 的内容；发布 GitHub Release 时附加到该 Release。没有签名证书时，macOS 应用只做临时签名（ad hoc，`signingIdentity` 为 `-`），没有经过苹果公证；完全不签名的应用下载后会被 macOS 报为“已损坏”。
 
+Linux 默认构建 DEB；随后 `pnpm --filter presmium-desktop bundle:rpm` 用已编译的二进制生成 RPM，不重新编译。RPM 元数据使用数字基础版本，预发布的 release 为 `0.<预发布标识>`，稳定版为 `1`；二进制与更新签名保留主包完整版本。CI 同时提供 DEB 与 RPM。
+
 桌面应用版本跟随主包版本。原生菜单“检查更新…”随时可用，正式构建启动时及每 6 小时自动检查；后台网络失败保持安静。发现新版后先询问下载，下载与编辑并行，完整校验通过后再提示作者保存文稿、处理未提交表单与录音并重启安装。作者选择稍后时保留当前候选包；下次重新核对签名，旧候选缓存会清理。安装前停止应用拥有的 Studio，借用的服务保留；Studio 页面不取得原生更新权限。
 
 更新使用 Tauri updater 的版本绑定签名，公钥随应用发布，私钥由仓库 Actions 加密密钥 `TAURI_SIGNING_PRIVATE_KEY` 提供，密码可由 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` 提供。六个平台全部成功后，将最终包（DEB 重压缩后重新签名，并用应用内的公钥验证最终字节及版本）上传到对应版本 Release；已发布的同名文件不能改写为其他字节。固定 `desktop-updates/latest.json` 最后发布，列全 macOS app、Windows NSIS、Linux DEB/RPM 的架构与格式；较旧构建不得覆盖较新的更新。`desktop-latest` 是独立的滚动预览，不推进自动更新。尚无更新功能的旧版须手动安装一次支持更新的版本。

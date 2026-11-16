@@ -93,6 +93,7 @@ jobs:
           fi
           # Tauri's deb is gzip with no setting for it; xz makes it about a third smaller.
           if [ "$RUNNER_OS" = Linux ]; then
+            pnpm --filter presmium-desktop bundle:rpm
             for deb in packages/desktop/src-tauri/target/release/bundle/deb/*.deb; do
               unpacked=$(mktemp -d)
               dpkg-deb -R "$deb" "$unpacked/package"

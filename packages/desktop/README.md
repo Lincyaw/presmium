@@ -31,6 +31,8 @@ Requirements: Rust 1.90 or later (stable), Node 22.19 or later, pnpm, and the pl
 
 `node scripts/prepare.mjs node|ui|runtime|gallery` runs one part. Each platform is built on that platform; `.github/workflows/desktop.yml` builds Linux, macOS and Windows on x64 and arm64.
 
+On Linux the default build produces a DEB. Run `pnpm --filter presmium-desktop bundle:rpm` afterwards to package the already-built binary as an RPM. The RPM metadata uses the numeric base version and release `0.<prerelease>` (or `1` for a stable version), so prereleases sort before the stable release. This does not recompile or change the binary's full application/updater version. CI signs final RPM bytes with that full version through `collect-updates.mjs`.
+
 macOS signing keeps Hardened Runtime enabled and uses `src-tauri/Entitlements.plist` for the bundled Node's V8 JIT and loading native extensions such as sharp and workspace plugins. CI executes JavaScript and loads sharp with the signed `Contents/MacOS/presmium-node`. Also open a workspace in the built app: `--version` alone does not initialize V8. The launcher's **Details** opens the startup log, including process creation failures and unexpected exit status.
 
 
