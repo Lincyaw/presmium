@@ -232,6 +232,8 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
     hide('.online,.traces,.result')
     tl.to('.fixedP', { attr: { cx: 98.5 }, duration: 4, ease: 'power2.out' }, T(0, .18))
     tl.to('.fixedPLabel', { attr: { x: 93.5 }, duration: 4, ease: 'power2.out' }, T(0, .18))
+    tl.to('.fixedQLabel', { autoAlpha: 0, duration: .4 }, T(0, .43))
+    setText('.fixedPLabel', 'p = q', 0, .45)
     show('.online', 1, .02)
     gsap.set('.syncLoop', { drawSVG: '0%' })
     tl.to('.movingP', { attr: { cx: 49 }, duration: 1.5 }, T(1, .2))
