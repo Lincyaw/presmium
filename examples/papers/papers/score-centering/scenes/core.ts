@@ -192,6 +192,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       setText('.equation', 's̃_y = s_y − s̄', 1, .58)
       setText('.answer', '', 1, .04)
       setText('.stage', '同一个平移量', 1, .2)
+      tl.to('.shiftGuide', { autoAlpha: 0, duration: .35 }, T(2))
       tl.to('.scoreA', { attr: { d: path(95, 42, 111.8) }, duration: 1.4 }, T(2, .14))
       tl.to('.scoreB', { attr: { d: path(95, 54, 78.2) }, duration: 1.4 }, T(2, .28))
       setText('.sAValue', '0.6 × 0.4 = 0.24', 2, .14)
