@@ -138,7 +138,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
     tl.to('.vB', { drawSVG: '100%', duration: 1.2 }, T(2, .42))
   } else if (['zero', 'mismatch', 'center', 'signal'].includes(page)) {
     const initialQ = page === 'center' || page === 'signal' ? .6 : .5
-    html = apparatus(initialQ) +
+    html = apparatus(initialQ, page === 'signal' ? .4 : .5, page === 'signal' ? -.6 : -.5) +
       '<g class="bottom">' +
       arrow('meanArrow', 95, 66, 95, C.drift, .85) +
       txt(10, 68, '', 'equation formula', 3.5) +
@@ -219,22 +219,25 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
   } else if (page === 'feedback') {
     html = txt(11, 21, '固定采样器', 'strong', 3.4) +
       line(20, 34, 143, 34) +
-      '<circle class="fixedP" cx="31" cy="34" r="2" fill="var(--c-ink)"/><rect x="96" y="31.5" width="5" height="5" fill="' + C.q + '"/>' +
-      txt(26, 29, 'p', '', 3.3) + txt(95, 29, 'q 固定', 'q', 3.3) +
+      '<circle class="fixedP" cx="31" cy="34" r="3.6" fill="none" stroke="var(--c-ink)" stroke-width=".7"/><rect x="96" y="31.5" width="5" height="5" fill="' + C.q + '"/>' +
+      txt(26, 29, 'p', 'fixedPLabel', 3.3) + txt(95, 29, 'q 固定', 'q', 3.3) +
       '<g class="online">' + txt(11, 45, '随训练同步', 'strong', 3.4) +
       line(20, 57, 143, 57) + '<circle class="movingP" cx="31" cy="57" r="2" fill="var(--c-ink)"/>' +
       '<rect class="movingQ" x="48" y="54.5" width="5" height="5" fill="' + C.q + '"/>' +
       '<path class="syncLoop" d="M43 62 C30 73 16 68 20 60" fill="none" stroke="var(--c-accent)" stroke-width=".6"/>' +
-      txt(27, 51, 'p', '', 3.3) + txt(47, 51, 'q', 'q', 3.3) + '</g>' +
+      txt(27, 51, 'p', 'movingPLabel', 3.3) + txt(47, 51, 'q', 'q movingQLabel', 3.3) + '</g>' +
       '<g class="traces">' + [31, 49, 67, 85, 103, 121].map((x, i) => '<circle class="trace trace' + i + '" cx="' + x + '" cy="57" r=".8" fill="' + C.drift + '"/>').join('') + '</g>' +
       txt(57, 68, '偏差随同步循环累积', 'result drift strong', 3.6)
     start(html, '论文 §4 · 机制示意；横轴表示参数变化，不是实验曲线')
     hide('.online,.traces,.result')
     tl.to('.fixedP', { attr: { cx: 98.5 }, duration: 4, ease: 'power2.out' }, T(0, .18))
+    tl.to('.fixedPLabel', { attr: { x: 93.5 }, duration: 4, ease: 'power2.out' }, T(0, .18))
     show('.online', 1, .02)
     gsap.set('.syncLoop', { drawSVG: '0%' })
     tl.to('.movingP', { attr: { cx: 49 }, duration: 1.5 }, T(1, .2))
+    tl.to('.movingPLabel', { attr: { x: 45 }, duration: 1.5 }, T(1, .2))
     tl.to('.movingQ', { attr: { x: 66 }, duration: 1.5 }, T(1, .38))
+    tl.to('.movingQLabel', { attr: { x: 66 }, duration: 1.5 }, T(1, .38))
     tl.to('.syncLoop', { drawSVG: '100%', duration: 1.5 }, T(1, .48))
     show('.traces', 2, .01, .1)
     hide('.trace')
@@ -242,6 +245,8 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       show('.trace' + i, 2, .08 + i * .11, .1)
       tl.to('.movingP', { attr: { cx: 49 + i * 18 }, duration: .9, ease: 'none' }, T(2, .08 + i * .11))
       tl.to('.movingQ', { attr: { x: 66 + i * 14 }, duration: .9, ease: 'none' }, T(2, .14 + i * .11))
+      tl.to('.movingPLabel', { attr: { x: 45 + i * 18 }, duration: .9, ease: 'none' }, T(2, .08 + i * .11))
+      tl.to('.movingQLabel', { attr: { x: 66 + i * 14 }, duration: .9, ease: 'none' }, T(2, .14 + i * .11))
     }
     show('.result', 2, .76)
   } else if (page === 'split') {
@@ -279,11 +284,11 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
         '<circle cx="106" cy="' + y + '" r="3.4" fill="' + (i < 2 ? C.signal : C.drift) + '"/>' +
         txt(116, y + 1, i < 2 ? '+1' : '−1', i < 2 ? 'signal' : 'drift', 3.4)).join('') + '</g>' +
       '<rect class="prefixBox" x="57" y="18" width="78" height="23" rx="2" fill="none" stroke="' + C.q + '" stroke-width=".7"/>' +
-      txt(58, 15, '已走到的前缀', 'prefixLabel q', 3.2) +
+      txt(60, 23, '已走到的前缀', 'prefixLabel q', 2.8) +
       txt(13, 68, '全组均值：(+1+1−1−1)/4 = 0', 'wholeMean formula', 3.4) +
       txt(76, 67, '条件均值：(+1+1)/2 = +1', 'conditional formula', 3.1) +
-      arrow('residual', 91, 37, 120, C.drift) +
-      txt(72, 44, '前缀漂移仍存在', 'residualLabel drift', 3.2)
+      arrow('residual', 15, 60, 44, C.drift) +
+      txt(49, 61, '前缀漂移仍存在', 'residualLabel drift', 3.2)
     start(html, '论文 §4 · 四条回答为教学示例；图中数值表示组中心化后的优势')
     hide('.prefixBox,.prefixLabel,.conditional,.residual,.residualLabel')
     gsap.set('.branches path', { drawSVG: '0%' })
@@ -308,7 +313,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       txt(13, 36, 's_C=+0.9　s_D=−0.1', 'muted', 2.7) +
       line(24, 46, 145, 46) + arrow('rareArrow', 24, 46, 34, C.tis, 1) +
       txt(27, 40, 'r_C = 10', 'ratioLabel', 3.7) +
-      line(64, 38, 64, 56, 'cap') + txt(56, 61, 'TIS 上界 2', 'capLabel', 3.2) +
+      line(44, 38, 44, 56, 'cap') + txt(36, 61, 'TIS 上界 2', 'capLabel', 3.2) +
       txt(13, 68, '乘法校正 → 大比率 → 截断偏差', '', 3.6) + '</g>' +
       txt(17, 18, '精确 IS', 'exactLabel', 3.2) +
       txt(78, 57, 'E_q[w s] = −0.072', 'clipLabel drift', 3.2)
@@ -327,8 +332,8 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
     tl.to('.rareArrow', { attr: { d: path(24, 46, 124) }, duration: 2.2 }, T(2, .27))
     tl.to('.ratioLabel', { x: 71, duration: 2.2 }, T(2, .27))
     show('.cap,.capLabel', 3, .15)
-    tl.to('.rareArrow', { attr: { d: path(24, 46, 64) }, duration: 1.6 }, T(3, .32))
-    tl.to('.ratioLabel', { x: 25, duration: 1.6 }, T(3, .32))
+    tl.to('.rareArrow', { attr: { d: path(24, 46, 44) }, duration: 1.6 }, T(3, .32))
+    tl.to('.ratioLabel', { x: 1, duration: 1.6 }, T(3, .32))
     setText('.ratioLabel', 'w_C = 2', 3, .41)
     show('.clipLabel', 3, .65)
   } else if (page === 'compose') {
@@ -336,7 +341,7 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
       arrow('weightedA', 79, 34, 123, C.tis) +
       arrow('weightedB', 79, 50, 52, C.tis) +
       token(15, 34, 'A') + token(15, 50, 'B') +
-      txt(27, 35, 'w_A s_A', 'formula', 3.5) + txt(27, 51, 'w_B s_B', 'formula', 3.5) +
+      txt(27, 35, 'w_A s_A', 'formula weightedALabel', 3.5) + txt(27, 51, 'w_B s_B', 'formula weightedBLabel', 3.5) +
       line(79, 27, 79, 57) +
       '<g class="mean">' + arrow('weightedMean', 79, 61, 89, C.drift) +
       txt(92, 62, 'm = E_q[w s]', 'formula drift', 3.4) + '</g>' +
@@ -352,6 +357,8 @@ export default gsapScene(({ root, gsap, at, durations, parameters }) => {
     show('.recenter', 1, .12)
     tl.to('.weightedA', { attr: { d: path(79, 34, 113) }, duration: 1.5 }, T(1, .28))
     tl.to('.weightedB', { attr: { d: path(79, 50, 42) }, duration: 1.5 }, T(1, .42))
+    setText('.weightedALabel', 'w_A s_A − m', 1, .58)
+    setText('.weightedBLabel', 'w_B s_B − m', 1, .58)
     show('.final', 1, .6)
     tl.to('.weightedMean', { attr: { d: path(79, 61, 79) }, duration: 1.3 }, T(1, .6))
     setText('.sanity', '精确 IS：m = 0', 2, .16)
