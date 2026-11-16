@@ -94,6 +94,9 @@ visible result.
   benchmark by starting a second export in the active document's fixed export directory. Each benchmark round
   needs a fresh browser context: lecture advancement is forward-only and two players in one context share
   position broadcasts. Do not remove scene readiness or frame barriers to improve a timing number.
+  Contact-sheet decoding and tiling must use asynchronous child processes so MCP and the app remain responsive
+  after the frame counter reaches its total. Check event-loop responsiveness, cancellation and temporary-frame
+  cleanup on an actual video; the resulting sheet must keep its original pixels and labels.
 - Preview loading: Vite dependency pre-bundling finishes in one round (`DEBUG=vite:deps` shows no "new
   dependencies found").
 - Consecutive saves cancel the old compile and publish only the latest result.

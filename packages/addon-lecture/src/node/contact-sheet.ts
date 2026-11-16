@@ -1,7 +1,8 @@
-import { spawnSync } from 'node:child_process'
+import { execFile, spawnSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { promisify } from 'node:util'
 import type { Ffmpeg } from '@lincyaw/kernel/node'
 
 export interface SheetFrame {
@@ -17,6 +18,8 @@ export interface SheetOptions {
   columns: number
   /** The video's frame rate: the export writes frame `n` at `n / fps` seconds. */
   fps: number
+  /** Stops FFmpeg and removes temporary frames when the export is cancelled. */
+  signal?: AbortSignal
 }
 
 const filters = new Map<string, boolean>()
@@ -31,9 +34,15 @@ function hasFilter(ffmpeg: Ffmpeg, name: string): boolean {
   return found
 }
 
-function runFfmpeg(ffmpeg: Ffmpeg, args: string[], cwd: string): void {
-  const run = spawnSync(ffmpeg.file, ['-hide_banner', '-loglevel', 'error', '-y', ...args], { cwd, encoding: 'utf8' })
-  if (run.status !== 0) throw new Error(`ffmpeg stopped (${run.status ?? run.signal}): ${run.stderr.trim().slice(-2000) || 'no message'}`)
+const executeFile = promisify(execFile)
+
+async function runFfmpeg(ffmpeg: Ffmpeg, args: string[], cwd: string, signal?: AbortSignal): Promise<void> {
+  try {
+    await executeFile(ffmpeg.file, ['-hide_banner', '-loglevel', 'error', '-y', ...args], { cwd, encoding: 'utf8', signal })
+  } catch (error) {
+    const failure = error as { code?: string | number, signal?: string, stderr?: string }
+    throw new Error(`ffmpeg stopped (${failure.code ?? failure.signal}): ${failure.stderr?.trim().slice(-2000) || 'no message'}`)
+  }
 }
 
 const numbered = (prefix: string, index: number) => `${prefix}${String(index).padStart(4, '0')}`
@@ -77,7 +86,7 @@ function pngSize(file: string): { width: number, height: number } {
  * video once and keeps the frames shown at those times (`select` by frame number), then labels them with one ASS script
  * (libass, its `ass` filter) and tiles them (`tile`); without `ass` the frames go unlabelled.
  */
-export function writeContactSheet(ffmpeg: Ffmpeg, video: string, frames: readonly SheetFrame[], out: string, options: SheetOptions): { labelled: boolean } {
+export async function writeContactSheet(ffmpeg: Ffmpeg, video: string, frames: readonly SheetFrame[], out: string, options: SheetOptions): Promise<{ labelled: boolean }> {
   const labelled = hasFilter(ffmpeg, 'ass')
   // The filters name only files of this folder, so no path needs escaping in a filter graph.
   const dir = mkdtempSync(join(tmpdir(), 'presmium-sheet-'))
@@ -86,7 +95,7 @@ export function writeContactSheet(ffmpeg: Ffmpeg, video: string, frames: readonl
     const taken = [...new Set(numbers)].sort((a, b) => a - b)
     // `setpts` makes the kept frames consecutive. Passthrough output preserves every selected frame instead of
     // letting the image muxer's default frame-rate conversion stop after the last timestamp it considers in range.
-    runFfmpeg(ffmpeg, ['-i', video, '-an', '-sn', '-vf', `select='${anyFrame(taken)}',setpts=N/FRAME_RATE/TB,scale=${options.width}:-2`, '-fps_mode', 'passthrough', '-start_number', '0', 'taken%04d.png'], dir)
+    await runFfmpeg(ffmpeg, ['-i', video, '-an', '-sn', '-vf', `select='${anyFrame(taken)}',setpts=N/FRAME_RATE/TB,scale=${options.width}:-2`, '-fps_mode', 'passthrough', '-start_number', '0', 'taken%04d.png'], dir, options.signal)
     const missing = taken.findIndex((_, index) => !existsSync(join(dir, `${numbered('taken', index)}.png`)))
     if (missing >= 0) throw new Error(`ffmpeg took ${missing} of the ${taken.length} frames asked for from ${video}`)
     // Two times can fall on one frame: each place on the sheet gets its own copy.
@@ -98,7 +107,7 @@ export function writeContactSheet(ffmpeg: Ffmpeg, video: string, frames: readonl
       labels.push('ass=labels.ass')
     }
     const rows = Math.max(1, Math.ceil(frames.length / options.columns))
-    runFfmpeg(ffmpeg, ['-framerate', '1', '-i', '%04d.png', '-vf', [...labels, `tile=${options.columns}x${rows}:padding=4:margin=4:color=gray`].join(','), '-frames:v', '1', '-update', '1', out], dir)
+    await runFfmpeg(ffmpeg, ['-framerate', '1', '-i', '%04d.png', '-vf', [...labels, `tile=${options.columns}x${rows}:padding=4:margin=4:color=gray`].join(','), '-frames:v', '1', '-update', '1', out], dir, options.signal)
     return { labelled }
   } finally {
     rmSync(dir, { recursive: true, force: true })
