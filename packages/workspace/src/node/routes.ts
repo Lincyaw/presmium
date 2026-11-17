@@ -61,6 +61,7 @@ export interface WorkspaceRoutesOptions {
   historyRoutes?: Record<string, Route>
   authoringClientRoutes?: Record<string, Route>
   projectRoutes?: Record<string, Route>
+  documentImport?: Route
   mcpSettings?: Route
   speechSettings?: Route
   changesRoutes?: Record<string, Route>
@@ -130,6 +131,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
     ...(options.historyRoutes ?? ownedHistory!.routes),
     ...options.authoringClientRoutes,
     ...options.projectRoutes,
+    ...options.documentImport ? { 'documents/import': options.documentImport } : {},
     'files': {
       role: 'editor',
       handle: (request, ctx) => catchRequestErrors(async () => {

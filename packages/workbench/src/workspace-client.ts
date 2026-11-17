@@ -79,6 +79,7 @@ export interface WorkspaceClient {
   openAuthoringWindow?: AuthoringWindowSubscription
   subscribeRequests?(listener: (event: WorkspaceRequestEvent) => void): () => void
   readDocuments(document?: string): Promise<DocumentsAnswer>
+  importDocuments?(files: readonly File[], signal?: AbortSignal): Promise<import('@lincyaw/kernel').DocumentImportAnswer>
   planProjectChange(request: ProjectPlanRequest): Promise<ProjectPlan>
   operateDocument(operation: ProjectOperation, planned?: ProjectPlan): Promise<OperationAnswer>
   readSource(document: string, path: string): Promise<SourceAnswer>
@@ -202,7 +203,7 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     const path = target.pathname.slice(prefix.length)
     const method = (init?.method ?? 'GET').toUpperCase()
     if (client.capabilities?.readOnly && !['GET', 'HEAD', 'OPTIONS'].includes(method)
-      && /^(?:document(?:\/|$)|source(?:\/|$)|project\/|pages\/|history\/|revisions\/|review(?:\/|$))/.test(path)) throw new WorkspaceServerError(403, { error: 'permission-denied' })
+      && /^(?:documents?(?:\/|$)|source(?:\/|$)|project\/|pages\/|history\/|revisions\/|review(?:\/|$))/.test(path)) throw new WorkspaceServerError(403, { error: 'permission-denied' })
     if (path === 'telemetry' || (path === 'diagnostics' || path === 'diagnostics/authoring') && method === 'POST') return fetch(address, { credentials: 'same-origin', ...init })
     const document = target.searchParams.get('document') ?? undefined
     const requestId = ++requestSequence
@@ -369,6 +370,12 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
         if (error instanceof WorkspaceServerError && error.status < 500) projectIntents.delete(key)
         throw error
       }
+    },
+    importDocuments: (files, signal) => {
+      const body = new FormData()
+      body.set('paths', JSON.stringify(files.map(file => file.webkitRelativePath || file.name)))
+      for (const file of files) body.append('files', file, file.name)
+      return call(url('documents/import'), { method: 'POST', body, signal })
     },
     readSource: (document, path) => call(url('source', document, { path })),
     saveSource: (document, path, content, base, message) => post(url('source', document), { path, content, base, ...message ? { message } : {} }),

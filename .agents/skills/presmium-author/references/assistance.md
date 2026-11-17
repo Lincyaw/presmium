@@ -102,3 +102,9 @@ is for transport diagnostics. A pending window result returns `{handle}`: pass i
 `get_authoring_client_request` or `cancel_authoring_client_request`, never resend the action. Navigation
 uses native retained document state without implicitly saving or discarding drafts; composition, pending
 forms, recordings and asset writes can block it. A document-bound assistant cannot navigate other documents.
+
+## Importing existing files
+
+In a multi-document workspace, use the home page's **Import Documents / 导入文档** to choose UTF-8 Markdown (`.md`, `.markdown`), Word (`.docx`) files or a folder. Each file becomes one editable document, preserving folder hierarchy. Choose the whole folder when Markdown references local images or other files. Each batch creates independent copies; it does not replace earlier imports. Limits are 1000 files and 32 MiB, both before and after conversion. Check the completion notice for unresolved links/images and Word conversion notices.
+
+From a shell, `presmium import notes --out site` uses the same converter and prints the workspace document patterns. Markdown keeps supported content semantics, including tables, code and math, rather than byte-for-byte syntax or third-party rendering. Word keeps headings, paragraphs, lists, tables, emphasis, links and embedded images; it does not retain page layout or load external files. Old `.doc` files must first be saved as `.docx`. Exact input copies are kept under each document's `originals/`; further editing uses the converted document. Details: repository `docs/ir.md`, section 7.

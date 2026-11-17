@@ -459,6 +459,14 @@ export class Workbench {
     })
   }
 
+  /** Imports a batch, then refreshes the visible document list. */
+  async importDocuments(files: readonly File[], signal?: AbortSignal): Promise<import('@lincyaw/kernel').DocumentImportAnswer> {
+    if (!this.client.importDocuments) throw new Error('document-import-unavailable')
+    const answer = await this.client.importDocuments(files, signal)
+    await this.loadDocuments()
+    return answer
+  }
+
   /** Makes a document called `title` from the template, in a directory of its own; answers the directory. */
   async createDocument(title: string, template?: string): Promise<string> {
     const taken = this.#state.documents?.documents.map(doc => doc.dir) ?? []

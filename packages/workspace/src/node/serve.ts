@@ -50,6 +50,7 @@ import type { DocumentVoiceServices } from './document-voice.ts'
 import { createWorkbenchBackend } from './workbench-api.ts'
 import type { WorkbenchBackend } from './workbench-api.ts'
 import { localWriter } from './writer.ts'
+import { documentImportRoute } from './document-import.ts'
 
 export interface ServeOptions {
   dir: string
@@ -494,6 +495,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
       historyRoutes: documentHistory.routes,
       authoringClientRoutes: { ...authoringClients.routes, ...authoringWindows.routes, ...agentActivity.routes },
       projectRoutes: projectAuthoring.routes,
+      documentImport: documentImportRoute({ config, writer, locks, revisions: history?.revisions, changed: documentsChanged }),
       locks,
       ...history ? { revisions: history.revisions, operations: history.operations, reviews: history.agentSessionReviews } : {},
       documentsChanged,

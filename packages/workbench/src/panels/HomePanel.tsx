@@ -5,6 +5,8 @@ import type { DocumentSummary, ProjectPlan } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmEmpty, PmInput, PmSelect, PmIcon, PmMenu, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { contentText } from '../messages.ts'
+import { IMPORT_MESSAGES } from '../import-messages.ts'
+import { DocumentImportDialog } from './DocumentImportDialog.tsx'
 
 type Editing =
   | { op: 'create' }
@@ -22,6 +24,8 @@ export function HomePanel({ actions }: { actions?: ReactNode } = {}) {
   const [done, setDone] = useState<string>()
   const [error, setError] = useState<string>()
   const [working, setWorking] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const importMessages = IMPORT_MESSAGES[useWorkbenchState(state => state.locale)]
   const handingOff = useRef(false)
   useEffect(() => {
     void workbench.loadDocuments()
@@ -48,6 +52,7 @@ export function HomePanel({ actions }: { actions?: ReactNode } = {}) {
       <header className="pmw-home__bar">
         <h1 id="pmw-home-title" className="pmw-home__title">{answer?.title ?? t.documents}</h1>
         {actions}
+        {operable && workbench.client.importDocuments && <PmButton icon="upload" disabled={working || workbench.client.capabilities?.readOnly} onClick={() => setImporting(true)}>{importMessages.title}</PmButton>}
         {operable && <PmButton variant="primary" icon="plus" disabled={working} onClick={() => { handingOff.current = false; setError(undefined); setEditing({ op: 'create' }) }}>{t.newDocument}</PmButton>}
       </header>
       {failure && <PmNotice tone="danger">{bundleDisabled ? t.bundleDisabled : failure}</PmNotice>}
@@ -91,6 +96,9 @@ export function HomePanel({ actions }: { actions?: ReactNode } = {}) {
                 ))}
               </ul>
             )}
+      {importing && <DocumentImportDialog onClose={() => setImporting(false)} onImported={answer => {
+        setImporting(false); setQuery(''); setDone(importMessages.done(answer.documents.length, answer.unresolved, answer.warnings))
+      }} />}
       {editing && (
         <DocumentDialog
           editing={editing}

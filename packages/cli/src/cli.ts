@@ -15,7 +15,7 @@ import type { ApprovalPolicy } from '@lincyaw/server'
 import { buildWorkspace, isWorkspaceRoot, serveWorkspace } from '@lincyaw/workspace'
 import type { WorkspaceBuild } from '@lincyaw/workspace'
 import { runCheck } from './check.ts'
-import { documentPatterns, importMarkdown } from './import.ts'
+import { documentPatterns, importDocuments } from '@lincyaw/compiler'
 import type { CheckResult } from './check.ts'
 import { devHost } from './dev-host.ts'
 import { DocumentFileError, readDocumentFile, saveDocumentFile } from './document-file.ts'
@@ -335,7 +335,7 @@ async function runNewCommand(argv: string[], bundled: string): Promise<number> {
 }
 
 /** Markdown notes to documents; prints what it wrote, the links it could not resolve and the patterns that list them. */
-function runImportCommand(argv: string[]): number {
+async function runImportCommand(argv: string[]): Promise<number> {
   let parsed
   try {
     parsed = parseArgs({ args: argv, allowPositionals: true, options: {
@@ -369,7 +369,8 @@ function runImportCommand(argv: string[]): number {
     return 2
   }
   const out = resolve(values.out ?? '.')
-  const report = importMarkdown(input, { out, exclude: values.exclude, lang: values.lang, group })
+  const report = await importDocuments(input, { out, exclude: values.exclude, lang: values.lang, group, preserveOriginal: true }).catch(() => undefined)
+  if (!report) return fail(t.importFailed, 1)
   for (const { note, link } of report.unresolved) process.stderr.write(`${t.importUnresolved(note, link)}\n`)
   process.stdout.write(`${t.imported(report.documents.length, report.files, relative(process.cwd(), out) || '.')}\n`)
   if (report.documents.length > 0) process.stdout.write(`${t.importPatterns(documentPatterns(report.documents))}\n`)

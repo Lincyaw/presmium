@@ -7,7 +7,7 @@ export const inject = ['presmium', 'connection']
 export const ROUTES: Record<string, string> = Object.fromEntries([
   ['mcp-settings', `${WORKSPACE_ROUTES}mcp-settings`],
   ['speech-settings', `${WORKSPACE_ROUTES}speech-settings`],
-  ...['project/capabilities', 'project/plan', 'project/apply', 'documents', 'document', 'document/capabilities', 'document/outline', 'document/part', 'document/page/plan', 'document/page/apply', 'document/action/plan', 'document/action/impact', 'document/action/apply', 'document/asset', 'document/events', 'document/change', 'document/image', 'document/audio', 'document/recording/adopt', 'document/media-clip', 'files', 'source', 'source/create', 'source/transaction', 'changes', 'changes/commit', 'changes/discard', 'revisions', 'revisions/revert', 'history/list', 'history/file', 'history/undo', 'history/redo',
+  ...['project/capabilities', 'project/plan', 'project/apply', 'documents', 'documents/import', 'document', 'document/capabilities', 'document/outline', 'document/part', 'document/page/plan', 'document/page/apply', 'document/action/plan', 'document/action/impact', 'document/action/apply', 'document/asset', 'document/events', 'document/change', 'document/image', 'document/audio', 'document/recording/adopt', 'document/media-clip', 'files', 'source', 'source/create', 'source/transaction', 'changes', 'changes/commit', 'changes/discard', 'revisions', 'revisions/revert', 'history/list', 'history/file', 'history/undo', 'history/redo',
     'document/media-clip/validate', 'document/transcription/capabilities', 'document/transcription', 'document/transcription/result', 'document/transcription/cancel',
     'document/transcription/adoption/plan', 'document/transcription/adoption/apply',
     'ir', 'ir/events', 'preview', 'build', 'check', 'jobs', 'jobs/cancel', 'jobs/events', 'voice-catalog', 'voice-capabilities',
@@ -50,7 +50,7 @@ export function apply(ctx: DshContext): void {
           ...request.method === 'POST' ? { raw: await request.arrayBuffer() } : {},
           signal: request.signal,
         })
-        if ((path === 'documents' || path === 'project/apply') && request.method === 'POST' && upstream.ok) ctx.presmium.server.invalidateDocuments()
+        if ((path === 'documents' || path === 'documents/import' || path === 'project/apply') && request.method === 'POST' && upstream.ok) ctx.presmium.server.invalidateDocuments()
         const answered = new Headers()
         for (const name of RETURNED) {
           const value = upstream.headers.get(name)

@@ -39,6 +39,7 @@ export interface CliMessages {
   notRendered(blocks: number): string
   codeRuns(executed: number, cached: number, sandbox?: string): string
   importMissing: string
+  importFailed: string
   badGroup(value: string): string
   imported(documents: number, files: number, out: string): string
   importUnresolved(note: string, link: string): string
@@ -135,7 +136,7 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
           --allow <种类>  无需询问即允许的操作：operate、spend、write、agent
   ir      以 JSON 打印文稿的运行快照
           --out <文件>    写入文件，而不是打印
-  import  把 Markdown 笔记转成文稿（参数是一个 .md 文件或一个文件夹）：每份笔记成为
+  import  把 Markdown 或 Word 转成文稿（参数是 .md、.markdown、.docx 文件或文件夹）：每个文件成为
           <输出>/<路径>/${DOCUMENT_ENTRY}，一级与二级标题各开一个页面；[[笔记]] 与 [[笔记|文字]]
           按文件名或 frontmatter 的 aliases 找到对应的文稿，笔记链接的本地文件复制到文稿的
           attachments/；再次导入时覆盖写过的文稿
@@ -231,7 +232,8 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
     notRendered: blocks => `  （${blocks} 个内容块未显示）`,
     codeRuns: (executed, cached, sandbox) => `代码运行：执行 ${executed} 个，取自缓存 ${cached} 个${sandbox ? `，隔离方式为 ${sandbox}` : ''}`,
     badGroup: value => `--group 需要 1 或更大的整数，而不是“${value}”。`,
-    importMissing: '缺少要导入的笔记。请给出一个 .md 文件或一个文件夹，例如 presmium import notes --out site。',
+    importMissing: '缺少要导入的文件。请给出 .md、.markdown、.docx 文件或文件夹，例如 presmium import notes --out site。',
+    importFailed: '文件未能导入。请检查文件编码、Word 文件是否完整，以及输出目录是否可写。',
     imported: (documents, files, out) => `已导入 ${documents} 份文稿，复制了 ${files} 个文件，写在 ${out}`,
     importUnresolved: (note, link) => `${note}：链接 ${link} 没有对应的笔记或文件，已改为普通文字`,
     importPatterns: patterns => `presmium.workspace.yaml 的 documents 需要包含：\n${patterns.map(pattern => `  - '${pattern}'`).join('\n')}`,
@@ -357,7 +359,7 @@ Commands:
           --allow <kinds>    approvals given without asking: operate, spend, write, agent
   ir      print the runtime snapshot as JSON
           --out <file>    write it to a file instead
-  import  Markdown notes to documents (the argument is a .md file or a folder): each note becomes
+  import  Markdown or Word to documents (.md, .markdown, .docx files or folders): each file becomes
           <out>/<path>/${DOCUMENT_ENTRY}, a page for each level-1 and level-2 heading; [[note]] and
           [[note|text]] find their document by file name or the aliases of the frontmatter, and
           the local files a note links to are copied into the document's attachments/; importing
@@ -464,7 +466,8 @@ Exit Codes: 0 no errors, 1 error findings, 2 usage or internal error.`,
     notRendered: blocks => `  (${blocks} blocks not rendered)`,
     codeRuns: (executed, cached, sandbox) => `code runs: ${executed} executed, ${cached} from cache${sandbox ? `, isolated by ${sandbox}` : ''}`,
     badGroup: value => `--group needs a whole number of 1 or more, not “${value}”.`,
-    importMissing: 'No notes to import. Give a .md file or a folder, for example presmium import notes --out site.',
+    importMissing: 'No files to import. Give a .md, .markdown, .docx file or folder, for example presmium import notes --out site.',
+    importFailed: 'Import failed. Check the file encoding, whether the Word file is complete, and output directory permissions.',
     imported: (documents, files, out) => `imported ${documents} documents and copied ${files} files into ${out}`,
     importUnresolved: (note, link) => `${note}: the link ${link} leads to no note or file; it is plain text now`,
     importPatterns: patterns => `the documents of presmium.workspace.yaml need:\n${patterns.map(pattern => `  - '${pattern}'`).join('\n')}`,

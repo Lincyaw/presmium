@@ -1,4 +1,8 @@
 export { directoryAsset, fileHash, publishesDirectory } from './assets.ts'
+export { documentPatterns, importDocuments, importMarkdown } from './import.ts'
+export type { ImportOptions, ImportReport } from './import.ts'
+export { headingSlug, markdownDocument, noteTitle, splitFrontmatter } from './markdown.ts'
+export type { Frontmatter, ImportedMarkdown, MarkdownLinks } from './markdown.ts'
 export { availableRenderers, build } from './build.ts'
 export type { BuildOptions, BuildReport } from './build.ts'
 export { buildSummary, buildToDist, checkContext, runBlock } from './compilation-actions.ts'

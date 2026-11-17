@@ -1,4 +1,4 @@
-import type { DocumentOperation, OperationAnswer } from './workspace.ts'
+import type { DocumentOperation, OperationAnswer, Revision } from './workspace.ts'
 import type { CanonicalSource } from '../ir.ts'
 import type { Member } from './server.ts'
 
@@ -6,6 +6,16 @@ export const PROJECT_MAX_REQUEST_CHARS = 4096
 export const PROJECT_MAX_RESPONSE_CHARS = 7168
 export const PROJECT_MAX_PLANS = 64
 export const PROJECT_PLAN_TTL_MS = 300_000
+export const DOCUMENT_IMPORT_MAX_FILES = 1000
+export const DOCUMENT_IMPORT_MAX_BYTES = 32 << 20
+export interface DocumentImportAnswer {
+  directory: string
+  documents: { dir: string, title: string }[]
+  files: number
+  unresolved: number
+  warnings: number
+  revision?: Revision
+}
 export type ProjectOperation = DocumentOperation | { op: 'retitle', dir: string, title: string }
 export interface ProjectCaller { member: Member, origin: 'editor' | 'agent', boundDocument?: string }
 export interface ProjectObservation { snapshot?: string, configuration: string }

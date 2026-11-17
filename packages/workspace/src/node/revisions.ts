@@ -574,6 +574,14 @@ export class Revisions implements RevisionService {
     })
   }
 
+  /** Checks a whole import before writing; one Git process regardless of file count. */
+  async ignoresAny(paths: string[]): Promise<boolean> {
+    if (!paths.length) return false
+    const answer = await this.#git.run(['check-ignore', '-z', '--stdin'], {}, Buffer.from(paths.map(path => `${path}\0`).join('')))
+    if (answer.code > 1) throw new Error('history-ignore-check-failed')
+    return answer.code === 0
+  }
+
   /** Whether git ignores the path, which a commit then leaves out. */
   async ignores(path: string): Promise<boolean> {
     return (await this.#git.run(['check-ignore', '-q', '--', path])).code === 0

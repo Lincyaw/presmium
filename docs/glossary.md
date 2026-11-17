@@ -221,7 +221,7 @@ zh-CN 以 Microsoft Office 的简体中文本地化为首选，没有对应时�
 | zh-CN | English | 含义与用法 | 不用 |
 |---|---|---|---|
 | （不显示） | （不显示） | 框架与包名 | `dsh`、`DeepSeek Harness`、`Harness`、`bundle`、`插件包`、`@lincyaw` |
-| （不显示） | （不显示） | 中间表示与源码；`presmium` 命令行面向开发者的输出说出 IR 文件时写“运行快照 / runtime snapshot” | `IR`、`MyST`、`Markdown`、`源码`、`源文件`、`JSON` |
+| （不显示） | （不显示） | 中间表示与源码；外部文件导入中使用 Markdown、Word 与扩展名帮助作者选择格式；`presmium` 命令行面向开发者的输出说出 IR 文件时写“运行快照 / runtime snapshot” | `IR`、`MyST`、`Markdown`、`源码`、`源文件`、`JSON` |
 | （不显示） | （不显示） | 协议与传输；外部 AI 连接设置例外，使用 MCP 连接 / MCP Connection、stdio、HTTP 等准确名称帮助配置客户端 | `MCP`、`SSE`、`RPC`、`HTTP` |
 | （不显示） | （不显示） | 任务与计划 | `job`、`jobs`、`plan`、`任务队列` |
 | （不显示） | （不显示） | 构建 | `编译`、`compile`、`compiled`、`recompile`、`build` |
