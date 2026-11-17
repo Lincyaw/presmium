@@ -1,5 +1,38 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.116
+
+### Patch Changes
+
+- 13c1df8: `presmium-export` and `presmium-diff` find the slides renderer through the project's `@lincyaw/presmium`, as `presmium` does, so they export in a project that installs only Presmium and the publish plugin (they failed with "no plugin of the document exports pdf"). New projects install Presmium's own packages as soon as they are released, without pnpm's one-day `minimumReleaseAge` delay, and so does the Claude Code plugin.
+- Updated dependencies [13c1df8]
+  - @lincyaw/addon-publish@1.0.0-rc.116
+  - create-presmium@1.0.0-rc.116
+  - @lincyaw/addon-assistant@1.0.0-rc.116
+  - @lincyaw/addon-classroom@1.0.0-rc.116
+  - @lincyaw/addon-code@1.0.0-rc.116
+  - @lincyaw/addon-content@1.0.0-rc.116
+  - @lincyaw/addon-exec@1.0.0-rc.116
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.116
+  - @lincyaw/addon-exec-local@1.0.0-rc.116
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.116
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.116
+  - @lincyaw/addon-guide@1.0.0-rc.116
+  - @lincyaw/addon-lecture@1.0.0-rc.116
+  - @lincyaw/addon-motion@1.0.0-rc.116
+  - @lincyaw/addon-session@1.0.0-rc.116
+  - @lincyaw/addon-speech@1.0.0-rc.116
+  - @lincyaw/addon-stage@1.0.0-rc.116
+  - @lincyaw/cli@1.0.0-rc.116
+  - @lincyaw/host@1.0.0-rc.116
+  - @lincyaw/kernel@1.0.0-rc.116
+  - @lincyaw/mcp@1.0.0-rc.116
+  - @lincyaw/render-notebook@1.0.0-rc.116
+  - @lincyaw/render-slides@1.0.0-rc.116
+  - @lincyaw/viewer@1.0.0-rc.116
+  - @lincyaw/web@1.0.0-rc.116
+  - @lincyaw/studio@0.2.0-rc.115
+
 ## 1.0.0-rc.115
 
 ### Patch Changes

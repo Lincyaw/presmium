@@ -1,5 +1,11 @@
 # @lincyaw/addon-publish
 
+## 1.0.0-rc.116
+
+### Patch Changes
+
+- 13c1df8: `presmium-export` and `presmium-diff` find the slides renderer through the project's `@lincyaw/presmium`, as `presmium` does, so they export in a project that installs only Presmium and the publish plugin (they failed with "no plugin of the document exports pdf"). New projects install Presmium's own packages as soon as they are released, without pnpm's one-day `minimumReleaseAge` delay, and so does the Claude Code plugin.
+
 ## 1.0.0-rc.115
 
 No changes in this release.
