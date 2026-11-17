@@ -1,5 +1,9 @@
 # @lincyaw/addon-exec-jupyter
 
+## 1.0.0-rc.117
+
+No changes in this release.
+
 ## 1.0.0-rc.116
 
 No changes in this release.

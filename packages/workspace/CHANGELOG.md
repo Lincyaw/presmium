@@ -1,5 +1,16 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.117
+
+### Patch Changes
+
+- f316386: Automatically replace older workspace services after an upgrade, waiting for active work and lease cleanup; reconnect MCP relays to the current runtime without replaying edits.
+- Updated dependencies [f316386]
+  - @lincyaw/kernel@1.0.0-rc.117
+  - @lincyaw/server@1.0.0-rc.117
+  - @lincyaw/compiler@1.0.0-rc.117
+  - @lincyaw/design@1.0.0-rc.117
+
 ## 1.0.0-rc.116
 
 ### Patch Changes
