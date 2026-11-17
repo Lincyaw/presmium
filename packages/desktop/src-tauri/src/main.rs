@@ -5,6 +5,7 @@
 mod messages;
 mod studio;
 mod updates;
+mod chrome;
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -193,8 +194,7 @@ async fn open_workspace(app: AppHandle, path: String) -> Result<(), String> {
     let workspace = PathBuf::from(&path);
     if let Some(url) = current_workspace(&app, &workspace) {
         if let Some(window) = main_window(&app) {
-            let launcher = app.state::<Desktop>().launcher.lock().unwrap().clone();
-            if window.url().ok().zip(launcher).is_some_and(|(current, launcher)| current.origin() == launcher.origin()) {
+            if window.url().ok().is_some_and(|current| chrome::is_launcher(&app, &current)) {
                 if let Ok(url) = Url::parse(&url) { navigate_studio(&app, &workspace, url); }
             }
             let _ = window.set_focus();
@@ -301,8 +301,12 @@ fn menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
 }
 
 fn create_window(app: &AppHandle) -> tauri::Result<WebviewWindow> {
-    let window = WebviewWindowBuilder::new(app, MAIN, WebviewUrl::App("index.html".into()))
+    let builder = WebviewWindowBuilder::new(app, MAIN, WebviewUrl::App("index.html".into()));
+    #[cfg(target_os = "macos")]
+    let builder = builder.title_bar_style(tauri::TitleBarStyle::Overlay).hidden_title(true);
+    let window = builder
         .title(messages::current().title)
+        .initialization_script(include_str!("../../build/ui/bridge.js"))
         .inner_size(1440.0, 900.0)
         .min_inner_size(720.0, 480.0)
         // Links out of Studio open in the browser; its own pages (presenting, previews) stay in the app.
@@ -369,7 +373,8 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(Desktop::default())
         .manage(updates::Updates::default())
-        .invoke_handler(tauri::generate_handler![launcher_state, forget_workspace, choose_workspace, open_workspace, show_details])
+        .invoke_handler(tauri::generate_handler![launcher_state, forget_workspace, choose_workspace, open_workspace, show_details,
+            chrome::desktop_state, chrome::activate_app_update, chrome::drag_window, chrome::toggle_window])
         .menu(|app| menu(app))
         .on_menu_event(|app, event| {
             if event.id() == updates::CHECK_UPDATES { updates::check(app.clone(), true); }
@@ -395,6 +400,9 @@ fn main() {
         .expect("Presmium Studio could not start");
 
     app.run(|app, event| {
+        if let RunEvent::WindowEvent { label, event: tauri::WindowEvent::Resized(_), .. } = &event {
+            if label == MAIN { chrome::publish(app); }
+        }
         if let RunEvent::Exit = event {
             updates::stop(app);
             stop_studio(app);

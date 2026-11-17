@@ -1,0 +1,9 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "studio-chrome",
+  "description": "Only window dragging and signed application updates. Native commands additionally require the exact current Studio origin.",
+  "windows": ["main"],
+  "local": false,
+  "remote": { "urls": ["http://127.0.0.1:*/*"] },
+  "permissions": ["allow-desktop-state", "allow-activate-app-update", "allow-drag-window", "allow-toggle-window"]
+}

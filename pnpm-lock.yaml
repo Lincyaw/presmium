@@ -1005,6 +1005,9 @@ importers:
       '@lincyaw/design':
         specifier: workspace:*
         version: link:../design
+      '@lincyaw/kernel':
+        specifier: workspace:*
+        version: link:../kernel
       '@tauri-apps/api':
         specifier: 2.12.4
         version: 2.12.4

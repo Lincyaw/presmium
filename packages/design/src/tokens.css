@@ -203,6 +203,8 @@
   /* The editor's frame: its bars, panes and the page on the canvas. */
   --pm-appbar-height: 2.5rem;
   --pm-appbar-height-touch: 3rem;
+  /* The system traffic-light controls inside the unified macOS desktop app bar. */
+  --pm-desktop-controls-inset: 5rem;
   --pm-toolbar-height: 2.5rem;
   --pm-statusbar-height: 1.75rem;
   --pm-pane-header-height: 2.25rem;

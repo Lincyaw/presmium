@@ -9,6 +9,12 @@ export interface LauncherMessages {
   remove: string
   starting(name: string): string
   details: string
+  updates: {
+    version(version: string): string
+    idle: string, checking: string, current: string, available: string,
+    downloading(progress?: number): string
+    ready: string, installing: string, error: string
+  }
   errors: Record<LaunchError, string>
 }
 
@@ -20,6 +26,12 @@ export const LAUNCHER_MESSAGES: Record<Locale, LauncherMessages> = {
     remove: '从最近打开中移除',
     starting: name => `正在打开 ${name}…`,
     details: '详细信息',
+    updates: {
+      version: version => `当前版本 ${version}`,
+      idle: '检查更新', checking: '正在检查', current: '已是最新版', available: '发现更新',
+      downloading: progress => progress === undefined ? '正在下载' : `正在下载 ${progress}%`,
+      ready: '重启安装', installing: '正在安装', error: '重试更新',
+    },
     errors: {
       'not-directory': '这个文件夹不存在或无法打开。',
       'start-failed': 'Presmium Studio 未能启动。',
@@ -35,6 +47,12 @@ export const LAUNCHER_MESSAGES: Record<Locale, LauncherMessages> = {
     remove: 'Remove from Recent',
     starting: name => `Opening ${name}…`,
     details: 'Details',
+    updates: {
+      version: version => `Current version ${version}`,
+      idle: 'Check for Updates', checking: 'Checking', current: 'Up to Date', available: 'Update Available',
+      downloading: progress => progress === undefined ? 'Downloading' : `Downloading ${progress}%`,
+      ready: 'Restart and Install', installing: 'Installing', error: 'Retry Update',
+    },
     errors: {
       'not-directory': 'This folder does not exist or cannot be opened.',
       'start-failed': 'Presmium Studio could not start.',

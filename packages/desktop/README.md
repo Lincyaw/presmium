@@ -38,10 +38,18 @@ macOS signing keeps Hardened Runtime enabled and uses `src-tauri/Entitlements.pl
 
 ## Updates
 
-The application checks for updates on startup and every six hours. **Check for Updates…** is also available
-from the application menu. Downloading leaves the workspace open. After signature verification, save your work
+The application checks for updates on startup and every six hours. An update icon appears in the
+app bar and launcher only after a newer version is found; it has no permanent text or space reservation.
+Hover it for the installed/available versions, progress and action. **Check for Updates…** remains available
+in the application menu at any time. Background discovery never opens a dialog; clicking the icon starts
+the download. Downloading leaves the workspace open. After signature verification, save your work
 and choose **Restart and Install**; **Later** keeps the verified candidate for another attempt.
 The installed app version follows `@lincyaw/presmium`. Older clients without the updater need one manual upgrade.
+
+On macOS the app bar includes the system window buttons and replaces the separate title strip. Drag its empty
+area to move the window, or double-click it to zoom. Fullscreen releases the window-button inset; Windows and
+Linux keep their native window controls. Studio receives only an explicitly allowed, origin-checked window and
+signed-update bridge, while workspace selection remains restricted to the bundled launcher.
 
 Local builds produce ordinary installers without requiring the release private key. CI enables signed updater artifacts and signs packages with the repository Actions secret `TAURI_SIGNING_PRIVATE_KEY`; the matching public key is in
 `src-tauri/tauri.conf.json`. Never include the private key in source or release assets. The optional password is

@@ -55,6 +55,10 @@ body,
   font-size: var(--pm-text-md);
 }
 
+html[data-pm-desktop='darwin']:not([data-pm-desktop-fullscreen]) .pmw-appbar {
+  padding-inline-start: var(--pm-desktop-controls-inset);
+}
+
 .pmw-appbar__places {
   display: flex;
   align-items: center;

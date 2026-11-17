@@ -15,6 +15,31 @@ const state = await invoke<LauncherState>('launcher_state')
 const t = LAUNCHER_MESSAGES[state.locale] ?? LAUNCHER_MESSAGES.en
 document.documentElement.lang = state.locale
 
+const updateButton = document.getElementById('desktop-update') as HTMLButtonElement
+let unsubscribeUpdates: (() => void) | undefined
+const connectUpdates = () => {
+  const host = window.presmiumDesktop
+  if (!host) return
+  unsubscribeUpdates?.()
+  const paint = () => {
+    const snapshot = host.getSnapshot(), update = snapshot.update
+    const label = update.phase === 'downloading' ? t.updates.downloading(update.progress) : t.updates[update.phase]
+    document.getElementById('desktop-update-slot')!.hidden = !update.version
+    updateButton.disabled = ['checking', 'downloading', 'installing'].includes(update.phase)
+    const name = ['checking', 'downloading', 'installing'].includes(update.phase) ? 'loading'
+      : update.phase === 'available' ? 'download' : update.phase === 'error' ? 'warning' : 'refresh'
+    updateButton.innerHTML = `<span class="${name === 'loading' ? 'pm-ui-loading' : 'pm-ui-icon'}" aria-hidden="true">${iconMarkup(name)}</span>`
+    updateButton.setAttribute('aria-label', `${t.updates.version(snapshot.version)} · ${label}`)
+    updateButton.title = `${t.updates.version(snapshot.version)} · ${label}`
+  }
+  unsubscribeUpdates = host.subscribe(paint)
+  updateButton.onclick = () => void host.activateUpdate().catch(() => { updateButton.title = t.updates.error })
+  paint()
+}
+window.addEventListener('presmium-desktop-ready', connectUpdates)
+window.addEventListener('pagehide', () => unsubscribeUpdates?.(), { once: true })
+connectUpdates()
+
 const dark = matchMedia('(prefers-color-scheme: dark)')
 const theme = () => document.documentElement.classList.toggle('dark', dark.matches)
 dark.addEventListener('change', theme)

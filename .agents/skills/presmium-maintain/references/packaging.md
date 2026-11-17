@@ -143,6 +143,15 @@ operation delays for the effect.
 
 
 Desktop updates use the public Tauri updater API in the native process, outside the unprivileged Studio page.
+The app bar and launcher expose an icon only after discovering a newer version; ordinary/checking/current
+states take no space until a candidate exists. Tooltips and accessible labels carry versions, progress and
+restart/error actions. Manual Check for Updates remains in the native menu. The kernel's `DesktopHost` contract carries only a snapshot, subscription and update
+activation request. Background discovery is silent; icon activation starts downloading, while restart still
+requires the native save-and-restart confirmation. Explicit Tauri command permissions and exact current-Studio origin checks protect its bounded bridge;
+do not expose launcher, filesystem or process commands to remote pages. macOS overlays the native title bar
+onto the existing app bar, reserves the token-defined traffic-light inset outside fullscreen, and permits
+dragging only the bar's noninteractive background. Verify real window buttons, dragging, zoom, fullscreen and
+both themes; ordinary browser sessions retain their existing frame.
 The app version comes from `packages/presmium/package.json`. Keep version-bound signatures and the committed
 public key; private signing material stays outside the repository. Local builds leave updater artifact generation disabled; CI explicitly enables it and requires `TAURI_SIGNING_PRIVATE_KEY`
 (and the optional password secret). Never print or commit this key. `collect-updates.mjs` signs final bytes,
@@ -155,6 +164,9 @@ and reopening the workspace in the built app; do not claim Windows/Linux install
 Before a long desktop build, integrate the latest main and push the version commit to main to reserve it.
 A failed fast-forward push requires reconciling the concurrent release and regenerating the version before
 building. Do not build a separately chosen pending version while another release can claim the same number.
+Local acceptance builds use a distinct development version and application identifier; they must not claim a
+published application version. For a desktop release, complete the immutable version-release/feed workflow
+below: updating only `desktop-latest` leaves existing clients on the previous signed update feed.
 Prepare the immutable tag and release draft, then dispatch with `release_tag`. CI explicitly permits publishing
 that draft only after all platform builds pass and all immutable assets upload; it confirms publication before
 promoting the feed. Its repository-scoped `GITHUB_TOKEN` avoids recursively triggering another release build.

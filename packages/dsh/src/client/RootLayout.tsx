@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalS
 import type { ReactNode, RefObject } from 'react'
 import { openMcpSettings } from './settings-opener.ts'
 import { Logo } from './brand.tsx'
+import { DesktopUpdate } from './DesktopUpdate.tsx'
 import { mainViewAgentSession } from './document-context.ts'
 import { centreMinWidth, clamp, CONVERSATION_MAX, CONVERSATION_MIN, singlePaneWidth, RIGHTBAR_MAX_RATIO, RIGHTBAR_MIN, rightbarRoom, SIDE_COLLAPSE, SIDE_MAX, SIDE_MIN } from './layout.ts'
 import type { LayoutActions, LayoutState, NarrowPane } from './layout.ts'
@@ -296,7 +297,7 @@ function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, nar
   }
 
   return (
-    <nav className="pm-ui-appbar pmw-appbar" aria-label={t.activity}>
+    <nav className="pm-ui-appbar pmw-appbar" aria-label={t.activity} data-pm-window-drag>
       <span className="pmw-appbar__brand"><Logo /><span className="pmw-brand-name">{t.product}</span></span>
       <ol className="pmw-appbar__places">
         <li>
@@ -315,6 +316,7 @@ function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, nar
       </ol>
       <span className="pmw-spacer" />
       <AgentActivityBar />
+      <DesktopUpdate />
       <span className="pmw-appbar__approvals" data-activity="approvals"><WorkbenchApprovals density={narrow ? 'touch' : 'compact'} /></span>
       <button type="button" className="pmw-appbar__button pmw-appbar__assistant" data-activity="assistant" title={t.assistant} aria-pressed={chatShown} onClick={toggleAssistant}>
         <PmIcon name="sparkle" /><span className="pmw-appbar__label">{t.assistant}</span>

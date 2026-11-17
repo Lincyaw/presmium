@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "launcher",
-  "description": "The launcher page: its own commands only. Studio's pages (loopback http) get no access to the app.",
+  "description": "The bundled launcher: workspace selection and bounded desktop chrome commands.",
   "windows": ["main"],
   "local": true,
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "allow-launcher-state", "allow-forget-workspace", "allow-choose-workspace", "allow-open-workspace", "allow-show-details", "allow-desktop-state", "allow-activate-app-update", "allow-drag-window", "allow-toggle-window"]
 }

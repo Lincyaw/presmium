@@ -117,6 +117,14 @@ async function launcher() {
     loader: { '.woff2': 'file', '.woff': 'file' },
     logLevel: 'warning',
   })
+  await build({
+    entryPoints: [join(pkg, 'ui', 'bridge.ts')],
+    outfile: join(ui, 'bridge.js'),
+    bundle: true,
+    format: 'iife',
+    minify: true,
+    logLevel: 'warning',
+  })
   copyFileSync(join(pkg, 'ui', 'index.html'), join(ui, 'index.html'))
 }
 

@@ -20,6 +20,22 @@ body {
   padding: var(--pm-space-12) var(--pm-space-6);
 }
 
+.launcher-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: var(--pm-space-3);
+}
+
+html[data-pm-desktop='darwin']:not([data-pm-desktop-fullscreen]) .launcher-bar {
+  padding-inline-start: var(--pm-desktop-controls-inset);
+}
+
+.launcher-bar__brand {
+  font-size: var(--pm-text-sm);
+  font-weight: var(--pm-weight-semibold);
+}
+
 .launcher__brand {
   display: flex;
   align-items: center;
@@ -60,7 +76,7 @@ body {
 }
 
 .launcher--starting {
-  min-height: 100vh;
+  min-height: calc(100vh - var(--pm-appbar-height));
   align-content: center;
   justify-items: center;
   gap: var(--pm-space-3);
