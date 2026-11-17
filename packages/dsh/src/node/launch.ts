@@ -172,7 +172,7 @@ export function writeProfile(dshHome: string, name: string, carrier: Carrier, bu
   const manifestFile = join(dir, 'package.json')
   const saved = existsSync(manifestFile) ? JSON.parse(readFileSync(manifestFile, 'utf8')) : {}
   if (!saved || typeof saved !== 'object' || Array.isArray(saved)) throw new TypeError('Invalid profile package manifest')
-  const required = ['@deepseek-ai/dsh-base', CARRIERS[carrier], PACKAGE_NAME]
+  const required = ['@deepseek-ai/dsh-base', CARRIERS[carrier], 'dsh-deltabox', PACKAGE_NAME]
   const extra = Array.isArray(saved.dsh?.profile?.bundles) ? saved.dsh.profile.bundles.filter((bundle: unknown) => typeof bundle === 'string' && !required.includes(bundle) && !Object.values(CARRIERS).includes(bundle as string)) : []
   writeChanged(manifestFile, `${JSON.stringify({
     ...saved,
@@ -192,6 +192,14 @@ export function writeProfile(dshHome: string, name: string, carrier: Carrier, bu
   if (current !== target) {
     rmSync(link, { force: true, recursive: true })
     symlinkSync(target, link, 'junction')
+  }
+  const deltabox = join(dir, 'node_modules', 'dsh-deltabox')
+  const deltaboxTarget = dirname(createRequire(join(bundle, 'package.json')).resolve('dsh-deltabox/package.json'))
+  let currentDeltabox: string | undefined
+  try { currentDeltabox = realpathSync(deltabox) } catch {}
+  if (currentDeltabox !== deltaboxTarget) {
+    rmSync(deltabox, { force: true, recursive: true })
+    symlinkSync(deltaboxTarget, deltabox, 'junction')
   }
   return dir
 }

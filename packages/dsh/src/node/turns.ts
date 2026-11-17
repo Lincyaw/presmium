@@ -4,6 +4,7 @@ import { isInside } from '@lincyaw/kernel/node'
 import type { DshAgent, DshContext, DshToolExecution } from './dsh-types.ts'
 import { WORKSPACE_ROUTES } from './server-routes.ts'
 import { isCandidateTool, PREFIX, resolvePresmiumCall } from './tools.ts'
+import { deltaboxOf, runtimeAgent } from './deltabox-runtime.ts'
 
 // What a writing tool answers when the change cannot be recorded. The AI reads it and tells the author in their own
 // language, so it names what the author sees (Version History) and none of the internals behind it.
@@ -104,7 +105,7 @@ export function apply(ctx: DshContext): void {
   ctx.on('tools/execute', async (exec: DshToolExecution, next: () => Promise<unknown>) => {
     if (!exec.agent) return next()
     const { root } = await ctx.presmium.server.ready
-    if (!isInside(ctx.presmium.bindings.workingDirectoryOf(exec.agent), root)) return next()
+    if (!ctx.presmium.bindings.candidateRootOf(exec.agent) && !isInside(ctx.presmium.bindings.workingDirectoryOf(exec.agent), root)) return next()
     await ctx.presmium.bindings.candidateOf(exec.agent)
     const binding = ctx.presmium.bindings.bindingOf(exec.agent)
     const target = exec.name.startsWith(PREFIX) ? await resolvePresmiumCall(binding, exec) : undefined
@@ -114,13 +115,23 @@ export function apply(ctx: DshContext): void {
     const agentSessionId = rootAgentSessionOf(exec.agent.session.id)
     const state = turnStateOf(agentSessionId)
     try {
-      await postReview(document, agentSessionId, 'open', state.turn !== undefined ? { turn: state.turn } : {})
+      await postReview(document, agentSessionId, 'open', { ...state.turn !== undefined ? { turn: state.turn } : {}, ...deltaboxOf(ctx) ? { backend: 'deltabox' } : {} })
     } catch (error) {
       throw new Error(`${errorMessage(error)} ${NOTHING_CHANGED}`)
     }
     state.document = document
     state.wrote = true
-    const result = await next()
+    const session = await deltaboxOf(ctx)?.acquireFor(runtimeAgent(exec.agent))
+    let result
+    try {
+      result = session && target ? await session.runMutable(() => next()) : await next()
+      if (session?.reviewActive) await session.reviewCommit()
+    } catch (error) {
+      if (session?.reviewActive) await session.reviewAbort()
+      ctx.presmium.bindings.candidateChanged(exec.agent)
+      throw error
+    }
+    ctx.presmium.bindings.candidateChanged(exec.agent)
     await postReview(document, agentSessionId, 'step', { ...state.turn !== undefined ? { turn: state.turn } : {}, label: labelOf(target ? { ...exec, name: PREFIX + target.tool.name, arguments: target.arguments } : exec), tool: target ? PREFIX + target.tool.name : exec.name })
     return result
   })

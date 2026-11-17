@@ -40,6 +40,7 @@ export interface SourceEditorOptions {
   config: WorkspaceConfig
   writer: DocumentWriter
   locks?: DocumentLocks
+  beforeWrite?(paths: string[], historyLocked: boolean): Promise<void>
 }
 
 interface Scope {
@@ -60,11 +61,13 @@ export class SourceEditor {
   readonly #config: WorkspaceConfig
   readonly #writer: DocumentWriter
   readonly #locks?: DocumentLocks
+  readonly #beforeWrite?: SourceEditorOptions['beforeWrite']
 
   constructor(options: SourceEditorOptions) {
     this.#config = options.config
     this.#writer = options.writer
     this.#locks = options.locks
+    this.#beforeWrite = options.beforeWrite
   }
 
   scope(document: string): Scope {
@@ -277,6 +280,7 @@ export class SourceEditor {
       const created: string[] = []
       const edited = snapshots.filter(snapshot => snapshot.before && !snapshot.written.equals(snapshot.before))
       const touched = snapshots.filter(snapshot => !snapshot.before || !snapshot.written.equals(snapshot.before)).map(snapshot => snapshot.path)
+      if (touched.length) await this.#beforeWrite?.(touched, Boolean(history))
       const lang = history && touched.length && document ? readDocumentSummary(this.#config, document).lang : undefined
       const write = async (next: DocumentFileChange[]) => document ? await this.#writer.write(next) : writeChanges(this.#config, next, true)
       try {
@@ -330,6 +334,7 @@ export class SourceEditor {
       const change: DocumentFileChange = { path, content: written, ...(lstatSync(join(this.#config.root, path)).mode & 0o111) !== 0 ? { executable: true } : {} }
       const lang = commit && !written.equals(bytes) && document ? readDocumentSummary(this.#config, document).lang : undefined
       const write = async (next: DocumentFileChange) => (outside ? writeChanges(this.#config, [next], true) : await this.#writer.write([next]))
+      if (!written.equals(bytes)) await this.#beforeWrite?.([path], false)
       await write(change)
       let revision: Revision | undefined
       if (commit && !written.equals(bytes)) {

@@ -36,7 +36,7 @@
 - **服务端**：凭据只在服务端，不进入文稿、IR、产物与浏览器；确认的关口在服务端，任何 agent 运行时经同一个 `Approvals`；确认策略只来自命令行与工作区配置，不来自文稿；不声称隔离同一 uid 的代码，措施是纵深防御。
 - **执行环境**：同一会话按请求顺序执行、只用一个环境；环境指纹与执行器修订进入缓存键。
 - **讲授**：讲授轨中的事件只经 ID 引用章节与块；讲授计划绑定精确的文稿来源与快照 revision，只读缓存，不隐式合成。
-- **工作区**：每次修改是一个 git 提交，撤销是 `git revert`；写文档目录只经 `DocumentFiles`；审阅从首次写入到接受或拒绝持有范围内的锁。
+- **工作区**：每次保存记录独立的本地编辑历史，撤销生成反向修改；项目 Git 提交由作者明确发起。写文档目录只经 `DocumentFiles`；AI 在候选目录修改，发布时短暂持有原工作区的锁。
 
 领域事件只有内核在 `EventBus` 上发出的 `kernel.plugin.started`、`degraded`、`disabled`、`failed`。
 
@@ -94,7 +94,7 @@ lecture.json ──► 编译 ──► 运行快照 ──► 渲染：网页 �
 | 运行快照 | 编译器派生的运行数据 | `IRDocument` |
 | 讲授计划 | 从快照派生的不可变时间线 | `ProductionPlan`、`ProductionBinding` |
 | 讲授轨 | 一堂讲授的语音段与事件 | `LectureTrack`、`Utterance`、`TrackEvent` |
-| 修改 | 工作区的一次 git 提交 | `Revision` |
+| 修改 | 本地编辑历史中的一次修改 | `Revision` |
 | 诊断 | 带严重级别与位置的问题 | `Finding`、`DocumentIssue`、`ProductionDiagnostic` |
 | 焦点 | 用户指向的一处 | `Focus` |
 

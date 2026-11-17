@@ -1,4 +1,23 @@
+# DeltaBox owns execution inside Presmium's per-session candidate. Publication and
+# author review remain one Presmium transaction, with source guards and validation.
+- id: deltabox-runtime
+  disabled: true
+- id: deltabox-review-policy
+  disabled: true
+- id: ptc-runtime
+  disabled: true
+- id: workflow-ptc
+  disabled: true
+- id: tool-workflow
+  disabled: true
+
 - insert:
+    - id: presmium-deltabox-runtime
+      name: '@lincyaw/dsh/deltabox-runtime'
+      config:
+        binary: !!js process.env.DELTABOX_BINARY ?? 'deltabox'
+        fsMode: cbcow-private
+        projectSessionReuse: false
     - id: presmium-service
       name: '@lincyaw/dsh/service'
       config:

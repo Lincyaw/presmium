@@ -79,6 +79,23 @@ never synthesize values or reveal undeclared `additionalProperties` names.
 
 ## Editing the document
 
+Studio composes the official `dsh-deltabox` bundle before Presmium. Its public runtime adapter binds
+each Agent to Presmium's candidate root and uses `cbcow-private`; FS, foreground Shell and candidate
+MCP share that view. Mutating candidate MCP calls use `runMutable`. Settle native writes into the
+candidate before Presmium's source validation, author flush, guarded publication and review. Keep the
+stock DeltaBox review row disabled and the authoring preset registry enabled. Renew the view and MCP
+bindings at a step boundary after mutation or a changed author baseline; close them on Agent disposal.
+Preserve DeltaBox-backed candidates during restart until the native orphan has been adopted and
+staged; an empty host Git diff alone cannot prove the native review is empty. Do not read dependency
+internals or replace these boundaries with a second approval or an unguarded native host commit.
+
+Saved edits use an independent local Git directory under the persistent Presmium state home, not the
+project's branch or index. Import its existing HEAD and local exclusions when creating the history,
+capture actual disk content as the baseline, and checkpoint external preimages before edits. A changed
+external baseline resets saved-history undo/redo. Project changes/commit/discard continue to use the
+author's actual Git repository. Verify save, undo/redo, explicit project commit, branch changes and a
+folder without `.git`; check the user's HEAD and staging remain untouched by ordinary saves.
+
 Three entry points share `lecture.json`: document editing, presentation and video production (sections 16
 to 19). The document editor is one full-document BlockNote instance with its native selection, history and
 comments; do not add per-page editors or a second selection or comment toolbar. Present and Video read

@@ -5,7 +5,7 @@ import type { DshAgent, DshAttachments, DshContentBlock, DshContext, DshImageMed
 import type { DocumentBinding, PreparedBindingCall } from './bindings.ts'
 
 export const name = 'presmium-tools'
-export const inject = ['presmium', 'tools']
+export const inject = ['presmium', 'tools', 'deltabox']
 
 export const PREFIX = 'presmium__'
 export const CANDIDATE_TOOLS = new Set([
@@ -159,13 +159,14 @@ export function apply(ctx: DshContext): void {
     if (!live.has(agent)) return
     selections.set(agent, ctx.presmium.bindings.watchSelection(agent.session.id, { before: () => agent.whenIdle(), after: () => sync(agent) }))
   })
-  ctx.on('agent/disposed', ({ agent }: { agent: DshAgent }) => {
+  ctx.on('agent/disposed', async ({ agent }: { agent: DshAgent }) => {
     live.delete(agent)
     selections.get(agent)?.(); selections.delete(agent)
     const previous = registered.get(agent)
     registered.delete(agent)
     previous?.stop?.()
     for (const dispose of previous?.dispose ?? []) dispose()
+    await ctx.presmium.bindings.retireCandidate(agent)
   })
   ctx.on('agent/pre-step', async ({ agent }: { agent: DshAgent }, next: () => Promise<unknown>) => {
     await ctx.presmium.bindings.refreshCandidate(agent)
