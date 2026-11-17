@@ -11,10 +11,16 @@ export const EXPORT_TIMEOUT = 120_000
 // The export's own directory below the deck's: the slides renderer's exporters write there.
 const WORK = '.presmium/export'
 const PAGE_IMAGE = /^\d+(?:-\d+)?\.png$/
+const FIGURE_FILE = /\.svg$/
+
+export type ExportFormat = 'pdf' | 'png' | 'pptx' | 'svg'
+
+/** The formats that write a directory of files, one per page or figure. */
+const DIRECTORY_FORMATS = new Set<ExportFormat>(['png', 'svg'])
 
 export interface ExportJob {
   deckDir: string
-  format?: 'pdf' | 'png' | 'pptx'
+  format?: ExportFormat
   output?: string
   withClicks?: boolean
   range?: string
@@ -32,7 +38,7 @@ export interface ExportedLink {
 }
 
 export interface ExportResult {
-  format: 'pdf' | 'png' | 'pptx'
+  format: ExportFormat
   output: string
   pages: number
   links: ExportedLink[]
@@ -45,8 +51,8 @@ function expectedPages(compilation: Compilation, range: Set<number> | undefined,
   return exportedSlides(sections.length, range).reduce((count, slide) => count + (withClicks ? sections[slide - 1]!.steps + 1 : 1), 0)
 }
 
-/** Exports the slides with the slides renderer's exporters (`pdf`, `png`, `pptx`) to `output`. */
-export async function exportSlides(compilation: Compilation, job: ExportJob & { format: 'pdf' | 'png' | 'pptx', output: string }): Promise<string[]> {
+/** Exports the slides with the slides renderer's exporters (`pdf`, `png`, `pptx`, `svg`) to `output`. */
+export async function exportSlides(compilation: Compilation, job: ExportJob & { format: ExportFormat, output: string }): Promise<string[]> {
   const range = parseRange(job.range)
   const work = join(compilation.deckDir, WORK)
   await rm(work, { recursive: true, force: true })
@@ -54,12 +60,14 @@ export async function exportSlides(compilation: Compilation, job: ExportJob & { 
   try {
     const options = { steps: Boolean(job.withClicks), ...range ? { slides: [...range] } : {}, ...job.dark ? { dark: true } : {}, timeout: job.timeout ?? EXPORT_TIMEOUT }
     const { files } = await exportDocument(compilation, job.format, { outDir: work, options, ...job.log ? { log: job.log } : {}, ...job.signal ? { signal: job.signal } : {} })
-    if (job.format !== 'png') {
+    if (!DIRECTORY_FORMATS.has(job.format)) {
       await cp(join(work, files[0]!), job.output)
       return [job.output]
     }
+    // The files of an earlier export of the same format go: a figure renamed or removed leaves none behind.
+    const earlier = job.format === 'png' ? PAGE_IMAGE : FIGURE_FILE
     await mkdir(job.output, { recursive: true })
-    await Promise.all((await readdir(job.output)).filter(file => PAGE_IMAGE.test(file)).map(file => rm(join(job.output, file))))
+    await Promise.all((await readdir(job.output)).filter(file => earlier.test(file)).map(file => rm(join(job.output, file))))
     await Promise.all(files.map(file => cp(join(work, file), join(job.output, file))))
     return files
   } finally {
@@ -73,9 +81,13 @@ export async function exportDeck(job: ExportJob): Promise<ExportResult> {
   const warnings = compilation.doc.diagnostics.filter(f => f.severity !== 'info').map(f => f.message)
   const filename = compilation.doc.config.renderers.slides?.exportFilename
   const name = job.output ? resolve(job.output) : resolve(compilation.deckDir, String(filename ?? 'slides-export'))
-  const output = format === 'png' || name.endsWith(`.${format}`) ? name : `${name}.${format}`
+  const output = DIRECTORY_FORMATS.has(format) || name.endsWith(`.${format}`) ? name : `${name}.${format}`
   const range = parseRange(job.range)
   const written = await exportSlides(compilation, { ...job, format, output })
+  if (format === 'svg') {
+    if (written.length === 0) throw new Error('the slides draw no figure: mark the root <svg> of each figure with data-figure="<name>"')
+    return { format, output, pages: written.length, links: [], warnings }
+  }
   const expected = expectedPages(compilation, range, Boolean(job.withClicks))
 
   if (format === 'png') {

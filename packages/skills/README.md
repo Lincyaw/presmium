@@ -1,6 +1,6 @@
 # @lincyaw/skills
 
-The bundled `presmium-author`, `presmium-animate`, `presmium-develop` and `presmium-paper-to-xiaohongshu` skills, with their references and animation gallery text. The paper workflow produces a narrated animation, independent cover and brief introduction, continues the configured account's episode numbering and verifies the Xiaohongshu submission. Their authority is the repository’s `.agents/skills`; packaging generates this package’s `skills/` resources and index.
+The bundled `presmium-author`, `presmium-animate`, `presmium-develop`, `presmium-figure` and `presmium-paper-to-xiaohongshu` skills, with their references and animation gallery text. The paper workflow produces a narrated animation, independent cover and brief introduction, continues the configured account's episode numbering and verifies the Xiaohongshu submission. Their authority is the repository’s `.agents/skills`; packaging generates this package’s `skills/` resources and index.
 
 `listBundledSkills()` returns names, descriptions and relative file lists. `readBundledSkill({ name, path, offset, limit })` reads at most 12,000 Unicode characters and returns the next offset, package version and file SHA-256. `skillDirectory(name)` supplies a resource base to a host integration. Unsafe paths and unavailable files raise `SkillError` with a stable code.
 

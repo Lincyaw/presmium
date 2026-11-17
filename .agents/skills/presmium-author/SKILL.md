@@ -29,6 +29,7 @@ Terms used throughout:
 | Write a lecture, revise text, plan pages, write slide text or narration | [Writing](references/writing.md) first, then [Document format](references/document.md) |
 | Show code, reference project files or run code | [Code](references/code.md) |
 | Show something moving or explain a process | `presmium-animate` |
+| Draw an SVG figure that builds up step by step, exported as SVG files | `presmium-figure` |
 | Make one large piece with several agents in parallel | `presmium-animate/references/team.md` |
 | Generate voiceover, choose voices, set captions, record or make the video | [Lecture production](references/lecture.md) |
 | Turn a paper link into an animation, voiceover, cover and brief introduction, then post to Xiaohongshu | `presmium-paper-to-xiaohongshu` |

@@ -1,0 +1,6 @@
+.figure { display: block; width: 100%; height: auto; font-family: var(--pm-font-sans); }
+.figure__box rect { fill: var(--pm-color-bg); stroke: var(--pm-color-line-strong); stroke-width: 2; }
+.figure__box text { fill: var(--pm-color-ink); font-size: 18px; text-anchor: middle; }
+.figure__box--focus rect { fill: var(--pm-color-accent-soft); stroke: var(--pm-color-accent); }
+.figure__arrow { stroke: var(--pm-color-muted); stroke-width: 2; }
+.figure__arrowhead { fill: var(--pm-color-muted); }
