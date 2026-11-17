@@ -1,0 +1,16 @@
+{
+  "name": "presmium",
+  "owner": {
+    "name": "lincyaw"
+  },
+  "metadata": {
+    "description": "Presmium for Claude Code: write, animate, draw and present teaching documents"
+  },
+  "plugins": [
+    {
+      "name": "presmium",
+      "source": "./plugins/presmium",
+      "description": "Write, animate, draw and present Presmium documents: the authoring, animation, SVG figure and plugin skills, and the Presmium MCP tools"
+    }
+  ]
+}

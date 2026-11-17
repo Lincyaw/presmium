@@ -172,6 +172,16 @@ for (const packagePath of ['packages/skills/package.json', 'packages/dsh/package
   }
 }
 
+// The Claude Code plugin (`plugins/presmium`) links the bundled skills, so installing it gives the same skills.
+const pluginSkills = join(root, 'plugins/presmium/skills')
+const bundledSkills = JSON.parse(readFileSync(join(root, 'packages/skills/package.json'), 'utf8')).presmium?.skills ?? []
+const linked = existsSync(pluginSkills) ? readdirSync(pluginSkills).sort() : []
+for (const name of bundledSkills) if (!linked.includes(name)) fail(`plugins/presmium/skills lacks ${name}, a bundled skill`)
+for (const name of linked) {
+  if (!bundledSkills.includes(name)) fail(`plugins/presmium/skills/${name} is not a bundled skill (packages/skills presmium.skills)`)
+  else checkLink(`plugins/presmium/skills/${name}`, `../../../.agents/skills/${name}`)
+}
+
 if (problems.length) {
   console.error(`skill problems:\n${problems.join('\n')}`)
   process.exit(1)

@@ -26,7 +26,7 @@
 - 前端样式（与 aegis-ui 相同的纪律）：设计令牌是视觉的唯一来源，在 `packages/design/src/tokens.css`（颜色令牌的名字另在 `tokens.ts` 的 `COLORS`，表在 `docs/architecture.md` 的设计系统一节）。组件与界面的 CSS 不写原始颜色（十六进制、`rgb()` 等）、px 与 ms/s，px 只出现在 `@media` 断点中；颜色混合、控件与图标尺寸、栏高与窗格宽、圆角、阴影、时长都引用令牌，没有合适的先在 `tokens.css` 加一个，暗色只覆盖颜色与阴影。React 组件中图标与标志的大小由 CSS 的尺寸令牌决定，不在组件里写数字。`scripts/check-tokens.mjs` 检查工作台与 studio 外框的样式，其他包的旧样式改动时迁入它的范围。
 - 先修组件再修页面：先读 `docs/design-system.md`，检查 `@lincyaw/design` 的 `pm-ui-*`、工作台通用组件（`packages/workbench/src/components.tsx`）是否缺能力；缺项先在公共层与 Figma 组件变体中补齐，再组合页面。业务 CSS 只负责布局，不通过后代选择器、业务类或内联样式临时改写公共按钮、输入框等控件的外观和状态；触及遗留样式时按本次范围迁入公共层。界面改动在亮色与暗色、桌面与 768 px 以下的四种组合中看过才算完成。
 - 步骤可逆：组件的视觉状态是步骤的纯函数。
-- 技能：面向讲义作者、讲者与开发者的技能在 `.agents/skills`（Codex 读取），`.claude/skills` 是指向它的软链接，`AGENTS.md` 是指向本文件的软链接；改动指令、命令或开发流程时同步更新技能，`scripts/check-skills.mjs` 检查二者一致。
+- 技能：面向讲义作者、讲者与开发者的技能在 `.agents/skills`（Codex 读取），`.claude/skills` 是指向它的软链接，`AGENTS.md` 是指向本文件的软链接；改动指令、命令或开发流程时同步更新技能，`scripts/check-skills.mjs` 检查二者一致。Claude Code 插件在 `plugins/presmium`（市场清单 `.claude-plugin/marketplace.json`）：`skills/` 是指向 `.agents/skills` 中随包发布技能的软链接（与 `packages/skills` 的 `presmium.skills` 一致，同一脚本检查），`.mcp.json` 用 `pnpm dlx @lincyaw/presmium mcp` 提供 MCP 工具，`commands/` 是斜杠命令；增删随包技能时同步这里的链接。
 - 源码以 `.ts`、`.tsx` 直接发布，不预编译；相对导入写 `.ts` 扩展名。
 - 测试：不写新测试，日常不运行测试套件；改动弄坏的已有测试直接删除，不去适配。验证靠真实运行（构建文稿、启动服务、在浏览器中打开）与性能测量，另加相关的轻量结构检查（`scripts/check-*.mjs`）。已有测试是集成测试（真实运行 CLI、构建产物、服务、浏览器，不 mock 宿主框架），只在用户明确要求时运行：默认单个 worker，只构建用例需要的文稿与形态；除非用户要求全量验证，不运行 `pnpm test`、`pnpm verify`、完整 `pnpm e2e` 或示例两讲的完整构建与检查（`pnpm demo:build`、`pnpm demo:check`），也不以收尾或合并前检查为由运行它们。报告实际运行、通过与未运行的范围。
 

@@ -10,6 +10,7 @@ export const TEMPLATE_SOURCES: Record<string, string> = {
   'skills/presmium-animate': '.agents/skills/presmium-animate',
   'skills/presmium-author': '.agents/skills/presmium-author',
   'skills/presmium-develop': '.agents/skills/presmium-develop',
+  'skills/presmium-figure': '.agents/skills/presmium-figure',
 }
 
 export const TEMPLATES = fileURLToPath(new URL('../templates', import.meta.url))

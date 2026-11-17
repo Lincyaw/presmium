@@ -1,0 +1,10 @@
+{
+  "name": "presmium",
+  "description": "Write, animate, draw and present Presmium documents: the authoring, animation, SVG figure and plugin skills, and the Presmium MCP tools (edit, check, capture, voiceover, build and export)",
+  "author": { "name": "lincyaw" },
+  "homepage": "https://github.com/Lincyaw/presmium",
+  "repository": "https://github.com/Lincyaw/presmium",
+  "keywords": ["presmium", "slides", "lecture", "animation", "svg"],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}

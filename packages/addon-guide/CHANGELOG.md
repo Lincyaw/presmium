@@ -1,5 +1,9 @@
 # @lincyaw/addon-guide
 
+## 1.0.0-rc.114
+
+No changes in this release.
+
 ## 1.0.0-rc.113
 
 No changes in this release.

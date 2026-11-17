@@ -1,5 +1,11 @@
 # @lincyaw/web
 
+## 1.0.0-rc.114
+
+### Patch Changes
+
+- @lincyaw/design@1.0.0-rc.114
+
 ## 1.0.0-rc.113
 
 ### Minor Changes

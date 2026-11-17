@@ -36,12 +36,19 @@ syntax or Markdown fallback.
 ## Skills
 
 Skills live in `.agents/skills`; `.claude/skills` links to it and `AGENTS.md` to `CLAUDE.md`. The author,
-animate, develop and paper-to-Xiaohongshu workflow skills are packed into `@lincyaw/skills`, registered by Studio and exposed by
+animate, figure, develop and paper-to-Xiaohongshu workflow skills are packed into `@lincyaw/skills`, registered by Studio and exposed by
 MCP (`list_skills`, `read_skill`, `presmium://skills`); `presmium skills install <dir>` installs missing
 ones. New projects get those listed in `packages/create-presmium/src/templates.ts`. Shipped skills are
 self-contained (no `docs/`, `packages/`, `scripts/` or `e2e/` references); `presmium-maintain` is not
 shipped. Update skills in the same change as the commands they describe. `scripts/check-skills.mjs` checks
 metadata, `references/` links, the document contract and that every `presmium <command> --<option>` exists.
+
+The Claude Code plugin is `plugins/presmium`, listed by the marketplace `.claude-plugin/marketplace.json`
+(installed with `/plugin marketplace add Lincyaw/presmium`, `/plugin install presmium@presmium`). Its `skills/`
+holds symbolic links `../../../.agents/skills/<name>` to exactly the skills of `packages/skills`
+`presmium.skills` (checked by `scripts/check-skills.mjs`), `.mcp.json` starts `pnpm dlx @lincyaw/presmium mcp`,
+and `commands/` holds the slash commands. `claude plugin validate plugins/presmium` checks the manifests;
+`claude plugin details presmium@presmium` lists what an installation loads.
 
 ## Published example sites
 
