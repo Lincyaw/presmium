@@ -2,7 +2,13 @@
   "mcpServers": {
     "presmium": {
       "command": "pnpm",
-      "args": ["dlx", "@lincyaw/presmium", "mcp"]
+      "args": [
+        "--config.minimum-release-age-exclude=@lincyaw/*",
+        "--config.minimum-release-age-exclude=create-presmium",
+        "dlx",
+        "@lincyaw/presmium",
+        "mcp"
+      ]
     }
   }
 }

@@ -46,7 +46,7 @@ metadata, `references/` links, the document contract and that every `presmium <c
 The Claude Code plugin is `plugins/presmium`, listed by the marketplace `.claude-plugin/marketplace.json`
 (installed with `/plugin marketplace add Lincyaw/presmium`, `/plugin install presmium@presmium`). Its `skills/`
 holds symbolic links `../../../.agents/skills/<name>` to exactly the skills of `packages/skills`
-`presmium.skills` (checked by `scripts/check-skills.mjs`), `.mcp.json` starts `pnpm dlx @lincyaw/presmium mcp`,
+`presmium.skills` (checked by `scripts/check-skills.mjs`), `.mcp.json` starts `pnpm dlx @lincyaw/presmium mcp`, excluding Presmium's packages from pnpm's `minimumReleaseAge`,,
 and `commands/` holds the slash commands. `claude plugin validate plugins/presmium` checks the manifests;
 `claude plugin details presmium@presmium` lists what an installation loads.
 

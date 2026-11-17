@@ -1,7 +1,8 @@
 import { cp, mkdir, readdir, readFile, rm } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
-import { Compiler, exportDocument, viewFor } from '@lincyaw/compiler'
+import { exportDocument, viewFor } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
+import { deckCompiler } from './deck.ts'
 import { exportedSlides, linkLine, normalizeUrl, parseRange, slideLinks } from '../domain/index.ts'
 import type { DeclaredLink } from '../domain/index.ts'
 import { pdfLinks } from './pdf.ts'
@@ -77,7 +78,7 @@ export async function exportSlides(compilation: Compilation, job: ExportJob & { 
 
 export async function exportDeck(job: ExportJob): Promise<ExportResult> {
   const format = job.format ?? 'pdf'
-  const compilation = await new Compiler(job.deckDir).compile()
+  const compilation = await deckCompiler(job.deckDir).compile()
   const warnings = compilation.doc.diagnostics.filter(f => f.severity !== 'info').map(f => f.message)
   const filename = compilation.doc.config.renderers.slides?.exportFilename
   const name = job.output ? resolve(job.output) : resolve(compilation.deckDir, String(filename ?? 'slides-export'))

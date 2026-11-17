@@ -1,12 +1,12 @@
 import { existsSync } from 'node:fs'
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve } from 'node:path'
-import { Compiler, DECK_ENTRY, viewFor } from '@lincyaw/compiler'
+import { DECK_ENTRY, viewFor } from '@lincyaw/compiler'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
 import { diffReport, pageStatus, pairPages, parsePageFile, parseWebFile, reportMarkdown } from '../domain/index.ts'
 import type { DiffSide, PageRef, VisualDiff, VisualDiffReport } from '../domain/index.ts'
-import { hasForm } from './deck.ts'
+import { deckCompiler, hasForm } from './deck.ts'
 import { git, run } from './process.ts'
 import { exportSlides } from './export.ts'
 import { captureWeb } from './web-capture.ts'
@@ -49,7 +49,7 @@ export async function visualDiff(job: DiffJob): Promise<{ report: VisualDiffRepo
       const deck = join(checkout, relative(root, deckDir))
       if (!existsSync(join(deck, DECK_ENTRY))) throw new Error(`${side.ref} has no ${relative(root, join(deckDir, DECK_ENTRY))}`)
       if (job.install) await run(lockfileDir(deck, checkout), 'pnpm', ['install', '--frozen-lockfile', '--prefer-offline'])
-      const compilation = await new Compiler(deck).compile()
+      const compilation = await deckCompiler(deck).compile()
       const wait = job.wait ?? 500
       if (hasForm(compilation, 'slides')) {
         await exportSlides(compilation, { deckDir: deck, format: 'png', withClicks: true, output: join(out, label) })

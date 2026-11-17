@@ -8,3 +8,7 @@ allowBuilds:
   node-pty: false
   playwright-chromium: true
   protobufjs: false
+# Presmium's own packages install as soon as they are released; pnpm's minimumReleaseAge still delays every other package.
+minimumReleaseAgeExclude:
+  - '@lincyaw/*'
+  - create-presmium
