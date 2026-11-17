@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
@@ -10,11 +10,13 @@ import type { SlidesPrintQuery } from '../domain/index.ts'
 import { checkDocumentCode } from './document-bundle.ts'
 import { devDocument } from './renderer.ts'
 import { buildSlidesSite } from './site-build.ts'
+import { figureFiles, readFigures } from './figures.ts'
 
 /**
  * The slides form: the viewer app's slides page (its presentation, one slide at a time on a canvas of a fixed size), built
  * as the web form is, and served by the same dev server. The exports print it: the page lays every slide out at the
- * canvas's size (`?print`), and Chromium prints it to a PDF or takes a picture of each slide.
+ * canvas's size (`?print`), and Chromium prints it to a PDF, takes a picture of each slide, or reads the SVG figures
+ * (`<svg data-figure>`) the slides draw at each step.
  */
 
 const BUILD_DIR = '.presmium/slides/build'
@@ -41,6 +43,7 @@ interface PrintingPage {
   pdf(options: { path: string, width: string, height: string, printBackground: boolean }): Promise<unknown>
   $$(selector: string): Promise<{ screenshot(options: { path: string }): Promise<unknown> }[]>
   evaluate<T>(run: () => T): Promise<T>
+  evaluate<T, A>(run: (arg: A) => T | Promise<T>, arg: A): Promise<T>
 }
 
 /** What printing uses of Playwright's Chromium (`playwright-chromium`), which the caller loads. */
@@ -55,9 +58,9 @@ export interface PrintOptions extends SlidesPrintQuery {
   /** The slides as `slidesRenderer` built them, for the root path. */
   dir: string
   chromium: PrintingChromium
-  /** One PDF file, or a picture of each page in a directory. */
-  format: 'pdf' | 'png'
-  /** The PDF file, or the directory of the pictures. */
+  /** One PDF file, a picture of each page, or each figure's SVG at each of its steps, in a directory. */
+  format: 'pdf' | 'png' | 'svg'
+  /** The PDF file, or the directory of the pictures or figures. */
   output: string
   dark?: boolean
   /** How long the page may take to be ready, in milliseconds. */
@@ -76,7 +79,12 @@ export interface PrintedPage {
 export interface Printed {
   shape: SlideShape
   pages: PrintedPage[]
+  /** The figures' files, with `svg`: each figure's distinct pictures, `<name>-<n>.svg`. */
+  figures?: { file: string, section: string, slide: number, step: number }[]
 }
+
+const PRINTED_PAGE = '.pm-slides-print__page'
+const FIGURE = 'svg[data-figure]'
 
 /** Serves the built slides on a loopback port, through `send` (Express's): types and validators as HTTP defines them. */
 async function serveBuilt(dir: string): Promise<{ url: string, close(): Promise<void> }> {
@@ -117,7 +125,12 @@ export async function printSlides(options: PrintOptions): Promise<Printed> {
         await page.pdf({ path: options.output, width: `${shape.width}px`, height: `${shape.height}px`, printBackground: true })
         return { shape, pages }
       }
-      const elements = await page.$$('.pm-slides-print__page')
+      if (options.format === 'svg') {
+        const files = figureFiles(await page.evaluate(readFigures, { page: PRINTED_PAGE, figure: FIGURE }))
+        await Promise.all(files.map(figure => writeFile(join(options.output, figure.file), figure.svg)))
+        return { shape, pages, figures: files.map(figure => ({ file: figure.file, ...pages[figure.page]! })) }
+      }
+      const elements = await page.$$(PRINTED_PAGE)
       for (const [i, element] of elements.entries()) {
         options.signal?.throwIfAborted()
         const printed = pages[i]!

@@ -1,5 +1,19 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.112
+
+### Minor Changes
+
+- 13e932f: Export step-built SVG figures: `presmium-export --format svg` (and **Export → Figures as SVG** in the studio) writes each `<svg data-figure="name">` a component draws as `<name>-<n>.svg`, one file per step that changes it, with its look written on each element. The new `presmium-figure` skill shows how to draw such a figure as a React component and build it up step by step.
+
+### Patch Changes
+
+- Updated dependencies [13e932f]
+  - @lincyaw/skills@1.0.0-rc.113
+  - @lincyaw/cli@1.0.0-rc.113
+  - @lincyaw/mcp@1.0.0-rc.113
+  - @lincyaw/kernel@1.0.0-rc.113
+
 ## 0.2.0-rc.111
 
 ### Patch Changes

@@ -472,7 +472,7 @@ DeltaBox 自带的 turn-stopping 审阅行关闭，保留 Presmium 的单一接�
 | simple-git | 代码引用读 git |
 | Pyodide、Runno、jax-js | 浏览器 Python；WASI；张量与 WebGPU |
 | `@jupyterlab/services`、`@xterm/xterm`、`ws` | Jupyter 协议；终端；Node WebSocket |
-| playwright-chromium、pptxgenjs | 录制 WebGPU、打印、逐帧截图；PowerPoint |
+| playwright-chromium、pptxgenjs | 录制 WebGPU、打印、逐帧截图、读取图形 SVG；PowerPoint |
 | Mediabunny、FFmpeg（作者安装） | 录音录屏与无 FFmpeg 时的合成；视频编码 |
 | `@noble/hashes` | 浏览器中的 SHA-256 |
 | `@volcengine/speechsaasprod*` | 火山引擎音色列表 |

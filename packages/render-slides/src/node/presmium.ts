@@ -35,12 +35,14 @@ function printChoices(options: Record<string, unknown>): Pick<PrintOptions, 'ste
 }
 
 /** Builds the slides and prints them. */
-async function printed(ctx: ExportContext, format: 'pdf' | 'png', output: string) {
+async function printed(ctx: ExportContext, format: 'pdf' | 'png' | 'svg', output: string) {
   ctx.progress('build')
   const dir = await ctx.build('slides')
   ctx.progress('print')
   const chromium = await playwrightChromium<PrintingChromium>(ctx.deckDir, import.meta.url)
-  const result = await printSlides({ dir, chromium, format, output, signal: ctx.signal, ...printChoices(ctx.options) })
+  // A figure is drawn at each of its steps: its files are its pictures, as building it up shows them.
+  const choices = { ...printChoices(ctx.options), ...format === 'svg' ? { steps: true } : {} }
+  const result = await printSlides({ dir, chromium, format, output, signal: ctx.signal, ...choices })
   return { ...result, doc: JSON.parse(await readFile(join(dir, 'ir.json'), 'utf8')) as IRDocument }
 }
 
@@ -61,6 +63,11 @@ const plugin: PresmiumNodePlugin = {
     slidesExporter('png', { 'zh-CN': '幻灯片图片', 'en': 'Slides as pictures' }, async (ctx) => {
       const { pages } = await printed(ctx, 'png', ctx.outDir)
       return { files: pages.map(page => page.file!) }
+    }),
+    // Each figure the slides draw (`<svg data-figure="name">`) as SVG, a file for each change it goes through.
+    slidesExporter('svg', { 'zh-CN': '图形 SVG', 'en': 'Figures as SVG' }, async (ctx) => {
+      const { figures } = await printed(ctx, 'svg', ctx.outDir)
+      return { files: (figures ?? []).map(figure => figure.file) }
     }),
     // A picture of each slide, its narration as the speaker notes.
     slidesExporter('pptx', { 'zh-CN': '幻灯片 PowerPoint', 'en': 'Slides as PowerPoint' }, async (ctx) => {

@@ -5,9 +5,10 @@ import { DECK_ENTRY } from '@lincyaw/compiler'
 import { errorMessage } from '@lincyaw/kernel'
 import { isDeck } from './deck.ts'
 import { EXPORT_TIMEOUT, exportDeck } from './export.ts'
+import type { ExportFormat } from './export.ts'
 import { visualDiff } from './visual-diff.ts'
 
-const EXPORT_USAGE = `Usage: presmium-export [deckDir] [--format pdf|pptx|png] [--output <file.pdf | file.pptx | dir>] [--with-clicks] [--range <1,3-5>] [--dark] [--timeout <ms>] [--json]
+const EXPORT_USAGE = `Usage: presmium-export [deckDir] [--format pdf|pptx|png|svg] [--output <file.pdf | file.pptx | dir>] [--with-clicks] [--range <1,3-5>] [--dark] [--timeout <ms>] [--json]
 
 Builds the deck's slides and prints them in Chromium (playwright-chromium): to
 PDF (default), then checks that every link the slides show (Markdown links,
@@ -15,7 +16,10 @@ href and *link/*url attributes, code permalinks) is still a link in the PDF,
 and exits 1 when a link was lost; to PowerPoint (a picture of each slide, its
 narration as the speaker notes, no links); or to PNG images, one per slide
 (per click step with --with-clicks), in the --output directory, where links
-cannot be checked. The print page must be ready within --timeout (default
+cannot be checked; or to SVG: each figure the slides draw (a component's root
+<svg data-figure="name">) as <name>-<n>.svg in the --output directory, a file
+for each step that changes it (<name>.svg when it never changes), with its
+look written on each element. The print page must be ready within --timeout (default
 ${EXPORT_TIMEOUT}); an export that lacks a page fails (exit 2).`
 
 const DIFF_USAGE = `Usage: presmium-diff <refA> <refB> [deckDir] [--out <dir>] [--threshold <ratio>] [--wait <ms>] [--install] [--json]
@@ -67,7 +71,7 @@ export async function exportMain(argv: string[]): Promise<number> {
     return 0
   }
   const format = values.format ?? 'pdf'
-  if (positionals.length > 1 || (format !== 'pdf' && format !== 'png' && format !== 'pptx')) {
+  if (positionals.length > 1 || !['pdf', 'png', 'pptx', 'svg'].includes(format)) {
     console.error(EXPORT_USAGE)
     return 2
   }
@@ -81,7 +85,7 @@ export async function exportMain(argv: string[]): Promise<number> {
   try {
     const result = await exportDeck({
       deckDir,
-      format,
+      format: format as ExportFormat,
       output: values.output as string | undefined,
       withClicks: values['with-clicks'] as boolean | undefined,
       range: values.range as string | undefined,
@@ -93,7 +97,9 @@ export async function exportMain(argv: string[]): Promise<number> {
       console.log(JSON.stringify({ ...result, lost: lost.length }, null, 2))
     } else {
       result.warnings.forEach(w => console.error(`warning: ${w}`))
-      if (format === 'png') {
+      if (format === 'svg') {
+        console.log(`exported ${shown(result.output)} (${result.pages} SVG figures)`)
+      } else if (format === 'png') {
         console.log(`exported ${shown(result.output)} (${result.pages} images); links are not checked in images`)
       } else if (format === 'pptx') {
         console.log(`exported ${shown(result.output)} (${result.pages} slides, each a picture)`)

@@ -62,7 +62,7 @@ Each section heading on the web page links to the same place in the slides. When
 { "presmium.web": { "slidesUrl": "https://example.com/slides/" } }
 ```
 
-## Export a PDF, images or PowerPoint
+## Export a PDF, images, PowerPoint or SVG figures
 
 Export prints the slides in Chromium. Set it up once in the project:
 
@@ -79,7 +79,7 @@ pnpm exec presmium-export --format pdf --output lecture.pdf
 
 | Option | Does |
 |---|---|
-| `--format pdf` (default), `png`, `pptx` | PDF; PNG images, one per slide, into the `--output` folder; PowerPoint, each slide a picture, the narration as speaker notes, no links |
+| `--format pdf` (default), `png`, `pptx`, `svg` | PDF; PNG images, one per slide, into the `--output` folder; PowerPoint, each slide a picture, the narration as speaker notes, no links; SVG, each figure (`<svg data-figure>`) at each step that changes it, into the `--output` folder (see the `presmium-figure` skill) |
 | `--output <file or folder>` | Where to write |
 | `--with-clicks` | One page (or image) per step instead of per slide |
 | `--range 1,3-5` | Only these slides |
