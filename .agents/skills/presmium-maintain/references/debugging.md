@@ -31,6 +31,11 @@ persistent log path (default `~/.local/state/presmium/studio/presmium-studio-<ha
 - For a missing import, verify recovery after creating its file or installing an already-declared dependency,
   without editing the importing source. Also check directory entries and package subpaths. Failed code bundles
   recheck missing imports with Vite's public resolver under the same build conditions; they never scan package trees.
+- For TypeScript configuration changes, verify the cached bundle changes after editing an inherited JSONC or
+  package config, including configs nearest to imported modules. Repeat with a cold bundle and compare the output.
+  For plugin installation or repair, compile again with the same compiler instance and confirm its loading diagnostic clears.
+- Source saves and batch transactions share text validation. Check that a rejected binary path or null byte leaves
+  both the original bytes and editing history unchanged, then save and reopen ordinary UTF-8 text.
 
 ## Collect evidence with `pnpm debug:studio`
 

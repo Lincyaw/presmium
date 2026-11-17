@@ -525,8 +525,10 @@ export class Compiler {
     const dirs = new Set(operators.plugins.map(loaded => loaded.dir))
     const plugins = [...operators.plugins, ...deck.plugins.filter(loaded => !dirs.has(loaded.dir))]
     const problems = [...operators.problems, ...deck.problems]
-    this.#plugins = { key, plugins, problems }
-    return this.#plugins
+    const loaded = { key, plugins, problems }
+    // Failed discovery must be retried after a package is installed or repaired.
+    this.#plugins = problems.length === 0 ? loaded : undefined
+    return loaded
   }
 
 }

@@ -128,6 +128,7 @@ CLI 的 `mcp call` 与按名称查询 `mcp tools <工具>` 同时接受精简目
 项目能力读取同时提供可选模板名，默认最多 20 项，按 `nextTemplatesOffset` 继续；不返回安装路径或模板内容。目录只列出 `findTemplate` 能实际选择的普通模板目录，排除隐藏项与符号链接。选择模板仍使用原 `plan_project_change/apply_project_change` 创建动作。
 
 - 同一文稿的 `lecture.json`、实现文件、原始媒体与引用文件在一个 `SourceEditor.transaction` 内提交：文稿锁、CAS、一个本地历史版本；失败恢复原 JSON 并删除新建文件。
+- 单文件保存与批量文本事务共用文本校验：拒绝二进制扩展名与空字节，拒绝发生在写入之前，原文件和修改历史保持原样。
 - 通用修改最多 16 个文件、文本合计 2 MiB，每个已有文件带 base，新文件 `base: null`。二进制只走导入接口。
 - 写入带客户端首次发送前生成的稳定意图 `id`。同意图同 payload 返回原回执；同 ID 不同 payload 被拒绝。
 - 计划有效五分钟；计划与回执各保留 64 条，都在进程内。幂等范围是 `process-current-source`：结果仍是当前源才复用回执，不承诺跨重启。

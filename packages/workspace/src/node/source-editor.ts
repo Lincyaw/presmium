@@ -18,6 +18,10 @@ const MAX_FILES = 2000
 const HIDDEN_FROM_EDITOR = new Set(['node_modules', 'dist', '.git', '.presmium'])
 const BINARY = /\.(?:png|jpe?g|gif|webp|avif|ico|bmp|pdf|wasm|zip|gz|tgz|bz2|xz|7z|woff2?|ttf|otf|eot|mp3|mp4|m4a|wav|ogg|oga|webm|mov|avi|mkv|bin|so|dylib|dll|exe|pyc|xlsx?|docx?|pptx?|parquet|npy|npz|pkl|db|sqlite)$/i
 
+function validateSourceText(path: string, content: unknown): asserts content is string {
+  if (typeof content !== 'string' || BINARY.test(path) || content.includes('\0')) throw new RequestError(415, `${path} is not a text file`)
+}
+
 export function validateDocumentSource(path: string, content: string, before?: Uint8Array): void {
   if (path !== DOCUMENT_ENTRY && !path.endsWith(`/${DOCUMENT_ENTRY}`)) return
   let value: unknown
@@ -233,7 +237,7 @@ export class SourceEditor {
       if (paths.has(change.path)) throw new RequestError(400, `a source path occurs twice: ${change.path}`)
       paths.add(change.path)
       if (change.path !== binaryPath) {
-        if (typeof change.content !== 'string' || BINARY.test(change.path) || change.content.includes('\0')) throw new RequestError(415, `${change.path} is not a text file`)
+        validateSourceText(change.path, change.content)
         bytes += Buffer.byteLength(change.content, 'utf8')
       }
       return this.#documentHolding(change.path, known)
@@ -328,6 +332,7 @@ export class SourceEditor {
         const conflict: Omit<ConflictAnswer, 'error'> = { conflict: { version: now, content: bytes.toString('utf8') } }
         throw new RequestError(409, `${path} changed since it was opened`, conflict)
       }
+      validateSourceText(path, content)
       const written = Buffer.from(content, 'utf8')
       validateDocumentSource(path, content, bytes)
       if (written.byteLength > MAX_SOURCE) throw new RequestError(413, `the text is larger than the editor saves (${MAX_SOURCE} bytes)`)

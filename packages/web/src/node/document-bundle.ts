@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameS
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { stripVTControlCharacters } from 'node:util'
+import { getTsconfig } from 'get-tsconfig'
 import { errorMessage, irBlocks } from '@lincyaw/kernel'
 import type { Finding, IRDocument, PresmiumNodePlugin, RenderContext } from '@lincyaw/kernel'
 import type { InlineConfig, Plugin } from 'vite'
@@ -31,7 +32,7 @@ const CHECK_DIR = '.presmium/web/check'
 export const CODE_CHECK = 'presmium.preview.code'
 const KEEP = 3
 // Failed imports are rechecked with the bundler resolver before reusing their diagnostics.
-const FORMAT = 7
+const FORMAT = 8
 
 export interface DocumentBundleInput {
   deckDir: string
@@ -69,6 +70,8 @@ export interface DocumentBundle {
   dir: string
   /** The files the bundle was built from, by path, with their size and time then. */
   inputs: Record<string, string>
+  /** Resolved TypeScript configurations of the source modules, including inherited options. */
+  typescript: string
   restartable: boolean
   /** The names of the document's own components. */
   components: string[]
@@ -228,6 +231,20 @@ const stamp = (file: string) => {
   }
 }
 
+/** Resolves each module's nearest config afresh, including package, array and JSONC extends. */
+function typescriptKey(files: Iterable<string>): string {
+  const cache = new Map()
+  const configs = [...files].filter(file => /\.[cm]?[jt]sx?$/.test(file)).sort().map(file => {
+    try {
+      return [file, getTsconfig(file, 'tsconfig.json', cache)]
+    } catch (error) {
+      // The bundler reports invalid configurations; repairing one must invalidate its cached failure.
+      return [file, { error: errorMessage(error) }]
+    }
+  })
+  return createHash('sha256').update(JSON.stringify(configs)).digest('hex')
+}
+
 /** The entry of the document's bundle and the key of what it is made of, or none when the document has no code of its own. */
 async function documentCode(input: DocumentBundleInput): Promise<DocumentCode | undefined> {
   const modules = emptyClientModules()
@@ -253,9 +270,7 @@ ${ids.map((id, i) => `  ${JSON.stringify(id)}: module${i},`).join('\n')}
 }
 export const restartable = ${modules.restartable}
 `
-  // A repaired workspace config must replace a previously cached transform failure too.
-  const typescript = [...new Set([join(input.workspaceRoot, 'tsconfig.json'), join(input.deckDir, 'tsconfig.json')])].map(file => [file, stamp(file)])
-  const key = createHash('sha256').update(JSON.stringify([FORMAT, typescript, input.externals.toSorted(), entry(), generated])).digest('hex').slice(0, 16)
+  const key = createHash('sha256').update(JSON.stringify([FORMAT, input.externals.toSorted(), entry(), generated])).digest('hex').slice(0, 16)
   const named = Object.values(generated).flatMap(source => [...source.matchAll(IMPORTED)].map(match => JSON.parse(match[1]!) as string))
   const parts = [...components.values()].map(({ file }) => file).concat(modules.plugins, modules.viewers.map(({ file }) => file), named)
   return { key, entry, generated, restartable: modules.restartable, components: [...components.keys()], parts: [...new Set(parts)].filter(file => existsSync(file)).map(file => realpathSync(file)) }
@@ -264,7 +279,9 @@ export const restartable = ${modules.restartable}
 function readBundle(dir: string): DocumentBundle | undefined {
   try {
     const bundle = JSON.parse(readFileSync(join(dir, BUNDLE_MANIFEST), 'utf8')) as DocumentBundle
-    return Object.entries(bundle.inputs).every(([file, known]) => stamp(file) === known) && bundle.loads ? { ...bundle, components: bundle.components ?? [], failures: bundle.failures ?? [], dir } : undefined
+    return Object.entries(bundle.inputs).every(([file, known]) => stamp(file) === known)
+      && bundle.typescript === typescriptKey(Object.keys(bundle.inputs)) && bundle.loads
+      ? { ...bundle, components: bundle.components ?? [], failures: bundle.failures ?? [], dir } : undefined
   } catch {
     return undefined
   }
@@ -332,6 +349,7 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
     const file = existsSync(path) ? realpathSync(path) : path
     if (!file.startsWith(realWork + sep) && !file.split(sep).includes('node_modules')) inputs[file] = stamp(file)
   }
+  for (const file of code.parts) keep(file)
   let loads: DocumentBundle['loads'] = { files: [], shared: [] }
   // The parts that do not bundle, by their module: the entry and the document modules load each with a load that fails
   // with why, not an import of a module that throws, which Vite's loader would take for a stale page and reload.
@@ -440,10 +458,11 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
   // A module that cannot be found may be installed since.
   const own = failed.size > 0 ? deckPackage(input.deckDir, input.workspaceRoot) : undefined
   if (own) keep(join(own, 'package.json'))
-  const content = createHash('sha256').update(readFileSync(join(work, 'out', BUNDLE_ENTRY))).digest('hex').slice(0, 8)
+  const typescript = typescriptKey(Object.keys(inputs))
+  const content = createHash('sha256').update(readFileSync(join(work, 'out', BUNDLE_ENTRY))).update(typescript).digest('hex').slice(0, 8)
   const name = `${code.key}-${content}`
   const out = join(input.outDir, name)
-  const bundle: DocumentBundle = { key: name, dir: out, inputs, restartable: code.restartable, components: code.components, loads, failures: [...failed.values()].flat() }
+  const bundle: DocumentBundle = { key: name, dir: out, inputs, typescript, restartable: code.restartable, components: code.components, loads, failures: [...failed.values()].flat() }
   writeFileSync(join(work, 'out', BUNDLE_MANIFEST), `${JSON.stringify(bundle, null, 2)}\n`)
   // The key names the bundle's exact output. A concurrent preview may install the same immutable directory
   // first; reusing its completed manifest is success, while deleting the target here races into ENOTEMPTY.

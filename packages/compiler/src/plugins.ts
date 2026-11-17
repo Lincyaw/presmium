@@ -32,6 +32,7 @@ export interface PluginSources {
 }
 
 const jiti = createJiti(import.meta.url)
+const failedEntries = new Set<string>()
 
 export async function loadPlugin(name: string, deckDir: string, sources?: PluginSources): Promise<{ loaded?: LoadedPlugin, problem?: PluginProblem }> {
   const problem = (severity: Severity, message: string): PluginProblem => ({ name, severity, message })
@@ -139,13 +140,28 @@ async function loadFrom(name: string, dir: string, problem: (severity: Severity,
     if (!existsSync(file)) {
       return { loaded: { name, dir }, problem: problem('warning', `plugin "${name}": ${NODE_PLUGIN_EXPORT} points to missing file ${target}; only its components are used`) }
     }
-    const plugin = await jiti.import(file, { default: true })
+    const retry = failedEntries.has(file)
+    failedEntries.add(file)
+    let plugin: unknown
+    if (retry) {
+      // Re-evaluate failed entries; native ESM imports can retain an invalid export after repair.
+      delete jiti.cache[file]
+      const [kernel, contracts, node] = await Promise.all([
+        import('@lincyaw/kernel'), import('@lincyaw/kernel/contracts'), import('@lincyaw/kernel/node'),
+      ])
+      const loader = createJiti(import.meta.url, { virtualModules: {
+        '@lincyaw/kernel': kernel, '@lincyaw/kernel/contracts': contracts, '@lincyaw/kernel/node': node,
+      } })
+      const module = await loader.evalModule(readFileSync(file, 'utf8'), { filename: file, async: true, forceTranspile: true })
+      plugin = isRecord(module) && module.default !== undefined ? module.default : module
+    } else plugin = await jiti.import(file, { default: true })
     if (!isNodePlugin(plugin)) throw new Error(`default export of ${NODE_PLUGIN_EXPORT} is not a PresmiumNodePlugin`)
     const incompatible = plugin.kernel === undefined ? undefined : kernelIncompatibility(plugin.kernel)
     if (incompatible) {
       const version = plugin.version ? ` ${plugin.version}` : ''
       return { problem: problem('error', `plugin "${name}" (${plugin.id}${version}) is not loaded: ${incompatible}`) }
     }
+    failedEntries.delete(file)
     return { loaded: { name, dir, plugin, entry: file } }
   } catch (error) {
     return { problem: problem('error', `cannot load plugin "${name}": ${errorMessage(error)}`) }
