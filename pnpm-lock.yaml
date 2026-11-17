@@ -1017,6 +1017,9 @@ importers:
       '@lincyaw/skills':
         specifier: workspace:*
         version: link:../skills
+      dsh-deltabox:
+        specifier: 0.1.8
+        version: 0.1.8(eee7c868b451aadbdee7ff8e5a31102d)
       eventsource:
         specifier: 3.0.7
         version: 3.0.7
@@ -2281,6 +2284,9 @@ packages:
 
   '@deepseek-ai/cosmokit@1.8.6-alpha.2':
     resolution: {integrity: sha512-FcxdMUal80CeFURh3lPYsw9TPDMVSGpovWnA3JtTGrBG15XFli4k38z1Egso1lgvifKpIW4Hx42X6UTelLEOAA==}
+
+  '@deepseek-ai/cosmokit@1.9.0':
+    resolution: {integrity: sha512-5O1S53mZiJyZYcvxxD0Qv1EY7qFPSxbGyD8CbVK6gw7W9FvcXZj2YIX1ZkOqyQQ3Xt2rFkZDHJv0+V3Zmmp8CA==}
 
   '@deepseek-ai/dsh-acp-app@0.2.1-alpha.4':
     resolution: {integrity: sha512-BwBuUC0GYj5cbpXyAslc+nTG5GowKAyhPYpj2XY1djhtZ4WB3nd2Ibysigc6aiEU0RdcKQKp0v5+z25NWP9rfQ==}
@@ -4720,6 +4726,9 @@ packages:
 
   '@deepseek-ai/schemastery@3.18.5-alpha.2':
     resolution: {integrity: sha512-W+2TSjdeKOEKqaii9BNpw7ev2Yf8C+J74i/BE/VBx56O7BX0zxV2zQKwRY4ADLTXD5O69iJ+/Skm91/ES7iMgw==}
+
+  '@deepseek-ai/schemastery@3.19.0':
+    resolution: {integrity: sha512-bDXoYQa7ghAhmdYD5VPlzKxEzJV/aKkz5l4V5h1u06z8GAPN1ROewSjvR9WiXhpa52E9fng8lpH5QdCRIQgnyQ==}
 
   '@devcontainers/cli@0.89.0':
     resolution: {integrity: sha512-LzaoOGKQ/Zql6PsiZ4hVIYVZagzWkD65aG/1ou5/Kly5Y1PtjLg1yn7qu+LZCzVoAl6DZZ/pbz8qOO4RLNlqMg==}
@@ -7612,6 +7621,37 @@ packages:
     resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
     engines: {node: '>=0.4.0'}
 
+  deltabox-lite-darwin-arm64@0.3.0:
+    resolution: {integrity: sha512-rQtNlJw+3WUbxJTFwmWXuqQIcQcFw8qKMSYqjgkAL0KSaWP9MuE2jyG4Ifh/Mq9YwkzDf0PoOnrbobWThhleCQ==}
+    cpu: [arm64]
+    os: [darwin]
+
+  deltabox-lite-darwin-x64@0.3.0:
+    resolution: {integrity: sha512-K8SiGvyzLWPbopNkvLqlPI2baVtVjZX7LYn1hPLy06yzBW6HmhK5GIR/HrAUuGwzGF0SZo+ijgoFb8UBdwVKtw==}
+    cpu: [x64]
+    os: [darwin]
+
+  deltabox-lite-linux-arm64@0.3.0:
+    resolution: {integrity: sha512-crb6LIK5/VjUGX7fd9hGyFvga9YkyjU6DFCNqViTQ2wcCtokGGLtIhiVvv92PZJ+Te1U6ydLkPU56FBVqSo5IQ==}
+    cpu: [arm64]
+    os: [linux]
+
+  deltabox-lite-linux-x64@0.3.0:
+    resolution: {integrity: sha512-QEhAjiIEWLqF3MBH4utKOBHfS7ykZRUc/Ksl1Azbe1qepJfJnp8Zsy1p5iiaP0/ii54GshoOWp9C2wS6WaaMtQ==}
+    cpu: [x64]
+    os: [linux]
+
+  deltabox-lite-windows-x64@0.3.0:
+    resolution: {integrity: sha512-5Q15TL+bi3ZVHVFQQSjTr4JEfKxX3+yGbhNAyFV0VXwXWJHGKPNrIWYnVhdQIhg7TKlxux1NvVuVWIe17Z/DoQ==}
+    cpu: [x64]
+    os: [win32]
+
+  deltabox-lite@0.3.0:
+    resolution: {integrity: sha512-iiNAm79iRqQ2hY0eUcy1vWiS7qGZ3hWl8U/DeQFjbZX7Z5QRsjRhbY2qCnW1USxX74SNa2dqcRVrs494ewMrcQ==}
+    engines: {node: '>=18'}
+    os: [darwin, linux, win32]
+    hasBin: true
+
   depd@2.0.0:
     resolution: {integrity: sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==}
     engines: {node: '>= 0.8'}
@@ -7656,6 +7696,23 @@ packages:
 
   driver.js@1.9.0:
     resolution: {integrity: sha512-+YWVdNVUrY1/2spszQshohWYY4soIjNBnMFS6lfmousT8igos2lmswhlqyuuNMhr+qbV0EjJ+L6i2FECPr6Ygg==}
+
+  dsh-deltabox@0.1.8:
+    resolution: {integrity: sha512-yakBdsJC6nYHpPmZmg67m4c6kajMoiyhXsanANAgsyuNUM/AmFCxwqRB27ZY4pJJCrZIus767qA1XGaMTDqAMw==}
+    engines: {node: ^22.19.0 || >=24.0.0}
+    peerDependencies:
+      '@deepseek-ai/cordis': ^4.0.4
+      '@deepseek-ai/dsh-agent': ^0.2.0-0
+      '@deepseek-ai/dsh-fs': ^0.2.0-0
+      '@deepseek-ai/dsh-home-paths': ^0.2.0-0
+      '@deepseek-ai/dsh-sandbox': ^0.2.0-0
+      '@deepseek-ai/dsh-sandbox-policy': ^0.2.0-0
+      '@deepseek-ai/dsh-session': ^0.2.0-0
+      '@deepseek-ai/dsh-shell': ^0.2.0-0
+      '@deepseek-ai/dsh-shell-env': ^0.2.0-0
+      '@deepseek-ai/dsh-system-prompt': ^0.2.0-0
+      '@deepseek-ai/dsh-tools': ^0.2.0-0
+      '@deepseek-ai/dsh-user-approval': ^0.2.0-0
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -11275,6 +11332,8 @@ snapshots:
 
   '@deepseek-ai/cosmokit@1.8.6-alpha.2': {}
 
+  '@deepseek-ai/cosmokit@1.9.0': {}
+
   '@deepseek-ai/dsh-acp-app@0.2.1-alpha.4(562b605d34cbf78caf73a0887af078d1)':
     dependencies:
       '@deepseek-ai/cordis': 4.0.5-alpha.2(@deepseek-ai/cordis-plugin-include@1.0.10-alpha.2)(@deepseek-ai/cordis-plugin-loader@1.0.6-alpha.2)
@@ -14532,6 +14591,11 @@ snapshots:
       '@deepseek-ai/cosmokit': 1.8.6-alpha.2
       '@standard-schema/spec': 1.1.0
 
+  '@deepseek-ai/schemastery@3.19.0':
+    dependencies:
+      '@deepseek-ai/cosmokit': 1.9.0
+      '@standard-schema/spec': 1.1.0
+
   '@devcontainers/cli@0.89.0': {}
 
   '@dimforge/rapier3d-compat@0.12.0': {}
@@ -17244,6 +17308,29 @@ snapshots:
 
   delayed-stream@1.0.0: {}
 
+  deltabox-lite-darwin-arm64@0.3.0:
+    optional: true
+
+  deltabox-lite-darwin-x64@0.3.0:
+    optional: true
+
+  deltabox-lite-linux-arm64@0.3.0:
+    optional: true
+
+  deltabox-lite-linux-x64@0.3.0:
+    optional: true
+
+  deltabox-lite-windows-x64@0.3.0:
+    optional: true
+
+  deltabox-lite@0.3.0:
+    optionalDependencies:
+      deltabox-lite-darwin-arm64: 0.3.0
+      deltabox-lite-darwin-x64: 0.3.0
+      deltabox-lite-linux-arm64: 0.3.0
+      deltabox-lite-linux-x64: 0.3.0
+      deltabox-lite-windows-x64: 0.3.0
+
   depd@2.0.0: {}
 
   dequal@2.0.3: {}
@@ -17273,6 +17360,23 @@ snapshots:
       '@types/trusted-types': 2.0.7
 
   driver.js@1.9.0: {}
+
+  dsh-deltabox@0.1.8(eee7c868b451aadbdee7ff8e5a31102d):
+    dependencies:
+      '@deepseek-ai/cordis': 4.0.5-alpha.2(@deepseek-ai/cordis-plugin-include@1.0.10-alpha.2)(@deepseek-ai/cordis-plugin-loader@1.0.6-alpha.2)
+      '@deepseek-ai/dsh-agent': 0.2.1-alpha.4(0bc329fa5fee65d08497d9ec4565e441)
+      '@deepseek-ai/dsh-fs': 0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)(@deepseek-ai/dsh-brand@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2))(@deepseek-ai/dsh-llm@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2))(@deepseek-ai/dsh-sandbox@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)(@deepseek-ai/dsh-llm@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2))(@deepseek-ai/dsh-session@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)(@deepseek-ai/dsh-scope@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2))))
+      '@deepseek-ai/dsh-home-paths': 0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)
+      '@deepseek-ai/dsh-sandbox': 0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)(@deepseek-ai/dsh-llm@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2))(@deepseek-ai/dsh-session@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)(@deepseek-ai/dsh-scope@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)))
+      '@deepseek-ai/dsh-sandbox-policy': 0.2.1-alpha.4(70df67ab98a10944ae6b37da9abe3a14)
+      '@deepseek-ai/dsh-session': 0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)(@deepseek-ai/dsh-scope@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2))
+      '@deepseek-ai/dsh-shell': 0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)(@deepseek-ai/dsh-sandbox@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)(@deepseek-ai/dsh-llm@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2))(@deepseek-ai/dsh-session@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)(@deepseek-ai/dsh-scope@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2))))(@deepseek-ai/dsh-subprocess@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)(@deepseek-ai/dsh-http-proxy@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)))
+      '@deepseek-ai/dsh-shell-env': 0.2.1-alpha.4(567536ca00ecb0d61815be35dbaa0488)
+      '@deepseek-ai/dsh-system-prompt': 0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)(@deepseek-ai/dsh-llm@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2))(@deepseek-ai/dsh-scope@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2))
+      '@deepseek-ai/dsh-tools': 0.2.1-alpha.4(0c1ddd149f8c677528e072e36b7b876c)
+      '@deepseek-ai/dsh-user-approval': 0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)(@deepseek-ai/dsh-agent@0.2.1-alpha.4(0bc329fa5fee65d08497d9ec4565e441))(@deepseek-ai/dsh-brand@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2))(@deepseek-ai/dsh-llm@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2))(@deepseek-ai/dsh-scope@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2))(@deepseek-ai/dsh-session@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)(@deepseek-ai/dsh-scope@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)))(@deepseek-ai/dsh-system-prompt@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)(@deepseek-ai/dsh-llm@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2))(@deepseek-ai/dsh-scope@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)))
+      '@deepseek-ai/schemastery': 3.19.0
+      deltabox-lite: 0.3.0
 
   dunder-proto@1.0.1:
     dependencies:

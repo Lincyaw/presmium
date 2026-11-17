@@ -17,7 +17,7 @@
 lecture.json + 引用的代码与媒体
     │ validateDocument
     ▼
-TeachingDocument ──工作区事务──► git 历史
+TeachingDocument ──工作区事务──► 本地编辑历史
     │ 异步编译：lowering、步骤状态、插件编译步骤、代码引用与执行、受众筛选、检查
     ▼
 IRDocument ──► web · slides（同一查看器）· notebook · lecture 等插件渲染端

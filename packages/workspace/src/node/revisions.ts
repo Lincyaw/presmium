@@ -15,6 +15,7 @@ import { documentDirOf, isGeneratedPath, makeDocumentDir, writeChanges } from '.
 import type { DocumentWriter } from './writer.ts'
 import { revisionDigest, revisionFiles } from './revision-files.ts'
 import type { RevisionFile } from './revision-files.ts'
+import { captureLocalBaseline } from './local-history.ts'
 
 const FIELD = '\x00'
 const RECORD = '\x1e'
@@ -90,9 +91,9 @@ function undoTargets(entries: LogEntry[]): UndoTargets {
     if (at >= 0) stack.splice(at, 1)
   }
   for (const entry of [...entries].reverse()) {
+    if (entry.root) { done.length = 0; undone.length = 0; continue }
     const origin = originOf(entry.message)
     if (!origin) continue
-    if (entry.root) { done.length = 0; undone.length = 0; continue }
     if (origin.operation) {
       done.length = 0
       undone.length = 0
@@ -205,6 +206,11 @@ export class Revisions implements RevisionService {
   /** Serialize authoring work; commitWhileLocked owns its index changes and rollback. */
   transaction<T>(work: () => Promise<T>): Promise<T> {
     return this.#git.exclusive(work)
+  }
+
+  /** Capture external preimages before a source mutation; the caller holds the revision transaction. */
+  async checkpoint(paths: string[]): Promise<void> {
+    if (this.#git.localHistory) await captureLocalBaseline(this.#git, paths)
   }
 
   commit(change: { files: string[], message: string, origin: CommitOrigin, trailers?: [string, string][] }): Promise<Revision | undefined> {
@@ -595,7 +601,7 @@ export class Revisions implements RevisionService {
     const entries = log.ok ? parseLog(log.output).map(entry => ({ ...entry, files: entry.files.map(this.#fromTop) })) : []
     if (entries.length) {
       const rootIds = new Set((await this.#git.output(['rev-list', '--max-parents=0', 'HEAD'])).trim().split('\n'))
-      for (const entry of entries) if (rootIds.has(entry.id)) entry.root = true
+      for (const entry of entries) if (rootIds.has(entry.id) || /^Presmium-Baseline: true$/m.test(entry.message)) entry.root = true
     }
     if (document === undefined) return entries
     const candidates = entries.flatMap((entry, index) => entry.files.filter(path => !leavesRoot(path) && (document === '' || path.startsWith(document + '/'))).map(path => ({ index, path, id: entry.id })))

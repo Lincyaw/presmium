@@ -101,6 +101,8 @@ Commands written for users use only pnpm and `presmium`.
 
 ## Verify the behavior you changed
 
+An empty workspace opened in Studio prepares independent local editing history and offers New Document immediately, without creating or advancing a project Git repository. Verify creating, saving and reopening its first document; preserve the user's HEAD and staging and capture existing files as the real history baseline. For DSH provider and saved-history changes follow [the workbench boundary](references/workbench.md#editing-the-document).
+
 No new tests, no routine suites (`AGENTS.md`). Build, start the service, open a browser, measure when speed
 matters. The real run must show:
 

@@ -10,6 +10,20 @@
 
 - id: harness-dev-context
   disabled: true
+- id: agent-preset-registry
+  disabled: false
+- id: open-in-app
+  disabled: true
+- id: job-controller
+  disabled: true
+- id: terminal-controller
+  disabled: true
+- id: ui-sidebar-terminal
+  disabled: true
+- id: ui-jobs
+  disabled: true
+- id: workspace-changes
+  disabled: true
 
 - insert:
     - id: presmium-workbench
@@ -79,18 +93,16 @@
             name: '@deepseek-ai/dsh-time-context'
           - id: tool-bash
             name: '@deepseek-ai/dsh-tool-bash'
+            config:
+              enableRunInBackground: false
             disabled: !!js process.platform === 'win32'
           - id: tool-pwsh
             name: '@deepseek-ai/dsh-tool-pwsh'
+            config:
+              enableRunInBackground: false
             disabled: !!js process.platform !== 'win32'
           - id: tool-fs
             name: '@deepseek-ai/dsh-tool-fs'
-          - id: tool-fs-search
-            name: '@deepseek-ai/dsh-tool-fs-search'
-            config:
-              sampleOverCapGlobResults: false
-          - id: tool-jobs
-            name: '@deepseek-ai/dsh-tool-jobs'
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
           - id: tool-skill

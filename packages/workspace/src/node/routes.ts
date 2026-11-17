@@ -44,6 +44,7 @@ export interface WorkspaceRoutesOptions {
   documentEditor: DocumentEditor
   locks: DocumentLocks
   revisions?: Revisions
+  projectRevisions?: Revisions
   operations?: DocumentOperations
   reviews?: AgentSessionReviews
   documentsChanged(change: DocumentsChange): Promise<void> | void
@@ -117,7 +118,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       role: 'reader',
       handle: (request, ctx) => catchRequestErrors(async () => {
         if (request.method === 'GET') {
-          const status = revisions ? await revisions.status(editor.roots(scopeOf(ctx))) : {}
+          const status = options.projectRevisions ? await options.projectRevisions.status(editor.roots(scopeOf(ctx))) : {}
           return jsonResponse({ title: config.title, documents: documentSummaries(config), templates: listTemplates(config), git: Boolean(revisions), ...status, single: config.singleDeck } satisfies DocumentsAnswer)
         }
         if (request.method !== 'POST') return problemResponse(405, 'GET or POST')

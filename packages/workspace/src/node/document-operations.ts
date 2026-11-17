@@ -66,6 +66,7 @@ export class DocumentOperations {
           release ??= claimed?.release
         }
         await prepared?.verify()
+        await this.#revisions.checkpoint(touched(operation))
         const head = await this.#revisions.head()
         const before = await this.#writer.checkpoint(touched(operation), operation.op === 'rename' ? { from: operation.dir, to: operation.to } : undefined, prepared?.changes?.map(change => change.path)).catch(error => {
           if (error instanceof DocumentCheckpointRefusal) throw new RequestError(error.status, error.message, error.detail)

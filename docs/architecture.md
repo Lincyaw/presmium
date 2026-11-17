@@ -246,7 +246,7 @@ Node 入口与浏览器公开导出共用 `@lincyaw/kernel/node` 的 `packageExp
 - `SPEECH` 提供合成、转写、音色与配音缓存的清理（`pruneCache`）；引擎由运营者以 `PRESMIUM_SPEECH_<ID>_URL`、`_KEY`、`_PROVIDER` 定义。语音 `lang` 是 BCP 47。
 - 读者问答在浏览器中经读者自己的服务，不经站点服务端。
 - agent 工具的元数据标明种类（读取、操作、计费），确认按种类。
-- 每次接受的修改是一个 git 提交，尾注 `Presmium-Origin`，会话修改另有 `Presmium-Session`、`Presmium-Turn`。
+- 每次接受的修改记录在独立的本地历史库，不推进项目 Git 分支。历史条目由 Git 对象存储，尾注 `Presmium-Origin`，会话修改另有 `Presmium-Session`、`Presmium-Turn`。
 
 ### 4.9 操作与讲授轨
 
@@ -418,7 +418,9 @@ presmium serve: 浏览器 → 服务端 ─┬ /__presmium/<插件 ID>/…、/__
 
 ### 10.7 修改审阅
 
-`packages/workspace/src/node/review/`：会话的候选目录位于工作区 `.presmium/agent-workspaces/`，有独立 git 与来源文件版本。AI 文件工具、新进程与正文 MCP 工具操作候选目录，原工作区持续接受作者保存。候选 git 树记录检查点；拒绝与恢复只写候选目录。发布先确认作者输入已保存，再在原工作区短事务中执行全部文件的版本检查、写入与 `REVISIONS` 提交；任一来源过期时不发布，AI 重新读取后重试。审阅记录在 `presmium/reviews/`，包含候选地址与来源版本，重启后恢复。插件的单次修改任务仍使用文稿锁。
+`packages/workspace/src/node/review/`：会话的候选目录位于工作区 `.presmium/agent-workspaces/`，有独立 git 与来源文件版本。DSH 默认加载官方 `dsh-deltabox` 插件，以 `cbcow-private` 在候选目录上提供文件系统与前台 Shell；Presmium 的 runtime 适配只通过公开的 `projectRootFor` 绑定候选根。正文 MCP 服务使用同一私有视图，写入由 `runMutable` 串行化。每个写入工具完成后，DeltaBox 先接受到候选目录，再进入 Presmium 的校验、审阅与发布事务。原工作区持续接受作者保存。候选 git 树记录检查点；拒绝与恢复只写候选目录。发布先确认作者输入已保存，再在原工作区短事务中执行全部文件的版本检查、写入与 `REVISIONS` 提交；任一来源过期时不发布，AI 重新读取后重试。审阅记录在 `presmium/reviews/`，包含候选地址与来源版本，重启后恢复。插件的单次修改任务仍使用文稿锁。
+
+DeltaBox 自带的 turn-stopping 审阅行关闭，保留 Presmium 的单一接受与拒绝入口。工具写入或来源刷新后，在下一模型步骤边界关闭旧视图、候选服务和绑定，再创建新的视图。插件使用原生后端：macOS 需要 APFS/FSEvents，Linux 需要 FUSE，Windows 需要 WinFsp；不静默退回未隔离的执行器。
 
 候选服务由 bundle 设置 `PRESMIUM_AGENT_CANDIDATE=1`，在自己的目录中允许正文动作提交，是否需要作者确认由原服务发布时的审阅设置决定。作者历史、运行任务和浏览器状态由原服务负责。
 

@@ -170,12 +170,15 @@ export function writeProfile(dshHome: string, name: string, carrier: Carrier, bu
     name: `dsh-profile-${name}`,
     private: true,
     dependencies: {},
-    dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', CARRIERS[carrier], PACKAGE_NAME] } },
+    dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', CARRIERS[carrier], 'dsh-deltabox', PACKAGE_NAME] } },
   }, null, 2)}\n`)
   writeFileSync(join(dir, 'cordis.yml'), '# The profile root: an empty entry list; the tree is composed from the bundles and the patches.\n[]\n')
   if (!existsSync(join(dir, 'cordis.patch.yml'))) writeFileSync(join(dir, 'cordis.patch.yml'), '# Your patch layer for this profile (Presmium\'s settings are passed with --patch after it).\n[]\n')
   const link = join(dir, 'node_modules', PACKAGE_NAME)
   rmSync(link, { force: true, recursive: true })
   symlinkSync(realpathSync(bundle), link, 'junction')
+  const deltabox = join(dir, 'node_modules', 'dsh-deltabox')
+  rmSync(deltabox, { force: true, recursive: true })
+  symlinkSync(dirname(createRequire(join(bundle, 'package.json')).resolve('dsh-deltabox/package.json')), deltabox, 'junction')
   return dir
 }

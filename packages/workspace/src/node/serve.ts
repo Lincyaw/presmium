@@ -26,6 +26,7 @@ import { DocumentOperations, documentsDiff } from './document-operations.ts'
 import type { DocumentsChange } from './document-operations.ts'
 import { RequestError } from './errors.ts'
 import { Git } from './git.ts'
+import { captureLocalBaseline, openLocalHistory } from './local-history.ts'
 import { createJobs, OUTPUTS_PATH } from './jobs.ts'
 import { DocumentLocks } from './locks.ts'
 import { AgentSessionReviews } from './review/agent-session-reviews.ts'
@@ -76,10 +77,11 @@ export interface WorkspaceServer {
   close(): Promise<void>
 }
 
-/** What the workspace keeps when it is a git repository: its revisions, the document operations and the reviews. */
+/** Local editing history and the separate project version-control boundary. */
 interface WorkspaceHistory {
   git: Git
   revisions: Revisions
+  projectRevisions?: Revisions
   operations: DocumentOperations
   agentSessionReviews: AgentSessionReviews
   taskReviews: ChangeReviewService
@@ -140,6 +142,8 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const config = readWorkspaceConfig(options.dir)
   if (env.PRESMIUM_AGENT_CANDIDATE === '1') config.settings['presmium.assistant'] = { ...config.settings['presmium.assistant'], review: 'auto' }
   const { root } = config
+  const historyGit = await openLocalHistory(root, env)
+  await historyGit.exclusive(() => captureLocalBaseline(historyGit, ['.']))
   const operatorDirectory = resolveOperatorDir(root, options.operatorDir ?? env.PRESMIUM_OPERATOR_DIR)
   const speechSettings = new OperatorSpeechSettings(operatorDirectory, name => env[name])
   const stateDir = makeStateDir(root, env)
@@ -148,7 +152,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const agentToolListeners = new Set<(document: string) => void>()
   const locks = new DocumentLocks()
   const writer = localWriter(config)
-  const editor = new SourceEditor({ config, writer, locks })
+  const editor = new SourceEditor({ config, writer, locks, beforeWrite: (paths, historyLocked) => historyLocked ? captureLocalBaseline(historyGit, paths) : historyGit.exclusive(() => captureLocalBaseline(historyGit, paths)) })
   const check = options.check ?? (compilation => compilation.check())
   const launcherToken = env.PRESMIUM_SERVICE_TOKEN || randomBytes(32).toString('hex')
   const preview = { origins: options.previewOrigins ?? [] }
@@ -302,14 +306,11 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   }
 
   const openHistory = (): WorkspaceHistory | undefined => {
-    if (!Git.isRepository(root)) {
-      log.warn(`${root} is not a git repository: editing, the document operations and the history are not available (run git init)`)
-      return undefined
-    }
-    const git = new Git(root)
+    const git = historyGit
     const revisions = new Revisions(git, { config, writer })
     return {
       revisions,
+      ...Git.isRepository(root) ? { projectRevisions: new Revisions(new Git(root), { config, writer }) } : {},
       operations: new DocumentOperations({ config, git, revisions, writer, changed: documentsChanged, locks }),
       git,
       agentSessionReviews: new AgentSessionReviews({ config, revisions, locks, files: writer, log, flush: (documents, member) => authoringClients?.flush(documents, member) ?? Promise.resolve() }),
@@ -461,7 +462,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   })
   workbench = createWorkbenchBackend({ root, compileSessionOf, serverHost, voices: voiceAuthoring.service, diagnostics: running.diagnostics, url: () => options.publicUrl ? new URL(options.publicUrl).origin : running.url, basePath, preview, log, warmSite: dir => site?.warm(dir) ?? Promise.resolve(), viewerPage: (dir, wait) => site?.app(dir, wait) ?? Promise.resolve(undefined) })
   history = openHistory()
-  workspaceChanges = createWorkspaceChanges({ config, editor, locks, revisions: history?.revisions, changed: documentsChanged })
+  workspaceChanges = createWorkspaceChanges({ config, editor, locks, revisions: history?.projectRevisions, changed: documentsChanged })
   workspaceSource = createWorkspaceSource({ config, editor, revisions: history?.revisions })
   workspaceReview = history && createWorkspaceReview(history.agentSessionReviews)
   documentEditor = createDocumentEditor({ productionPlan: async (document, source) => { const audio = (await authoringServices(document, source)).audio; if (!audio) throw new RequestError(503, 'caption-production-unavailable'); return audio.readPlan({ source }) }, editor, revisions: history?.revisions, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
@@ -479,6 +480,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const routeOptions = {
       speechSettings: speechSettingsRoute(speechSettings),
       changesRoutes: workspaceChanges.routes,
+      projectRevisions: history?.projectRevisions,
       config,
       editor,
       documentEditor,

@@ -35,6 +35,7 @@
     "./skills": "./entries/skills.mjs",
     "./routes": "./entries/routes.mjs",
     "./turns": "./entries/turns.mjs",
+    "./deltabox-runtime": "./entries/deltabox-runtime.mjs",
     "./telemetry": "./entries/telemetry.mjs",
     "./events": {
       "types": "./src/node/workspace-events.ts",
@@ -87,12 +88,13 @@
     "@lincyaw/cli": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/mcp": "workspace:*",
+    "@lincyaw/skills": "workspace:*",
+    "dsh-deltabox": "0.1.8",
     "eventsource": "3.0.7",
     "jiti": "^2.7.0",
     "node-addon-require-builtin": "0.1.9",
     "ws": "8.22.0",
-    "zod": "4.4.3",
-    "@lincyaw/skills": "workspace:*"
+    "zod": "4.4.3"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh": "0.2.1-alpha.4"

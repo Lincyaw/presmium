@@ -43,6 +43,8 @@ interface OpenReview {
   turns: { from: number, to: number }
   running: boolean
   opened: string
+  backend?: 'deltabox'
+  awaitingDeltabox?: boolean
   workspace?: AgentWorkspace
   timer?: ReturnType<typeof setTimeout>
 }
@@ -115,10 +117,11 @@ export class AgentSessionReviews {
     const workspace = pending.workspace ? AgentWorkspace.resume(config, pending.workspace) : undefined
     const root = workspace?.root ?? config.root
     const review = await resumeGitReview(pending, { workspaceRoot: root, files: { write: async changes => writeChanges({ ...config, root }, changes, true) }, onRestore: paths => log.warn(`session ${session.session}: the agent changed the git directory, put back: ${paths.join(', ')}`) })
-    if ((await review.diff()).length === 0) { await review.close(); workspace?.dispose(); return }
+    const empty = (await review.diff()).length === 0
+    if (empty && session.backend !== 'deltabox') { await review.close(); workspace?.dispose(); return }
     if (!workspace) { review.suspend(); throw new Error('A legacy review needs to be accepted or rejected with the version that created it before concurrent editing can start.') }
     this.#workspaces.set(session.session, workspace)
-    const open: OpenReview = { review, document: session.document, session: session.session, member: session.member, turns: session.turns, running: false, opened: session.opened, workspace }
+    const open: OpenReview = { review, document: session.document, session: session.session, member: session.member, turns: session.turns, running: session.backend === 'deltabox', opened: session.opened, workspace, backend: session.backend, awaitingDeltabox: session.backend === 'deltabox' }
     this.#open = open
     log.info(`the review of session ${session.session} in ${session.document || '.'} (turns ${session.turns.from}-${session.turns.to}) waits for its author again`)
     this.#scheduleRollback(open)
@@ -133,10 +136,27 @@ export class AgentSessionReviews {
     })
   }
 
-  refreshWorkspace(session: string): Promise<void> {
+  refreshWorkspace(session: string): Promise<boolean> {
     return this.#serial(async () => {
       const workspace = this.#workspaces.get(session)
-      if (workspace && this.#open?.session !== session) await workspace.refresh()
+      return workspace && this.#open?.session !== session ? workspace.refresh() : false
+    })
+  }
+
+  /** The DSH adapter has adopted and staged any orphaned native review before this is called. */
+  resumeWorkspace(session: string): Promise<void> {
+    return this.#serial(async () => {
+      const open = this.#open
+      if (!open || open.session !== session || !open.awaitingDeltabox) return
+      open.awaitingDeltabox = false
+      open.running = false
+      if ((await open.review.diff()).length === 0) {
+        await open.review.close()
+        await this.#end(open, { outcome: 'empty', files: [] })
+      } else {
+        await this.#publish(open)
+        this.#scheduleRollback(open)
+      }
     })
   }
 
@@ -227,7 +247,7 @@ export class AgentSessionReviews {
     }, { signal })
   }
 
-  open(document: string, body: { session: string, turn?: number }, member: Member): Promise<ReviewSnapshot> {
+  open(document: string, body: { session: string, turn?: number, backend?: 'deltabox' }, member: Member): Promise<ReviewSnapshot> {
     return this.#serial(async () => {
       if (this.#closed) throw new RequestError(503, 'the workspace service is closing')
       let open = this.#open
@@ -249,9 +269,9 @@ export class AgentSessionReviews {
             files: { write: async changes => writeChanges({ ...config, root }, changes, true) },
             onRestore: paths => log.warn(`session ${body.session}: the agent changed the git directory, put back: ${paths.join(', ')}`),
             warn: message => log.warn(`session ${body.session}: ${message}`),
-            session: { session: body.session, document, member, turns: { from: turn, to: turn }, opened },
+            session: { session: body.session, document, member, turns: { from: turn, to: turn }, opened, backend: body.backend },
           })
-          open = { review, document, session: body.session, member, turns: { from: turn, to: turn }, running: true, opened, workspace }
+          open = { review, document, session: body.session, member, turns: { from: turn, to: turn }, running: true, opened, workspace, backend: body.backend }
         } catch (error) {
           throw new RequestError(409, `the review of ${document || '.'} did not open: ${errorMessage(error)}`)
         }
@@ -305,6 +325,7 @@ export class AgentSessionReviews {
   accept(document: string, body: { reject?: string[], message?: string, expected?: string }, signal?: AbortSignal): Promise<ReviewEnd> {
     return this.#serial(async () => {
       const open = this.#requireOpen(document, body.expected)
+      if (open.awaitingDeltabox) throw new RequestError(409, 'workspace-review-running')
       await this.#expected(open, body.expected, signal)
       try { return await this.#accept(open, body.reject ?? [], body.message, signal, body.expected) }
       catch (error) {
@@ -341,6 +362,7 @@ export class AgentSessionReviews {
         catch { throw new RequestError(409, 'workspace-review-changed') }
         signal?.throwIfAborted()
         const prepared = open.workspace!.prepare(files, material)
+        await this.#options.revisions.checkpoint(files)
         try {
           open.workspace!.write(prepared.changes)
           return await this.#options.revisions.commitWhileLocked({ paths: files, summary: message?.trim() || commitSummary(files, lang), body: steps.join('\n'), origin: { kind: 'agent', task: open.review.task, member: open.member }, trailers: [[AGENT_SESSION_TRAILER, open.session], [TURN_TRAILER, `${open.turns.from}-${open.turns.to}`]] })
@@ -357,6 +379,7 @@ export class AgentSessionReviews {
   reject(document: string, body: { paths?: string[], expected?: string }, signal?: AbortSignal): Promise<ReviewUpdate> {
     return this.#serial(async () => {
       const open = this.#requireOpen(document, body.expected)
+      if (open.awaitingDeltabox) throw new RequestError(409, 'workspace-review-running')
       await this.#expected(open, body.expected, signal)
       if (body.paths) {
         await open.review.restoreFiles(body.paths)
@@ -373,6 +396,7 @@ export class AgentSessionReviews {
   restore(document: string, body: { step: string, expected?: string }, signal?: AbortSignal): Promise<ReviewSnapshot> {
     return this.#serial(async () => {
       const open = this.#requireOpen(document, body.expected)
+      if (open.awaitingDeltabox) throw new RequestError(409, 'workspace-review-running')
       await this.#expected(open, body.expected, signal)
       try {
         await open.review.restoreTo!(body.step)
@@ -422,7 +446,7 @@ export class AgentSessionReviews {
   #noteTurn(open: OpenReview, turn: number | undefined): void {
     if (turn === undefined || !Number.isInteger(turn) || turn < 0) return
     open.turns = { from: open.turns.from === 0 ? turn : Math.min(open.turns.from, turn), to: Math.max(open.turns.to, turn) }
-    open.review.noteSession({ session: open.session, document: open.document, member: open.member, turns: open.turns, opened: open.opened })
+    open.review.noteSession({ session: open.session, document: open.document, member: open.member, turns: open.turns, opened: open.opened, backend: open.backend })
   }
 
   async #publish(open: OpenReview): Promise<ReviewSnapshot> {

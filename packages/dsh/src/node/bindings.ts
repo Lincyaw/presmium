@@ -10,6 +10,7 @@ import { SERVER_ROUTES } from './server-routes.ts'
 import type { WorkspaceServerClient } from './service.ts'
 import { WorkspaceServerClient as CandidateServer } from './service.ts'
 import { WORKSPACE_ROUTES } from './server-routes.ts'
+import { deltaboxOf, runtimeAgent } from './deltabox-runtime.ts'
 
 /** Fixed inputs owned by one pending invocation, including native resources that need retirement. */
 export interface PreparedBindingCall { signature: string, arguments: Record<string, unknown>, native?: PreparedMcpCall }
@@ -207,7 +208,9 @@ export class DocumentBindings {
   readonly #candidates = new Map<string, Promise<WorkspaceServerClient>>()
   readonly #parents = new Map<string, string>()
   readonly #candidateRoots = new Map<string, string>()
+  readonly #candidateViews = new Map<string, string>()
   readonly #candidateOwners = new Map<string, Set<string>>()
+  readonly #renewCandidates = new Set<string>()
 
   rootSessionOf(agent: DshAgent): string {
     const header = agent.session.header as { origin?: string, parentSession?: string } | undefined
@@ -226,7 +229,16 @@ export class DocumentBindings {
     if (!pending) {
       pending = (async () => {
         const { root } = await this.#server.requestJson<{ root: string }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id } })
-        const candidate = new CandidateServer({ root, candidate: true, presmium: this.#server.presmium }, this.#log)
+        this.#candidateRoots.set(id, root)
+        const runtime = deltaboxOf(this.#ctx)
+        const previous = runtime?.existingSession(runtimeAgent(agent))
+        if (previous && previous.projectRoot !== root) await previous.close()
+        const session = await runtime?.acquireFor(runtimeAgent(agent))
+        if (session?.recoveredFrom && session.reviewActive) await session.reviewCommit()
+        if (session) await this.#server.requestJson(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id, resumed: true } })
+        const view = session ? (await session.target()).mountpoint : root
+        this.#candidateViews.set(id, view)
+        const candidate = new CandidateServer({ root: view, candidate: true, presmium: this.#server.presmium }, this.#log)
         await candidate.ready
         return candidate
       })()
@@ -235,7 +247,6 @@ export class DocumentBindings {
     }
     const candidate = await pending
     const directory = await candidate.ready
-    this.#candidateRoots.set(id, directory.root)
     const workingDirectory = this.#ctx.get('workingDirectory') as { set(agent: DshAgent, path: string): Promise<string> } | undefined
     if (!workingDirectory) throw new Error('Presmium needs the workingDirectory service for concurrent authoring')
     if (!isInside(this.workingDirectoryOf(agent), directory.root)) await workingDirectory.set(agent, directory.root)
@@ -246,11 +257,34 @@ export class DocumentBindings {
     return agent ? this.#candidateRoots.get(this.rootSessionOf(agent)) : undefined
   }
 
+  candidateViewOf(agent: DshAgent | undefined): string | undefined {
+    return agent ? this.#candidateViews.get(this.rootSessionOf(agent)) : undefined
+  }
+
   async refreshCandidate(agent: DshAgent): Promise<void> {
     const { root } = await this.#server.ready
-    if (!isInside(this.workingDirectoryOf(agent), root)) return
+    if (!this.candidateRootOf(agent) && !isInside(this.workingDirectoryOf(agent), root)) return
     await this.candidateOf(agent)
-    await this.#server.requestJson(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: this.rootSessionOf(agent), refresh: true } })
+    const id = this.rootSessionOf(agent)
+    const { changed } = await this.#server.requestJson<{ changed: boolean }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id, refresh: true } })
+    if (deltaboxOf(this.#ctx) && (changed || this.#renewCandidates.has(id))) {
+      await this.retireCandidate(agent)
+      await this.candidateOf(agent)
+    }
+  }
+
+  candidateChanged(agent: DshAgent): void { this.#renewCandidates.add(this.rootSessionOf(agent)) }
+
+  /** Retire the private view only at a tool/step boundary, before its next binding is installed. */
+  async retireCandidate(agent: DshAgent): Promise<void> {
+    const id = this.rootSessionOf(agent)
+    await this.unbind(agent.session.id, false)
+    const candidate = this.#candidates.get(id)
+    this.#candidates.delete(id)
+    if (candidate) await (await candidate).close()
+    this.#candidateViews.delete(id)
+    await deltaboxOf(this.#ctx)?.existingSession(runtimeAgent(agent))?.close()
+    this.#renewCandidates.delete(id)
   }
 
   constructor(ctx: DshContext, server: WorkspaceServerClient, log: DshLogger) {
@@ -292,7 +326,7 @@ export class DocumentBindings {
     const documents = await this.#server.readDocuments()
     const selected = this.#selected.get(id)
     const cwd = this.workingDirectoryOf(agent)
-    if (!isInside(cwd, root)) return undefined
+    if (!this.candidateRootOf(agent) && !isInside(cwd, root)) return undefined
     const document = selected === undefined ? documentAt(root, agent.session.header?.cwd ?? root, documents) ?? (documents.length === 1 ? documents[0] : undefined) : documents.find(doc => doc.dir === selected)
     if (!current()) return undefined
     if (!document) {
@@ -408,6 +442,7 @@ export class DocumentBindings {
       if (owners?.size === 0) {
         this.#candidateOwners.delete(ownerId)
         this.#candidateRoots.delete(ownerId)
+        this.#candidateViews.delete(ownerId)
         const candidate = this.#candidates.get(ownerId)
         this.#candidates.delete(ownerId)
         if (candidate) await (await candidate).close()
@@ -431,6 +466,7 @@ export class DocumentBindings {
     await Promise.all([...this.#candidates.values()].map(async candidate => (await candidate).close()))
     this.#candidates.clear()
     this.#candidateRoots.clear()
+    this.#candidateViews.clear()
     this.#candidateOwners.clear()
     this.#parents.clear()
   }

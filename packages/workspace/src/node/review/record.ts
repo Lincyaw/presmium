@@ -13,6 +13,7 @@ export interface AgentSessionRecord {
   member: Member
   turns: { from: number, to: number }
   opened: string
+  backend?: 'deltabox'
   checkpoints: string[]
   steps: ReviewStep[]
 }

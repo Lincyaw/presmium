@@ -8,6 +8,8 @@ import type { WorkspaceConfig } from '../config.ts'
 import { RequestError } from '../errors.ts'
 import { validateDocumentSource, versionOf } from '../source-editor.ts'
 import { writeChanges } from '../writer.ts'
+import { openLocalHistory } from '../local-history.ts'
+import { Git } from '../git.ts'
 
 interface FileStamp { version: string, executable?: boolean, link?: true }
 export interface AgentWorkspaceRecord { root: string, original: string, base: Record<string, FileStamp> }
@@ -48,6 +50,7 @@ export class AgentWorkspace {
     await mkdir(root)
     const workspace = new AgentWorkspace(config, { root, original: config.root, base: {} })
     await git(root, ['init', '-q'])
+    await writeFile(join(root, '.git', 'info', 'exclude'), '.presmium/\nnode_modules/\ndist/\n.deltabox/\n.deltabox-lite-state/\n')
     await workspace.refresh()
     return workspace
   }
@@ -57,13 +60,16 @@ export class AgentWorkspace {
     return new AgentWorkspace(config, record)
   }
 
-  async refresh(): Promise<void> {
-    const paths = (await git(this.#config.root, ['ls-files', '--cached', '--others', '--exclude-standard', '-z', '--', '.'])).split('\0').filter(path => path && !path.startsWith('.presmium/agent-workspaces/'))
+  async refresh(): Promise<boolean> {
+    const listing = ['ls-files', '--cached', '--others', '--exclude-standard', '-z', '--', '.']
+    const listed = Git.isRepository(this.#config.root) ? await git(this.#config.root, listing) : await (await openLocalHistory(this.#config.root)).output(listing)
+    const paths = listed.split('\0').filter(path => path && !path.startsWith('.presmium/agent-workspaces/'))
     const next: Record<string, FileStamp> = {}
     for (const path of new Set(paths)) {
       const current = await sourceStamp(join(this.#config.root, path))
       if (!current) continue
       next[path] = current
+      if (same(current, this.record.base[path])) continue
       const target = join(this.root, path)
       if (same(await sourceStamp(target), current)) continue
       await mkdir(dirname(target), { recursive: true })
@@ -72,6 +78,7 @@ export class AgentWorkspace {
       if (!same(await sourceStamp(join(this.#config.root, path)), current)) throw new RequestError(409, 'agent-source-changed', { paths: [path], next: 'The author changed a file while the candidate was refreshed. Read the current author files and retry.' })
     }
     for (const path of Object.keys(this.record.base)) if (!next[path]) await rm(join(this.root, path), { force: true, recursive: true })
+    const changed = JSON.stringify(next) !== JSON.stringify(this.record.base)
     this.record.base = next
     const dependencyDirs = new Set(['', ...paths.filter(path => path.endsWith('package.json')).map(dirname)])
     for (const dir of dependencyDirs) {
@@ -80,8 +87,11 @@ export class AgentWorkspace {
       const target = join(this.root, dir, 'node_modules')
       if (existsSync(join(source, 'node_modules')) && !existsSync(target) && existsSync(dirname(target))) await symlink(join(source, 'node_modules'), target, 'dir')
     }
-    await git(this.root, ['add', '-A'])
-    await git(this.root, ['-c', 'user.name=Presmium', '-c', 'user.email=presmium@localhost', 'commit', '-q', '--allow-empty', '-m', 'Author workspace snapshot'])
+    if (changed || !(await git(this.root, ['rev-parse', '--verify', 'HEAD']).catch(() => '')).trim()) {
+      await git(this.root, ['add', '-A'])
+      await git(this.root, ['-c', 'user.name=Presmium', '-c', 'user.email=presmium@localhost', 'commit', '-q', '--allow-empty', '-m', 'Author workspace snapshot'])
+    }
+    return changed
   }
 
   /** Caller holds the original workspace's mutation lock and history transaction. */

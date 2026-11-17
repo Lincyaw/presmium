@@ -86,7 +86,7 @@
 
 ### 5.1 路由
 
-工作区路由在 `/__presmium/presmium.workspace/` 下：`documents`、`source` 与 `source/transaction`（带版本的读写与原子保存，冲突 409，每次保存成为一个 git 版本）、`revisions*` 与 `history/*`、`ir` 与 `ir/events`、`preview`（`prefetch=1` 预先准备，准备中回答 503 `preview-preparing`）、`build`、`check`、`jobs*`（导出请求带已确认的 `source { version, fingerprint }`，不符 409）、`review*`。服务端路由在 `/__presmium/presmium.server/` 下：`tokens`、`focus`、`diagnostics*`；另有 `/mcp`。
+工作区路由在 `/__presmium/presmium.workspace/` 下：`documents`、`source` 与 `source/transaction`（带版本的读写与原子保存，冲突 409，每次保存成为一个独立本地历史版本）、`revisions*` 与 `history/*`、`ir` 与 `ir/events`、`preview`（`prefetch=1` 预先准备，准备中回答 503 `preview-preparing`）、`build`、`check`、`jobs*`（导出请求带已确认的 `source { version, fingerprint }`，不符 409）、`review*`。服务端路由在 `/__presmium/presmium.server/` 下：`tokens`、`focus`、`diagnostics*`；另有 `/mcp`。
 
 ### 5.2 令牌
 
@@ -132,13 +132,13 @@
 
 ### 6.5 审阅与提交
 
-1. 每个 AI 会话在独立候选工作区中读取和修改文件，初始内容包含作者已保存的未提交文件；候选目录有自己的 git，依赖链接回原工作区。文件与正文工具使用候选服务，历史、作者位置、浏览器控制与后台任务使用原服务。
+1. 每个 AI 会话在独立候选工作区中读取和修改文件，初始内容包含作者已保存的未提交文件；候选目录有自己的 git，依赖链接回原工作区。官方 `dsh-deltabox` 插件为该候选目录提供私有文件系统与前台 Shell，文件工具与正文 MCP 工具使用同一私有视图；DeltaBox 接受到候选目录后才执行 Presmium 发布。历史、作者位置、浏览器控制与后台任务使用原服务。
 2. 每个写入工具记录候选检查点。作者的正文、讲稿与参数编辑保持可用，AI 思考与待审阅状态不占用原工作区的保存锁。
 3. `settings.presmium.assistant.review` 为 `auto`（默认）时，每个写入工具完成后发布；为 `required` 时，作者在审阅面板中接受、拒绝某些文件或回到候选检查点。发布先等待已连接作者窗口确认保存，再在短事务中检查所有受影响文件的来源版本；任一版本改变时，全部拒绝，刷新候选内容并通知 AI 重新读取、重试。拒绝操作只恢复候选文件。
-4. 一次接受一个版本，尾注 `Presmium-Origin: agent`、`Presmium-Session`、`Presmium-Turn`。撤消用 `git revert`，之后经 `Agent.inject` 通知会话。
-5. 审阅记录与候选来源版本由工作区服务保存，重启后恢复；空审阅直接结束。会话销毁后关闭候选服务，没有待审阅内容的候选目录随之清理。
+4. 一次接受记录一个本地历史版本，不推进项目 Git 分支，尾注 `Presmium-Origin: agent`、`Presmium-Session`、`Presmium-Turn`。撤消在本地历史中生成反向修改，之后经 `Agent.inject` 通知会话。
+5. 审阅记录与候选来源版本由工作区服务保存，重启后恢复。DeltaBox 审阅先保留候选目录，待原生会话恢复并同步后再判定是否为空。工具修改或作者来源刷新后，在下一模型步骤边界重建 DeltaBox 视图和候选服务；只读步骤复用未变化的视图。Agent 销毁时关闭视图与服务，会话销毁后清理没有待审阅内容的候选目录。
 
-工作台按审阅差异闪烁改过的块，不显示 dsh 的修改卡片。
+工作台按审阅差异闪烁改过的块，不显示 dsh 的修改卡片。DeltaBox 的内置审阅行关闭，由 Presmium 保持唯一的审阅和发布入口。插件不提供后台命令、终端或文件搜索服务；需要搜索时经前台 Shell 执行。原生运行条件见 `architecture.md` 的执行与审阅边界。普通保存和项目版本提交的区别见 `authoring-actions.md` 的历史规则。
 
 ### 6.6 profile 补丁与隐私
 

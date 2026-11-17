@@ -22,8 +22,9 @@ export function reviewRoutes(reviews: AgentSessionReviews): Record<string, Route
       const session = toText(body.session, 200)
       if (!session) return problemResponse(400, '{ session }')
       if (body.close === true) { await reviews.closeWorkspace(session); return jsonResponse({ closed: true }) }
-      if (body.refresh === true) await reviews.refreshWorkspace(session)
-      return jsonResponse(await reviews.workspace(session))
+      if (body.resumed === true) await reviews.resumeWorkspace(session)
+      const changed = body.refresh === true ? await reviews.refreshWorkspace(session) : false
+      return jsonResponse({ ...await reviews.workspace(session), changed })
     }),
     'review': {
       role: 'editor',
@@ -46,7 +47,7 @@ export function reviewRoutes(reviews: AgentSessionReviews): Record<string, Route
         const session = toText(body.session, 200)
         if (!session) return problemResponse(400, '{ session, turn? }')
         const turn = toTurn(body.turn)
-        return jsonResponse({ review: await reviews.open(ctx.document, { session, ...turn !== undefined ? { turn } : {} }, ctx.member) })
+        return jsonResponse({ review: await reviews.open(ctx.document, { session, ...turn !== undefined ? { turn } : {}, ...body.backend === 'deltabox' ? { backend: 'deltabox' as const } : {} }, ctx.member) })
       }),
     },
     'review/step': post(async (body, document) => {

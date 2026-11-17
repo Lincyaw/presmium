@@ -127,7 +127,7 @@ CLI 的 `mcp call` 与按名称查询 `mcp tools <工具>` 同时接受精简目
 
 项目能力读取同时提供可选模板名，默认最多 20 项，按 `nextTemplatesOffset` 继续；不返回安装路径或模板内容。目录只列出 `findTemplate` 能实际选择的普通模板目录，排除隐藏项与符号链接。选择模板仍使用原 `plan_project_change/apply_project_change` 创建动作。
 
-- 同一文稿的 `lecture.json`、实现文件、原始媒体与引用文件在一个 `SourceEditor.transaction` 内提交：文稿锁、CAS、一次 git 提交；失败恢复原 JSON 并删除新建文件。
+- 同一文稿的 `lecture.json`、实现文件、原始媒体与引用文件在一个 `SourceEditor.transaction` 内提交：文稿锁、CAS、一个本地历史版本；失败恢复原 JSON 并删除新建文件。
 - 通用修改最多 16 个文件、文本合计 2 MiB，每个已有文件带 base，新文件 `base: null`。二进制只走导入接口。
 - 写入带客户端首次发送前生成的稳定意图 `id`。同意图同 payload 返回原回执；同 ID 不同 payload 被拒绝。
 - 计划有效五分钟；计划与回执各保留 64 条，都在进程内。幂等范围是 `process-current-source`：结果仍是当前源才复用回执，不承诺跨重启。
@@ -323,12 +323,12 @@ CLI 的 `mcp call` 与按名称查询 `mcp tools <工具>` 同时接受精简目
 
 **历史**（`kernel/src/contracts/document-history.ts`）
 
-- 每次保存（作者动作、Studio 中的保存、AI 的修改与撤消）是当前分支上的一个 git 提交，带 `Presmium-Origin` 等尾注与 `Co-authored-by`。本机服务的作者（`LOCAL_AUTHOR`）以仓库配置的 `user.name` 与 `user.email` 为作者，git 没有配置时为 `local author <local@presmium.invalid>`；多人服务中的成员以自己的名字与邮箱为作者。提交者是 git 配置的身份，没有时为 `Presmium <presmium@presmium.invalid>`。
-- 版本历史、撤消、恢复与读取历史文件都只从这些提交得到，保存本身也在提交事务内完成（没有 git 时不能编辑），所以没有不提交的设置。不想把逐次保存的提交原样推送时，在单独的分支上工作，推送前合并成一个提交。
-- `get_document_history` 每页最多 20 条原修改，`undone` 与 `revertTarget` 由完整历史链派生。`historyBinding` 含已保存原文的 version、fingerprint 与 git HEAD `snapshot`。
+- 每次保存（作者动作、Studio 中的保存、AI 的修改与撤消）记录为独立本地历史库中的一个版本，不修改项目 Git 的分支、HEAD 或索引，带 `Presmium-Origin` 等尾注与 `Co-authored-by`。本机服务的作者（`LOCAL_AUTHOR`）以首次建立历史时仓库配置的 `user.name` 与 `user.email` 为作者，git 没有配置时为 `local author <local@presmium.invalid>`；多人服务中的成员以自己的名字与邮箱为作者。提交者是 git 配置的身份，没有时为 `Presmium <presmium@presmium.invalid>`。
+- 工作区服务按规范化工作区路径，在 `$XDG_STATE_HOME/presmium/history/<SHA-256>` 建立独立的 Git 历史库（未配置时为 `~/.local/state/presmium/history/`）。首次使用导入已有项目的可达 HEAD 历史，并以磁盘上的真实文件建立基准；空目录也可直接创建第一份文稿，不会自动创建项目 `.git`。保存、撤消、恢复和历史读取使用此库；“更改”面板与 `change_workspace_changes` 仍操作项目自己的 Git，只有明确提交版本才推进项目分支。工作区移动到新路径时会建立另一份本地历史，原库保留。
+- `get_document_history` 每页最多 20 条原修改，`undone` 与 `revertTarget` 由完整历史链派生。`historyBinding` 含已保存原文的 version、fingerprint 与本地历史 HEAD `snapshot`。
 - `read_history_file` 读可达提交中的文本文件，默认 `lecture.json`；不恢复当前文稿。
 - `undo_document_change`、`redo_document_change`、`revert_document_change` 传 `{ id, source, snapshot, expect }`，expect 是读取得到的完整提交 ID。执行时复核原文、HEAD 与目标，产生新的 revert 提交；不 checkout、不 reset、不 discard。
-- 越界提交、目标文件有未提交改动、首个基线都拒绝；没有 git 时 `available: false`。浏览器原生 Undo 不归这些工具管。
+- 越界提交、目标文件有未记录到本地历史的改动、首个基线都拒绝；本地历史不可用时 `available: false`。浏览器原生 Undo 不归这些工具管。
 
 **审阅权限**：required review 下，文稿内 agent 不能自行接受或丢弃候选修改；外部未绑定的所有者经上述审阅入口处理。直接 agent 来源的写入返回 409 `authoring-review-required`。
 

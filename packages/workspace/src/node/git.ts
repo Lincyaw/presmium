@@ -11,11 +11,15 @@ export interface GitResult {
 export class Git {
   readonly root: string
   readonly top: string
+  readonly localHistory: boolean
+  readonly #environment: Record<string, string>
   #queue: Promise<unknown> = Promise.resolve()
 
-  constructor(root: string) {
+  constructor(root: string, history?: { directory: string, top: string }) {
     this.root = root
-    this.top = realpathSync(execFileSync('git', [...gitConfigArgs(), 'rev-parse', '--show-toplevel'], { cwd: root, encoding: 'utf8', env: gitEnvironment(process.env) }).trim())
+    this.localHistory = Boolean(history)
+    this.#environment = history ? { GIT_DIR: history.directory, GIT_WORK_TREE: history.top } : {}
+    this.top = history ? realpathSync(history.top) : realpathSync(execFileSync('git', [...gitConfigArgs(), 'rev-parse', '--show-toplevel'], { cwd: root, encoding: 'utf8', env: gitEnvironment(process.env) }).trim())
   }
 
   static isRepository(root: string): boolean {
@@ -33,7 +37,7 @@ export class Git {
         cwd: this.root,
         encoding: 'buffer',
         maxBuffer: 1 << 30,
-        env: { ...gitEnvironment(process.env), ...env },
+        env: { ...gitEnvironment(process.env), ...this.#environment, ...env },
       }, (error, stdout, stderr) => {
         const code = inputError ? 1 : !error ? 0 : typeof error.code === 'number' ? error.code : 1
         done({ code, stdout, stderr: stderr.toString('utf8') + (inputError?.message ?? '') })
