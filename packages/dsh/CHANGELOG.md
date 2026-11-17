@@ -1,5 +1,19 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.114
+
+### Minor Changes
+
+- 955f6a6: Show desktop update discovery, download progress and restart actions in the app bar and launcher. Unify the macOS title bar with the existing app bar, preserving native window controls and background dragging. Keep workspace selection private to the launcher and constrain Studio's native bridge to window actions and signed application updates.
+
+### Patch Changes
+
+- Updated dependencies [955f6a6]
+  - @lincyaw/kernel@1.0.0-rc.115
+  - @lincyaw/cli@1.0.0-rc.115
+  - @lincyaw/mcp@1.0.0-rc.115
+  - @lincyaw/skills@1.0.0-rc.115
+
 ## 0.2.0-rc.113
 
 ### Patch Changes

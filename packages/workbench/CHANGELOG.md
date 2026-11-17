@@ -1,5 +1,13 @@
 # @lincyaw/workbench
 
+## 0.2.0-rc.116
+
+### Patch Changes
+
+- Updated dependencies [955f6a6]
+  - @lincyaw/kernel@1.0.0-rc.115
+  - @lincyaw/design@1.0.0-rc.115
+
 ## 0.2.0-rc.115
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @lincyaw/web
 
+## 1.0.0-rc.115
+
+### Patch Changes
+
+- Updated dependencies [955f6a6]
+  - @lincyaw/design@1.0.0-rc.115
+
 ## 1.0.0-rc.114
 
 ### Patch Changes

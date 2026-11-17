@@ -1,5 +1,11 @@
 # @lincyaw/design
 
+## 1.0.0-rc.115
+
+### Patch Changes
+
+- 955f6a6: Show desktop update discovery, download progress and restart actions in the app bar and launcher. Unify the macOS title bar with the existing app bar, preserving native window controls and background dragging. Keep workspace selection private to the launcher and constrain Studio's native bridge to window actions and signed application updates.
+
 ## 1.0.0-rc.114
 
 No changes in this release.

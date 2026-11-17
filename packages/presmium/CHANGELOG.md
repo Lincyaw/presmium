@@ -1,5 +1,38 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.115
+
+### Patch Changes
+
+- 955f6a6: Show desktop update discovery, download progress and restart actions in the app bar and launcher. Unify the macOS title bar with the existing app bar, preserving native window controls and background dragging. Keep workspace selection private to the launcher and constrain Studio's native bridge to window actions and signed application updates.
+- Updated dependencies [955f6a6]
+  - @lincyaw/kernel@1.0.0-rc.115
+  - @lincyaw/addon-assistant@1.0.0-rc.115
+  - @lincyaw/addon-classroom@1.0.0-rc.115
+  - @lincyaw/addon-code@1.0.0-rc.115
+  - @lincyaw/addon-content@1.0.0-rc.115
+  - @lincyaw/addon-exec@1.0.0-rc.115
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.115
+  - @lincyaw/addon-exec-local@1.0.0-rc.115
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.115
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.115
+  - @lincyaw/addon-guide@1.0.0-rc.115
+  - @lincyaw/addon-lecture@1.0.0-rc.115
+  - @lincyaw/addon-motion@1.0.0-rc.115
+  - @lincyaw/addon-publish@1.0.0-rc.115
+  - @lincyaw/addon-session@1.0.0-rc.115
+  - @lincyaw/addon-speech@1.0.0-rc.115
+  - @lincyaw/addon-stage@1.0.0-rc.115
+  - @lincyaw/cli@1.0.0-rc.115
+  - create-presmium@1.0.0-rc.115
+  - @lincyaw/host@1.0.0-rc.115
+  - @lincyaw/mcp@1.0.0-rc.115
+  - @lincyaw/render-notebook@1.0.0-rc.115
+  - @lincyaw/render-slides@1.0.0-rc.115
+  - @lincyaw/studio@0.2.0-rc.114
+  - @lincyaw/viewer@1.0.0-rc.115
+  - @lincyaw/web@1.0.0-rc.115
+
 ## 1.0.0-rc.114
 
 ### Patch Changes
