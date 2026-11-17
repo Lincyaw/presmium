@@ -1,5 +1,9 @@
 # @lincyaw/addon-exec-webgpu
 
+## 1.0.0-rc.111
+
+No changes in this release.
+
 ## 1.0.0-rc.110
 
 No changes in this release.

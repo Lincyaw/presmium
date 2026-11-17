@@ -1,5 +1,16 @@
 # @lincyaw/compiler
 
+## 1.0.0-rc.111
+
+### Minor Changes
+
+- 7ac9d71: Import Markdown and Word files or folders into editable documents from the workspace home page or CLI. Preserve one document per file, folder hierarchy, local images, cross-file links and exact original files; convert Word basic formatting and embedded images. Publish each workspace import as one reversible history change.
+
+### Patch Changes
+
+- Updated dependencies [7ac9d71]
+  - @lincyaw/kernel@1.0.0-rc.111
+
 ## 1.0.0-rc.110
 
 ### Patch Changes
