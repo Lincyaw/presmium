@@ -165,7 +165,7 @@ export function markdownDocument(source: string, options: { id: string, title: s
   root.children = (root.children ?? []).flatMap(relink)
   restoreLabels(root)
 
-  const used = new Set<string>([options.id])
+  const used = new Set<string>()
   const unique = (base: string) => {
     let id = base.slice(0, 180) || 'node'
     for (let n = 2; used.has(id); n++) id = `${base.slice(0, 180)}-${n}`
@@ -292,7 +292,7 @@ export function markdownDocument(source: string, options: { id: string, title: s
   return {
     document: {
       schemaVersion: 1,
-      id: options.id,
+      id: unique(options.id),
       metadata: {
         title,
         lang: frontmatter.lang ?? options.lang ?? guessLang(body),
