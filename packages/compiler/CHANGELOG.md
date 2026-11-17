@@ -1,5 +1,12 @@
 # @lincyaw/compiler
 
+## 1.0.0-rc.112
+
+### Patch Changes
+
+- ef0376a: Preserve Markdown heading anchors when a document filename matches its title by allocating the document identifier after its content identifiers.
+- @lincyaw/kernel@1.0.0-rc.112
+
 ## 1.0.0-rc.111
 
 ### Minor Changes
