@@ -59,7 +59,7 @@ export async function readDocumentAudioBytes(editor: SourceEditor, ctx: RequestC
 }
 
 /** Owns the canonical transaction and receipts; plugin services only inspect actual media. */
-export function createDocumentAudioAuthoring({ root, editor, revisions, audio, services, reviewRequired = false, uploads }: DocumentAudioAuthoringOptions): { service: DocumentAudioAuthoring, routes: Record<string, Route>, close(): Promise<void> } {
+export function createDocumentAudioAuthoring({ root, editor, revisions, audio, services, reviewRequired = false, uploads }: DocumentAudioAuthoringOptions): { service: DocumentAudioAuthoring, routes: Record<string, Route>, busy(): boolean, close(): Promise<void> } {
   const receipts = new Map<string, Receipt>(), imports = new Map<string, { signature: string, source: CanonicalSource, promise: Promise<VerifiedDocumentAudioImport> }>(), operations = new Set<Operation>()
   const clipChanges = new Map<string, { signature: string, promise: Promise<VerifiedDocumentMediaClipChange> }>()
   const recordingChanges = new Map<string, { signature: string, promise: Promise<VerifiedDocumentRecordingAdoption> }>()
@@ -488,5 +488,5 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
       }),
     },
   }
-  return { service, routes, async close() { closed = true; for (const operation of operations) operation.controller.abort(); await Promise.allSettled([...operations].map(operation => operation.finished)); receipts.clear() } }
+  return { service, routes, busy: () => operations.size > 0, async close() { closed = true; for (const operation of operations) operation.controller.abort(); await Promise.allSettled([...operations].map(operation => operation.finished)); receipts.clear() } }
 }

@@ -71,6 +71,8 @@ export interface McpRuntimeWindow {
 }
 
 export interface McpHost {
+  /** A business operation joins the host's admission barrier until its returned release is called. */
+  beginOperation?(): (() => void) | undefined
   agentActivity?: import('@lincyaw/kernel').AgentActivityObserver
   projectAuthoring?: ProjectAuthoring
   authoring?: DocumentAuthoring

@@ -65,6 +65,7 @@ export function createVoiceoverOwner() {
   const find = (query: VoiceoverJobQuery): Intent | undefined => 'intent' in query ? intents.get(query.intent) : [...intents.values()].find(intent => intent.job?.job.id === query.id)
   const observation = (id: string, intent: Intent): VoiceoverObservation => ({ intent: id, state: intent.job?.job.state ?? (intent.state === 'preparing' ? 'queued' : intent.state), ...intent.job ? { job: structuredClone(intent.job.job) } : {}, ...intent.error ? { error: intent.error } : {} })
   return {
+    busy: () => operations.size > 0 || [...jobs.values()].some(entry => ['queued', 'running', 'cancelling'].includes(entry.job.state)),
     limits: { intents: MAX_INTENTS, recentJobs: RECENT_JOBS, concurrent: MAX_OPERATIONS, quotes: MAX_QUOTES, quoteLifetimeMs: QUOTE_MS, previewBytes: 8 << 20, previewResources: MAX_PREVIEWS, retainedPreviewBytes: MAX_MEDIA_BYTES },
     snapshot(query: VoiceoverStatusQuery, load: Load, signal?: AbortSignal) {
       if (!validateVoiceoverStatus(query)) throw new VoiceoverOperationError(400, 'voice-status-invalid')

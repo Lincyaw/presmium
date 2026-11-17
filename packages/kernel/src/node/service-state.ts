@@ -1,8 +1,12 @@
 import { createHash } from 'node:crypto'
 import { readFileSync, realpathSync, rmSync } from 'node:fs'
 import { homedir } from 'node:os'
+import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { isRecord } from '../errors.ts'
+
+/** Captured when this runtime loads; replacing the installation must not relabel a running host. */
+export const SERVICE_VERSION = (createRequire(import.meta.url)('../../package.json') as { version: string }).version
 
 /** What a running Presmium server records for local clients: its address, its MCP endpoint and token, its process. */
 export interface ServiceState {
@@ -10,6 +14,7 @@ export interface ServiceState {
   mcp: string
   token: string
   pid: number
+  version?: string
   /** Local launcher credential for Studio reuse; never include it in MCP tool results. */
   launcherToken?: string
 }
@@ -39,7 +44,7 @@ export function readServiceState(file: string): ServiceState | undefined {
   try {
     const state: unknown = JSON.parse(readFileSync(file, 'utf8'))
     if (!isRecord(state) || typeof state.url !== 'string' || typeof state.mcp !== 'string' || typeof state.token !== 'string' || typeof state.pid !== 'number') return undefined
-    return alive(state.pid) ? { url: state.url, mcp: state.mcp, token: state.token, pid: state.pid, ...typeof state.launcherToken === 'string' && state.launcherToken ? { launcherToken: state.launcherToken } : {} } : undefined
+    return alive(state.pid) ? { url: state.url, mcp: state.mcp, token: state.token, pid: state.pid, ...typeof state.version === 'string' ? { version: state.version } : {}, ...typeof state.launcherToken === 'string' && state.launcherToken ? { launcherToken: state.launcherToken } : {} } : undefined
   } catch {
     return undefined
   }

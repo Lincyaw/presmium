@@ -35,7 +35,7 @@ function inspect(bytes: Uint8Array) {
 }
 
 /** Original bytes and the canonical asset bank are committed or rolled back together. */
-export function createDocumentImageAuthoring({ root, editor, revisions, reviewRequired = false, uploads }: Options): { service: DocumentImageAuthoring, routes: Record<string, Route> } {
+export function createDocumentImageAuthoring({ root, editor, revisions, reviewRequired = false, uploads }: Options): { service: DocumentImageAuthoring, routes: Record<string, Route>, busy(): boolean } {
   const receipts = new Map<string, Receipt>(), pending = new Map<string, { signature: string, done: Promise<DocumentImageImportAnswer> }>()
   const binding = (current: ReturnType<typeof readAuthoringDocument>): CanonicalSource => ({ documentId: current.content.id, version: current.source.version, fingerprint: fnv1a64(current.source.content) })
   const opened = (ctx: RequestContext, version?: string, source?: CanonicalSource) => {
@@ -247,5 +247,5 @@ export function createDocumentImageAuthoring({ root, editor, revisions, reviewRe
       return jsonResponse(await apply(ctx, change, title, bytes, image, hash, request.signal, 'editor'))
     }) },
   }
-  return { service, routes }
+  return { service, routes, busy: () => active > 0 || pending.size > 0 }
 }

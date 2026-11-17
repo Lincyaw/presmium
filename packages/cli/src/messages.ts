@@ -30,6 +30,7 @@ export interface CliMessages {
   studioMissing: string
   mcpMissing: string
   workspaceServiceBusy(url?: string): string
+  workspaceServiceUpgrade(reason: 'busy' | 'newer' | 'unavailable', version?: string): string
   noProblems: string
   counts(errors: number, warnings: number, infos: number): string
   severity: Record<'error' | 'warning' | 'info', string>
@@ -223,6 +224,7 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
     studioMissing: 'presmium studio: 没有安装 Presmium Studio。它随 Presmium 一起安装，请运行 pnpm add -g @lincyaw/presmium。',
     mcpMissing: 'presmium mcp: 没有安装 @lincyaw/mcp。它随 Presmium 一起安装，请运行 pnpm add -g @lincyaw/presmium。',
     workspaceServiceBusy: url => `这个工作区已有作者服务${url ? `：${url}` : '正在启动'}。请使用已运行的服务。`,
+    workspaceServiceUpgrade: (reason, version) => reason === 'busy' ? '工作区正在编辑或导出，请等待当前操作结束后重试升级。' : reason === 'newer' ? `工作区服务已运行更新版本 ${version}，请升级当前 Presmium。` : '无法自动切换旧版工作区服务，请关闭使用该工作区的旧版 Presmium 后重试。',
     noProblems: '没有问题',
     counts: (errors, warnings, infos) => `${errors} 个错误，${warnings} 个警告，${infos} 条信息`,
     severity: { error: '错误', warning: '警告', info: '信息' },
@@ -457,6 +459,7 @@ Exit Codes: 0 no errors, 1 error findings, 2 usage or internal error.`,
     studioMissing: 'presmium studio: Presmium Studio is not installed. It comes with Presmium: run pnpm add -g @lincyaw/presmium.',
     mcpMissing: 'presmium mcp: @lincyaw/mcp is not installed. It comes with Presmium: run pnpm add -g @lincyaw/presmium.',
     workspaceServiceBusy: url => `This workspace already has an authoring service${url ? `: ${url}` : ' starting'}. Use the existing service.`,
+    workspaceServiceUpgrade: (reason, version) => reason === 'busy' ? 'The workspace is being edited or exported. Wait for the current operation to finish, then retry the upgrade.' : reason === 'newer' ? `The workspace service runs the newer version ${version}. Update this Presmium.` : 'The older workspace service could not be replaced automatically. Close the older Presmium using this workspace, then retry.',
     noProblems: 'no problems',
     counts: (errors, warnings, infos) => `${errors} errors, ${warnings} warnings, ${infos} infos`,
     severity: { error: 'error', warning: 'warning', info: 'info' },

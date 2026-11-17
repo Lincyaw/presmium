@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { createJiti } from 'jiti'
 import { APPROVAL_KINDS, deckLocale, errorMessage } from '@lincyaw/kernel'
-import { bracketIPv6, irRevision, lanAddresses } from '@lincyaw/kernel/node'
+import { bracketIPv6, irRevision, lanAddresses, ServiceUpgradeError } from '@lincyaw/kernel/node'
 import type { ApprovalKind, Finding, Severity, SpeechVoice } from '@lincyaw/kernel'
 import { build, Compiler, dev, resolveEntry } from '@lincyaw/compiler'
 import type { BuildReport, Compilation, RunStats } from '@lincyaw/compiler'
@@ -97,7 +97,7 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
       case 'serve': return await runServeCommand(command, bundled)
     }
   } catch (error) {
-    process.stderr.write(`presmium: ${typeof error === 'object' && error !== null && 'code' in error && error.code === 'workspace-service-already-running' ? t.workspaceServiceBusy('url' in error && typeof error.url === 'string' ? error.url : undefined) : errorMessage(error)}\n`)
+    process.stderr.write(`presmium: ${error instanceof ServiceUpgradeError ? t.workspaceServiceUpgrade(error.reason, error.version) : typeof error === 'object' && error !== null && 'code' in error && error.code === 'workspace-service-already-running' ? t.workspaceServiceBusy('url' in error && typeof error.url === 'string' ? error.url : undefined) : errorMessage(error)}\n`)
     return 2
   }
 }
@@ -291,27 +291,40 @@ async function runDevCommand(command: Command, bundled: string): Promise<number>
 }
 
 async function runServeCommand(command: Command, bundled: string): Promise<number> {
-  const started = await serveWorkspace({
-    dir: command.entry,
-    listenAddress: command.listenAddress,
-    port: command.port,
-    ...command.operatorDir ? { operatorDir: resolve(command.operatorDir) } : {},
-    bundled,
-    check: compilation => compilation.check(),
-    previewOrigins: command.previewOrigins,
-    ...command.publicUrl ? { publicUrl: command.publicUrl } : {},
-    allow: command.allow,
-  })
-  process.stdout.write(`serve  ${started.url}\n${networkLines(command.listenAddress, started.url)}workspace  ${started.root}\nmcp  ${started.mcp.url}${t.token(started.mcp.stateFile)}\n`)
-  if (command.listenAddress && !isLoopback(command.listenAddress)) {
-    process.stderr.write(`${t.serveOpen(command.listenAddress, new URL(started.url).port)}\n`)
+  const stop = new AbortController(), quit = () => stop.abort()
+  const parentPipe = process.env.PRESMIUM_SERVICE_PARENT_PIPE === '1'
+  delete process.env.PRESMIUM_SERVICE_PARENT_PIPE
+  process.once('SIGINT', quit)
+  process.once('SIGTERM', quit)
+  if (parentPipe) { process.stdin.once('end', quit); process.stdin.resume() }
+  try {
+    const started = await serveWorkspace({
+      dir: command.entry,
+      listenAddress: command.listenAddress,
+      port: command.port,
+      ...command.operatorDir ? { operatorDir: resolve(command.operatorDir) } : {},
+      bundled,
+      check: compilation => compilation.check(),
+      previewOrigins: command.previewOrigins,
+      ...command.publicUrl ? { publicUrl: command.publicUrl } : {},
+      allow: command.allow,
+      signal: stop.signal,
+      onUpgrade: version => { process.stdout.write(`service-upgrade  ${version}\n`); quit() },
+    })
+    try {
+      process.stdout.write(`serve  ${started.url}\n${networkLines(command.listenAddress, started.url)}workspace  ${started.root}\nmcp  ${started.mcp.url}${t.token(started.mcp.stateFile)}\n`)
+      if (command.listenAddress && !isLoopback(command.listenAddress)) process.stderr.write(`${t.serveOpen(command.listenAddress, new URL(started.url).port)}\n`)
+      if (!stop.signal.aborted) await new Promise<void>(done => stop.signal.addEventListener('abort', () => done(), { once: true }))
+    } finally { await started.close() }
+    return 0
+  } catch (error) {
+    if (stop.signal.aborted) return 0
+    throw error
+  } finally {
+    process.removeListener('SIGINT', quit)
+    process.removeListener('SIGTERM', quit)
+    if (parentPipe) { process.stdin.removeListener('end', quit); process.stdin.pause() }
   }
-  await new Promise<void>((done) => {
-    process.once('SIGINT', done)
-    process.once('SIGTERM', done)
-  })
-  await started.close()
-  return 0
 }
 
 function resolveInstalled(name: string, bundled: string): string | undefined {
@@ -533,8 +546,8 @@ async function runMcpCommand(argv: string[], bundled: string): Promise<number> {
   }
   console.log = console.info = console.debug = console.error
   const workspace = mcpWorkspaceSession(bundled)
-  const { main: mcpMain } = await createJiti(import.meta.url).import<{ main(argv: string[], options: { bundled: string, startWorkspace: typeof workspace.startWorkspace }): Promise<number | undefined> }>(entry)
-  try { return await mcpMain(argv, { bundled, startWorkspace: workspace.startWorkspace }) ?? 0 }
+  const { main: mcpMain } = await createJiti(import.meta.url).import<{ main(argv: string[], options: { bundled: string, startWorkspace: typeof workspace.startWorkspace, locateWorkspace: typeof workspace.locateWorkspace }): Promise<number | undefined> }>(entry)
+  try { return await mcpMain(argv, { bundled, startWorkspace: workspace.startWorkspace, locateWorkspace: workspace.locateWorkspace }) ?? 0 }
   catch (error) { return fail(errorMessage(error), 2) }
   finally { await workspace.close() }
 }

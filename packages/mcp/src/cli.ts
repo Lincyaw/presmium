@@ -89,6 +89,8 @@ export interface McpCliOptions {
   bundled?: string
   /** The application layer owns workspace startup, so MCP never imports its server implementation. */
   startWorkspace?(directory: string, allow: readonly ApprovalKind[], signal: AbortSignal): Promise<{ target: BridgeTarget, close(): Promise<void> }>
+  /** Poll without starting a host, retaining the launcher's runtime-version requirement. */
+  locateWorkspace?(directory: string): BridgeTarget | undefined
 }
 
 export async function main(argv: string[], options: McpCliOptions = {}): Promise<number | undefined> {
@@ -127,7 +129,7 @@ export async function main(argv: string[], options: McpCliOptions = {}): Promise
   const locate = async (ensure = true) => {
     controller.signal.throwIfAborted()
     if (compilerOnly) return undefined
-    if (!ensure) return runningWorkspaceService(dir)
+    if (!ensure) return options.locateWorkspace ? options.locateWorkspace(dir) : runningWorkspaceService(dir)
     if (options.startWorkspace) {
       workspace = await options.startWorkspace(dir, allow, controller.signal)
       return workspace.target

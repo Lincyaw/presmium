@@ -209,5 +209,5 @@ export function createDocumentVoiceAuthoring({ editor, services, prepareExecutio
     },
     readPreview: async (document, id, member) => ownerOf(document, member).readPreview(id),
   }
-  return { service, routes: createVoiceoverRoutes(service), async close() { closed = true; for (const { prepared } of clones.values()) prepared.close(); for (const operation of pending) operation.controller.abort(); await Promise.allSettled([...owners.values()].map(owner => owner.close())); await Promise.allSettled([...pending].map(operation => operation.finished)); owners.clear() } }
+  return { service, routes: createVoiceoverRoutes(service), busy: () => pending.size > 0 || [...owners.values()].some(owner => owner.busy()), async close() { closed = true; for (const { prepared } of clones.values()) prepared.close(); for (const operation of pending) operation.controller.abort(); await Promise.allSettled([...owners.values()].map(owner => owner.close())); await Promise.allSettled([...pending].map(operation => operation.finished)); owners.clear() } }
 }

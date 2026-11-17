@@ -663,6 +663,11 @@ function argsOf(variables: Variables): Args {
 }
 
 async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpServer> {
+  const operation = async <T>(run: () => Promise<T>): Promise<T> => {
+    const finish = host.beginOperation?.()
+    if (host.beginOperation && !finish) throw Object.assign(new Error('workspace-service-upgrading'), { status: 503 })
+    try { return await run() } finally { finish?.() }
+  }
   const { builtIn, plugins, documents } = await offer(host, caller)
   const directAuthoring = (tool: ToolSpec, args?: Args) => caller.authoringConfirmed === true && tool.kind === 'operate'
     && (AUTHORING_TOOLS.includes(tool) || AUTHORING_ACTION_TOOLS.includes(tool) || EDITING_TOOLS.includes(tool))
@@ -684,7 +689,7 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
     const contextual = ['get_context', 'edit_narration', 'editor_action'].includes(tool.name)
     const own = call(args, signal, spec ? directAuthoring(spec, args) : false, contextual)
     const lang = spec && SKILL_TOOLS.includes(spec) ? undefined : async () => { const dir = await own.document(); return (await host.documents()).find(doc => doc.dir === dir)?.lang }
-    return toolResult(async () => {
+    return toolResult(() => operation(async () => {
       const document = host.agentActivity ? await own.document().catch(() => undefined) : undefined
       const source = host.agentActivity && document !== undefined && activityNeedsDocument(args) ? await host.authoring?.read(document, caller.member).catch(() => undefined) : undefined
       const finish = host.agentActivity?.begin({ operation: activityOperation(tool.name, tool.kind === 'read'), document, targets: activityTargets(args, source?.content) }, caller.member)
@@ -693,7 +698,7 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
         finish?.(signal.aborted ? 'cancelled' : 'done')
         return result
       } catch (error) { finish?.(signal.aborted ? 'cancelled' : 'failed'); throw error }
-    }, spec?.structured ?? false, lang, spec ? undefined : (tool as AgentTool).errors)
+    }), spec?.structured ?? false, lang, spec ? undefined : (tool as AgentTool).errors)
   }
   const toolSchema = (tool: ToolSpec | AgentTool) => compactSchema(builtIn.includes(tool as ToolSpec)
     ? (tool as ToolSpec).inputSchema ?? schemaOf((tool as ToolSpec).properties, (tool as ToolSpec).required) : pluginSchema(tool as AgentTool))
@@ -754,7 +759,7 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
     params: fromJsonSchema<ClonePreparationRequest>(CLONE_PREPARATION_SCHEMA as unknown as JsonSchemaType), result: CallToolResultSchema,
   }, (request, ctx) => {
     const own = call({ ...request.document !== undefined ? { document: request.document } : {} }, ctx.mcpReq.signal)
-    return toolResult(() => nativeCloneCall(own, request, builtIn.some(tool => tool.name === 'clone_voice')), true,
+    return toolResult(() => operation(() => nativeCloneCall(own, request, builtIn.some(tool => tool.name === 'clone_voice'))), true,
       async () => { const document = await own.document(); return (await host.documents()).find(doc => doc.dir === document)?.lang })
   })
 

@@ -14,7 +14,7 @@ import { join, relative, resolve } from 'node:path'
 import { Compiler, operatorDir as resolveOperatorDir, pluginLogger, runBlock, workspacePlugins } from '@lincyaw/compiler'
 import type { Compilation, CompilerOptions } from '@lincyaw/compiler'
 import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, DOCUMENT_VOICE_TASKS, errorMessage, PreviewPreparing, PRODUCTION_AUDIO_AUTHORING, REVISIONS, SPEECH, VOICEOVER, VOICEOVER_EXECUTION } from '@lincyaw/kernel'
-import { irRevision, OperatorSpeechSettings, readServiceState, removeServiceState, serveStateDir, tryAcquireServiceHostLease } from '@lincyaw/kernel/node'
+import { compareServiceVersion, irRevision, OperatorSpeechSettings, readServiceState, removeServiceState, serveStateDir, SERVICE_VERSION, tryAcquireServiceHostLease, upgradeWorkspaceService } from '@lincyaw/kernel/node'
 import type { ServiceHostLease } from '@lincyaw/kernel/node'
 import { createMcpSettings } from './mcp-settings.ts'
 import { speechSettingsRoute } from './speech-settings.ts'
@@ -51,6 +51,8 @@ import { createWorkbenchBackend } from './workbench-api.ts'
 import type { WorkbenchBackend } from './workbench-api.ts'
 import { localWriter } from './writer.ts'
 import { documentImportRoute } from './document-import.ts'
+import { hostUpgradeRoute } from './host-upgrade.ts'
+import { createHostActivity } from './host-activity.ts'
 
 export interface ServeOptions {
   dir: string
@@ -70,6 +72,8 @@ export interface ServeOptions {
   /** A launcher may reserve the shared workspace host before starting it. Released after close. */
   hostLease?: ServiceHostLease
   signal?: AbortSignal
+  /** A CLI host ends its process after a graceful upgrade; stdio relays remain separate. */
+  onUpgrade?(version: string): void
 }
 
 export interface WorkspaceServer {
@@ -102,7 +106,11 @@ function makeStateDir(root: string, env: NodeJS.ProcessEnv): string {
 
 export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const root = realpathSync(resolve(options.dir)), env = options.env ?? process.env
-  const advertised = readServiceState(join(serveStateDir(root, env), 'server.json'))
+  let advertised = readServiceState(join(serveStateDir(root, env), 'server.json'))
+  if (advertised && compareServiceVersion(advertised, SERVICE_VERSION) < 0) {
+    await upgradeWorkspaceService(root, advertised, SERVICE_VERSION, env, options.signal)
+    advertised = readServiceState(join(serveStateDir(root, env), 'server.json'))
+  }
   if (advertised) throw Object.assign(new Error('workspace-service-already-running'), { code: 'workspace-service-already-running', url: advertised.url })
   const lease = options.hostLease ?? await tryAcquireServiceHostLease(root, env)
   if (!lease) {
@@ -124,7 +132,10 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   try {
     lease.signal.throwIfAborted()
     options.signal?.throwIfAborted()
-    running = await startWorkspace(options)
+    running = await startWorkspace({ ...options, onUpgrade: version => {
+      options.onUpgrade?.(version)
+      void close().catch(error => (options.log ?? pluginLogger('presmium serve')).error(errorMessage(error)))
+    } })
     lease.signal.throwIfAborted()
     options.signal?.throwIfAborted()
     lease.signal.addEventListener('abort', compromised, { once: true })
@@ -153,6 +164,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const compileSessions = new Map<string, CompileSession>()
   const agentToolListeners = new Set<(document: string) => void>()
   const locks = new DocumentLocks()
+  const activity = createHostActivity()
   const writer = localWriter(config)
   const editor = new SourceEditor({ config, writer, locks, beforeWrite: (paths, historyLocked) => historyLocked ? captureLocalBaseline(historyGit, paths) : historyGit.exclusive(() => captureLocalBaseline(historyGit, paths)) })
   const check = options.check ?? (compilation => compilation.check())
@@ -324,6 +336,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const ready = new Promise<void>(resolve => started = resolve)
 
   const serverHost: ServerHost = {
+    beginOperation: route => route?.plugin === WORKSPACE_ID && route.path === 'host-upgrade' ? () => {} : activity.begin(),
     agentActivity: agentActivity.service,
     workspaceRoot: root,
     get authoring() { return documentEditor },
@@ -502,6 +515,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
       workbench,
       jobs,
       previewOrigins: preview.origins,
+      hostUpgrade: hostUpgradeRoute(locks, jobs, () => !transcriptions?.busy() && !voiceAuthoring?.busy() && !audioAuthoring?.busy() && !imageAuthoring?.busy() && activity.quiesce(), version => options.onUpgrade?.(version)),
       ...launcherToken ? { launcherToken } : {},
   }
   workspaceRoutesOwner = workspaceRoutes(routeOptions)
@@ -559,7 +573,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
     site = await startWorkspaceSite({ root, spec, basePath, bundled: options.bundled, stateDir, compile: compileForSite, stampPreviewRevision: (compilation, doc) => workbench!.stampPreviewRevision(compilation, doc), diagnostics: running.diagnostics, preview, log })
     options.signal?.throwIfAborted()
     // Publish only the fully assembled authoring host. Another MCP client may discover it immediately.
-    writeFileSync(stateFile, `${JSON.stringify({ url: running.url, mcp: `${running.url}/mcp`, token: running.mcpToken, pid: process.pid, launcherToken }, null, 2)}\n`, { mode: 0o600 })
+    writeFileSync(stateFile, `${JSON.stringify({ url: running.url, mcp: `${running.url}/mcp`, token: running.mcpToken, pid: process.pid, launcherToken, version: SERVICE_VERSION }, null, 2)}\n`, { mode: 0o600 })
     chmodSync(stateFile, 0o600)
   } catch (error) {
     await closeHost()

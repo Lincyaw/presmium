@@ -188,3 +188,8 @@ Release events build version tags beginning with `v`; publishing the feed or rol
 must not recursively build another client.
 
 Pin each CI checkout to the triggering commit (`github.sha`), or the explicitly selected immutable release tag, rather than a moving branch reference. All platform artifacts must come from the same verified source.
+
+For a desktop/runtime upgrade, start with a workspace already held by an older MCP host. Verify that the new
+launcher replaces it automatically, reports the current captured service version, preserves saved content, and opens
+the actual preview. The stdio relay must remain usable, in-flight work must finish, and replacement must wait for the
+old lease and plugin cleanup; process liveness or a document list alone is not acceptance.

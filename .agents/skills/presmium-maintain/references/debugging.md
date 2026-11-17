@@ -78,6 +78,10 @@ Rules for judging:
   verify playable data before the final byte, and check legacy Ogg playback too. Private server media keeps its original
   version-bound resource path. A deep link must mount its selected page first; its picture hints follow only that
   page's static dependencies and start after the framework load to avoid delaying the first visible page.
+- After an upgrade, compare the desktop/CLI version with the service state's captured `version`, not only the app's
+  bundle metadata. A newer launcher must hand over an older host before reuse. Verify an existing stdio client survives
+  the switch, an active execution finishes, asynchronous plugin cleanup releases the lease before replacement, and no
+  business request is replayed. Unversioned legacy hosts use authenticated graceful process shutdown.
 - After an upgrade, verify on the author's actual workspace copy (old `@lincyaw/slidev-addon-*` imports map
   to `@lincyaw/addon-*`). Never delete their copy, rewrite their sources or externalize modules to pass.
 

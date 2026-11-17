@@ -8,7 +8,7 @@ import { delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { bracketIPv6, dshBin, inheritedEnv, isLauncherVariable, launchArgs, launchEnv, launchNode, launchWorkspaceServer, WEB_READY, writeProfile } from '@lincyaw/dsh/launch'
 import type { LaunchedProcess } from '@lincyaw/dsh/launch'
-import { findWorkspaceServiceState, readServiceState, serveStateDir } from '@lincyaw/kernel/node'
+import { compareServiceVersion, findWorkspaceServiceState, readServiceState, serveStateDir, SERVICE_VERSION, ServiceUpgradeError, upgradeWorkspaceService } from '@lincyaw/kernel/node'
 import { STUDIO_MESSAGES, systemLocale } from './messages.ts'
 import { modelEnv } from './model-env.ts'
 import { startProxy } from './proxy.ts'
@@ -225,6 +225,16 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
   let existing = findWorkspaceServiceState(options.dir, env)
   const canReuse = () => existing?.state.launcherToken && listenAddress === undefined && options.previewPort === undefined && options.previewUrl === undefined
   if (existing && !canReuse()) throw new Error(t.existingService(existing.state.url))
+  try {
+    while (existing && compareServiceVersion(existing.state, SERVICE_VERSION) !== 0) {
+      if (compareServiceVersion(existing.state, SERVICE_VERSION) > 0) throw new ServiceUpgradeError('newer', existing.state.version)
+      await upgradeWorkspaceService(existing.root, existing.state, SERVICE_VERSION, env)
+      existing = findWorkspaceServiceState(options.dir, env)
+    }
+  } catch (error) {
+    if (error instanceof ServiceUpgradeError) throw new Error(t.serviceUpgrade(error.reason, error.version))
+    throw error
+  }
   const wildcard = WILDCARD.test(boundAddress)
   // External MCP clients keep the default address, so it is preferred; an explicit port must be free.
   let previewPort = options.previewPort ?? DEFAULT_PREVIEW_PORT
@@ -305,6 +315,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
           if (!existing) await new Promise(done => setTimeout(done, 100))
         }
         if (!existing || !canReuse()) throw error
+        if (compareServiceVersion(existing.state, SERVICE_VERSION) !== 0) throw new Error(t.serviceUpgrade('unavailable'))
         serviceToken = existing.state.launcherToken!
         ready = { url: existing.state.url, root: existing.root }
       }

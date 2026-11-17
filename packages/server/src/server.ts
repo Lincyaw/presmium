@@ -230,20 +230,26 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     if (!hasRole(member, role)) return problemResponse(403, `this route needs the role ${role}`)
     const limited = await limitBody(request, found.route.maxBody ?? MAX_BODY)
     if (limited instanceof Response) return limited
+    const finish = options.serverHost?.beginOperation?.(target)
+    if (options.serverHost?.beginOperation && !finish) return problemResponse(503, 'workspace-service-upgrading')
     try {
       const response = await found.route.handle(limited, { member, document, rest: found.rest })
       return response.headers.has('cache-control') ? response : withHeaders(response, { 'Cache-Control': 'no-store' })
     } catch (error) {
       log.error(`route ${target.plugin}/${target.path} failed: ${errorMessage(error)}`)
       return problemResponse(500, errorMessage(error))
-    }
+    } finally { finish?.() }
   }
 
   const handle = async (request: Request, req: IncomingMessage): Promise<Response> => {
     const url = new URL(request.url)
     const path = inner(url.pathname)
     // This exact capability route authenticates its own one-write upload reference, not a workspace credential.
-    if (options.serverHost?.mediaUploads && path.startsWith(`${MEDIA_UPLOAD_PATH}/`)) return options.serverHost.mediaUploads.handle(request)
+    if (options.serverHost?.mediaUploads && path.startsWith(`${MEDIA_UPLOAD_PATH}/`)) {
+      const finish = options.serverHost.beginOperation?.()
+      if (options.serverHost.beginOperation && !finish) return problemResponse(503, 'workspace-service-upgrading')
+      try { return await options.serverHost.mediaUploads.handle(request) } finally { finish?.() }
+    }
     const member = memberOf(req)
     if ('status' in member) return problemResponse(member.status, member.message)
     const document = requestedDocument(req.headers, url)

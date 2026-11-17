@@ -75,7 +75,7 @@ async function writeJson(path: string, value: unknown, exclusive = false): Promi
 }
 
 /** Recognition is an immutable candidate. Only a later, separate authoring action may adopt it. */
-export function createDocumentTranscriptions({ root, editor, audio, speech, services }: Options): DocumentTranscriptions & { close(): Promise<void> } {
+export function createDocumentTranscriptions({ root, editor, audio, speech, services }: Options): DocumentTranscriptions & { busy(): boolean, close(): Promise<void> } {
   const active = new Map<string, Active>()
   const admitting = new Map<string, { document: string, documentId: string, member: string, intent: string, controller: AbortController, finished: Promise<void> }>()
   let closed = false
@@ -266,6 +266,7 @@ export function createDocumentTranscriptions({ root, editor, audio, speech, serv
     }
   }
   return {
+    busy: () => active.size > 0 || admitting.size > 0,
     capabilities,
     async list(document, member): Promise<TranscriptionListAnswer> {
       const path = join(dirname(authorize(document, member)), 'transcriptions'), observation = observe(document, member)

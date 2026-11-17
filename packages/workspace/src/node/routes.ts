@@ -67,6 +67,7 @@ export interface WorkspaceRoutesOptions {
   changesRoutes?: Record<string, Route>
   /** Shared mutable allow-list; a later local Studio may register its preview origin. */
   previewOrigins?: string[]
+  hostUpgrade?: Route
 }
 
 function toRendererIds(body: unknown): string[] | undefined {
@@ -91,6 +92,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
   const transcriptions = options.transcriptions ?? ownedTranscriptions!
   const ownedAudio = options.audioAuthoringRoutes ? undefined : createDocumentAudioAuthoring({ root: config.root, editor, revisions, audio: options.audio, reviewRequired: config.settings['presmium.assistant']?.review === 'required' })
   const routes: Record<string, Route> = {
+    ...options.hostUpgrade ? { 'host-upgrade': options.hostUpgrade } : {},
     ...options.previewOrigins ? { 'preview-origins': {
       role: 'owner', maxBody: 8192,
       handle: async (request: Request) => {

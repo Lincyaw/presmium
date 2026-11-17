@@ -48,6 +48,8 @@ export function servedDocument(compilation: Compilation): ServedDocument {
 }
 
 export interface ServerHost {
+  /** Undefined denies new business work while a host is handing over; call the release after completion. */
+  beginOperation?(route?: { plugin: string, path: string }): (() => void) | undefined
   agentActivity?: import('@lincyaw/kernel').AgentActivityObserver
   projectAuthoring?: ProjectAuthoring
   authoring?: DocumentAuthoring
