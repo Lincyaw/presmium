@@ -1,4 +1,5 @@
 import DeltaboxRuntime from 'dsh-deltabox/runtime'
+import { realpathSync } from 'node:fs'
 import type { DshAgent, DshContext } from './dsh-types.ts'
 import type { Presmium } from './service.ts'
 
@@ -10,7 +11,7 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
 
   projectRootFor(agent: RuntimeAgent): string {
     const presmium = this.ctx.get('presmium') as Presmium | undefined
-    return presmium?.bindings.candidateRootOf(agent as unknown as DshAgent) ?? super.projectRootFor(agent)
+    return realpathSync(presmium?.bindings.candidateRootOf(agent as unknown as DshAgent) ?? super.projectRootFor(agent))
   }
 }
 

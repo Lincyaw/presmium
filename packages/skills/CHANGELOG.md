@@ -1,5 +1,12 @@
 # @lincyaw/skills
 
+## 1.0.0-rc.109
+
+### Patch Changes
+
+- 411e409: Use the official DeltaBox DSH plugin for isolated AI file and Shell operations while preserving Presmium's guarded review and publication. Store ordinary saves in independent local editing history so only explicit version commits advance the project's Git branch.
+- @lincyaw/kernel@1.0.0-rc.109
+
 ## 1.0.0-rc.108
 
 ### Patch Changes
