@@ -1,5 +1,38 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.114
+
+### Patch Changes
+
+- 7145f49: Presmium is now a Claude Code plugin: `/plugin marketplace add Lincyaw/presmium` and `/plugin install presmium@presmium` bring the authoring, animation, SVG figure and plugin skills, the Presmium MCP tools (through `pnpm dlx @lincyaw/presmium mcp`) and the `/presmium:new`, `/presmium:studio` and `/presmium:export-svg` commands. New lecture, workspace and site projects also get the `presmium-figure` skill.
+- Updated dependencies [7145f49]
+  - create-presmium@1.0.0-rc.114
+  - @lincyaw/addon-assistant@1.0.0-rc.114
+  - @lincyaw/addon-classroom@1.0.0-rc.114
+  - @lincyaw/addon-code@1.0.0-rc.114
+  - @lincyaw/addon-content@1.0.0-rc.114
+  - @lincyaw/addon-exec@1.0.0-rc.114
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.114
+  - @lincyaw/addon-exec-local@1.0.0-rc.114
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.114
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.114
+  - @lincyaw/addon-guide@1.0.0-rc.114
+  - @lincyaw/addon-lecture@1.0.0-rc.114
+  - @lincyaw/addon-motion@1.0.0-rc.114
+  - @lincyaw/addon-publish@1.0.0-rc.114
+  - @lincyaw/addon-session@1.0.0-rc.114
+  - @lincyaw/addon-speech@1.0.0-rc.114
+  - @lincyaw/addon-stage@1.0.0-rc.114
+  - @lincyaw/cli@1.0.0-rc.114
+  - @lincyaw/host@1.0.0-rc.114
+  - @lincyaw/kernel@1.0.0-rc.114
+  - @lincyaw/mcp@1.0.0-rc.114
+  - @lincyaw/render-notebook@1.0.0-rc.114
+  - @lincyaw/render-slides@1.0.0-rc.114
+  - @lincyaw/viewer@1.0.0-rc.114
+  - @lincyaw/web@1.0.0-rc.114
+  - @lincyaw/studio@0.2.0-rc.113
+
 ## 1.0.0-rc.113
 
 ### Patch Changes
