@@ -1,5 +1,12 @@
 # create-presmium
 
+## 1.0.0-rc.120
+
+### Patch Changes
+
+- Updated dependencies [6ac85f4]
+  - @lincyaw/kernel@1.0.0-rc.120
+
 ## 1.0.0-rc.119
 
 ### Patch Changes
