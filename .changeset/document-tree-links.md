@@ -5,6 +5,7 @@
 "@lincyaw/server": patch
 "@lincyaw/mcp": patch
 "@lincyaw/web": patch
+"@lincyaw/addon-motion": patch
 "@lincyaw/dsh": patch
 "@lincyaw/skills": patch
 "@lincyaw/presmium": patch

@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { DOCUMENT_ENTRY, validateDocument } from '@lincyaw/kernel'
+import { blockSubtree, DOCUMENT_ENTRY, validateDocument } from '@lincyaw/kernel'
 import type { DocumentId, PresmiumDocument } from '@lincyaw/kernel'
 import { effectiveDocumentIn, workspaceDocuments } from './document-tree.ts'
 
@@ -54,4 +54,39 @@ export function workspaceLinks(root: string): DocumentLinks {
       return linked
     },
   }
+}
+
+/** How far `embeddedPlugins` follows synced blocks inside synced blocks, as the lowering does. */
+const EMBED_DEPTH = 4
+
+/**
+ * The plugins the document's synced blocks need beyond its own: for each embedded component that a plugin provides
+ * (its definition's `data.plugin` or plugin implementation), the plugin's ID, and the source documents' plugins
+ * (with their inherited settings) as the packages to look for it in. Synced blocks inside synced blocks count too.
+ */
+export function embeddedPlugins(document: PresmiumDocument, links: DocumentLinks): { packages: string[], ids: Set<string> } {
+  const packages: string[] = [], ids = new Set<string>(), seen = new Set<string>()
+  const visit = (blocks: PresmiumDocument['blocks'], depth: number) => {
+    for (const block of Object.values(blocks)) {
+      if (block.type !== 'embed' || depth >= EMBED_DEPTH || block.source.document === document.id) continue
+      const key = `${block.source.document}#${block.source.block}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      const source = links.resolve(block.source.document)?.document
+      const subtree = source && blockSubtree(source, block.source.block)
+      if (!source || !subtree) continue
+      let needed = false
+      for (const item of Object.values(subtree)) {
+        if (item.type !== 'component') continue
+        const definition = source.definitions[item.definitionId]
+        const data = definition?.data ?? {}
+        const id = typeof data.plugin === 'string' ? data.plugin : definition?.implementation.type === 'plugin' ? definition.implementation.plugin : undefined
+        if (id) { ids.add(id); needed = true }
+      }
+      if (needed) for (const name of source.metadata.plugins ?? []) if (!packages.includes(name)) packages.push(name)
+      visit(subtree, depth + 1)
+    }
+  }
+  visit(document.blocks, 0)
+  return { packages, ids }
 }

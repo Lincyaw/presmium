@@ -35,9 +35,28 @@ export function deckScenes(deckDir: string): Map<string, string> {
   return scenes
 }
 
-/** The source of `virtual:presmium-motion/scenes`: each scene of the deck, by name, to an import of its file. */
-export function scenesModule(deckDir: string): string {
-  const entries = [...deckScenes(deckDir)].map(([name, file]) => `  ${JSON.stringify(name)}: () => import(${JSON.stringify(file)}),`)
+/**
+ * A scene of another document, shown here through a synced block: its name is the path from this document's folder to
+ * the file without its extension (`../other/scenes/bubble`), so it never collides with this document's own scenes.
+ */
+export function syncedSceneName(deckDir: string, file: string): string | undefined {
+  const parts = file.split(sep), at = parts.lastIndexOf(SCENES_DIR)
+  if (at < 1) return undefined
+  const owner = parts.slice(0, at).join(sep)
+  if (sceneName(owner, file) === undefined) return undefined
+  const ext = SCENE_EXTENSIONS.find(ext => file.endsWith(ext))!
+  return relative(deckDir, file.slice(0, -ext.length)).split(sep).join('/')
+}
+
+/** The configuration key under which the definitions pass records the synced scenes' files by name. */
+export const SYNCED_SCENES = 'syncedScenes'
+
+/**
+ * The source of `virtual:presmium-motion/scenes`: each scene of the deck, by name, to an import of its file, and the
+ * scenes of other documents its synced blocks show (`synced`, by name).
+ */
+export function scenesModule(deckDir: string, synced: Record<string, string> = {}): string {
+  const entries = [...deckScenes(deckDir), ...Object.entries(synced)].map(([name, file]) => `  ${JSON.stringify(name)}: () => import(${JSON.stringify(file)}),`)
   return `export default {\n${entries.join('\n')}\n}\n`
 }
 

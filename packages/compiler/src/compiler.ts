@@ -29,7 +29,7 @@ import { validateIR } from './validate.ts'
 import { createSourceReader, findWorkspaceRoot } from './workspace.ts'
 import { operatorDir, operatorPlugins, WORKSPACE_CONFIG, workspaceSettings } from './workspace-settings.ts'
 import { effectiveDocumentIn } from './document-tree.ts'
-import { workspaceLinks } from './document-links.ts'
+import { embeddedPlugins, workspaceLinks } from './document-links.ts'
 import type { OperatorSettings } from './workspace-settings.ts'
 
 export { DECK_ENTRY }
@@ -300,9 +300,21 @@ export class Compiler {
     }
 
     const listed = stringList(headmatter.plugins)
-    const loaded = await this.#loadPlugins(listedPlugins(listed), workspace)
-    const { plugins } = loaded
-    const problems = [...loaded.problems]
+    // Synced blocks can show components whose plugins only their source documents name: those plugins are loaded for
+    // this compile too (and listed in the snapshot's plugins), never written into the document.
+    const needs = embeddedPlugins(document, workspaceLinks(existsSync(join(workspaceRoot, WORKSPACE_CONFIG)) ? workspaceRoot : this.deckDir))
+    const own = listedPlugins(listed)
+    const borrowed = new Set(listedPlugins(needs.packages).filter(name => !own.includes(name)))
+    const loaded = await this.#loadPlugins([...own, ...borrowed], workspace)
+    const plugins = loaded.plugins.filter(plugin => !borrowed.has(plugin.name) || needs.ids.has(pluginId(plugin)))
+    const kept = [...borrowed].filter(name => plugins.some(plugin => plugin.name === name))
+    if (kept.length) headmatter.plugins = [...listed, ...kept]
+    const problems = loaded.problems.filter(problem => !borrowed.has(problem.name))
+    const unprovided = [...needs.ids].filter(id => id !== DECK_PLUGIN && !plugins.some(plugin => pluginId(plugin) === id))
+    if (unprovided.length) {
+      const why = loaded.problems.filter(problem => borrowed.has(problem.name)).map(problem => problem.message)
+      report({ checkId: 'embed.plugin-missing', severity: 'error', message: `synced blocks show components of ${unprovided.join(', ')}, which no plugin of this document or of the source documents (${needs.packages.join(', ') || 'none'}) provides${why.length ? `: ${why.join('; ')}` : ''}`, source: { file: this.entry, line: 1 } })
+    }
     const services = new NodeServices(this.options.services)
     for (const plugin of plugins) addServices(services, plugin, {
       deckDir: this.deckDir,
