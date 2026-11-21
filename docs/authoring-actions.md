@@ -391,7 +391,7 @@ agent 的循环：探测能力 → 读源 → 预检 → 提交或开始任务 �
 
 ## 15. 文稿树、引用与同步块
 
-工作区的文稿树、回收站和文稿之间的引用由 `DocumentIndex`（`packages/workspace/src/node/document-index.ts`）从文件派生，不另存：每次读取比较各 `index.pmd` 的大小与修改时间，只重新解析变了的文件，因此保存、升级、树操作、撤消与工作区外的改动都直接反映。它给出树（节点、显示顺序、问题 `tree.unknown-parent`、`tree.cycle`、`tree.duplicate-id`）、回收站、每份文稿的引用与同步块（出链）和引用它的地方（入链，带引用所在的句子，不超过约 120 字），以及搜索：先按文稿标题，再按页面标题与块文字。契约在 `packages/kernel/src/contracts/document-tree.ts`。
+工作区的文稿树、回收站和文稿之间的引用由 `DocumentIndex`（`packages/workspace/src/node/document-index.ts`）从文件派生，不另存。服务启动时异步建立索引，分片读取并让出事件循环；之后靠文件事件（监视文稿文件夹与容纳它们的文件夹，不监视文稿内的子文件夹）只重新读取变了的 `index.pmd`，树操作直接告诉索引它改了哪些文件；每 30 秒异步走查一遍工作区，补上文件事件报告不了的变化。因此保存、升级、树操作、撤消与工作区外的改动都直接反映。只改正文的保存只替换这份文稿在索引中的条目（引用的入链也只改它的）；位置、标题或文稿增减才重建树。搜索用索引时已转成小写的文字，不重新解析文稿；回答都来自内存，`embed/source` 只读源文稿一个文件。同一进程中编译器扫描工作区、列出文稿时直接用这个索引，不再遍历与解析全部文稿；文稿列表只为变了的文稿（或其祖先变了的文稿）重新生成摘要。它给出树（节点、显示顺序、问题 `tree.unknown-parent`、`tree.cycle`、`tree.duplicate-id`）、回收站、每份文稿的引用与同步块（出链）和引用它的地方（入链，带引用所在的句子，不超过约 120 字），以及搜索：先按文稿标题，再按页面标题与块文字。契约在 `packages/kernel/src/contracts/document-tree.ts`。
 
 | HTTP 路由 | 回答 | MCP 工具 |
 | --- | --- | --- |
@@ -403,7 +403,7 @@ agent 的循环：探测能力 → 读源 → 预检 → 提交或开始任务 �
 | `GET embed/source?document=&block=` | `EmbedSource` | 无 |
 | `GET tree/events` | SSE，事件 `tree`，数据 `{ type: 'tree' }` | 无 |
 
-读取需要 reader，树操作需要 editor；文稿按 ID 指定。`tree/events` 在树操作之后立即推送，其他改动（保存、撤消、工作区外编辑）由服务约每两秒比较一次树后推送；Studio 经共享 socket 的 `tree` 主题订阅它。`embed/source` 的 `assets` 是相对工作区路由的 `document/asset` 地址。MCP 的树操作是 `operate` 类，与其他改工作区的动作一样审批，记为 agent 的修订；绑定到单份文稿的令牌不能使用。
+读取需要 reader，树操作需要 editor；文稿按 ID 指定。`tree/events` 在树或回收站变化后推送：树操作之后立即，其他改动（保存、撤消、工作区外编辑）在文件事件后约 40 毫秒；Studio 经共享 socket 的 `tree` 主题订阅它。`embed/source` 的 `assets` 是相对工作区路由的 `document/asset` 地址。MCP 的树操作是 `operate` 类，与其他改工作区的动作一样审批，记为 agent 的修订；绑定到单份文稿的令牌不能使用。
 
 树操作（`packages/workspace/src/node/tree-operations.ts`）都是原子的：在涉及文稿的锁与历史锁之下改文件，记一条修订，涉及的每份文稿的历史中都有它（回答的 `revisions` 逐份列出），可以撤消；任何一步失败都还原全部文件，不留修订。文件夹只在回收站进出时移动，移动与改名不动文件夹。
 

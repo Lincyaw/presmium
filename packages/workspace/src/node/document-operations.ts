@@ -21,7 +21,8 @@ export interface DocumentsChange {
 }
 
 export function documentsDiff(before: string[], after: string[]): DocumentsChange {
-  return { removed: before.filter(dir => !after.includes(dir)), added: after.filter(dir => !before.includes(dir)) }
+  const was = new Set(before), now = new Set(after)
+  return { removed: before.filter(dir => !now.has(dir)), added: after.filter(dir => !was.has(dir)) }
 }
 
 export interface DocumentOperationsOptions {

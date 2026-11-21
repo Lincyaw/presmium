@@ -40,16 +40,16 @@ function read(file: string): PresmiumDocument | undefined {
 
 /** The documents of the workspace at `root` by ID, from one scan; trashed documents are found in `.trash/<id>/`. */
 export function workspaceLinks(root: string): DocumentLinks {
-  const { tree } = workspaceDocuments(root)
+  let scanned: ReturnType<typeof workspaceDocuments> | undefined
   const found = new Map<DocumentId, LinkedDocument | undefined>()
   return {
     resolve(id) {
       if (found.has(id)) return found.get(id)
-      const node = tree.byId.get(id)
+      const node = (scanned ??= workspaceDocuments(root)).tree.byId.get(id)
       const trashed = node ? undefined : join(root, TRASH_DIR, id, DOCUMENT_ENTRY)
       const entry = node ? join(root, node.path) : trashed && existsSync(trashed) ? trashed : undefined
       const document = entry && read(entry)
-      const linked = entry && document && document.id === id ? { entry, deckDir: dirname(entry), document: effectiveDocumentIn(root, entry, document), trashed: !node } : undefined
+      const linked = entry && document && document.id === id ? { entry, deckDir: dirname(entry), document: effectiveDocumentIn(root, entry, document, scanned), trashed: !node } : undefined
       found.set(id, linked)
       return linked
     },

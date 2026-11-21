@@ -30,6 +30,7 @@ import { createSourceReader, findWorkspaceRoot } from './workspace.ts'
 import { operatorDir, operatorPlugins, WORKSPACE_CONFIG, workspaceSettings } from './workspace-settings.ts'
 import { effectiveDocumentIn } from './document-tree.ts'
 import { embeddedPlugins, workspaceLinks } from './document-links.ts'
+import type { DocumentLinks } from './document-links.ts'
 import type { OperatorSettings } from './workspace-settings.ts'
 
 export { DECK_ENTRY }
@@ -169,6 +170,8 @@ interface CompileRun {
   document: PresmiumDocument
   stored: PresmiumDocument
   rawSource: string
+  /** The workspace's other documents, for references and synced blocks; scanned only when one is resolved. */
+  links: DocumentLinks
 }
 
 interface PassResults {
@@ -302,7 +305,8 @@ export class Compiler {
     const listed = stringList(headmatter.plugins)
     // Synced blocks can show components whose plugins only their source documents name: those plugins are loaded for
     // this compile too (and listed in the snapshot's plugins), never written into the document.
-    const needs = embeddedPlugins(document, workspaceLinks(existsSync(join(workspaceRoot, WORKSPACE_CONFIG)) ? workspaceRoot : this.deckDir))
+    const links = workspaceLinks(existsSync(join(workspaceRoot, WORKSPACE_CONFIG)) ? workspaceRoot : this.deckDir)
+    const needs = embeddedPlugins(document, links)
     const own = listedPlugins(listed)
     const borrowed = new Set(listedPlugins(needs.packages).filter(name => !own.includes(name)))
     const loaded = await this.#loadPlugins([...own, ...borrowed], workspace)
@@ -336,7 +340,7 @@ export class Compiler {
     }
     const execute = toExecuteConfig(headmatter.execute, report, at)
     checkSecrets(headmatter, report, at)
-    return { workspace, headmatter, lang, plugins, configOf, service, execute, inputs, findings, report, at, signal: options.signal, document, stored, rawSource: read }
+    return { workspace, headmatter, lang, plugins, configOf, service, execute, inputs, findings, report, at, signal: options.signal, document, stored, rawSource: read, links }
   }
 
   /** Collects the plugins' anchor resolvers, executors, environment providers and components. */
@@ -372,8 +376,7 @@ export class Compiler {
 
   /** Validated JSON is the sole runtime source; compiler output remains a derived snapshot. */
   async #compileSections(run: CompileRun, _contributions: Contributions): Promise<{ sections: IRSection[], marks: AudienceMark[], sourceFiles: string[], sourceFingerprints: Record<string, string> }> {
-    const root = existsSync(join(run.workspace.root, WORKSPACE_CONFIG)) ? run.workspace.root : this.deckDir
-    const sections = lowerDocument(run.document, this.entry, this.deckDir, run.report, (...files) => run.inputs.watch(...files), run.stored, workspaceLinks(root))
+    const sections = lowerDocument(run.document, this.entry, this.deckDir, run.report, (...files) => run.inputs.watch(...files), run.stored, run.links)
     for (const id of productionAssetIds(run.document.production, run.document.sectionOrder.map(id => ({ id, stepIds: run.document.sections[id]!.stepOrder })))) {
       const asset = run.document.assets[id], file = asset && productionAssetFile(this.deckDir, asset.location)
       if (file) run.inputs.watch(file)

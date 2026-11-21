@@ -100,8 +100,6 @@ interface AuthoringServices extends DocumentVoiceServices { audio?: ProductionAu
 interface NodeServiceLoad { key: string, promise: Promise<AuthoringServices>, controller: AbortController }
 
 const DISK_LOOK_MS = 1000
-/** How often the document tree is compared with the files, for `tree/events` and reference titles. */
-const TREE_LOOK_MS = 2000
 
 function makeStateDir(root: string, env: NodeJS.ProcessEnv): string {
   const dir = serveStateDir(root, env)
@@ -171,6 +169,9 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const locks = new DocumentLocks()
   const activity = createHostActivity()
   const writer = localWriter(config)
+  // The document tree's index, built before anything lists the documents: the compiler's scans in this process read it.
+  const documentIndex = new DocumentIndex(config)
+  await documentIndex.start()
   const editor = new SourceEditor({ config, writer, locks, beforeWrite: (paths, historyLocked) => historyLocked ? captureLocalBaseline(historyGit, paths) : historyGit.exclusive(() => captureLocalBaseline(historyGit, paths)) })
   const check = options.check ?? (compilation => compilation.check())
   const launcherToken = env.PRESMIUM_SERVICE_TOKEN || randomBytes(32).toString('hex')
@@ -527,22 +528,29 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
       hostUpgrade: hostUpgradeRoute(locks, jobs, () => !transcriptions?.busy() && !voiceAuthoring?.busy() && !audioAuthoring?.busy() && !imageAuthoring?.busy() && activity.quiesce(), version => options.onUpgrade?.(version)),
       ...launcherToken ? { launcherToken } : {},
   }
-  const documentIndex = new DocumentIndex(config)
-  const treeOperations = new TreeOperations({ config, index: documentIndex, writer, locks, revisions: history?.revisions, changed: documentsChanged, warn: message => log.warn(message) })
-  treeService = {
-    tree: () => documentIndex.tree(),
-    apply: (operation, member, origin) => treeOperations.apply(operation, member, origin),
-    links: id => documentIndex.links(id),
-    search: (query, limit) => documentIndex.search(query, limit),
-    preview: (id, target) => documentIndex.preview(id, target),
-    embedSource: (document, block) => documentIndex.embedSource(document, block),
+  // A move or rename changes titles and places in the site's list without adding or removing a document.
+  const placed = (dirs: string[]) => {
+    const { documents } = documentIndex.scan()
+    const byDir = new Map([...documents.values()].map(entry => [entry.dir, entry]))
+    for (const dir of dirs) {
+      const known = spec.documents.find(document => document.dir === dir), entry = byDir.get(dir)
+      if (!known || !entry) continue
+      known.title = entry.title
+      const parent = entry.placement.parent === null ? undefined : documents.get(entry.placement.parent)?.dir
+      if (parent === undefined) delete known.parent
+      else known.parent = parent
+    }
   }
-  // External edits, history and saves reach the tree's subscribers; titles that changed reach the references to them.
-  const treeLook = setInterval(() => {
-    try { documentIndex.check() } catch (error) { log.warn(`the document tree could not be read: ${errorMessage(error)}`) }
-    void treeOperations.refreshFallbacks()
-  }, TREE_LOOK_MS)
-  treeLook.unref()
+  const treeOperations = new TreeOperations({ config, index: documentIndex, writer, locks, revisions: history?.revisions, changed: documentsChanged, placed, warn: message => log.warn(message) })
+  const read = async <T>(answer: () => T) => { await documentIndex.ready(); return answer() }
+  treeService = {
+    tree: () => read(() => documentIndex.tree()),
+    apply: (operation, member, origin) => treeOperations.apply(operation, member, origin),
+    links: id => read(() => documentIndex.links(id)),
+    search: (query, limit) => read(() => documentIndex.search(query, limit)),
+    preview: (id, target) => read(() => documentIndex.preview(id, target)),
+    embedSource: async (document, block) => { await documentIndex.ready(); return documentIndex.embedSource(document, block) },
+  }
   const routeOptionsWithTree = { ...routeOptions, index: documentIndex, treeOperations }
   workspaceRoutesOwner = workspaceRoutes(routeOptionsWithTree)
   routesPlugin = { id: WORKSPACE_ID, plugin: workspaceRoutesPlugin(routeOptionsWithTree, workspaceRoutesOwner.routes), config: {} }
@@ -556,7 +564,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const closeHost = (): Promise<void> => hostClosing ??= Promise.resolve().then(async () => {
     // Stop advertising before releasing any authoring resource; contenders keep waiting for the lease.
     removeServiceState(stateFile)
-    clearInterval(treeLook)
+    treeOperations.close()
     documentIndex.close()
     const results = await Promise.allSettled([
       () => running.close(),

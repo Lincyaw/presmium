@@ -1,6 +1,6 @@
-import { existsSync, readFileSync, realpathSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { effectiveDocumentIn, inheritedSettingsIn, WORKSPACE_CONFIG, workspaceDefaults, workspaceDocuments } from '@lincyaw/compiler'
+import { effectiveDocumentIn, providedDocuments, inheritedSettingsIn, WORKSPACE_CONFIG, workspaceDefaults, workspaceDocuments, workspaceSettings } from '@lincyaw/compiler'
 import type { OperatorSettings } from '@lincyaw/compiler'
 import { APPROVAL_KINDS, DOCUMENT_ENTRY, errorMessage, isRecord } from '@lincyaw/kernel'
 import type { ApprovalKind, DocumentDefaults, DocumentSummary, EffectiveDocument, PresmiumDocument } from '@lincyaw/kernel'
@@ -110,10 +110,22 @@ function effectiveMetadata(config: WorkspaceConfig, entry: string, parsed: unkno
   return effectiveDocumentIn(config.root, join(config.root, entry), parsed as unknown as PresmiumDocument).metadata as unknown as Record<string, unknown>
 }
 
+/** What a summary needs of a document file (not its pages or blocks), kept until the file changes. */
+const heads = new Map<string, { mtimeMs: number, size: number, value: unknown }>()
+function documentHead(file: string): unknown {
+  const stat = statSync(file)
+  const known = heads.get(file)
+  if (known && known.mtimeMs === stat.mtimeMs && known.size === stat.size) return known.value
+  const parsed: unknown = JSON.parse(readFileSync(file, 'utf8'))
+  const value = isRecord(parsed) ? { id: parsed.id, schemaVersion: parsed.schemaVersion, placement: parsed.placement, metadata: parsed.metadata, production: parsed.production } : parsed
+  heads.set(file, { mtimeMs: stat.mtimeMs, size: stat.size, value })
+  return value
+}
+
 export function readDocumentSummary(config: WorkspaceConfig, { dir, entry }: DocumentEntry): FoundDocument {
   let headmatter: Record<string, unknown> = {}
   try {
-    headmatter = effectiveMetadata(config, entry, JSON.parse(readFileSync(join(config.root, entry), 'utf8')))
+    headmatter = effectiveMetadata(config, entry, documentHead(join(config.root, entry)))
   } catch {
   }
   const tags = strings(headmatter.tags)
@@ -128,11 +140,50 @@ export function readDocumentSummary(config: WorkspaceConfig, { dir, entry }: Doc
   }
 }
 
+const listed = new WeakMap<WorkspaceConfig, { generation: number, settings: unknown, documents: FoundDocument[] }>()
+
+/**
+ * The documents with their summaries, in tree order. Where the workspace service's index keeps the documents, the list
+ * is reused until one of them changes; otherwise each document file is looked at (and read only when it changed).
+ */
 export function listDocuments(config: WorkspaceConfig): FoundDocument[] {
+  const generation = config.singleDeck ? undefined : providedDocuments(config.root)?.generation
+  const settings = workspaceSettings(config.root)
+  const known = listed.get(config)
+  if (generation !== undefined && known?.generation === generation && known.settings === settings) return known.documents.map(document => ({ ...document }))
+  const documents = summarize(config)
+  if (generation !== undefined) listed.set(config, { generation, settings, documents })
+  return documents.map(document => ({ ...document }))
+}
+
+/** Each document's summary with the stamps of its file and its ancestors' files it was made from. */
+const summaries = new WeakMap<WorkspaceConfig, { settings: unknown, entries: Map<string, { key: string, summary: FoundDocument }> }>()
+
+function summarize(config: WorkspaceConfig): FoundDocument[] {
   const places = documentPlaces(config)
   const dirs = new Map([...places].map(([dir, place]) => [place.id, dir]))
+  // With an index in this process, a summary is made again only when its file or an ancestor's file changed.
+  const provided = config.singleDeck ? undefined : providedDocuments(config.root)
+  const settings = workspaceSettings(config.root)
+  const cache = summaries.get(config)
+  const known = cache?.settings === settings ? cache.entries : new Map<string, { key: string, summary: FoundDocument }>()
+  summaries.set(config, { settings, entries: known })
+  const keyOf = (entry: DocumentEntry): string | undefined => {
+    if (!provided) return undefined
+    const stamps: string[] = [String(provided.stamps.get(entry.entry))]
+    for (let at = places.get(entry.dir)?.parent ?? null, hops = 0; at !== null && hops < 64; hops++) {
+      const dir = dirs.get(at)
+      if (dir === undefined) break
+      stamps.push(String(provided.stamps.get(dir ? `${dir}/${DOCUMENT_ENTRY}` : DOCUMENT_ENTRY)))
+      at = places.get(dir)?.parent ?? null
+    }
+    return stamps.join('|')
+  }
   return listDocumentEntries(config).map((entry) => {
-    const found = readDocumentSummary(config, entry), parent = places.get(entry.dir)?.parent
+    const key = keyOf(entry), cached = known.get(entry.entry)
+    const found = key !== undefined && cached?.key === key ? cached.summary : readDocumentSummary(config, entry)
+    if (key !== undefined) known.set(entry.entry, { key, summary: found })
+    const parent = places.get(entry.dir)?.parent
     const parentDir = parent === null || parent === undefined ? undefined : dirs.get(parent)
     return parentDir === undefined ? found : { ...found, parentDir }
   })

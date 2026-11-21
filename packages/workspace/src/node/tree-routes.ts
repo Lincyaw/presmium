@@ -49,6 +49,8 @@ export function treeRoutes(index: DocumentIndex, operations: TreeOperations | un
     role: 'reader',
     handle: request => catchRequestErrors(async () => {
       if (request.method !== 'GET') throw new RequestError(405, 'GET')
+      // What file events reported is read first; everything else is answered from memory.
+      await index.ready()
       return jsonResponse(await handle(request))
     }),
   })

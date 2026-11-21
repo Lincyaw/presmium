@@ -82,7 +82,7 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 
 ### 2.5 富文本
 
-`RichTextNode` 是段落、标题、列表、引用、代码、公式、表格与扩展，实际编辑单元（段落、列表项、表格行与单元格）有稳定 ID；行内 `InlineNode` 是带 marks 的文字、链接、公式、换行、引用与扩展。引用 `{ type: 'reference', target: { document, section?, block? }, label?, fallback }` 按 ID 指向一份文稿、它的一页或一个块（`target.document` 可以是本文稿）；显示 `label`，没有时显示目标当前的标题，目标不存在时显示 `fallback`（最近一次知道的标题）。同一文稿内找不到的页面或块是警告 `reference.missing`。块的标题是它的第一段文字，没有时是图片的替代文字、代码的标题、组件的 `title` 或 `alt` 参数、容器的标题。工作区在被引用的标题变化后把引用处的 `fallback` 改成当前标题，每份文稿一条自动修订（作者 Presmium，提交带 `Presmium-Automatic: reference-titles`）；连续两次查看（约两秒一次）标题都没有再变才写，输入标题时不会逐字记录。编译见 5.5 节。不保存 Markdown 字符串，不持久化编辑器私有状态。表格按逻辑网格校验 `rowspan`、`colspan`，单元格不越界、不重叠。
+`RichTextNode` 是段落、标题、列表、引用、代码、公式、表格与扩展，实际编辑单元（段落、列表项、表格行与单元格）有稳定 ID；行内 `InlineNode` 是带 marks 的文字、链接、公式、换行、引用与扩展。引用 `{ type: 'reference', target: { document, section?, block? }, label?, fallback }` 按 ID 指向一份文稿、它的一页或一个块（`target.document` 可以是本文稿）；显示 `label`，没有时显示目标当前的标题，目标不存在时显示 `fallback`（最近一次知道的标题）。同一文稿内找不到的页面或块是警告 `reference.missing`。块的标题是它的第一段文字，没有时是图片的替代文字、代码的标题、组件的 `title` 或 `alt` 参数、容器的标题。工作区在被引用的标题变化后把引用处的 `fallback` 改成当前标题，每份文稿一条自动修订（作者 Presmium，提交带 `Presmium-Automatic: reference-titles`）；标题停止变化约两秒后才写，只读取引用了变化标题的文稿，输入标题时不会逐字记录。编译见 5.5 节。不保存 Markdown 字符串，不持久化编辑器私有状态。表格按逻辑网格校验 `rowspan`、`colspan`，单元格不越界、不重叠。
 
 ### 2.6 步骤
 

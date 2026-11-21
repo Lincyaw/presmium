@@ -4,11 +4,11 @@ import type { Member } from './server.ts'
 
 /** The workspace's document tree as the workspace service offers it to MCP and its other in-process clients. */
 export interface DocumentTreeService {
-  tree(): DocumentTree
+  tree(): Promise<DocumentTree>
   /** Applies one tree operation atomically; `origin` marks the revisions as the author's or an agent's. */
   apply(operation: TreeOperation, member: Member, origin: 'editor' | 'agent'): Promise<TreeOperationResult>
-  links(id: DocumentId): DocumentLinks
-  search(query: string, limit: number): DocumentSearchHit[]
-  preview(id: DocumentId, target: { section?: SectionId, block?: BlockId }): DocumentPreview
-  embedSource(document: DocumentId, block: BlockId): EmbedSource
+  links(id: DocumentId): Promise<DocumentLinks>
+  search(query: string, limit: number): Promise<DocumentSearchHit[]>
+  preview(id: DocumentId, target: { section?: SectionId, block?: BlockId }): Promise<DocumentPreview>
+  embedSource(document: DocumentId, block: BlockId): Promise<EmbedSource>
 }

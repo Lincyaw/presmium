@@ -25,6 +25,8 @@ export interface WorkspaceDocuments {
   tree: PlacementTree
 }
 
+const real = (path: string) => { try { return realpathSync(path) } catch { return resolve(path) } }
+
 interface Read { mtimeMs: number, size: number, value: unknown }
 const reads = new Map<string, Read>()
 
@@ -39,8 +41,36 @@ function readEntry(file: string): unknown {
   return value
 }
 
+/** The documents of a workspace as a process that keeps them indexed knows them; `generation` changes with any of them. */
+export interface ProvidedDocuments {
+  generation: number
+  documents: ScannedDocument[]
+  /** A stamp of each entry file (by path) that changes whenever the file does. */
+  stamps: ReadonlyMap<string, string>
+}
+const providers = new Map<string, () => ProvidedDocuments | undefined>()
+const provided = new Map<string, { generation: number, result: WorkspaceDocuments, settings: unknown }>()
+
+/**
+ * Lets the scans of the workspace at `root` in this process read the documents from `provide` instead of walking and
+ * reading the workspace (the workspace service's document index); `provide` answers undefined while it is not current.
+ * Returns the function that stops it.
+ */
+export function provideDocumentEntries(root: string, provide: () => ProvidedDocuments | undefined): () => void {
+  const key = real(root)
+  providers.set(key, provide)
+  return () => { if (providers.get(key) === provide) { providers.delete(key); provided.delete(key) } }
+}
+
+/** The provided documents of the workspace at `root`, when an index in this process keeps them current. */
+export function providedDocuments(root: string): ProvidedDocuments | undefined {
+  return providers.size ? providers.get(real(root))?.() : undefined
+}
+
 /** Every workspace-relative entry file under `root`, in path order. */
 export function discoverDocumentEntries(root: string): string[] {
+  const known = providers.size ? providers.get(real(root))?.() : undefined
+  if (known) return known.documents.map(document => document.path)
   const found: string[] = []
   // A folder reached twice through symbolic links holds its documents once, at the first path.
   const seen = new Set<string>()
@@ -76,11 +106,18 @@ function scan(root: string, path: string): ScannedDocument {
 /** Every document of the workspace at `root` and the tree their placements make. Cheap to repeat: files are cached until they change. */
 export function workspaceDocuments(root: string): WorkspaceDocuments {
   const settings = workspaceSettings(root)
+  const key = providers.size ? real(root) : ''
+  const known = key ? providers.get(key)?.() : undefined
+  if (known) {
+    const memo = provided.get(key)
+    if (memo && memo.generation === known.generation && memo.settings === settings) return memo.result
+    const result = { root, defaults: settings.defaults, needsMigration: Boolean(settings.needsMigration), documents: known.documents, tree: documentTree(known.documents) }
+    provided.set(key, { generation: known.generation, result, settings })
+    return result
+  }
   const documents = discoverDocumentEntries(root).map(path => scan(root, path))
   return { root, defaults: settings.defaults, needsMigration: Boolean(settings.needsMigration), documents, tree: documentTree(documents) }
 }
-
-const real = (path: string) => { try { return realpathSync(path) } catch { return resolve(path) } }
 
 /** The workspace root for a document: the nearest folder above it with a workspace file, otherwise the document's own folder. */
 export async function documentWorkspaceRoot(entry: string): Promise<string> {
@@ -95,12 +132,12 @@ function treeEntry(entry: string, document: PresmiumDocument): string {
 }
 
 /** The document's ancestors (root first, parent last) and the workspace `defaults` at the root of its settings. */
-function inheritance(root: string, entry: string, document: PresmiumDocument): { ancestors: PresmiumDocument[], defaults: DocumentDefaults } {
+function inheritance(root: string, entry: string, document: PresmiumDocument, scanned?: WorkspaceDocuments): { ancestors: PresmiumDocument[], defaults: DocumentDefaults } {
   const { defaults } = workspaceSettings(root)
   const own = treeEntry(entry, document)
   const placement = own === entry ? document.placement : (() => { const value = existsSync(own) ? readEntry(own) : undefined; return isRecord(value) ? placementOf(value) : document.placement })()
   if (placement.parent === null) return { ancestors: [], defaults }
-  const { tree } = workspaceDocuments(root)
+  const { tree } = scanned ?? workspaceDocuments(root)
   const rel = relative(real(root), real(own)).split(sep).join('/')
   const id = tree.byId.get(document.id)?.path === rel ? document.id : [...tree.byId.values()].find(node => node.path === rel)?.id
   const ancestors = (id === undefined ? [] : tree.ancestors(id)).flatMap((node) => {
@@ -113,10 +150,11 @@ function inheritance(root: string, entry: string, document: PresmiumDocument): {
 /**
  * The document with its inherited settings: workspace `defaults` → root ancestor → … → parent → itself. `entry` is
  * the document's file, `root` the workspace it belongs to; a document outside every workspace has no ancestors.
- * Ancestors are found by ID through the workspace scan; ancestors that cannot be read are skipped.
+ * Ancestors are found by ID through the workspace scan (`scanned`, when the caller has one); ancestors that cannot
+ * be read are skipped.
  */
-export function effectiveDocumentIn(root: string, entry: string, document: PresmiumDocument): EffectiveDocument {
-  const { ancestors, defaults } = inheritance(root, entry, document)
+export function effectiveDocumentIn(root: string, entry: string, document: PresmiumDocument, scanned?: WorkspaceDocuments): EffectiveDocument {
+  const { ancestors, defaults } = inheritance(root, entry, document, scanned)
   return withEffectiveSettings(document, ancestors, defaults)
 }
 
