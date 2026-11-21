@@ -2,12 +2,13 @@ import { createHash } from 'node:crypto'
 import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, readdirSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 import { WORKSPACE_CONFIG } from '@lincyaw/compiler'
-import { DOCUMENT_ENTRY, SOURCE_MAX_BYTES, SOURCE_MAX_FILES, validateDocument } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, SOURCE_MAX_BYTES, SOURCE_MAX_FILES } from '@lincyaw/kernel'
 import type { ConflictAnswer, DocumentFileChange, FilesAnswer, Member, Revision, SavedAnswer, SourceAnswer, SourceFile, SourceTransactionAnswer, SourceTransactionChange, DocumentDefaults, EffectiveDocument, PresmiumDocument } from '@lincyaw/kernel'
 import { isWithin } from '../domain/paths.ts'
 import { effectiveContent, inheritedContent, listDocumentEntries, readDocumentSummary } from './config.ts'
 import type { DocumentEntry, WorkspaceConfig } from './config.ts'
 import { RequestError } from './errors.ts'
+import { checkDocumentText } from './document-check.ts'
 import type { DocumentLocks } from './locks.ts'
 import { documentDirOf, FilesError, writeChanges } from './writer.ts'
 import type { DocumentWriter } from './writer.ts'
@@ -24,10 +25,8 @@ function validateSourceText(path: string, content: unknown): asserts content is 
 
 export function validateDocumentSource(path: string, content: string, before?: Uint8Array): void {
   if (path !== DOCUMENT_ENTRY && !path.endsWith(`/${DOCUMENT_ENTRY}`)) return
-  let value: unknown
-  try { value = JSON.parse(content.replace(/^\uFEFF/, '')) }
-  catch { throw new RequestError(422, 'document-invalid', { issues: [{ path: '', code: 'json-syntax', message: 'The document is not valid JSON.', severity: 'error' }] }) }
-  const checked = validateDocument(value)
+  const checked = checkDocumentText(content)
+  if (checked.syntax) throw new RequestError(422, 'document-invalid', { issues: [{ path: '', code: 'json-syntax', message: 'The document is not valid JSON.', severity: 'error' }] })
   if (!checked.document || checked.issues.some(issue => issue.severity === 'error')) throw new RequestError(422, 'document-invalid', { issues: checked.issues })
   if (before) {
     let previous: unknown

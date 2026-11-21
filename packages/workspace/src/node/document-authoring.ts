@@ -1,9 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto'
+import { setImmediate as nextTurn } from 'node:timers/promises'
 import { isRecord } from '@lincyaw/kernel'
 import { applyDocumentOperations, AUTHORING_API_VERSION, documentSettings, createDocumentPage, DOCUMENT_ENTRY, DOCUMENT_OPERATION_TYPES, DOCUMENT_READ_MAX_REQUEST_CHARS, DOCUMENT_READ_MAX_RESPONSE_CHARS, DOCUMENT_SCHEMA_VERSION, documentOutline, documentPart, DocumentReadError, duplicateDocumentPage, fnv1a64, hasRole, moveDocumentPage, pageDeletionImpact, removeDocumentPage, renameDocumentPage, validateDocument } from '@lincyaw/kernel'
 import { validateDocumentChange, validateDocumentPageChange, validateDocumentPageChangeApply, validateDocumentPageDuplication, validateDocumentPageDuplicationApply, validateDocumentOutlineQuery, validateDocumentPartQuery } from '@lincyaw/kernel/node'
 import type { AppliedDocumentChange, ApplyDocumentChange, CanonicalSource, DocumentAnswer, DocumentAuthoring, DocumentChange, DocumentChangeAnswer, DocumentChangePlan, DocumentIssue, DocumentPageAction, DocumentPageChangePlan, DocumentPageDuplicationPlan, Member, RequestContext, SourceTransactionChange, PresmiumDocument } from '@lincyaw/kernel'
 import { RequestError } from './errors.ts'
+import { checkDocumentText, rememberCheckedText } from './document-check.ts'
 import { applyDocumentAuthoringAction, DOCUMENT_ACTION_MAX_REQUEST_CHARS, DOCUMENT_ACTION_MAX_RESPONSE_CHARS, DOCUMENT_AUTHORING_ACTION_TYPES, DOCUMENT_PARAMETER_MAX_CHANGES, DOCUMENT_PARAMETER_MAX_PATH_DEPTH, DocumentCommentError, DocumentComponentError, DocumentCaptionTimingError, ProductionAudioRefusal } from '@lincyaw/kernel'
 import { validateDocumentAuthoringAction, validateDocumentAuthoringActionReference, validateDocumentAuthoringActionImpact } from '@lincyaw/kernel/node'
 import type { AppliedDocumentAuthoringAction, DocumentAuthoringActionReference, DocumentPageChangeReference, DocumentPageDuplicationReference, DocumentAuthoringActionPlan, DocumentComponentImpactAnswer, DocumentAuthoringAction, ProductionPlan } from '@lincyaw/kernel'
@@ -19,10 +21,9 @@ const keyOf = (document: string, member: Member, id: string) => JSON.stringify([
 const sourceOf = (answer: DocumentAnswer) => ({ documentId: answer.content.id, version: answer.version, fingerprint: answer.fingerprint })
 
 export function decodeAuthoringDocument(content: string): { document?: PresmiumDocument, issues: DocumentIssue[] } {
-  let value: unknown
-  try { value = JSON.parse(content.replace(/^\uFEFF/, '')) }
-  catch { return { issues: [{ path: '', code: 'json-syntax', message: 'The document is not valid JSON.', severity: 'error' }] } }
-  return validateDocument(value)
+  const checked = checkDocumentText(content)
+  if (checked.syntax) return { issues: [{ path: '', code: 'json-syntax', message: 'The document is not valid JSON.', severity: 'error' }] }
+  return checked.document ? { document: checked.document, issues: checked.issues } : { issues: checked.issues }
 }
 
 export function readAuthoringDocument(editor: SourceEditor, ctx: Pick<RequestContext, 'document' | 'member'>) {
@@ -95,6 +96,7 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
     return checked.change
   }
   const filesOf = async (document: string, current: DocumentAnswer, change: DocumentChange): Promise<{ content: PresmiumDocument, issues: DocumentIssue[], changes: SourceTransactionChange[] }> => {
+    await nextTurn()
     if (current.version !== change.baseDocumentVersion) throw new RequestError(409, 'document-version-changed', { version: current.version })
     let candidate: unknown = change.replacement
     if (change.operations) {
@@ -107,6 +109,8 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
     const path = entryOf(document), fileChanges = change.fileChanges ?? []
     if (fileChanges.some(file => file.path === path)) throw new RequestError(422, 'document-file-repeated')
     const changes = [{ path, content: `${JSON.stringify(checked.document, null, 2)}\n`, base: current.version }, ...fileChanges]
+    // The text written is the document just validated: its checks are not repeated when it is read back.
+    rememberCheckedText(changes[0]!.content, true, checked.issues)
     if (revisions) {
       const ignored = (await Promise.all(changes.map(async file => await revisions.ignores(file.path) ? file.path : undefined))).filter((path): path is string => Boolean(path))
       if (ignored.length) throw new RequestError(409, 'document-files-ignored', { ignored })
@@ -129,7 +133,11 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
     await editor.planTransaction(editor.scope(document), candidate.changes, member)
   }
   const saveChange = async (document: string, raw: DocumentChange, member: Member, origin: 'editor' | 'agent' = 'editor'): Promise<DocumentChangeAnswer> => {
-    const change = checkedChange(raw), current = await read(document, member)
+    // Validating a large document takes milliseconds; each check gets its own turn of the event loop.
+    const change = checkedChange(raw)
+    await nextTurn()
+    const current = await read(document, member)
+    await nextTurn()
     const signature = signatureOf(change), key = keyOf(document, member, change.id), receipt = replayOf(document, change, member, current)
     if (receipt) return { ...current, changeId: change.id, files: receipt.files, ...receipt.commit ? { commit: receipt.commit } : {} }
     const candidate = await filesOf(document, current, change)
@@ -142,6 +150,7 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
     })
     const version = saved.versions.find(file => file.path === entryOf(document))!.version
     remember(receipts, key, { signature, version, files: saved.versions, ...saved.revision ? { commit: saved.revision } : {} })
+    await nextTurn()
     const verified = await read(document, member)
     if (verified.version !== version || saved.versions.some(file => editor.read(editor.scope(document), file.path, member).version !== file.version)) throw new RequestError(409, 'document-readback-changed', { changeId: change.id, committed: true, version, currentVersion: verified.version })
     return { ...verified, changeId: change.id, files: saved.versions, ...saved.revision ? { commit: saved.revision } : {} }

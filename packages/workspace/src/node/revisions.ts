@@ -258,11 +258,14 @@ export class Revisions implements RevisionService {
     return this.#git.exclusive(async () => this.#applyFrozen(which, which === 'commit' && !captured.encoded ? await this.freezeCommit(captured) : captured, commit, check))
   }
 
+  /** Where the repository keeps its index: fixed for the repository, so asked once. */
+  #indexName?: Promise<string>
+
   async #changeState() {
     const [head, ref, indexName] = await Promise.all([
       this.#git.run(['rev-parse', '--verify', '--quiet', 'HEAD']),
       this.#git.run(['symbolic-ref', '--quiet', 'HEAD']),
-      this.#git.output(['rev-parse', '--git-path', 'index']),
+      this.#indexName ??= this.#git.output(['rev-parse', '--git-path', 'index']).catch((error: unknown) => { this.#indexName = undefined; throw error }),
     ])
     if (ref.code !== 0 && ref.code !== 1 || head.code !== 0 && !(head.code === 1 && ref.code === 0)) throw new RequestError(409, 'changes-repository-unavailable')
     const indexPath = resolve(this.#git.root, indexName.trim()), index = existsSync(indexPath) ? readFileSync(indexPath) : undefined
