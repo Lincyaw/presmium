@@ -24,7 +24,7 @@ export { DOCUMENT_JSON_SCHEMA, DOCUMENT_UPGRADE_CODE, validateDocument } from '.
 export { documentSettings, effectiveSettings, withEffectiveSettings, withInheritedSettings } from './document-settings.ts'
 export type { EffectiveDocument } from './document-settings.ts'
 export { documentTree, ranksAfter, ranksBetween } from './document-tree.ts'
-export type { DocumentTree, DocumentTreeNode, DocumentTreeProblem } from './document-tree.ts'
+export type { PlacementTree, DocumentTreeNode, DocumentTreeProblem } from './document-tree.ts'
 export { validateDocumentParameters, documentParameterAccess, documentParameterSchemaForAccess } from './parameters.ts'
 export type { DocumentParameterAccess, DocumentParameterIssue, DocumentParameterSchemaReference, DocumentParameterValidation } from './parameters.ts'
 export { docBlocks, irBlocks, nodeMdast } from './blocks.ts'

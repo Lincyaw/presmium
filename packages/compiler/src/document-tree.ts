@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { DOCUMENT_ENTRY, documentTree, effectiveSettings, isRecord, ranksAfter, withEffectiveSettings } from '@lincyaw/kernel'
-import type { DocumentDefaults, DocumentPlacement, DocumentTree, DocumentTreeNode, EffectiveDocument, PresmiumDocument } from '@lincyaw/kernel'
+import type { DocumentDefaults, DocumentPlacement, PlacementTree, DocumentTreeNode, EffectiveDocument, PresmiumDocument } from '@lincyaw/kernel'
 import { findWorkspaceRoot } from './workspace.ts'
 import { WORKSPACE_CONFIG, workspaceSettings } from './workspace-settings.ts'
 
@@ -22,7 +22,7 @@ export interface WorkspaceDocuments {
   /** The workspace file still lists `documents:`. */
   needsMigration: boolean
   documents: ScannedDocument[]
-  tree: DocumentTree
+  tree: PlacementTree
 }
 
 interface Read { mtimeMs: number, size: number, value: unknown }

@@ -25,7 +25,7 @@ export type DocumentTreeProblem =
   | { code: 'tree.cycle', id: DocumentId, path: string }
 
 /** The workspace tree derived from every document's placement; nothing of it is stored. */
-export interface DocumentTree {
+export interface PlacementTree {
   /** Depth-first, siblings by rank then ID; the order documents are listed in. */
   order: (DocumentTreeNode & { depth: number, parent: DocumentId | null })[]
   byId: Map<DocumentId, DocumentTreeNode>
@@ -42,7 +42,7 @@ const byRank = (a: DocumentTreeNode, b: DocumentTreeNode) => a.placement.rank < 
  * document of a cycle is shown at the top level, equal ranks are ordered by ID, and of two documents with one ID the
  * first by path is kept.
  */
-export function documentTree(documents: readonly DocumentTreeNode[]): DocumentTree {
+export function documentTree(documents: readonly DocumentTreeNode[]): PlacementTree {
   const problems: DocumentTreeProblem[] = []
   const byId = new Map<DocumentId, DocumentTreeNode>()
   for (const node of [...documents].sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0)) {
@@ -68,7 +68,7 @@ export function documentTree(documents: readonly DocumentTreeNode[]): DocumentTr
     const key = parent.get(node.id) ?? null
     children.set(key, [...children.get(key) ?? [], node.id])
   }
-  const order: DocumentTree['order'] = []
+  const order: PlacementTree['order'] = []
   const walk = (key: DocumentId | null, depth: number) => {
     for (const id of children.get(key) ?? []) { order.push({ ...byId.get(id)!, depth, parent: key }); walk(id, depth + 1) }
   }
