@@ -4,6 +4,7 @@
 @import './step-production.css';
 @import './component-properties.css';
 @import './caption-timing.css';
+@import './knowledge.css';
 
 .pmw-preview__frames[data-pending-snapshot]:not([data-presentation-gated]) { visibility: hidden; }
 

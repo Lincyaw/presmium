@@ -43,6 +43,7 @@ import { ProductionPlayback } from './production-playback.ts'
 import type { ProductionBinding, ProductionPlan, ProductionPlaybackCommand, ProductionPlaybackState } from '@lincyaw/kernel'
 import { workspaceClient, WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
+import { DocumentTreeActions } from './document-tree.ts'
 import type { AuthoringClientAction, AuthoringClientActionType, AuthoringClientActionResult, AuthoringClientSnapshot } from '@lincyaw/kernel'
 import { PRODUCTION_PLAYBACK_RATES } from '@lincyaw/kernel'
 
@@ -116,6 +117,8 @@ export class Workbench {
   readonly production: DocumentProduction
   #removedDocumentPosition?: { identity: string, documentId: string, sectionId: string, stepId?: string, version: string, fingerprint: string, scope: number, generation: number, token: string }
   readonly editing: DocumentEditing
+  readonly tree: DocumentTreeActions
+  #pendingPlace?: { document: string | undefined, section: string, block?: string }
   #state: WorkbenchState
   readonly #listeners = new Set<Listener>()
   readonly #clientControls = new Set<AuthoringClientControls>()
@@ -226,6 +229,7 @@ export class Workbench {
           ...selected ? { stepId: selected } : {}, version: previous.version, fingerprint: previous.fingerprint, scope, generation, token: this.#state.documentPositionToken }
       }
       this.editing.finishOpening()
+      this.#applyPendingPlace()
       // Native insertion can select a page before the source actor receives that new entity.
       if (position && previous && previous.identity === authoring.identity && !previous.content?.sections[position.section]
         && authoring.content?.sections[position.section]) this.editing.saveReturnPoint()
@@ -243,6 +247,7 @@ export class Workbench {
       flush: signal => this.flushPendingEdits(signal), goToSection: section => this.goToSection(section),
       rememberStep: (directory, section, step) => { this.#selectedSteps.set(`${directory}\0${section}`, step) },
       canAskAnimation: () => this.#drafters.size > 0, askAnimation: place => this.draftAnimation(place) })
+    this.tree = new DocumentTreeActions({ client: this.client, store, open: dir => this.openDocument(dir), reveal: (section, block) => this.#revealInDocument(section, block) })
     this.#diagnostics = new DocumentDiagnostics(this.client, store)
     this.#jobs = new DocumentJobs(this.client, store)
     this.#voiceover = new VoiceoverJobs(this.client, store, (job, signal) => this.#refreshVoiceover(job, signal))
@@ -436,6 +441,8 @@ export class Workbench {
   }
 
   async loadDocuments(): Promise<void> {
+    // With tree events the tree is read once and then on each change; without them, with the document list.
+    if (!this.client.subscribeTree || !this.#state.documentTree) void this.tree.load()
     try {
       this.#set({ documents: await this.client.readDocuments(), documentsFailure: undefined, isBundleDisabled: false })
     } catch (error) {
@@ -509,6 +516,7 @@ export class Workbench {
     this.#set({ ...DOCUMENT_RESET, document: dir, previewRenderer: 'web', webView: 'document' })
     this.editing.beginOpening(dir, options.focus, options.fallbackReturnPoint)
     this.#record('document.open')
+    this.tree.visited(this.tree.idOf(dir))
     this.#diagnostics.subscribe(dir)
     // Authoring is ready from source JSON; compilation and preview are independent.
     const [opened] = await Promise.all([this.#documentSession.open(dir, options.expectedIdentity, options.signal), this.#readFocus(dir, options.signal), this.#history.read(dir, options.signal)])
@@ -1380,6 +1388,21 @@ export class Workbench {
       documentNavigation: { section: sectionId, block: blockId, request: randomUUID() } })
   }
 
+  /** Shows a page, or a block on it, of the open document once its content is there (a reference followed from elsewhere). */
+  #revealInDocument(section: string, block?: string): void {
+    this.#pendingPlace = { document: this.#state.document, section, ...block ? { block } : {} }
+    this.#applyPendingPlace()
+  }
+
+  #applyPendingPlace(): void {
+    const place = this.#pendingPlace, content = this.#state.authoring?.content
+    if (!place || place.document !== this.#state.document || !content) return
+    this.#pendingPlace = undefined
+    if (!content.sections[place.section]) return
+    this.#set({ position: { section: place.section, step: 0, trail: [], view: 'document' }, documentPositionFailure: undefined,
+      documentNavigation: { section: place.section, ...place.block && content.blocks[place.block] ? { block: place.block } : {}, request: randomUUID() } })
+  }
+
   observeDocumentSection(section: string): void {
     if (this.#state.webView !== 'document' || !this.#state.authoring?.content?.sections[section]) return
     if (this.#state.documentPositionFailure) this.#set({ documentPositionFailure: undefined })
@@ -1685,6 +1708,7 @@ export class Workbench {
     this.#stopSubscriptions()
     this.#diagnostics.dispose()
     this.#documentSession.dispose()
+    this.tree.dispose()
     this.#commentDrafts.close()
     this.#componentPropertyDrafts.close()
     this.production.dispose()

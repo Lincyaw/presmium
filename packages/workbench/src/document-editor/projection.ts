@@ -52,8 +52,9 @@ function productBlock(blockId: string, context: DocumentProjection, sectionId: s
   context.owners.set(block.id, block.id)
   if (block.type === 'container') return [{ id: block.id, type: 'presmiumContainer', props: { entityId: block.id, layout: block.layout, title: block.properties.title ?? '' }, children: block.children.flatMap(child => productBlock(child, context, sectionId)) }]
   if (block.type === 'image') return [{ id: block.id, type: 'image', props: { url: block.assetId ? document.assets[block.assetId]?.location ?? '' : '', caption: plain(block.caption ?? []), name: block.alt, textAlignment: block.alignment ?? 'left', ...block.width !== undefined ? { previewWidth: block.width } : {} } }]
+  if (block.type === 'embed') return [{ id: block.id, type: 'presmiumEmbed', props: { document: block.source.document, block: block.source.block } }]
   if (block.type === 'code' && block.value !== undefined && !isDiagram(block, context.plugins)) return [{ id: block.id, type: 'codeBlock', props: { language: block.language }, content: block.value }]
-  return [{ id: block.id, type: 'presmiumAtom', props: { entityId: block.id, kind: block.type, label: block.type === 'code' ? block.title ?? block.origin?.anchor ?? block.language : block.type === 'embed' ? block.source.document : document.definitions[block.definitionId]?.kind ?? block.definitionId }, ...block.type === 'component' && block.children ? { children: block.children.flatMap(child => productBlock(child, context, sectionId)) } : {} }]
+  return [{ id: block.id, type: 'presmiumAtom', props: { entityId: block.id, kind: block.type, label: block.type === 'code' ? block.title ?? block.origin?.anchor ?? block.language : document.definitions[block.definitionId]?.kind ?? block.definitionId }, ...block.type === 'component' && block.children ? { children: block.children.flatMap(child => productBlock(child, context, sectionId)) } : {} }]
 }
 
 export function createDocumentProjection(document: PresmiumDocument, plugins: readonly string[] | undefined = document.metadata.plugins): DocumentProjection {
@@ -68,7 +69,7 @@ export function createDocumentProjection(document: PresmiumDocument, plugins: re
 
 function structureOf(blocks: readonly DocumentEditorBlock[], context: DocumentProjection): string {
   const tree = (blocks: readonly DocumentEditorBlock[]): unknown[] => blocks.map(block => [block.id, block.type,
-    block.type === 'presmiumPage' ? block.props.sectionId : block.type === 'presmiumAtom' ? [block.props.entityId, block.props.kind] : undefined, tree(block.children)])
+    block.type === 'presmiumPage' ? block.props.sectionId : block.type === 'presmiumAtom' ? [block.props.entityId, block.props.kind] : block.type === 'presmiumEmbed' ? [block.props.document, block.props.block] : undefined, tree(block.children)])
   return JSON.stringify([tree(blocks), [...context.tables]])
 }
 
@@ -149,7 +150,7 @@ function nativePlain(block: DocumentEditorBlock): string {
 }
 function isEntity(block: DocumentEditorBlock, context: DocumentProjection): boolean {
   if (block.type === 'presmiumAtom') return !block.props.kind.startsWith('rich:')
-  if (block.type === 'presmiumContainer' || block.type === 'image') return true
+  if (block.type === 'presmiumContainer' || block.type === 'image' || block.type === 'presmiumEmbed') return true
   return block.type === 'codeBlock' && context.document.blocks[context.owners.get(block.id) ?? block.id]?.type !== 'text' && !context.rich.has(block.id)
 }
 function nativeChildren(native: readonly DocumentEditorBlock[], context: DocumentProjection, next: PresmiumDocument, usedListIds: Set<string>): string[] {
@@ -200,7 +201,8 @@ function nativeChildren(native: readonly DocumentEditorBlock[], context: Documen
       product = { ...original?.type === 'image' ? structuredClone(original) : {}, id: block.id, type: 'image', ...assetId ? { assetId } : {}, alt: block.props.name, ...caption ? { caption } : {}, width: block.props.previewWidth, alignment: block.props.textAlignment }
       if (!assetId) delete product.assetId
       if (!caption) delete product.caption
-    } else if (block.type === 'codeBlock') product = { ...original?.type === 'code' ? structuredClone(original) : {}, id: block.id, type: 'code', language: block.props.language, value: nativePlain(block) }
+    } else if (block.type === 'presmiumEmbed') product = { ...original?.type === 'embed' ? structuredClone(original) : {}, id: block.id, type: 'embed', source: { document: block.props.document, block: block.props.block } }
+    else if (block.type === 'codeBlock') product = { ...original?.type === 'code' ? structuredClone(original) : {}, id: block.id, type: 'code', language: block.props.language, value: nativePlain(block) }
     else {
       if (!original) throw new Error('document-opaque-reference')
       product = structuredClone(original)

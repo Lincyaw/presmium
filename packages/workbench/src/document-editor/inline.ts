@@ -62,6 +62,7 @@ export function productInlineToNative(nodes: readonly InlineNode[], context: Inl
   return nodes.map(node => {
     if (node.type === 'text' || node.type === 'break') return nativeText(node)
     if (node.type === 'math') return { type: 'presmiumMathInline', props: {}, content: node.value }
+    if (node.type === 'reference') return { type: 'presmiumReference', props: { document: node.target.document, section: node.target.section ?? '', block: node.target.block ?? '', label: node.label ?? '', fallback: node.fallback }, content: undefined }
     if (isDocumentTextLink(node)) {
       return { type: 'link', href: node.href, content: node.children.map(child => nativeText(child as Extract<InlineNode, { type: 'text' | 'break' }>)) }
     }
@@ -86,6 +87,10 @@ export function nativeInlineToProduct(nodes: readonly NativeInline[], context: I
     if (node.type === 'text') return productText(node)
     if (node.type === 'link') return [{ type: 'link', href: node.href, children: node.content.flatMap(productText) } satisfies InlineNode]
     if (node.type === 'presmiumMathInline') return [{ type: 'math', value: node.content } satisfies InlineNode]
+    if (node.type === 'presmiumReference') {
+      const { document, section, block, label, fallback } = node.props
+      return [{ type: 'reference', target: { document, ...section ? { section } : {}, ...block ? { block } : {} }, ...label ? { label } : {}, fallback } satisfies InlineNode]
+    }
     const original = context.opaqueInline.get(node.props.entityId)
     if (!original) throw new Error('document-inline-reference')
     return [structuredClone(original)]

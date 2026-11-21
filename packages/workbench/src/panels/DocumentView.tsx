@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useContainerLayout } from '../container-layout.ts'
 import type { ReactNode, RefObject } from 'react'
-import { PmBadge, PmButton, PmDialog, PmIcon, PmIconButton, PmMenu, PmNotice, PmPanelHeader, PmSkeleton, PmSortableList, PmToolbar, PmToolbarButton } from '../components.tsx'
-import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
+import { PmBadge, PmButton, PmDialog, PmIcon, PmIconButton, PmMenu, PmNotice, PmPanelHeader, PmSkeleton, PmSortableList, PmTabs, PmToolbar, PmToolbarButton } from '../components.tsx'
+import { useMessages, useTreeMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
+import { ReferencesPanel, ReferencesSummary } from './ReferencesPanel.tsx'
 import { failureReason, timeAgo } from '../messages.ts'
 import { SHORTCUTS } from '../shortcuts.ts'
 import { DocumentOutline, DocumentWordCounter } from '../outline.ts'
@@ -18,7 +19,10 @@ import { PageDeleteDialog } from './PageDeleteDialog.tsx'
 import { SourceDocumentPanel } from './SourceDocumentPanel.tsx'
 import { DocumentNarrationPanel } from './DocumentNarrationPanel.tsx'
 
-export type DocumentAside = 'comments' | 'history' | 'export' | 'narration'
+export type DocumentAside = 'outline' | 'references' | 'comments' | 'history' | 'export' | 'narration'
+/** The right pane's tabs: the page outline, the references and the comments. */
+const RAIL_TABS: readonly DocumentAside[] = ['outline', 'references', 'comments']
+const isRail = (aside: DocumentAside | null): aside is 'outline' | 'references' | 'comments' => aside !== null && RAIL_TABS.includes(aside)
 
 const isTyping = (target: EventTarget | null) => target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select, [contenteditable]') !== null)
 
@@ -41,27 +45,23 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
   const presentButton = useRef<HTMLButtonElement>(null)
   const [commentsPortal, setCommentsPortal] = useState<HTMLDivElement | null>(null)
   const t = useMessages()
+  const tt = useTreeMessages()
   const document = useWorkbenchState(state => state.document)
   const sourceIdentity = useWorkbenchState(state => state.authoring?.identity)
   const view = useWorkbenchState(state => state.webView)
   const previousView = useRef({ document, workspace, view, active })
   const currentScope = useRef({ document, active })
   currentScope.current = { document, active }
-  const [navigation, setNavigation] = useState(false)
   const container = useContainerLayout(), { roomy, narrow } = container
   const previousRoomy = useRef<boolean>()
+  // A roomy layout opens with the outline in the right pane; where the pane would cover the page it starts closed.
   useEffect(() => {
     if (!container.measured) return
-    if (!roomy) setNavigation(false)
-    else if (previousRoomy.current === undefined) setNavigation(true)
+    if (!roomy) setAside(current => isRail(current) ? null : current)
+    else if (previousRoomy.current === undefined) setAside(current => current ?? 'outline')
     previousRoomy.current = roomy
   }, [roomy, container.measured])
-  // Where the pane covers the page, another document opens with it closed, so its body is not hidden.
-  const [navigationDocument, setNavigationDocument] = useState(document)
-  if (navigationDocument !== document) {
-    setNavigationDocument(document)
-    if (navigation && !roomy) setNavigation(false)
-  }
+  const navigation = isRail(aside)
   const compilePresentation = async (ready?: () => void, forReading = false, signal?: AbortSignal, deadline?: number): Promise<void> => {
     if (preparing.current || workbench.getState().isPreparingPresentation) return
     preparing.current = true
@@ -153,7 +153,7 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
     transition.current++; exiting.current = undefined
     setWorkspace('document')
     setChangingView(false); setViewFailure(undefined)
-    setAside(null)
+    setAside(current => isRail(current) && roomy ? current : null)
   }, [document])
   useEffect(() => { if (!active) { transition.current++; exiting.current = undefined; setChangingView(false) } }, [active])
   useEffect(() => () => { transition.current++ }, [])
@@ -224,15 +224,24 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
         workbench.setMode('viewing')
         workbench.setWebView('present')
         setWorkspace('presentation')
-      })} onNavigation={() => { setNavigation(shown => !shown); if (!navigation && !roomy) setAside(null) }} onAside={next => { setAside(current => (current === next ? null : next)); if (!roomy) setNavigation(false) }} />}
+      })} onNavigation={() => setAside(current => isRail(current) ? null : 'outline')} onAside={next => setAside(current => (current === next ? null : next))} />}
       {viewFailure && <PmNotice tone="danger">{viewFailure}</PmNotice>}
       <DocumentNotices />
       <div className="pmw-document__body" role="region" aria-label={producing ? PRODUCTION_MESSAGES[workbench.getState().locale].title : presenting ? t.presentationPreview : reading ? t.readDocument : t.documentEditor}>
-        {!presenting && !producing && !reading && navigation && <NavigationPane onClose={() => setNavigation(false)} onSelect={() => { if (!roomy) setNavigation(false) }} />}
-        <div className="pmw-document__main"><div className="pmw-document__source" hidden={presenting || producing || reading}><SourceDocumentPanel commentsPortal={commentsPortal} onCommentDraftRestore={() => setAside(current => current === 'comments' ? null : current)} onOpenComments={() => setAside('comments')} /></div>{producing && <ProductionPanel actions={actions} active={active} closing={changingView} onClose={() => void exitPresent()} />}{presenting && <PreviewPanel presentation active={active} onPresentationAction={action => { if (action === 'refresh') void compilePresentation(); else void exitPresent() }} />}{reading && <PreviewPanel active={active} />}</div>
+        <div className="pmw-document__main"><div className="pmw-document__source" hidden={presenting || producing || reading}><SourceDocumentPanel commentsPortal={commentsPortal} onCommentDraftRestore={() => setAside(current => current === 'comments' ? null : current)} onOpenComments={() => setAside('comments')} after={narrow ? <ReferencesSummary /> : undefined} /></div>{producing && <ProductionPanel actions={actions} active={active} closing={changingView} onClose={() => void exitPresent()} />}{presenting && <PreviewPanel presentation active={active} onPresentationAction={action => { if (action === 'refresh') void compilePresentation(); else void exitPresent() }} />}{reading && <PreviewPanel active={active} />}</div>
         {!presenting && !producing && !reading && aside && (
-          <aside className="pmw-document__aside pm-ui-block-editor" aria-label={{ narration: t.documentNarration, comments: t.comments, export: t.exportPane, history: t.versionHistory }[aside]}>
-            {aside === 'comments' ? <section className="pmw-pane"><PmPanelHeader className="pmw-pane__header" title={t.comments} actions={<PmIconButton small icon="close" label={t.close} onClick={() => setAside(null)} />} /><div ref={setCommentsPortal} /></section> : aside === 'narration' ? <DocumentNarrationPanel onClose={() => setAside(null)} /> : aside === 'export' ? <ExportPanel documentOnly onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} revisionAction={historyRevisionAction} />}
+          <aside className="pmw-document__aside pm-ui-block-editor" aria-label={{ outline: tt.outline, references: tt.references, narration: t.documentNarration, comments: t.comments, export: t.exportPane, history: t.versionHistory }[aside]}>
+            {isRail(aside) ? <section className="pmw-pane pmw-rail">
+              <div className="pmw-rail__header">
+                <PmTabs variant="dock" value={aside} label={tt.rail} tabs={[{ value: 'outline', label: tt.outline }, { value: 'references', label: tt.references }, { value: 'comments', label: t.comments }]} onValueChange={value => setAside(value as DocumentAside)} />
+                <PmIconButton small icon="close" label={t.close} onClick={() => setAside(null)} />
+              </div>
+              <div className="pmw-rail__body">
+                {aside === 'outline' && <NavigationPane embedded onClose={() => setAside(null)} onSelect={() => { if (!roomy) setAside(null) }} />}
+                {aside === 'references' && <ReferencesPanel />}
+                {aside === 'comments' && <div ref={setCommentsPortal} />}
+              </div>
+            </section> : aside === 'narration' ? <DocumentNarrationPanel onClose={() => setAside(null)} /> : aside === 'export' ? <ExportPanel documentOnly onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} revisionAction={historyRevisionAction} />}
           </aside>
         )}
       </div>
@@ -242,7 +251,7 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
 }
 
 /** The document's sections, or its slides: where the preview is, and a click to go to another. */
-function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): void }) {
+function NavigationPane({ embedded, onClose, onSelect }: { embedded?: boolean, onClose(): void, onSelect(): void }) {
   const t = useMessages()
   const workbench = useWorkbench()
   const outline = useMemo(() => new DocumentOutline(), [])
@@ -287,10 +296,12 @@ function NavigationPane({ onClose, onSelect }: { onClose(): void, onSelect(): vo
   }
   return (
     <nav className="pmw-navigation" aria-label={t.navigation}>
-      <PmPanelHeader className="pmw-pane__header" title={editing ? t.pages : slides ? t.renderers.slides : t.navigation} actions={<>
+      {embedded ? editing && <div className="pmw-rail__actions">
+        <PmButton small variant="ghost" icon="plus" loading={creating} disabled={!canCreate || pageBusy || !items.length} onClick={() => { if (workbench.editing.createPage()) onSelect() }}>{t.newPage}</PmButton>
+      </div> : <PmPanelHeader className="pmw-pane__header" title={editing ? t.pages : slides ? t.renderers.slides : t.navigation} actions={<>
         {editing && <PmIconButton icon="plus" label={t.newPage} small loading={creating} disabled={!canCreate || pageBusy || !items.length} onClick={() => { if (workbench.editing.createPage()) onSelect() }} />}
         <PmIconButton icon="close" label={t.closeNavigation} small onClick={onClose} />
-      </>} />
+      </>} />}
       {failure && !renaming && !deleting && <PmNotice tone="danger">{failure}</PmNotice>}
       {items.length === 0 && loading ? <div className="pmw-navigation__empty"><PmSkeleton shape="list" label={t.loadingPages} /></div>
         : items.length === 0
@@ -348,6 +359,7 @@ function StatusBar() {
 
 function DocumentToolbar({ narrow, presentButton, framed, onBack, actions, aside, navigation, changingView, onProduction, onRead, onPresent, onNavigation, onAside }: { narrow: boolean, presentButton: RefObject<HTMLButtonElement>, framed: boolean, onBack?(): void, actions?: ReactNode, aside: DocumentAside | null, navigation: boolean, changingView: boolean, onProduction(): void, onRead(): void, onPresent(): void, onNavigation(): void, onAside(aside: DocumentAside): void }) {
   const t = useMessages()
+  const tt = useTreeMessages()
   const workbench = useWorkbench()
   const p = PRODUCTION_MESSAGES[useWorkbenchState(state => state.locale)]
   const title = useWorkbenchState(state => state.authoring?.content?.metadata.title ?? state.documents?.documents.find(doc => doc.dir === state.document)?.title ?? '')
@@ -374,7 +386,7 @@ function DocumentToolbar({ narrow, presentButton, framed, onBack, actions, aside
         <PmToolbarButton asChild><PmIconButton icon="arrow-left" label={t.back} small onClick={() => onBack ? onBack() : workbench.closeDocument()} /></PmToolbarButton>
         <h1 className="pmw-toolbar__title" title={title}>{title}</h1>
       </div>}
-      <PmToolbarButton asChild><PmIconButton small icon="navigation" label={t.navigationPane} aria-pressed={navigation} onClick={onNavigation} /></PmToolbarButton>
+      <PmToolbarButton asChild><PmIconButton small icon="rail" label={tt.rail} aria-pressed={navigation} onClick={onNavigation} /></PmToolbarButton>
       {!compactCommands && <>
         <PmToolbarButton asChild><PmIconButton small icon="undo" label={t.undo} shortcut={SHORTCUTS.undo} disabled={undoDisabled} onClick={() => void workbench.undo()} /></PmToolbarButton>
         <PmToolbarButton asChild><PmIconButton small icon="redo" label={t.redo} shortcut={SHORTCUTS.redo} disabled={redoDisabled} onClick={() => void workbench.redo()} /></PmToolbarButton>

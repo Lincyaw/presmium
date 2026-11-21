@@ -12,3 +12,13 @@
 .pm-document-editor__comment-tools { position: sticky; top: var(--pm-space-2); z-index: var(--pm-z-site-header); width: fit-content; margin-inline-start: var(--pm-space-5); }
 
 .pm-document-place-comment__trigger { display: inline-flex; align-items: center; gap: var(--pm-space-1); }
+
+/* References and synced blocks: the shared PmDocMention and PmSyncedBlockFrame inside the editor's node views. */
+.pm-document-editor__embed { flex: 1; width: 100%; min-width: 0; margin-block: var(--pm-space-2); }
+.pm-document-editor .bn-block-content[data-content-type='presmiumEmbed'] > * { flex: 1; width: 100%; min-width: 0; }
+.pm-document-editor__synced-content { min-width: 0; }
+.pm-document-editor__synced-content > :first-child { margin-top: 0; }
+.pm-document-editor__synced-content > :last-child { margin-bottom: 0; }
+.pm-document-editor__synced-image { display: block; max-width: 100%; height: auto; }
+.pm-document-editor__synced-link { color: var(--pm-color-accent); }
+.pm-document-editor__synced-picker { display: grid; gap: var(--pm-space-4); }

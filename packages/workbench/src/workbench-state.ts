@@ -66,6 +66,19 @@ export interface WorkbenchState {
   isDark: boolean
   documents?: DocumentsAnswer
   documentsFailure?: string
+  /** The workspace's document tree and trash; `documentTreeFailure` is `tree-unavailable` when the host has none. */
+  documentTree?: import('@lincyaw/kernel/contracts').DocumentTree
+  documentTreeFailure?: string
+  isDocumentTreeLoading?: boolean
+  isDocumentTreeBusy?: boolean
+  /** The document whose title is being edited in the tree (a new one starts so). */
+  renamingDocument?: string
+  /** Documents opened recently in this browser, the latest first. */
+  recentDocuments?: import('./document-tree.ts').RecentDocument[]
+  /** Changes when cached reference previews and synced block sources are forgotten. */
+  documentLinksGeneration?: number
+  /** The one message at the bottom that says what an operation did. */
+  toast?: import('./knowledge-components.tsx').ToastMessage
   /** The workspace's routes answer 404: `@lincyaw/dsh` is turned off on the plugins page. */
   isBundleDisabled?: boolean
   document?: string

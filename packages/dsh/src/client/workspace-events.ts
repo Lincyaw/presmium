@@ -6,7 +6,7 @@ import { WORKSPACE_EVENTS_PATH, workspaceEventMessage } from '../workspace-event
 import type { WorkspaceEventTopic, WorkspaceEventCommand } from '../workspace-events.ts'
 
 const TOPICS: Readonly<Record<string, WorkspaceEventTopic>> = {
-  document: 'document', diagnostics: 'diagnostics', review: 'review', revision: 'ir', job: 'jobs', 'viewer-site': 'viewer-site', 'viewer-control': 'viewer-control', approvals: 'approvals', 'agent-activity': 'agent-activity',
+  document: 'document', diagnostics: 'diagnostics', review: 'review', revision: 'ir', job: 'jobs', 'viewer-site': 'viewer-site', 'viewer-control': 'viewer-control', approvals: 'approvals', 'agent-activity': 'agent-activity', tree: 'tree',
 }
 
 /** Each live reader owns one logical subscription; the library owns physical reconnect timing. */

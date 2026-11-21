@@ -15,6 +15,9 @@ import type { DocumentImageImport, DocumentImageImportAnswer } from '@lincyaw/ke
 import type { ProductionAssetAnswer, ProductionAssetQuery, ProductionMediaQuery, ProductionPlan, ProductionPlanQuery } from '@lincyaw/kernel'
 import type { DocumentTranscriptionRequest, TranscriptionCapabilities, TranscriptionTask, TranscriptionListAnswer, TranscriptionRevision, TranscriptionCancellation, TranscriptionAdoptionDraft, TranscriptionAdoptionPlan, TranscriptionAdoptionApply, TranscriptionAdoptionAnswer } from '@lincyaw/kernel'
 import { randomUUID } from '@lincyaw/kernel'
+import type { ReferenceTarget } from '@lincyaw/kernel'
+// The contract's DocumentTree is the workspace's answer; the kernel's root also names its own tree builder DocumentTree.
+import type { DocumentLinks, DocumentPreview, DocumentSearchHit, DocumentTree, EmbedSource, TreeOperation, TreeOperationResult } from '@lincyaw/kernel/contracts'
 
 /** A change of the host's pending approvals that this author may answer. */
 export type ApprovalEvent =
@@ -82,6 +85,15 @@ export interface WorkspaceClient {
   importDocuments?(files: readonly File[], signal?: AbortSignal): Promise<import('@lincyaw/kernel').DocumentImportAnswer>
   /** Converts the workspace's documents to the current format, one revision per document. */
   migrateWorkspace?(): Promise<import('@lincyaw/kernel').WorkspaceMigrationAnswer>
+  /** The workspace's document tree and trash (absent for a host without one). */
+  readTree?(signal?: AbortSignal): Promise<DocumentTree>
+  operateTree?(operation: TreeOperation, signal?: AbortSignal): Promise<TreeOperationResult>
+  readDocumentLinks?(id: string, signal?: AbortSignal): Promise<DocumentLinks>
+  searchDocuments?(query: string, limit?: number, signal?: AbortSignal): Promise<DocumentSearchHit[]>
+  readDocumentPreview?(target: ReferenceTarget, signal?: AbortSignal): Promise<DocumentPreview>
+  readEmbedSource?(source: { document: string, block: string }, signal?: AbortSignal): Promise<EmbedSource>
+  /** Each change of the workspace's document tree (created, moved, renamed, trashed, restored). */
+  subscribeTree?(changed: () => void, failed?: () => void): () => void
   planProjectChange(request: ProjectPlanRequest): Promise<ProjectPlan>
   operateDocument(operation: ProjectOperation, planned?: ProjectPlan): Promise<OperationAnswer>
   readSource(document: string, path: string): Promise<SourceAnswer>
@@ -205,7 +217,7 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
     const path = target.pathname.slice(prefix.length)
     const method = (init?.method ?? 'GET').toUpperCase()
     if (client.capabilities?.readOnly && !['GET', 'HEAD', 'OPTIONS'].includes(method)
-      && /^(?:documents?(?:\/|$)|source(?:\/|$)|project\/|pages\/|history\/|revisions\/|review(?:\/|$))/.test(path)) throw new WorkspaceServerError(403, { error: 'permission-denied' })
+      && /^(?:documents?(?:\/|$)|tree\/|source(?:\/|$)|project\/|pages\/|history\/|revisions\/|review(?:\/|$))/.test(path)) throw new WorkspaceServerError(403, { error: 'permission-denied' })
     if (path === 'telemetry' || (path === 'diagnostics' || path === 'diagnostics/authoring') && method === 'POST') return fetch(address, { credentials: 'same-origin', ...init })
     const document = target.searchParams.get('document') ?? undefined
     const requestId = ++requestSequence
@@ -380,6 +392,18 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
       return call(url('documents/import'), { method: 'POST', body, signal })
     },
     migrateWorkspace: () => call(url('workspace/migrate'), { method: 'POST' }),
+    readTree: signal => call(url('tree'), { signal }),
+    operateTree: (operation, signal) => post(url('tree/operation'), operation, signal),
+    readDocumentLinks: (id, signal) => call(url('document/links', undefined, { id }), { signal }),
+    searchDocuments: (q, limit = 20, signal) => call(url('documents/search', undefined, { q, limit: String(limit) }), { signal }),
+    readDocumentPreview: (target, signal) => call(url('document/preview', undefined, { id: target.document, ...target.section ? { section: target.section } : {}, ...target.block ? { block: target.block } : {} }), { signal }),
+    readEmbedSource: async (source, signal) => {
+      const answer = await call<EmbedSource>(url('embed/source', undefined, { document: source.document, block: source.block }), { signal })
+      // Asset URLs are relative to the workspace routes; the editor loads them from any page.
+      const routes = new URL(base, globalThis.document.baseURI)
+      return answer.assets ? { ...answer, assets: Object.fromEntries(Object.entries(answer.assets).map(([id, address]) => [id, new URL(address, routes).href])) } : answer
+    },
+    subscribeTree: (changed, failed) => subscribe(url('tree/events', ''), 'tree', () => changed(), failed),
     readSource: (document, path) => call(url('source', document, { path })),
     saveSource: (document, path, content, base, message) => post(url('source', document), { path, content, base, ...message ? { message } : {} }),
     saveSourceTransaction: (document, changes, message) => post(url('source/transaction', document), { changes, ...message ? { message } : {} }),

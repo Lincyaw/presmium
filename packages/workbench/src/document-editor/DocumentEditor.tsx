@@ -19,6 +19,7 @@ import type { NativeDocumentSelection, NativeTextPoint } from './selection.ts'
 import { documentInsertionPlace } from './insertion-place.ts'
 import type { DocumentInsertionPlace } from './insertion-place.ts'
 import { effectiveOf } from '../effective-settings.ts'
+import { syncedLinkOf } from './references.tsx'
 
 export interface DocumentEditingPosition {
   nativeBlockId: string
@@ -77,6 +78,11 @@ export interface DocumentEditorProps {
 export function DocumentEditor(props: DocumentEditorProps) {
   const projection = useMemo(() => createDocumentProjection(props.document, effectiveOf(props.document, props.inherited).metadata.plugins), [props.identity, props.reset])
   useEffect(() => rememberComponentConfiguration(projection, props.document), [projection, props.version])
+  // The drag handle menu's Copy Synced Block Link names the document block that owns the native one.
+  const nodeViews = useMemo<DocumentNodeViews>(() => ({ ...props.nodeViews, syncedLink: nativeId => {
+    const owner = projection.owners.get(nativeId) ?? nativeId
+    return projection.document.blocks[owner] ? syncedLinkOf(projection.document.id, owner) : undefined
+  } }), [props.nodeViews, projection])
   const comments = useMemo(() => new DocumentThreadStore(props.document, props.member, props.version, props.identity, props.commentDrafts), [props.identity, props.reset])
   useEffect(() => {
     const latest = current.current, document = latest.getDocument ? latest.getDocument() : latest.document
@@ -158,7 +164,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
   }
   return <BlockNoteSurface identity={props.identity} reset={props.reset} initialContent={projection.content} locale={props.locale} contentLang={effectiveOf(props.document, props.inherited).metadata.lang} readOnly={props.readOnly}
     resolveAssetURL={props.resolveAssetURL} uploadImage={props.uploadImage}
-    comments={comments} commentsPortal={props.commentsPortal} onCommentDraftRestore={() => current.current.onCommentDraftRestore?.()} onOpenComments={() => current.current.onOpenComments?.()} nodeViews={props.nodeViews} onComposition={props.onComposition} onSelection={props.onSelection}
+    comments={comments} commentsPortal={props.commentsPortal} onCommentDraftRestore={() => current.current.onCommentDraftRestore?.()} onOpenComments={() => current.current.onOpenComments?.()} nodeViews={nodeViews} onComposition={props.onComposition} onSelection={props.onSelection}
     animationRequest={{
       available: () => !current.current.readOnly && binding.current === projection && active.current === projection && Boolean(animationRequests.current?.available()),
       request: value => {

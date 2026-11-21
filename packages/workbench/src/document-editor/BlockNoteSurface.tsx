@@ -163,6 +163,8 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
     } : undefined,
     disableExtensions: ['dropFile'],
     pasteHandler: ({ event, editor, defaultPasteHandler }) => {
+      const text = event.clipboardData?.getData('text/plain')
+      if (text && !event.clipboardData?.getData('text/html') && current.current.nodeViews?.pasteText?.(text, editor as NativeDocumentEditor)) return true
       const files = [...event.clipboardData?.files ?? []]
       if (files.length && !event.clipboardData?.getData('text/html')) {
         editor.getExtension(imageFileInput)?.insert(files)
@@ -217,10 +219,11 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
           title: t.animateWithAI, subtext: t.animateWithAIHint, group: dictionary.slash_menu.image.group, icon: <PmIcon name="sparkle" />, aliases: slashAliases('animateWithAIAliases'),
           // The menu has already taken back the typed “/” and query; the AI is asked, the document stays as it was.
           onItemClick: () => current.current.animationRequest?.request(editor),
-        }] : []), {
+        }] : []), ...current.current.nodeViews?.slashItems?.(editor) ?? [], {
           title: t.page, aliases: slashAliases('pageAliases'), group: t.document,
           onItemClick: () => { const current = editor.getTextCursorPosition().block; editor.insertBlocks([{ type: 'presmiumPage', props: { sectionId: randomUUID() }, content: t.untitledPage }], current, 'after') },
         }], query)} />
+        {props.nodeViews?.editorChildren?.(editor)}
         {props.children}
         </NewCommentDraftProvider></BlockNoteViewEditor>
         </ComponentsContext.Provider>

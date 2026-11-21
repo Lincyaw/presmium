@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react'
+import type { ReactNode } from 'react'
 import { hasRole } from '@lincyaw/kernel'
 import { PmButton, PmNotice, PmSkeleton } from '../components.tsx'
-import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
+import { useMessages, useTreeMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
+import { DocumentReference, insertSyncedBlock, parseSyncedLink, ReferenceEditorTools, referenceSlashItems, SyncedBlock } from '../document-editor/references.tsx'
 import { DocumentEditor } from '../document-editor/DocumentEditor.tsx'
 import { DOCUMENT_EDITOR_MESSAGES } from '../document-editor/messages.ts'
 import { DocumentBlockFallback } from '../document-editor/DocumentBlockFallback.tsx'
@@ -13,7 +15,7 @@ import { isAgentChanging } from '../workbench-state.ts'
 import { effectiveOf } from '../effective-settings.ts'
 
 /** Source editing is available before the first successful runtime compilation. */
-export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onOpenComments }: { commentsPortal?: HTMLElement | null, onCommentDraftRestore?(): void, onOpenComments?(): void }) {
+export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onOpenComments, after }: { commentsPortal?: HTMLElement | null, onCommentDraftRestore?(): void, onOpenComments?(): void, /** Shown below the page (the references on a narrow screen). */ after?: ReactNode }) {
   const workbench = useWorkbench(), t = useMessages()
   const source = useWorkbenchState(state => state.authoring)
   const activities = useWorkbenchState(state => state.agentActivities)
@@ -25,6 +27,8 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onO
   }
   const positionFailure = useWorkbenchState(state => state.documentPositionFailure)
   const locale = useWorkbenchState(state => state.locale), messages = DOCUMENT_EDITOR_MESSAGES[locale]
+  const tt = useTreeMessages()
+  const syncedPicker = useMemo<{ open?: (editor: NativeDocumentEditor) => void }>(() => ({}), [])
   const navigation = useWorkbenchState(state => state.documentNavigation)
   const readOnly = useWorkbenchState(state => state.mode !== 'editing' || workbench.client.capabilities?.readOnly === true || Boolean(state.authoring?.member && !hasRole(state.authoring.member, 'editor')) || Boolean(state.authoring?.loading) || isAgentChanging(state))
   const container = useRef<HTMLElement>(null)
@@ -180,7 +184,20 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onO
           const effective = effectiveOf(source.content, source.inherited)
           const fallback = <DocumentBlockFallback block={block} document={effective} locale={locale} />
           return hasBlockPreview(block, effective.metadata.plugins) ? <DocumentBlockPreview blockId={id} fallback={fallback} /> : fallback
-        } }}
+        },
+        renderReference: (target, label, fallback) => <DocumentReference document={target.document} section={target.section} block={target.block} label={label} fallback={fallback} />,
+        renderEmbed: (id, embed) => <SyncedBlock id={id} document={embed.document} block={embed.block} />,
+        ...workbench.tree.available ? {
+          slashItems: editor => readOnly ? [] : referenceSlashItems(editor, tt, tt.documents, workbench, () => syncedPicker.open?.(editor)),
+          editorChildren: editor => readOnly ? null : <ReferenceEditorTools editor={editor} picker={syncedPicker} />,
+          pasteText: (text, editor) => {
+            const source = parseSyncedLink(text)
+            if (!source || readOnly) return false
+            insertSyncedBlock(editor, source)
+            return true
+          },
+          copySyncedLink: link => { void navigator.clipboard.writeText(link).then(() => workbench.tree.toast(tt.linkCopied), () => workbench.tree.toast(tt.copyFailed, 'danger')) },
+        } : {} }}
         commentsPortal={commentsPortal} onChange={document => workbench.recordDocument(document)} onReady={(editor, commands) => {
           bodyEditor.current = editor
           editingPosition.current = undefined
@@ -195,5 +212,6 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onO
         }}
         onComposition={composing => workbench.documentComposition(composing, 'body', source.identity)} onError={() => workbench.documentError(new Error(messages.adapterError))} />
     </div>}
+    {source?.content && after}
   </section>
 }

@@ -3,7 +3,8 @@ import type { ReactNode } from 'react'
 import { errorMessage } from '@lincyaw/kernel'
 import type { DocumentSummary, ProjectPlan } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmEmpty, PmInput, PmSelect, PmIcon, PmMenu, PmNotice } from '../components.tsx'
-import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
+import { useMessages, useTreeMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
+import { WorkspaceHome } from './WorkspaceHome.tsx'
 import { contentText } from '../messages.ts'
 import { IMPORT_MESSAGES } from '../import-messages.ts'
 import { DocumentImportDialog } from './DocumentImportDialog.tsx'
@@ -14,7 +15,15 @@ type Editing =
 
 /** The documents of the workspace: open one, make a new one, rename, copy or delete one. */
 export function HomePanel({ actions }: { actions?: ReactNode } = {}) {
+  const workbench = useWorkbench()
+  const tree = useWorkbenchState(state => state.documentTree)
+  return workbench.tree.available && tree ? <WorkspaceHome actions={actions} /> : <DocumentListHome actions={actions} />
+}
+
+/** A workspace without the tree routes (or before its tree is read): the flat list with its operations. */
+function DocumentListHome({ actions }: { actions?: ReactNode }) {
   const t = useMessages()
+  const tt = useTreeMessages()
   const workbench = useWorkbench()
   const answer = useWorkbenchState(state => state.documents)
   const failure = useWorkbenchState(state => state.documentsFailure)
@@ -59,7 +68,7 @@ export function HomePanel({ actions }: { actions?: ReactNode } = {}) {
       {done && <PmNotice tone="ok">{done}</PmNotice>}
       {error && !editing && <PmNotice tone="danger">{error}</PmNotice>}
       {answer && !answer.git && !answer.single && <PmNotice tone="warn">{t.notGit}</PmNotice>}
-      {answer?.migration && workbench.client.migrateWorkspace && <PmNotice tone="warn" action={<PmButton disabled={working} onClick={() => void run(async () => t.upgraded((await workbench.migrateWorkspace()).documents.length))}>{t.upgrade}</PmButton>}>{t.formatUpgrade}</PmNotice>}
+      {answer?.migration && workbench.client.migrateWorkspace && <PmNotice tone="warn" action={<PmButton disabled={working} onClick={() => void run(async () => t.upgraded((await workbench.migrateWorkspace()).documents.length))}>{t.upgrade}</PmButton>}>{answer.migration.documents.length ? tt.upgradePending(answer.migration.documents.length) : t.formatUpgrade}</PmNotice>}
       <div className="pmw-home__heading-row">
         <h2 className="pmw-home__heading">{t.allDocuments}</h2>
         {documents.length > 6 && (
@@ -67,7 +76,7 @@ export function HomePanel({ actions }: { actions?: ReactNode } = {}) {
         )}
       </div>
       {answer && documents.length === 0
-        ? <PmEmpty icon="document" title={t.noDocuments} />
+        ? !answer.migration?.documents.length && <PmEmpty icon="document" title={t.noDocuments} />
         : shown.length === 0 && query
           ? <p className="pmw-muted">{t.noMatch}</p>
           : (

@@ -24,7 +24,7 @@ export function registerNavigationShell(ctx: DshClientContext, workbench: Workbe
     ctx.slots.inject('sidebar.panellist', updatePanels)
     const closeHistory = () => {
       if (layout.getSnapshot().layoutInfo.viewportWidth < SIDE_COLLAPSE) actions.revealConversation()
-      else actions.toggleSidebar()
+      else actions.showDocumentTree()
     }
     function Sidebar({ renderSlot }: SidebarProps) {
       const t = useClientMessages(workbench)

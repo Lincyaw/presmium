@@ -12,6 +12,8 @@ import { PmIcon } from '../components.tsx'
 import { DOCUMENT_EDITOR_MESSAGES, slashAliases } from './messages.ts'
 import { DOCUMENT_EDITOR_LOCALE } from './math.tsx'
 import type { NativeDocumentEditor } from './schema.tsx'
+import { DOCUMENT_NODE_VIEWS } from './schema.tsx'
+import { DOCUMENT_TREE_MESSAGES } from '../tree-messages.ts'
 
 const useMessages = () => DOCUMENT_EDITOR_MESSAGES[useContext(DOCUMENT_EDITOR_LOCALE)]
 
@@ -110,6 +112,18 @@ function BlockColorsItem({ children }: { children: ReactNode }) {
   return <ColorSubmenu text={choice('textColor')} background={choice('backgroundColor')}>{children}</ColorSubmenu>
 }
 
+/** Copies the link that inserts this block as a synced block in another document (pasted there). */
+function CopySyncedLinkItem() {
+  const Components = useComponentsContext()!
+  const editor = useBlockNoteEditor<any, any, any>()
+  const views = useContext(DOCUMENT_NODE_VIEWS)
+  const locale = useContext(DOCUMENT_EDITOR_LOCALE)
+  const block = useExtensionState(SideMenuExtension, { editor, selector: state => state?.block })
+  const link = block && block.type !== 'presmiumPage' ? views.syncedLink?.(block.id) : undefined
+  if (!link || !views.copySyncedLink) return null
+  return <Components.Generic.Menu.Item className="bn-menu-item" onClick={() => views.copySyncedLink!(link)}>{DOCUMENT_TREE_MESSAGES[locale].copySyncedLink}</Components.Generic.Menu.Item>
+}
+
 function DocumentDragHandleMenu() {
   const dict = useDictionary()
   return <DragHandleMenu>
@@ -117,6 +131,7 @@ function DocumentDragHandleMenu() {
     <BlockColorsItem>{dict.drag_handle.colors_menuitem}</BlockColorsItem>
     <TableRowHeaderItem>{dict.drag_handle.header_row_menuitem}</TableRowHeaderItem>
     <TableColumnHeaderItem>{dict.drag_handle.header_column_menuitem}</TableColumnHeaderItem>
+    <CopySyncedLinkItem />
   </DragHandleMenu>
 }
 export function DocumentSideMenu(props: SideMenuProps) { return <SideMenu {...props} dragHandleMenu={DocumentDragHandleMenu} /> }

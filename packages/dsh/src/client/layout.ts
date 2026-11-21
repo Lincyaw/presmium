@@ -25,8 +25,8 @@ export function rightbarRoom(viewport: number, side: number, conversation: numbe
   return viewport - side - conversation - centreMinWidth() - handles * HANDLE
 }
 
-/** What the side panel shows: the chat history (DeepSeek Harness's sessions). */
-export type Activity = 'sessions'
+/** What the side panel shows: the workspace's document tree, or the chat history (DeepSeek Harness's sessions). */
+export type Activity = 'documents' | 'sessions'
 /** What a narrow screen shows, one at a time. */
 export type NarrowPane = 'documents' | 'preview' | 'sessions' | 'conversation'
 
@@ -75,7 +75,7 @@ export function createLayoutStore() {
       panelInfo: { activePanelId: null },
       layoutInfo: {
         viewportWidth: window.innerWidth,
-        isSideOpen: false,
+        isSideOpen: true,
         isSideExpanded: false,
         sideWidth: SIDE_DEFAULT,
         conversationWidth: CONVERSATION_DEFAULT,
@@ -84,7 +84,7 @@ export function createLayoutStore() {
         isRightbarOpen: false,
         hasRightbarTrack: false,
         isRightbarFullscreen: false,
-        activity: 'sessions',
+        activity: 'documents',
         narrowPane: 'documents',
       },
     }),
@@ -130,7 +130,7 @@ export function createLayoutStore() {
         } else {
           const historyShown = info.activity === 'sessions' && (info.viewportWidth < SIDE_COLLAPSE ? info.isSideExpanded : info.isSideOpen)
           if (historyShown && info.viewportWidth < SIDE_COLLAPSE) revealConversation(d)
-          else if (historyShown && info.isConversationOpen) info.isSideOpen = false
+          else if (historyShown && info.isConversationOpen) info.activity = 'documents'
           else showHistory(d)
         }
       },
@@ -164,6 +164,11 @@ export function createLayoutStore() {
           if (d.layoutInfo.isSideExpanded) d.layoutInfo.isConversationOpen = false
         }
         d.layoutInfo.narrowPane = activity
+      },
+      /** Back from the chat history to the document tree, keeping the side panel open. */
+      showDocumentTree: (d: LayoutState) => {
+        d.layoutInfo.activity = 'documents'
+        if (d.layoutInfo.narrowPane === 'sessions') d.layoutInfo.narrowPane = 'conversation'
       },
       showNarrowPane: (d: LayoutState, pane: NarrowPane) => {
         d.layoutInfo.narrowPane = pane

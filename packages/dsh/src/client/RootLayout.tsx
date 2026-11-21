@@ -1,6 +1,6 @@
 import { useStartupReady } from './startup.ts'
 import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
-import { AgentActivityBar, DocumentView, HomePanel, PmDialog, PmIcon, PmMenu, SHORTCUTS, useWorkbenchState, WorkbenchApprovals, WorkbenchProvider } from '@lincyaw/workbench'
+import { AgentActivityBar, DocumentBreadcrumb, DocumentView, HomePanel, PmDialog, PmDrawer, PmIcon, PmIconButton, PmMenu, SHORTCUTS, useTreeMessages, useWorkbenchState, WorkbenchApprovals, WorkbenchProvider, WorkbenchToast, WorkspaceSidebar } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode, RefObject } from 'react'
@@ -148,6 +148,8 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
   const frame = useRef<HTMLDivElement>(null)
   const rightbarTrack = useRef<HTMLDivElement>(null)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const tt = useTreeMessages()
   const geometry = solveGeometry(info)
   const { narrow, collapsed } = geometry
   const conversationPanel = usePanelRef()
@@ -186,6 +188,14 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
   const panel = activePanel !== null ? renderSlot('main', {}, { entryKey: activePanel }) : null
   const rightbar = renderSlot('rightbar', { width: rightbarBox?.width ?? geometry.rightbar, viewportWidth: geometry.viewport, canShow: geometry.rightbar > 0 })
 
+  const showHome = () => {
+    actions.selectPanel(null)
+    workbench.closeDocument()
+    if (narrow) actions.showNarrowPane('documents')
+  }
+  useEffect(() => { if (!narrow) setDrawerOpen(false) }, [narrow])
+  useEffect(() => { void workbench.tree.load() }, [workbench])
+
   const pane: NarrowPane = narrow ? info.narrowPane : 'documents'
   const documentShown = panel === null && document_ !== undefined && (!narrow || pane === 'preview')
   const centre = <>
@@ -206,7 +216,11 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
       data-rightbar-fullscreen={info.isRightbarFullscreen || undefined}
     >
       <a className="pmw-frame__skip" href="#pmw-centre">{t.skip}</a>
-      <AppBar workbench={workbench} info={info} actions={actions} activePanel={activePanel} globalPanels={globalPanels} pane={pane} narrow={narrow} openSettings={openSettings} openHelp={() => setHelpOpen(true)} />
+      <AppBar workbench={workbench} info={info} actions={actions} activePanel={activePanel} globalPanels={globalPanels} pane={pane} narrow={narrow} openSettings={openSettings} openHelp={() => setHelpOpen(true)} openDrawer={() => setDrawerOpen(true)} />
+      <PmDrawer open={narrow && drawerOpen} label={tt.tree} size="sidebar" onClose={() => setDrawerOpen(false)}>
+        <WorkspaceSidebar onHome={showHome} onNavigate={() => setDrawerOpen(false)} closeLabel={tt.closeSidebar} onClose={() => setDrawerOpen(false)} />
+      </PmDrawer>
+      <WorkbenchToast />
 
       <RuntimeDiagnosticsNotice workbench={workbench} />
       <Group className="pmw-frame__panels" disabled={narrow} onLayoutChanged={(layout, meta) => {
@@ -222,7 +236,10 @@ function RootLayout({ useStore, useSessions, usePanelInfo, actions, renderSlot, 
       }}>
         {/* Collapsed, not hidden, on a wide screen: a hidden panel's box sits at the page's corner, and react-resizable-panels takes the gap from it to the centre (the activity bar) for a handle. */}
         <Panel id="sessions" panelRef={sidePanelRef} groupResizeBehavior="preserve-pixel-size" collapsible collapsedSize={0} defaultSize={info.sideWidth} minSize={narrow ? 0 : SIDE_MIN} maxSize={SIDE_MAX} className="pmw-frame__side-panel" hidden={narrow && pane !== 'sessions'}>
-          <div className="pmw-frame__sidebar" data-pmw-slot="sidebar" data-shown={(narrow ? pane === 'sessions' : sideShown) || undefined}>{sidebar}</div>
+          <div className="pmw-frame__sidebar" data-pmw-slot="sidebar" data-activity={info.activity} data-shown={(narrow ? pane === 'sessions' : sideShown) || undefined}>
+            <div className="pmw-frame__history" hidden={!narrow && info.activity !== 'sessions'}>{sidebar}</div>
+            {!narrow && info.activity !== 'sessions' && <WorkspaceSidebar onHome={showHome} />}
+          </div>
         </Panel>
         {sideShown && <Separator className="pmw-frame__handle" data-side="side" aria-label={t.resize} />}
         <Panel id="centre" minSize={narrow ? 0 : centreMinWidth()} className="pmw-frame__centre-panel" hidden={narrow && (pane === 'sessions' || pane === 'conversation') && panel === null}>
@@ -263,6 +280,7 @@ interface AppBarProps {
   narrow: boolean
   openSettings(): void
   openHelp(): void
+  openDrawer(): void
 }
 
 /**
@@ -270,7 +288,8 @@ interface AppBarProps {
  * global panel), then operations waiting for the author's approval, the AI assistant, more (plugins, automation), settings and help. On a narrow screen the places
  * are the panes it switches between.
  */
-function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, narrow, openSettings, openHelp }: AppBarProps) {
+function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, narrow, openSettings, openHelp, openDrawer }: AppBarProps) {
+  const tt = useTreeMessages()
   const t = useClientMessages(workbench)
   const document_ = useWorkbenchState(state => state.document)
   const documentTitle = useWorkbenchState(state => state.documents?.documents.find(doc => doc.dir === state.document)?.title)
@@ -298,6 +317,7 @@ function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, nar
 
   return (
     <nav className="pm-ui-appbar pmw-appbar" aria-label={t.activity} data-pm-window-drag>
+      {narrow && <PmIconButton icon="menu" label={tt.openSidebar} onClick={openDrawer} />}
       <span className="pmw-appbar__brand"><Logo /><span className="pmw-brand-name">{t.product}</span></span>
       <ol className="pmw-appbar__places">
         <li>
@@ -305,6 +325,7 @@ function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, nar
             <PmIcon name="folder" /><span className="pmw-appbar__label">{t.documents}</span>
           </button>
         </li>
+        {document_ !== undefined && <DocumentBreadcrumb compact={narrow} />}
         {document_ !== undefined && (
           <li>
             <button type="button" className="pmw-appbar__place pmw-appbar__title" data-activity="document" title={documentTitle ?? t.document} aria-current={atDocument ? 'page' : undefined} onClick={showDocument}>

@@ -17,12 +17,12 @@ export interface DocumentInsertionPlace {
   end: boolean
 }
 
-type Inline = { type: string, text?: string, content?: unknown, props?: { label?: string } }
+type Inline = { type: string, text?: string, content?: unknown, props?: { label?: string, fallback?: string } }
 
 function inlineText(content: unknown): string {
   if (typeof content === 'string') return content
   if (!Array.isArray(content)) return ''
-  return (content as Inline[]).map(item => item.type === 'text' ? item.text ?? '' : item.type === 'presmiumInline' ? item.props?.label ?? '' : inlineText(item.content)).join('')
+  return (content as Inline[]).map(item => item.type === 'text' ? item.text ?? '' : item.type === 'presmiumInline' ? item.props?.label ?? '' : item.type === 'presmiumReference' ? item.props?.label || item.props?.fallback || '' : inlineText(item.content)).join('')
 }
 
 function textOf(block: DocumentEditorBlock): string {

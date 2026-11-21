@@ -3,7 +3,9 @@ import type { ReactNode } from 'react'
 import { BlockNoteSchema, defaultBlockSpecs, defaultInlineContentSpecs, defaultStyleSpecs } from '@blocknote/core'
 import type { Block, BlockNoteEditor, PartialBlock, StyleConfig, StyleSpec } from '@blocknote/core'
 import { createReactBlockSpec, createReactInlineContentSpec } from '@blocknote/react'
+import type { DefaultReactSuggestionItem } from '@blocknote/react'
 import { DOCUMENT_IMAGE_MEDIA_TYPES } from '@lincyaw/kernel'
+import type { ReferenceTarget } from '@lincyaw/kernel'
 import { tableIdentityExtension } from './table-identities.ts'
 import { documentColorStyles } from './colors.ts'
 import { mathBlock, mathInline } from './math.tsx'
@@ -11,6 +13,17 @@ import { mathBlock, mathInline } from './math.tsx'
 export interface DocumentNodeViews {
   renderBlock?(id: string, kind: string): ReactNode
   renderInline?(id: string, kind: string, label: string): ReactNode
+  /** An inline reference to a document, a page or a block: the current title, its preview and the way to it. */
+  renderReference?(target: ReferenceTarget, label: string | undefined, fallback: string): ReactNode
+  /** A synced block: the source's current content, read-only. */
+  renderEmbed?(id: string, source: { document: string, block: string }): ReactNode
+  /** The link that inserts the native block's document block as a synced block elsewhere; none when it has none yet. */
+  syncedLink?(nativeBlockId: string): string | undefined
+  copySyncedLink?(link: string): void
+  /** More slash menu items, controls rendered with the editor (suggestion menus, dialogs), and plain text pasted. */
+  slashItems?(editor: NativeDocumentEditor): DefaultReactSuggestionItem[]
+  editorChildren?(editor: NativeDocumentEditor): ReactNode
+  pasteText?(text: string, editor: NativeDocumentEditor): boolean
 }
 export const DOCUMENT_NODE_VIEWS = createContext<DocumentNodeViews>({})
 
@@ -57,6 +70,30 @@ const inline = createReactInlineContentSpec({
   },
 })
 
+const reference = createReactInlineContentSpec({
+  type: 'presmiumReference',
+  propSchema: { document: { default: '' }, section: { default: '' }, block: { default: '' }, label: { default: '' }, fallback: { default: '' } },
+  content: 'none',
+}, {
+  render: ({ inlineContent }) => {
+    const views = useContext(DOCUMENT_NODE_VIEWS)
+    const { document, section, block, label, fallback } = inlineContent.props
+    const target: ReferenceTarget = { document, ...section ? { section } : {}, ...block ? { block } : {} }
+    return <span className="pm-document-editor__reference" contentEditable={false}>{views.renderReference?.(target, label || undefined, fallback) ?? (label || fallback)}</span>
+  },
+})
+
+const embed = createReactBlockSpec({
+  type: 'presmiumEmbed',
+  propSchema: { document: { default: '' }, block: { default: '' } },
+  content: 'none',
+}, {
+  render: ({ block }) => {
+    const views = useContext(DOCUMENT_NODE_VIEWS)
+    return <div className="pm-document-editor__embed" contentEditable={false}>{views.renderEmbed?.(block.id, { document: block.props.document, block: block.props.block })}</div>
+  },
+})()
+
 const table = { ...defaultBlockSpecs.table, extensions: [...defaultBlockSpecs.table.extensions ?? [], tableIdentityExtension] }
 const image: typeof defaultBlockSpecs.image = { ...defaultBlockSpecs.image, implementation: { ...defaultBlockSpecs.image.implementation,
   meta: { ...defaultBlockSpecs.image.implementation.meta, fileBlockAccept: [...DOCUMENT_IMAGE_MEDIA_TYPES] },
@@ -98,9 +135,9 @@ export const documentEditorSchema = BlockNoteSchema.create({
     bulletListItem: defaultBlockSpecs.bulletListItem, numberedListItem: defaultBlockSpecs.numberedListItem,
     checkListItem: defaultBlockSpecs.checkListItem, quote: defaultBlockSpecs.quote,
     codeBlock: defaultBlockSpecs.codeBlock, table, image,
-    presmiumPage: page, presmiumAtom: atom, presmiumContainer: container, presmiumMath: mathBlock,
+    presmiumPage: page, presmiumAtom: atom, presmiumContainer: container, presmiumMath: mathBlock, presmiumEmbed: embed,
   },
-  inlineContentSpecs: { ...defaultInlineContentSpecs, presmiumInline: inline, presmiumMathInline: mathInline },
+  inlineContentSpecs: { ...defaultInlineContentSpecs, presmiumInline: inline, presmiumMathInline: mathInline, presmiumReference: reference },
   styleSpecs: clipboardStyles,
 })
 export const commentEditorSchema = BlockNoteSchema.create({
