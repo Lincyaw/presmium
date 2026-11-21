@@ -1,5 +1,16 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.121
+
+### Patch Changes
+
+- 99f06f0: 在文稿正文中按 Ctrl+Z（或 ⌘Z）只撤消编辑器里的修改，编辑器没有可撤消的修改时不再撤消已保存的版本；沿引用打开另一份文稿时，光标落在它的正文中。格式升级与文稿的创建成为版本历史的边界：不再出现在可撤消的步骤中，撤消或还原到它之前会被拒绝并说明原因，不会再留下旧格式的文稿或让文稿从文稿树中消失。
+- Updated dependencies [73cead9]
+  - @lincyaw/design@1.0.0-rc.121
+  - @lincyaw/server@1.0.0-rc.121
+  - @lincyaw/compiler@1.0.0-rc.121
+  - @lincyaw/kernel@1.0.0-rc.121
+
 ## 1.0.0-rc.120
 
 ### Patch Changes
