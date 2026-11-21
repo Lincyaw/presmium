@@ -223,7 +223,7 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 
 工作区配置是 `presmium.workspace.yaml`：`title`、`site`、`approvals`、`settings`、`templates` 与 `defaults:`（继承链的根，可写 `lang`、`plugins`、`presmium`、`renderers`、`execute`、`checks`、`production.defaults`、`production.captions`，见 2.1.2 节）。它不列出文稿：工作区根目录下的每个 `index.pmd` 都是一份文稿，扫描跳过 `node_modules`、`.git`、`.presmium`、`dist`、`.trash`、以 `.` 开头的目录与 `locales/<语言>/`。凡列出文稿的地方（工作区服务的文稿列表、网站导航与翻页、命令行）都按文稿树深度优先排列，同级按 `rank`；网站侧栏在有下级文稿时按文稿树嵌套显示（`SiteDocument.parent` 是上级文稿的文件夹），当前文稿上方的分支展开，`site.sidebar: directories` 时仍按文件夹显示。仍有 `documents:` 的工作区文件不被采用：`presmium check` 与编译报告需要升级，Studio 显示升级提示。根目录自己有 `index.pmd` 的目录是单文稿工作区。
 
-`presmium new` 与 Studio 新建的文稿放在顶层末尾，复制的文稿放在原文稿之后；导入的文稿按导入顺序放在顶层末尾。`presmium import <文件或文件夹> --out <目录>` 与工作台首页的“导入文档 / Import Documents”共用 `@lincyaw/compiler` 的转换：支持 UTF-8 Markdown（`.md`、`.markdown`）与 Word（`.docx`），每个文件一份文稿，保留目录层级；一级与二级标题各开一页，每页一个显示全部内容块的步骤。相对链接与本地图片按导入的文件夹解析，图片复制到各文稿的 `attachments/`；导入单文件时无法提供的图片和链接计入待检查数。原始文件逐字节保留在文稿的 `originals/` 中。
+`presmium new` 与 Studio 新建的文稿放在顶层末尾，复制的文稿放在原文稿之后；导入的文稿按导入顺序放在顶层末尾。`presmium import <文件或文件夹> --out <目录>` 与工作台首页的“导入文稿 / Import Documents”共用 `@lincyaw/compiler` 的转换：支持 UTF-8 Markdown（`.md`、`.markdown`）与 Word（`.docx`），每个文件一份文稿，保留目录层级；一级与二级标题各开一页，每页一个显示全部内容块的步骤。相对链接与本地图片按导入的文件夹解析，图片复制到各文稿的 `attachments/`；导入单文件时无法提供的图片和链接计入待检查数。原始文件逐字节保留在文稿的 `originals/` 中。
 
 Markdown 的段落、标题、强调、链接、列表、代码、公式和表格转成可编辑节点；没有对应富文本节点的内容（原始 HTML、脚注、提示框、内联图片）保存为 `presmium.mdast` 扩展。保留内容语义，不保证空白、语法拼写、第三方扩展或排版的往返一致性。Word 使用 Mammoth 的公开接口提取标题、段落、列表、表格、粗体、斜体、链接和内嵌图片；无表头的表格保持原有行数，不导入字体、页眉页脚或分页布局，也不读取外部关联文件。不支持旧版 `.doc`。Markdown 与 Word 只是一次性导入来源，后续编辑只写 `index.pmd`。
 

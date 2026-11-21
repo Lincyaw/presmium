@@ -1,6 +1,6 @@
 export const IMPORT_MESSAGES = {
   'zh-CN': {
-    title: '导入文档', files: '选择文件', folder: '选择文件夹', submit: '导入',
+    title: '导入文稿', files: '选择文件', folder: '选择文件夹', submit: '导入',
     description: '支持 Markdown（.md、.markdown）和 Word（.docx）。每个文件生成一份文稿，保留目录层级；一级、二级标题分成页面。',
     images: '含本地图片或文件间链接的 Markdown，请导入所在文件夹。Word 保留标题、段落、列表、表格、强调、链接和内嵌图片。',
     limits: '最多 1000 个文件，合计 32 MiB。导入后可在工作区中继续编辑。',
