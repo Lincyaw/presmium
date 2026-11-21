@@ -45,3 +45,4 @@ export * from './contracts/document-tree.ts'
 // Both the assistant's answers and the document tree name a `Citation`; the assistant's keeps the plain name.
 export type { Citation } from './contracts/agent.ts'
 export type { Citation as DocumentCitation } from './contracts/document-tree.ts'
+export * from './contracts/document-tree-service.ts'

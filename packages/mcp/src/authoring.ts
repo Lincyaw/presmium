@@ -98,7 +98,7 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
   },
   {
     name: 'plan_document_change', kind: 'read', structured: true,
-    description: 'Preflights a versioned DocumentChange with canonical semantic operations or an explicit replacement and optional same-document text files. Validates candidate, identity, references, all file bases and transaction limits without saving or compiling. Returns planId, digest, issues, entity impact, source and predicted files; the candidate document is not repeated (read its parts with read_document_part). Existing-file bases are exact versions; null exclusively creates a new text file.',
+    description: 'Preflights a versioned DocumentChange with canonical semantic operations or an explicit replacement and optional same-document text files. Validates candidate, identity, references, all file bases and transaction limits without saving or compiling. Returns planId, digest, issues, entity impact, source and predicted files; the candidate document is not repeated (read its parts with read_document_part). Existing-file bases are exact versions; null exclusively creates a new text file. Inline references to other documents are reference nodes in text and synced blocks are embed blocks (see search_documents for both shapes).',
     inputSchema: schema(),
     run: async call => withoutContent(await service(call).plan(await call.document(), call.args.change as DocumentChange, call.caller.member)),
   },

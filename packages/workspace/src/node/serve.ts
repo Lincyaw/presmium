@@ -18,7 +18,7 @@ import { compareServiceVersion, irRevision, OperatorSpeechSettings, readServiceS
 import type { ServiceHostLease } from '@lincyaw/kernel/node'
 import { createMcpSettings } from './mcp-settings.ts'
 import { speechSettingsRoute } from './speech-settings.ts'
-import type { ApprovalKind, CanonicalSource, ChangeReviewService, Finding, IRDocument, Logger, ProductionAudioAuthoring, ServiceToken, SiteSpec, SpeechService } from '@lincyaw/kernel'
+import type { ApprovalKind, CanonicalSource, DocumentTreeService, ChangeReviewService, Finding, IRDocument, Logger, ProductionAudioAuthoring, ServiceToken, SiteSpec, SpeechService } from '@lincyaw/kernel'
 import { serverConfigKey, servedDocument, startServer } from '@lincyaw/server'
 import type { DiagnosticStore, PresmiumServer, ServedDocument, ServedPlugin, ServerHost } from '@lincyaw/server'
 import { CompileSession } from './compile-session.ts'
@@ -50,6 +50,8 @@ import type { DocumentVoiceServices } from './document-voice.ts'
 import { createWorkbenchBackend } from './workbench-api.ts'
 import type { WorkbenchBackend } from './workbench-api.ts'
 import { localWriter } from './writer.ts'
+import { DocumentIndex } from './document-index.ts'
+import { TreeOperations } from './tree-operations.ts'
 import { documentImportRoute } from './document-import.ts'
 import { workspaceMigrateRoute } from './workspace-migrate.ts'
 import { hostUpgradeRoute } from './host-upgrade.ts'
@@ -98,6 +100,8 @@ interface AuthoringServices extends DocumentVoiceServices { audio?: ProductionAu
 interface NodeServiceLoad { key: string, promise: Promise<AuthoringServices>, controller: AbortController }
 
 const DISK_LOOK_MS = 1000
+/** How often the document tree is compared with the files, for `tree/events` and reference titles. */
+const TREE_LOOK_MS = 2000
 
 function makeStateDir(root: string, env: NodeJS.ProcessEnv): string {
   const dir = serveStateDir(root, env)
@@ -201,6 +205,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   let voiceAuthoring: ReturnType<typeof createDocumentVoiceAuthoring> | undefined
   let workspaceRoutesOwner: ReturnType<typeof workspaceRoutes> | undefined
   let routesPlugin: ServedPlugin | undefined
+  let treeService: DocumentTreeService | undefined
   // The builds and exports, as jobs the workbench and the AI start and follow.
   const jobs = createJobs({
     stateDir,
@@ -293,6 +298,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
       // Undoing prose also refreshes the list: retain compiled document modules and translations.
       delete known.lang
       delete known.tags
+      delete known.parent
       return Object.assign(known, summary)
     })
     spec.documents.splice(0, spec.documents.length, ...listed)
@@ -343,6 +349,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
     get authoring() { return documentEditor },
     get documentHistory() { return documentHistory?.service },
     get projectAuthoring() { return projectAuthoring?.service },
+    get documentTree() { return treeService },
     get authoringClients() { return authoringClients?.service },
     get authoringWindows() { return authoringWindows?.service },
     get mediaUploads() { return mediaUploads },
@@ -520,8 +527,25 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
       hostUpgrade: hostUpgradeRoute(locks, jobs, () => !transcriptions?.busy() && !voiceAuthoring?.busy() && !audioAuthoring?.busy() && !imageAuthoring?.busy() && activity.quiesce(), version => options.onUpgrade?.(version)),
       ...launcherToken ? { launcherToken } : {},
   }
-  workspaceRoutesOwner = workspaceRoutes(routeOptions)
-  routesPlugin = { id: WORKSPACE_ID, plugin: workspaceRoutesPlugin(routeOptions, workspaceRoutesOwner.routes), config: {} }
+  const documentIndex = new DocumentIndex(config)
+  const treeOperations = new TreeOperations({ config, index: documentIndex, writer, locks, revisions: history?.revisions, changed: documentsChanged, warn: message => log.warn(message) })
+  treeService = {
+    tree: () => documentIndex.tree(),
+    apply: (operation, member, origin) => treeOperations.apply(operation, member, origin),
+    links: id => documentIndex.links(id),
+    search: (query, limit) => documentIndex.search(query, limit),
+    preview: (id, target) => documentIndex.preview(id, target),
+    embedSource: (document, block) => documentIndex.embedSource(document, block),
+  }
+  // External edits, history and saves reach the tree's subscribers; titles that changed reach the references to them.
+  const treeLook = setInterval(() => {
+    try { documentIndex.check() } catch (error) { log.warn(`the document tree could not be read: ${errorMessage(error)}`) }
+    void treeOperations.refreshFallbacks()
+  }, TREE_LOOK_MS)
+  treeLook.unref()
+  const routeOptionsWithTree = { ...routeOptions, index: documentIndex, treeOperations }
+  workspaceRoutesOwner = workspaceRoutes(routeOptionsWithTree)
+  routesPlugin = { id: WORKSPACE_ID, plugin: workspaceRoutesPlugin(routeOptionsWithTree, workspaceRoutesOwner.routes), config: {} }
   workspaceServices = [
     ...history ? [[REVISIONS, history.revisions] as [ServiceToken<unknown>, unknown]] : [],
     [DOCUMENT_FILES, writer],
@@ -532,6 +556,8 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const closeHost = (): Promise<void> => hostClosing ??= Promise.resolve().then(async () => {
     // Stop advertising before releasing any authoring resource; contenders keep waiting for the lease.
     removeServiceState(stateFile)
+    clearInterval(treeLook)
+    documentIndex.close()
     const results = await Promise.allSettled([
       () => running.close(),
       async () => history?.agentSessionReviews.close(),

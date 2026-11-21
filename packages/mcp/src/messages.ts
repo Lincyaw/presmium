@@ -22,6 +22,7 @@ export interface McpMessages {
   historyChange(which: 'undo' | 'redo' | 'revert', revision: string): string
   authoringClientAction(action: string): string
   projectChange: string
+  treeChange: string
   duplicatePage: string
   applyPagePlan: string
   applyAuthoringAction: string
@@ -71,6 +72,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     historyChange: which => which === 'undo' ? '撤消上一次修改' : which === 'redo' ? '恢复上一次撤消的修改' : '撤消版本历史中的一项修改',
     authoringClientAction: () => '在编辑器中执行操作',
     projectChange: '更改工作区',
+    treeChange: '更改文稿树',
     duplicatePage: '复制页面',
     applyPagePlan: '应用页面修改',
     applyAuthoringAction: '应用文稿操作',
@@ -116,6 +118,7 @@ export const MCP_MESSAGES: Record<Locale, McpMessages> = {
     historyChange: which => which === 'undo' ? 'Undo Last Change' : which === 'redo' ? 'Redo Last Change' : 'Undo a Change from Version History',
     authoringClientAction: () => 'Perform Editor Action',
     projectChange: 'Change Workspace',
+    treeChange: 'Change Document Tree',
     duplicatePage: 'Duplicate Page',
     applyPagePlan: 'Apply Page Change',
     applyAuthoringAction: 'Apply Document Action',

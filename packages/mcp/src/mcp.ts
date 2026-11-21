@@ -1,4 +1,5 @@
 import { PROJECT_TOOLS } from './projects.ts'
+import { DOCUMENT_TREE_TOOLS } from './document-tree.ts'
 import { createRequire } from 'node:module'
 import { createMcpHandler, fromJsonSchema, McpServer, ResourceTemplate, UriTemplate } from '@modelcontextprotocol/server'
 import type { AuthInfo, CallToolResult, JsonSchemaType, Variables } from '@modelcontextprotocol/server'
@@ -150,6 +151,7 @@ const TOOLS: ToolSpec[] = [
   ...AUTHORING_ACTION_TOOLS,
   ...HISTORY_TOOLS,
   ...PROJECT_TOOLS,
+  ...DOCUMENT_TREE_TOOLS,
   ...AUTHORING_CLIENT_TOOLS,
   ...AUDIO_AUTHORING_TOOLS,
   ...IMAGE_AUTHORING_TOOLS,
@@ -461,6 +463,7 @@ function hostSupports(host: McpHost, name: string): boolean {
   if (SPEECH_SETTINGS_TOOLS.some(tool => tool.name === name)) return Boolean(host.speechSettings)
   if (name !== 'get_authoring_capabilities' && [...AUTHORING_TOOLS, ...AUTHORING_ACTION_TOOLS, ...EDITING_TOOLS].some(tool => tool.name === name)) return Boolean(host.authoring)
   if (PROJECT_TOOLS.some(tool => tool.name === name)) return Boolean(host.projectAuthoring)
+  if (DOCUMENT_TREE_TOOLS.some(tool => tool.name === name)) return Boolean(host.documentTree)
   switch (name) {
     case 'cancel_authoring_client_request': return Boolean(host.authoringClients?.cancel)
     case 'clone_voice': return Boolean(host.voiceAuthoring?.prepareClone)

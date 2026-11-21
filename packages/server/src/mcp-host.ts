@@ -43,6 +43,7 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     get beginOperation() { return options.serverHost?.beginOperation },
     get agentActivity() { return options.serverHost?.agentActivity },
     get projectAuthoring() { return options.serverHost?.projectAuthoring },
+    get documentTree() { return options.serverHost?.documentTree },
     get authoring() { return options.serverHost?.authoring },
     get documentHistory() { return options.serverHost?.documentHistory },
     get authoringClients() { return options.serverHost?.authoringClients },

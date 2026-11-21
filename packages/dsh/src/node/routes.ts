@@ -11,7 +11,8 @@ export const ROUTES: Record<string, string> = Object.fromEntries([
     'document/media-clip/validate', 'document/transcription/capabilities', 'document/transcription', 'document/transcription/result', 'document/transcription/cancel',
     'document/transcription/adoption/plan', 'document/transcription/adoption/apply',
     'ir', 'ir/events', 'preview', 'build', 'check', 'jobs', 'jobs/cancel', 'jobs/events', 'voice-catalog', 'voice-capabilities',
-    'review', 'review/workspace', 'review/open', 'review/step', 'review/accept', 'review/reject', 'review/restore'].map(path => [path, `${WORKSPACE_ROUTES}${path}`]),
+    'review', 'review/workspace', 'review/open', 'review/step', 'review/accept', 'review/reject', 'review/restore',
+    'tree', 'tree/operation', 'document/links', 'documents/search', 'document/preview', 'embed/source'].map(path => [path, `${WORKSPACE_ROUTES}${path}`]),
   ['focus', `${SERVER_ROUTES}focus`],
   ['control', `${SERVER_ROUTES}control`],
   ['diagnostics', `${SERVER_ROUTES}diagnostics`],
@@ -50,7 +51,7 @@ export function apply(ctx: DshContext): void {
           ...request.method === 'POST' ? { raw: await request.arrayBuffer() } : {},
           signal: request.signal,
         })
-        if ((path === 'documents' || path === 'documents/import' || path === 'project/apply') && request.method === 'POST' && upstream.ok) ctx.presmium.server.invalidateDocuments()
+        if ((path === 'documents' || path === 'documents/import' || path === 'project/apply' || path === 'tree/operation') && request.method === 'POST' && upstream.ok) ctx.presmium.server.invalidateDocuments()
         const answered = new Headers()
         for (const name of RETURNED) {
           const value = upstream.headers.get(name)

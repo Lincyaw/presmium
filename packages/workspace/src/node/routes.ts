@@ -27,6 +27,9 @@ import { createDocumentTranscriptions, documentTranscriptionRoutes } from './doc
 import type { DocumentTranscriptions, ProductionAudioAuthoring, SpeechService } from '@lincyaw/kernel'
 import { createDocumentHistory } from './document-history.ts'
 import { createWorkspaceChanges } from './workspace-changes.ts'
+import { DocumentIndex } from './document-index.ts'
+import type { TreeOperations } from './tree-operations.ts'
+import { treeRoutes } from './tree-routes.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
@@ -70,6 +73,10 @@ export interface WorkspaceRoutesOptions {
   /** Shared mutable allow-list; a later local Studio may register its preview origin. */
   previewOrigins?: string[]
   hostUpgrade?: Route
+  /** The document tree's index; without one, the routes read the tree from the files on each request. */
+  index?: DocumentIndex
+  /** The tree operations; without them `tree/operation` refuses. */
+  treeOperations?: TreeOperations
 }
 
 function toRendererIds(body: unknown): string[] | undefined {
@@ -190,6 +197,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       }),
     },
     ...changes,
+    ...treeRoutes(options.index ?? new DocumentIndex(config), options.treeOperations),
     ...workbench ? workbenchRoutes(workbench) : {},
     ...options.jobs ? jobRoutes(options.jobs, editor) : {},
     ...reviews ? reviewRoutes(reviews) : {},

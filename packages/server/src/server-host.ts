@@ -1,4 +1,4 @@
-import type { DocumentCapture, ProjectAuthoring, DocumentHistory, SpeechSettings, WorkspaceReview, WorkspaceSource, WorkspaceChanges } from '@lincyaw/kernel'
+import type { DocumentCapture, DocumentTreeService, ProjectAuthoring, DocumentHistory, SpeechSettings, WorkspaceReview, WorkspaceSource, WorkspaceChanges } from '@lincyaw/kernel'
 import type { Compilation } from '@lincyaw/compiler'
 import { pluginId } from '@lincyaw/compiler'
 import type { DocumentSummary, Finding, IRDocument, Member, OutputJobs, PresmiumNodePlugin, RunResult, ServiceToken } from '@lincyaw/kernel'
@@ -52,6 +52,8 @@ export interface ServerHost {
   beginOperation?(route?: { plugin: string, path: string }): (() => void) | undefined
   agentActivity?: import('@lincyaw/kernel').AgentActivityObserver
   projectAuthoring?: ProjectAuthoring
+  /** The workspace's document tree, references and synced blocks, and the tree operations. */
+  documentTree?: DocumentTreeService
   authoring?: DocumentAuthoring
   documentHistory?: DocumentHistory
   authoringClients?: AuthoringClients

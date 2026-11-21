@@ -281,6 +281,8 @@ export interface Renderer {
 export interface SiteDocument {
   dir: string
   title: string
+  /** The folder of the document it is under in the workspace's document tree; absent at the top level. */
+  parent?: string
   description?: string
   lang?: string
   tags?: string[]

@@ -28,6 +28,8 @@ const ROUTES = {
   ir: { path: `${WORKSPACE_ROUTES}ir/events`, event: 'revision' },
   jobs: { path: `${WORKSPACE_ROUTES}jobs/events`, event: 'job' },
   'agent-activity': { path: `${WORKSPACE_ROUTES}agent-activity/events`, event: 'agent-activity' },
+  /** `{ type: 'tree' }` whenever the document tree or the trash changes; the client reads `tree` again. */
+  tree: { path: `${WORKSPACE_ROUTES}tree/events`, event: 'tree' },
 } as const
 const MAX_SUBSCRIPTIONS = 16
 const MAX_BUFFERED_BYTES = 2 << 20

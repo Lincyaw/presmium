@@ -94,3 +94,5 @@ export { jupyterKernelLanguage } from './jupyter-kernel.ts'
 
 export { createPreviewEvents } from './preview-events.ts'
 export type { PreviewEvents } from './preview-events.ts'
+export { blockFirstText, blockSubtree, copyEmbeddedBlock, documentCitationSites, documentSearchText, EXCERPT_LENGTH, finalVisuals, freshDocumentId, inlinePlainText, matchingSentence, referenceTargetTitle, targetExcerpt, withReferenceFallbacks } from './document-links.ts'
+export type { CopiedAssetFile, DocumentCitationSite } from './document-links.ts'
