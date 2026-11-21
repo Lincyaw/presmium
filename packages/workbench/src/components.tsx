@@ -15,7 +15,7 @@ export type { ButtonVariant, ControlDensity } from './base-controls.tsx'
 export { PmSortableList } from './sortable-list.tsx'
 export type { SortableListItem, SortableListLabels, SortableListProps } from './sortable-list.tsx'
 export { PmBacklinkItem, PmDocMention, PmDocPreviewCard, PmDocTree, PmMentionPicker, PmSyncedBlockFrame, PmToast } from './knowledge-components.tsx'
-export type { DocPreview, DocTreeDrop, DocTreeLabels, DocTreeNode, DocTreeProps, MentionOption, ToastMessage } from './knowledge-components.tsx'
+export type { BacklinkPlace, DocPreview, DocTreeDrop, DocTreeLabels, DocTreeNode, DocTreeProps, MentionOption, ToastMessage } from './knowledge-components.tsx'
 
 const cls = (...names: (string | false | undefined | null)[]) => names.filter(Boolean).join(' ')
 

@@ -310,7 +310,7 @@ const TreeRow = memo(function TreeRow({ row, node, open, selected, tabStop, drop
       <span className="pm-ui-doc-tree__icon"><PmIcon name={node.warning ? 'warning' : 'document'} /></span>
       {renaming
         ? <TreeRename title={node.title} label={labels.renameField} onDone={value => handlers.finishRename(row.id, value)} />
-        : <span className="pm-ui-doc-tree__title">{title}</span>}
+        : <span className="pm-ui-doc-tree__title" title={title}>{title}</span>}
       {actions && <span className="pm-ui-doc-tree__actions" data-open={menuOpen || undefined}>
         {canCreate && <PmIconButton icon="plus" small tabIndex={-1} label={labels.newChild(title)} onClick={() => handlers.createChild(row.id)} />}
         {/* The menu's items are built when it opens, not for every row on every render. */}
@@ -484,12 +484,35 @@ export function PmSyncedBlockFrame({ source, state = 'default', stateLabel, acti
 }
 
 /** One place that cites the document: the citing document's title and the sentence around the citation. */
-export function PmBacklinkItem({ title, excerpt, synced, syncedLabel, onActivate }: { title: string, excerpt: string, synced?: boolean, syncedLabel?: string, onActivate(): void }) {
+export interface BacklinkPlace { id: string, excerpt: string, meta?: string, synced?: boolean }
+
+/**
+ * A document that cites this one: its title, then each place with the sentence around it (two lines at most) and what
+ * tells equal sentences apart (`meta`). One place makes the whole card the button; several are a list under the title.
+ */
+export function PmBacklinkItem({ title, count, places, syncedLabel, onActivate }: { title: string, count?: string, places: readonly BacklinkPlace[], syncedLabel?: string, onActivate(id: string): void }) {
+  const icon = (place: BacklinkPlace) => <PmIcon name={place.synced ? 'synced' : 'document'} />
+  const label = (place: BacklinkPlace) => place.synced && syncedLabel ? <span className="pm-ui-sr-only">{syncedLabel}</span> : null
+  if (places.length === 1) {
+    const place = places[0]!
+    return (
+      <button type="button" className="pm-ui-backlink" title={title} onClick={() => onActivate(place.id)}>
+        <span className="pm-ui-backlink__title">{icon(place)}<span className="pm-ui-backlink__name">{title}</span>{label(place)}</span>
+        {place.excerpt && <span className="pm-ui-backlink__excerpt">{place.excerpt}</span>}
+        {place.meta && <span className="pm-ui-backlink__meta">{place.meta}</span>}
+      </button>
+    )
+  }
   return (
-    <button type="button" className="pm-ui-backlink" onClick={onActivate}>
-      <span className="pm-ui-backlink__title"><PmIcon name={synced ? 'synced' : 'document'} />{title}{synced && syncedLabel && <span className="pm-ui-sr-only">{syncedLabel}</span>}</span>
-      {excerpt && <span className="pm-ui-backlink__excerpt">{excerpt}</span>}
-    </button>
+    <div className="pm-ui-backlink" data-group="">
+      <span className="pm-ui-backlink__title" title={title}><PmIcon name="document" /><span className="pm-ui-backlink__name">{title}</span>{count && <span className="pm-ui-backlink__count">{count}</span>}</span>
+      <ul className="pm-ui-backlink__places">{places.map(place => (
+        <li key={place.id}><button type="button" className="pm-ui-backlink__place" onClick={() => onActivate(place.id)}>
+          {place.excerpt && <span className="pm-ui-backlink__excerpt">{place.excerpt}</span>}
+          <span className="pm-ui-backlink__meta">{icon(place)}{place.meta}{label(place)}</span>
+        </button></li>
+      ))}</ul>
+    </div>
   )
 }
 

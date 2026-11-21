@@ -185,7 +185,7 @@ export function RecentList({ onOpen }: { onOpen(id: string): void }) {
   if (!known.length) return <p className="pmw-muted pmw-recent__empty">{t.recentEmpty}</p>
   return <ul className="pmw-recent">{known.map(entry => (
     <li key={entry.id}><button type="button" className="pm-ui-nav-item pmw-recent__item" onClick={() => onOpen(entry.id)}>
-      <PmIcon name="document" /><span className="pmw-recent__title">{workbench.tree.title(entry.id)}</span>
+      <PmIcon name="document" /><span className="pmw-recent__title" title={workbench.tree.title(entry.id)}>{workbench.tree.title(entry.id)}</span>
       <span className="pmw-recent__path">{workbench.tree.ancestors(entry.id).map(item => item.title).join(' › ')}</span>
       <span className="pmw-recent__time">{timeAgo(entry.at, locale)}</span>
     </button></li>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { DocumentLinks, OutgoingLink } from '@lincyaw/kernel/contracts'
+import type { DocumentCitation, DocumentLinks, OutgoingLink } from '@lincyaw/kernel/contracts'
 import { PmBacklinkItem, PmButton, PmIcon, PmNotice, PmSkeleton } from '../components.tsx'
 import { useTreeMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 
@@ -24,15 +24,38 @@ export function useDocumentLinks(): { links: Links, retry(): void } {
   return { links, retry: () => setAttempt(n => n + 1) }
 }
 
-function OutgoingItem({ link }: { link: OutgoingLink }) {
+/** The places one document cites this one, together, in the order the service gives them. */
+function groupCitations(citations: readonly DocumentCitation[]): { document: string, title: string, citations: DocumentCitation[] }[] {
+  const groups = new Map<string, { document: string, title: string, citations: DocumentCitation[] }>()
+  for (const citation of citations) {
+    let group = groups.get(citation.document)
+    if (!group) groups.set(citation.document, group = { document: citation.document, title: citation.title, citations: [] })
+    group.citations.push(citation)
+  }
+  return [...groups.values()]
+}
+
+/** Several references to one target are one row with their count. */
+function sameTargets(links: readonly OutgoingLink[]): { link: OutgoingLink, count: number }[] {
+  const rows = new Map<string, { link: OutgoingLink, count: number }>()
+  for (const link of links) {
+    const key = JSON.stringify([link.target.document, link.target.section ?? '', link.target.block ?? ''])
+    const row = rows.get(key)
+    if (row) row.count++
+    else rows.set(key, { link, count: 1 })
+  }
+  return [...rows.values()]
+}
+
+function OutgoingItem({ link, count }: { link: OutgoingLink, count: number }) {
   const t = useTreeMessages()
   const workbench = useWorkbench()
   const gone = link.missing || link.trashed
   return <li>
-    <button type="button" className="pm-ui-nav-item pmw-references__link" disabled={link.missing} aria-disabled={gone || undefined} onClick={() => void workbench.tree.openPlace(link.target)}>
+    <button type="button" className="pm-ui-nav-item pmw-references__link" title={link.title} disabled={link.missing} aria-disabled={gone || undefined} onClick={() => void workbench.tree.openPlace(link.target)}>
       <PmIcon name={link.kind === 'embed' ? 'synced' : 'document'} />
       <span className="pmw-references__title">{link.title}</span>
-      {gone && <span className="pm-ui-nav-item__count">{link.missing ? t.missingTarget : t.trashedTarget}</span>}
+      {gone ? <span className="pm-ui-nav-item__count">{link.missing ? t.missingTarget : t.trashedTarget}</span> : count > 1 && <span className="pm-ui-nav-item__count">{t.placeCount(count)}</span>}
     </button>
   </li>
 }
@@ -50,26 +73,28 @@ function ReferencesView({ read }: { read: ReturnType<typeof useDocumentLinks> })
   if (links.state === 'unavailable') return <div className="pmw-references"><p className="pmw-muted">{t.referencesUnavailable}</p></div>
   if (links.state === 'failed') return <div className="pmw-references"><PmNotice tone="danger" action={<PmButton small onClick={retry}>{t.retry}</PmButton>}>{t.referencesFailed}</PmNotice></div>
   const { incoming, outgoing } = links.links
-  const references = outgoing.filter(link => link.kind === 'reference')
-  const synced = outgoing.filter(link => link.kind === 'embed')
+  const references = sameTargets(outgoing.filter(link => link.kind === 'reference'))
+  const synced = sameTargets(outgoing.filter(link => link.kind === 'embed'))
   return (
     <div className="pmw-references">
       <section className="pmw-references__group" aria-labelledby="pmw-references-incoming">
         <h3 className="pmw-references__heading" id="pmw-references-incoming">{t.citedBy} · {incoming.length}</h3>
-        {incoming.length ? <ul className="pmw-references__list">{incoming.map(citation => (
-          <li key={`${citation.document}\0${citation.block}`}>
-            <PmBacklinkItem title={citation.title} excerpt={citation.excerpt} synced={citation.kind === 'embed'} syncedLabel={t.syncedLabel}
-              onActivate={() => void workbench.tree.openPlace({ document: citation.document, ...citation.section ? { section: citation.section } : {}, block: citation.block })} />
+        {incoming.length ? <ul className="pmw-references__list">{groupCitations(incoming).map(group => (
+          <li key={group.document}>
+            <PmBacklinkItem title={group.title} count={group.citations.length > 1 ? t.placeCount(group.citations.length) : undefined} syncedLabel={t.syncedLabel}
+              places={group.citations.map((citation, index) => ({ id: String(index), excerpt: citation.excerpt, synced: citation.kind === 'embed',
+                meta: group.citations.length > 1 ? `${citation.kind === 'embed' ? t.syncedLabel : t.referenceLabel} · ${t.placeIndex(index + 1)}` : undefined }))}
+              onActivate={id => { const citation = group.citations[Number(id)]!; void workbench.tree.openPlace({ document: citation.document, ...citation.section ? { section: citation.section } : {}, block: citation.block }) }} />
           </li>
         ))}</ul> : <p className="pmw-muted">{t.noCitations}</p>}
       </section>
       <section className="pmw-references__group" aria-labelledby="pmw-references-outgoing">
         <h3 className="pmw-references__heading" id="pmw-references-outgoing">{t.outgoing} · {references.length}</h3>
-        {references.length ? <ul className="pmw-references__links">{references.map((link, index) => <OutgoingItem key={index} link={link} />)}</ul> : <p className="pmw-muted">{t.noOutgoing}</p>}
+        {references.length ? <ul className="pmw-references__links">{references.map(({ link, count }, index) => <OutgoingItem key={index} link={link} count={count} />)}</ul> : <p className="pmw-muted">{t.noOutgoing}</p>}
       </section>
       <section className="pmw-references__group" aria-labelledby="pmw-references-synced">
         <h3 className="pmw-references__heading" id="pmw-references-synced">{t.syncedBlocks} · {synced.length}</h3>
-        {synced.length ? <ul className="pmw-references__links">{synced.map((link, index) => <OutgoingItem key={index} link={link} />)}</ul> : <p className="pmw-muted">{t.noSynced}</p>}
+        {synced.length ? <ul className="pmw-references__links">{synced.map(({ link, count }, index) => <OutgoingItem key={index} link={link} count={count} />)}</ul> : <p className="pmw-muted">{t.noSynced}</p>}
       </section>
     </div>
   )

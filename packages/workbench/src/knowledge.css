@@ -160,14 +160,18 @@
 
 .pmw-references {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: var(--pm-space-4);
+  min-width: 0;
   padding: var(--pm-space-3);
 }
 
 .pmw-references__group {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--pm-space-2);
+  min-width: 0;
 }
 
 .pmw-references__heading {
@@ -180,6 +184,7 @@
 .pmw-references__list,
 .pmw-references__links {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--pm-space-2);
   margin: 0;
   padding: 0;
@@ -251,8 +256,14 @@
 
 .pmw-rail__body {
   flex: 1;
+  min-width: 0;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.pmw-rail {
+  min-width: 0;
 }
 
 .pmw-rail__actions {
