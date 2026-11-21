@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { effectiveDocumentIn, providedDocuments, inheritedSettingsIn, WORKSPACE_CONFIG, workspaceDefaults, workspaceDocuments, workspaceSettings } from '@lincyaw/compiler'
-import type { OperatorSettings } from '@lincyaw/compiler'
+import type { OperatorSettings, WorkspaceDocuments } from '@lincyaw/compiler'
 import { APPROVAL_KINDS, DOCUMENT_ENTRY, errorMessage, isRecord } from '@lincyaw/kernel'
 import type { ApprovalKind, DocumentDefaults, DocumentSummary, EffectiveDocument, PresmiumDocument } from '@lincyaw/kernel'
 import type { ApprovalPolicy } from '@lincyaw/server'
@@ -104,28 +104,34 @@ export function documentPlaces(config: WorkspaceConfig): Map<string, { id: strin
 }
 
 /** The metadata a document decides with (its language, plugins, renderers), inherited settings filled in. */
-function effectiveMetadata(config: WorkspaceConfig, entry: string, parsed: unknown): Record<string, unknown> {
+function effectiveMetadata(config: WorkspaceConfig, entry: string, parsed: unknown, scanned?: WorkspaceDocuments): Record<string, unknown> {
   if (!isRecord(parsed) || !isRecord(parsed.metadata)) return {}
   if (!isRecord(parsed.production) || !isRecord(parsed.placement)) return parsed.metadata
-  return effectiveDocumentIn(config.root, join(config.root, entry), parsed as unknown as PresmiumDocument).metadata as unknown as Record<string, unknown>
+  return effectiveDocumentIn(config.root, join(config.root, entry), parsed as unknown as PresmiumDocument, scanned).metadata as unknown as Record<string, unknown>
 }
 
 /** What a summary needs of a document file (not its pages or blocks), kept until the file changes. */
 const heads = new Map<string, { mtimeMs: number, size: number, value: unknown }>()
+const headOf = (parsed: unknown) => isRecord(parsed) ? { id: parsed.id, schemaVersion: parsed.schemaVersion, placement: parsed.placement, metadata: parsed.metadata, production: parsed.production } : parsed
 function documentHead(file: string): unknown {
   const stat = statSync(file)
   const known = heads.get(file)
   if (known && known.mtimeMs === stat.mtimeMs && known.size === stat.size) return known.value
-  const parsed: unknown = JSON.parse(readFileSync(file, 'utf8'))
-  const value = isRecord(parsed) ? { id: parsed.id, schemaVersion: parsed.schemaVersion, placement: parsed.placement, metadata: parsed.metadata, production: parsed.production } : parsed
+  const value = headOf(JSON.parse(readFileSync(file, 'utf8')))
   heads.set(file, { mtimeMs: stat.mtimeMs, size: stat.size, value })
   return value
 }
 
-export function readDocumentSummary(config: WorkspaceConfig, { dir, entry }: DocumentEntry): FoundDocument {
+/** A document file another reader (the document index, reading asynchronously) has just parsed: listing it needs no second read. */
+export function primeDocumentHead(file: string, mtimeMs: number, size: number, parsed: unknown): void {
+  heads.set(file, { mtimeMs, size, value: headOf(parsed) })
+}
+
+/** `scanned`: the workspace scan the caller already has (listing every document must not scan once per document). */
+export function readDocumentSummary(config: WorkspaceConfig, { dir, entry }: DocumentEntry, scanned?: WorkspaceDocuments): FoundDocument {
   let headmatter: Record<string, unknown> = {}
   try {
-    headmatter = effectiveMetadata(config, entry, documentHead(join(config.root, entry)))
+    headmatter = effectiveMetadata(config, entry, documentHead(join(config.root, entry)), scanned)
   } catch {
   }
   const tags = strings(headmatter.tags)
@@ -179,9 +185,10 @@ function summarize(config: WorkspaceConfig): FoundDocument[] {
     }
     return stamps.join('|')
   }
+  let scanned: WorkspaceDocuments | undefined
   return listDocumentEntries(config).map((entry) => {
     const key = keyOf(entry), cached = known.get(entry.entry)
-    const found = key !== undefined && cached?.key === key ? cached.summary : readDocumentSummary(config, entry)
+    const found = key !== undefined && cached?.key === key ? cached.summary : readDocumentSummary(config, entry, scanned ??= config.singleDeck ? undefined : workspaceDocuments(config.root))
     if (key !== undefined) known.set(entry.entry, { key, summary: found })
     const parent = places.get(entry.dir)?.parent
     const parentDir = parent === null || parent === undefined ? undefined : dirs.get(parent)

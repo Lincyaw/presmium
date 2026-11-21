@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, lstatSync } from 'node:fs'
+import { existsSync, lstatSync, rmSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
@@ -10,9 +10,23 @@ import { Git } from './git.ts'
 import { leavesRoot } from '../domain/paths.ts'
 
 /** Editing history owns its index and refs; project commits remain an explicit author action. */
+const historyDirectory = (root: string, env: NodeJS.ProcessEnv) => join(env.XDG_STATE_HOME || join(homedir(), '.local', 'state'), 'presmium', 'history', createHash('sha256').update(root).digest('hex'))
+
+/**
+ * Removes the index lock a git command of an earlier service left in the workspace's local history when that service
+ * was ended in the middle of it; every later command would fail on it. Only the workspace's host (which holds the
+ * workspace's lease, so no other service uses this history) may call this. Answers whether there was one.
+ */
+export function clearStaleHistoryLock(root: string, env: NodeJS.ProcessEnv = process.env): boolean {
+  const lock = join(historyDirectory(root, env), 'index.lock')
+  if (!existsSync(lock)) return false
+  rmSync(lock, { force: true })
+  return true
+}
+
 export async function openLocalHistory(root: string, env: NodeJS.ProcessEnv = process.env): Promise<Git> {
   const base = join(env.XDG_STATE_HOME || join(homedir(), '.local', 'state'), 'presmium', 'history')
-  const directory = join(base, createHash('sha256').update(root).digest('hex'))
+  const directory = historyDirectory(root, env)
   if (existsSync(join(directory, 'HEAD'))) {
     const top = (await readFile(join(directory, 'presmium-worktree'), 'utf8')).trim()
     return new Git(root, { directory, top })

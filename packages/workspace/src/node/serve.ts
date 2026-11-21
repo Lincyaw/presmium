@@ -27,7 +27,7 @@ import { DocumentOperations, documentsDiff } from './document-operations.ts'
 import type { DocumentsChange } from './document-operations.ts'
 import { RequestError } from './errors.ts'
 import { Git } from './git.ts'
-import { captureLocalBaseline, openLocalHistory } from './local-history.ts'
+import { captureLocalBaseline, clearStaleHistoryLock, openLocalHistory } from './local-history.ts'
 import { createJobs, OUTPUTS_PATH } from './jobs.ts'
 import { DocumentLocks } from './locks.ts'
 import { AgentSessionReviews } from './review/agent-session-reviews.ts'
@@ -131,7 +131,12 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     try { await running?.close() }
     finally { await lease.release() }
   })
-  const compromised = () => { void close().catch(error => (options.log ?? pluginLogger('presmium serve')).error(errorMessage(error))) }
+  const compromised = () => {
+    const log = options.log ?? pluginLogger('presmium serve')
+    // The lease is renewed on a timer: a lost lease is most often the event loop held longer than the lease's stale time.
+    log.error(`the workspace service stops: it lost the workspace's host lease (${errorMessage(lease.signal.reason ?? 'unknown reason')}); another process may host the workspace now, or the service was blocked too long`)
+    void close().catch(error => log.error(errorMessage(error)))
+  }
   try {
     lease.signal.throwIfAborted()
     options.signal?.throwIfAborted()
@@ -158,6 +163,10 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const config = readWorkspaceConfig(options.dir)
   if (env.PRESMIUM_AGENT_CANDIDATE === '1') config.settings['presmium.assistant'] = { ...config.settings['presmium.assistant'], review: 'auto' }
   const { root } = config
+  // A failure nobody awaited is a log line, never the end of the service that hosts the author's workspace.
+  const unhandled = (reason: unknown) => log.error(`an operation failed unexpectedly: ${errorMessage(reason)}`)
+  process.on('unhandledRejection', unhandled)
+  if (clearStaleHistoryLock(root, env)) log.warn('removed the local history\'s index lock that an earlier service, ended in the middle of a git command, left behind')
   const historyGit = await openLocalHistory(root, env)
   await historyGit.exclusive(() => captureLocalBaseline(historyGit, ['.']))
   const operatorDirectory = resolveOperatorDir(root, options.operatorDir ?? env.PRESMIUM_OPERATOR_DIR)
@@ -565,6 +574,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
     // Stop advertising before releasing any authoring resource; contenders keep waiting for the lease.
     removeServiceState(stateFile)
     treeOperations.close()
+    process.off('unhandledRejection', unhandled)
     documentIndex.close()
     const results = await Promise.allSettled([
       () => running.close(),

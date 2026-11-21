@@ -7,6 +7,7 @@ import { provideDocumentEntries } from '@lincyaw/compiler'
 import type { ScannedDocument } from '@lincyaw/compiler'
 import { blockFirstText, blockSubtree, DOCUMENT_ENTRY, documentCitationSites, documentSearchText, documentTree, isRecord, targetExcerpt } from '@lincyaw/kernel'
 import type { BlockId, DocumentCitation, DocumentId, DocumentLinks, DocumentPlacement, DocumentPreview, DocumentSearchHit, DocumentTree, EmbedSource, OutgoingLink, PlacementTree, PresmiumDocument, ReferenceTarget, SectionId, TrashEntry, TreeIssue, TreeNode } from '@lincyaw/kernel'
+import { primeDocumentHead } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
 
 /** The workspace folder trashed documents are moved to, one folder per document ID. */
@@ -256,6 +257,8 @@ export class DocumentIndex {
         if (state && text !== undefined) {
           const document = parseDocument(text)
           try { if (document) state.entry = indexEntry(document, dirOf(path)) } catch { /* Indexed as a file without a document. */ }
+          // The document list reads the same file's metadata; it finds it parsed already.
+          if (document) primeDocumentHead(join(this.#config.root, path), state.mtimeMs, state.size, document)
         }
         into(path, state)
         if (performance.now() - slice > SLICE_MS) { await yieldToEvents(); slice = performance.now() }

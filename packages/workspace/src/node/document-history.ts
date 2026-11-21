@@ -53,7 +53,14 @@ export function createDocumentHistory(options: DocumentHistoryOptions): { servic
     if ((/[\x00-\x1f\x7f]/.test(path) || path.split('/').some(part => part.startsWith('.'))) || documentDirOf(config, path) !== document) throw new RequestError(403, 'history-file-outside-document')
   }
   const compact = (document: string, entry: HistoryRevision, member: Member): HistoryRevision => {
-    const files = entry.files.filter(path => { try { pathAllowed(document, path, member); return path.length <= 500 } catch { return false } })
+    // A revision can name every file of the workspace (the baseline does): only this document's files are checked in
+    // full, and only until the six shown are found.
+    const files: string[] = []
+    for (const path of entry.files) {
+      if (files.length >= 6) break
+      if (path.length > 500 || (document && !path.startsWith(`${document}/`))) continue
+      try { pathAllowed(document, path, member); files.push(path) } catch { /* Not shown. */ }
+    }
     const message = (entry.message.split('\n')[0] ?? '').slice(0, 240)
     return { id: entry.id, message, author: entry.author.slice(0, 120), date: entry.date, origin: { kind: entry.origin.kind }, files: files.slice(0, 6),
       ...entry.revertedBy ? { revertedBy: entry.revertedBy } : {}, ...entry.reverts ? { reverts: entry.reverts } : {}, ...entry.redo ? { redo: true } : {},
