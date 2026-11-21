@@ -168,7 +168,8 @@
   --pm-control-time-width: 7rem;
   --pm-canvas-min-width: 30rem;
   --pm-layout-narrow-width: 48rem;
-  --pm-layout-roomy-width: 80rem;
+  /* A document pane this wide keeps its right pane (outline, references, comments) beside the page instead of over it. */
+  --pm-layout-roomy-width: 64rem;
   --pm-production-wide-width: 68.75rem;
   --pm-opacity-disabled: 0.55;
   --pm-dialog-width: 40rem;
@@ -180,6 +181,17 @@
   --pm-menu-min-width: 12rem;
   --pm-size-notice-message: 12rem; /* below this, a notice puts its action on its own line */
   --pm-search-list-max-height: 18rem;
+  /* The document tree: a row and the indent of each level. */
+  --pm-tree-row-height: 1.875rem;
+  --pm-tree-indent: 1rem;
+  --pm-preview-card-width: 22rem;
+  --pm-mention-picker-width: 22rem;
+  --pm-mention-picker-max-height: 16rem;
+  --pm-toast-max-width: 32rem;
+  /* A synced block keeps this much room while its content loads, so the page below does not jump. */
+  --pm-synced-block-min-height: 6rem;
+  /* The sidebar's drawer on a narrow screen. */
+  --pm-sidebar-drawer-width: 19rem;
   --pm-timeline-label-width: 5.5rem;
   --pm-timeline-tick-width: 5rem;
   --pm-timeline-wave-height: 1.25rem;

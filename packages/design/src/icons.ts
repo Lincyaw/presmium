@@ -1,4 +1,4 @@
-import { UserRound, LogOut, Share2, Square, Sigma, Captions, Clock3, Layers, ArrowLeft, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleCheck, CircleHelp, CircleX, Code2, Columns2, Contrast, Copy, Download, ExternalLink, Eye, FileDiff, FileOutput, FileText, Film, Folder, Globe, GitBranch, GitFork, History, GripVertical, Info, Languages, LayoutGrid, LoaderCircle, Maximize2, Menu, MessageSquare, MessageSquarePlus, MessagesSquare, Minimize2, Moon, MoreHorizontal, PanelLeft, PanelLeftClose, Pause, Pencil, PenLine, Play, Plug, Plus, Presentation, Redo2, Save, Search, SlidersHorizontal, Sparkles, Sun, Trash2, TriangleAlert, Undo2, Users, X, Clapperboard, AudioLines, Scissors, Mic, Volume2, Upload, Image, Link, RefreshCw, Minus, Scan, AlignStartVertical, ArrowRightToLine } from 'lucide'
+import { UserRound, LogOut, Share2, Square, Sigma, Captions, Clock3, Layers, ArrowLeft, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleCheck, CircleHelp, CircleX, Code2, Columns2, Contrast, Copy, Download, ExternalLink, Eye, FileDiff, FileOutput, FileText, Film, Folder, Globe, GitBranch, GitFork, History, GripVertical, Info, Languages, LayoutGrid, LoaderCircle, Maximize2, Menu, MessageSquare, MessageSquarePlus, MessagesSquare, Minimize2, Moon, MoreHorizontal, PanelLeft, PanelLeftClose, Pause, Pencil, PenLine, Play, Plug, Plus, Presentation, Redo2, Save, Search, SlidersHorizontal, Sparkles, Sun, Trash2, TriangleAlert, Undo2, Users, X, Clapperboard, AudioLines, Scissors, Mic, Volume2, Upload, Image, Link, RefreshCw, Minus, Scan, AlignStartVertical, ArrowRightToLine, House, Clock, FilePlus, PanelRight, RotateCcw, FolderInput, ListTree, Link2 } from 'lucide'
 import type { IconNode } from 'lucide'
 
 // Presmium's semantic names stay stable across React components and the generated HTML.
@@ -24,6 +24,8 @@ export const ICONS = {
   'timing-during': AlignStartVertical, 'timing-after': ArrowRightToLine,
   overview: LayoutGrid, fullscreen: Maximize2, 'exit-fullscreen': Minimize2,
   share: Share2, stop: Square,
+  home: House, recent: Clock, 'document-add': FilePlus, rail: PanelRight, restore: RotateCcw,
+  move: FolderInput, outline: ListTree, reference: Link2, synced: RefreshCw,
 } satisfies Record<string, IconNode>
 
 export type IconName = keyof typeof ICONS

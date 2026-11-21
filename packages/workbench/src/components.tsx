@@ -14,6 +14,8 @@ export { PmButton, PmIcon, PmIconButton, PmTooltip } from './base-controls.tsx'
 export type { ButtonVariant, ControlDensity } from './base-controls.tsx'
 export { PmSortableList } from './sortable-list.tsx'
 export type { SortableListItem, SortableListLabels, SortableListProps } from './sortable-list.tsx'
+export { PmBacklinkItem, PmDocMention, PmDocPreviewCard, PmDocTree, PmMentionPicker, PmSyncedBlockFrame, PmToast } from './knowledge-components.tsx'
+export type { DocPreview, DocTreeDrop, DocTreeLabels, DocTreeNode, DocTreeProps, MentionOption, ToastMessage } from './knowledge-components.tsx'
 
 const cls = (...names: (string | false | undefined | null)[]) => names.filter(Boolean).join(' ')
 
@@ -84,6 +86,8 @@ export interface SearchListProps {
   onActivate?(value: string): void
   query?: string
   onQueryChange?(query: string): void
+  /** False when `items` already are the results of `query` (a search on the server): they are shown as given. */
+  filter?: boolean
   resultsLabel(count: number): string
   emptyLabel: string
   loadingLabel: string
@@ -96,7 +100,7 @@ export interface SearchListProps {
 }
 
 /** Search and a single choice compose with Dialog; Radix owns radio navigation and selection. */
-export function PmSearchList({ label, searchLabel, searchPlaceholder, items, value, onValueChange, onActivate, query, onQueryChange, resultsLabel, emptyLabel, loadingLabel, loading, error, disabled, density = 'compact', autoFocus, 'aria-describedby': describedBy }: SearchListProps) {
+export function PmSearchList({ label, searchLabel, searchPlaceholder, items, value, onValueChange, onActivate, query, onQueryChange, filter = true, resultsLabel, emptyLabel, loadingLabel, loading, error, disabled, density = 'compact', autoFocus, 'aria-describedby': describedBy }: SearchListProps) {
   const id = useId()
   const [localQuery, setLocalQuery] = useState('')
   const list = useRef<HTMLDivElement>(null)
@@ -107,12 +111,13 @@ export function PmSearchList({ label, searchLabel, searchPlaceholder, items, val
   useEffect(() => () => { if (navigationRelease.current) clearTimeout(navigationRelease.current) }, [])
   const search = query ?? localQuery
   const matches = useMemo(() => {
+    if (!filter) return items
     const terms = search.normalize('NFKC').toLowerCase().trim().split(/\s+/).filter(Boolean)
     return items.filter(item => {
       const text = [item.label, ...item.keywords ?? []].join(' ').normalize('NFKC').toLowerCase()
       return terms.every(term => text.includes(term))
     })
-  }, [items, search])
+  }, [items, search, filter])
   const blocked = Boolean(disabled || loading || error)
   const errorId = error ? `${id}-error` : undefined
   return <div className="pm-ui-search-list" data-density={density} onKeyDownCapture={event => {
@@ -347,6 +352,21 @@ export function PmDialog({ open, label, closeLabel, name, actions, description, 
   )
 }
 
+/** A modal side panel from the start edge (the sidebar on a narrow screen): Esc, the backdrop and `onClose` close it. */
+export function PmDrawer({ open, label, size, onClose, children }: { open: boolean, label: string, size?: 'sidebar', onClose(): void, children?: ReactNode }) {
+  return (
+    <Dialog.Root open={open} modal onOpenChange={next => { if (!next) onClose() }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="pm-ui-dialog-overlay" />
+        <Dialog.Content className="pm-ui-drawer pm-ui" data-size={size} aria-describedby={undefined} onEscapeKeyDown={event => event.stopPropagation()}>
+          <Dialog.Title className="pm-ui-sr-only">{label}</Dialog.Title>
+          {children}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  )
+}
+
 /** A non-modal floating panel on its trigger, with the shared `pm-ui-popover` surface (host's PmPopover for React pages). */
 export function PmPopover({ open, label, name, placement = 'below-end', trigger, onOpenChange, onInteractOutside, children }: { open: boolean, label: string, name?: string, placement?: PopoverPlacement, trigger: ReactNode, onOpenChange(open: boolean): void, onInteractOutside?: ComponentProps<typeof Popover.Content>['onInteractOutside'], children?: ReactNode }) {
   const inDialog = useContext(PmDialogLayerContext)
@@ -374,11 +394,11 @@ export interface MenuItem {
 }
 
 /** `toolbarItem`: the trigger joins the surrounding `PmToolbar`'s arrow-key navigation, e.g. as its overflow ("More") menu. */
-export function PmMenu({ label, description, items, icon = 'more', placement = 'below-end', triggerRef, toolbarItem, onSelect }: { label: string, description?: string, items: MenuItem[], icon?: IconName, placement?: PopoverPlacement, triggerRef?: Ref<HTMLButtonElement>, toolbarItem?: boolean, onSelect(id: string): void }) {
+export function PmMenu({ label, description, items, icon = 'more', placement = 'below-end', triggerRef, toolbarItem, onOpenChange, onSelect }: { label: string, description?: string, items: MenuItem[], icon?: IconName, placement?: PopoverPlacement, triggerRef?: Ref<HTMLButtonElement>, toolbarItem?: boolean, onOpenChange?(open: boolean): void, onSelect(id: string): void }) {
   const descriptionId = useId()
   const trigger = <PmIconButton ref={triggerRef} icon={icon} label={label} small />
   return (
-    <DropdownMenu.Root>
+    <DropdownMenu.Root onOpenChange={onOpenChange}>
       <DropdownMenu.Trigger asChild>{toolbarItem ? <Toolbar.Button asChild>{trigger}</Toolbar.Button> : trigger}</DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content className="pm-ui-menu pm-ui-floating pm-ui" data-density="compact" data-description={description ? '' : undefined} aria-label={label} aria-describedby={description ? descriptionId : undefined} {...placementOf(placement)} sideOffset={6} collisionPadding={16} onEscapeKeyDown={event => event.stopPropagation()}>

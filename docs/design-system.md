@@ -119,6 +119,16 @@ macOS 桌面端将原生标题栏与全局应用栏合并为一行，隐藏重�
 | Timeline | `PmTimeline`（workbench） | 画面、配音、字幕三轨与稳定步骤身份；未知或估算时长不开放任意定位；只有真实样本才画波形；缩放只改视图；`excluded` 表示本页不在时间线中（讲授中没有这一页），状态与提示由调用方给出，不列片段；`notice` 是关于所选步骤的提示，显示在轨道下方（如这一步不在讲授中） |
 | Split panes | workbench `PmSplitGroup`、`PmSplitPanel`、`PmSplitHandle` | 通过 react-resizable-panels 公开接口实现双轴调整、键盘与双击恢复；隐藏与后台挂载由公共适配处理 |
 | SortableList | `PmSortableList`（workbench，dnd kit） | 按稳定 ID 提交一次移动；禁用排序不禁止选择 |
+| DocTree | `PmDocTree`（workbench），`pm-ui-doc-tree` | WAI-ARIA 树：单一 Tab 停留点，方向键、`Home`、`End`、按首字母跳转、`*` 展开同级、`Enter` 打开、`F2` 行内重命名、`Delete` 移到回收站；状态 Default、Hover、Selected（`aria-selected`）、DropTarget（`data-drop` 为 `before`／`inside`／`after`，前后是强调色细线，中部是强调色描边与浅底）；悬停或聚焦显示“新建子文稿”与“更多”；行按原始属性记忆，可见行超过 200 时只绘制视口中的行；树自己滚动 |
+| DocMention | `PmDocMention`，`pm-ui-doc-mention` | 行内引用：文稿图标与标题，强调色；悬停浅强调底；Missing 为弱化色与删除线，不可激活；`role="link"`，`Enter` 激活 |
+| DocPreviewCard | `PmDocPreviewCard`，`pm-ui-doc-preview` | 引用的预览卡（Radix Popover 锚定）：停留 500 ms 打开，离开 300 ms 内可移入，键盘聚焦同样打开，不抢焦点，可 Tab 进入；指针到达时开始读取，已读到时打开即显示；路径、标题、四行摘要、元信息、操作 |
+| MentionPicker | `PmMentionPicker`，`pm-ui-mention-picker` | `@`／`[[` 的文稿列表（listbox）：标题行、选项（标题与路径）、末项“新建子文稿并链接”、底部按键说明；键盘由编辑器处理，`listId`、`optionId` 与编辑器的 `aria-activedescendant` 对应 |
+| SyncedBlockFrame | `PmSyncedBlockFrame`，`pm-ui-synced-block` | 同步块外框：标题栏写来源，悬停或聚焦时强调色描边与浅强调标题栏并显示操作；SourceMissing／Trashed 为虚线框与提醒色标题栏，操作常显；内容区保留 `--pm-synced-block-min-height` |
+| BacklinkItem | `PmBacklinkItem`，`pm-ui-backlink` | 引用了本文的一处：标题与两行上下文，整卡是按钮 |
+| Toast | `PmToast`，`pm-ui-toast` | 底部居中、反色（`--pm-color-inverse`／`on-inverse`），一次一条；4 秒后自动关闭，指针或焦点停留时暂停，错误不自动关闭；可带一个文字操作（如“撤消”）与关闭；结果用 polite、错误用 assertive 的实时区域 |
+| Drawer | `PmDrawer`（workbench，Radix Dialog），`pm-ui-drawer` | 从起始边滑出的模态面板；`size="sidebar"` 用 `--pm-sidebar-drawer-width` 与侧栏底色（窄屏的工作区侧栏） |
+| NavItem、SearchTrigger | `pm-ui-nav-item`、`pm-ui-search-trigger` | 侧栏的位置项（图标与名称，`aria-current="page"` 为选中，末尾可带计数）；画成搜索框、带快捷键的搜索入口按钮 |
+| Card 命令 | `pm-ui-card__cover`、`pm-ui-card__icon`、`pm-ui-card__hint` | 可点的卡片：卡片中唯一的按钮覆盖整张卡，卡片聚焦时描边 |
 | SchemaForm | `PmSchemaForm`（workbench，RJSF） | 用公共控件渲染组件参数；只显示声明的字段，未声明数据原样保留 |
 | Caption | `PmCaption`、`PmCaptionProvider`（host），`caption.css` | 放映字幕浮层，超长在安全区内滚动，不改变画布布局；字号与最大宽度乘以文稿的字幕大小（`--pm-caption-scale`，放映页面设定） |
 | 烧录字幕 | `.pm-lecture-caption`（addon-lecture） | 导出视频画面上的字幕，与放映字幕浮层分开；字号、宽度、底边距、内边距与颜色取 `--pm-caption-burn-*` 令牌，按画面比例：默认字号取画面高度的 5.6% 与宽度的 3.15% 中较小的一个（1080p 画面上约 60 px，1080×1920 画面上约 34 px），乘以文稿的字幕大小（`--pm-caption-scale`），最宽为画面宽度的 89%，框底距底边约 30 px（1080p）。烧录字幕从不超过两行：讲授播放器按字幕框的字号与宽度算出两行能放下的长度，再在画面上把每一段排一遍（隐藏的同样式副本），有一段超过两行（没有空格的长串、较宽的大写字母）就把长度缩短一成重新切分，结果只取决于画面与文字，仍是时间的函数；没有空格的长串（标识符、网址）在框内任意处换行（`overflow-wrap: anywhere`），不越出画面；更长的字幕（没有词时码的整句、录音、译文）切成放得下的最少几段（这样会在词或数字中间切开而多一段就不会时，多切一段），各段长度相近（与平均长度相差不超过 30%），在这个范围内优先在句末、其次在分句处、再次在空格处切开，在这句的时间里按长度依次显示；全角标点在哪里都算句末或分句，半角的 `. ! ? ;`（句末）与 `, :`（分句）后面是空格或全文结尾时才算，所以 1,024、3.14、10:30 不会断开；两行时行长平衡。底色是半透明的浅灰，尽量少遮挡画面，近黑色半粗字带一圈很淡的浅色描边，在浅色与深色画面上都可读；颜色由墨色与页面色混合，暗色外观下是半透明深灰与浅色字 |
