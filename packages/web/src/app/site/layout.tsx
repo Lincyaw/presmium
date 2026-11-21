@@ -4,7 +4,7 @@ import { isChapterTitle, isRecord } from '@lincyaw/kernel'
 import { listViews, OverlayViewOutlet, PageViewOutlet, useViewer } from '@lincyaw/viewer'
 import { useEffect, useState } from 'react'
 import type { ReactElement } from 'react'
-import { directoryTree, folderLabel, sitePageLayout, WEB_MESSAGES } from '../../domain/index.ts'
+import { directoryTree, documentTreeNodes, folderLabel, treeAncestors, sitePageLayout, WEB_MESSAGES } from '../../domain/index.ts'
 import type { AppConfig, DirectoryNode, NavItem, SiteLocale } from '../../domain/index.ts'
 import type { PageRouter } from '../router.ts'
 import { SearchDialog } from './search.tsx'
@@ -64,6 +64,13 @@ function Sidebar({ config, router, course = false }: { config: AppConfig, router
       <DirectoryItems nodes={directoryTree(config.site.documents)} current={config.document} own={own} chapters={chapters} />
     </nav>
   }
+  // Documents placed under others show as the workspace's document tree, the branches above this document open.
+  if (config.site.documents?.some(item => item.parent !== undefined)) {
+    const open = new Set(treeAncestors(config.site.documents, config.document))
+    return <nav className="pm-site-sidebar" aria-label={course ? t.courseContents : t.sidebarNav}>
+      <DirectoryItems nodes={documentTreeNodes(config.site.documents)} current={config.document} own={own} chapters={chapters} isOpen={node => open.has(node.dir)} />
+    </nav>
+  }
   return <nav className="pm-site-sidebar" aria-label={course ? t.courseContents : t.sidebarNav}>
     {course && <div className="pm-site-sidebar__intro"><p className="pm-ui-heading">{t.courseContents}</p><p className="pm-site-sidebar__title">{config.site.brandTitle ?? doc.meta.title}</p></div>}
     {[...groups].map(([group, items]) => <div key={group} className="pm-site-sidebar__group">
@@ -84,19 +91,19 @@ type SidebarDocument = NonNullable<AppConfig['site']['documents']>[number]
  * The documents as a tree of the workspace's folders (`site.sidebar: directories`): a folder that holds documents opens
  * and closes, and the folders on the way to this document are open.
  */
-function DirectoryItems({ nodes, current, own, chapters }: { nodes: DirectoryNode<SidebarDocument>[], current: string, own: string, chapters: ReactElement }) {
+function DirectoryItems({ nodes, current, own, chapters, isOpen }: { nodes: DirectoryNode<SidebarDocument>[], current: string, own: string, chapters: ReactElement, isOpen?(node: DirectoryNode<SidebarDocument>): boolean }) {
   return <ol className="pm-site-sidebar__tree">{nodes.map((node) => {
     const here = node.doc?.dir === current
     const label = node.doc
       ? <a className="pm-site-sidebar__link" href={here ? own : node.doc.href} aria-current={here ? 'page' : undefined}><span>{node.doc.title}</span></a>
       : <span className="pm-site-sidebar__folder">{folderLabel(node.name)}</span>
     if (!node.children.length) return <li key={node.dir} className={`pm-site-sidebar__chapter${here ? ' pm-current' : ''}`}>{label}{here && chapters}</li>
-    const open = current === node.dir || current.startsWith(`${node.dir}/`)
+    const open = current === node.dir || (isOpen ? isOpen(node) : current.startsWith(`${node.dir}/`))
     return <li key={node.dir} className={`pm-site-sidebar__branch${here ? ' pm-current' : ''}`}>
       <details open={open || undefined}>
         <summary className="pm-site-sidebar__toggle">{label}<PmIcon name="chevron-down" /></summary>
         {here && chapters}
-        <DirectoryItems nodes={node.children} current={current} own={own} chapters={chapters} />
+        <DirectoryItems nodes={node.children} current={current} own={own} chapters={chapters} isOpen={isOpen} />
       </details>
     </li>
   })}</ol>

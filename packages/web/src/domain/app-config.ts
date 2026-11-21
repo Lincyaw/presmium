@@ -33,8 +33,11 @@ export interface SiteConfig {
   home?: string
   /** The document's languages, its own first; one when it has no translation. */
   locales: SiteLocale[]
-  /** The workspace's documents in its order, for the sidebar; a document's first tag is its group there. */
-  documents?: { dir: string, title: string, href: string, group?: string }[]
+  /**
+   * The workspace's documents in its order (the document tree's, depth first), for the sidebar; a document's first tag is
+   * its group there, and `parent` is the folder of the document it is under in the tree.
+   */
+  documents?: { dir: string, title: string, href: string, group?: string, parent?: string }[]
   /** The sidebar shows `documents` (then in tree order) as the tree of the workspace's folders, not in groups by tag. */
   sidebar?: 'directories'
   /** The documents before and after this one in the workspace: the pager goes on to them. */

@@ -76,7 +76,10 @@ export interface DocumentEntry {
   entry: string
 }
 
-export interface FoundDocument extends DocumentSummary, DocumentEntry {}
+export interface FoundDocument extends DocumentSummary, DocumentEntry {
+  /** The folder of the document it is under in the tree; absent at the top level. */
+  parentDir?: string
+}
 
 const entryOf = (path: string): DocumentEntry => ({ dir: path.split('/').slice(0, -1).join('/'), entry: path })
 
@@ -126,7 +129,13 @@ export function readDocumentSummary(config: WorkspaceConfig, { dir, entry }: Doc
 }
 
 export function listDocuments(config: WorkspaceConfig): FoundDocument[] {
-  return listDocumentEntries(config).map(entry => readDocumentSummary(config, entry))
+  const places = documentPlaces(config)
+  const dirs = new Map([...places].map(([dir, place]) => [place.id, dir]))
+  return listDocumentEntries(config).map((entry) => {
+    const found = readDocumentSummary(config, entry), parent = places.get(entry.dir)?.parent
+    const parentDir = parent === null || parent === undefined ? undefined : dirs.get(parent)
+    return parentDir === undefined ? found : { ...found, parentDir }
+  })
 }
 
 export function documentSummaries(config: WorkspaceConfig): DocumentSummary[] {

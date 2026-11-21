@@ -29,6 +29,7 @@ import { validateIR } from './validate.ts'
 import { createSourceReader, findWorkspaceRoot } from './workspace.ts'
 import { operatorDir, operatorPlugins, WORKSPACE_CONFIG, workspaceSettings } from './workspace-settings.ts'
 import { effectiveDocumentIn } from './document-tree.ts'
+import { workspaceLinks } from './document-links.ts'
 import type { OperatorSettings } from './workspace-settings.ts'
 
 export { DECK_ENTRY }
@@ -359,7 +360,8 @@ export class Compiler {
 
   /** Validated JSON is the sole runtime source; compiler output remains a derived snapshot. */
   async #compileSections(run: CompileRun, _contributions: Contributions): Promise<{ sections: IRSection[], marks: AudienceMark[], sourceFiles: string[], sourceFingerprints: Record<string, string> }> {
-    const sections = lowerDocument(run.document, this.entry, this.deckDir, run.report, (...files) => run.inputs.watch(...files), run.stored)
+    const root = existsSync(join(run.workspace.root, WORKSPACE_CONFIG)) ? run.workspace.root : this.deckDir
+    const sections = lowerDocument(run.document, this.entry, this.deckDir, run.report, (...files) => run.inputs.watch(...files), run.stored, workspaceLinks(root))
     for (const id of productionAssetIds(run.document.production, run.document.sectionOrder.map(id => ({ id, stepIds: run.document.sections[id]!.stepOrder })))) {
       const asset = run.document.assets[id], file = asset && productionAssetFile(this.deckDir, asset.location)
       if (file) run.inputs.watch(file)

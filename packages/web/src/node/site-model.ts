@@ -311,7 +311,7 @@ export function documentSiteConfig(input: { site: SiteSpec, base: string, dir: s
     ...input.workspace ? {
       home: listLink(site, root),
       neighbours: siteNeighbours(site, base, dir, input.docs).neighbours,
-      documents: sidebarDocuments(site).map(other => ({ dir: other.dir, title: other.title, href: documentBase(base, other.dir), ...sidebarSettings(site.config.sidebar).by === 'tags' && other.tags?.[0] ? { group: other.tags[0] } : {} })),
+      documents: sidebarDocuments(site).map(other => ({ dir: other.dir, title: other.title, href: documentBase(base, other.dir), ...sidebarSettings(site.config.sidebar).by === 'tags' && other.tags?.[0] ? { group: other.tags[0] } : {}, ...other.parent !== undefined ? { parent: other.parent } : {} })),
       ...sidebarSettings(site.config.sidebar).by === 'directories' ? { sidebar: 'directories' as const } : {},
     } : {},
   }

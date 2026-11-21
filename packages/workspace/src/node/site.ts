@@ -34,8 +34,8 @@ export async function siteTranslations(compilation: Compilation): Promise<{ tran
   return { translations: translations.map(({ lang, doc }) => ({ lang, doc: siteIR(compilation, doc) })), findings }
 }
 
-export function siteDocument(document: DocumentSummary, doc?: IRDocument, translations?: SiteDocument['translations'], compilation?: Compilation): SiteDocument {
-  return { dir: document.dir, title: document.title, description: document.description, ...document.lang ? { lang: document.lang } : {}, ...document.tags ? { tags: document.tags } : {}, ...document.slides ? { slides: true } : {}, ...doc ? { doc } : {}, ...translations?.length ? { translations } : {}, ...compilation ? { nodeVitePlugins: nodeVitePlugins(compilation) } : {} }
+export function siteDocument(document: DocumentSummary & { parentDir?: string }, doc?: IRDocument, translations?: SiteDocument['translations'], compilation?: Compilation): SiteDocument {
+  return { dir: document.dir, title: document.title, ...document.parentDir !== undefined ? { parent: document.parentDir } : {}, description: document.description, ...document.lang ? { lang: document.lang } : {}, ...document.tags ? { tags: document.tags } : {}, ...document.slides ? { slides: true } : {}, ...doc ? { doc } : {}, ...translations?.length ? { translations } : {}, ...compilation ? { nodeVitePlugins: nodeVitePlugins(compilation) } : {} }
 }
 
 export function refreshDocumentVitePlugins(site: SiteSpec, dir: string, compilation: Compilation): void {

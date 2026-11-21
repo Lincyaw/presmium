@@ -82,3 +82,25 @@ export function folderLabel(name: string): string {
   const words = name.replace(/[-_]+/g, ' ').trim()
   return words.charAt(0).toLocaleUpperCase() + words.slice(1)
 }
+
+/**
+ * The entries as the workspace's document tree (`parent`: the parent document's folder), for entries already in tree
+ * order: each document under its parent, siblings in the order given. An entry whose parent is not listed is at the top.
+ */
+export function documentTreeNodes<T extends DirectoryEntry & { parent?: string, title: string }>(entries: readonly T[]): DirectoryNode<T>[] {
+  const roots: DirectoryNode<T>[] = []
+  const nodes = new Map<string, DirectoryNode<T>>(entries.map(entry => [entry.dir, { name: entry.title, dir: entry.dir, doc: entry, children: [] }]))
+  for (const entry of entries) {
+    const parent = entry.parent !== undefined ? nodes.get(entry.parent) : undefined
+    ;(parent ? parent.children : roots).push(nodes.get(entry.dir)!)
+  }
+  return roots
+}
+
+/** The folders of the documents above `dir` in the tree (`parent`), nearest last. */
+export function treeAncestors<T extends DirectoryEntry & { parent?: string }>(entries: readonly T[], dir: string): string[] {
+  const parents = new Map(entries.map(entry => [entry.dir, entry.parent]))
+  const out: string[] = []
+  for (let at = parents.get(dir); at !== undefined && !out.includes(at); at = parents.get(at)) out.unshift(at)
+  return out
+}

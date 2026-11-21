@@ -1,5 +1,6 @@
 import { irBlocks } from './blocks.ts'
-import type { IRBlock, IRDocument, IRSection } from './ir.ts'
+import { isRecord } from './errors.ts'
+import type { IRBlock, IRDocument, IRSection, MdastNode } from './ir.ts'
 
 /**
  * Closes the gaps that removed blocks leave in a section's steps. With `stepMap`, the section records
@@ -28,15 +29,39 @@ export function compactSteps(section: IRSection, options: { stepMap?: boolean } 
   return { ...section, steps: map(section.steps), ...options.stepMap ? { stepMap } : {}, blocks: renumber(section.blocks) }
 }
 
-/** The document as one renderer sees it: blocks limited to other renderers are gone, the steps closed up. */
+/** The renderer whose output links documents to each other's pages; every other one shows a reference as its text. */
+const LINKING_RENDERER = 'web'
+
+/** The tree with each reference link (`data.presmiumReference`) replaced by its text; the same tree when it has none. */
+function unlinkReferences(node: MdastNode): MdastNode {
+  if (!node.children) return node
+  let changed = false
+  const children = node.children.flatMap((child) => {
+    if (child.type === 'link' && isRecord(child.data) && child.data.presmiumReference === true) { changed = true; return child.children ?? [] }
+    const next = unlinkReferences(child)
+    if (next !== child) changed = true
+    return [next]
+  })
+  return changed ? { ...node, children } : node
+}
+
+/**
+ * The document as one renderer sees it: blocks limited to other renderers are gone, the steps closed up; outside the
+ * web, references to documents and pages are plain text.
+ */
 export function viewFor(doc: IRDocument, renderer: string): IRDocument {
   let changed = false
+  const unlink = (block: IRBlock): IRBlock => {
+    if (renderer === LINKING_RENDERER || block.node.type !== 'markdown') return block
+    const mdast = unlinkReferences(block.node.mdast)
+    return mdast === block.node.mdast ? block : { ...block, node: { ...block.node, mdast } }
+  }
   const keep = (blocks: IRBlock[]): IRBlock[] => blocks.flatMap((block) => {
     if (block.only && !block.only.includes(renderer)) {
       changed = true
       return []
     }
-    return block.node.type === 'component' && block.node.children ? [{ ...block, node: { ...block.node, children: keep(block.node.children) } }] : [block]
+    return block.node.type === 'component' && block.node.children ? [{ ...block, node: { ...block.node, children: keep(block.node.children) } }] : [unlink(block)]
   })
   const sections = doc.sections.map((section) => {
     changed = false
