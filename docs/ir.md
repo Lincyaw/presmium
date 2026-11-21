@@ -78,11 +78,11 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 - `image` 没有 `assetId` 表示尚未选图，可以保存，编译给出警告与回退；写出的 `assetId` 必须指向图片素材。
 - `code` 保存内联 `value` 或工程文件引用 `origin`，可带 `execution`、按步骤的高亮与 `variants`。
 - `component` 引用定义，保存自己的参数，可以有子块。
-- `embed` 是同步块 `{ source: { document, block } }`：显示源文稿中那个块及其全部内容的当前样子，自己没有内容与子块，内容只在源文稿中编辑。凡能放块的地方都能放它。步骤留在本地：本文稿步骤中它的 `VisualState` 控制显示，`state` 与 `parameters` 指向源块（组件）声明的状态与参数，因此校验不要求它是组件。同一文稿内，源块缺失是警告 `embed.missing`，显示自己或包含自己的块是错误 `embed.cycle`；跨文稿的源由编译解析，不在校验之内。当前版本的编译在原处给出占位与警告 `embed.unresolved`，说明同步块将在后续版本中显示。
+- `embed` 是同步块 `{ source: { document, block } }`：显示源文稿中那个块及其全部内容的当前样子，自己没有内容与子块，内容只在源文稿中编辑。凡能放块的地方都能放它。步骤留在本地：本文稿步骤中它的 `VisualState` 控制显示，`state` 与 `parameters` 指向源块（组件）声明的状态与参数，因此校验不要求它是组件。同一文稿内，源块缺失是警告 `embed.missing`，显示自己或包含自己的块是错误 `embed.cycle`；跨文稿的源由编译解析（5.5 节），不在校验之内。“转为副本”把同步块换成源内容的深拷贝（新的块 ID，需要的素材文件复制进本文稿文件夹，定义复制或在内容相同时复用；同步块自己的 `only`、`audience` 留给副本，其下的块在同步块显示的步骤中以源中的最终状态显示），见[作者动作](authoring-actions.md)第 15 节。
 
 ### 2.5 富文本
 
-`RichTextNode` 是段落、标题、列表、引用、代码、公式、表格与扩展，实际编辑单元（段落、列表项、表格行与单元格）有稳定 ID；行内 `InlineNode` 是带 marks 的文字、链接、公式、换行、引用与扩展。引用 `{ type: 'reference', target: { document, section?, block? }, label?, fallback }` 按 ID 指向一份文稿、它的一页或一个块（`target.document` 可以是本文稿）；显示 `label`，没有时显示目标当前的标题，目标不存在时显示 `fallback`（最近一次知道的标题）。同一文稿内找不到的页面或块是警告 `reference.missing`。当前版本的编译把引用写成文字：本文稿中的页面或块链接到那一页，其他文稿只写文字。不保存 Markdown 字符串，不持久化编辑器私有状态。表格按逻辑网格校验 `rowspan`、`colspan`，单元格不越界、不重叠。
+`RichTextNode` 是段落、标题、列表、引用、代码、公式、表格与扩展，实际编辑单元（段落、列表项、表格行与单元格）有稳定 ID；行内 `InlineNode` 是带 marks 的文字、链接、公式、换行、引用与扩展。引用 `{ type: 'reference', target: { document, section?, block? }, label?, fallback }` 按 ID 指向一份文稿、它的一页或一个块（`target.document` 可以是本文稿）；显示 `label`，没有时显示目标当前的标题，目标不存在时显示 `fallback`（最近一次知道的标题）。同一文稿内找不到的页面或块是警告 `reference.missing`。块的标题是它的第一段文字，没有时是图片的替代文字、代码的标题、组件的 `title` 或 `alt` 参数、容器的标题。工作区在被引用的标题变化后把引用处的 `fallback` 改成当前标题，每份文稿一条自动修订（作者 Presmium，提交带 `Presmium-Automatic: reference-titles`）；连续两次查看（约两秒一次）标题都没有再变才写，输入标题时不会逐字记录。编译见 5.5 节。不保存 Markdown 字符串，不持久化编辑器私有状态。表格按逻辑网格校验 `rowspan`、`colspan`，单元格不越界、不重叠。
 
 ### 2.6 步骤
 
@@ -193,6 +193,11 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 
 `IRNode` 是 `markdown`（mdast）、`code`、`component`。富文本直接 lowering 为 mdast；组件由定义与参数 lowering 为 `ComponentNode`；代码引用由锚点解析器读取工程文件得到 `CodeOrigin`。网页是能力最完整的参考媒介；其他渲染端按 `Support` 声明支持程度，不能交互时给静态回退，无法表示的节点进入构建诊断。
 
+引用与同步块在 lowering 时按工作区解析（`@lincyaw/compiler` 的 `workspaceLinks`：工作区扫描按 ID 找文稿，`.trash/<id>/` 中的文稿算在回收站中）：
+
+- 引用 lowering 为带 `data.presmiumReference` 的 mdast 链接，文字是 `label`、目标当前的标题或 `fallback`。指向本文稿时链接到那一页（`#<页面 ID>`）；指向其他文稿时链接到它的 `index.pmd` 加 `#<块或页面 ID>`，网站把它换成那份文稿的页面地址与锚点。`viewFor` 在网页以外的媒介（幻灯片、notebook、讲授与视频、单文稿导出）把这些链接换成文字，不加脚注。目标文稿不存在或在回收站中、页面或块不存在时写 `fallback` 的文字，并报警告 `reference.missing`。
+- 同步块按源文稿自己的上下文 lowering 源块与其下全部块：源文稿的生效设置、定义，素材与组件文件相对源文稿的文件夹解析（运行块的源位置指向源文稿）。它的运行块 ID 是同步块自己的 ID，其下的块为 `<同步块 ID>~<源块 ID>`，嵌套时逐层加前缀。本文稿步骤中同步块的 `VisualState` 决定源块的显示，`state` 与 `parameters` 作用于源块（组件）如同本地实例；没有给状态时用源块在源文稿中最后一次显示时的状态，其下的块在同步块显示时以各自在源中的最终状态显示。讲稿从不带过来。源文稿被编译监视，改了就重新编译。源文稿或源块不存在是错误 `embed.missing`，同步块经由同步块又显示自己是错误 `embed.cycle`，嵌套超过 4 层是错误 `embed.depth`，三者都在原处显示说明；源文稿在回收站中时照常显示并警告 `embed.source-trashed`。组件所需的插件要在本文稿的插件中。
+
 ### 5.6 执行与语音缓存
 
 代码执行保留具名环境、会话、缓存与富输出（`RunSpec`、`RecordedRun`）。合成只读精确脚本与音色的已完成缓存，缺失时报告未生成；打开、保存与编译都不调用付费合成。
@@ -216,7 +221,7 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 
 ## 7. 工作区与命令
 
-工作区配置是 `presmium.workspace.yaml`：`title`、`site`、`approvals`、`settings`、`templates` 与 `defaults:`（继承链的根，可写 `lang`、`plugins`、`presmium`、`renderers`、`execute`、`checks`、`production.defaults`、`production.captions`，见 2.1.2 节）。它不列出文稿：工作区根目录下的每个 `index.pmd` 都是一份文稿，扫描跳过 `node_modules`、`.git`、`.presmium`、`dist`、`.trash`、以 `.` 开头的目录与 `locales/<语言>/`。凡列出文稿的地方（工作区服务的文稿列表、网站导航与翻页、命令行）都按文稿树深度优先排列，同级按 `rank`。仍有 `documents:` 的工作区文件不被采用：`presmium check` 与编译报告需要升级，Studio 显示升级提示。根目录自己有 `index.pmd` 的目录是单文稿工作区。
+工作区配置是 `presmium.workspace.yaml`：`title`、`site`、`approvals`、`settings`、`templates` 与 `defaults:`（继承链的根，可写 `lang`、`plugins`、`presmium`、`renderers`、`execute`、`checks`、`production.defaults`、`production.captions`，见 2.1.2 节）。它不列出文稿：工作区根目录下的每个 `index.pmd` 都是一份文稿，扫描跳过 `node_modules`、`.git`、`.presmium`、`dist`、`.trash`、以 `.` 开头的目录与 `locales/<语言>/`。凡列出文稿的地方（工作区服务的文稿列表、网站导航与翻页、命令行）都按文稿树深度优先排列，同级按 `rank`；网站侧栏在有下级文稿时按文稿树嵌套显示（`SiteDocument.parent` 是上级文稿的文件夹），当前文稿上方的分支展开，`site.sidebar: directories` 时仍按文件夹显示。仍有 `documents:` 的工作区文件不被采用：`presmium check` 与编译报告需要升级，Studio 显示升级提示。根目录自己有 `index.pmd` 的目录是单文稿工作区。
 
 `presmium new` 与 Studio 新建的文稿放在顶层末尾，复制的文稿放在原文稿之后；导入的文稿按导入顺序放在顶层末尾。`presmium import <文件或文件夹> --out <目录>` 与工作台首页的“导入文档 / Import Documents”共用 `@lincyaw/compiler` 的转换：支持 UTF-8 Markdown（`.md`、`.markdown`）与 Word（`.docx`），每个文件一份文稿，保留目录层级；一级与二级标题各开一页，每页一个显示全部内容块的步骤。相对链接与本地图片按导入的文件夹解析，图片复制到各文稿的 `attachments/`；导入单文件时无法提供的图片和链接计入待检查数。原始文件逐字节保留在文稿的 `originals/` 中。
 

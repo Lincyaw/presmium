@@ -68,7 +68,7 @@ index.pmd + 引用的代码与媒体
 | `create-presmium` | 新建讲义、工作区或插件项目 |
 | `server` | 服务端：插件路由与代理、来源检查、确认、控制通道、MCP 挂载 |
 | `mcp` | MCP 工具与资源；`presmium-mcp` |
-| `workspace` | 工作区服务 `presmium serve`：文档、历史、审阅、任务、工作区站点 |
+| `workspace` | 工作区服务 `presmium serve`：文档、文稿树与引用索引、历史、审阅、任务、工作区站点 |
 | `language-server` | `index.pmd` 的语言服务 |
 | `vscode` | VS Code 扩展（私有，平台 VSIX） |
 | `skills` | 从 `.agents/skills` 打包的四项技能 |

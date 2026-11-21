@@ -19,6 +19,7 @@ workspace 为每项能力创建一个实例，HTTP 与 MCP 共用实例与回执
 | `createDocumentEditor`（`document-authoring.ts`） | `document`、`document/{change,outline,part,capabilities}`、`document/page/*`、`document/action/*` | `editing.ts`、`authoring.ts`、`authoring-actions.ts` |
 | `SourceEditor`、`createWorkspaceSource`（`source-editor.ts`、`workspace-source.ts`） | `files`、`source`、`source/create`、`source/transaction` | `workspace-source.ts` |
 | `createProjectAuthoring`（`projects.ts`） | `project/*` | `projects.ts` |
+| `DocumentIndex`、`TreeOperations`（`document-index.ts`、`tree-operations.ts`） | `tree`、`tree/*`、`document/links`、`documents/search`、`document/preview`、`embed/source`（第 15 节） | `document-tree.ts` |
 | `createDocumentHistory`（`document-history.ts`） | `history/*` | `history.ts` |
 | `Revisions`、`createWorkspaceChanges`（`revisions.ts`、`workspace-changes.ts`） | `changes`、`changes/commit`、`changes/discard` | `workspace-changes.ts` |
 | `createDocumentAudioAuthoring`（`document-audio.ts`） | `document/audio`、`document/media-clip*`、`document/recording/adopt` | `audio-authoring.ts` |
@@ -387,3 +388,34 @@ agent 的循环：探测能力 → 读源 → 预检 → 提交或开始任务 �
 - 任意 checkout；选中文件的提交与丢弃使用第 12 节的共享未提交修改入口。
 - 原音与新讲稿的自动词对齐、跨步连续分配原音、只转写所选区间。
 - 通用 `plan_document_change`、`apply_document_change` 的大文稿输入没有预算（它们的结果不带文稿，用 `read_document_part` 读取）；agent 优先用页面与语义动作。
+
+## 15. 文稿树、引用与同步块
+
+工作区的文稿树、回收站和文稿之间的引用由 `DocumentIndex`（`packages/workspace/src/node/document-index.ts`）从文件派生，不另存：每次读取比较各 `index.pmd` 的大小与修改时间，只重新解析变了的文件，因此保存、升级、树操作、撤消与工作区外的改动都直接反映。它给出树（节点、显示顺序、问题 `tree.unknown-parent`、`tree.cycle`、`tree.duplicate-id`）、回收站、每份文稿的引用与同步块（出链）和引用它的地方（入链，带引用所在的句子，不超过约 120 字），以及搜索：先按文稿标题，再按页面标题与块文字。契约在 `packages/kernel/src/contracts/document-tree.ts`。
+
+| HTTP 路由 | 回答 | MCP 工具 |
+| --- | --- | --- |
+| `GET tree` | `DocumentTree`（含回收站） | `get_tree` |
+| `POST tree/operation`（`TreeOperation`） | `TreeOperationResult` | `create_document`、`move_document`、`rename_document`、`duplicate_document`、`trash_document`、`restore_document`、`purge_document`、`convert_embed_to_copy` |
+| `GET document/links?id=` | `DocumentLinks` | `get_backlinks` |
+| `GET documents/search?q=&limit=` | `DocumentSearchHit[]`（默认 20，最多 100） | `search_documents` |
+| `GET document/preview?id=&section=&block=` | `DocumentPreview` | `get_document_preview` |
+| `GET embed/source?document=&block=` | `EmbedSource` | 无 |
+| `GET tree/events` | SSE，事件 `tree`，数据 `{ type: 'tree' }` | 无 |
+
+读取需要 reader，树操作需要 editor；文稿按 ID 指定。`tree/events` 在树操作之后立即推送，其他改动（保存、撤消、工作区外编辑）由服务约每两秒比较一次树后推送；Studio 经共享 socket 的 `tree` 主题订阅它。`embed/source` 的 `assets` 是相对工作区路由的 `document/asset` 地址。MCP 的树操作是 `operate` 类，与其他改工作区的动作一样审批，记为 agent 的修订；绑定到单份文稿的令牌不能使用。
+
+树操作（`packages/workspace/src/node/tree-operations.ts`）都是原子的：在涉及文稿的锁与历史锁之下改文件，记一条修订，涉及的每份文稿的历史中都有它（回答的 `revisions` 逐份列出），可以撤消；任何一步失败都还原全部文件，不留修订。文件夹只在回收站进出时移动，移动与改名不动文件夹。
+
+- `create { title, parent, after? }`：在 `docs/<由标题得出的名字>/` 用默认文稿模板新建一份文稿（重名时加 `-2` 等），一页一步，放在 `after` 之后（缺省或 `null` 为第一个）。放在上级之下时不写语言、插件、渲染端、插件配置、执行与检查，由上级继承。标题为空是 `tree.title-empty`。
+- `move { id, parent, after? }`：只改被移动文稿的 `placement`，`rank` 取新邻居之间；移到自己或自己的下级之下是 `tree.cycle`。
+- `rename { id, title }`：只改 `metadata.title`。
+- `duplicate { id }`：复制到新文件夹，新 ID，标题加“副本 / (copy)”，放在原文稿之后；下级文稿不复制，其中的引用不变。
+- `trash { id }`：文稿与它的全部下级各自移到 `.trash/<id>/`，旁边的 `trashed.json` 记 `deletedAt`、原文件夹 `from`、原 `parent` 与 `rank`、随它进回收站的下级 `children`（下级的记录有 `with`）。回收站中的文稿不在树中；引用它的地方显示最后的标题，同步块照常显示并警告。
+- `restore { id }`：把文稿与随它进回收站的下级移回原文件夹（被占用时新建 `docs/<名字>`）；原上级不在时放到顶层末尾。
+- `purge { id }`：先把其他文稿中显示它（及随它进回收站的下级）的同步块转为副本（`converted` 列出），再彻底删除它们；引用它的地方变成缺失。
+- `embed-to-copy { document, block }`：把同步块换成源内容的副本（[IR](ir.md) 2.4 节），需要的素材文件复制进本文稿文件夹，同名而内容不同时放在 `synced/<源文稿 ID 前 8 位>/` 下。
+
+错误码：`tree.not-found`（文稿、`after` 或同步块不存在）、`tree.cycle`、`tree.trash-not-found`、`tree.title-empty`、`tree.operation-invalid`、`tree.single-document`（单文稿工作区没有树操作）、`embed.missing`（转为副本时源已不在）。
+
+agent 用已有的文稿修改插入引用和同步块：引用是正文中的行内节点 `{ type: 'reference', target: { document, section?, block? }, label?, fallback }`（`updateText` 或整份替换），同步块是 `insertBlock` 插入的 `{ id, type: 'embed', source: { document, block } }`，再用 `setStepState` 让它在步骤中显示；目标 ID 用 `search_documents` 或 `get_tree` 查。被引用的标题变化后，工作区把引用处的 `fallback` 更新为当前标题（[IR](ir.md) 2.5 节）。

@@ -20,7 +20,7 @@
 | 课堂 Classroom | 课堂会话、同步传输、跟随、笔记、测验、练习、提问、理解度、先预测再揭示 | `@lincyaw/addon-session`、`@lincyaw/addon-classroom`、`@lincyaw/classroom-server` | `SessionSnapshot`、`Participant`、`ClassroomStore`、`Answer`、`Question` |
 | 讲授 Lecture | 讲授计划、讲授轨、录制与回放、导出视频、字幕 | `@lincyaw/addon-lecture` | `LectureTrack`（聚合根）、`ProductionPlan`、`LecturePlan`、`Utterance`、`TrackEvent` |
 | 语音 Speech | 合成与转写、引擎适配、合成缓存、克隆音色的同意记录 | `@lincyaw/addon-speech` | `SpeechService`、`Synthesis`、`Transcript`、合成缓存（聚合根）、`ConsentRecord` |
-| 工作区 Workspace | 多份文档的工程：发现文稿与文稿树、继承的设置的根（`defaults:`）、文档操作、文稿事务、修改历史与撤销、锁、编译会话、修改审阅、格式升级、工作区站点 | `@lincyaw/workspace`；扫描与继承链在 `@lincyaw/compiler`（`document-tree.ts`），升级在 `@lincyaw/compiler/migrate` | `Workspace`（聚合根）、`Document`、`DocumentTree`、`Revision`、`RevisionService`、`DocumentLockService`、`DocumentFiles`、`CompileSession`、`ChangeReview`（聚合根） |
+| 工作区 Workspace | 多份文档的工程：发现文稿与文稿树、继承的设置的根（`defaults:`）、文档操作、文稿事务、修改历史与撤销、锁、编译会话、修改审阅、格式升级、工作区站点 | `@lincyaw/workspace`（文稿索引 `document-index.ts`、树操作 `tree-operations.ts`）；扫描与继承链在 `@lincyaw/compiler`（`document-tree.ts`），引用与同步块的解析在 `document-links.ts`，升级在 `@lincyaw/compiler/migrate` | `Workspace`（聚合根）、`Document`、`DocumentTree`、`DocumentIndex`、`TreeOperation`、`Revision`、`RevisionService`、`DocumentLockService`、`DocumentFiles`、`CompileSession`、`ChangeReview`（聚合根） |
 | 智能体 Agent | agent 环境（MCP 工具与资源）、焦点、读者问答 | `@lincyaw/mcp`、`@lincyaw/addon-assistant` | `AgentContext`、`Focus`、`AgentTool`、`AskClient` |
 | 工作台 Workbench | 作者界面：文稿列表、文稿编辑、批注、AI 改写、历史、对话；DeepSeek Harness 的防腐层 | `@lincyaw/workbench`、`@lincyaw/dsh`、`@lincyaw/studio`、`@lincyaw/design` | bundle、`DiagnosticSnapshot`、预览协议 `PREVIEW_PROTOCOL` |
 | 编辑器集成 Editing | 代码编辑器中的诊断、跳转、悬停、补全与预览同步 | `@lincyaw/language-server`、`presmium-vscode` | `AnchorRef`、`SectionLocation` |
@@ -29,7 +29,7 @@
 主要不变量：
 
 - **文稿**：映射键等于 ID，内容树单父无环，引用、参数与状态有效，每页至少一步，任意定位可重建画面（[ir.md](ir.md) 第 2、3 节）。文稿只接受当前格式版本，旧版本经升级转换（[ir.md](ir.md) 2.17 节）。
-- **文稿树**：每份文稿在工作区中有唯一的 `id` 与一个 `placement { parent, rank }`；树由全部文稿的位置派生，不另存；移动只改被移动的文稿，文件夹不动；无效位置（未知上级、成环、同序）降级显示并诊断，不使列表失败。跨文稿的引用与同步块只用 `id`。
+- **文稿树**：每份文稿在工作区中有唯一的 `id` 与一个 `placement { parent, rank }`；树由全部文稿的位置派生，不另存；移动只改被移动的文稿，文件夹不动；无效位置（未知上级、成环、同序）降级显示并诊断，不使列表失败。跨文稿的引用与同步块只用 `id`。工作区的文稿索引（树、回收站、双向引用、搜索）从文件派生，不另存；树操作原子，涉及的每份文稿各有一条修订，文件夹只在进出回收站 `.trash/<id>/` 时移动；彻底删除前先把显示它的同步块转为副本（[作者动作](authoring-actions.md)第 15 节）。
 - **继承的设置**：文稿只存自己设置的值；语言、插件、插件与渲染端配置、执行、检查与讲授默认值按“工作区 `defaults:` → 祖先 → 本文稿”生效，越近越优先；生效的文稿只用于判断，从不保存（[ir.md](ir.md) 2.1.2 节）。
 - **内核**：插件 ID 唯一；一个服务令牌在一个作用域内只有一个实现；插件按服务依赖拓扑启动，环上插件全部禁用；必需依赖缺失或内核版本不兼容时禁用，可选依赖缺失时降级；单个插件初始化失败只禁用它与必需依赖它的插件。
 - **锚点解析**：`Resolution` 为 `exact`、`moved`、`fuzzy`、`lost`；只有前两种直接用于渲染，后两种必须产生诊断。
