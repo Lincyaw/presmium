@@ -1,5 +1,38 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.118
+
+### Patch Changes
+
+- 3cf0fa4: 桌面安装包内置完整示例，首次启动自动准备可编辑的默认工作区，后续保留修改并记住用户选择的目录。
+- Updated dependencies [a29d9d2]
+  - @lincyaw/host@1.0.0-rc.118
+  - @lincyaw/addon-assistant@1.0.0-rc.118
+  - @lincyaw/web@1.0.0-rc.118
+  - @lincyaw/addon-classroom@1.0.0-rc.118
+  - @lincyaw/addon-content@1.0.0-rc.118
+  - @lincyaw/addon-exec@1.0.0-rc.118
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.118
+  - @lincyaw/addon-exec-local@1.0.0-rc.118
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.118
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.118
+  - @lincyaw/addon-guide@1.0.0-rc.118
+  - @lincyaw/addon-lecture@1.0.0-rc.118
+  - @lincyaw/addon-motion@1.0.0-rc.118
+  - @lincyaw/addon-publish@1.0.0-rc.118
+  - @lincyaw/addon-session@1.0.0-rc.118
+  - @lincyaw/addon-speech@1.0.0-rc.118
+  - @lincyaw/addon-stage@1.0.0-rc.118
+  - @lincyaw/viewer@1.0.0-rc.118
+  - @lincyaw/studio@0.2.0-rc.117
+  - @lincyaw/cli@1.0.0-rc.118
+  - @lincyaw/render-notebook@1.0.0-rc.118
+  - @lincyaw/render-slides@1.0.0-rc.118
+  - @lincyaw/addon-code@1.0.0-rc.118
+  - create-presmium@1.0.0-rc.118
+  - @lincyaw/kernel@1.0.0-rc.118
+  - @lincyaw/mcp@1.0.0-rc.118
+
 ## 1.0.0-rc.117
 
 ### Patch Changes

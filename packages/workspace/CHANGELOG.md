@@ -1,5 +1,16 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.118
+
+### Patch Changes
+
+- a29d9d2: 工作台换用白底蓝色强调的新配色与 32/28 控件尺寸，按钮分为主要、默认、ghost、文字与危险五种，提示条带语气图标与末端操作，文稿工具栏的放映与视频制作入口改为带提示的图标按钮。
+- Updated dependencies [a29d9d2]
+  - @lincyaw/design@1.0.0-rc.118
+  - @lincyaw/compiler@1.0.0-rc.118
+  - @lincyaw/kernel@1.0.0-rc.118
+  - @lincyaw/server@1.0.0-rc.118
+
 ## 1.0.0-rc.117
 
 ### Patch Changes
