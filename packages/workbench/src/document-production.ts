@@ -408,6 +408,14 @@ export class DocumentProduction {
     this.#options.session.record(next)
   }
   /** The whole document's caption size (`production.captions.scale`), recorded like a step's timing. */
+  /** Removes the document's own caption size, so that it takes the one it inherits (its ancestors', or the workspace's). */
+  inheritCaptionScale(identity?: string): void {
+    const document = this.#options.document(identity)
+    if (!document?.production.captions || isAgentChanging(this.#options.store.state)) return
+    const { captions: _captions, ...production } = document.production
+    this.#options.session.record({ ...document, production })
+  }
+
   setCaptionScale(scale: number, identity?: string): void {
     const document = this.#options.document(identity)
     if (!document || isAgentChanging(this.#options.store.state)) return
