@@ -61,3 +61,8 @@ export function documentSettings(document: EffectiveDocument): EffectiveSettings
   const { defaults, captions } = document.production
   return { lang, ...plugins ? { plugins } : {}, ...presmium ? { presmium } : {}, ...renderers ? { renderers } : {}, ...execute ? { execute } : {}, ...checks ? { checks } : {}, production: { defaults, ...captions ? { captions } : {} } }
 }
+
+/** The document with what it inherits filled in, from its ancestors' merged settings (`DocumentAnswer.inherited`). */
+export function withInheritedSettings(document: PresmiumDocument, inherited: DocumentDefaults = {}): EffectiveDocument {
+  return withEffectiveSettings(document, [], inherited)
+}

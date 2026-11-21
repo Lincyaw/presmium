@@ -21,6 +21,7 @@ import { ProductionMediaClips } from './ProductionMediaClips.tsx'
 import { ProductionRecording } from './ProductionRecording.tsx'
 import { ProductionTranscription } from './ProductionTranscription.tsx'
 import { useProductionVoicePlayback } from '../production-voice-playback.ts'
+import { effectiveOf } from '../effective-settings.ts'
 
 const clockTime = (value?: number) => {
   if (value === undefined || !Number.isFinite(value)) return '--:--.---'
@@ -60,7 +61,7 @@ export function ProductionPanel({ onClose, closing, active = true, actions }: { 
   const transcriptionSelection = useRef(0)
   const owner = useRef({ active: true, generation: 0 }), initial = useRef(false)
   const document = source?.content, sectionId = position && document?.sections[position.section] ? position.section : document?.sectionOrder[0]
-  const declared = Boolean(document?.metadata.plugins?.includes('@lincyaw/addon-lecture'))
+  const declared = Boolean(effectiveOf(document, source?.inherited)?.metadata.plugins?.includes('@lincyaw/addon-lecture'))
   const section = sectionId ? document?.sections[sectionId] : undefined
   const stepId = section?.stepOrder[position && position.section === sectionId ? position.step : 0] ?? section?.stepOrder[0]
   const sourceCurrent = Boolean(source && stamp && source.version === stamp.version && source.fingerprint === stamp.fingerprint && (source.projectRevision ?? 0) === stamp.project && !source.dirty && !source.saving && !source.error)
@@ -255,7 +256,7 @@ export function ProductionPanel({ onClose, closing, active = true, actions }: { 
                   onSelectAsset={() => { transcriptionSelection.current++; setTranscriptionAsset(undefined) }} />
               </div></PmTabPanel>
               <PmTabPanel value="captions" keepMounted><div className="pmw-production__fields">
-                <ProductionCaptionSize identity={source.identity} document={document} disabled={blocked || closing} onChanged={() => setMediaRefresh(true)} />
+                <ProductionCaptionSize identity={source.identity} document={effectiveOf(document, source.inherited)} disabled={blocked || closing} onChanged={() => setMediaRefresh(true)} />
                 <ProductionCaptionTiming key={source.identity} identity={source.identity} stepId={stepId} plan={plan} current={planCurrent} loading={preparing || planBusy} disabled={blocked || closing} onChanged={() => setMediaRefresh(true)} />
               </div></PmTabPanel>
             </PmTabs>

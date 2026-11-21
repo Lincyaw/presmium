@@ -16,7 +16,7 @@ it('refreshes concrete diagnostics before a model step, isolates documents and r
   const home = testHome('diagnostics')
   const source = '---\ntitle: Broken plugin\nplugins:\n  - presmium-missing-diagnostics-fixture\n---\n\n# Broken plugin\n\nExplain this document.\n'
   const workspace = home.workspace('diagnostics', {
-    'presmium.workspace.yaml': 'title: Diagnostics\ndocuments: [lectures/*/lecture.md]\n',
+    'presmium.workspace.yaml': 'title: Diagnostics\n',
     'lectures/broken/lecture.md': source,
     'lectures/clean/lecture.md': '---\ntitle: Clean document\n---\n\n# Clean document\n\nNo plugin is needed.\n',
   })

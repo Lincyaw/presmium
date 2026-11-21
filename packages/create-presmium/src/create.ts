@@ -7,16 +7,16 @@ import { basename, dirname, join } from 'node:path'
 import type { Locale, Messages } from './messages.ts'
 import { projectPath, templateDir, templateFiles } from './templates.ts'
 
-export type ProjectKind = 'lecture' | 'workspace' | 'plugin' | 'site'
+export type ProjectKind = 'document' | 'workspace' | 'plugin' | 'site'
 export type SiteTheme = 'course' | 'docs' | 'showcase'
 
-export const KINDS: readonly ProjectKind[] = ['lecture', 'workspace', 'plugin', 'site']
+export const KINDS: readonly ProjectKind[] = ['document', 'workspace', 'plugin', 'site']
 export const SITE_THEMES: readonly SiteTheme[] = ['course', 'docs', 'showcase']
 
 export const VERSION = (JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }).version
 
 const SKILLS: Record<ProjectKind, string[]> = {
-  lecture: ['presmium-author', 'presmium-animate', 'presmium-figure'],
+  document: ['presmium-author', 'presmium-animate', 'presmium-figure'],
   workspace: ['presmium-author', 'presmium-animate', 'presmium-figure'],
   site: ['presmium-author', 'presmium-animate', 'presmium-figure'],
   plugin: ['presmium-develop', 'presmium-author'],
@@ -84,7 +84,7 @@ export function createProject(options: ProjectOptions): void {
       return `${JSON.stringify(value, null, 2)}\n`
     })
   }
-  if (kind === 'lecture') {
+  if (kind === 'document') {
     document(dir, title)
     copyTemplate('workspace', dir, unchanged, path => path === '.gitignore' || path === 'pnpm-workspace.yaml')
     writePackage(dir, { name, private: true, type: 'module', scripts: { dev: 'presmium dev', check: 'presmium check', build: 'presmium build' }, devDependencies: { '@lincyaw/presmium': `^${VERSION}` } })

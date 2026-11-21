@@ -8,7 +8,7 @@ import { MESSAGES, systemLocale } from './messages.ts'
 import type { Messages } from './messages.ts'
 
 const DEFAULT_DIRS: Record<ProjectKind, string> = {
-  lecture: 'my-lecture',
+  document: 'my-document',
   workspace: 'my-course',
   site: 'my-site',
   plugin: 'presmium-plugin-greeting',
@@ -46,7 +46,7 @@ export async function main(argv: string[]): Promise<number> {
     // The project's content is written in the title's language: a Chinese title gets Chinese pages whatever the system says.
     const lang = /\p{Script=Han}/u.test(title) ? 'zh-CN' : systemLocale()
     createProject({ kind: project, dir, title, name, git: args.values.git, theme: theme as SiteTheme, t, content: MESSAGES[lang], lang })
-    const steps = [...folder === '.' ? [] : [`cd ${/[\s'"]/.test(folder) ? JSON.stringify(folder) : folder}`], ...project === 'plugin' ? ['pnpm install', 'pnpm test', 'pnpm dev'] : project === 'site' ? ['pnpm install', 'pnpm serve'] : [`presmium ${project === 'lecture' ? 'dev' : 'serve'}`]]
+    const steps = [...folder === '.' ? [] : [`cd ${/[\s'"]/.test(folder) ? JSON.stringify(folder) : folder}`], ...project === 'plugin' ? ['pnpm install', 'pnpm test', 'pnpm dev'] : project === 'site' ? ['pnpm install', 'pnpm serve'] : [`presmium ${project === 'document' ? 'dev' : 'serve'}`]]
     process.stdout.write(`${t.created(project, folder)}\n\n${t.next}\n${steps.map(step => `  ${step}\n`).join('')}\n${t.agents}\n`)
     return 0
   } catch (error) {

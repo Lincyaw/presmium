@@ -116,7 +116,7 @@ position.
 ## 5. Install as a user would
 
 The example loads the plugin from its directory. Before publishing, check the packed package once: `pnpm
-pack`, then in a new directory create a document project (`presmium new --type lecture`, which has
+pack`, then in a new directory create a document project (`presmium new --type document`, which has
 Presmium as a dev dependency; run `pnpm install`), `pnpm add -D <path to the .tgz>`, list the package name under `plugins`, and run `presmium check` and `presmium build`.
 This catches files missing from `files`, imports of dev-only packages, and peer ranges the installed
 Presmium does not satisfy (`plugin "..." is not loaded: it needs ...`).

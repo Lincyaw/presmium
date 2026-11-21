@@ -16,7 +16,7 @@ const authorText = (value: unknown) => typeof value === 'string' && value.trim()
  */
 export function DocumentBlockFallback({ block, document, locale }: { block: DocumentBlock, document: PresmiumDocument, locale: Locale }) {
   const t = DOCUMENT_EDITOR_MESSAGES[locale], p = BLOCK_PREVIEW_MESSAGES[locale]
-  if (isDiagram(block, document)) return <PmNotice>{t.diagram(block.type === 'code' && block.title || '')}</PmNotice>
+  if (isDiagram(block, document.metadata.plugins)) return <PmNotice>{t.diagram(block.type === 'code' && block.title || '')}</PmNotice>
   if (block.type === 'embed') return <PmNotice>{t.syncedBlock(block.source.document)}</PmNotice>
   if (block.type === 'code') return <PmNotice>{t.codeReference(block.title ?? block.origin?.anchor ?? block.language)}</PmNotice>
   if (block.type !== 'component') return null

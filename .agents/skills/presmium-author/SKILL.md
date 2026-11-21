@@ -77,7 +77,7 @@ Paths in `plan_document_change.change.fileChanges`, source tools and workspace m
 Without an MCP host that has author actions (working on files in a project), edit `index.pmd` directly and use the command line:
 
 ```sh
-presmium new lesson --type lecture --title 'Lesson'
+presmium new lesson --type document --title 'Lesson'
 presmium check lesson --json
 presmium dev lesson
 presmium build lesson --to web

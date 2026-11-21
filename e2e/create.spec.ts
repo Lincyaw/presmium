@@ -65,7 +65,7 @@ test.beforeAll(async () => {
   const tarballs = await packAll(join(work, 'tarballs'))
   const create = (args: string[]) => sh('pnpm', [`--package=${tarballs.get('create-presmium')!.file}`, 'dlx', 'create-presmium', ...args], work!)
   await create(['greeting', '--type', 'plugin', '--name', 'presmium-plugin-greeting'])
-  await create(['lecture', '--type', 'lecture', '--title', '问候'])
+  await create(['lecture', '--type', 'document', '--title', '问候'])
   plugin = join(work, 'greeting')
   const packed = await packPlugin(plugin, join(work, 'tarballs'))
 

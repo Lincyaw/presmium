@@ -27,7 +27,7 @@ async function buildDocs(out: string): Promise<string> {
 
 function workspace(files: Record<string, string>): string {
   const root = mkdtempSync(join(tmpdir(), 'presmium-docs-broken-'))
-  for (const [path, text] of Object.entries({ 'presmium.workspace.yaml': 'title: Notes\ndocuments: [notes/lecture.md]\n', ...files })) {
+  for (const [path, text] of Object.entries({ 'presmium.workspace.yaml': 'title: Notes\n', ...files })) {
     mkdirSync(dirname(join(root, path)), { recursive: true })
     writeFileSync(join(root, path), text)
   }
@@ -156,7 +156,7 @@ test.describe('the documentation site\'s build fails', () => {
 
   test('on a link of a built page to no file of the site', async () => {
     const root = workspace({
-      'presmium.workspace.yaml': 'title: Notes\ndocuments: [notes/lecture.md]\nsite:\n  nav:\n    - { text: Missing, link: /nowhere/ }\n',
+      'presmium.workspace.yaml': 'title: Notes\nsite:\n  nav:\n    - { text: Missing, link: /nowhere/ }\n',
       'notes/lecture.md': '---\ntitle: Notes\nlang: en\n---\n\n(notes)=\n# Notes\n\nA page.\n',
     })
     made.push(root)

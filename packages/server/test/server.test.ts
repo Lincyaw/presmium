@@ -79,7 +79,7 @@ describe('presmium serve configuration updates', () => {
   let url: string
   beforeAll(async () => {
     dir = workspace('server-config', { doc: DECK })
-    writeFileSync(join(dir, 'presmium.workspace.yaml'), 'title: Server configuration\ndocuments:\n  - doc/lecture.md\n')
+    writeFileSync(join(dir, 'presmium.workspace.yaml'), 'title: Server configuration\n')
     serve = presmiumProcess(dir, ['serve', '--port', '0'])
     url = (await waitFor(serve, /^serve {2}(http\S+)$/m))[1]!
   }, 120_000)

@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { dirname, join, relative, resolve, sep } from 'node:path'
-import { DOCUMENT_ENTRY, documentTree, isRecord, ranksAfter, withEffectiveSettings } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, documentTree, effectiveSettings, isRecord, ranksAfter, withEffectiveSettings } from '@lincyaw/kernel'
 import type { DocumentDefaults, DocumentPlacement, DocumentTree, DocumentTreeNode, EffectiveDocument, PresmiumDocument } from '@lincyaw/kernel'
 import { findWorkspaceRoot } from './workspace.ts'
 import { WORKSPACE_CONFIG, workspaceSettings } from './workspace-settings.ts'
@@ -94,24 +94,38 @@ function treeEntry(entry: string, document: PresmiumDocument): string {
   return original ? resolve(dirname(entry), original) : entry
 }
 
+/** The document's ancestors (root first, parent last) and the workspace `defaults` at the root of its settings. */
+function inheritance(root: string, entry: string, document: PresmiumDocument): { ancestors: PresmiumDocument[], defaults: DocumentDefaults } {
+  const { defaults } = workspaceSettings(root)
+  const own = treeEntry(entry, document)
+  const placement = own === entry ? document.placement : (() => { const value = existsSync(own) ? readEntry(own) : undefined; return isRecord(value) ? placementOf(value) : document.placement })()
+  if (placement.parent === null) return { ancestors: [], defaults }
+  const { tree } = workspaceDocuments(root)
+  const rel = relative(real(root), real(own)).split(sep).join('/')
+  const id = tree.byId.get(document.id)?.path === rel ? document.id : [...tree.byId.values()].find(node => node.path === rel)?.id
+  const ancestors = (id === undefined ? [] : tree.ancestors(id)).flatMap((node) => {
+    const value = readEntry(join(root, node.path))
+    return isRecord(value) && isRecord(value.metadata) && isRecord(value.production) ? [value as unknown as PresmiumDocument] : []
+  })
+  return { ancestors, defaults }
+}
+
 /**
  * The document with its inherited settings: workspace `defaults` → root ancestor → … → parent → itself. `entry` is
  * the document's file, `root` the workspace it belongs to; a document outside every workspace has no ancestors.
  * Ancestors are found by ID through the workspace scan; ancestors that cannot be read are skipped.
  */
 export function effectiveDocumentIn(root: string, entry: string, document: PresmiumDocument): EffectiveDocument {
-  const { defaults } = workspaceSettings(root)
-  const own = treeEntry(entry, document)
-  const placement = own === entry ? document.placement : (() => { const value = existsSync(own) ? readEntry(own) : undefined; return isRecord(value) ? placementOf(value) : document.placement })()
-  if (placement.parent === null) return withEffectiveSettings(document, [], defaults)
-  const { tree } = workspaceDocuments(root)
-  const rel = relative(real(root), real(own)).split(sep).join('/')
-  const id = tree.byId.get(document.id)?.path === rel ? document.id : [...tree.byId.values()].find(node => node.path === rel)?.id
-  const chain = (id === undefined ? [] : tree.ancestors(id)).flatMap((node) => {
-    const value = readEntry(join(root, node.path))
-    return isRecord(value) && isRecord(value.metadata) && isRecord(value.production) ? [value as unknown as PresmiumDocument] : []
-  })
-  return withEffectiveSettings(document, chain, defaults)
+  const { ancestors, defaults } = inheritance(root, entry, document)
+  return withEffectiveSettings(document, ancestors, defaults)
+}
+
+/** What the document inherits, without its own settings: an editor fills it in with `withInheritedSettings` as the author edits. */
+export function inheritedSettingsIn(root: string, entry: string, document: PresmiumDocument): DocumentDefaults {
+  const { ancestors, defaults } = inheritance(root, entry, document)
+  const { lang: _lang, ...merged } = effectiveSettings(ancestors, defaults)
+  const lang = [defaults.lang, ...ancestors.map(ancestor => ancestor.metadata.lang)].filter((value): value is string => typeof value === 'string').at(-1)
+  return { ...merged, ...lang !== undefined ? { lang } : {} }
 }
 
 /** `effectiveDocumentIn` for a document whose workspace is found upward from its file, as the compiler finds it. */

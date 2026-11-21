@@ -18,6 +18,7 @@ import { nativeEditingCursor, nativeTextPoint, nativeTextPosition } from './sele
 import type { NativeDocumentSelection, NativeTextPoint } from './selection.ts'
 import { documentInsertionPlace } from './insertion-place.ts'
 import type { DocumentInsertionPlace } from './insertion-place.ts'
+import { effectiveOf } from '../effective-settings.ts'
 
 export interface DocumentEditingPosition {
   nativeBlockId: string
@@ -39,6 +40,8 @@ export interface DocumentEditorProps {
   agentActivities?: import('@lincyaw/kernel').AgentActivity[]
   identity: string
   document: PresmiumDocument
+  /** What the document inherits from its ancestors: its content language and plugins when it sets none. */
+  inherited?: import('@lincyaw/kernel').DocumentDefaults
   version?: string
   member?: Member
   commentDrafts?: CommentDrafts
@@ -72,7 +75,7 @@ export interface DocumentEditorProps {
 
 /** A source version reset replaces the editor; its own save receipts never replace it. */
 export function DocumentEditor(props: DocumentEditorProps) {
-  const projection = useMemo(() => createDocumentProjection(props.document), [props.identity, props.reset])
+  const projection = useMemo(() => createDocumentProjection(props.document, effectiveOf(props.document, props.inherited).metadata.plugins), [props.identity, props.reset])
   useEffect(() => rememberComponentConfiguration(projection, props.document), [projection, props.version])
   const comments = useMemo(() => new DocumentThreadStore(props.document, props.member, props.version, props.identity, props.commentDrafts), [props.identity, props.reset])
   useEffect(() => {
@@ -153,7 +156,7 @@ export function DocumentEditor(props: DocumentEditorProps) {
       reportPosition()
     } catch (error) { current.current.onError?.(error instanceof Error ? error : new Error(String(error))) }
   }
-  return <BlockNoteSurface identity={props.identity} reset={props.reset} initialContent={projection.content} locale={props.locale} contentLang={props.document.metadata.lang || 'zh-CN'} readOnly={props.readOnly}
+  return <BlockNoteSurface identity={props.identity} reset={props.reset} initialContent={projection.content} locale={props.locale} contentLang={effectiveOf(props.document, props.inherited).metadata.lang} readOnly={props.readOnly}
     resolveAssetURL={props.resolveAssetURL} uploadImage={props.uploadImage}
     comments={comments} commentsPortal={props.commentsPortal} onCommentDraftRestore={() => current.current.onCommentDraftRestore?.()} onOpenComments={() => current.current.onOpenComments?.()} nodeViews={props.nodeViews} onComposition={props.onComposition} onSelection={props.onSelection}
     animationRequest={{

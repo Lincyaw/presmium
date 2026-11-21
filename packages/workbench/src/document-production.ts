@@ -23,6 +23,7 @@ import { discardMediaDraft, keepMediaDrafts, mediaDraftSnapshot } from './media-
 import type { MediaDrafts } from './media-drafts.ts'
 import { TranscriptionCorrections } from './transcription-drafts.ts'
 import type { TranscriptionCorrection, TranscriptionCorrectionTarget } from './transcription-drafts.ts'
+import { effectiveOf } from './effective-settings.ts'
 
 interface ProductionOptions {
   store: WorkbenchStore
@@ -416,13 +417,13 @@ export class DocumentProduction {
   }
   timingDraft(stepId: string, key: StepDurationKey, identity: string, reset: number): StepDurationDraft | undefined {
     const document = this.#options.document(identity)
-    return document && this.#options.store.state.authoring?.reset === reset ? this.#documentTimingDrafts.get(identity, document, stepId, key) : undefined
+    return document && this.#options.store.state.authoring?.reset === reset ? this.#documentTimingDrafts.get(identity, effectiveOf(document, this.#options.store.state.authoring.inherited), stepId, key) : undefined
   }
   /** Retains unaccepted numeric input by stable target; it is not authoring content or a second timing source. */
   setTimingDraft(stepId: string, key: StepDurationKey, draft: StepDurationDraft | undefined, identity: string, reset: number): void {
     const source = this.#options.store.state.authoring, document = this.#options.document(identity)
     if (!document?.steps[stepId] || source?.reset !== reset || isAgentChanging(this.#options.store.state)) return
-    if (!this.#documentTimingDrafts.set(identity, document, stepId, key, draft)) return
+    if (!this.#documentTimingDrafts.set(identity, effectiveOf(document, source.inherited), stepId, key, draft)) return
     this.#draftRevision++
     this.#options.store.set({ authoring: { ...source }, hasDocumentTimingDrafts: this.#documentTimingDrafts.has(identity, document), documentTimingDraftStorageFailure: this.#documentTimingDrafts.failed })
   }

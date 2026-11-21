@@ -23,8 +23,8 @@ export interface Messages {
   agents: string
   firstDocument: string
   site: Record<'lang' | 'description' | 'guideTitle' | 'guideIntro' | 'guideStartTitle' | 'guideStartBody' | 'guideStyleTitle' | 'guideStyleBody' | 'guidePublishTitle' | 'guidePublishBody', string>
-  readme(kind: 'lecture' | 'workspace' | 'site', title: string): string
-  agentsFile(kind: 'lecture' | 'workspace' | 'site', title: string): string
+  readme(kind: 'document' | 'workspace' | 'site', title: string): string
+  agentsFile(kind: 'document' | 'workspace' | 'site', title: string): string
 }
 
 const REPOSITORY = 'https://github.com/Lincyaw/presmium'
@@ -36,7 +36,7 @@ export const MESSAGES: Record<Locale, Messages> = {
 在 <目录> 中新建一个 Presmium 项目；没有给出 --type 或目录时逐项询问。
 
 选项：
-  --type <种类>    lecture（一份文稿）、workspace（多份文稿）、site（带首页与发布流程的网站）
+  --type <种类>    document（一份文稿）、workspace（多份文稿）、site（带首页与发布流程的网站）
                    或 plugin（插件：指令、两种形态共用的组件与服务端路由）
   --theme <主题>   site 的主题：course、docs 或 showcase（默认 course）
   --title <标题>   文稿、工作区或网站的标题（默认为目录名）
@@ -45,7 +45,7 @@ export const MESSAGES: Record<Locale, Messages> = {
   -h, --help       显示本说明`,
     kindQuestion: '新建哪种项目？',
     kinds: {
-      lecture: '一份文稿，导出为网页、幻灯片与 Notebook',
+      document: '一份文稿，导出为网页、幻灯片与 Notebook',
       workspace: '工作区：多份文稿与一个网站，用 presmium serve 预览',
       site: '网站：可编辑首页、内容文稿与 GitHub Pages 发布流程',
       plugin: '插件：指令、网页与幻灯片共用的组件、服务端路由与集成测试',
@@ -56,12 +56,12 @@ export const MESSAGES: Record<Locale, Messages> = {
     nameQuestion: '包名',
     tooManyDirectories: count => `给出了 ${count} 个目录。请只给出一个目录。`,
     noAnswer: '没有读到回答。请用 --type 与目录给出项目，用法见 presmium new --help。',
-    badKind: kind => `没有“${kind}”这种项目。请选择 lecture、workspace、site 或 plugin。`,
+    badKind: kind => `没有“${kind}”这种项目。请选择 document、workspace、site 或 plugin。`,
     badTheme: theme => `没有“${theme}”这种主题。请选择 course、docs 或 showcase。`,
     themeOnlyForSite: '--theme 只用于网站。请同时指定 --type site。',
     badName: name => `“${name}”不能用作包名。请只用小写字母、数字与 - . _，可以带 @作用域/。`,
     notEmpty: dir => `${dir} 已存在且不是空目录。请换一个目录，或先清空它。`,
-    created: (kind, dir) => `已在 ${dir} 新建${kind === 'lecture' ? '文稿' : kind === 'workspace' ? '工作区' : kind === 'site' ? '网站' : '插件'}。`,
+    created: (kind, dir) => `已在 ${dir} 新建${kind === 'document' ? '文稿' : kind === 'workspace' ? '工作区' : kind === 'site' ? '网站' : '插件'}。`,
     next: '接下来：',
     agents: '给 AI 编程工具的说明：AGENTS.md 与 .agents/skills 中的技能。',
     firstDocument: '第一讲',
@@ -103,7 +103,7 @@ pnpm build     # 导出网站到 dist/web/
 
 \`AGENTS.md\` 与 \`.agents/skills\` 是给 AI 编程工具的说明。Presmium：${REPOSITORY}
 `
-      : kind === 'lecture'
+      : kind === 'document'
       ? `# ${title}
 
 一份 Presmium 文稿：保存在 \`index.pmd\` 中，Presmium 把它导出为网页、幻灯片与 Notebook。命令来自 \`pnpm add -g @lincyaw/presmium\`；在本目录运行 \`pnpm install\` 之后，用的是 \`package.json\` 锁定的版本。
@@ -144,7 +144,7 @@ presmium build           # 把工作区导出为网站，产物在 dist/web/
 `,
     agentsFile: (kind, title) => `# ${title}
 
-${kind === 'lecture'
+${kind === 'document'
   ? '这是一份 Presmium 文稿：保存在 `index.pmd` 中，`presmium` 把它导出为网页、幻灯片与 Notebook。'
   : kind === 'site'
   ? '这是一个 Presmium 网站：独立首页在 `site/home.json`，由 `presmium.workspace.yaml` 的 `site.landing.source` 指定；也可以通过 `site.landing.template` 使用 `site/home.html`。首页自由编排品牌介绍和网站板块，内容始终写在各目录的 `index.pmd`（第一份为 `intro/index.pmd`），保持文稿、步骤与放映的同一内容入口。'
@@ -157,7 +157,7 @@ ${kind === 'lecture'
 
 连接原生 MCP 服务 \`presmium\`（\`.mcp.json\`，命令 \`presmium mcp\`）后，按 \`presmium-author\` 技能中的 “Work through the tools” 直接调用作者动作修改文稿、检查与截帧。默认命令在初始化前启动或复用工作区服务；工作目录须为本项目，也可显式传入工作区或文稿的绝对路径。仅在明确使用 \`--compiler-only\` 或没有 MCP 宿主时直接修改 \`index.pmd\`。中断后先查保存历史或任务状态，不重发结果未知的写入；自动启动保留收费、源文件写入与浏览器操作的审批。
 
-修改后运行 \`${kind === 'lecture' ? 'presmium check' : 'presmium check <文稿目录>'}\` 并修复它报告的问题；\`presmium build\` 导出${kind === 'lecture' ? '网页、幻灯片与 Notebook' : '工作区的网站'}。
+修改后运行 \`${kind === 'document' ? 'presmium check' : 'presmium check <文稿目录>'}\` 并修复它报告的问题；\`presmium build\` 导出${kind === 'document' ? '网页、幻灯片与 Notebook' : '工作区的网站'}。
 `,
   },
   'en': {
@@ -166,16 +166,16 @@ ${kind === 'lecture'
 Makes a new Presmium project in <directory>; asks for what --type or the directory leaves out.
 
 Options:
-  --type <kind>    lecture (one document), workspace (documents), site (a home page and publishing),
+  --type <kind>    document (one document), workspace (documents), site (a home page and publishing),
                    or plugin (a directive, a component of both forms, and a server route)
   --theme <name>   site theme: course, docs, or showcase (default: course)
-  --title <text>   the lecture, workspace, or site title (default: the directory’s name)
+  --title <text>   the document, workspace, or site title (default: the directory’s name)
   --name <name>    the plugin’s package name (default: the directory’s name)
   --no-git         do not run git init
   -h, --help       show this help`,
     kindQuestion: 'Which project?',
     kinds: {
-      lecture: 'lecture: one document, as a web page, slides, and a Notebook',
+      document: 'document: one document, as a web page, slides, and a Notebook',
       workspace: 'workspace: documents and a website, previewed with presmium serve',
       site: 'site: an editable home page, documents, and a GitHub Pages workflow',
       plugin: 'plugin: a directive, a component of the web page and the slides, a server route, and tests',
@@ -186,7 +186,7 @@ Options:
     nameQuestion: 'Package name',
     tooManyDirectories: count => `${count} directories were given. Give one directory.`,
     noAnswer: 'No answer was read. Give the project with --type and a directory (see presmium new --help).',
-    badKind: kind => `There is no project “${kind}”. Choose lecture, workspace, site, or plugin.`,
+    badKind: kind => `There is no project “${kind}”. Choose document, workspace, site, or plugin.`,
     badTheme: theme => `There is no theme “${theme}”. Choose course, docs, or showcase.`,
     themeOnlyForSite: '--theme is only for a site. Add --type site.',
     badName: name => `“${name}” is not a package name. Use lowercase letters, digits, and - . _, with an optional @scope/.`,
@@ -233,16 +233,16 @@ To publish on GitHub Pages, commit the project and the \`pnpm-lock.yaml\` create
 
 \`AGENTS.md\` and \`.agents/skills\` are for AI coding tools. Presmium: ${REPOSITORY}
 `
-      : kind === 'lecture'
+      : kind === 'document'
       ? `# ${title}
 
-A Presmium lecture: the document is \`index.pmd\`, which Presmium exports to a web page, slides, and a
+A Presmium document: it is \`index.pmd\`, which Presmium exports to a web page, slides, and a
 Notebook. The commands come from \`pnpm add -g @lincyaw/presmium\`; after \`pnpm install\` here, they are the
 version \`package.json\` pins.
 
 \`\`\`sh
 presmium dev       # a live preview of the web page and the slides
-presmium check     # checks the lecture: syntax, plugins, links
+presmium check     # checks the document: syntax, plugins, links
 presmium build     # exports the web page, the slides, and the Notebook into dist/
 \`\`\`
 
@@ -278,8 +278,8 @@ The Reader Q&A plugin the configuration lists lets readers “Ask”.
 `,
     agentsFile: (kind, title) => `# ${title}
 
-${kind === 'lecture'
-  ? 'This is a Presmium lecture: the document is `index.pmd`, which `presmium` exports to a web page, slides, and a Notebook.'
+${kind === 'document'
+  ? 'This is a Presmium document: it is `index.pmd`, which `presmium` exports to a web page, slides, and a Notebook.'
   : kind === 'site'
   ? 'This is a Presmium website: its independent home page is `site/home.json`, selected by `site.landing.source` in `presmium.workspace.yaml`; `site.landing.template` can instead select `site/home.html`. The home page presents the brand and website sections. Content stays in each directory’s `index.pmd` (the first is `intro/index.pmd`), keeping content, steps, and presentations in one document.'
   : 'This is a Presmium workspace: the `index.pmd` of each subdirectory is a document, and `presmium.workspace.yaml` is the workspace’s configuration (the operator’s settings are in its `settings`, which no document changes).'} Change the documents and the code, never the output in \`dist/\`.
@@ -291,7 +291,7 @@ Skills (\`.agents/skills\`, self-contained):
 
 When native MCP \`presmium\` is connected (\`.mcp.json\`, command \`presmium mcp\`), use its author actions directly for edits, checks and captures as “Work through the tools” in \`presmium-author\` says. The default command starts or reuses the workspace service before initialization. Use this project as the working directory or pass an absolute workspace or document path. Edit \`index.pmd\` directly only with explicit \`--compiler-only\` mode or without an MCP host. After an interruption, inspect saved history or task state before repeating a write with an unknown outcome. Automatic startup preserves approvals for paid operations, source-file writes and browser control.
 
-After a change, run \`${kind === 'lecture' ? 'presmium check' : 'presmium check <document directory>'}\` and fix what it reports; \`presmium build\` exports ${kind === 'lecture' ? 'the web page, the slides, and the Notebook' : 'the workspace’s website'}.
+After a change, run \`${kind === 'document' ? 'presmium check' : 'presmium check <document directory>'}\` and fix what it reports; \`presmium build\` exports ${kind === 'document' ? 'the web page, the slides, and the Notebook' : 'the workspace’s website'}.
 `,
   },
 }

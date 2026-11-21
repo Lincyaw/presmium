@@ -114,7 +114,7 @@ test('presmium serve shows a workspace\'s home page and its document with the th
   const ws = join(project!, 'ws')
   mkdirSync(join(ws, 'intro'), { recursive: true })
   cpSync(join(FIXTURES, 'deck/lecture.md'), join(ws, 'intro/lecture.md'))
-  writeFileSync(join(ws, 'presmium.workspace.yaml'), 'title: Consumer workspace\ndocuments: [\'*/lecture.md\']\n')
+  writeFileSync(join(ws, 'presmium.workspace.yaml'), 'title: Consumer workspace\n')
   const { serve: url } = await start(['serve', 'ws', '--port', '0'], /^mcp {2}/m, ['serve'], { XDG_CACHE_HOME: outsideDir('presmium-consumer-cache-') })
   const errors: string[] = []
   page.on('pageerror', error => errors.push(String(error)))

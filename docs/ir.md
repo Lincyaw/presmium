@@ -57,7 +57,7 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 | `production.defaults` | 按字段取最近的值 |
 | `production.captions` | 最近的值 |
 
-标题、说明、标签与译文登记不继承。纯函数 `effectiveSettings(chain, defaults)` 给出生效的设置，`withEffectiveSettings(document, ancestors, defaults)` 给出填好继承值的文稿（`EffectiveDocument`），只用于判断，从不保存。凡按语言、插件、渲染端与插件配置、执行、检查或讲授默认值做决定的地方，都读生效的文稿：编译器、`presmium build`、`dev`、`check`、`voiceover`、`script`、工作区服务（文稿列表、作者动作、媒体与配音）、MCP 与语言服务。`@lincyaw/compiler` 的 `effectiveDocument(入口, 文稿)` 与 `effectiveDocumentIn(工作区, 入口, 文稿)` 向上找到工作区、按 `placement.parent` 与工作区扫描解析祖先链；不在任何工作区中的文稿没有祖先。`GET document` 的回答另带 `settings`（生效的设置）。手工字幕的指纹按保存的文稿计算，不受继承影响。
+标题、说明、标签与译文登记不继承。纯函数 `effectiveSettings(chain, defaults)` 给出生效的设置，`withEffectiveSettings(document, ancestors, defaults)` 给出填好继承值的文稿（`EffectiveDocument`），只用于判断，从不保存。凡按语言、插件、渲染端与插件配置、执行、检查或讲授默认值做决定的地方，都读生效的文稿：编译器、`presmium build`、`dev`、`check`、`voiceover`、`script`、工作区服务（文稿列表、作者动作、媒体与配音）、MCP 与语言服务。`@lincyaw/compiler` 的 `effectiveDocument(入口, 文稿)` 与 `effectiveDocumentIn(工作区, 入口, 文稿)` 向上找到工作区、按 `placement.parent` 与工作区扫描解析祖先链；不在任何工作区中的文稿没有祖先。`GET document` 的回答另带 `settings`（生效的设置）与 `inherited`（从祖先与 `defaults:` 继承的部分）；工作台用 `withInheritedSettings` 把它填进正在编辑的文稿，内容语言、图表插件、配音与讲授默认值都按生效的值判断。手工字幕的指纹按保存的文稿计算，不受继承影响。
 
 ### 2.2 身份与引用
 
@@ -225,7 +225,7 @@ Markdown 的段落、标题、强调、链接、列表、代码、公式和表�
 `presmium script export` 把讲稿写成一份供润色的 Markdown 工作副本（默认 `<文稿>/dist/script.md`）：每页、每步一个标题，每段讲稿在标记行 `<!-- n: <讲稿 ID> -->` 之下，到下一个标记行或标题为止。讲稿中的换行在文件中另起一行，空行（`\n\n`）是一个空行；读回时每行去掉首尾空白，连续的空行算一个。读音节点写作 `{显示|读音}`，cue 写作 `⟦cue:<id>⟧`；文字中的 `\`、`{`、`}`、`⟦`、`⟧`（读音节点中另有 `|`）前面加 `\`，看起来像标题或注释的行以 `\` 开头，读回时去掉这些 `\`。`presmium script import` 核对标记与 cue（不能缺、不能多、cue 不能删除或跨段），只替换文字有变化的讲稿的 `content`（`provenance` 与 cue 节点保留），经 `validateDocument` 后按文件原有的缩进原子写入；副本本身从不进入编译。`presmium voiceover` 生成配音（[作者动作](authoring-actions.md) 第 9 节），`presmium speech key` 读写运营者的语音服务密钥（[架构](architecture.md)）。
 
 ```sh
-presmium new lesson --type lecture
+presmium new lesson --type document
 presmium dev lesson
 presmium check lesson --json
 presmium build lesson --to web

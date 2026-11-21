@@ -6,7 +6,7 @@ import { cleanEnv, FIXTURES, presmiumProcess, raw, remove, waitFor, workspace } 
 
 it('updates cached preview sections and still republishes a changed local image in an unchanged section', async () => {
   const dir = workspace('preview-cache', join(FIXTURES, 'service'))
-  writeFileSync(join(dir, 'presmium.workspace.yaml'), "title: Preview cache\ndocuments: ['talk/lecture.md']\n")
+  writeFileSync(join(dir, 'presmium.workspace.yaml'), "title: Preview cache\n")
   const entry = join(dir, 'talk/lecture.md')
   const source = '# Cache\n\n## Prose\n\nOriginal paragraph.\n\n$$\nx=1\n$$\n\n## Image\n\n![Chart](chart.svg)\n'
   const image = join(dir, 'talk/chart.svg')

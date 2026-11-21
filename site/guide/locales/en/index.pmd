@@ -14,7 +14,7 @@
     },
     "translationOf": {
       "entry": "../../index.pmd",
-      "digest": "40c925b444c3d72eadd8e731c3811bbb9ffc73584f40f7e5662310340f851cc6"
+      "digest": "012701d5fb9f15ee9b33155f00cee0c2c09bce011cc98c4dbe0ff4834dc8c63c"
     }
   },
   "sectionOrder": [
@@ -225,7 +225,7 @@
           "id": "start--body-1--text",
           "type": "code",
           "language": "sh",
-          "value": "presmium new lesson --type lecture --title 'First lesson'\npresmium studio lesson"
+          "value": "presmium new lesson --type document --title 'First lesson'\npresmium studio lesson"
         }
       ]
     },

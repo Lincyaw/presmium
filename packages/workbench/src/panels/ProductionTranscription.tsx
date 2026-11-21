@@ -6,6 +6,7 @@ import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { documentTranscriptionSession } from '../transcription-session.ts'
 import { TRANSCRIPTION_MESSAGES, transcriptionFailure } from '../transcription-messages.ts'
 import { TranscriptionAdoption } from './TranscriptionAdoption.tsx'
+import { effectiveOf } from '../effective-settings.ts'
 
 interface Props { identity: string, directory: string, document: PresmiumDocument, sectionId: string, stepId: string, disabled: boolean, active: boolean, selectedAsset?: { id: string, revision: number }, onSelectAsset(): void }
 
@@ -95,7 +96,7 @@ export function ProductionTranscription({ identity, directory, document, section
     try {
       const expected = { identity, version: now.version }, audio = await workbench.production.inspectAudio(assetId, expected, controller.signal)
       if (!current() || controller.signal.aborted) return
-      const request: DocumentTranscriptionRequest = { intent: `transcription_${randomUUID()}`, source: { documentId: now.content.id, version: now.version, fingerprint: now.fingerprint }, assetId, audioSha256: audio.inspection.sha256, engine, lang: now.content.metadata.lang, confirmed: true }
+      const request: DocumentTranscriptionRequest = { intent: `transcription_${randomUUID()}`, source: { documentId: now.content.id, version: now.version, fingerprint: now.fingerprint }, assetId, audioSha256: audio.inspection.sha256, engine, lang: effectiveOf(now.content, now.inherited).metadata.lang, confirmed: true }
       await session.start(request, () => workbench.production.startTranscription(request, expected))
     } catch (error) { if (current() && !controller.signal.aborted) setFailure(transcriptionFailure(error, locale)) }
     finally { if (inspectionRequest.current === controller) { inspectionRequest.current = undefined; if (current()) setInspecting(false) } }

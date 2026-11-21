@@ -62,7 +62,7 @@ it('gives the agent observed browser failures before it edits and commits its co
 it('names the document\'s entry and files, and keeps the author\'s position of the turn while they scroll, without sending the context again', async () => {
   const home = testHome('turn-position')
   const workspace = home.workspace('turn-position', {
-    'presmium.workspace.yaml': 'title: 两讲\ndocuments: [lectures/*/lecture.md]\n',
+    'presmium.workspace.yaml': 'title: 两讲\n',
     'lectures/one/lecture.md': '---\ntitle: 第一讲\n---\n\n(first)=\n## 第一节\n\n正文。\n\n(second)=\n## 第二节\n\n正文。\n',
     'lectures/one/slides.md': '---\ntitle: 第一讲的幻灯片\n---\n\n## 第一节\n',
     'lectures/two/lecture.md': '---\ntitle: 第二讲\n---\n\n## 一节\n\n正文。\n',

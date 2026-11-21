@@ -4,7 +4,7 @@ Starts a new [Presmium](https://github.com/Lincyaw/presmium) project: a lecture,
 
 ```sh
 presmium new
-presmium new my-lecture --type lecture --title "Tokenization"
+presmium new my-document --type document --title "Tokenization"
 presmium new my-course --type workspace --title "Data structures"
 presmium new my-site --type site --theme course --title "My course"
 presmium new presmium-plugin-greeting --type plugin --name presmium-plugin-greeting

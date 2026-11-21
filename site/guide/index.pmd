@@ -224,7 +224,7 @@
           "id": "start--body-1--text",
           "type": "code",
           "language": "sh",
-          "value": "presmium new lesson --type lecture --title '第一课'\npresmium studio lesson"
+          "value": "presmium new lesson --type document --title '第一课'\npresmium studio lesson"
         }
       ]
     },

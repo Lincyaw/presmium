@@ -3,9 +3,9 @@ import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, readdir
 import { join } from 'node:path'
 import { WORKSPACE_CONFIG } from '@lincyaw/compiler'
 import { DOCUMENT_ENTRY, SOURCE_MAX_BYTES, SOURCE_MAX_FILES, validateDocument } from '@lincyaw/kernel'
-import type { ConflictAnswer, DocumentFileChange, FilesAnswer, Member, Revision, SavedAnswer, SourceAnswer, SourceFile, SourceTransactionAnswer, SourceTransactionChange, EffectiveDocument, PresmiumDocument } from '@lincyaw/kernel'
+import type { ConflictAnswer, DocumentFileChange, FilesAnswer, Member, Revision, SavedAnswer, SourceAnswer, SourceFile, SourceTransactionAnswer, SourceTransactionChange, DocumentDefaults, EffectiveDocument, PresmiumDocument } from '@lincyaw/kernel'
 import { isWithin } from '../domain/paths.ts'
-import { effectiveContent, listDocumentEntries, readDocumentSummary } from './config.ts'
+import { effectiveContent, inheritedContent, listDocumentEntries, readDocumentSummary } from './config.ts'
 import type { DocumentEntry, WorkspaceConfig } from './config.ts'
 import { RequestError } from './errors.ts'
 import type { DocumentLocks } from './locks.ts'
@@ -77,6 +77,11 @@ export class SourceEditor {
   /** The document in `document` with its inherited settings filled in, for decisions; never saved. */
   effective(document: string, content: PresmiumDocument): EffectiveDocument {
     return effectiveContent(this.#config, document, content)
+  }
+
+  /** What the document in `document` inherits from its ancestors and the workspace defaults. */
+  inherited(document: string, content: PresmiumDocument): DocumentDefaults {
+    return inheritedContent(this.#config, document, content)
   }
 
   scope(document: string): Scope {

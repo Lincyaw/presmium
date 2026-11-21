@@ -5,7 +5,7 @@ import { cleanEnv, FIXTURES, presmiumProcess, raw, remove, waitFor, workspace } 
 
 it('compiles only the requested document and publishes the latest edit when saves arrive during compilation', async () => {
   const dir = workspace('compile-scheduling', join(FIXTURES, 'service'))
-  writeFileSync(join(dir, 'presmium.workspace.yaml'), "title: Scheduling\ndocuments: ['*/lecture.md']\n")
+  writeFileSync(join(dir, 'presmium.workspace.yaml'), "title: Scheduling\n")
   mkdirSync(join(dir, 'probe'))
   writeFileSync(join(dir, 'probe/package.json'), JSON.stringify({ name: 'fixture-scheduling', private: true, type: 'module', exports: { './presmium': './plugin.mjs' } }))
   writeFileSync(join(dir, 'probe/plugin.mjs'), `

@@ -60,7 +60,7 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
   }
   const read = async (document: string, member: Member): Promise<DocumentAnswer> => {
     const { source, content, effective, issues } = readAuthoringDocument(editor, { document, member })
-    return { document, version: source.version, fingerprint: fnv1a64(source.content), content, settings: documentSettings(effective), issues }
+    return { document, version: source.version, fingerprint: fnv1a64(source.content), content, settings: documentSettings(effective), inherited: editor.inherited(document, content), issues }
   }
   const readSelection = <T>(document: string, expected: CanonicalSource | undefined, member: Member, select: (content: PresmiumDocument, source: CanonicalSource) => T): T => {
     if (!hasRole(member, 'editor')) throw new RequestError(403, 'authoring-permission-denied')

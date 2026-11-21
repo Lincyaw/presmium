@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { effectiveDocumentIn, WORKSPACE_CONFIG, workspaceDefaults, workspaceDocuments } from '@lincyaw/compiler'
+import { effectiveDocumentIn, inheritedSettingsIn, WORKSPACE_CONFIG, workspaceDefaults, workspaceDocuments } from '@lincyaw/compiler'
 import type { OperatorSettings } from '@lincyaw/compiler'
 import { APPROVAL_KINDS, DOCUMENT_ENTRY, errorMessage, isRecord } from '@lincyaw/kernel'
 import type { ApprovalKind, DocumentDefaults, DocumentSummary, EffectiveDocument, PresmiumDocument } from '@lincyaw/kernel'
@@ -147,4 +147,9 @@ export function isDocumentDir(config: WorkspaceConfig, dir: string): boolean {
 /** The document in `dir` with the settings it inherits from its ancestors and the workspace defaults; never saved. */
 export function effectiveContent(config: WorkspaceConfig, dir: string, content: PresmiumDocument): EffectiveDocument {
   return effectiveDocumentIn(config.root, join(config.root, dir ? `${dir}/${DOCUMENT_ENTRY}` : DOCUMENT_ENTRY), content)
+}
+
+/** What the document in `dir` inherits from its ancestors and the workspace defaults, without its own settings. */
+export function inheritedContent(config: WorkspaceConfig, dir: string, content: PresmiumDocument): DocumentDefaults {
+  return inheritedSettingsIn(config.root, join(config.root, dir ? `${dir}/${DOCUMENT_ENTRY}` : DOCUMENT_ENTRY), content)
 }

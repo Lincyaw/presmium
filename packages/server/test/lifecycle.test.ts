@@ -35,7 +35,7 @@ it('waits for a document\'s asynchronous resource release before remounting and 
 
 it('refreshes the HTTP contribution when a saved plugin path selects a different implementation with the same ID', async () => {
   const dir = workspace('server-implementation', { doc: FIXTURE })
-  writeFileSync(join(dir, 'presmium.workspace.yaml'), 'title: Implementations\ndocuments: [doc/lecture.md]\n')
+  writeFileSync(join(dir, 'presmium.workspace.yaml'), 'title: Implementations\n')
   const process = presmiumProcess(dir, ['serve', '--port', '0'], cleanEnv({ XDG_CACHE_HOME: join(dir, '.cache'), XDG_STATE_HOME: join(dir, '.state') }))
   try {
     const url = (await waitFor(process, /^serve {2}(http\S+)$/m))[1]!

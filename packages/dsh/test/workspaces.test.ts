@@ -17,7 +17,7 @@ describe('one Harness workspace for the Presmium workspace root', () => {
   beforeAll(async () => {
     home = testHome('workspaces')
     ws = home.workspace('workspaces', {
-      'presmium.workspace.yaml': 'title: 跟随\ndocuments: [lectures/*/lecture.md]\n',
+      'presmium.workspace.yaml': 'title: 跟随\n',
       'lectures/alpha/lecture.md': '---\ntitle: 文稿甲\n---\n\n# 文稿甲\n\n## 一节\n\n正文。\n',
     })
     service = await home.serve(ws.dir)

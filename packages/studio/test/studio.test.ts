@@ -63,7 +63,7 @@ function repository(files: Record<string, string>, under = join(ROOT, 'e2e/fixtu
 }
 
 const TWO_DOCUMENTS = {
-  'presmium.workspace.yaml': 'title: Two lectures\ndocuments: [lectures/*/lecture.md]\n',
+  'presmium.workspace.yaml': 'title: Two lectures\n',
   'lectures/alpha/lecture.md': '---\ntitle: Alpha\nlang: en\n---\n\n# Alpha\n\n(alpha-one)=\n## The first section of alpha\n\nText.\n',
   'lectures/beta/lecture.md': '---\ntitle: Beta\nlang: en\n---\n\n# Beta\n\n(beta-one)=\n## The first section of beta\n\nText.\n',
 }
@@ -190,7 +190,7 @@ describe('presmium studio installed from the packed packages', () => {
     const ws = join(project, 'ws')
     mkdirSync(join(ws, 'intro'), { recursive: true })
     cpSync(join(CONSUMER, 'deck/lecture.md'), join(ws, 'intro/lecture.md'))
-    writeFileSync(join(ws, 'presmium.workspace.yaml'), 'title: Consumer workspace\ndocuments: [\'*/lecture.md\']\n')
+    writeFileSync(join(ws, 'presmium.workspace.yaml'), 'title: Consumer workspace\n')
     git(ws, ['init', '-q', '-b', 'main'])
     const running = await studio([join(project, 'node_modules/@lincyaw/presmium/bin/presmium.mjs'), 'studio', 'ws', '--port', '5666'], { cwd: project, env: home.env() })
     const browser = await chromium.launch()

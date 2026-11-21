@@ -123,7 +123,7 @@ it('serves a workspace with presmium serve, its sites outside the project, with 
   const ws = join(project, 'ws')
   mkdirSync(join(ws, 'intro'), { recursive: true })
   cpSync(join(FIXTURES, 'deck/lecture.md'), join(ws, 'intro/lecture.md'))
-  writeFileSync(join(ws, 'presmium.workspace.yaml'), 'title: Consumer workspace\ndocuments: [\'*/lecture.md\']\n')
+  writeFileSync(join(ws, 'presmium.workspace.yaml'), 'title: Consumer workspace\n')
   expect((await run('git', ['init', '-q'], { cwd: ws })).code).toBe(0)
   const cache = mkdtempSync(join(tmpdir(), 'presmium-consumer-cache-'))
   const serve = await start(['serve', 'ws', '--port', '0'], /^mcp {2}/m, { XDG_CACHE_HOME: cache })
@@ -174,7 +174,7 @@ it('reports a plugin whose peer dependencies exclude the installed Presmium and 
 it('makes a lecture with presmium new in an empty directory and checks and builds it with nothing installed there', async () => {
   const empty = mkdtempSync(join(tmpdir(), 'presmium-new-'))
   try {
-    const made = await presmium(['new', 'talk', '--type', 'lecture', '--title', 'Talk', '--no-git'], empty)
+    const made = await presmium(['new', 'talk', '--type', 'document', '--title', 'Talk', '--no-git'], empty)
     expect(made.code, made.stdout + made.stderr).toBe(0)
     expect(made.stdout).toMatch(/^ {2}presmium dev$/m)
     const lecture = join(empty, 'talk')

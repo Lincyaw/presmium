@@ -1,5 +1,5 @@
 import type { IRDocument } from '../ir.ts'
-import type { PresmiumDocument, DocumentEditOperation, DocumentIssue, EffectiveSettings } from './document.ts'
+import type { DocumentDefaults, PresmiumDocument, DocumentEditOperation, DocumentIssue, EffectiveSettings } from './document.ts'
 import type { Focus } from './agent.ts'
 import type { Finding } from './checks.ts'
 import type { Member } from './server.ts'
@@ -210,6 +210,8 @@ export interface DocumentAnswer {
   content: PresmiumDocument
   /** On a read: the settings `content` decides with, inherited ones filled in from its ancestors and the workspace defaults. */
   settings?: EffectiveSettings
+  /** On a read: what the document inherits from its ancestors and the workspace defaults; with the edited content, `withInheritedSettings` gives its settings. */
+  inherited?: DocumentDefaults
   issues: DocumentIssue[]
 }
 

@@ -10,6 +10,7 @@ import { nativeEditingCursor } from '../document-editor/selection.ts'
 import { hasBlockPreview } from '../document-editor/projection.ts'
 import type { NativeDocumentEditor } from '../document-editor/schema.tsx'
 import { isAgentChanging } from '../workbench-state.ts'
+import { effectiveOf } from '../effective-settings.ts'
 
 /** Source editing is available before the first successful runtime compilation. */
 export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onOpenComments }: { commentsPortal?: HTMLElement | null, onCommentDraftRestore?(): void, onOpenComments?(): void }) {
@@ -160,7 +161,7 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onO
     {!source?.content || !source.identity ? source?.loading
       ? <div className="pmw-source-document__sheet pmw-source-document__sheet--loading"><PmSkeleton label={messages.loading} /></div>
       : <PmNotice tone="warn" action={<PmButton small onClick={() => void workbench.retryDocument()}>{t.retry}</PmButton>}>{messages.unavailable}</PmNotice> : <div className="pmw-source-document__sheet">
-      <DocumentEditor agentActivities={agentActivities} acknowledged={sourceAcknowledged()} getDocumentAcknowledged={sourceAcknowledged} onCommentDraftRestore={onCommentDraftRestore} onOpenComments={onOpenComments} commentDrafts={workbench.documentCommentDrafts(source.identity)} identity={source.identity} document={source.content} version={source.version} member={source.member} getDocument={() => workbench.getDocument(source.identity)}
+      <DocumentEditor agentActivities={agentActivities} acknowledged={sourceAcknowledged()} getDocumentAcknowledged={sourceAcknowledged} onCommentDraftRestore={onCommentDraftRestore} onOpenComments={onOpenComments} commentDrafts={workbench.documentCommentDrafts(source.identity)} identity={source.identity} document={source.content} inherited={source.inherited} version={source.version} member={source.member} getDocument={() => workbench.getDocument(source.identity)}
         getDocumentVersion={() => { const current = workbench.getState().authoring; return current && current.identity === source.identity && current.reset === source.reset ? current.version : undefined }} reset={source.reset} locale={locale} readOnly={readOnly}
         uploadImage={(file, signal) => workbench.importDocumentImage(file, source.identity!, signal)}
         getPositionToken={() => workbench.getState().documentPositionToken}
@@ -176,8 +177,9 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onO
         nodeViews={{ renderBlock: id => {
           const block = source.content?.blocks[id]
           if (!block || !source.content) return undefined
-          const fallback = <DocumentBlockFallback block={block} document={source.content} locale={locale} />
-          return hasBlockPreview(block, source.content) ? <DocumentBlockPreview blockId={id} fallback={fallback} /> : fallback
+          const effective = effectiveOf(source.content, source.inherited)
+          const fallback = <DocumentBlockFallback block={block} document={effective} locale={locale} />
+          return hasBlockPreview(block, effective.metadata.plugins) ? <DocumentBlockPreview blockId={id} fallback={fallback} /> : fallback
         } }}
         commentsPortal={commentsPortal} onChange={document => workbench.recordDocument(document)} onReady={(editor, commands) => {
           bodyEditor.current = editor

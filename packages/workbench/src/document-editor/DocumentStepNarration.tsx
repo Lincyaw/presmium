@@ -10,6 +10,7 @@ import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
 import { narrationFieldFocus, narrationsToNative, nativeToNarrations } from './narration.ts'
 import type { NativeNarrationEditor } from './narration-schema.tsx'
 import { StepProductionEditor } from '../StepProductionEditor.tsx'
+import { effectiveOf } from '../effective-settings.ts'
 
 /** Content ownership determines the page, even when the author is reading another page. */
 export function documentBlockSection(document: PresmiumDocument, blockId: string): string | undefined {
@@ -89,7 +90,7 @@ export function DocumentStepNarration({ blockId, sectionId, stepId, expanded, ad
       <NarrationField key={`narration:${source.identity}:${source.reset}:${stepId}`}
         identity={source.identity!} reset={source.reset} blockId={blockId} stepId={stepId}
         content={ids.map(id => ({ id, content: document.narrations[id]!.content }))} readOnly={readOnly} advanced={advanced} onPause={onPause} />
-      <StepProductionEditor key={`timing:${source.identity}:${source.reset}:${stepId}`} document={document} stepId={stepId} locale={locale} readOnly={readOnly} advanced={advanced}
+      <StepProductionEditor key={`timing:${source.identity}:${source.reset}:${stepId}`} document={effectiveOf(document, source.inherited)} stepId={stepId} locale={locale} readOnly={readOnly} advanced={advanced}
         onPause={onPause} onInteraction={() => workbench.editing.interact()}
         onChange={patch => workbench.production.setStepTiming(stepId, patch, source.identity)}
         drafts={{ minimumHoldMs: workbench.production.timingDraft(stepId, 'minimumHoldMs', source.identity, source.reset), trailingPauseMs: workbench.production.timingDraft(stepId, 'trailingPauseMs', source.identity, source.reset) }}

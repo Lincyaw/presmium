@@ -8,6 +8,7 @@ import { MEDIA_MESSAGES, mediaFailure } from '../media-messages.ts'
 import { mediaTime, mediaTimeValue } from '../media-time.ts'
 import { PRODUCTION_MESSAGES } from '../production-messages.ts'
 import type { RecordingRangeDraft as RangeDraft } from '../document-production.ts'
+import { effectiveOf } from '../effective-settings.ts'
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
 /** Video-only pending input; the existing recording transaction and source actor own every write. */
@@ -16,7 +17,7 @@ export function ProductionRecordingRange({ identity, sectionId, stepId, active, 
 }) {
   const workbench = useWorkbench(), locale = useWorkbenchState(state => state.locale), source = useWorkbenchState(state => state.authoring)
   const t = MEDIA_MESSAGES[locale], r = AUDIO_RECORDING_MESSAGES[locale]
-  const document = source?.identity === identity ? source.content : undefined
+  const document = source?.identity === identity ? effectiveOf(source.content, source.inherited) : undefined
   const effective = document?.production.stepOverrides[stepId]?.voiceSource ?? document?.production.sectionOverrides?.[sectionId]?.voiceSource ?? document?.production.defaults.voiceSource
   const voice = effective?.type === 'recording' ? effective : undefined, key = JSON.stringify([stepId, voice?.assetId])
   const drafts = workbench.production.recordingRangeDrafts(identity), mounted = useRef(true), request = useRef<AbortController>()
@@ -43,7 +44,7 @@ export function ProductionRecordingRange({ identity, sectionId, stepId, active, 
   const clean = () => { const value = workbench.getState().authoring; return value?.identity === identity && !value.loading && !value.dirty && !value.saving && !value.composing && !value.restored && !value.recovering && !value.error ? value : undefined }
   const settle = () => {
     const value = sent.current, actual = clean(), step = value && actual?.content?.steps[value.request.stepId]
-    const saved = step && (actual!.content!.production.stepOverrides[step.id]?.voiceSource ?? actual!.content!.production.sectionOverrides?.[step.sectionId]?.voiceSource ?? actual!.content!.production.defaults.voiceSource)
+    const saved = step && (actual!.content!.production.stepOverrides[step.id]?.voiceSource ?? actual!.content!.production.sectionOverrides?.[step.sectionId]?.voiceSource ?? effectiveOf(actual!.content!, actual!.inherited).production.defaults.voiceSource)
     if (!value || !actual?.version || saved?.type !== 'recording' || saved.assetId !== value.request.assetId || !same(saved.sourceRange, value.request.sourceRange)
       || actual.content?.assets[saved.assetId]?.fingerprint !== `sha256:${value.request.sha256}`) return false
     const pending = drafts.get(value.key)

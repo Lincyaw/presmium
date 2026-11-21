@@ -52,7 +52,7 @@ describe('every save a revision, undone and redone by revision', () => {
 
   beforeAll(async () => {
     const source = mkdtempSync(join(tmpdir(), 'presmium-history-source-'))
-    writeFileSync(join(source, 'presmium.workspace.yaml'), 'title: 修改历史\ndocuments: [\'*/lecture.md\']\n')
+    writeFileSync(join(source, 'presmium.workspace.yaml'), 'title: 修改历史\n')
     const files: Record<string, string> = { 'intro/lecture.md': lecture('导论'), 'en/lecture.md': lecture('English', 'lang: en\n'), 'stack/lecture.md': STACK, 'target/lecture.md': lecture('目标') }
     for (const [path, content] of Object.entries(files)) {
       mkdirSync(join(source, path.split('/')[0]!))

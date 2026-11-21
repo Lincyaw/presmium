@@ -17,7 +17,7 @@ const BETA_SECOND = BETA.replace('开始时的内容。', '第二次改。')
 function files(timeoutMs?: number): Record<string, string> {
   const settings = `settings:\n  presmium.assistant:\n    review: required\n${timeoutMs ? `    reviewTimeoutMs: ${timeoutMs}\n` : ''}`
   return {
-    'presmium.workspace.yaml': `title: 审阅\ndocuments: [lectures/*/lecture.md]\napprovals: { operate: allow }\n${settings}`,
+    'presmium.workspace.yaml': `title: 审阅\napprovals: { operate: allow }\n${settings}`,
     'lectures/alpha/lecture.md': ALPHA,
     'lectures/beta/lecture.md': BETA,
   }

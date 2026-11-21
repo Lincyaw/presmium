@@ -10,6 +10,7 @@ import { prepareVoiceSnapshot, runtimeVoiceScope, voiceSnapshotCurrent } from '.
 import type { VoiceSnapshot } from '../voice-snapshot.ts'
 import { isAgentChanging } from '../workbench-state.ts'
 import { VoiceScopeField } from './VoiceScopeField.tsx'
+import { effectiveOf } from '../effective-settings.ts'
 
 interface CheckedVoice { snapshot: VoiceSnapshot, document: PresmiumDocument }
 interface OwnedJob { directory: string }
@@ -110,7 +111,7 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
   const selection = useMemo(() => {
     if (!checked || !status) return undefined
     try {
-      const ids = documentVoiceStepIds(checked.document, scope), wanted = new Set(ids)
+      const ids = documentVoiceStepIds(checked.document, scope), wanted = new Set(ids), effective = effectiveOf(checked.document, source?.inherited)
       const steps = status.steps.filter(value => {
         const page = checked.snapshot.ir.sections.find(page => page.id === value.target.section)
         return page?.stepIds?.[value.target.step] !== undefined && wanted.has(page.stepIds[value.target.step]!)
@@ -122,17 +123,17 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
       const missing = units.filter(value => value.state === 'missing').reduce((sum, value) => sum + value.utterances - value.cached, 0)
       const blocked = units.filter(value => value.state === 'blocked').reduce((sum, value) => sum + value.utterances - value.cached, 0)
       const providers = status.capability.providers.filter(provider => ids.some(id => {
-        const value = resolveDocumentStepVoice(checked.document, id).value
+        const value = resolveDocumentStepVoice(effective, id).value
         return value?.type === 'tts' && provider.id === speechEngineId(value.voice.engine ?? status.capability.defaultEngine ?? '')
       }))
       const text = ids.flatMap(id => checked.document.steps[id]!.narrationIds.map(narrationId => checked.document.narrations[narrationId]!.content.map(node => node.type === 'text' ? node.text : node.type === 'pronunciation' ? node.spoken : '').join(''))).join('\n\n')
-      const voices = [...new Map(ids.flatMap(id => { const value = resolveDocumentStepVoice(checked.document, id).value; return value?.type === 'tts' ? [[JSON.stringify(value.voice), value.voice] as const] : [] })).values()]
-      const silent = ids.filter(id => resolveDocumentStepVoice(checked.document, id).value?.type === 'none').length
-      const unset = ids.some(id => resolveDocumentStepVoice(checked.document, id).value === undefined)
+      const voices = [...new Map(ids.flatMap(id => { const value = resolveDocumentStepVoice(effective, id).value; return value?.type === 'tts' ? [[JSON.stringify(value.voice), value.voice] as const] : [] })).values()]
+      const silent = ids.filter(id => resolveDocumentStepVoice(effective, id).value?.type === 'none').length
+      const unset = ids.some(id => resolveDocumentStepVoice(effective, id).value === undefined)
       const reasons = [...new Set(units.filter(value => value.state === 'blocked').flatMap(value => value.reason && !(value.reason === 'voice-unset' && silent && !unset) ? [value.reason] : []))]
       return { cached, missing, blocked, providers, voices, silent, reasons, text, hasUnbound: !unbound.length && (status.unboundByPage ?? []).some(value => pages.has(value.section) && value.utterances > 0) }
     } catch { return undefined }
-  }, [checked, status, scope])
+  }, [checked, status, scope, source?.inherited])
   const hasScopeJob = useMemo(() => {
     if (!checked) return false
     try {

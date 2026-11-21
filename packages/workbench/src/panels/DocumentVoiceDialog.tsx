@@ -15,6 +15,7 @@ import { isAgentChanging } from '../workbench-state.ts'
 import { VoiceCloneDialog } from './VoiceCloneDialog.tsx'
 import { VoicePreviewDialog } from './VoicePreviewDialog.tsx'
 import { VoiceScopeField } from './VoiceScopeField.tsx'
+import { effectiveOf } from '../effective-settings.ts'
 
 interface Review { draft: VoiceDraft, impact: DocumentVoiceImpact, scopeLabel: string, targets: string[], expected: { identity: string, version: string, fingerprint: string } }
 const supportsLanguage = (languages: string[], lang: string) => !languages.length || languages.some(value => value.toLowerCase().split('-')[0] === lang.toLowerCase().split('-')[0])
@@ -27,7 +28,7 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
   const serviceVersion = useWorkbenchState(state => state.voiceServiceVersion)
   const identity = useRef(actor!.identity!).current, directory = useRef(actor!.directory).current
   const [restored, setRestored] = useState(() => readVoiceDraft(workbench.client, identity, stepId))
-  const [draft, setDraft] = useState<VoiceDraft>(() => restored ?? { version: actor!.version!, scope: { kind: 'step', stepId }, source: resolveDocumentStepVoice(actor!.content!, stepId).value ?? null, replaceOverrides: false })
+  const [draft, setDraft] = useState<VoiceDraft>(() => restored ?? { version: actor!.version!, scope: { kind: 'step', stepId }, source: resolveDocumentStepVoice(effectiveOf(actor!.content!, actor!.inherited), stepId).value ?? null, replaceOverrides: false })
   const [storageFailed, setStorageFailed] = useState(() => voiceDraftStorageStatus(workbench.client, identity, stepId) !== 'available')
   const [engineFilter, setEngineFilter] = useState(draft.source?.type === 'tts' ? draft.source.voice.engine : undefined)
   const [language, setLanguage] = useState(''), [query, setQuery] = useState(''), [catalog, setCatalog] = useState<VoiceCatalogAnswer>()
@@ -50,7 +51,7 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
   const engines = catalog?.engines.filter(engine => engine.tts) ?? []
   const engine: SpeechEngineInfo | undefined = engines.find(engine => engine.id === (draft.source?.type === 'tts' ? draft.source.voice.engine ?? engineId : engineId))
   const voices = catalog?.catalog.status === 'available' ? catalog.catalog.voices : []
-  const lang = document?.metadata.lang ?? 'zh-CN'
+  const lang = effectiveOf(document, actor?.inherited)?.metadata.lang ?? 'zh-CN'
   const languages = [...new Set(voices.flatMap(voice => voice.lang))].sort()
   const rateRange = engine?.parameters?.rate, styles = engine?.parameters?.styles
   const normalizedRate = draft.rateInput?.normalize('NFKC').trim()
@@ -67,7 +68,7 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
       const actual = workbench.getState().authoring, content = workbench.getDocument(identity)
       if (!actual?.version || !content) return
       owner.current.generation++; request.current?.abort(); request.current = undefined
-      const value: VoiceDraft = { version: actual.version, scope: { kind: 'step', stepId }, source: resolveDocumentStepVoice(content, stepId).value ?? null, replaceOverrides: false }
+      const value: VoiceDraft = { version: actual.version, scope: { kind: 'step', stepId }, source: resolveDocumentStepVoice(effectiveOf(content, actual.inherited), stepId).value ?? null, replaceOverrides: false }
       setDraft(value); setRestored(undefined); setStorageFailed(false); setReview(undefined); setFailure(undefined)
       setEngineFilter(value.source?.type === 'tts' ? value.source.voice.engine : undefined); setLanguage(''); setQuery('')
     } }), [workbench, identity, stepId])

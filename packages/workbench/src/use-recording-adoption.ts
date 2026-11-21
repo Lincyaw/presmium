@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import type { DocumentRecordingAdoption } from '@lincyaw/kernel'
 import type { DocumentSessionState } from './document-session.ts'
 import { useWorkbench, useWorkbenchState } from './context.tsx'
+import { effectiveOf } from './effective-settings.ts'
 
 const requestId = () => `recording_${[...crypto.getRandomValues(new Uint8Array(16))].map(value => value.toString(16).padStart(2, '0')).join('')}`
 function applied(source: DocumentSessionState | undefined, request: DocumentRecordingAdoption): boolean {
-  const document = source?.content, step = document?.steps[request.stepId]
+  const document = effectiveOf(source?.content, source?.inherited), step = document?.steps[request.stepId]
   const voice = step && (document.production.stepOverrides[step.id]?.voiceSource ?? document.production.sectionOverrides?.[step.sectionId]?.voiceSource ?? document.production.defaults.voiceSource)
   return Boolean(document?.id === request.source.documentId && voice?.type === 'recording' && voice.assetId === request.assetId && document.assets[request.assetId]?.fingerprint === `sha256:${request.sha256}`)
 }
@@ -18,7 +19,7 @@ export function useRecordingAdoption({ identity, sectionId, stepId, active, disa
   const [selection, setSelection] = useState<string>(), [busy, setBusy] = useState(false), [failure, setFailure] = useState<string>()
   const owner = useRef({ active: false, revision: 0 }), request = useRef<AbortController>(), retry = useRef<DocumentRecordingAdoption>(), submitted = useRef<DocumentRecordingAdoption>(), reported = useRef<string>()
   const latest = useRef({ sectionId, stepId, active, onAdopted }); latest.current = { sectionId, stepId, active, onAdopted }
-  const document = source?.identity === identity ? source.content : undefined
+  const document = source?.identity === identity ? effectiveOf(source.content, source.inherited) : undefined
   const effective = document && (document.production.stepOverrides[stepId]?.voiceSource ?? document.production.sectionOverrides?.[sectionId]?.voiceSource ?? document.production.defaults.voiceSource)
   const selected = selection ?? candidateAssetId ?? (effective?.type === 'recording' ? effective.assetId : '')
   const assets = Object.values(document?.assets ?? {}).filter(asset => asset.kind === 'audio')

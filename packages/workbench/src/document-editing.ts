@@ -14,6 +14,7 @@ import { nativeBlockText, nativeTextPoint, nativeTextPosition } from './document
 import type { NativeTextPoint } from './document-editor/selection.ts'
 import type { DocumentFieldBookmark, DocumentFieldRegistration, DocumentHistoryEditor } from './document-editor/focus.ts'
 import { contentText, MESSAGES } from './messages.ts'
+import { effectiveOf } from './effective-settings.ts'
 
 interface EditingOptions {
   store: WorkbenchStore
@@ -384,7 +385,7 @@ export class DocumentEditing {
       if (scope !== this.#options.scope() || identity !== this.#store.state.authoring?.identity) throw new Error('page-context-changed')
       const page = document.sections[section]
       if (!page) throw new Error('page-boundary')
-      const copy = duplicateDocumentPage(document, section, contentText(document.metadata.lang).copyTitle(page.title), () => randomUUID())
+      const copy = duplicateDocumentPage(document, section, contentText(effectiveOf(document, this.#store.state.authoring?.inherited).metadata.lang).copyTitle(page.title), () => randomUUID())
       copied = copy.section
       Object.assign(document, copy.document)
       if (generation === this.#generation) this.#pendingDocumentFocus = { documentId: document.id, nodeId: `page:${copied}`, generation, afterSave: true }
@@ -431,7 +432,7 @@ export class DocumentEditing {
       || this.#store.state.isHistoryBusy || this.#store.state.isHistoryPreparing) return false
     try {
       this.#store.set({ pageEditFailure: undefined })
-      const created = commands.insertPage(after, contentText(source.content.metadata.lang).newPage)
+      const created = commands.insertPage(after, contentText(effectiveOf(source.content, source.inherited).metadata.lang).newPage)
       this.#pendingDocumentField = undefined; this.#pendingDocumentSelection = undefined; this.#pendingDocumentFocus = undefined
       this.#store.set({ position: { section: created.sectionId, step: 0, trail: [], view: 'document' }, documentNavigation: { section: created.sectionId, request: randomUUID() } })
       // The default title is selected: the author's first words name the page, and Enter goes on to its body.

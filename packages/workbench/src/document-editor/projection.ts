@@ -15,6 +15,8 @@ export interface DocumentProjection extends RichProjection {
   structures: Map<string, Pick<DocumentProjection, 'document' | 'rich' | 'owners' | 'pages' | 'baseline'>>
   createdPages: Map<string, NativePageCreation>
   componentConfiguration: Map<string, string>
+  /** The plugins the document has, inherited ones included: they decide which code is drawn as a diagram. */
+  plugins?: readonly string[]
 }
 export type NativePageCreation = DocumentPageIds
 const newId = () => randomUUID()
@@ -26,13 +28,13 @@ function plain(nodes: readonly { type: string, text?: string, children?: readonl
  * Code the published document draws as a picture is generated content: authors see its preview, not its source.
  * The viewer draws Mermaid; the content add-on's compiler pass turns PlantUML into an image.
  */
-export function isDiagram(block: DocumentBlock, document: PresmiumDocument): boolean {
+export function isDiagram(block: DocumentBlock, plugins: readonly string[] | undefined): boolean {
   if (block.type !== 'code') return false
-  return block.language === 'mermaid' || /^(?:plantuml|puml)$/i.test(block.language) && Boolean(document.metadata.plugins?.includes('@lincyaw/addon-content'))
+  return block.language === 'mermaid' || /^(?:plantuml|puml)$/i.test(block.language) && Boolean(plugins?.includes('@lincyaw/addon-content'))
 }
-/** Blocks the editor shows through their read-only runtime preview. */
-export function hasBlockPreview(block: DocumentBlock, document: PresmiumDocument): boolean {
-  return block.type === 'component' || isDiagram(block, document)
+/** Blocks the editor shows through their read-only runtime preview; `plugins` are the document's effective ones. */
+export function hasBlockPreview(block: DocumentBlock, plugins: readonly string[] | undefined): boolean {
+  return block.type === 'component' || isDiagram(block, plugins)
 }
 function register(blocks: readonly DocumentEditorInput[], owner: string, context: DocumentProjection): void {
   for (const block of blocks) { if (block.id) context.owners.set(block.id, owner); if (block.children) register(block.children, owner, context) }
@@ -50,12 +52,12 @@ function productBlock(blockId: string, context: DocumentProjection, sectionId: s
   context.owners.set(block.id, block.id)
   if (block.type === 'container') return [{ id: block.id, type: 'presmiumContainer', props: { entityId: block.id, layout: block.layout, title: block.properties.title ?? '' }, children: block.children.flatMap(child => productBlock(child, context, sectionId)) }]
   if (block.type === 'image') return [{ id: block.id, type: 'image', props: { url: block.assetId ? document.assets[block.assetId]?.location ?? '' : '', caption: plain(block.caption ?? []), name: block.alt, textAlignment: block.alignment ?? 'left', ...block.width !== undefined ? { previewWidth: block.width } : {} } }]
-  if (block.type === 'code' && block.value !== undefined && !isDiagram(block, document)) return [{ id: block.id, type: 'codeBlock', props: { language: block.language }, content: block.value }]
+  if (block.type === 'code' && block.value !== undefined && !isDiagram(block, context.plugins)) return [{ id: block.id, type: 'codeBlock', props: { language: block.language }, content: block.value }]
   return [{ id: block.id, type: 'presmiumAtom', props: { entityId: block.id, kind: block.type, label: block.type === 'code' ? block.title ?? block.origin?.anchor ?? block.language : block.type === 'embed' ? block.source.document : document.definitions[block.definitionId]?.kind ?? block.definitionId }, ...block.type === 'component' && block.children ? { children: block.children.flatMap(child => productBlock(child, context, sectionId)) } : {} }]
 }
 
-export function createDocumentProjection(document: PresmiumDocument): DocumentProjection {
-  const context: DocumentProjection = { ...createRichProjection(), owners: new Map(), pages: new Map(), blockSections: new Map(), structures: new Map(), createdPages: new Map(), componentConfiguration: new Map(), document: structuredClone(document), content: [] }
+export function createDocumentProjection(document: PresmiumDocument, plugins: readonly string[] | undefined = document.metadata.plugins): DocumentProjection {
+  const context: DocumentProjection = { ...createRichProjection(), owners: new Map(), pages: new Map(), blockSections: new Map(), structures: new Map(), createdPages: new Map(), componentConfiguration: new Map(), document: structuredClone(document), content: [], ...plugins ? { plugins } : {} }
   context.content = document.sectionOrder.flatMap(sectionId => {
     const section = document.sections[sectionId]!
     context.pages.set(pageId(sectionId), sectionId)

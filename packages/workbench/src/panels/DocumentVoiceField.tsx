@@ -5,6 +5,7 @@ import { resolveDocumentStepVoice } from '../document-voices.ts'
 import { PRODUCTION_MESSAGES } from '../production-messages.ts'
 import { isAgentChanging } from '../workbench-state.ts'
 import { DocumentVoiceDialog } from './DocumentVoiceDialog.tsx'
+import { effectiveOf } from '../effective-settings.ts'
 
 /** One current voice and selector, shared by document captions and production. */
 export function DocumentVoiceField({ stepId, disabled = false, onGenerate }: { stepId: string, disabled?: boolean, onGenerate?(): void }) {
@@ -16,7 +17,7 @@ export function DocumentVoiceField({ stepId, disabled = false, onGenerate }: { s
   useEffect(() => { setOpen(false) }, [source?.identity, stepId])
   const document = source?.content, step = document?.steps[stepId], p = PRODUCTION_MESSAGES[locale]
   if (!document || !step || !source?.identity) return null
-  const voice = resolveDocumentStepVoice(document, stepId)
+  const voice = resolveDocumentStepVoice(effectiveOf(document, source.inherited), stepId)
   const recording = voice.value?.type === 'recording' ? document.assets[voice.value.assetId] : undefined
   const label = voice.value?.type === 'tts' ? voice.value.voice.voice
     : voice.value?.type === 'none' ? p.none
