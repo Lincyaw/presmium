@@ -247,7 +247,7 @@ export class Workbench {
       flush: signal => this.flushPendingEdits(signal), goToSection: section => this.goToSection(section),
       rememberStep: (directory, section, step) => { this.#selectedSteps.set(`${directory}\0${section}`, step) },
       canAskAnimation: () => this.#drafters.size > 0, askAnimation: place => this.draftAnimation(place) })
-    this.tree = new DocumentTreeActions({ client: this.client, store, open: dir => this.openDocument(dir), reveal: (section, block) => this.#revealInDocument(section, block) })
+    this.tree = new DocumentTreeActions({ client: this.client, store, open: (dir, focus) => this.openDocument(dir, focus ? { focus } : {}), reveal: (section, block) => this.#revealInDocument(section, block) })
     this.#diagnostics = new DocumentDiagnostics(this.client, store)
     this.#jobs = new DocumentJobs(this.client, store)
     this.#voiceover = new VoiceoverJobs(this.client, store, (job, signal) => this.#refreshVoiceover(job, signal))
@@ -1664,8 +1664,10 @@ export class Workbench {
         this.#record('shortcut', { 'presmium.command': report.command })
         if (report.command === 'dismiss') {
           if (this.#state.pointer) this.point(undefined)
-        } else if (report.command === 'undo') void this.undo()
-        else if (report.command === 'redo') void this.redo()
+        // A preview's keys come from inside the page (a block preview in the editor): they reach the editor's history only,
+        // never a saved version, which the toolbar's Undo and Redo take back.
+        } else if (report.command === 'undo') this.editing.nativeHistory('undo')
+        else if (report.command === 'redo') this.editing.nativeHistory('redo')
         else if (report.command === 'save') void this.flushPendingEdits().catch(() => {})
         else for (const listener of this.#playbackKeys) listener(report.command)
         break

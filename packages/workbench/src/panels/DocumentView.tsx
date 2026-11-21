@@ -25,6 +25,8 @@ const RAIL_TABS: readonly DocumentAside[] = ['outline', 'references', 'comments'
 const isRail = (aside: DocumentAside | null): aside is 'outline' | 'references' | 'comments' => aside !== null && RAIL_TABS.includes(aside)
 
 const isTyping = (target: EventTarget | null) => target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select, [contenteditable]') !== null)
+// Keys pressed in the document's page (the editor, its references, synced blocks and previews) belong to the editor.
+const inDocument = (target: EventTarget | null) => target instanceof Element && target.closest('.pmw-document__source') !== null
 
 // Esc belongs to the topmost dialog or menu first; only then does it leave the presentation.
 const hasOpenLayer = () => document.querySelector('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]') !== null
@@ -181,7 +183,7 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
       if (!event.repeat) void workbench.flushPendingEdits().catch(() => {})
     }
     const keys = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || isTyping(event.target) || !(event.ctrlKey || event.metaKey) || event.altKey) return
+      if (event.defaultPrevented || isTyping(event.target) || inDocument(event.target) || !(event.ctrlKey || event.metaKey) || event.altKey) return
       const key = event.key.toLowerCase()
       if (key === 'z' && !event.shiftKey) {
         event.preventDefault()

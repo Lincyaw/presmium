@@ -53,7 +53,7 @@ export const DocumentReference = memo(function DocumentReference({ document, sec
   const own = workbench.getState().authoring?.content?.id === target.document
   const missing = Boolean(tree && !own && !tree.nodes[target.document] && !tree.trash.some(entry => entry.id === target.document))
   const title = label ?? currentTitle(workbench, target) ?? fallback
-  const open = () => void workbench.tree.openPlace(target)
+  const open = () => void workbench.tree.openPlace(target, { focus: 'body' })
   return (
     <PmDocPreviewCard label={t.previewLabel} loadingLabel={t.previewLoading} failedLabel={t.previewFailed} load={() => previewOf(t, workbench, target, fallback)}
       actions={<PmButton small variant="primary" onClick={open}>{t.open}</PmButton>}>
@@ -146,7 +146,7 @@ export const SyncedBlock = memo(function SyncedBlock({ id, document, block }: { 
     if (block?.type === 'component') return typeof block.parameters.title === 'string' ? block.parameters.title : ''
     return ''
   }, [ready, source.block])
-  const edit = () => void workbench.tree.openPlace({ document: source.document, block: source.block, ...sectionOfBlock(workbench, source) })
+  const edit = () => void workbench.tree.openPlace({ document: source.document, block: source.block, ...sectionOfBlock(workbench, source) }, { focus: 'body' })
   const convert = async () => {
     if (!ownId) return
     await workbench.flushPendingEdits().catch(() => {})

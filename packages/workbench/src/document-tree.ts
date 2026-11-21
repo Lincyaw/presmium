@@ -23,7 +23,7 @@ export type DocumentPlace = ReferenceTarget
 export class DocumentTreeActions {
   readonly #client: WorkspaceClient
   readonly #store: WorkbenchStore
-  readonly #open: (dir: string) => Promise<void>
+  readonly #open: (dir: string, focus?: 'body') => Promise<void>
   readonly #reveal: (section: string, block?: string) => void
   #reading?: AbortController
   #treeText?: string
@@ -32,7 +32,7 @@ export class DocumentTreeActions {
   #unsubscribe?: () => void
   #toastSequence = 0
 
-  constructor(options: { client: WorkspaceClient, store: WorkbenchStore, open(dir: string): Promise<void>, reveal(section: string, block?: string): void }) {
+  constructor(options: { client: WorkspaceClient, store: WorkbenchStore, open(dir: string, focus?: 'body'): Promise<void>, reveal(section: string, block?: string): void }) {
     this.#client = options.client
     this.#store = options.store
     this.#open = options.open
@@ -88,10 +88,10 @@ export class DocumentTreeActions {
   }
 
   /** Opens a document by its ID, then shows the page or block of `place`. */
-  async openPlace(place: DocumentPlace): Promise<boolean> {
+  async openPlace(place: DocumentPlace, options: { focus?: 'body' } = {}): Promise<boolean> {
     const dir = this.dirOf(place.document)
     if (dir === undefined) { this.toast(this.#t.openFailed, 'danger'); return false }
-    await this.#open(dir)
+    await this.#open(dir, options.focus)
     if (place.section) this.#reveal(place.section, place.block)
     return true
   }
