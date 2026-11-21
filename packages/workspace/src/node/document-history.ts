@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { DOCUMENT_ENTRY, DOCUMENT_HISTORY_MAX_FILE_BYTES, DOCUMENT_HISTORY_MAX_REQUEST_CHARS, DOCUMENT_HISTORY_MAX_RESPONSE_CHARS, DOCUMENT_HISTORY_PAGE_SIZE, fnv1a64, hasRole, jsonResponse, problemResponse } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, DOCUMENT_HISTORY_MAX_FILE_BYTES, DOCUMENT_SCHEMA_VERSION, DOCUMENT_HISTORY_MAX_REQUEST_CHARS, DOCUMENT_HISTORY_MAX_RESPONSE_CHARS, DOCUMENT_HISTORY_PAGE_SIZE, fnv1a64, hasRole, jsonResponse, problemResponse } from '@lincyaw/kernel'
 import type { DocumentHistory, DocumentHistoryAnswer, DocumentHistoryBinding, DocumentHistoryChange, DocumentHistoryChanged, DocumentHistoryFile, DocumentHistorySource, HistoryRevision, Member, Route } from '@lincyaw/kernel'
 import { validateDocumentHistoryChange, validateDocumentHistoryQuery, validateDocumentHistoryRead } from '@lincyaw/kernel/node'
 import { listDocuments } from './config.ts'
@@ -74,9 +74,25 @@ export function createDocumentHistory(options: DocumentHistoryOptions): { servic
     if (origin === 'agent' && options.reviewRequired) throw new RequestError(409, 'authoring-review-required')
     return { key: JSON.stringify([document, member.id, request.id]), signature: digest(JSON.stringify([which, request.id, request.snapshot, request.source.version, request.source.fingerprint, request.expect])) }
   }
-  const targetPaths = async (document: string, request: DocumentHistoryChange, member: Member) => {
+  // A format upgrade (and a document's creation) is a boundary of its history: taking it back would leave the document
+  // without its entry file, or in a format this version no longer opens.
+  const supportedAt = async (revision: string, document: string): Promise<boolean> => {
+    try {
+      const bytes = await history().readFile(revision, entryOf(document), DOCUMENT_HISTORY_MAX_FILE_BYTES)
+      const value = JSON.parse(new TextDecoder().decode(bytes)) as { schemaVersion?: unknown }
+      return value.schemaVersion === DOCUMENT_SCHEMA_VERSION
+    } catch { return false }
+  }
+  const crossesBoundary = async (document: string, revision: string, paths?: string[]): Promise<boolean> => {
+    const files = paths ?? await history().filesOf(revision)
+    if (!files.includes(entryOf(document))) return false
+    const parent = await history().parentOf(revision)
+    return !parent || !await supportedAt(parent, document)
+  }
+  const targetPaths = async (document: string, request: DocumentHistoryChange, member: Member, which: 'undo' | 'redo' | 'revert') => {
     const paths = await history().filesOf(request.expect)
     if (!paths.length) throw new RequestError(404, 'history-revision-not-found')
+    if (which !== 'redo' && await crossesBoundary(document, request.expect, paths)) throw new RequestError(409, 'history-format-boundary')
     for (const path of paths) {
       pathAllowed(document, path, member)
       const owners = await Promise.all([history().ownerAt(request.expect, path), history().ownerAt(`${request.expect}^1`, path)])
@@ -100,6 +116,10 @@ export function createDocumentHistory(options: DocumentHistoryOptions): { servic
       if ((query.offset ?? 0) > 0 && !query.snapshot) throw new RequestError(400, 'history-snapshot-required')
       if (query.snapshot !== undefined && query.snapshot !== before.snapshot) throw new RequestError(409, 'history-snapshot-changed')
       const full = await revisions.historyWithUndo({ document }), changes = full.revisions.filter(entry => !entry.reverts), offset = query.offset ?? 0
+      // The upgrade from the earlier format is not offered as a step to undo or revert.
+      if (full.undo && await crossesBoundary(document, full.undo)) delete full.undo
+      const legacy = `${document ? `${document}/` : ''}lecture.json`
+      for (const entry of changes) if (entry.files.includes(legacy) && entry.files.includes(entryOf(document))) entry.revertible = false
       if (offset > changes.length) throw new RequestError(400, 'history-offset-invalid')
       const answer: DocumentHistoryAnswer = { document, available: true, historyBinding: before, revisions: [], ...full.undo ? { undo: full.undo } : {}, ...full.redo ? { redo: full.redo } : {} }
       let index = offset
@@ -141,7 +161,7 @@ export function createDocumentHistory(options: DocumentHistoryOptions): { servic
         if (known && !flight && !sameBinding(await binding(document, member), { source: known.answer.source, snapshot: known.answer.snapshot })) throw new RequestError(409, 'history-result-no-longer-current')
         return
       }
-      const paths = await targetPaths(document, request, member)
+      const paths = await targetPaths(document, request, member, which)
       if (!sameBinding(await binding(document, member), { source: request.source, snapshot: request.snapshot })) throw new RequestError(409, 'history-source-changed')
       const claimed = locks.claimAll(paths.map(path => documentDirOf(config, path)!), 'revision:revert')
       if ('holder' in claimed) throw lockedError(claimed.document, claimed.holder)
@@ -161,7 +181,7 @@ export function createDocumentHistory(options: DocumentHistoryOptions): { servic
       }
       if (pending.size >= MAX_RECEIPTS) throw new RequestError(429, 'history-busy')
       const work = Promise.resolve().then(async () => {
-        const paths = await targetPaths(document, request, member)
+        const paths = await targetPaths(document, request, member, which)
         const claimed = locks.claimAll(paths.map(path => documentDirOf(config, path)!), 'revision:revert')
         if ('holder' in claimed) throw lockedError(claimed.document, claimed.holder)
         try {

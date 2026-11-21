@@ -321,6 +321,7 @@ const zh = {
   historyFailureReasons: {
     'history-target-changed': '版本历史已变化，这一更改不再是下一步可撤消或恢复的更改。请查看最新的历史后重试。',
     'history-conflict': '这次更改之后，相关内容又被修改过，或有尚未记入版本的修改，无法自动撤消。',
+    'history-format-boundary': '这一版本是文稿格式的升级（或文稿的创建），无法撤消或还原到它之前：之前的版本是旧格式，当前版本无法打开。',
     'history-source-changed': '文稿已在别处修改，请查看最新的历史后重试。',
     'history-snapshot-changed': '版本历史已变化，请查看最新的历史后重试。',
     'history-revision-not-found': '找不到这个版本，它可能已不在当前历史中。',
@@ -693,6 +694,7 @@ const en: WorkbenchMessages = {
   historyFailureReasons: {
     'history-target-changed': 'Version History changed; this change is no longer the next one to undo or redo. Review the latest history and try again.',
     'history-conflict': 'The content was changed again after this change, or has changes not yet saved as a version, so it can’t be undone automatically.',
+    'history-format-boundary': 'This version upgraded the document’s format (or created the document), so it can’t be undone or restored to an earlier version: those are in the earlier format, which this version can’t open.',
     'history-source-changed': 'The document changed elsewhere. Review the latest history and try again.',
     'history-snapshot-changed': 'Version History changed. Review the latest history and try again.',
     'history-revision-not-found': 'Couldn’t find this version; it may no longer be in the current history.',

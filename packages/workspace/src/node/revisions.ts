@@ -438,6 +438,13 @@ export class Revisions implements RevisionService {
     return this.#git.exclusive(async () => undoTargets(await this.#entries(document))[which])
   }
 
+  /** The first parent of a revision in the current history; none for the root. */
+  async parentOf(id: string): Promise<string | undefined> {
+    if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(id)) throw new RequestError(400, 'history-file-invalid')
+    const result = await this.#git.tryOutput(['rev-parse', '--verify', '--quiet', `${id}^1`])
+    return result.ok ? result.output.trim() || undefined : undefined
+  }
+
   async head(): Promise<string | undefined> {
     const result = await this.#git.tryOutput(['rev-parse', '--verify', 'HEAD'])
     return result.ok ? result.output.trim() : undefined
