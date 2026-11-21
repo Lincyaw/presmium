@@ -1,5 +1,5 @@
-import { applyDocumentCaptionTiming, changeDocumentCaptionScale, DOCUMENT_AUDIO_MAX_BYTES, randomUUID, replaceStepNarrations, sameProductionBinding, validateDocument } from '@lincyaw/kernel'
-import type { DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentCaptionTimingAction, DocumentChangeAnswer, DocumentRecordingAdoption, DocumentTranscriptionRequest, MediaClip, Narration, ProductionBinding, TeachingDocument, TimeRange, TranscriptionAdoptionAnswer, TranscriptionAdoptionApply, TranscriptionAdoptionDraft, TranscriptionAdoptionPlan, TranscriptionTask, VerifiedDocumentRecordingAdoption, VoiceSource } from '@lincyaw/kernel'
+import { applyDocumentCaptionTiming, changeDocumentCaptionScale, DOCUMENT_AUDIO_MAX_BYTES, randomUUID, replaceStepNarrations, sameProductionBinding, validateDocument, DOCUMENT_ENTRY } from '@lincyaw/kernel'
+import type { DocumentAudioImportAnswer, DocumentAudioInspectionAnswer, DocumentCaptionTimingAction, DocumentChangeAnswer, DocumentRecordingAdoption, DocumentTranscriptionRequest, MediaClip, Narration, ProductionBinding, PresmiumDocument, TimeRange, TranscriptionAdoptionAnswer, TranscriptionAdoptionApply, TranscriptionAdoptionDraft, TranscriptionAdoptionPlan, TranscriptionTask, VerifiedDocumentRecordingAdoption, VoiceSource } from '@lincyaw/kernel'
 import { isAgentChanging } from './workbench-state.ts'
 import type { WorkbenchStore } from './workbench-state.ts'
 import type { DocumentSession, DocumentSessionState } from './document-session.ts'
@@ -29,7 +29,7 @@ interface ProductionOptions {
   session: DocumentSession
   client: WorkspaceClient
   scope(): number
-  document(identity?: string): TeachingDocument | undefined
+  document(identity?: string): PresmiumDocument | undefined
   flush(signal?: AbortSignal): Promise<void>
   pause(): Promise<void>
   stopAuditions(): void
@@ -387,7 +387,7 @@ export class DocumentProduction {
         return { ...actual, changeId: id, files: receipt.files }
       }, (before, answer, current) => reconcileCaptionTiming(action, before, answer, current), signal)
     } catch (error) {
-      const current = this.#options.store.state.authoring, file = plan.files.find(file => file.path === (source.directory ? `${source.directory}/lecture.json` : 'lecture.json'))
+      const current = this.#options.store.state.authoring, file = plan.files.find(file => file.path === (source.directory ? `${source.directory}/${DOCUMENT_ENTRY}` : DOCUMENT_ENTRY))
       // Lost ACK was independently read by commitExternal; only the exact predicted saved version can settle it.
       if (scope === this.#options.scope() && current?.identity === expected.identity && current.content && current.version === file?.version && current.fingerprint && !current.error) {
         try {

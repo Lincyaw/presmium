@@ -1,6 +1,6 @@
 ---
 name: presmium-figure
-description: "Draw SVG figures (diagrams, schematics, charts for a paper, a slide or a post) as React components in a Presmium lecture.json document, build them up step by step like slide builds, and export each step as a standalone SVG file. Use when the person wants SVG graphics, vector figures, a diagram that grows or changes over several pictures, or 'export every step as SVG'. 画 SVG 图形、矢量图、示意图，按步骤逐步增加或修改，每一步导出一张 SVG 时使用。"
+description: "Draw SVG figures (diagrams, schematics, charts for a paper, a slide or a post) as React components in a Presmium index.pmd document, build them up step by step like slide builds, and export each step as a standalone SVG file. Use when the person wants SVG graphics, vector figures, a diagram that grows or changes over several pictures, or 'export every step as SVG'. 画 SVG 图形、矢量图、示意图，按步骤逐步增加或修改，每一步导出一张 SVG 时使用。"
 ---
 
 # Step-built SVG figures
@@ -51,7 +51,7 @@ Rules:
 
 ## 3. Register it in the document
 
-In `lecture.json`, add a definition, a component block that uses it, and one step per picture that sets the block's state. The complete working document is in [example/lecture.json](example/lecture.json), its component in [example/figures/Pipeline.tsx](example/figures/Pipeline.tsx):
+In `index.pmd`, add a definition, a component block that uses it, and one step per picture that sets the block's state. The complete working document is in [example/index.pmd](example/index.pmd), its component in [example/figures/Pipeline.tsx](example/figures/Pipeline.tsx):
 
 ```json
 "definitions": {

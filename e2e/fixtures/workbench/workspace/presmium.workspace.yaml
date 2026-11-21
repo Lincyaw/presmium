@@ -1,7 +1,3 @@
 # The workspace of e2e/workbench.spec.ts: two documents, one with an included page whose unknown directive is
 # a problem of its compilation.
 title: 工作台用例
-documents:
-  # A matching directory is not necessarily a lecture: examples/ and scripts/ contain only code.
-  - '*/lecture.json'
-  - lectures/*/lecture.json

@@ -1,6 +1,6 @@
 {
   "input": "78b4960ea1fef2d0af2ac6d9d707558e3f7442a1fe10583b28ec5f9501a510f1",
-  "entry": "lecture.json",
+  "entry": "index.pmd",
   "lang": "javascript",
   "code": "const values = Array.from({length: Number(n)}, (_, i) => i + 1)\nconst total = values.reduce((sum, value) => sum + value, 0)\nconsole.log(JSON.stringify({n: Number(n), total}))",
   "environment": "node v24.22.0",

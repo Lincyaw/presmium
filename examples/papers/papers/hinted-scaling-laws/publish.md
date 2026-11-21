@@ -23,7 +23,7 @@
 - 字幕：[hinted-scaling-laws.zh-CN.vtt](dist/hinted-scaling-laws.zh-CN.vtt)
 - 论文：Hinted Scaling Laws，arXiv 2611.02270
 
-视频由 `lecture.json` 与已提交的配音缓存导出；字幕大小为默认字号的 90%。
+视频由 `index.pmd` 与已提交的配音缓存导出；字幕大小为默认字号的 90%。
 
 ## 2026-11-14 合集核对
 

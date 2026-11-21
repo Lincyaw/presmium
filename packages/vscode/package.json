@@ -24,13 +24,21 @@
     "workspace"
   ],
   "activationEvents": [
-    "workspaceContains:**/lecture.json"
+    "workspaceContains:**/index.pmd"
   ],
   "contributes": {
+    "languages": [
+      {
+        "id": "json",
+        "filenames": [
+          "index.pmd"
+        ]
+      }
+    ],
     "jsonValidation": [
       {
-        "fileMatch": "**/lecture.json",
-        "url": "./dist/lecture.schema.json"
+        "fileMatch": "**/index.pmd",
+        "url": "./dist/document.schema.json"
       }
     ],
     "commands": [
@@ -68,35 +76,35 @@
       "editor/title": [
         {
           "command": "presmium.openPreview",
-          "when": "resourceScheme == file && resourceFilename == lecture.json && editorLangId == json",
+          "when": "resourceScheme == file && resourceFilename == index.pmd && editorLangId == json",
           "group": "navigation"
         },
         {
           "command": "presmium.openStudio",
-          "when": "resourceScheme == file && resourceFilename == lecture.json && editorLangId == json",
+          "when": "resourceScheme == file && resourceFilename == index.pmd && editorLangId == json",
           "group": "navigation"
         }
       ],
       "explorer/context": [
         {
           "command": "presmium.openStudio",
-          "when": "resourceScheme == file && resourceFilename == lecture.json",
+          "when": "resourceScheme == file && resourceFilename == index.pmd",
           "group": "navigation"
         },
         {
           "command": "presmium.installSkills",
-          "when": "resourceScheme == file && (explorerResourceIsFolder || resourceFilename == lecture.json)",
+          "when": "resourceScheme == file && (explorerResourceIsFolder || resourceFilename == index.pmd)",
           "group": "navigation"
         }
       ],
       "commandPalette": [
         {
           "command": "presmium.openPreview",
-          "when": "resourceScheme == file && resourceFilename == lecture.json && editorLangId == json"
+          "when": "resourceScheme == file && resourceFilename == index.pmd && editorLangId == json"
         },
         {
           "command": "presmium.present",
-          "when": "resourceScheme == file && resourceFilename == lecture.json && editorLangId == json"
+          "when": "resourceScheme == file && resourceFilename == index.pmd && editorLangId == json"
         }
       ]
     },
@@ -140,7 +148,7 @@
   },
   "files": [
     "dist/extension.cjs",
-    "dist/lecture.schema.json",
+    "dist/document.schema.json",
     "l10n",
     "package.nls*.json",
     "README.md",

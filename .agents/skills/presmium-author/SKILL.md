@@ -1,15 +1,15 @@
 ---
 name: presmium-author
-description: "Write, edit, present and produce a Presmium teaching document: the sole lecture.json with its pages, blocks, steps and narration; its reading version (web page, notebook) and presentation version (slides, narrated lecture video); writing style for both; voiceover, captions, classroom, export and publishing. Use it to write or revise a lecture, plan pages, write slide text or narration, check, preview, present, record, generate voiceover or export. 写讲义、改文稿、写正文与幻灯片文字、写讲稿、配音、字幕、放映、上课、导出、发布时使用。"
+description: "Write, edit, present and produce a Presmium teaching document: the sole index.pmd with its pages, blocks, steps and narration; its reading version (web page, notebook) and presentation version (slides, narrated lecture video); writing style for both; voiceover, captions, classroom, export and publishing. Use it to write or revise a lecture, plan pages, write slide text or narration, check, preview, present, record, generate voiceover or export. 写讲义、改文稿、写正文与幻灯片文字、写讲稿、配音、字幕、放映、上课、导出、发布时使用。"
 ---
 
 # Authoring a Presmium document
 
-A **document** is a folder containing `lecture.json`: the only editable source of a teaching document. Everything readers see is derived from it by the compiler: the **reading version** (the web page, and a notebook when listed) and the **presentation version** (the slides, and the narrated **lecture** video made from the slides and the narration). Don't create `lecture.md`, `slides.md` or any second copy of the content.
+A **document** is a folder containing `index.pmd`: the only editable source of a teaching document. Everything readers see is derived from it by the compiler: the **reading version** (the web page, and a notebook when listed) and the **presentation version** (the slides, and the narrated **lecture** video made from the slides and the narration). Don't create `lecture.md`, `slides.md` or any second copy of the content.
 
 Web edits and author actions save this same document. Read its latest saved content before changing it. Keep titles, body, steps, narration, parameters, comments and production settings there; checks, builds and publishing read it without regenerating its content. Project scripts may create a new document or request explicit changes through the author actions, with the original source version retained when the change depends on a previous read. They must not reconstruct an existing document from separate page descriptions. Without an author service, one coordinator edits the latest document and preserves unrelated fields.
 
-A **workspace** has `presmium.workspace.yaml`; its `documents` patterns name the documents, normally `*/lecture.json`. The **studio** is the browser editor started by `presmium studio`.
+A **workspace** has `presmium.workspace.yaml`; every `index.pmd` below it is a document, and documents nest in a document tree by their own `placement` (see [the document format](references/document.md)). Settings a document leaves out are inherited from its parent documents and the workspace's `defaults:`. The **studio** is the browser editor started by `presmium studio`.
 
 Terms used throughout:
 
@@ -72,9 +72,9 @@ Use the native MCP tools already connected to the AI client. For a script or pip
 
 The CLI accepts both the listed compact tools (`operations`, `read_operation`, `edit_operation` and the other permission dispatchers) and original operation names, selecting their endpoint automatically. Inspect either with `presmium mcp tools <tool> --schema`.
 
-Paths in `plan_document_change.change.fileChanges`, source tools and workspace media imports are relative to the workspace root, including the document directory: with `document: "papers/re-search"`, a scene file change uses `papers/re-search/scenes/story.ts` and an image import uses `papers/re-search/figures/result.png`. Files must remain within the selected document's scope; stage external cache figures there or use a ready upload. A definition's implementation path inside `lecture.json` remains document-relative (`scenes/story.ts`).
+Paths in `plan_document_change.change.fileChanges`, source tools and workspace media imports are relative to the workspace root, including the document directory: with `document: "papers/re-search"`, a scene file change uses `papers/re-search/scenes/story.ts` and an image import uses `papers/re-search/figures/result.png`. Files must remain within the selected document's scope; stage external cache figures there or use a ready upload. A definition's implementation path inside `index.pmd` remains document-relative (`scenes/story.ts`).
 
-Without an MCP host that has author actions (working on files in a project), edit `lecture.json` directly and use the command line:
+Without an MCP host that has author actions (working on files in a project), edit `index.pmd` directly and use the command line:
 
 ```sh
 presmium new lesson --type lecture --title 'Lesson'

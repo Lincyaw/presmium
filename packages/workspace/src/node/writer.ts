@@ -3,8 +3,9 @@ import { closeSync, constants, cpSync, fstatSync, lstatSync, mkdirSync, mkdtempS
 import type { Stats } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { CHANGES_MAX_BYTES, CHANGES_MAX_FILES, DOCUMENT_ENTRY, validateDocument } from '@lincyaw/kernel'
-import type { DocumentFileChange, DocumentFiles } from '@lincyaw/kernel'
+import { topLevelRanks, workspaceDocuments } from '@lincyaw/compiler'
+import { CHANGES_MAX_BYTES, CHANGES_MAX_FILES, DOCUMENT_ENTRY, ranksBetween, validateDocument } from '@lincyaw/kernel'
+import type { DocumentFileChange, DocumentFiles, DocumentPlacement } from '@lincyaw/kernel'
 import { isWithin, rewriteLinks } from '../domain/paths.ts'
 import { isDocumentDir, listDocuments } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
@@ -238,19 +239,30 @@ function writeTemplate(config: WorkspaceConfig, dir: string, template: string, t
   if (!entries.some(entry => entry.path === DOCUMENT_ENTRY)) throw new FilesError(`The document template must contain ${DOCUMENT_ENTRY}.`)
   writeChanges(config, entries.map(({ path, executable }) => {
     const content = readFileSync(join(source, path))
-    return { path: `${dir}/${path}`, content: path === DOCUMENT_ENTRY ? freshDocument(content, title, documentId) : content, ...executable ? { executable } : {} }
+    return { path: `${dir}/${path}`, content: path === DOCUMENT_ENTRY ? freshDocument(content, { parent: null, rank: topLevelRanks(config.root, 1)[0]! }, title, documentId) : content, ...executable ? { executable } : {} }
   }))
 }
 
+/** Where a copy of the document in `dir` goes: beside it, right after it. */
+function placementAfter(config: WorkspaceConfig, dir: string): DocumentPlacement {
+  const { tree } = workspaceDocuments(config.root)
+  const node = tree.order.find(node => node.path === `${dir}/${DOCUMENT_ENTRY}`)
+  if (!node) return { parent: null, rank: topLevelRanks(config.root, 1)[0]! }
+  const siblings = tree.children.get(node.parent) ?? []
+  const next = siblings[siblings.indexOf(node.id) + 1]
+  return { parent: node.parent, rank: ranksBetween(node.placement.rank || null, next === undefined ? null : tree.byId.get(next)!.placement.rank || null, 1)[0]! }
+}
+
 /** A copy is a new document; block/section identities remain inside its new namespace. */
-function freshDocument(content: Uint8Array, title?: string, documentId?: string): Buffer {
+function freshDocument(content: Uint8Array, placement: DocumentPlacement, title?: string, documentId?: string): Buffer {
   let value: unknown
   try { value = JSON.parse(Buffer.from(content).toString('utf8')) }
-  catch { throw new FilesError(`Invalid ${DOCUMENT_ENTRY}: expected a JSON teaching document.`) }
+  catch { throw new FilesError(`Invalid ${DOCUMENT_ENTRY}: expected a JSON Presmium document.`) }
   const validated = validateDocument(value)
   if (!validated.document) throw new FilesError(`Invalid ${DOCUMENT_ENTRY}: ${validated.issues[0]?.message ?? 'document validation failed'}`)
   const document = validated.document
   document.id = documentId ?? randomUUID()
+  document.placement = placement
   if (title !== undefined) {
     document.metadata.title = title
     for (const section of Object.values(document.sections)) if (section.title === '{{title}}') section.title = title
@@ -263,13 +275,14 @@ function copyDocument(config: WorkspaceConfig, from: string, to: string, documen
   assertDocumentDir(config, to)
   const entries = documentSourceEntries(join(config.root, from))
   if (!entries.some(entry => entry.path === DOCUMENT_ENTRY)) throw new FilesError(`The copied document must contain ${DOCUMENT_ENTRY}.`)
+  const placement = placementAfter(config, from)
   writeChanges(config, entries.map(({ path, link, executable }): DocumentFileChange => {
     if (link !== undefined) {
       if (path === DOCUMENT_ENTRY) throw new FilesError('The canonical document entry cannot be a symbolic link when copied.')
       return { path: `${to}/${path}`, link }
     }
     const content = readFileSync(join(config.root, from, path))
-    if (path === DOCUMENT_ENTRY) return { path: `${to}/${path}`, content: freshDocument(content, title, documentId) }
+    if (path === DOCUMENT_ENTRY) return { path: `${to}/${path}`, content: freshDocument(content, placement, title, documentId) }
     if (path.endsWith('.md')) return { path: `${to}/${path}`, content: Buffer.from(rewriteLinks(content.toString('utf8'), `${to}/${path}`, `${from}/${path}`, from, to)) }
     return { path: `${to}/${path}`, content, ...executable ? { executable } : {} }
   }))

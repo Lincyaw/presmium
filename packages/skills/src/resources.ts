@@ -25,7 +25,7 @@ export const PACKAGE_DIR = fileURLToPath(new URL('..', import.meta.url))
 export const REPOSITORY_SKILLS = fileURLToPath(new URL('../../../.agents/skills/', import.meta.url))
 export const VERSION = (JSON.parse(readFileSync(join(PACKAGE_DIR, 'package.json'), 'utf8')) as { version: string }).version
 const EXCLUDED = new Set(['node_modules', 'dist', '.presmium'])
-const TEXT_EXTENSIONS = /\.(?:md|txt|json|ts|tsx|js|mjs|cjs|py|yaml|yml|css|html|svg|toml|sh)$/i
+const TEXT_EXTENSIONS = /\.(?:md|txt|json|pmd|ts|tsx|js|mjs|cjs|py|yaml|yml|css|html|svg|toml|sh)$/i
 const MAX_FILE_BYTES = 2 << 20
 const inside = (root: string, file: string) => { const path = relative(root, file); return path !== '..' && !path.startsWith(`..${sep}`) && !isAbsolute(path) }
 

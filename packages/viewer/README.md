@@ -2,7 +2,7 @@
 
 Presmium's IR runtime: renders compiled documents in the browser with React, in pluggable runtime views (the document, scrollytelling, the present view, the presenter view), and applies live updates without reloading. The web form and the slides are both this runtime: a slide is a section on a canvas of a fixed size, scaled as a whole. Runnable code blocks can be edited in place before they run (CodeMirror 6, loaded the first time a block is edited).
 
-Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonical lecture.json teaching documents into web pages, slides, Jupyter notebooks and narrated playback.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonical index.pmd teaching documents into web pages, slides, Jupyter notebooks and narrated playback.
 
 ## Install
 
@@ -21,11 +21,11 @@ const plugin: ViewerPlugin = (ctx) => {
 export default plugin
 ```
 
-Author editing lives in one native BlockNote document editor in the workbench. It saves normalized `lecture.json` through document-version transactions. The viewer remains a runtime snapshot consumer; independent readers and presentations do not load the authoring editor. React extensions subscribe to public viewer stores with `useStore(viewer.position)` or `useStore(viewer.doc)`.
+Author editing lives in one native BlockNote document editor in the workbench. It saves normalized `index.pmd` through document-version transactions. The viewer remains a runtime snapshot consumer; independent readers and presentations do not load the authoring editor. React extensions subscribe to public viewer stores with `useStore(viewer.position)` or `useStore(viewer.doc)`.
 
 ## Documentation
 
-- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/locales/en/lecture.json)
+- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/locales/en/index.pmd)
 
 ## License
 

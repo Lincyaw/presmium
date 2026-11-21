@@ -23,4 +23,4 @@
 - 字幕：[adversarial-speculative-reasoning.zh-CN.vtt](dist/adversarial-speculative-reasoning.zh-CN.vtt)
 - 论文：Adversarial Speculative Reasoning Improves Long Horizon Agents，arXiv 2611.05345
 
-视频由 `lecture.json` 与已提交的配音缓存导出。
+视频由 `index.pmd` 与已提交的配音缓存导出。

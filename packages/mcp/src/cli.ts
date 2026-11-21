@@ -1,11 +1,11 @@
 import { mkdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { PassThrough } from 'node:stream'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
-import { APPROVAL_KINDS, errorMessage, isRecord, LOCAL_AUTHOR } from '@lincyaw/kernel'
+import { APPROVAL_KINDS, DOCUMENT_ENTRY, errorMessage, isRecord, LOCAL_AUTHOR } from '@lincyaw/kernel'
 import type { ApprovalKind } from '@lincyaw/kernel'
 import { devStateFile, fileVersion, findWorkspaceServiceState, readServiceState } from '@lincyaw/kernel/node'
 import { buildSummary, buildToDist, Compiler, findPackageDir, resolveEntry, runBlock } from '@lincyaw/compiler'
@@ -116,7 +116,7 @@ export async function main(argv: string[], options: McpCliOptions = {}): Promise
     process.stderr.write(`presmium mcp: ${errorMessage(error)}\n\n${t.usage}\n`)
     return 2
   }
-  const dir = deck.endsWith('.json') ? dirname(deck) : deck
+  const dir = basename(deck) === DOCUMENT_ENTRY ? dirname(deck) : deck
   const controller = new AbortController()
   const stop = () => controller.abort()
   process.once('SIGINT', stop); process.once('SIGTERM', stop)

@@ -62,7 +62,7 @@ function LandingSection({ section, documents }: { section: SiteLandingSection, d
   </section>
 }
 
-/** A site's own page is independent from teaching documents and their viewer state. */
+/** A site's own page is independent from documents and their viewer state. */
 export function IndependentLanding({ config, page }: { config: AppConfig, page: SiteLandingPage }) {
   const t = useMessages(WEB_MESSAGES), hero = page.hero, title = hero?.title ?? page.title, description = hero?.description ?? page.description
   return <div className="pm-site pm-site--landing" {...siteThemeAttributes(config)}>

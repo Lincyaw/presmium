@@ -1,5 +1,5 @@
 import { hasRole, isRecord, randomUUID, validateDocument } from '@lincyaw/kernel'
-import type { CanonicalSource, ClientBodyDraftReference, DocumentAnswer, DocumentChangeAnswer, DocumentImageImportAnswer, DocumentIssue, Member, TeachingDocument } from '@lincyaw/kernel'
+import type { CanonicalSource, ClientBodyDraftReference, DocumentAnswer, DocumentChangeAnswer, DocumentImageImportAnswer, DocumentIssue, Member, PresmiumDocument } from '@lincyaw/kernel'
 import { WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 import { waitForDraft } from './document-draft-store.ts'
@@ -11,7 +11,7 @@ export interface DocumentSessionState {
   directory: string
   member?: Member
   identity?: string
-  content?: TeachingDocument
+  content?: PresmiumDocument
   version?: string
   fingerprint?: string
   projectRevision?: number
@@ -31,7 +31,7 @@ export interface DocumentSessionState {
   recoveryChanged?: boolean
 }
 export interface DocumentDraftOperation { signal: AbortSignal, guard(): void, source: CanonicalSource, localDraft?: true }
-export interface BodyDraftCandidate { draft: DocumentDraftReference & { current: boolean }, content: TeachingDocument, storage: 'durable' | 'rescue' | 'session', updatedAt: number, baseVersion: string, composing: boolean, pendingSubmission: boolean }
+export interface BodyDraftCandidate { draft: DocumentDraftReference & { current: boolean }, content: PresmiumDocument, storage: 'durable' | 'rescue' | 'session', updatedAt: number, baseVersion: string, composing: boolean, pendingSubmission: boolean }
 interface Slot {
   observedSource?: CanonicalSource
   state: DocumentSessionState
@@ -39,7 +39,7 @@ interface Slot {
   compositions: Set<string>
   input: number
   baseHash: string
-  baseContent: TeachingDocument
+  baseContent: PresmiumDocument
   storage: string
   drafts: DocumentDrafts
   backup?: DocumentDraftCommit
@@ -50,7 +50,7 @@ interface Slot {
   legacyFailure?: 'read' | 'write'
   persistFailure?: boolean
   recoveryOperation?: number
-  flight?: { id: string, input: number, content: TeachingDocument, baseVersion: string, hash?: string }
+  flight?: { id: string, input: number, content: PresmiumDocument, baseVersion: string, hash?: string }
   assetFlight?: Promise<DocumentChangeAnswer>
   timer?: ReturnType<typeof setTimeout>
   refreshed?: boolean
@@ -62,8 +62,8 @@ interface Slot {
 const serialize = (value: unknown) => JSON.stringify(value, (_, entry) => entry && typeof entry === 'object' && !Array.isArray(entry) ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b))) : entry)
 const sameSource = (a: CanonicalSource | undefined, b: CanonicalSource) => a?.documentId === b.documentId && a.version === b.version && a.fingerprint === b.fingerprint
 /** Non-body authoring changes keep native selection, comment drafts and body history. */
-function keepsEditorContent(before: TeachingDocument, after: TeachingDocument): boolean {
-  const editing = ({ assets: _assets, production: _production, comments: _comments, definitions: _definitions, ...document }: TeachingDocument) => {
+function keepsEditorContent(before: PresmiumDocument, after: PresmiumDocument): boolean {
+  const editing = ({ assets: _assets, production: _production, comments: _comments, definitions: _definitions, ...document }: PresmiumDocument) => {
     const resolved = new Map<string, Map<string, { blockId: string, visible: boolean, state?: string }>>()
     const visiting = new Set<string>()
     const visuals = (id?: string): Map<string, { blockId: string, visible: boolean, state?: string }> => {
@@ -94,12 +94,12 @@ function keepsEditorContent(before: TeachingDocument, after: TeachingDocument): 
     && Object.entries(before.assets).every(([id, asset]) => Object.hasOwn(after.assets, id) && serialize(asset) === serialize(after.assets[id]))
 }
 
-async function digest(value: TeachingDocument): Promise<string> {
+async function digest(value: PresmiumDocument): Promise<string> {
   return sha256(serialize(value))
 }
 
 /** Replay pending author input on a newer saved document; an overlapping value belongs to the author. */
-function rebaseDocument(base: TeachingDocument, local: TeachingDocument, remote: TeachingDocument): TeachingDocument {
+function rebaseDocument(base: PresmiumDocument, local: PresmiumDocument, remote: PresmiumDocument): PresmiumDocument {
   const merge = (before: unknown, author: unknown, saved: unknown): unknown => {
     if (serialize(author) === serialize(before)) return structuredClone(saved)
     if (serialize(saved) === serialize(before) || serialize(author) === serialize(saved)) return structuredClone(author)
@@ -325,7 +325,7 @@ export class DocumentSession {
     slot.state = { ...slot.state, version: answer.version, fingerprint: answer.fingerprint, content: answer.content, reset, error: undefined, issues: answer.issues }
   }
 
-  record(content: TeachingDocument): void {
+  record(content: PresmiumDocument): void {
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
     if (!slot || this.#readOnly(slot) || content.id !== slot.state.content?.id) return
     slot.input++
@@ -340,7 +340,7 @@ export class DocumentSession {
     if (slot.state.dirty && !slot.state.restored && !slot.state.error && !slot.state.composing) slot.timer = setTimeout(() => { slot.timer = undefined; void this.#save(slot) }, 600)
   }
 
-  replace(content: TeachingDocument): void {
+  replace(content: PresmiumDocument): void {
     const current = this.#active === undefined ? undefined : this.#slots.get(this.#active)
     if (current && this.#readOnly(current)) return
     this.record(content)
@@ -416,8 +416,8 @@ export class DocumentSession {
   }
 
   /** Adopt a verified asset-only transaction without replacing later native text. */
-  async #adoptImportedAssets(slot: Slot, before: TeachingDocument, input: number, answer: DocumentAnswer, owns: () => boolean): Promise<boolean> {
-    const withoutAssets = ({ assets: _assets, ...content }: TeachingDocument) => serialize(content)
+  async #adoptImportedAssets(slot: Slot, before: PresmiumDocument, input: number, answer: DocumentAnswer, owns: () => boolean): Promise<boolean> {
+    const withoutAssets = ({ assets: _assets, ...content }: PresmiumDocument) => serialize(content)
     if (!owns() || answer.document !== slot.state.directory || withoutAssets(before) !== withoutAssets(answer.content)
       || !Object.entries(before.assets).every(([id, asset]) => serialize(asset) === serialize(answer.content.assets[id]))) return false
     const baseHash = await digest(answer.content)
@@ -434,7 +434,7 @@ export class DocumentSession {
     return true
   }
 
-  async #adoptExternal(slot: Slot, before: TeachingDocument, input: number, answer: DocumentAnswer, owns: () => boolean, reconcile: (before: TeachingDocument, answer: DocumentAnswer, current: TeachingDocument) => TeachingDocument | undefined): Promise<boolean> {
+  async #adoptExternal(slot: Slot, before: PresmiumDocument, input: number, answer: DocumentAnswer, owns: () => boolean, reconcile: (before: PresmiumDocument, answer: DocumentAnswer, current: PresmiumDocument) => PresmiumDocument | undefined): Promise<boolean> {
     if (!owns() || answer.document !== slot.state.directory || answer.content.id !== before.id || !slot.state.content) return false
     if (!reconcile(before, answer, slot.state.content)) return false
     const baseHash = await digest(answer.content)
@@ -453,7 +453,7 @@ export class DocumentSession {
   }
 
   /** Reconcile an external source transaction without replacing later native input. */
-  async commitExternal<T extends DocumentChangeAnswer>(expected: { identity: string, version: string }, submit: (before: TeachingDocument, signal?: AbortSignal) => Promise<T>, reconcile: (before: TeachingDocument, answer: DocumentAnswer, current: TeachingDocument) => TeachingDocument | undefined, signal?: AbortSignal): Promise<T> {
+  async commitExternal<T extends DocumentChangeAnswer>(expected: { identity: string, version: string }, submit: (before: PresmiumDocument, signal?: AbortSignal) => Promise<T>, reconcile: (before: PresmiumDocument, answer: DocumentAnswer, current: PresmiumDocument) => PresmiumDocument | undefined, signal?: AbortSignal): Promise<T> {
     signal?.throwIfAborted()
     const slot = this.#active === undefined ? undefined : this.#slots.get(this.#active)
     if (slot && this.#readOnly(slot)) throw new WorkspaceServerError(403, { error: 'permission-denied' })

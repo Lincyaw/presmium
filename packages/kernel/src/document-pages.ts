@@ -1,12 +1,12 @@
-import { isDocumentPlaceAnchor } from './contracts/document.ts'
-import type { ListItemNode, RichTextNode, TableCellNode, TableRowNode, TeachingDocument } from './contracts/document.ts'
+import { DOCUMENT_ENTRY, isDocumentPlaceAnchor } from './contracts/document.ts'
+import type { ListItemNode, RichTextNode, TableCellNode, TableRowNode, PresmiumDocument } from './contracts/document.ts'
 import type { DocumentPageDeletionImpact, DocumentPageIds } from './contracts/authoring.ts'
 import type { PageDeletePlan } from './contracts/workspace.ts'
 
 export const DOCUMENT_PAGE_DEFAULT_TIMING = { minimumHoldMs: 4000, trailingPauseMs: 500 } as const
 
 /** The native insertion and server preflight reserve the same declared page identities. */
-export function allocateDocumentPage(document: TeachingDocument, allocate: () => string): DocumentPageIds {
+export function allocateDocumentPage(document: PresmiumDocument, allocate: () => string): DocumentPageIds {
   const used = documentIds(document)
   for (const id of document.sectionOrder) used.add(`page:${id}`)
   const next = () => {
@@ -27,7 +27,7 @@ export function documentPageDefaults({ sectionId, blockId, nodeId, stepId }: Doc
   }
 }
 
-export function createDocumentPage(source: TeachingDocument, after: string | null, title: string, allocate: () => string): { document: TeachingDocument, ids: DocumentPageIds } {
+export function createDocumentPage(source: PresmiumDocument, after: string | null, title: string, allocate: () => string): { document: PresmiumDocument, ids: DocumentPageIds } {
   if (after !== null && (!source.sections[after] || !source.sectionOrder.includes(after))) throw new Error('page-boundary')
   if (!title.trim()) throw new Error('page-title-required')
   const ids = allocateDocumentPage(source, allocate), page = documentPageDefaults(ids, title.trim()), document = structuredClone(source)
@@ -37,7 +37,7 @@ export function createDocumentPage(source: TeachingDocument, after: string | nul
   return { document, ids }
 }
 
-export function renameDocumentPage(source: TeachingDocument, section: string, title: string): TeachingDocument {
+export function renameDocumentPage(source: PresmiumDocument, section: string, title: string): PresmiumDocument {
   if (!source.sections[section] || !source.sectionOrder.includes(section)) throw new Error('page-boundary')
   if (!title.trim()) throw new Error('page-title-required')
   const document = structuredClone(source)
@@ -45,7 +45,7 @@ export function renameDocumentPage(source: TeachingDocument, section: string, ti
   return document
 }
 
-export function moveDocumentPage(source: TeachingDocument, section: string, before: string | null): TeachingDocument {
+export function moveDocumentPage(source: PresmiumDocument, section: string, before: string | null): PresmiumDocument {
   if (!source.sections[section] || !source.sectionOrder.includes(section) || before !== null && (!source.sections[before] || !source.sectionOrder.includes(before))) throw new Error('page-boundary')
   const document = structuredClone(source)
   if (before !== section) {
@@ -55,7 +55,7 @@ export function moveDocumentPage(source: TeachingDocument, section: string, befo
   return document
 }
 
-export function pageContents(document: TeachingDocument, section: string): Set<string> {
+export function pageContents(document: PresmiumDocument, section: string): Set<string> {
   const ids = new Set<string>()
   const visit = (id: string) => { if (ids.has(id)) return; ids.add(id); const block = document.blocks[id]; if (block?.type === 'container' || block?.type === 'component') block.children?.forEach(visit) }
   document.sections[section]?.children.forEach(visit)
@@ -63,7 +63,7 @@ export function pageContents(document: TeachingDocument, section: string): Set<s
 }
 
 /** Deletion only owns declared entities. Opaque plugin data is never interpreted as identity. */
-export function pageDeletionImpact(document: TeachingDocument, section: string): DocumentPageDeletionImpact {
+export function pageDeletionImpact(document: PresmiumDocument, section: string): DocumentPageDeletionImpact {
   const page = document.sections[section]
   if (!page || !document.sectionOrder.includes(section)) throw new Error('page-boundary')
   const blocks = pageContents(document, section), steps = new Set(page.stepOrder)
@@ -99,14 +99,14 @@ export function pageDeletionImpact(document: TeachingDocument, section: string):
     }).map(thread => thread.id), references }
 }
 
-export function pageDeletion(document: TeachingDocument, directory: string, version: string, section: string): PageDeletePlan {
+export function pageDeletion(document: PresmiumDocument, directory: string, version: string, section: string): PageDeletePlan {
   const impact = pageDeletionImpact(document, section)
-  return { document: directory, section, revision: version, source: { path: `${directory ? `${directory}/` : ''}lecture.json`, version },
+  return { document: directory, section, revision: version, source: { path: `${directory ? `${directory}/` : ''}${DOCUMENT_ENTRY}`, version },
     counts: { steps: impact.steps.length, blocks: impact.blocks.length, narration: impact.narrations.length + impact.retainedNarrations.length }, last: impact.retainedEmpty, allowed: !impact.references.length,
     ...impact.references.length ? { reason: 'page-referenced', references: impact.references.map(reference => ({ document: directory, section: reference.type === 'inheritance' ? document.steps[reference.stepId]!.sectionId : reference.stepIds[0] ? document.steps[reference.stepIds[0]]!.sectionId : section, ...reference.type === 'cue' ? { block: reference.blockId } : {} })) } : {} }
 }
 
-export function removeDocumentPage(source: TeachingDocument, section: string, allocate: () => string): TeachingDocument {
+export function removeDocumentPage(source: PresmiumDocument, section: string, allocate: () => string): PresmiumDocument {
   const impact = pageDeletionImpact(source, section)
   if (impact.references.length) throw new Error('page-referenced')
   const document = structuredClone(source), page = document.sections[section]!
@@ -129,7 +129,7 @@ export function removeDocumentPage(source: TeachingDocument, section: string, al
 }
 
 /** Copy owned entities and explicit document references; plugin payloads and discussions retain their meaning. */
-export function duplicateDocumentPage(source: TeachingDocument, section: string, title: string, allocate: (oldId: string) => string): { document: TeachingDocument, section: string, mapping: Record<string, string> } {
+export function duplicateDocumentPage(source: PresmiumDocument, section: string, title: string, allocate: (oldId: string) => string): { document: PresmiumDocument, section: string, mapping: Record<string, string> } {
   const page = source.sections[section]
   if (!page || !source.sectionOrder.includes(section)) throw new Error('page-boundary')
   const document = structuredClone(source), identities = new Map<string, string>(), used = documentIds(source)
@@ -202,7 +202,7 @@ export function duplicateDocumentPage(source: TeachingDocument, section: string,
 }
 
 /** Collect declared identities only; arbitrary plugin data and discussion metadata are opaque. */
-function documentIds(document: TeachingDocument): Set<string> {
+function documentIds(document: PresmiumDocument): Set<string> {
   const ids = new Set([document.id, ...Object.keys(document.sections), ...Object.keys(document.blocks), ...Object.keys(document.steps), ...Object.keys(document.narrations), ...Object.keys(document.assets), ...Object.keys(document.definitions)])
   const rich = (node: RichTextNode | ListItemNode | TableRowNode | TableCellNode): void => {
     ids.add(node.id)

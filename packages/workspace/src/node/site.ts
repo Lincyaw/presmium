@@ -1,9 +1,9 @@
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
-import { compileTranslations, directoryAsset, fileHash, lineContaining, loadPlugins, nodeVitePlugins, portable, publishesDirectory, viewFor } from '@lincyaw/compiler'
+import { compileTranslations, directoryAsset, effectiveDocumentIn, fileHash, lineContaining, loadPlugins, nodeVitePlugins, portable, publishesDirectory, viewFor } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import { DOCUMENT_ENTRY, isRecord, NON_FILE_URL, WEB_RENDERER_PACKAGE } from '@lincyaw/kernel'
-import type { DocumentSummary, Finding, IRDocument, RenderContext, Renderer, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
+import type { DocumentSummary, Finding, IRDocument, PresmiumDocument, RenderContext, Renderer, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
 import type { WorkspaceConfig } from './config.ts'
 
@@ -116,7 +116,7 @@ function publishedAsset(options: SiteContextOptions, source: SourcePos, url: str
   const deck = deckOf(source.file, options.root)
   if (!deck || !publishesDirectory(target, deck)) return undefined
   const document: unknown = JSON.parse(readFileSync(join(deck, DOCUMENT_ENTRY), 'utf8'))
-  const lang = isRecord(document) && isRecord(document.metadata) ? document.metadata.lang : undefined
+  const lang = isRecord(document) && isRecord(document.metadata) && isRecord(document.production) && isRecord(document.placement) ? effectiveDocumentIn(options.root, join(deck, DOCUMENT_ENTRY), document as unknown as PresmiumDocument).metadata.lang : undefined
   return directoryAsset(target, deck, join(options.workDir, 'files'), typeof lang === 'string' ? lang : undefined, message => warn(`${url} is not published: ${message}`))
 }
 

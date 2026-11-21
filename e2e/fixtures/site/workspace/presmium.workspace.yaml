@@ -1,5 +1,4 @@
 title: 两周的课程
-documents: [week1/lecture.json, week2/lecture.json]
 site:
   home: week1
   nav:

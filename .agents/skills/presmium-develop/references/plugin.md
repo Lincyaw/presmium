@@ -4,9 +4,9 @@ This reference connects a normalized document definition to its runtime componen
 The hypothetical plugin `poll` (package `presmium-plugin-poll`, plugin id `poll`) supplies a `PmPoll`
 component. An authored component block references a versioned definition and stores structured parameters.
 The project created by `presmium new --type plugin` demonstrates the same boundary with
-`components/GreetingCard.tsx`, `example/lecture.json` and the `waves` route.
+`components/GreetingCard.tsx`, `example/index.pmd` and the `waves` route.
 
-The sole authoring entry is `lecture.json`. See `presmium-author/references/document.md` for the editable
+The sole authoring entry is `index.pmd`. See `presmium-author/references/document.md` for the editable
 document contract. References to mdast, runtime component props and fallback trees below describe compiler
 and renderer interfaces; they are not another authoring format.
 
@@ -25,7 +25,7 @@ presmium-plugin-poll/
 │   └── client/            optional: plugin.ts (browser plugin), viewer.ts (viewer extension), React hooks
 ├── components/PmPoll.tsx  a component; its file name is its name
 ├── vite.config.ts         optional: Vite plugins and JSX configuration for the viewer's build
-├── example/lecture.json     a document that lists the plugin by its directory
+├── example/index.pmd     a document that lists the plugin by its directory
 └── test/plugin.test.ts    integration tests
 ```
 
@@ -122,7 +122,7 @@ const plugin: PresmiumNodePlugin = {
 export default plugin
 ```
 
-Author a component definition in `example/lecture.json` with implementation `{ type: "plugin", plugin: PLUGIN_ID, name: "GreetingCard" }`, a real parameter Schema and fallback. The matching public component file is `components/GreetingCard.tsx`.
+Author a component definition in `example/index.pmd` with implementation `{ type: "plugin", plugin: PLUGIN_ID, name: "GreetingCard" }`, a real parameter Schema and fallback. The matching public component file is `components/GreetingCard.tsx`.
 
 The plugin id names the plugin everywhere: the `plugin` of its component nodes, its configuration
 (the key `<id>` under `metadata.presmium`, written `presmium.<id>` below), its routes under
@@ -156,7 +156,7 @@ included), `nodeMdast` (a node as mdast), `mdastText` (the plain text of mdast),
 
 ## 3. Document definitions and the runtime snapshot
 
-The only authored entry is `lecture.json`. A component block is `{ id, type: "component", definitionId, parameters }`; its definition declares `kind`, `schemaVersion`, `implementation`, `parameterSchema`, `states` and optional versioned `data`. Implementation references name a project file, installed module or plugin/component pair. The example document shows the exact structure.
+The only authored entry is `index.pmd`. A component block is `{ id, type: "component", definitionId, parameters }`; its definition declares `kind`, `schemaVersion`, `implementation`, `parameterSchema`, `states` and optional versioned `data`. Implementation references name a project file, installed module or plugin/component pair. The example document shows the exact structure.
 
 The compiler validates authored parameters/state references and lowers them into a runtime `component` node with plugin, name, props, optional nested child blocks, assets, timing and static fallback. These runtime nodes are renderer input; never copy their numeric `at`, `span`, absolute paths or generated props back into the document as a second authority.
 

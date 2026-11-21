@@ -1,4 +1,4 @@
-import type { IRDocument, MdastNode, TeachingDocument } from '@lincyaw/kernel'
+import type { IRDocument, MdastNode, PresmiumDocument } from '@lincyaw/kernel'
 
 /** A section as the navigation pane lists it: in the slides each section is one slide, numbered from 1. */
 export interface OutlineItem {
@@ -8,7 +8,7 @@ export interface OutlineItem {
   number: number
 }
 
-export function documentOutline(doc: IRDocument | TeachingDocument | undefined): OutlineItem[] {
+export function documentOutline(doc: IRDocument | PresmiumDocument | undefined): OutlineItem[] {
   if (doc && 'schemaVersion' in doc) return doc.sectionOrder.map((id, index) => ({ id, title: doc.sections[id]!.title, depth: doc.sections[id]!.level ?? 1, number: index + 1 }))
   return (doc?.sections ?? []).map((section, i) => ({ id: section.id, title: section.title, depth: section.depth, number: i + 1 }))
 }
@@ -18,7 +18,7 @@ export class DocumentOutline {
   #identity?: string
   #items: readonly OutlineItem[] = []
 
-  read(document: TeachingDocument | undefined, identity = document?.id): readonly OutlineItem[] {
+  read(document: PresmiumDocument | undefined, identity = document?.id): readonly OutlineItem[] {
     const items = documentOutline(document)
     if (identity !== this.#identity || items.length !== this.#items.length || items.some((item, index) => {
       const previous = this.#items[index]!
@@ -55,7 +55,7 @@ function richTextParts(value: unknown, parts: string[] = []): string[] {
 }
 
 /** Counts authored titles and rich text; code, components and separate narration are excluded. */
-export function countWords(doc: IRDocument | TeachingDocument | undefined): number {
+export function countWords(doc: IRDocument | PresmiumDocument | undefined): number {
   if (doc && 'schemaVersion' in doc) {
     return doc.sectionOrder.reduce((sum, id) => sum + countText(doc.sections[id]!.title), 0) + Object.values(doc.blocks).reduce((sum, block) => sum + (block.type === 'text' ? richTextParts(block.content).reduce((sum, text) => sum + countText(text), 0) : 0), 0)
   }
@@ -72,7 +72,7 @@ export class DocumentWordCounter {
   #identity?: string
   readonly #counts = new Map<string, { signature: string, words: number }>()
 
-  count(doc: TeachingDocument | undefined, identity = doc?.id): number {
+  count(doc: PresmiumDocument | undefined, identity = doc?.id): number {
     if (identity !== this.#identity || !doc) { this.#counts.clear(); this.#identity = identity }
     if (!doc) return 0
     const unused = new Set(this.#counts.keys())

@@ -1,7 +1,6 @@
 # The workspace of service.test.ts: the assistant is the operator's plugin, installed at the workspace root (the test
 # links it), whose browser part the home page of `presmium serve` loads, and the headless service's does not.
 title: Service workspace
-documents: ['*/lecture.json']
 settings:
   presmium.workspace:
     plugins: ['@lincyaw/addon-assistant']

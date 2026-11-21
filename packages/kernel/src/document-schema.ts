@@ -21,14 +21,15 @@ const block = (type: string, properties: Record<string, Schema>, required: strin
 /** Public authoring schema; domain graph checks are shared by the UI, agent and compiler validator. */
 export const DOCUMENT_JSON_SCHEMA: Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'urn:presmium:teaching-document:1',
+  $id: `urn:presmium:document:${DOCUMENT_SCHEMA_VERSION}`,
   ...object({
     schemaVersion: { const: DOCUMENT_SCHEMA_VERSION }, id,
-    metadata: object({ title: string, description: string, tags: list(string), lang: { type: 'string', minLength: 1 }, plugins: list(string), presmium: record(ref('JsonObject')), renderers: record(ref('JsonObject')), execute: ref('JsonObject'), checks: ref('JsonObject'), translations: record(string), translationOf: object({ entry: string, digest: string }) }, ['title', 'lang']),
+    placement: object({ parent: { anyOf: [id, { type: 'null' }] }, rank: { type: 'string', minLength: 1, maxLength: 200 } }),
+    metadata: object({ title: string, description: string, tags: list(string), lang: { type: 'string', minLength: 1 }, plugins: list(string), presmium: record(ref('JsonObject')), renderers: record(ref('JsonObject')), execute: ref('JsonObject'), checks: ref('JsonObject'), translations: record(string), translationOf: object({ entry: string, digest: string }) }, ['title']),
     sectionOrder: { ...ids, minItems: 1 }, sections: record(ref('Section')), blocks: record(ref('Block')),
     steps: record(ref('Step')), narrations: record(ref('Narration')), assets: record(ref('Asset')),
     definitions: record(ref('Definition')), production: ref('Production'), comments: record(ref('Thread')),
-  }, ['schemaVersion', 'id', 'metadata', 'sectionOrder', 'sections', 'blocks', 'steps', 'narrations', 'assets', 'definitions', 'production']),
+  }, ['schemaVersion', 'id', 'placement', 'metadata', 'sectionOrder', 'sections', 'blocks', 'steps', 'narrations', 'assets', 'definitions', 'production']),
   $defs: {
     JsonValue: { anyOf: [{ type: ['null', 'boolean', 'number', 'string'] }, { type: 'array', items: ref('JsonValue') }, ref('JsonObject')] },
     JsonObject: { type: 'object', additionalProperties: ref('JsonValue') },
@@ -40,6 +41,7 @@ export const DOCUMENT_JSON_SCHEMA: Schema = {
       object({ type: tag('text'), text: string, marks: list(ref('Mark')) }, ['type', 'text']),
       object({ type: tag('link'), href: string, children: list(ref('Inline')) }),
       object({ type: tag('math'), value: string }), object({ type: tag('break') }),
+      object({ type: tag('reference'), target: object({ document: id, section: id, block: id }, ['document']), label: string, fallback: string }, ['type', 'target', 'fallback']),
       object({ type: tag('extension'), kind: id, schemaVersion: { type: 'integer', minimum: 1 }, data: ref('JsonObject'), fallback: string }),
     ] },
     RichTextNode: { oneOf: [
@@ -64,6 +66,7 @@ export const DOCUMENT_JSON_SCHEMA: Schema = {
       block('image', { assetId: id, alt: string, caption: list(ref('Inline')), width: positive, alignment: { enum: ['left', 'center', 'right', 'justify'] } }, ['alt']),
       { ...block('code', { language: string, value: string, origin: ref('CodeReference'), title: string, execution: ref('CodeExecution'), highlight: record(list({ type: 'integer', minimum: 1 })), variants: list(ref('CodeVariant')), echo: { type: 'boolean' } }, ['language']), oneOf: exclusiveCode },
       block('component', { definitionId: id, parameters: ref('JsonObject'), children: ids }, ['definitionId', 'parameters']),
+      block('embed', { source: object({ document: id, block: id }) }),
     ] },
     Visual: object({ blockId: id, visible: { type: 'boolean' }, state: id, parameters: ref('JsonObject') }, ['blockId', 'visible']),
     Step: object({ id, sectionId: id, title: string, visuals: list(ref('Visual')), narrationIds: ids, inherits: id }, ['id', 'sectionId', 'visuals', 'narrationIds']),

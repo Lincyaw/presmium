@@ -12,7 +12,7 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@lincyaw/kernel` | npm | 共享内核：IR 与插件契约、服务注册、锚点、检查 |
 | `@lincyaw/host` | npm | 插件组件的宿主接口与设计系统的 React 组件 |
 | `@lincyaw/design` | npm | 设计系统：令牌、`pm-ui-*` 的类、字体与图标，产物与工作台共用，没有框架（`docs/studio.md` 3.1 节） |
-| `@lincyaw/compiler` | npm | 由 `lecture.json` 派生运行快照、插件加载、编译时执行、检查与渲染端调度 |
+| `@lincyaw/compiler` | npm | 由 `index.pmd` 派生运行快照、插件加载、编译时执行、检查与渲染端调度 |
 | `@lincyaw/cli` | npm | `presmium` 命令；`./testing` 供插件的集成测试运行 CLI |
 | `@lincyaw/viewer` | npm | IR 运行时 |
 | `@lincyaw/web` | npm | 网页渲染端 |

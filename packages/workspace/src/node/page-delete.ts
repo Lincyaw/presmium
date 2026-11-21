@@ -41,7 +41,6 @@ export function pageDeleteRoute({ config, editor, workbench, locks, revisions }:
     if (!config.singleDeck) {
       const workspaceSource = editor.read(editor.scope(''), WORKSPACE_CONFIG, ctx.member)
       const currentConfig = readWorkspaceConfig(config.root)
-      if (JSON.stringify(currentConfig.documents) !== JSON.stringify(config.documents)) throw new RequestError(409, 'page-references-unavailable')
       dependencies.set(workspaceSource.path, workspaceSource.version)
       const workspaceView = { ...answer.doc, meta: { ...answer.doc.meta, entry: WORKSPACE_CONFIG }, config: { ...answer.doc.config, presmium: { site: currentConfig.site } }, sections: [] }
       if (pageIncomingReferences(workspaceView, answer.doc.meta.entry, targets).length) references.push({ document: '', section })

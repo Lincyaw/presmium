@@ -1,0 +1,705 @@
+{
+  "schemaVersion": 2,
+  "id": "presmium-product-promo-60s",
+  "placement": {
+    "parent": null,
+    "rank": "aA"
+  },
+  "metadata": {
+    "title": "Make complex things clear",
+    "lang": "en",
+    "description": "A student asks a question late at night. The teacher marks a paragraph in Presmium and has the AI add an animation; the same figure is taught step by step in class, read on the course website and sent as a video, and the student replies \"Got it\". Music: \"Newer Wave\" by Kevin MacLeod (incompetech.com), CC BY 4.0.",
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "lecture": {}
+    },
+    "tags": [
+      "影片"
+    ]
+  },
+  "sectionOrder": [
+    "film-question",
+    "film-board",
+    "film-ask",
+    "film-brand"
+  ],
+  "sections": {
+    "film-question": {
+      "id": "film-question",
+      "title": "Make complex things clear",
+      "level": 1,
+      "children": [
+        "question-scene"
+      ],
+      "stepOrder": [
+        "question-step"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "film-board": {
+      "id": "film-board",
+      "title": "Three times on the board",
+      "level": 2,
+      "children": [
+        "board-scene"
+      ],
+      "stepOrder": [
+        "board-step"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "film-ask": {
+      "id": "film-ask",
+      "title": "Show it, then share it",
+      "level": 2,
+      "children": [
+        "ask-scene"
+      ],
+      "stepOrder": [
+        "ask-step",
+        "lesson-step",
+        "website-step",
+        "video-step"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "film-brand": {
+      "id": "film-brand",
+      "title": "Presmium",
+      "level": 2,
+      "children": [
+        "brand-scene",
+        "brand-credits"
+      ],
+      "stepOrder": [
+        "brand-step"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "question-scene": {
+      "id": "question-scene",
+      "type": "component",
+      "definitionId": "question-shot",
+      "parameters": {
+        "shot": "question"
+      }
+    },
+    "board-scene": {
+      "id": "board-scene",
+      "type": "component",
+      "definitionId": "board-shot",
+      "parameters": {
+        "shot": "board"
+      }
+    },
+    "ask-scene": {
+      "id": "ask-scene",
+      "type": "component",
+      "definitionId": "ask-shot",
+      "parameters": {
+        "shot": "ask"
+      }
+    },
+    "brand-scene": {
+      "id": "brand-scene",
+      "type": "component",
+      "definitionId": "brand-shot",
+      "parameters": {
+        "shot": "brand"
+      }
+    },
+    "brand-credits": {
+      "id": "brand-credits",
+      "type": "text",
+      "content": [
+        {
+          "id": "brand-credits--p",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "Music: “Newer Wave” by Kevin MacLeod ("
+            },
+            {
+              "type": "link",
+              "href": "https://incompetech.com",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "incompetech.com"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "), licensed under "
+            },
+            {
+              "type": "link",
+              "href": "http://creativecommons.org/licenses/by/4.0/",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Creative Commons: By Attribution 4.0"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": ". Interface sounds: Kenney “Interface Sounds” ("
+            },
+            {
+              "type": "link",
+              "href": "https://kenney.nl/assets/interface-sounds",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "kenney.nl"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "), CC0."
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    }
+  },
+  "steps": {
+    "question-step": {
+      "id": "question-step",
+      "sectionId": "film-question",
+      "visuals": [
+        {
+          "blockId": "question-scene",
+          "visible": true,
+          "state": "show"
+        }
+      ],
+      "narrationIds": []
+    },
+    "board-step": {
+      "id": "board-step",
+      "sectionId": "film-board",
+      "visuals": [
+        {
+          "blockId": "board-scene",
+          "visible": true,
+          "state": "show"
+        }
+      ],
+      "narrationIds": []
+    },
+    "ask-step": {
+      "id": "ask-step",
+      "sectionId": "film-ask",
+      "visuals": [
+        {
+          "blockId": "ask-scene",
+          "visible": true,
+          "state": "studio"
+        }
+      ],
+      "narrationIds": []
+    },
+    "lesson-step": {
+      "id": "lesson-step",
+      "sectionId": "film-ask",
+      "visuals": [
+        {
+          "blockId": "ask-scene",
+          "visible": true,
+          "state": "lesson"
+        }
+      ],
+      "narrationIds": []
+    },
+    "website-step": {
+      "id": "website-step",
+      "sectionId": "film-ask",
+      "visuals": [
+        {
+          "blockId": "ask-scene",
+          "visible": true,
+          "state": "website"
+        }
+      ],
+      "narrationIds": []
+    },
+    "video-step": {
+      "id": "video-step",
+      "sectionId": "film-ask",
+      "visuals": [
+        {
+          "blockId": "ask-scene",
+          "visible": true,
+          "state": "video"
+        }
+      ],
+      "narrationIds": []
+    },
+    "brand-step": {
+      "id": "brand-step",
+      "sectionId": "film-brand",
+      "visuals": [
+        {
+          "blockId": "brand-scene",
+          "visible": true,
+          "state": "show"
+        },
+        {
+          "blockId": "brand-credits",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {},
+  "assets": {
+    "film-score": {
+      "id": "film-score",
+      "kind": "audio",
+      "location": "audio/score.ogg",
+      "title": "Make complex things clear · score (music: “Newer Wave”, Kevin MacLeod, CC BY 4.0)",
+      "fingerprint": "sha256:8ecb8cf70f3d92772a7a11aa5e95b11e443f1e09eda8b2c6c96cb45b88347635",
+      "mediaType": "audio/ogg"
+    }
+  },
+  "definitions": {
+    "question-shot": {
+      "id": "question-shot",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/film.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shot": {
+            "type": "string",
+            "enum": [
+              "question",
+              "board",
+              "ask",
+              "brand"
+            ]
+          }
+        },
+        "required": [
+          "shot"
+        ],
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "show"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "language": "typescript",
+        "durations": [
+          8728
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Late at night, the teacher's phone lights up. In the class chat, Sam asks: \"How can a bunch of spinning circles draw any shape?\""
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "board-shot": {
+      "id": "board-shot",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/film.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shot": {
+            "type": "string",
+            "enum": [
+              "question",
+              "board",
+              "ask",
+              "brand"
+            ]
+          }
+        },
+        "required": [
+          "shot"
+        ],
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "show"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "language": "typescript",
+        "durations": [
+          4363
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Last class's blackboard: a square wave, built from sin x, then + sin 3x/3, then + sin 5x/5, drawn three times and erased twice. Drew it three times. Still didn't click."
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "ask-shot": {
+      "id": "ask-shot",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/film.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shot": {
+            "type": "string",
+            "enum": [
+              "question",
+              "board",
+              "ask",
+              "brand"
+            ]
+          }
+        },
+        "required": [
+          "shot"
+        ],
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "studio"
+        },
+        {
+          "id": "lesson"
+        },
+        {
+          "id": "website"
+        },
+        {
+          "id": "video"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "language": "typescript",
+        "durations": [
+          16364,
+          11999,
+          4364,
+          8727
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "That night, in Presmium, the teacher selects the paragraph on the corners of the note and leaves a comment: \"Animate this: draw the note with 1, 2, 4 … 64 circles.\" The AI Assistant applies it, and the page comes back with the turning circles, drawing the note with 2, 4, then 8 circles."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Next morning in class, the same figure is on the screen, at 8 circles. Each click is one step: 16, 32, then 64 circles, and the curve closes in on the note while the error falls below half a percent. \"Oh, I see!\""
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "After class, the same figure, at 64 circles, is on the course website."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "And in the lesson video in the class chat: missed a step? Drag it back. Sam replies: \"Got it! Each circle adds a finer detail, so more circles get closer to the shape.\""
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "brand-shot": {
+      "id": "brand-shot",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/film.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shot": {
+            "type": "string",
+            "enum": [
+              "question",
+              "board",
+              "ask",
+              "brand"
+            ]
+          }
+        },
+        "required": [
+          "shot"
+        ],
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "show"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "language": "typescript",
+        "durations": [
+          6545
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Make complex things clear. Presmium. Open source, free to use."
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      },
+      "narrationStart": "with-animation",
+      "trailingPauseMs": 0
+    },
+    "stepOverrides": {
+      "question-step": {
+        "minimumHoldMs": 8728,
+        "trailingPauseMs": 0
+      },
+      "board-step": {
+        "minimumHoldMs": 4363,
+        "trailingPauseMs": 0
+      },
+      "ask-step": {
+        "minimumHoldMs": 16364,
+        "trailingPauseMs": 0
+      },
+      "lesson-step": {
+        "minimumHoldMs": 11999,
+        "trailingPauseMs": 0
+      },
+      "website-step": {
+        "minimumHoldMs": 4364,
+        "trailingPauseMs": 0
+      },
+      "video-step": {
+        "minimumHoldMs": 8727,
+        "trailingPauseMs": 0
+      },
+      "brand-step": {
+        "minimumHoldMs": 6545,
+        "trailingPauseMs": 0
+      }
+    },
+    "mediaClips": [
+      {
+        "id": "score-question",
+        "assetId": "film-score",
+        "sourceRange": {
+          "startMs": 0,
+          "endMs": 8728
+        },
+        "attachment": {
+          "stepId": "question-step",
+          "offsetMs": 0
+        },
+        "volume": 1,
+        "muted": false
+      },
+      {
+        "id": "score-board",
+        "assetId": "film-score",
+        "sourceRange": {
+          "startMs": 8728,
+          "endMs": 13091
+        },
+        "attachment": {
+          "stepId": "board-step",
+          "offsetMs": 0
+        },
+        "volume": 1,
+        "muted": false
+      },
+      {
+        "id": "score-ask",
+        "assetId": "film-score",
+        "sourceRange": {
+          "startMs": 13091,
+          "endMs": 29455
+        },
+        "attachment": {
+          "stepId": "ask-step",
+          "offsetMs": 0
+        },
+        "volume": 1,
+        "muted": false
+      },
+      {
+        "id": "score-lesson",
+        "assetId": "film-score",
+        "sourceRange": {
+          "startMs": 29455,
+          "endMs": 41454
+        },
+        "attachment": {
+          "stepId": "lesson-step",
+          "offsetMs": 0
+        },
+        "volume": 1,
+        "muted": false
+      },
+      {
+        "id": "score-website",
+        "assetId": "film-score",
+        "sourceRange": {
+          "startMs": 41454,
+          "endMs": 45818
+        },
+        "attachment": {
+          "stepId": "website-step",
+          "offsetMs": 0
+        },
+        "volume": 1,
+        "muted": false
+      },
+      {
+        "id": "score-video",
+        "assetId": "film-score",
+        "sourceRange": {
+          "startMs": 45818,
+          "endMs": 54545
+        },
+        "attachment": {
+          "stepId": "video-step",
+          "offsetMs": 0
+        },
+        "volume": 1,
+        "muted": false
+      },
+      {
+        "id": "score-brand",
+        "assetId": "film-score",
+        "sourceRange": {
+          "startMs": 54545,
+          "endMs": 61090
+        },
+        "attachment": {
+          "stepId": "brand-step",
+          "offsetMs": 0
+        },
+        "volume": 1,
+        "muted": false
+      }
+    ]
+  }
+}

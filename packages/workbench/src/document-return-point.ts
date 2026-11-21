@@ -1,4 +1,4 @@
-import type { TeachingDocument } from '@lincyaw/kernel'
+import type { PresmiumDocument } from '@lincyaw/kernel'
 
 export interface DocumentReturnPoint {
   sectionId: string
@@ -38,7 +38,7 @@ export class DocumentReturnPoints {
   }
 }
 
-export function documentReturnStep(document: TeachingDocument, point: DocumentReturnPoint): number | undefined {
+export function documentReturnStep(document: PresmiumDocument, point: DocumentReturnPoint): number | undefined {
   const section = document.sections[point.sectionId]
   if (!section || !document.sectionOrder.includes(point.sectionId)) return
   if (point.stepId === undefined) return section.stepOrder.length === 0 ? 0 : undefined

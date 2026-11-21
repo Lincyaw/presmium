@@ -21,9 +21,9 @@ Without arguments it asks for the kind of project, the directory and the title (
 | `--no-git` | Do not run `git init` |
 | `-h`, `--help` | Show the help |
 
-- A lecture: `lecture.json`; `presmium dev`, `presmium check`, `presmium build`.
+- A lecture: `index.pmd`; `presmium dev`, `presmium check`, `presmium build`.
 - A workspace: `presmium.workspace.yaml` and a first document in `intro/`; `presmium serve`.
-- A site: `presmium.workspace.yaml`, an independent homepage in `site/home.json`, a teaching document in `intro/lecture.json`, and `.github/workflows/pages.yml`; `pnpm install`, `pnpm serve`, `pnpm build`.
+- A site: `presmium.workspace.yaml`, an independent homepage in `site/home.json`, a teaching document in `intro/index.pmd`, and `.github/workflows/pages.yml`; `pnpm install`, `pnpm serve`, `pnpm build`.
 - A plugin: a directive, a React component shown in the web page and the slides, a server route, text in Chinese and English, an example document and integration tests; `pnpm install`, `pnpm test`, `pnpm dev`.
 
 Lectures, workspaces and sites list `presmium` at create-presmium's own version as a dev dependency, so `pnpm install` pins it; without it the global `presmium` builds them. Each project gets an `AGENTS.md` (`CLAUDE.md` links to it) and copies of the Presmium skills for coding agents in `.agents/skills`. The text of the questions and of the new files follows the system's language (Chinese or English).
@@ -37,7 +37,7 @@ pnpm install
 pnpm serve
 ```
 
-Edit `site/home.json` to design the homepage and `intro/lecture.json` for the first teaching document. `site.landing.source` selects the homepage file; homepage content has its own structure, while teaching documents retain `lecture.json` as their sole content authority. Change `site.theme` and `site.params` in `presmium.workspace.yaml` to personalize the site. `pnpm build` exports `dist/web/`.
+Edit `site/home.json` to design the homepage and `intro/index.pmd` for the first teaching document. `site.landing.source` selects the homepage file; homepage content has its own structure, while teaching documents retain `index.pmd` as their sole content authority. Change `site.theme` and `site.params` in `presmium.workspace.yaml` to personalize the site. `pnpm build` exports `dist/web/`.
 
 For your own HTML, CSS and JavaScript, replace the landing configuration with `site.landing: { template: './site/home.html' }`. The HTML entry and its local assets are bundled for static hosting; `script#presmium-site-data` provides the site's public document links. Refresh the homepage to rebuild that template during `pnpm serve`; template hot updates are not provided.
 

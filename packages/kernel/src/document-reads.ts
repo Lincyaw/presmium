@@ -1,6 +1,6 @@
 import { DOCUMENT_ENTITY_COLLECTIONS, DOCUMENT_READ_MAX_RESPONSE_CHARS } from './contracts/document-reads.ts'
 import type { DocumentOutlineAnswer, DocumentOutlineEntry, DocumentOutlineQuery, DocumentPartAnswer, DocumentPartQuery } from './contracts/document-reads.ts'
-import type { JsonValue, TeachingDocument } from './contracts/document.ts'
+import type { JsonValue, PresmiumDocument } from './contracts/document.ts'
 import type { CanonicalSource } from './ir.ts'
 import { fnv1a64 } from './fingerprint.ts'
 
@@ -20,7 +20,7 @@ function preview(text: string): NonNullable<DocumentOutlineEntry['title']> {
   return { preview: text.slice(0, end), complete: end === text.length, totalChars: text.length }
 }
 
-export function documentOutline(content: TeachingDocument, source: CanonicalSource, query: DocumentOutlineQuery): DocumentOutlineAnswer {
+export function documentOutline(content: PresmiumDocument, source: CanonicalSource, query: DocumentOutlineQuery): DocumentOutlineAnswer {
   const collection = query.collection ?? 'sections', offset = query.offset ?? 0
   const records = content[collection] ?? {}, ids = collection === 'sections' ? content.sectionOrder : Object.keys(records)
   if (offset > ids.length) return fail(400, 'document-read-offset-invalid')
@@ -48,7 +48,7 @@ export function documentOutline(content: TeachingDocument, source: CanonicalSour
   return answer
 }
 
-export function documentPart(content: TeachingDocument, source: CanonicalSource, query: DocumentPartQuery): DocumentPartAnswer {
+export function documentPart(content: PresmiumDocument, source: CanonicalSource, query: DocumentPartQuery): DocumentPartAnswer {
   const { target } = query
   let value: unknown = content[target.collection]
   if ('id' in target) {

@@ -1,4 +1,4 @@
-> Editable source is `lecture.json`; renderer settings are under `metadata.renderers`, steps and narrations are explicit entities, and production timing/voices live only in `production`.
+> Editable source is `index.pmd`; renderer settings are under `metadata.renderers`, steps and narrations are explicit entities, and production timing/voices live only in `production`.
 
 # Classroom
 
@@ -23,7 +23,7 @@ Do not run a class from `presmium dev` or `presmium serve`. Their built-in class
 
    Run it in the document folder: `--deck` is the folder where archived classrooms are written (default: the current folder). `--port` defaults to 1234 (`0` picks a free one); `--host` limits the address it listens on (default: every interface). It prints the addresses it can be reached at; pick the local-network one (such as `192.168.1.10`), not `localhost`, because student devices reach it there.
 
-3. **Point the document at the server.** In `lecture.json` under `metadata.presmium`, with the address printed in step 2:
+3. **Point the document at the server.** In `index.pmd` under `metadata.presmium`, with the address printed in step 2:
 
    ```json
    { "presmium.session": { "server": "ws://192.168.1.10:1234" } }

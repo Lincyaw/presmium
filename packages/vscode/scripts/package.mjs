@@ -46,7 +46,7 @@ try {
   snapshotFiles(join(runtime, 'node_modules', '@lincyaw'))
   for (const file of ['.pnpm', '.bin', '.modules.yaml']) rmSync(join(runtime, 'node_modules', file), { recursive: true, force: true })
   for (const file of ['pnpm-lock.yaml', 'pnpm-workspace.yaml']) rmSync(join(runtime, file), { force: true })
-  for (const file of ['README.md', 'LICENSE', 'package.nls.json', 'package.nls.zh-cn.json', 'l10n', 'dist/extension.cjs', 'dist/lecture.schema.json']) {
+  for (const file of ['README.md', 'LICENSE', 'package.nls.json', 'package.nls.zh-cn.json', 'l10n', 'dist/extension.cjs', 'dist/document.schema.json']) {
     cpSync(join(pkg, file), join(staging, file), { recursive: true })
   }
   const { dependencies, devDependencies, scripts, ...installed } = manifest

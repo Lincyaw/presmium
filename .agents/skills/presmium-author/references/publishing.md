@@ -1,6 +1,6 @@
 # Publishing, export and offline
 
-`lecture.json` is the only editable source; every output is derived from it. A workspace configuration normally lists `documents: ['*/lecture.json']`; an independent site homepage is configured separately under `site.landing` and is not a teaching document. Ordinary README Markdown is not a document entry. To bring a folder of Markdown notes into a workspace, `presmium import notes --out . --exclude raw` writes one `lecture.json` per note (a page per level-1 and level-2 heading, `[[wikilinks]]` resolved by file name or alias, linked local files copied into the document's `attachments/`) and prints the `documents` patterns that list them. After this initial import, edit the generated documents through Web or author actions and publish their saved content. Never publish credentials or operator settings in document JSON.
+`index.pmd` is the only editable source; every output is derived from it. A workspace finds every `index.pmd` below its root and orders them by each document's `placement` (the workspace configuration lists no documents); an independent site homepage is configured separately under `site.landing` and is not a teaching document. Ordinary README Markdown is not a document entry. To bring a folder of Markdown notes into a workspace, `presmium import notes --out . --exclude raw` writes one `index.pmd` per note (a page per level-1 and level-2 heading, `[[wikilinks]]` resolved by file name or alias, linked local files copied into the document's `attachments/`), placing them at the end of the top level. After this initial import, edit the generated documents through Web or author actions and publish their saved content. Never publish credentials or operator settings in document JSON.
 
 Pick the build from what the teacher hands out, and build only the relevant document and form during routine work. Run document commands in the document folder. Before building, read `metadata.renderers`: it lists the forms (`web`, `slides`, `notebook`, `lecture`) with their options, among them `base`, the URL path a form's site is served at (such as `/course/week1/`). When `base` is already set, keep it and the hosting the teacher already uses. Plugin document settings belong in `metadata.presmium`.
 
@@ -99,7 +99,7 @@ Afterwards, open the file and check the page count, missing pages, long code run
 presmium build --to notebook
 ```
 
-This writes `dist/notebook/<name>.ipynb`, named after the entry file (`lecture.ipynb` for `lecture.json`), with images and other files in `media/` beside it; hand out the whole `dist/notebook/` folder. The kernel is `python3` unless the `metadata.renderers.notebook` says otherwise. Interactive components that a notebook cannot hold become a static form; the build report lists them. To link them to the online version, set the web address:
+This writes `dist/notebook/<name>.ipynb`, named after the entry file (`lecture.ipynb` for `index.pmd`), with images and other files in `media/` beside it; hand out the whole `dist/notebook/` folder. The kernel is `python3` unless the `metadata.renderers.notebook` says otherwise. Interactive components that a notebook cannot hold become a static form; the build report lists them. To link them to the online version, set the web address:
 
 ```json
 { "notebook": { "kernel": "python3", "webUrl": "https://example.com/course/" } }
@@ -130,7 +130,7 @@ pnpm install
 pnpm serve
 ```
 
-The scaffold contains an independent homepage at `site/home.json`, a teaching document at `intro/lecture.json`, and `presmium.workspace.yaml`. `site.landing: { source: './site/home.json' }` selects the homepage file; a `SiteLandingPage` object can also be written directly in `site.landing`. The homepage uses its own `schemaVersion: 1`, `title`, optional description/hero, and required `sections` array. It is a site page, without teaching steps, narrations or production settings. Do not wrap independent homepage content in a teaching document or add it to `documents`.
+The scaffold contains an independent homepage at `site/home.json`, a teaching document at `intro/index.pmd`, and `presmium.workspace.yaml`. `site.landing: { source: './site/home.json' }` selects the homepage file; a `SiteLandingPage` object can also be written directly in `site.landing`. The homepage uses its own `schemaVersion: 1`, `title`, optional description/hero, and required `sections` array. It is a site page, without teaching steps, narrations or production settings. Do not wrap independent homepage content in a document.
 
 ### Write the homepage
 
@@ -149,7 +149,7 @@ First decide whether the site needs a hero at all. A site of a few documents who
 Sections, two to four, usually in this order: `features` (what a reader gets), `documents` (where to start), optionally `text` or `media`, and a closing `cta`. Give each a `title` of at most 10 Chinese characters or 5 English words, and a `description` only when one sentence adds something.
 
 - `features`: three items (or six), written in parallel: a title of at most 8 Chinese characters or 4 English words, and a description of one or two lines on the card (at most 40 Chinese characters or 20 English words). Items of about the same length keep the cards the same height.
-- `documents`: always include one, so that readers reach the content. The theme draws the list (`course`: one numbered column; `docs`: cards; `showcase`: large cards). Each card shows a document's `metadata.title`, `metadata.description` (write one sentence) and `metadata.tags` (one or two), so write those in every `lecture.json`.
+- `documents`: always include one, so that readers reach the content. The theme draws the list (`course`: one numbered column; `docs`: cards; `showcase`: large cards). Each card shows a document's `metadata.title`, `metadata.description` (write one sentence) and `metadata.tags` (one or two), so write those in every `index.pmd`.
 - `text`: at most three short paragraphs; anything longer is a document.
 - `media`: one image or video that shows the work, with `alt`, and `captions` for speech.
 - `cta`: last, a short question or invitation and one action, usually the hero's primary action again.
@@ -162,7 +162,7 @@ For a freely designed homepage, use `site.landing: { template: './site/home.html
 
 Resolve JSON page media relative to that JSON file, inline media relative to the workspace configuration, and HTML assets relative to the HTML entry. Workspace `public/` files are published at the site root. Rebuild for deployment after changing the homepage.
 
-Existing string configuration `site.landing: welcome` remains available when the author intentionally wants a teaching document as the homepage. That directory must belong to `documents`; all its sections appear at the site root and its document URL remains available. Keep `lecture.json` as the only editable content source for that teaching document. Existing `site.home` redirects to a document and cannot be combined with any form of `landing`.
+Existing string configuration `site.landing: welcome` remains available when the author intentionally wants a teaching document as the homepage. That directory must hold a document of the workspace; all its sections appear at the site root and its document URL remains available. Keep `index.pmd` as the only editable content source for that teaching document. Existing `site.home` redirects to a document and cannot be combined with any form of `landing`.
 
 In the workspace configuration, `site.theme` selects `course`, `docs` or `showcase`; the renderer defaults to `docs`, while a new `site` scaffold selects `course`. All three share one surface: a cool light grey page (near-black in dark mode) under a translucent header with the site's name and navigation, sans-serif type and pill-shaped buttons. The workspace's theme and brand apply to all documents. `site.params` supports only these parameters:
 

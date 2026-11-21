@@ -1,4 +1,4 @@
-import type { Production, TeachingDocument, TimeRange, VoiceSource } from './contracts/document.ts'
+import type { Production, PresmiumDocument, TimeRange, VoiceSource } from './contracts/document.ts'
 
 /** Resolve only against a real inspected duration; no source bytes or authored text are changed. */
 export function recordingSourceRange(source: Extract<VoiceSource, { type: 'recording' }>, durationMs: number): TimeRange | undefined {
@@ -19,7 +19,7 @@ export function productionAssetIds(production: Production | undefined, sections:
 }
 
 /** Whole-step recordings have no inferred word clock. This check does not change authored atoms. */
-export function recordingStepIssue(document: TeachingDocument, stepId: string): 'recording-cue-unsupported' | 'recording-start-conflict' | undefined {
+export function recordingStepIssue(document: PresmiumDocument, stepId: string): 'recording-cue-unsupported' | 'recording-start-conflict' | undefined {
   const step = document.steps[stepId]
   if (!step) return undefined
   let text = false, mode: string | undefined

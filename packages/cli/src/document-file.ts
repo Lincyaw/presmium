@@ -1,13 +1,13 @@
 import { randomBytes } from 'node:crypto'
 import { readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { validateDocument } from '@lincyaw/kernel'
-import type { TeachingDocument } from '@lincyaw/kernel'
+import type { PresmiumDocument } from '@lincyaw/kernel'
 
-/** `lecture.json` as it was read: its exact text, to save a change in the same formatting and only if it is unchanged. */
+/** `index.pmd` as it was read: its exact text, to save a change in the same formatting and only if it is unchanged. */
 export interface DocumentFile {
   entry: string
   text: string
-  document: TeachingDocument
+  document: PresmiumDocument
 }
 
 export class DocumentFileError extends Error {
@@ -38,7 +38,7 @@ export function readDocumentFile(entry: string): DocumentFile {
  * indentation, line endings and byte order mark, so that the change is the only difference. Refuses when the file
  * changed since it was read (another editor saved it).
  */
-export function saveDocumentFile(file: DocumentFile, document: TeachingDocument): void {
+export function saveDocumentFile(file: DocumentFile, document: PresmiumDocument): void {
   const checked = validateDocument(document)
   if (!checked.document) throw new DocumentFileError('document-invalid', issuesOf(checked))
   const body = file.text.startsWith(BOM) ? file.text.slice(1) : file.text

@@ -1,5 +1,5 @@
 import { fnv1a64 } from './fingerprint.ts'
-import type { CaptionTiming, NarrationNode, TeachingDocument } from './contracts/document.ts'
+import type { CaptionTiming, NarrationNode, PresmiumDocument } from './contracts/document.ts'
 
 export const CAPTION_TIMING_MAX_SEGMENTS = 32
 export type DocumentCaptionTimingAction = { type: 'caption.timing.set', stepId: string, value: CaptionTiming } | { type: 'caption.timing.reset', stepId: string }
@@ -11,10 +11,10 @@ export function narrationCaptionText(content: readonly NarrationNode[]): string 
   return content.map(node => node.type === 'text' ? node.text : node.type === 'pronunciation' ? node.display : '').join('')
 }
 /** No second editable caption text. Separators are part of this exact display projection. */
-export function stepCaptionText(document: TeachingDocument, stepId: string): string {
+export function stepCaptionText(document: PresmiumDocument, stepId: string): string {
   return (document.steps[stepId]?.narrationIds ?? []).map(id => narrationCaptionText(document.narrations[id]?.content ?? [])).join('\n')
 }
-export function captionSourceFingerprint(document: TeachingDocument, stepId: string): string {
+export function captionSourceFingerprint(document: PresmiumDocument, stepId: string): string {
   const step = document.steps[stepId]
   if (!step) throw new DocumentCaptionTimingError(404, 'caption-step-missing')
   const timing = { ...document.production.defaults, ...document.production.sectionOverrides?.[step.sectionId], ...document.production.stepOverrides[stepId] }
@@ -46,7 +46,7 @@ export function captionTimingProblem(value: CaptionTiming, text: string): string
 }
 
 /** The shared semantic mutation uses the existing document transaction and its complete source CAS. */
-export function applyDocumentCaptionTiming(document: TeachingDocument, action: DocumentCaptionTimingAction) {
+export function applyDocumentCaptionTiming(document: PresmiumDocument, action: DocumentCaptionTimingAction) {
   const step = document.steps[action.stepId]
   if (!step) throw new DocumentCaptionTimingError(404, 'caption-step-missing')
   const content = structuredClone(document)

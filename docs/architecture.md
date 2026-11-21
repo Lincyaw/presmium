@@ -15,13 +15,13 @@
 2. **微内核**：内核只提供服务注册、锚点、检查、故障隔离。多个插件共用的业务契约与无状态纯函数也放在内核，因为插件之间不互相引用；内核运行时不使用它们。
 3. **业务功能都是插件**，官方与第三方同一套接口；插件经服务接口协作，实现可替换。
 4. **纯文本、可复现**：同一提交渲染结果一致。
-5. **文稿 IR 唯一权威**：`lecture.json`（`TeachingDocument`）是唯一内容入口；运行快照由编译器派生，不是第二入口。
+5. **文稿 IR 唯一权威**：`index.pmd`（`PresmiumDocument`）是唯一内容入口；运行快照由编译器派生，不是第二入口。
 6. **边界是标准协议**：Jupyter 内核协议、MCP、nbformat 输出、WebVTT、git。每种边界一个客户端，厂商接口只在一个适配器中。
 
 ## 1. 编译管线
 
 ```
-lecture.json + 引用的代码与媒体
+index.pmd + 引用的代码与媒体
    │ kernel：Schema 与领域校验   workspace：版本事务与历史
    │ compiler：状态解析 → 插件步骤 → 编译时执行（缓存）→ 运行校验
    ▼
@@ -69,7 +69,7 @@ lecture.json + 引用的代码与媒体
 | `server` | 服务端：插件路由与代理、来源检查、确认、控制通道、MCP 挂载 |
 | `mcp` | MCP 工具与资源；`presmium-mcp` |
 | `workspace` | 工作区服务 `presmium serve`：文档、历史、审阅、任务、工作区站点 |
-| `language-server` | `lecture.json` 的语言服务 |
+| `language-server` | `index.pmd` 的语言服务 |
 | `vscode` | VS Code 扩展（私有，平台 VSIX） |
 | `skills` | 从 `.agents/skills` 打包的四项技能 |
 | `classroom-server` | 课堂同步（y-websocket） |
@@ -141,7 +141,7 @@ packages/addon-<ctx>/
 
 | 模块（`contracts/`） | 内容 |
 |---|---|
-| `document*.ts` | `TeachingDocument` 及读取、批注、历史、图片、语音、音频 |
+| `document*.ts` | `PresmiumDocument` 及读取、批注、历史、图片、语音、音频 |
 | `plugin.ts`、`service.ts` | `PluginDefinition`、`PresmiumNodePlugin`、`defineService` |
 | `anchors.ts`、`checks.ts`、`diagnostics.ts` | 锚点、检查、诊断快照 |
 | `execution.ts` | `RunRequest`、`RunResult`、`RunContext`、`Executor`、进程沙箱、具名环境 |
@@ -415,7 +415,7 @@ presmium serve: 浏览器 → 服务端 ─┬ /__presmium/<插件 ID>/…、/__
 
 ### 10.5 部署
 
-`presmium serve [目录]`；只有 `lecture.json` 的目录作为单文档工作区。运营者目录在任何工作区之外，不被提交。远端环境模板在 `templates/env/`。静态产物发布到任意静态托管。
+`presmium serve [目录]`；只有 `index.pmd` 的目录作为单文档工作区。运营者目录在任何工作区之外，不被提交。远端环境模板在 `templates/env/`。静态产物发布到任意静态托管。
 
 ### 10.6 编译时执行的信任模型
 

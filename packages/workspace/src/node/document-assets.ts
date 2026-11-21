@@ -2,11 +2,11 @@ import { createReadStream, realpathSync } from 'node:fs'
 import { basename, isAbsolute, relative, resolve, sep } from 'node:path'
 import { Readable } from 'node:stream'
 import { lookup } from 'mime-types'
-import type { TeachingDocument } from '@lincyaw/kernel'
+import type { PresmiumDocument } from '@lincyaw/kernel'
 import { RequestError } from './errors.ts'
 
 /** Read only a file registered by the current canonical document, without compiling it. */
-export function documentAssetResponse(root: string, directory: string, document: TeachingDocument, id: string, readableFile: (path: string) => string, signal?: AbortSignal): Response {
+export function documentAssetResponse(root: string, directory: string, document: PresmiumDocument, id: string, readableFile: (path: string) => string, signal?: AbortSignal): Response {
   const asset = document.assets[id]
   if (!asset) throw new RequestError(404, 'document-asset-missing')
   if (!asset.location || /^(?:[a-z][a-z\d+.-]*:|\/)/i.test(asset.location)) throw new RequestError(400, 'document-asset-not-local')

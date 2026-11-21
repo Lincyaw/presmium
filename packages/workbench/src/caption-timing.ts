@@ -1,9 +1,9 @@
 import { applyDocumentCaptionTiming, captionSourceFingerprint } from '@lincyaw/kernel'
-import type { DocumentAnswer, DocumentCaptionTimingAction, TeachingDocument } from '@lincyaw/kernel'
+import type { DocumentAnswer, DocumentCaptionTimingAction, PresmiumDocument } from '@lincyaw/kernel'
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 /** The source actor adopts only this caption slot; later native body input remains owned by the editor. */
-export function reconcileCaptionTiming(action: DocumentCaptionTimingAction, before: TeachingDocument, answer: DocumentAnswer, current: TeachingDocument): TeachingDocument | undefined {
+export function reconcileCaptionTiming(action: DocumentCaptionTimingAction, before: PresmiumDocument, answer: DocumentAnswer, current: PresmiumDocument): PresmiumDocument | undefined {
   try {
     if (before.id !== answer.content.id || before.id !== current.id || !same(applyDocumentCaptionTiming(before, action).content, answer.content)) return
     if (!current.steps[action.stepId]) return current

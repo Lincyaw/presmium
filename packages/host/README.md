@@ -2,7 +2,7 @@
 
 Presmium's host interface for plugin components: step state, services, shared state, interface text, the site path and the design system, the same in the web form and in the slides (both are the viewer).
 
-Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonical lecture.json teaching documents into web pages, slides, Jupyter notebooks and narrated playback.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonical index.pmd teaching documents into web pages, slides, Jupyter notebooks and narrated playback.
 
 ## Install
 
@@ -32,7 +32,7 @@ Hooks return ordinary React values. `useSharedState` returns `[value, setValue]`
 
 ## Documentation
 
-- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/locales/en/lecture.json)
+- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/locales/en/index.pmd)
 
 ## License
 

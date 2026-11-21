@@ -5,7 +5,7 @@ export const SITE_THEME_IDS = ['course', 'docs', 'showcase'] as const
 export type SiteThemeId = typeof SITE_THEME_IDS[number]
 export type SitePageLayout = 'article' | 'landing' | 'wide'
 
-/** Public presentation options; the content and its stable identities stay in lecture.json. */
+/** Public presentation options; the content and its stable identities stay in index.pmd. */
 export interface SiteThemeParams {
   accent: 'blue' | 'teal' | 'violet' | 'amber'
   typography: 'reading' | 'sans'

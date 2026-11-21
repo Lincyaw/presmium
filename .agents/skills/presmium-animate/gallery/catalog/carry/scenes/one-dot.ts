@@ -79,7 +79,7 @@ function panelSvg(j: number, cls: string): string {
         <rect class="ln" x="56" y="${y + 130}" width="250" height="12" rx="6" />
       </g></g>`
   }).join('')
-  return `<g class="${cls}"><text class="mono" x="36" y="66">lecture.json</text>
+  return `<g class="${cls}"><text class="mono" x="36" y="66">index.pmd</text>
     <text class="chip" x="484" y="66" text-anchor="end">步骤 ${j + 1}</text>${blocks}</g>`
 }
 

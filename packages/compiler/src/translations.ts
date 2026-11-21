@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, relative, resolve, sep } from 'node:path'
 import { DOCUMENT_ENTRY, errorMessage, isRecord, validateDocument } from '@lincyaw/kernel'
-import type { Finding, IRDocument, TeachingDocument } from '@lincyaw/kernel'
+import type { Finding, IRDocument, PresmiumDocument } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
 import type { AudienceCompilation, Compilation, Compiler, CompilerOptions } from './compiler.ts'
 
@@ -34,7 +34,7 @@ export function applyTranslations(doc: IRDocument, fields: TranslationFields, re
   if (fields.translations) staleTranslations(doc, fields.translations).forEach(report)
 }
 
-function documentValue(text: string): TeachingDocument {
+function documentValue(text: string): PresmiumDocument {
   const checked = validateDocument(JSON.parse(text.replace(/^\uFEFF/, '')))
   if (!checked.document) throw new Error(checked.issues.map(issue => `${issue.path || '/'}: ${issue.message}`).join('\n'))
   return checked.document
@@ -46,12 +46,13 @@ function sorted(value: unknown): unknown {
   return value
 }
 
-/** Translation bookkeeping and JSON formatting do not change the original's content digest. */
-export function documentDigest(document: TeachingDocument): string {
+/** Translation bookkeeping, the document's place in the tree and JSON formatting do not change the original's content digest. */
+export function documentDigest(document: PresmiumDocument): string {
+  const { placement: _placement, ...content } = document
   const metadata = { ...document.metadata }
   delete metadata.translations
   delete metadata.translationOf
-  return createHash('sha256').update(JSON.stringify(sorted({ ...document, metadata }))).digest('hex')
+  return createHash('sha256').update(JSON.stringify(sorted({ ...content, metadata }))).digest('hex')
 }
 
 export function originalDigest(doc: IRDocument): string {
@@ -93,7 +94,7 @@ function staleTranslations(doc: IRDocument, translations: Record<string, string>
         findings.push({ checkId: CHECK_ID, severity: 'warning', message: `${name} is out of date: the original changed since digest ${translationOf.digest.slice(0, 12)}…; check the translation against it, then set translationOf.digest to ${digest}`, source: at('/metadata/translationOf/digest') })
       }
     } catch (error) {
-      findings.push({ checkId: CHECK_ID, severity: 'error', message: `${name} is not a valid teaching document: ${errorMessage(error)}`, source: at('') })
+      findings.push({ checkId: CHECK_ID, severity: 'error', message: `${name} is not a valid document: ${errorMessage(error)}`, source: at('') })
     }
   }
   return findings

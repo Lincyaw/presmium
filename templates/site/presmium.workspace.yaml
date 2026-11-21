@@ -1,5 +1,4 @@
 title: {{title}}
-documents: ['*/lecture.json']
 site:
   base: /
   lang: {{lang}}

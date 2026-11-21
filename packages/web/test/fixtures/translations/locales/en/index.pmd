@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 2,
+  "id": "document-d508b890410aa405",
+  "placement": {
+    "parent": null,
+    "rank": "b0i"
+  },
+  "metadata": {
+    "title": "Checking translations",
+    "lang": "en",
+    "translationOf": {
+      "entry": "../../index.pmd",
+      "digest": "aa40bc217536e53cd3dda2d3a1da087a7d62db059fe74fcf13b50f4b6b233b9d"
+    }
+  },
+  "sectionOrder": [
+    "checking-translations",
+    "first"
+  ],
+  "sections": {
+    "checking-translations": {
+      "id": "checking-translations",
+      "title": "Checking translations",
+      "level": 1,
+      "children": [
+        "checking-translations--paragraph-1"
+      ],
+      "stepOrder": [
+        "checking-translations--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "first": {
+      "id": "first",
+      "title": "The first section",
+      "level": 2,
+      "children": [
+        "first--paragraph-1"
+      ],
+      "stepOrder": [
+        "first--step-0"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "checking-translations--paragraph-1": {
+      "id": "checking-translations--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "checking-translations--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The cover’s narration."
+            }
+          ]
+        }
+      ]
+    },
+    "first--paragraph-1": {
+      "id": "first--paragraph-1",
+      "type": "text",
+      "content": [
+        {
+          "id": "first--paragraph-1--text-0",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "The first section’s content."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "checking-translations--step-0": {
+      "id": "checking-translations--step-0",
+      "sectionId": "checking-translations",
+      "visuals": [
+        {
+          "blockId": "checking-translations--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "checking-translations--paragraph-1--narration"
+      ]
+    },
+    "first--step-0": {
+      "id": "first--step-0",
+      "sectionId": "first",
+      "visuals": [
+        {
+          "blockId": "first--paragraph-1",
+          "visible": false
+        }
+      ],
+      "narrationIds": [
+        "first--paragraph-1--narration"
+      ]
+    }
+  },
+  "narrations": {
+    "checking-translations--paragraph-1--narration": {
+      "id": "checking-translations--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "The cover’s narration."
+        }
+      ]
+    },
+    "first--paragraph-1--narration": {
+      "id": "first--paragraph-1--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "The first section’s content."
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {},
+  "production": {
+    "defaults": {},
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

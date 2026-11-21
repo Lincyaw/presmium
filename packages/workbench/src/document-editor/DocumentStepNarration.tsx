@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import type { Narration, NarrationNode, TeachingDocument } from '@lincyaw/kernel'
+import type { Narration, NarrationNode, PresmiumDocument } from '@lincyaw/kernel'
 import { randomUUID } from '@lincyaw/kernel'
 import { PmIconButton } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
@@ -12,7 +12,7 @@ import type { NativeNarrationEditor } from './narration-schema.tsx'
 import { StepProductionEditor } from '../StepProductionEditor.tsx'
 
 /** Content ownership determines the page, even when the author is reading another page. */
-export function documentBlockSection(document: TeachingDocument, blockId: string): string | undefined {
+export function documentBlockSection(document: PresmiumDocument, blockId: string): string | undefined {
   const contains = (id: string): boolean => {
     if (id === blockId) return true
     const block = document.blocks[id]

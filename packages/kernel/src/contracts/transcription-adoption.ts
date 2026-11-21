@@ -1,6 +1,6 @@
 import type { CanonicalSource } from '../ir.ts'
 import type { DocumentChangeAnswer } from './workspace.ts'
-import type { NarrationNode, TeachingDocument } from './document.ts'
+import type { NarrationNode, PresmiumDocument } from './document.ts'
 import type { Member } from './server.ts'
 
 export type TranscriptionAdoptionPart = { type: 'text', text: string } | { type: 'preserve', key: string }
@@ -43,7 +43,7 @@ export interface TranscriptionAdoptionPlan extends TranscriptionAdoptionPreview 
   draftRevision: number
   planId?: string
   expiresAt?: string
-  content?: TeachingDocument
+  content?: PresmiumDocument
 }
 export interface TranscriptionAdoptionAnswer extends DocumentChangeAnswer {
   adoption: { planId: string, candidate: { id: string, revision: string }, draftRevision: number }

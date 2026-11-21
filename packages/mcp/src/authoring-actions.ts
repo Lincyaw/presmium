@@ -97,7 +97,7 @@ function semanticTools(): ToolSpec[] {
         const action = { ...values, type, ...plainText ? { content: [{ id: randomUUID(), type: 'paragraph', children: [{ type: 'text', text: String(text) }] }] } : {} } as DocumentAuthoringAction
         const plan = await own.planAction(document, { id: randomUUID(), source: { documentId: current.content.id, version: current.version, fingerprint: current.fingerprint }, action }, call.caller.member)
         const reference = { planId: plan.planId, digest: plan.digest, source: plan.source, ...confirm === true ? { confirmDeletion: true as const } : {} }
-        await call.approve('operate', messages => messages.applyAuthoringAction, { lang: current.content.metadata.lang ?? 'zh-CN', check: () => own.checkAction(document, reference, call.caller.member) })
+        await call.approve('operate', messages => messages.applyAuthoringAction, { lang: current.settings?.lang ?? current.content.metadata.lang ?? 'zh-CN', check: () => own.checkAction(document, reference, call.caller.member) })
         call.signal.throwIfAborted()
         const answer = await own.applyAction(document, reference, call.caller.member)
         if (details) return answer

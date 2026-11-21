@@ -80,7 +80,7 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
   },
   {
     name: 'get_document', kind: 'read', structured: true,
-    description: 'The canonical saved lecture.json: stable entities, exact source version and fingerprint, content and validation issues. Independent of runtime compilation. Use this source for authoring; get_section/get_step read derived runtime data.',
+    description: 'The canonical saved index.pmd: stable entities, exact source version and fingerprint, content and validation issues. Independent of runtime compilation. Use this source for authoring; get_section/get_step read derived runtime data.',
     properties: { document: documentProperty },
     run: async call => service(call).read(await call.document(), call.caller.member),
   },
@@ -135,7 +135,7 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
       const document = await call.document(), own = service(call), capability = own.capabilities(document, call.caller.member)
       if (!capability.actions.applyPageDuplication) throw Object.assign(new Error(capability.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: capability.applyUnavailableReason ? 409 : 403 })
       const current = await own.read(document, call.caller.member)
-      await call.approve('operate', messages => messages.duplicatePage, { lang: current.content.metadata.lang ?? '', check: () => own.checkPageDuplication(document, call.args.request as DocumentPageDuplicationReference, call.caller.member) })
+      await call.approve('operate', messages => messages.duplicatePage, { lang: current.settings?.lang ?? current.content.metadata.lang ?? '', check: () => own.checkPageDuplication(document, call.args.request as DocumentPageDuplicationReference, call.caller.member) })
       call.signal.throwIfAborted()
       return own.applyPageDuplication(document, call.args.request as DocumentPageDuplicationReference, call.caller.member)
     },
@@ -149,7 +149,7 @@ export const AUTHORING_TOOLS: ToolSpec[] = [
       const capability = own.capabilities(document, call.caller.member)
       if (!capability.actions.apply) throw Object.assign(new Error(capability.applyUnavailableReason === 'review-required' ? 'authoring-review-required' : 'authoring-permission-denied'), { status: capability.applyUnavailableReason ? 409 : 403 })
       const current = await own.read(document, call.caller.member)
-      await call.approve('operate', messages => messages.applyDocumentChange, { lang: current.content.metadata.lang ?? '', detail: documentChangeSummary(MCP_MESSAGES[deckLocale(current.content.metadata.lang)], call.args.change as DocumentChange, current.content), check: () => own.checkApply(document, { change: call.args.change as DocumentChange, planId: String(call.args.planId) }, call.caller.member) })
+      await call.approve('operate', messages => messages.applyDocumentChange, { lang: current.settings?.lang ?? current.content.metadata.lang ?? '', detail: documentChangeSummary(MCP_MESSAGES[deckLocale(current.settings?.lang ?? current.content.metadata.lang)], call.args.change as DocumentChange, current.content), check: () => own.checkApply(document, { change: call.args.change as DocumentChange, planId: String(call.args.planId) }, call.caller.member) })
       call.signal.throwIfAborted()
       return withoutContent(await own.apply(document, { change: call.args.change as DocumentChange, planId: String(call.args.planId) }, call.caller.member))
     },

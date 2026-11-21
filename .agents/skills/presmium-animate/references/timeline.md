@@ -16,4 +16,4 @@ A step without narration is valid. Playback must preserve any authored minimum h
 
 `clock(at, durations)` in `gallery/lengths/scenes/kit/fx/time.ts` gives `T(k, f)`, the time `f` of the way through state k, for placing those beats. A seek renders every tween at its time and skips callbacks, so the picture must come from tweens and `set` alone (`libraries.md`, GSAP).
 
-Inspect `gallery/timeline/lecture.json` and its `scenes/` code for actual retained animation cases. Verify forward, backward and arbitrary jumps and stop any audition before formal playback. Synthesis is an explicit action using an actual provider; a preview must not silently generate paid audio.
+Inspect `gallery/timeline/index.pmd` and its `scenes/` code for actual retained animation cases. Verify forward, backward and arbitrary jumps and stop any audition before formal playback. Synthesis is an explicit action using an actual provider; a preview must not silently generate paid audio.

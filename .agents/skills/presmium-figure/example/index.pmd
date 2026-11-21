@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 2,
+  "id": "figure-example",
+  "placement": {
+    "parent": null,
+    "rank": "b0k"
+  },
+  "metadata": {
+    "title": "Step-built figure",
+    "lang": "en",
+    "renderers": {
+      "slides": {},
+      "web": {}
+    }
+  },
+  "sectionOrder": [
+    "pipeline"
+  ],
+  "sections": {
+    "pipeline": {
+      "id": "pipeline",
+      "title": "Pipeline",
+      "level": 1,
+      "children": [
+        "pipeline-figure"
+      ],
+      "stepOrder": [
+        "pipeline-input",
+        "pipeline-model",
+        "pipeline-output",
+        "pipeline-focus"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "pipeline-figure": {
+      "id": "pipeline-figure",
+      "type": "component",
+      "definitionId": "pipeline-definition",
+      "parameters": {
+        "title": "Tokens to logits"
+      }
+    }
+  },
+  "steps": {
+    "pipeline-input": {
+      "id": "pipeline-input",
+      "sectionId": "pipeline",
+      "title": "Input",
+      "visuals": [
+        {
+          "blockId": "pipeline-figure",
+          "visible": true,
+          "state": "input"
+        }
+      ],
+      "narrationIds": []
+    },
+    "pipeline-model": {
+      "id": "pipeline-model",
+      "sectionId": "pipeline",
+      "title": "Model",
+      "visuals": [
+        {
+          "blockId": "pipeline-figure",
+          "visible": true,
+          "state": "model"
+        }
+      ],
+      "narrationIds": []
+    },
+    "pipeline-output": {
+      "id": "pipeline-output",
+      "sectionId": "pipeline",
+      "title": "Output",
+      "visuals": [
+        {
+          "blockId": "pipeline-figure",
+          "visible": true,
+          "state": "output"
+        }
+      ],
+      "narrationIds": []
+    },
+    "pipeline-focus": {
+      "id": "pipeline-focus",
+      "sectionId": "pipeline",
+      "title": "Focus",
+      "visuals": [
+        {
+          "blockId": "pipeline-figure",
+          "visible": true,
+          "state": "focus"
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "definitions": {
+    "pipeline-definition": {
+      "id": "pipeline-definition",
+      "kind": "component",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "figures/Pipeline.tsx"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "input",
+          "title": "Input"
+        },
+        {
+          "id": "model",
+          "title": "Model"
+        },
+        {
+          "id": "output",
+          "title": "Output"
+        },
+        {
+          "id": "focus",
+          "title": "Focus"
+        }
+      ]
+    }
+  },
+  "narrations": {},
+  "assets": {},
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

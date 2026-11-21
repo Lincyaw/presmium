@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, lstatSync, readFileSync, readdirSync, readlinkSync } from 'node:fs'
 import { join, posix } from 'node:path'
 import { DOCUMENT_ENTRY, parseAnchor, validateDocument } from '@lincyaw/kernel'
-import type { ProjectOperation, TeachingDocument, DocumentFileChange } from '@lincyaw/kernel'
+import type { ProjectOperation, PresmiumDocument, DocumentFileChange } from '@lincyaw/kernel'
 import { invalidDocumentDir, isWithin, movedUrl, rewriteLinks } from '../domain/paths.ts'
 import { isDocumentDir, listDocuments, readWorkspaceConfig } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
@@ -62,7 +62,7 @@ export function projectMaterial(config: WorkspaceConfig, operation: ProjectOpera
   const dirs = operation.op === 'copy' || operation.op === 'rename' ? [operation.dir, operation.to] : [operation.dir]
   if (operation.op === 'retitle') walk(join(config.root, entry(operation.dir)), entry(operation.dir), operation.dir)
   else for (const dir of dirs) { safeParents(dir); walk(join(config.root, dir), dir, dir) }
-  const canonical = new Map<string, TeachingDocument>()
+  const canonical = new Map<string, PresmiumDocument>()
   for (const doc of known) {
     safeParents(doc.dir)
     const path = join(config.root, doc.entry), stat = lstatSync(path)

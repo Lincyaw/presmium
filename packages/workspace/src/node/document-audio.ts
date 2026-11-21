@@ -3,7 +3,7 @@ import { constants } from 'node:fs'
 import { lstat, open } from 'node:fs/promises'
 import { basename, join, relative } from 'node:path'
 import { ASSET_TITLE_MAX_LENGTH, DOCUMENT_AUDIO_MAX_BYTES, DOCUMENT_AUDIO_REQUEST_MAX_BYTES, fnv1a64, hasRole, isRecord, jsonResponse, ProductionAudioRefusal, recordingSourceRange, recordingStepIssue, validateDocument } from '@lincyaw/kernel'
-import type { Asset, CanonicalSource, DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, DocumentAudioAuthoring, DocumentAudioCapabilities, DocumentAudioImport, DocumentAudioInspectionAnswer, DocumentChangeAnswer, DocumentMediaClipEdit, DocumentMediaClipValidation, DocumentMediaClipValidationAnswer, DocumentWorkspaceAudioImport, Finding, Member, ProductionAudioAuthoring, RequestContext, Route, TeachingDocument, VerifiedDocumentAudioImport, VerifiedDocumentMediaClipChange, WorkspaceAudioInspectionAnswer } from '@lincyaw/kernel'
+import type { Asset, CanonicalSource, DocumentRecordingAdoption, VerifiedDocumentRecordingAdoption, DocumentAudioAuthoring, DocumentAudioCapabilities, DocumentAudioImport, DocumentAudioInspectionAnswer, DocumentChangeAnswer, DocumentMediaClipEdit, DocumentMediaClipValidation, DocumentMediaClipValidationAnswer, DocumentWorkspaceAudioImport, Finding, Member, ProductionAudioAuthoring, RequestContext, Route, PresmiumDocument, VerifiedDocumentAudioImport, VerifiedDocumentMediaClipChange, WorkspaceAudioInspectionAnswer } from '@lincyaw/kernel'
 import { productionAssetFile, validateDocumentRecordingAdoption, validateDocumentAudioInspect, validateDocumentWorkspaceAudioImport, validateDocumentWorkspaceAudioInspect, validateDocumentMediaClipValidation, validateDocumentMediaClipEdit, validateDocumentProductionPlanQuery } from '@lincyaw/kernel/node'
 import { readAuthoringDocument } from './document-editor.ts'
 import { catchRequestErrors, RequestError } from './errors.ts'
@@ -108,13 +108,13 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
     check(signal); opened(ctx, source.version, source)
     return inspection
   }
-  const history = (ctx: RequestContext, content: TeachingDocument, origin: 'editor' | 'agent', validate?: () => Promise<void>): SourceTransactionHistory => ({
+  const history = (ctx: RequestContext, content: PresmiumDocument, origin: 'editor' | 'agent', validate?: () => Promise<void>): SourceTransactionHistory => ({
     run: work => { const guarded = async () => { await validate?.(); return work() }; return revisions ? revisions.transaction(guarded) : guarded() },
     commit: async paths => {
       if (!revisions) return undefined
       const ignored = (await Promise.all(paths.map(async path => await revisions.ignores(path) ? path : undefined))).filter((path): path is string => Boolean(path))
       if (ignored.length) throw new RequestError(409, 'document-files-ignored', { ignored })
-      return revisions.commitWhileLocked({ paths, summary: content.metadata.lang?.startsWith('en') ? 'Edit audio media' : '编辑音频素材', body: '', origin: { kind: origin, member: ctx.member } })
+      return revisions.commitWhileLocked({ paths, summary: editor.effective(ctx.document, content).metadata.lang.startsWith('en') ? 'Edit audio media' : '编辑音频素材', body: '', origin: { kind: origin, member: ctx.member } })
     },
   })
   const remember = (key: string, receipt: Receipt) => { receipts.set(key, receipt); while (receipts.size > MAX_RECEIPTS) receipts.delete(receipts.keys().next().value!) }
@@ -278,7 +278,7 @@ export function createDocumentAudioAuthoring({ root, editor, revisions, audio, s
     const current = opened(ctx, request.source.version, request.source), step = current.content.steps[request.stepId], asset = current.content.assets[request.assetId]
     if (!step) throw new RequestError(404, 'document-step-missing')
     if (!asset) throw new RequestError(404, 'production.asset-missing')
-    const original = current.content.production.stepOverrides[step.id]?.voiceSource ?? current.content.production.sectionOverrides?.[step.sectionId]?.voiceSource ?? current.content.production.defaults.voiceSource
+    const original = current.content.production.stepOverrides[step.id]?.voiceSource ?? current.content.production.sectionOverrides?.[step.sectionId]?.voiceSource ?? current.effective.production.defaults.voiceSource
     if (request.sourceRange && (original?.type !== 'recording' || original.assetId !== asset.id)) throw new RequestError(409, 'recording-source-changed')
     const issue = recordingStepIssue(current.content, request.stepId)
     if (issue) throw new RequestError(422, issue)

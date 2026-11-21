@@ -6,7 +6,7 @@
 
 ## 功能合集
 
-### [内容与排版](showcase-content/lecture.json)
+### [内容与排版](showcase-content/index.pmd)
 
 正文支持的各类内容：文字与公式、列表、表格、分栏、Mermaid 与 PlantUML、思维导图、音视频、图片、提示与折叠、在线媒体。
 
@@ -28,7 +28,7 @@
   - 提示、折叠与术语
   - 卡片与同步选项卡
 
-### [步骤与动画](showcase-steps/lecture.json)
+### [步骤与动画](showcase-steps/index.pmd)
 
 以步骤组织画面：逐项揭示、继承上一步、动画状态与参数、D3 数据绑定、交互组件、光标与聚光提示。
 
@@ -43,7 +43,7 @@
   - 交互组件
   - 光标与聚光提示
 
-### [代码与运行](showcase-code/lecture.json)
+### [代码与运行](showcase-code/index.pmd)
 
 代码引用与按步高亮，浏览器内运行 JavaScript 与 Python，以及 Docker、WASI、WebGPU、Jupyter 等运行环境。
 
@@ -66,7 +66,7 @@
   - 远端 Jupyter
   - 远端终端
 
-### [课堂互动](showcase-classroom/lecture.json)
+### [课堂互动](showcase-classroom/index.pmd)
 
 测验、预测、代码练习、提问与理解度投票、阅读笔记、跟随主讲，以及教师版与学生版输出。
 
@@ -80,7 +80,7 @@
   - 跟随主讲
   - 教师版与学生版
 
-### [阅读与发布](showcase-publishing/lecture.json)
+### [阅读与发布](showcase-publishing/index.pmd)
 
 搜索与脚注、放映与演讲者视图、按媒介输出、网页组件、高对比度、译文、AI 问答与导出。
 
@@ -97,7 +97,7 @@
 
 ## 教程
 
-### [编辑一份讲义](tutorial-editing/lecture.json)
+### [编辑一份讲义](tutorial-editing/index.pmd)
 
 以“午餐预算”为材料，依次练习复制页面、编辑讲稿、调整播放时机、批注与版本历史、放映与导出。
 
@@ -109,7 +109,7 @@
 - **批注、撤消与历史**
 - **放映与导出**
 
-### [讲稿与配音](tutorial-narration/lecture.json)
+### [讲稿与配音](tutorial-narration/index.pmd)
 
 依次练习读音与动作标记、播放时机、时间线预览、静音讲授、AI 配音、录音、音频片段与视频导出。
 
@@ -128,4 +128,4 @@
 
 ## 课程与参考
 
-[冒泡排序](bubble-sort/lecture.json)、[代码写成的动画](libraries/lecture.json) 与 [傅里叶级数小课](learn/lecture.json) 是带讲解的完整课程；[动画效果参考](animation-library/) 按场景收录动画：算法与代码、数据与图表、数学与机器学习、文字与字幕、强调与标注、概念与结构、产品演示、转场与镜头、路径与三维、动效技法。
+[冒泡排序](bubble-sort/index.pmd)、[代码写成的动画](libraries/index.pmd) 与 [傅里叶级数小课](learn/index.pmd) 是带讲解的完整课程；[动画效果参考](animation-library/) 按场景收录动画：算法与代码、数据与图表、数学与机器学习、文字与字幕、强调与标注、概念与结构、产品演示、转场与镜头、路径与三维、动效技法。

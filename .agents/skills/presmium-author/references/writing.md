@@ -1,6 +1,6 @@
 # Writing a teaching document
 
-One `lecture.json` gives every page two versions:
+One `index.pmd` gives every page two versions:
 
 - the **reading version** (the web page, and the notebook when the document lists it) is read by someone alone, with nobody to explain it. It is written like a book;
 - the **presentation version** (the slides, and the narrated lecture video made from them) is watched while a speaker or a voice explains it. It shows keywords, pictures and motion, and the explanation is spoken.

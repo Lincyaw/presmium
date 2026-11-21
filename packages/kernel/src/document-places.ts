@@ -1,5 +1,5 @@
 import { isDocumentPlaceAnchor, isDocumentTextAnchor } from './contracts/document.ts'
-import type { DocumentThreadAnchor, InlineNode, RichTextNode, TeachingDocument } from './contracts/document.ts'
+import type { DocumentThreadAnchor, InlineNode, RichTextNode, PresmiumDocument } from './contracts/document.ts'
 
 /** The stable places a discussion can point at, in document order. */
 export interface DocumentPlacesVisitor {
@@ -21,7 +21,7 @@ function inlineText(nodes: readonly InlineNode[]): string {
  * One walk over the document's stable places. Only addressable canonical identities are visited; opaque plugin
  * data is never traversed. A caller that only needs text targets can ignore `place`.
  */
-export function walkDocumentPlaces(document: TeachingDocument, visit: DocumentPlacesVisitor): void {
+export function walkDocumentPlaces(document: PresmiumDocument, visit: DocumentPlacesVisitor): void {
   const rich = (node: RichTextNode): void => {
     if (node.type === 'paragraph' || node.type === 'heading') visit.text(node.id, inlineText(node.children))
     else if (node.type === 'code') visit.text(node.id, node.value)
@@ -53,14 +53,14 @@ export function walkDocumentPlaces(document: TeachingDocument, visit: DocumentPl
 }
 
 /** Only addressable canonical text identities, in native document order; opaque data is never traversed. */
-export function documentCommentTargets(document: TeachingDocument): Map<string, { order: number, text: string }> {
+export function documentCommentTargets(document: PresmiumDocument): Map<string, { order: number, text: string }> {
   const targets = new Map<string, { order: number, text: string }>()
   walkDocumentPlaces(document, { place() {}, text: (id, text) => { targets.set(id, { order: targets.size, text }) } })
   return targets
 }
 
 /** Every anchorable place in document order: page titles, blocks and text identities on one scale. */
-export function documentAnchorOrder(document: TeachingDocument): Map<string, number> {
+export function documentAnchorOrder(document: PresmiumDocument): Map<string, number> {
   const places = new Map<string, number>()
   const add = (id: string) => { if (!places.has(id)) places.set(id, places.size) }
   walkDocumentPlaces(document, { place: add, text: add })
@@ -68,7 +68,7 @@ export function documentAnchorOrder(document: TeachingDocument): Map<string, num
 }
 
 /** The section that owns a block, following container and component children. */
-export function documentBlockSection(document: TeachingDocument, blockId: string): string | undefined {
+export function documentBlockSection(document: PresmiumDocument, blockId: string): string | undefined {
   for (const sectionId of document.sectionOrder) {
     const pending = [...document.sections[sectionId]!.children], seen = new Set<string>()
     while (pending.length) {

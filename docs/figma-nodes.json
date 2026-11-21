@@ -1726,8 +1726,8 @@
   },
   "designBaseline": "2026-10-25",
   "nativeDocumentEditor": {
-    "sourceEntry": "lecture.json",
-    "authority": "TeachingDocument",
+    "sourceEntry": "index.pmd",
+    "authority": "PresmiumDocument",
     "selection": "BlockNote native selection and CommentsExtension",
     "frames": [
       "9:10",
@@ -1745,7 +1745,7 @@
     "verification": "docs/benchmarks/document-json-editor-2026-10-26.md",
     "inlineRuntime": {
       "component": "BlockPreview",
-      "source": "TeachingDocument definitions and instances",
+      "source": "PresmiumDocument definitions and instances",
       "runtime": "read-only compiled block; no per-block event stream",
       "versionConfirmation": "exact source fingerprint, project revision and runtime IR revision",
       "interaction": "Direct runtime controls; shared compact icon buttons for captions and refresh",
@@ -1784,7 +1784,7 @@
     "pageReorder": {
       "componentId": "158:2823",
       "source": "packages/workbench/src/panels/DocumentView.tsx",
-      "authority": "TeachingDocument.sectionOrder",
+      "authority": "PresmiumDocument.sectionOrder",
       "commit": "Existing movePage(sectionId,beforeId|null) flushes pending text and captions, checks the version and preserves selection; menus remain available."
     },
     "filePanel": {
@@ -2000,9 +2000,9 @@
       "PmSegmented"
     ],
     "canonicalSources": [
-      "TeachingDocument.production.defaults",
-      "TeachingDocument.production.sectionOverrides",
-      "TeachingDocument.production.stepOverrides"
+      "PresmiumDocument.production.defaults",
+      "PresmiumDocument.production.sectionOverrides",
+      "PresmiumDocument.production.stepOverrides"
     ],
     "voiceSourceDiscriminator": "type: none | tts | recording; absence means no local override. Resolve step → page → document; all absent stays unset, never implicit silence.",
     "rules": [

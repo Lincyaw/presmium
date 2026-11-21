@@ -1,9 +1,8 @@
 # Presmium's documentation site: a Presmium workspace, built with `presmium build` here
-# (`pnpm --filter presmium-docs build`, see README.md). Each document uses canonical lecture.json,
-# with a complete English document in locales/en/lecture.json, published under /<document>/en/
+# (`pnpm --filter presmium-docs build`, see README.md). Each document uses canonical index.pmd,
+# with a complete English document in locales/en/index.pmd, published under /<document>/en/
 # and the home page in English under /en/.
 title: Presmium 文档
-documents: [guide/lecture.json, plugins/lecture.json, reference/lecture.json]
 site:
   lang: zh-CN
   locales:

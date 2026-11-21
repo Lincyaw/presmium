@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { FocusEvent, ReactNode } from 'react'
 import { documentAnchorOrder, isDocumentPlaceAnchor, randomUUID } from '@lincyaw/kernel'
-import type { DocumentPlaceAnchor, TeachingDocument } from '@lincyaw/kernel'
+import type { DocumentPlaceAnchor, PresmiumDocument } from '@lincyaw/kernel'
 import { CommentEditorSubmitExtension, CommentsExtension } from '@blocknote/core/comments'
 import { components } from '@blocknote/mantine'
 import { FloatingThreadController, getReferenceText, Thread, useBlockNoteEditor, useCreateBlockNote, useEditorState, useExtension, useExtensionState, useThreads } from '@blocknote/react'
@@ -115,7 +115,7 @@ export function DocumentFloatingThreadController() {
   }} />
 }
 
-export function placeReference(document: TeachingDocument | undefined, anchor: DocumentPlaceAnchor, t: typeof DOCUMENT_EDITOR_MESSAGES['zh-CN']): string {
+export function placeReference(document: PresmiumDocument | undefined, anchor: DocumentPlaceAnchor, t: typeof DOCUMENT_EDITOR_MESSAGES['zh-CN']): string {
   if (!document) return ''
   const block = document.blocks[anchor.blockId]
   let label: string

@@ -3,12 +3,15 @@ import { DOCUMENT_JSON_SCHEMA } from './document-schema.ts'
 import { isRecord } from './errors.ts'
 import { captionSourceFingerprint, captionTimingProblem, stepCaptionText } from './document-caption-timings.ts'
 import { validateDocumentParameters } from './parameters.ts'
-import { isDocumentPlaceAnchor } from './contracts/document.ts'
+import { DOCUMENT_SCHEMA_VERSION, isDocumentPlaceAnchor } from './contracts/document.ts'
 import { documentBlockSection } from './document-places.ts'
-import type { DocumentIssue, DocumentValidation, RichTextNode, TeachingDocument } from './contracts/document.ts'
+import type { DocumentIssue, DocumentValidation, InlineNode, RichTextNode, PresmiumDocument } from './contracts/document.ts'
 
 export { DOCUMENT_JSON_SCHEMA } from './document-schema.ts'
 export { DOCUMENT_ENTRY, DOCUMENT_SCHEMA_VERSION } from './contracts/document.ts'
+
+/** The code of the issue a document in an older schema version gets; `presmium migrate` or Studio's Upgrade converts it. */
+export const DOCUMENT_UPGRADE_CODE = 'document.schema-upgrade'
 
 const structural = new Validator(DOCUMENT_JSON_SCHEMA, '2020-12', false)
 const escape = (key: string) => key.replaceAll('~', '~0').replaceAll('/', '~1')
@@ -34,6 +37,10 @@ export function validateDocument(value: unknown): DocumentValidation {
     return valid
   }
   if (!json(value, '')) return { issues }
+  if (isRecord(value) && typeof value.schemaVersion === 'number' && value.schemaVersion < DOCUMENT_SCHEMA_VERSION) {
+    issue('/schemaVersion', DOCUMENT_UPGRADE_CODE, `This document uses the older format (schema version ${value.schemaVersion}). Run presmium migrate, or press Upgrade in Studio, to convert it to version ${DOCUMENT_SCHEMA_VERSION}.`)
+    return { issues }
+  }
   let checked
   try { checked = structural.validate(value) }
   catch (error) { issue('', 'schema.invalid', error instanceof Error ? error.message : 'Document schema validation failed.'); return { issues } }
@@ -41,9 +48,9 @@ export function validateDocument(value: unknown): DocumentValidation {
     for (const error of checked.errors.slice(0, 100)) issue(error.instanceLocation.replace(/^#/, ''), `schema.${error.keyword}`, error.error)
     return { issues }
   }
-  const doc = value as TeachingDocument
+  const doc = value as PresmiumDocument
   const lectureRenderer = doc.metadata.renderers?.lecture
-  if (isRecord(lectureRenderer) && own(lectureRenderer, 'script')) issue('/metadata/renderers/lecture/script', 'narration.external-source', 'External lecture scripts are not supported. Author narration in lecture.json narrations and bind it through each step narrationIds.')
+  if (isRecord(lectureRenderer) && own(lectureRenderer, 'script')) issue('/metadata/renderers/lecture/script', 'narration.external-source', 'External lecture scripts are not supported. Author narration in index.pmd narrations and bind it through each step narrationIds.')
   const titleTargets = new Map(Object.keys(doc.sections).map(id => [`page:${id}`, id]))
   const ids = new Map<string, string>()
   const identify = (id: string, path: string) => {
@@ -54,6 +61,7 @@ export function validateDocument(value: unknown): DocumentValidation {
     else ids.set(id, path)
   }
   identify(doc.id, '/id')
+  if (doc.placement.parent === doc.id) issue('/placement/parent', 'placement.self', 'A document cannot be placed under itself.')
   for (const name of ['sections', 'blocks', 'steps', 'narrations', 'assets', 'definitions'] as const) {
     for (const [key, entity] of Object.entries(doc[name])) {
       const path = at(`/${name}`, key)
@@ -70,14 +78,16 @@ export function validateDocument(value: unknown): DocumentValidation {
   for (const id of Object.keys(doc.sections)) if (!doc.sectionOrder.includes(id)) issue(at('/sections', id), 'section.order', 'Every section must appear once in sectionOrder.')
   const parents = new Map<string, string>()
   const sectionOf = new Map<string, string>()
+  const blockParents = new Map<string, string>()
   const visiting = new Set<string>()
-  const visit = (id: string, path: string, section: string) => {
+  const visit = (id: string, path: string, section: string, owner?: string) => {
     if (!reference(doc.blocks, id, path, 'block')) return
     if (visiting.has(id)) { issue(path, 'block.cycle', 'Block ownership cannot contain a cycle.'); return }
     if (parents.has(id)) { issue(path, 'block.parent', `Block ${id} already belongs to ${parents.get(id)}.`); return }
     parents.set(id, path); sectionOf.set(id, section); visiting.add(id)
+    if (owner !== undefined) blockParents.set(id, owner)
     const block = doc.blocks[id]!
-    if (block.type === 'container' || block.type === 'component') for (const [index, child] of (block.children ?? []).entries()) visit(child, at(at('/blocks', id), `children`) + `/${index}`, section)
+    if (block.type === 'container' || block.type === 'component') for (const [index, child] of (block.children ?? []).entries()) visit(child, at(at('/blocks', id), `children`) + `/${index}`, section, id)
     visiting.delete(id)
   }
   for (const [id, section] of Object.entries(doc.sections)) for (const [index, child] of section.children.entries()) visit(child, at('/sections', id) + `/children/${index}`, id)
@@ -139,10 +149,41 @@ export function validateDocument(value: unknown): DocumentValidation {
         if (reference(doc.steps, step, `${path}/${field}/${escape(step)}`, 'step') && doc.steps[step]!.sectionId !== sectionOf.get(id)) issue(`${path}/${field}/${escape(step)}`, 'code.highlight-section', 'A code highlight must belong to a step of its own section.')
       }
       for (const [index, variant] of (block.variants ?? []).entries()) identify(variant.id, `${path}/variants/${index}/id`)
+    } else if (block.type === 'embed') {
+      if (block.source.document === doc.id) {
+        if (!own(doc.blocks, block.source.block)) issue(`${path}/source/block`, 'embed.missing', `This document has no block ${block.source.block} to show.`, 'warning')
+        else {
+          let owner: string | undefined = block.id
+          while (owner !== undefined && owner !== block.source.block) owner = blockParents.get(owner)
+          if (owner !== undefined) issue(`${path}/source/block`, 'embed.cycle', 'A synced block cannot show itself or a block that contains it.')
+        }
+      }
     } else if (block.type === 'container') {
       if (block.properties.columnWidths && block.properties.columnWidths.length !== block.children.length) issue(`${path}/properties/columnWidths`, 'container.columns', 'Column widths must match the child count.')
       if (block.layout === 'tabs' && block.properties.tabTitles && block.properties.tabTitles.length !== block.children.length) issue(`${path}/properties/tabTitles`, 'container.tabs', 'Tab titles must match the child count.')
     }
+  }
+  const target = (node: Extract<InlineNode, { type: 'reference' }>, path: string) => {
+    if (node.target.document !== doc.id) return
+    const { section, block } = node.target
+    if (section !== undefined && !own(doc.sections, section)) issue(`${path}/target/section`, 'reference.missing', `This document has no page ${section}.`, 'warning')
+    else if (block !== undefined && !own(doc.blocks, block)) issue(`${path}/target/block`, 'reference.missing', `This document has no block ${block}.`, 'warning')
+    else if (section !== undefined && block !== undefined && sectionOf.get(block) !== section) issue(`${path}/target/block`, 'reference.missing', `Block ${block} is not on page ${section}.`, 'warning')
+  }
+  const inlines = (nodes: InlineNode[], path: string) => nodes.forEach((node, index) => {
+    if (node.type === 'reference') target(node, `${path}/${index}`)
+    else if (node.type === 'link') inlines(node.children, `${path}/${index}/children`)
+  })
+  const richInlines = (node: RichTextNode, path: string): void => {
+    if (node.type === 'paragraph' || node.type === 'heading') inlines(node.children, `${path}/children`)
+    else if (node.type === 'list') node.children.forEach((item, index) => item.children.forEach((child, at) => richInlines(child, `${path}/children/${index}/children/${at}`)))
+    else if (node.type === 'blockquote') node.children.forEach((child, index) => richInlines(child, `${path}/children/${index}`))
+    else if (node.type === 'table') node.children.forEach((row, index) => row.children.forEach((cell, at) => inlines(cell.children, `${path}/children/${index}/children/${at}/children`)))
+    else if (node.type === 'extension') node.fallback.forEach((child, index) => richInlines(child, `${path}/fallback/${index}`))
+  }
+  for (const [id, block] of Object.entries(doc.blocks)) {
+    if (block.type === 'text') block.content.forEach((node, index) => richInlines(node, `${at('/blocks', id)}/content/${index}`))
+    else if (block.type === 'image' && block.caption) inlines(block.caption, `${at('/blocks', id)}/caption`)
   }
   for (const [id, definition] of Object.entries(doc.definitions)) {
     const states = new Set<string>()
@@ -151,11 +192,11 @@ export function validateDocument(value: unknown): DocumentValidation {
       states.add(state.id)
     }
   }
-  const effectiveVisuals = (id: string, visiting = new Set<string>()): Map<string, TeachingDocument['steps'][string]['visuals'][number]> => {
+  const effectiveVisuals = (id: string, visiting = new Set<string>()): Map<string, PresmiumDocument['steps'][string]['visuals'][number]> => {
     if (visiting.has(id) || !own(doc.steps, id)) return new Map()
     visiting.add(id)
     const step = doc.steps[id]!
-    const result = step.inherits ? effectiveVisuals(step.inherits, visiting) : new Map<string, TeachingDocument['steps'][string]['visuals'][number]>()
+    const result = step.inherits ? effectiveVisuals(step.inherits, visiting) : new Map<string, PresmiumDocument['steps'][string]['visuals'][number]>()
     for (const visual of step.visuals) result.set(visual.blockId, { ...result.get(visual.blockId), ...visual, parameters: { ...result.get(visual.blockId)?.parameters, ...visual.parameters } })
     return result
   }
@@ -187,7 +228,7 @@ export function validateDocument(value: unknown): DocumentValidation {
           if (actual.state !== undefined && !state) issue(`${location}/state`, 'state.missing', 'The component definition does not declare this state.')
           if (state?.parameterSchema) schema(state.parameterSchema, { ...block.parameters, ...actual.parameters }, `${location}/parameters`)
         }
-      } else if (visual.state !== undefined) issue(`${location}/state`, 'state.unsupported', 'Named animation states require a component definition.')
+      } else if (visual.state !== undefined && block.type !== 'embed') issue(`${location}/state`, 'state.unsupported', 'Named animation states require a component definition.')
     }
     for (const [index, narration] of step.narrationIds.entries()) reference(doc.narrations, narration, `${path}/narrationIds/${index}`, 'narration')
     const seen = new Set<string>([id]); let inherited = step.inherits
@@ -210,7 +251,7 @@ export function validateDocument(value: unknown): DocumentValidation {
     if (node.target) reference(doc.blocks, node.target.blockId, `${path}/target/blockId`, 'block')
     if (node.parameters && ['pauseMs', 'durationMs', 'delayMs'].some(key => own(node.parameters!, key))) issue(`${path}/parameters`, 'production.owner', 'Cue timing belongs to production.cueTimings.')
   }
-  const voice = (production: TeachingDocument['production']['defaults'], path: string) => {
+  const voice = (production: PresmiumDocument['production']['defaults'], path: string) => {
     const source = production.voiceSource
     if (source?.type === 'recording' && reference(doc.assets, source.assetId, `${path}/voiceSource/assetId`, 'asset') && !['audio', 'video'].includes(doc.assets[source.assetId]!.kind)) issue(`${path}/voiceSource/assetId`, 'asset.kind', 'Recorded speech requires audio or video.')
     if (source?.type === 'recording' && source.sourceRange && source.sourceRange.endMs <= source.sourceRange.startMs) issue(`${path}/voiceSource/sourceRange`, 'media.range', 'A recording range must end after it starts.')
@@ -261,4 +302,4 @@ export function validateDocument(value: unknown): DocumentValidation {
   return issues.some(issue => issue.severity === 'error') ? { issues } : { document: doc, issues }
 }
 
-type JsonSchemaLike = TeachingDocument['definitions'][string]['parameterSchema']
+type JsonSchemaLike = PresmiumDocument['definitions'][string]['parameterSchema']

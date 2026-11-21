@@ -1,6 +1,6 @@
 {
   "input": "2256532ed893725967a8882ac38b75e26949e28cf407bf5ba05282fd4cd35047",
-  "entry": "lecture.json",
+  "entry": "index.pmd",
   "lang": "python",
   "code": "values = [n * n for n in range(1, count + 1)]\nprint(values if verbose else sum(values))",
   "environment": "Python 3.13.12",

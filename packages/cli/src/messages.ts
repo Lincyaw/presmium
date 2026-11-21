@@ -16,6 +16,7 @@ export interface CliMessages {
   audienceNotForWorkspace: string
   badAudience(value: string): string
   notFound(entry: string): string
+  olderFormat(dir: string): string
   emptyTo: string
   badAllow(kinds: readonly string[], value: string): string
   badPreviewOrigin(value: string): string
@@ -44,7 +45,14 @@ export interface CliMessages {
   badGroup(value: string): string
   imported(documents: number, files: number, out: string): string
   importUnresolved(note: string, link: string): string
-  importPatterns(patterns: string[]): string
+  migrateHelp: string
+  migrateRename(from: string, to: string): string
+  migrateDocument(path: string): string
+  migrateWorkspaceFile: string
+  migrateProblem(path: string, reason: string): string
+  migrateNothing(dir: string): string
+  migrateNeeded(documents: number, workspaceFile: boolean): string
+  migrateDone(documents: number): string
   badVoice(value: string): string
   documentChanged: string
   documentInvalid(detail: string): string
@@ -116,7 +124,7 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
   new     在目录中新建项目（没有给出时逐项询问），由 create-presmium 完成
           --type <种类>   lecture、workspace、site 或 plugin（默认询问）
           --theme <主题>  site 的主题：course、docs 或 showcase（默认 course）
-          --title <标题>  讲义、工作区或网站的标题
+          --title <标题>  文稿、工作区或网站的标题
           --name <包名>   插件的包名
           --no-git        不运行 git init
   skills  安装内置技能（与 MCP 和可视化编辑器共用）
@@ -146,6 +154,9 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
           --lang <语言>   没有在 frontmatter 中写 lang 的笔记的语言（默认按文字判断）
           --group <层数>  把笔记所在的第几层文件夹作为文稿的第一个标签；网站的侧栏按第一个
                           标签分组，例如 --group 2 让 projects/<项目>/ 中的笔记成为一组
+  migrate  把文稿升级为当前格式（参数是工作区的根目录或一份文稿，默认为 .）：lecture.json 重命名为
+          ${DOCUMENT_ENTRY}，每份文稿记下它在文稿树中的位置，presmium.workspace.yaml 不再列出 documents
+          --check         只报告要升级什么，不修改文件；需要升级时退出码为 1
   check   检查文稿并运行插件的检查
           --json          以 JSON 打印结果
           --update-lock   重新定位代码锚点，并重写 .presmium/anchors.lock.json
@@ -166,7 +177,7 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
           export <文稿>   写出每一步的讲稿：每段在它的标记行 <!-- n: … --> 之下，换行与空行照原样，
                           {显示|读法} 是显示与读法不同的词，⟦cue:…⟧ 是提示点，\\ 使后面的 \\、{、}、⟦、⟧
                           （读音中还有 |）作为文字
-          import <文稿> [<文件>]  把改过的讲稿写回 lecture.json，只改动有变化的讲稿；标记缺失或未知、
+          import <文稿> [<文件>]  把改过的讲稿写回 index.pmd，只改动有变化的讲稿；标记缺失或未知、
                           提示点被删除或移到别的段落时不写入
           --out <文件>    export 写到这个文件（默认为 <文稿>/dist/script.md，也是 import 默认读的文件）
   speech  语音服务的设置
@@ -210,6 +221,7 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
     audienceNotForWorkspace: '--audience 暂不能用于工作区。请分别为每份文稿加 --audience 导出。',
     badAudience: value => `“${value}”不是读者类别的名称。请给出字母、数字、.、_ 或 - 组成的名称，例如 student。`,
     notFound: entry => `找不到 ${entry}。请检查路径，或用 presmium new 新建文稿。`,
+    olderFormat: dir => `${dir} 中的文稿使用旧格式（lecture.json）。请运行 presmium migrate ${dir} 升级后再试。`,
     emptyTo: '--to 至少需要一个形态，例如 --to web。',
     badAllow: (kinds, value) => `--allow 不接受“${value}”。可用的种类：${kinds.join('、')}。`,
     badPreviewOrigin: value => `“${value}”不是来源。请给出协议、主机与端口，例如 http://127.0.0.1:4320。`,
@@ -238,7 +250,23 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
     importFailed: '文件未能导入。请检查文件编码、Word 文件是否完整，以及输出目录是否可写。',
     imported: (documents, files, out) => `已导入 ${documents} 份文稿，复制了 ${files} 个文件，写在 ${out}`,
     importUnresolved: (note, link) => `${note}：链接 ${link} 没有对应的笔记或文件，已改为普通文字`,
-    importPatterns: patterns => `presmium.workspace.yaml 的 documents 需要包含：\n${patterns.map(pattern => `  - '${pattern}'`).join('\n')}`,
+    migrateHelp: `用法：presmium migrate [<目录>] [--check]
+
+把工作区或一份文稿中旧格式的文稿升级为当前格式，与 Presmium Studio 中的“升级”相同：
+lecture.json 重命名为 ${DOCUMENT_ENTRY}（保留文件的版本历史），翻译一同重命名；
+每份文稿记下它在文稿树中的位置，按 presmium.workspace.yaml 中 documents 的顺序排在顶层，
+其余按路径；documents 从 presmium.workspace.yaml 中删除；指向 lecture.json 的路径一并改写。
+文稿自己的设置原样保留。重复运行不会再改动已升级的文稿。
+
+  --check         只报告要升级什么，不修改文件；需要升级时退出码为 1
+  -h, --help      显示这段说明`,
+    migrateRename: (from, to) => `重命名 ${from} → ${to}`,
+    migrateDocument: path => `升级 ${path}`,
+    migrateWorkspaceFile: '从 presmium.workspace.yaml 删除 documents，文稿的位置记在各自的文稿中',
+    migrateProblem: (path, reason) => `${path}：无法升级：${reason}`,
+    migrateNothing: dir => `${dir} 中的文稿已是当前格式，无需升级。`,
+    migrateNeeded: (documents, workspaceFile) => `需要升级 ${documents} 份文稿${workspaceFile ? '与 presmium.workspace.yaml' : ''}。运行 presmium migrate 完成升级。`,
+    migrateDone: documents => `已升级 ${documents} 份文稿。`,
     badVoice: value => `--voice 需要“<服务>:<音色>”，例如 volcengine:zh_female_tianmeitaozi_uranus_bigtts，而不是“${value}”。`,
     documentChanged: '文稿在读取之后被修改过，没有写入。请重新运行。',
     documentInvalid: detail => `修改后的文稿无效，没有写入：${detail}`,
@@ -372,6 +400,10 @@ Commands:
           --lang <tag>    the language of notes whose frontmatter has no lang (default: from the text)
           --group <n>     make the note's folder at depth n the document's first tag; the site's
                           sidebar groups documents by it, e.g. --group 2 groups projects/<project>/
+  migrate  convert documents to the current format (a workspace root or one document, default .):
+          lecture.json becomes ${DOCUMENT_ENTRY}, each document records its place in the document tree,
+          and presmium.workspace.yaml no longer lists documents
+          --check         only report what would change, without writing; exits with 1 when needed
   check   check the deck and run the plugins’ checks
           --json          print the result as JSON
           --update-lock   re-resolve anchors and rewrite .presmium/anchors.lock.json
@@ -396,7 +428,7 @@ Commands:
                           its line breaks and blank lines, {shown|spoken} for a word shown one way and said
                           another, ⟦cue:…⟧ for a cue, and \\ before a \\, {, }, ⟦ or ⟧ meant as text
                           (and before a | inside {…|…})
-          import <deck> [<file>]  write the edited paragraphs back into lecture.json, changing only those;
+          import <deck> [<file>]  write the edited paragraphs back into index.pmd, changing only those;
                           nothing is written when a marker is missing or unknown, or a cue was removed
                           or moved to another paragraph
           --out <file>    where export writes (default: <deck>/dist/script.md, which import reads by default)
@@ -445,6 +477,7 @@ Exit Codes: 0 no errors, 1 error findings, 2 usage or internal error.`,
     audienceNotForWorkspace: '--audience does not apply to a workspace yet. Export each document with --audience instead.',
     badAudience: value => `“${value}” is not the name of an audience. Give a name of letters, digits, ., _, or -, such as student.`,
     notFound: entry => `Couldn’t find ${entry}. Check the path, or make a document with presmium new.`,
+    olderFormat: dir => `The document in ${dir} uses the older format (lecture.json). Run presmium migrate ${dir} to upgrade it, then try again.`,
     emptyTo: '--to needs at least one renderer, such as --to web.',
     badAllow: (kinds, value) => `--allow does not take “${value}”. The kinds are ${kinds.join(', ')}.`,
     badPreviewOrigin: value => `“${value}” is not an origin. Give a scheme, host, and port, such as http://127.0.0.1:4320.`,
@@ -473,7 +506,23 @@ Exit Codes: 0 no errors, 1 error findings, 2 usage or internal error.`,
     importFailed: 'Import failed. Check the file encoding, whether the Word file is complete, and output directory permissions.',
     imported: (documents, files, out) => `imported ${documents} documents and copied ${files} files into ${out}`,
     importUnresolved: (note, link) => `${note}: the link ${link} leads to no note or file; it is plain text now`,
-    importPatterns: patterns => `the documents of presmium.workspace.yaml need:\n${patterns.map(pattern => `  - '${pattern}'`).join('\n')}`,
+    migrateHelp: `Usage: presmium migrate [<dir>] [--check]
+
+Converts the documents of a workspace, or one document, from the older format to the current one, as Upgrade
+does in Presmium Studio: lecture.json is renamed to ${DOCUMENT_ENTRY}, keeping the file’s history, translations too; each document records its place in the document tree, at the top level in
+the order of documents in presmium.workspace.yaml, then by path; documents is removed from
+presmium.workspace.yaml; paths that named lecture.json are rewritten. A document’s own settings stay as they
+are. Running it again leaves upgraded documents alone.
+
+  --check         only report what would change, without writing; exits with 1 when an upgrade is needed
+  -h, --help      show this help`,
+    migrateRename: (from, to) => `rename ${from} → ${to}`,
+    migrateDocument: path => `upgrade ${path}`,
+    migrateWorkspaceFile: 'remove documents from presmium.workspace.yaml; each document records its own place',
+    migrateProblem: (path, reason) => `${path}: Couldn’t upgrade: ${reason}`,
+    migrateNothing: dir => `The documents in ${dir} already use the current format; nothing to upgrade.`,
+    migrateNeeded: (documents, workspaceFile) => `${documents} ${documents === 1 ? 'document needs' : 'documents need'} an upgrade${workspaceFile ? ', and so does presmium.workspace.yaml' : ''}. Run presmium migrate to upgrade.`,
+    migrateDone: documents => `Upgraded ${documents} ${documents === 1 ? 'document' : 'documents'}.`,
     badVoice: value => `--voice takes “<service>:<voice>”, such as volcengine:zh_female_tianmeitaozi_uranus_bigtts, not “${value}”.`,
     documentChanged: 'The document changed after it was read, so nothing was written. Run the command again.',
     documentInvalid: detail => `The changed document is not valid, so nothing was written: ${detail}`,

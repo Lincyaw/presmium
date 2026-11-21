@@ -1,0 +1,1103 @@
+{
+  "schemaVersion": 2,
+  "id": "a2fda74d-be34-43fd-a712-174ce545f379",
+  "placement": {
+    "parent": null,
+    "rank": "a3"
+  },
+  "metadata": {
+    "title": "CoT 压缩：什么时候改写有用",
+    "lang": "zh-CN",
+    "description": "沿同一条推导比较四种结构改写，并核对训练压缩与推理成本的区别。",
+    "tags": [
+      "论文",
+      "CoT",
+      "蒸馏",
+      "训练数据"
+    ],
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-speech"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "lecture": {
+        "maximumDurationMs": 360000,
+        "video": {
+          "burn": "zh-CN",
+          "contactSheet": true,
+          "size": [
+            1920,
+            1080
+          ],
+          "fps": 30
+        }
+      }
+    }
+  },
+  "sectionOrder": [
+    "p-opening",
+    "p-problem",
+    "p-budget",
+    "p-edit",
+    "p-evidence",
+    "p-transfer",
+    "p-efficiency",
+    "p-ending",
+    "p-sources"
+  ],
+  "sections": {
+    "p-opening": {
+      "id": "p-opening",
+      "title": "CoT 改写，越短越好吗？",
+      "level": 2,
+      "children": [
+        "opening-scene"
+      ],
+      "stepOrder": [
+        "opening-opening"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-problem": {
+      "id": "p-problem",
+      "title": "先看一条推导，怎样变短",
+      "level": 2,
+      "children": [
+        "problem-scene"
+      ],
+      "stepOrder": [
+        "problem-chain",
+        "problem-redundancy"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-budget": {
+      "id": "p-budget",
+      "title": "把三个选择拆开",
+      "level": 2,
+      "children": [
+        "budget-scene"
+      ],
+      "stepOrder": [
+        "budget-controls"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-edit": {
+      "id": "p-edit",
+      "title": "四种改写，对同一条链做不同操作",
+      "level": 2,
+      "children": [
+        "edit-scene"
+      ],
+      "stepOrder": [
+        "edit-preserve",
+        "edit-step",
+        "edit-fuse",
+        "edit-framework"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-evidence": {
+      "id": "p-evidence",
+      "title": "同样的改写，任务不同结果也不同",
+      "level": 2,
+      "children": [
+        "evidence-scene"
+      ],
+      "stepOrder": [
+        "evidence-math",
+        "evidence-general"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-transfer": {
+      "id": "p-transfer",
+      "title": "训练短了，回答也会短吗？",
+      "level": 2,
+      "children": [
+        "transfer-scene"
+      ],
+      "stepOrder": [
+        "transfer-separate"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-efficiency": {
+      "id": "p-efficiency",
+      "title": "核对实际推理成本",
+      "level": 2,
+      "children": [
+        "efficiency-scene"
+      ],
+      "stepOrder": [
+        "efficiency-ratios"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-ending": {
+      "id": "p-ending",
+      "title": "保留可学习的推导，再谈压缩",
+      "level": 2,
+      "children": [
+        "ending-scene"
+      ],
+      "stepOrder": [
+        "ending-ending"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-sources": {
+      "id": "p-sources",
+      "title": "来源与说明",
+      "children": [
+        "source-text"
+      ],
+      "stepOrder": [
+        "sources-end"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "opening-scene": {
+      "id": "opening-scene",
+      "type": "component",
+      "definitionId": "opening-definition",
+      "parameters": {
+        "institution": "EIT · USC · 香港理工等",
+        "title": "CoT Compression",
+        "titleZh": "什么时候改写有用",
+        "authors": "Lyu、Chen、Sun 等",
+        "venue": "EMNLP 2026",
+        "compact": true,
+        "alt": "CoT 改写，越短越好吗？"
+      }
+    },
+    "problem-scene": {
+      "id": "problem-scene",
+      "type": "component",
+      "definitionId": "problem-definition",
+      "parameters": {
+        "paper": "CoT Compression",
+        "mode": "trace",
+        "titles": [
+          "先沿着推导走一遍",
+          "重复检查，也会占用训练文本"
+        ],
+        "labels": [
+          "3x + 2 = 11",
+          "3x = 9",
+          "x = 3",
+          "检验成立",
+          "重复说明：再代入一次",
+          "保留中间依赖",
+          "",
+          "",
+          "文本长度增加，答案没有改变"
+        ],
+        "source": "推导为示意 · 原文 §3 实验设置",
+        "alt": "先看一条推导，怎样变短"
+      }
+    },
+    "budget-scene": {
+      "id": "budget-scene",
+      "type": "component",
+      "definitionId": "budget-definition",
+      "parameters": {
+        "paper": "CoT Compression",
+        "mode": "controls",
+        "title": "删什么、怎样重组、保留多长",
+        "labels": [
+          "重要性",
+          "结构",
+          "长度预算",
+          "词或完整步骤",
+          "顺序与解题计划",
+          "保留长度 / 原长度"
+        ],
+        "source": "原文 §3 · 三个实验维度",
+        "alt": "把三个选择拆开"
+      }
+    },
+    "edit-scene": {
+      "id": "edit-scene",
+      "type": "component",
+      "definitionId": "edit-definition",
+      "parameters": {
+        "paper": "CoT Compression",
+        "mode": "edit",
+        "titles": [
+          "SP：删掉冗词，推导骨架保留",
+          "SE：编辑完整步骤",
+          "SF：把多步融合成一句",
+          "FR：改用新的解题框架"
+        ],
+        "labels": [
+          "3x + 2 = 11",
+          "3x = 9",
+          "x = 3",
+          "检验成立",
+          "重复检查步骤",
+          "“显然”“接下来我们可以”",
+          "3x = 9 ⇒ x = 3",
+          "已知 → 求解 → 结论",
+          "ax + c = b → x = (b − c) / a",
+          "a = 3",
+          "c = 2",
+          "b = 11",
+          "x = (11 − 2) / 3 = 3"
+        ],
+        "source": "四级改写：原文 §5 · 方程与文本为示意",
+        "alt": "四种改写，对同一条链做不同操作"
+      }
+    },
+    "evidence-scene": {
+      "id": "evidence-scene",
+      "type": "component",
+      "definitionId": "evidence-definition",
+      "parameters": {
+        "paper": "CoT Compression",
+        "mode": "figure",
+        "figure": "structure",
+        "titles": [
+          "先看数学任务",
+          "再看通用任务"
+        ],
+        "labels": [
+          "横轴：学生模型；左轴：准确率；橙虚线及右轴：推理token比例",
+          "数学：强结构保留更稳",
+          "通用：强重写有时能去噪"
+        ],
+        "source": "论文原图 · structure_model_lineplot · §5；橙虚线为推理token比例",
+        "alt": "同样的改写，任务不同结果也不同",
+        "legend": [
+          "SP · 结构保留（强）",
+          "SE · 步骤编辑（中）",
+          "SF · 语义融合（弱）",
+          "FR · 框架重建"
+        ]
+      }
+    },
+    "transfer-scene": {
+      "id": "transfer-scene",
+      "type": "component",
+      "definitionId": "transfer-definition",
+      "parameters": {
+        "paper": "CoT Compression",
+        "mode": "transfer",
+        "title": "训练文本长度，与推理输出长度分开量",
+        "labels": [
+          "训练阶段",
+          "推理阶段",
+          "压缩CoT",
+          "新题输出",
+          "学生",
+          "训练变短 ≠ 推理同比缩短"
+        ],
+        "source": "原文 §6 · 长度条为机制示意，不代表实测比例",
+        "alt": "训练短了，回答也会短吗？"
+      }
+    },
+    "efficiency-scene": {
+      "id": "efficiency-scene",
+      "type": "component",
+      "definitionId": "efficiency-definition",
+      "parameters": {
+        "paper": "CoT Compression",
+        "mode": "figure",
+        "figure": "efficiency",
+        "title": "两种长度比例，实测是否同步",
+        "labels": [
+          "横轴：训练文本保留比例；纵轴：推理token比例",
+          "长链训练：推理缩短可能落后于训练压缩"
+        ],
+        "source": "论文原图 · figure_rho_kappa_scatter · §6",
+        "alt": "核对实际推理成本"
+      }
+    },
+    "ending-scene": {
+      "id": "ending-scene",
+      "type": "component",
+      "definitionId": "ending-definition",
+      "parameters": {
+        "summary": "保留可学习的推导，再谈压缩",
+        "paper": "When Compression Helps and When It Hurts",
+        "alt": "保留可学习的推导，再谈压缩"
+      }
+    },
+    "source-text": {
+      "id": "source-text",
+      "type": "text",
+      "only": [
+        "web"
+      ],
+      "content": [
+        {
+          "id": "source-paragraph",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "When Compression Helps and When It Hurts, arXiv:2606.21704v2。机制示意取§3、§5、§6；原图取源包structure_model_lineplot.pdf及figure_rho_kappa_scatter.pdf。数学/通用、短链/长链分别比较；结论限论文模型与预算。示意方程不是实验样本。"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "opening-opening": {
+      "id": "opening-opening",
+      "sectionId": "p-opening",
+      "visuals": [
+        {
+          "blockId": "opening-scene",
+          "visible": true,
+          "state": "opening"
+        }
+      ],
+      "narrationIds": [
+        "n-opening-opening"
+      ]
+    },
+    "problem-chain": {
+      "id": "problem-chain",
+      "sectionId": "p-problem",
+      "visuals": [
+        {
+          "blockId": "problem-scene",
+          "visible": true,
+          "state": "chain"
+        }
+      ],
+      "narrationIds": [
+        "n-problem-chain"
+      ]
+    },
+    "problem-redundancy": {
+      "id": "problem-redundancy",
+      "sectionId": "p-problem",
+      "visuals": [
+        {
+          "blockId": "problem-scene",
+          "visible": true,
+          "state": "redundancy"
+        }
+      ],
+      "narrationIds": [
+        "n-problem-redundancy"
+      ]
+    },
+    "budget-controls": {
+      "id": "budget-controls",
+      "sectionId": "p-budget",
+      "visuals": [
+        {
+          "blockId": "budget-scene",
+          "visible": true,
+          "state": "controls"
+        }
+      ],
+      "narrationIds": [
+        "n-budget-controls"
+      ]
+    },
+    "edit-preserve": {
+      "id": "edit-preserve",
+      "sectionId": "p-edit",
+      "visuals": [
+        {
+          "blockId": "edit-scene",
+          "visible": true,
+          "state": "preserve"
+        }
+      ],
+      "narrationIds": [
+        "n-edit-preserve"
+      ]
+    },
+    "edit-step": {
+      "id": "edit-step",
+      "sectionId": "p-edit",
+      "visuals": [
+        {
+          "blockId": "edit-scene",
+          "visible": true,
+          "state": "step"
+        }
+      ],
+      "narrationIds": [
+        "n-edit-step"
+      ]
+    },
+    "edit-fuse": {
+      "id": "edit-fuse",
+      "sectionId": "p-edit",
+      "visuals": [
+        {
+          "blockId": "edit-scene",
+          "visible": true,
+          "state": "fuse"
+        }
+      ],
+      "narrationIds": [
+        "n-edit-fuse"
+      ]
+    },
+    "edit-framework": {
+      "id": "edit-framework",
+      "sectionId": "p-edit",
+      "visuals": [
+        {
+          "blockId": "edit-scene",
+          "visible": true,
+          "state": "framework"
+        }
+      ],
+      "narrationIds": [
+        "n-edit-framework"
+      ]
+    },
+    "evidence-math": {
+      "id": "evidence-math",
+      "sectionId": "p-evidence",
+      "visuals": [
+        {
+          "blockId": "evidence-scene",
+          "visible": true,
+          "state": "math"
+        }
+      ],
+      "narrationIds": [
+        "n-evidence-math"
+      ]
+    },
+    "evidence-general": {
+      "id": "evidence-general",
+      "sectionId": "p-evidence",
+      "visuals": [
+        {
+          "blockId": "evidence-scene",
+          "visible": true,
+          "state": "general"
+        }
+      ],
+      "narrationIds": [
+        "n-evidence-general"
+      ]
+    },
+    "transfer-separate": {
+      "id": "transfer-separate",
+      "sectionId": "p-transfer",
+      "visuals": [
+        {
+          "blockId": "transfer-scene",
+          "visible": true,
+          "state": "separate"
+        }
+      ],
+      "narrationIds": [
+        "n-transfer-separate"
+      ]
+    },
+    "efficiency-ratios": {
+      "id": "efficiency-ratios",
+      "sectionId": "p-efficiency",
+      "visuals": [
+        {
+          "blockId": "efficiency-scene",
+          "visible": true,
+          "state": "ratios"
+        }
+      ],
+      "narrationIds": [
+        "n-efficiency-ratios"
+      ]
+    },
+    "ending-ending": {
+      "id": "ending-ending",
+      "sectionId": "p-ending",
+      "visuals": [
+        {
+          "blockId": "ending-scene",
+          "visible": true,
+          "state": "ending"
+        }
+      ],
+      "narrationIds": [
+        "n-ending-ending"
+      ]
+    },
+    "sources-end": {
+      "id": "sources-end",
+      "sectionId": "p-sources",
+      "visuals": [
+        {
+          "blockId": "source-text",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "n-opening-opening": {
+      "id": "n-opening-opening",
+      "content": [
+        {
+          "type": "text",
+          "text": "三分钟读完一篇论文。大家好，这里是翰林院传达室，今天给大家带来宁波东方理工大学等团队的论文，思维链压缩什么时候有效，什么时候会伤害训练。"
+        }
+      ]
+    },
+    "n-problem-chain": {
+      "id": "n-problem-chain",
+      "content": [
+        {
+          "type": "text",
+          "text": "先看一道示意方程，三倍的未知数加二等于十一。减去二，得到三倍未知数等于九，再除以三，得到三。最后代回原式检验。这些从问题走到答案的中间推导，就是思维链。"
+        }
+      ]
+    },
+    "n-problem-redundancy": {
+      "id": "n-problem-redundancy",
+      "content": [
+        {
+          "type": "text",
+          "text": "如果教师反复解释同一条等式，又多做几次相同检查，轨迹会变长。训练学生时，每个词都要付出计算成本。于是我们想把轨迹压短。但压掉重复用语，和压掉一个关键推导步骤，会产生不同的监督。"
+        }
+      ]
+    },
+    "n-budget-controls": {
+      "id": "n-budget-controls",
+      "content": [
+        {
+          "type": "text",
+          "text": "论文把这个问题拆成三个选择。第一，按什么重要性信号决定删哪些词或步骤。第二，允许多大程度地重组推导。第三，最后保留多长。压缩比例相近的两份数据，也可能保留完全不同的逻辑，所以需要分别控制。"
+        }
+      ]
+    },
+    "n-edit-preserve": {
+      "id": "n-edit-preserve",
+      "content": [
+        {
+          "type": "text",
+          "text": "最轻的一档，叫结构保留，简称SP。把啰嗦用语划掉，但每一步的边界、顺序和解题计划都留下。画面上，文字缩短了，连接各个等式的主干仍然存在。学生还能沿着原来的推导往下学。"
+        }
+      ]
+    },
+    "n-edit-step": {
+      "id": "n-edit-step",
+      "content": [
+        {
+          "type": "text",
+          "text": "第二档叫步骤编辑，简称SE。操作单位变成完整步骤，可以保留、删除或改述。例如删去重复检验，而不是只删一句话里的几个词。重要的是，被删步骤提供的信息，后面的推导是否仍然需要。"
+        }
+      ]
+    },
+    "n-edit-fuse": {
+      "id": "n-edit-fuse",
+      "content": [
+        {
+          "type": "text",
+          "text": "第三档叫语义融合，简称SF。把相邻几步合成一句更紧凑的表达。它减少了文字，也减少了显式的中间连接。对已经懂的人可能很顺，但学生需要自己补出更多过渡。"
+        }
+      ]
+    },
+    "n-edit-framework": {
+      "id": "n-edit-framework",
+      "content": [
+        {
+          "type": "text",
+          "text": "第四档叫框架重建，简称FR。这次不逐步移项，而把原方程放进通式：系数a是三，常数c是二，右边b是十一。直接用b减c再除以a，代入得到三。上面的原链保留作对照，下面换成新的组织框架。这个算式是教学示意。"
+        }
+      ]
+    },
+    "n-evidence-math": {
+      "id": "n-evidence-math",
+      "content": [
+        {
+          "type": "text",
+          "text": "现在看论文原图。横轴是两种学生模型，柱高是准确率。从深蓝到浅绿，对应结构保留、步骤编辑、语义融合和框架重建，上方图例列出四种颜色。橙色虚线表示推理词数比例。先看数学任务，保留结构较强的版本更稳；重组过多可能损失学生需要学习的逻辑连接。"
+        }
+      ]
+    },
+    "n-evidence-general": {
+      "id": "n-evidence-general",
+      "content": [
+        {
+          "type": "text",
+          "text": "换到通用推理任务，排序就没有这么一致了。较强的重组有时能整理信息、去掉噪声，保持甚至改善表现。因此，不能把数学题上的压缩方案直接当成所有任务的最佳方案。这里比较的是论文测试的模型、数据和预算。"
+        }
+      ]
+    },
+    "n-transfer-separate": {
+      "id": "n-transfer-separate",
+      "content": [
+        {
+          "type": "text",
+          "text": "还有一个容易混淆的地方。左边是训练数据的长度，右边是训练后模型回答新问题的长度。把左边压短，并不保证右边按相同比例缩短。长思维链的表达习惯，可能仍被学生保留下来。"
+        }
+      ]
+    },
+    "n-efficiency-ratios": {
+      "id": "n-efficiency-ratios",
+      "content": [
+        {
+          "type": "text",
+          "text": "这张原图把两种比例放到一起：横轴是压缩后训练文本占原文本的比例，纵轴是新题推理输出的比例。绿色表示短链训练，橙色表示长链训练。靠近对角线，才表示两种长度大致同步。短链训练更接近这种关系，长链训练常留下额外开销。因此要同时报告准确率、训练词数和实际推理词数。"
+        }
+      ]
+    },
+    "n-ending-ending": {
+      "id": "n-ending-ending",
+      "content": [
+        {
+          "type": "text",
+          "text": "一句话总结：压缩思维链，要一起考虑推导结构、任务类型和真实推理成本。想看哪篇论文，欢迎在评论区留言。翰林院传达室为您分享最新论文，我们下期见。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "opening-definition": {
+      "id": "opening-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/opening.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "opening"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          16000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "CoT 改写，越短越好吗？"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "problem-definition": {
+      "id": "problem-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/story.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "chain"
+        },
+        {
+          "id": "redundancy"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          16000,
+          16000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "先看一条推导，怎样变短"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "budget-definition": {
+      "id": "budget-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/story.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "controls"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          16000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "把三个选择拆开"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "edit-definition": {
+      "id": "edit-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/story.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "preserve"
+        },
+        {
+          "id": "step"
+        },
+        {
+          "id": "fuse"
+        },
+        {
+          "id": "framework"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          16000,
+          16000,
+          16000,
+          16000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "四种改写，对同一条链做不同操作"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "evidence-definition": {
+      "id": "evidence-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/story.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "math"
+        },
+        {
+          "id": "general"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          16000,
+          16000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "同样的改写，任务不同结果也不同"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "transfer-definition": {
+      "id": "transfer-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/story.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "separate"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          16000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "训练短了，回答也会短吗？"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "efficiency-definition": {
+      "id": "efficiency-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/story.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "ratios"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          16000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "核对实际推理成本"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "ending-definition": {
+      "id": "ending-definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/ending.ts"
+      },
+      "parameterSchema": {
+        "type": "object"
+      },
+      "states": [
+        {
+          "id": "ending"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          16000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "保留可学习的推导，再谈压缩"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "tts",
+        "voice": {
+          "engine": "volcengine",
+          "voice": "zh_female_tianmeitaozi_uranus_bigtts"
+        }
+      },
+      "narrationStart": "with-animation",
+      "trailingPauseMs": 220
+    },
+    "sectionOverrides": {
+      "p-opening": {
+        "captionVisible": false
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

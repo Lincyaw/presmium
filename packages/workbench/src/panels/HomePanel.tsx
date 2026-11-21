@@ -59,6 +59,7 @@ export function HomePanel({ actions }: { actions?: ReactNode } = {}) {
       {done && <PmNotice tone="ok">{done}</PmNotice>}
       {error && !editing && <PmNotice tone="danger">{error}</PmNotice>}
       {answer && !answer.git && !answer.single && <PmNotice tone="warn">{t.notGit}</PmNotice>}
+      {answer?.migration && workbench.client.migrateWorkspace && <PmNotice tone="warn">{t.formatUpgrade} <PmButton disabled={working} onClick={() => void run(async () => t.upgraded((await workbench.migrateWorkspace()).documents.length))}>{t.upgrade}</PmButton></PmNotice>}
       <div className="pmw-home__heading-row">
         <h2 className="pmw-home__heading">{t.allDocuments}</h2>
         {documents.length > 6 && (

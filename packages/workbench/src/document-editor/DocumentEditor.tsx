@@ -4,7 +4,7 @@ import type { Transaction } from '@tiptap/pm/state'
 import { TextSelection } from '@tiptap/pm/state'
 import { closeHistory } from '@tiptap/pm/history'
 import { allocateDocumentPage, randomUUID } from '@lincyaw/kernel'
-import type { Member, TeachingDocument } from '@lincyaw/kernel'
+import type { Member, PresmiumDocument } from '@lincyaw/kernel'
 import type { Locale } from '../messages.ts'
 import { BlockNoteSurface } from './BlockNoteSurface.tsx'
 import type { CommentDrafts } from './comment-drafts.ts'
@@ -31,14 +31,14 @@ export interface DocumentAnimationRequests {
 }
 export interface DocumentEditorCommands {
   insertPage(after: string | undefined, title: string): NativePageCreation
-  rememberComponentConfiguration(document: TeachingDocument): void
+  rememberComponentConfiguration(document: PresmiumDocument): void
   handleAnimationRequests(requests: DocumentAnimationRequests | undefined): void
 }
 
 export interface DocumentEditorProps {
   agentActivities?: import('@lincyaw/kernel').AgentActivity[]
   identity: string
-  document: TeachingDocument
+  document: PresmiumDocument
   version?: string
   member?: Member
   commentDrafts?: CommentDrafts
@@ -48,7 +48,7 @@ export interface DocumentEditorProps {
   acknowledged?: boolean
   getDocumentAcknowledged?(): boolean
   /** Read sibling field edits before their React render has committed. */
-  getDocument?(): TeachingDocument | undefined
+  getDocument?(): PresmiumDocument | undefined
   /** Ownership of a deferred native focus notification. */
   getPositionToken?(): string
   /** Display-only URL resolution; native block URLs keep their canonical source locations. */
@@ -58,7 +58,7 @@ export interface DocumentEditorProps {
   locale: Locale
   readOnly?: boolean
   nodeViews?: DocumentNodeViews
-  onChange(document: TeachingDocument): void
+  onChange(document: PresmiumDocument): void
   onSelection?(selection: NativeDocumentSelection | undefined): void
   onEditingPosition?(position: DocumentEditingPosition, editor: NativeDocumentEditor): void
   onReady?(editor: NativeDocumentEditor | undefined, commands?: DocumentEditorCommands): void

@@ -1,10 +1,10 @@
 import { isDocumentPlaceAnchor } from './contracts/document.ts'
 import { degradeDocumentCommentAnchor } from './document-comments.ts'
 import { replaceStepNarrations } from './document-narrations.ts'
-import type { DocumentBlock, DocumentEditOperation, TeachingDocument } from './contracts/document.ts'
+import type { DocumentBlock, DocumentEditOperation, PresmiumDocument } from './contracts/document.ts'
 
 /** Operations describe author intent; the caller validates the resulting complete document before committing it. */
-export function applyDocumentOperations(source: TeachingDocument, operations: readonly DocumentEditOperation[]): TeachingDocument {
+export function applyDocumentOperations(source: PresmiumDocument, operations: readonly DocumentEditOperation[]): PresmiumDocument {
   if (!operations.length || operations.length > 1000) throw new Error('document-operation-count')
   let document = structuredClone(source)
   const block = (id: string): DocumentBlock => {

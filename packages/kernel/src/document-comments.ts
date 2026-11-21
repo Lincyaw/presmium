@@ -2,7 +2,7 @@ import { hasRole } from './access.ts'
 import type { DocumentCommentAction, DocumentCommentContext, DocumentCommentEffect } from './contracts/document-comments.ts'
 import { isDocumentPlaceAnchor, isDocumentTextAnchor } from './contracts/document.ts'
 import { documentBlockSection, documentCommentTargets } from './document-places.ts'
-import type { DocumentComment, DocumentThread, DocumentThreadAnchor, JsonObject, ListItemNode, RichTextNode, TableCellNode, TableRowNode, TeachingDocument } from './contracts/document.ts'
+import type { DocumentComment, DocumentThread, DocumentThreadAnchor, JsonObject, ListItemNode, RichTextNode, TableCellNode, TableRowNode, PresmiumDocument } from './contracts/document.ts'
 
 export { documentCommentTargets, isDocumentTextLink } from './document-places.ts'
 
@@ -13,7 +13,7 @@ export class DocumentCommentError extends Error {
 function fail(status: number, code: string): never { throw new DocumentCommentError(status, code) }
 
 /** No ordinal, offset clamping, surrogate splitting or guessed fallback identity. */
-export function validateDocumentCommentAnchor(document: TeachingDocument, anchor: DocumentThread['anchor']): void {
+export function validateDocumentCommentAnchor(document: PresmiumDocument, anchor: DocumentThread['anchor']): void {
   if (!anchor) return
   if (isDocumentPlaceAnchor(anchor)) {
     if (!Object.hasOwn(document.blocks, anchor.blockId)) fail(422, 'comment-anchor-target-unavailable')
@@ -39,7 +39,7 @@ export function validateDocumentCommentAnchor(document: TeachingDocument, anchor
  * The strongest still-valid anchor. A place whose step no longer exists keeps the block; a missing block or an
  * unmappable text range leaves the discussion explicitly unanchored rather than silently pointing elsewhere.
  */
-export function degradeDocumentCommentAnchor(document: TeachingDocument, anchor: DocumentThreadAnchor | undefined): DocumentThreadAnchor | undefined {
+export function degradeDocumentCommentAnchor(document: PresmiumDocument, anchor: DocumentThreadAnchor | undefined): DocumentThreadAnchor | undefined {
   if (!anchor) return undefined
   try { validateDocumentCommentAnchor(document, anchor); return anchor }
   catch (error) { if (!(error instanceof DocumentCommentError) || error.status !== 422) throw error }
@@ -51,7 +51,7 @@ export function degradeDocumentCommentAnchor(document: TeachingDocument, anchor:
 }
 
 /** Shared native/editor permissions: editors may delete any discussion, but edit their own comment; a document owner may manage earlier authors. */
-export function applyDocumentCommentAction(source: NonNullable<TeachingDocument['comments']>, action: DocumentCommentAction, context: DocumentCommentContext): { threads: NonNullable<TeachingDocument['comments']>, effect: DocumentCommentEffect } {
+export function applyDocumentCommentAction(source: NonNullable<PresmiumDocument['comments']>, action: DocumentCommentAction, context: DocumentCommentContext): { threads: NonNullable<PresmiumDocument['comments']>, effect: DocumentCommentEffect } {
   const member = context.member
   if (!member?.id || !hasRole(member, 'editor')) fail(403, 'comment-permission-denied')
   if (!Number.isFinite(Date.parse(context.now))) fail(422, 'comment-clock-invalid')

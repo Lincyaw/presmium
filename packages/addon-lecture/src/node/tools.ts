@@ -54,7 +54,7 @@ function planView(plan: LecturePlan, section?: string) {
 
 export const lecturePreview: AgentTool = {
   name: 'lecture_preview',
-  description: 'The lecture plan of the deck: per section and step, the canonical lecture.json narration the synthesized lecture says and the {cue} marks in it with the operation each makes; the voice; and problems (unknown cues, missing blocks). Reads only; nothing is synthesized.',
+  description: 'The lecture plan of the deck: per section and step, the canonical index.pmd narration the synthesized lecture says and the {cue} marks in it with the operation each makes; the voice; and problems (unknown cues, missing blocks). Reads only; nothing is synthesized.',
   input: { type: 'object', properties: { section: { type: 'string', description: 'Only this section id' } } },
   kind: 'read',
   async run(input, ctx) {

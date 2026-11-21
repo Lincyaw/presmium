@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { DOCUMENT_ENTRY } from '@lincyaw/kernel'
-import type { TeachingDocument } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, ranksAfter } from '@lincyaw/kernel'
+import type { PresmiumDocument } from '@lincyaw/kernel'
 import { spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
@@ -74,8 +74,10 @@ export function createProject(options: ProjectOptions): void {
   const document = (to: string, documentTitle: string) => {
     copyTemplate('document/default', to, (path, text) => {
       if (path !== DOCUMENT_ENTRY) return text
-      const value = JSON.parse(text) as TeachingDocument
+      const value = JSON.parse(text) as PresmiumDocument
       value.id = randomUUID()
+      // The project's first document, at the top level of its document tree.
+      value.placement = { parent: null, rank: ranksAfter(null, 1)[0]! }
       value.metadata.title = documentTitle
       if (options.lang) value.metadata.lang = options.lang
       for (const section of Object.values(value.sections)) if (section.title === '{{title}}') section.title = documentTitle
@@ -98,9 +100,9 @@ export function createProject(options: ProjectOptions): void {
       : { accent: 'blue', typography: 'sans', contentWidth: 'comfortable' }
     const strings: Record<string, string> = { ...c.site, title, theme, ...params }
     copyTemplate('site', dir, (path, text) => {
-      if (path.endsWith('.json')) {
+      if (path.endsWith('.json') || path.endsWith(DOCUMENT_ENTRY)) {
         const value = JSON.parse(text, (_key, value: unknown) => typeof value === 'string' ? value.replace(/\{\{(\w+)\}\}/g, (token, key: string) => strings[key] ?? token) : value) as Record<string, unknown>
-        if (path.endsWith(DOCUMENT_ENTRY)) value.id = randomUUID()
+        if (path.endsWith(DOCUMENT_ENTRY)) { value.id = randomUUID(); value.placement = { parent: null, rank: ranksAfter(null, 1)[0]! } }
         return `${JSON.stringify(value, null, 2)}\n`
       }
       if (path === 'presmium.workspace.yaml') return text.replace(/\{\{(\w+)\}\}/g, (token, key: string) => key in strings ? JSON.stringify(strings[key]) : token)
@@ -122,7 +124,7 @@ export function createProject(options: ProjectOptions): void {
 
 const unchanged = (_path: string, text: string): string => text
 
-const TEXT = /(?:\.(?:md|tsx?|mts|jsx?|mjs|json|ya?ml|css|html|txt)|(?:^|[\\/])\.gitignore)$/
+const TEXT = /(?:\.(?:md|tsx?|mts|jsx?|mjs|json|pmd|ya?ml|css|html|txt)|(?:^|[\\/])\.gitignore)$/
 
 function copyTemplate(template: string, to: string, edit: (path: string, text: string) => string, only: (path: string) => boolean = () => true): void {
   const from = templateDir(template)

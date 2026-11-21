@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { prepareTranscriptionAdoption, randomUUID } from '@lincyaw/kernel'
-import type { CanonicalSource, NarrationNode, TeachingDocument, TranscriptionRevision, TranscriptionAdoptionDraft, TranscriptionAdoptionPart, TranscriptionAdoptionPlan } from '@lincyaw/kernel'
+import type { CanonicalSource, NarrationNode, PresmiumDocument, TranscriptionRevision, TranscriptionAdoptionDraft, TranscriptionAdoptionPart, TranscriptionAdoptionPlan } from '@lincyaw/kernel'
 import { PmBadge, PmButton, PmDialog, PmField, PmNotice, PmSelect, PmTextarea } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { NarrationEditor } from '../document-editor/NarrationEditor.tsx'
@@ -10,7 +10,7 @@ import { TRANSCRIPTION_MESSAGES } from '../transcription-messages.ts'
 import { transcriptionCorrectionKey } from '../transcription-drafts.ts'
 import type { TranscriptionCorrection as Draft } from '../transcription-drafts.ts'
 
-interface Props { identity: string, candidate: TranscriptionRevision, document: TeachingDocument, sectionId: string, stepId: string, disabled: boolean }
+interface Props { identity: string, candidate: TranscriptionRevision, document: PresmiumDocument, sectionId: string, stepId: string, disabled: boolean }
 const ordered = (value: unknown): unknown => Array.isArray(value) ? value.map(ordered) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, ordered((value as Record<string, unknown>)[key])])) : value
 const same = (a: unknown, b: unknown) => JSON.stringify(ordered(a)) === JSON.stringify(ordered(b))
 const displayed = (nodes: readonly NarrationNode[]) => nodes.map(node => node.type === 'text' ? node.text : node.type === 'pronunciation' ? node.display : '').join('')

@@ -143,7 +143,7 @@ export class DocumentOperations {
     const fresh = (dir: string) => {
       const invalid = invalidDocumentDir(dir)
       if (invalid) throw new RequestError(400, invalid)
-      if (!isDocumentDir(config, dir)) throw new RequestError(400, `"${dir}" is not where the workspace configuration's documents are (${config.documents.join(', ')})`)
+      if (!isDocumentDir(config, dir)) throw new RequestError(400, `"${dir}" cannot hold a document`)
       const holder = known.find(doc => doc !== '' && (isWithin(dir, doc) || isWithin(doc, dir)))
       if (holder !== undefined) throw new RequestError(409, `${dir} would hold or be inside the document ${holder}`)
       if (existsSync(join(config.root, dir))) throw new RequestError(409, `${dir} exists already`)

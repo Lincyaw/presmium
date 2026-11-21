@@ -1,3 +1,4 @@
+import { DOCUMENT_ENTRY } from '@lincyaw/kernel'
 import { WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient, WorkspaceRequestEvent } from './workspace-client.ts'
 import type { IrAnswer, PreviewAnswer, PreviewRenderer } from '@lincyaw/kernel'
@@ -52,7 +53,7 @@ export function waitForPreviewRequest<T>(work: Promise<T>, signal?: AbortSignal)
 
 /** Speech preflights need a confirmed source snapshot without building a visual output. */
 export async function readDocumentSnapshot(client: WorkspaceClient, source: Pick<PreviewSource, 'directory' | 'version' | 'fingerprint'>, signal?: AbortSignal): Promise<IrAnswer> {
-  const entry = source.directory ? `${source.directory}/lecture.json` : 'lecture.json', started = Date.now()
+  const entry = source.directory ? `${source.directory}/${DOCUMENT_ENTRY}` : DOCUMENT_ENTRY, started = Date.now()
   for (;;) {
     signal?.throwIfAborted()
     const ir = await waitForPreviewRequest(client.readIr(source.directory), signal)
@@ -64,7 +65,7 @@ export async function readDocumentSnapshot(client: WorkspaceClient, source: Pick
 
 /** The explicit request owner can abort while the compiler confirms one exact source snapshot. */
 export async function compileDocumentPreview(client: WorkspaceClient, source: PreviewSource, signal?: AbortSignal, feedbackOwner?: WorkspaceRequestEvent['feedbackOwner'], onPreparing?: () => void): Promise<CompiledDocumentPreview> {
-  const { directory, fingerprint } = source, entry = directory ? `${directory}/lecture.json` : 'lecture.json'
+  const { directory, fingerprint } = source, entry = directory ? `${directory}/${DOCUMENT_ENTRY}` : DOCUMENT_ENTRY
   let started = Date.now()
   for (;;) {
     signal?.throwIfAborted()

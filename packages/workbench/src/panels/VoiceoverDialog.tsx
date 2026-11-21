@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { speechEngineId } from '@lincyaw/kernel'
-import type { TeachingDocument, VoiceoverJob, VoiceoverSnapshot, VoiceScope } from '@lincyaw/kernel'
+import type { PresmiumDocument, VoiceoverJob, VoiceoverSnapshot, VoiceScope } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmField, PmNotice } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { documentVoiceStepIds, resolveDocumentStepVoice } from '../document-voices.ts'
@@ -11,7 +11,7 @@ import type { VoiceSnapshot } from '../voice-snapshot.ts'
 import { isAgentChanging } from '../workbench-state.ts'
 import { VoiceScopeField } from './VoiceScopeField.tsx'
 
-interface CheckedVoice { snapshot: VoiceSnapshot, document: TeachingDocument }
+interface CheckedVoice { snapshot: VoiceSnapshot, document: PresmiumDocument }
 interface OwnedJob { directory: string }
 const NO_JOBS: VoiceoverJob[] = []
 const active = (job: VoiceoverJob) => ['queued', 'running', 'cancelling'].includes(job.state)

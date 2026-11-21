@@ -1,5 +1,5 @@
 import { documentPageDefaults, DOCUMENT_PAGE_DEFAULT_TIMING, randomUUID } from '@lincyaw/kernel'
-import type { DocumentBlock, DocumentPageIds, NarrationNode, RichTextNode, Section, TeachingDocument, TextBlock } from '@lincyaw/kernel'
+import type { DocumentBlock, DocumentPageIds, NarrationNode, RichTextNode, Section, PresmiumDocument, TextBlock } from '@lincyaw/kernel'
 import { productInlineToNative } from './inline.ts'
 import { captureRichBaseline, createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
 import type { RichProjection } from './rich-text.ts'
@@ -9,7 +9,7 @@ export interface DocumentProjection extends RichProjection {
   owners: Map<string, string>
   pages: Map<string, string>
   blockSections: Map<string, string>
-  document: TeachingDocument
+  document: PresmiumDocument
   content: DocumentEditorInput[]
   structure?: string
   structures: Map<string, Pick<DocumentProjection, 'document' | 'rich' | 'owners' | 'pages' | 'baseline'>>
@@ -26,12 +26,12 @@ function plain(nodes: readonly { type: string, text?: string, children?: readonl
  * Code the published document draws as a picture is generated content: authors see its preview, not its source.
  * The viewer draws Mermaid; the content add-on's compiler pass turns PlantUML into an image.
  */
-export function isDiagram(block: DocumentBlock, document: TeachingDocument): boolean {
+export function isDiagram(block: DocumentBlock, document: PresmiumDocument): boolean {
   if (block.type !== 'code') return false
   return block.language === 'mermaid' || /^(?:plantuml|puml)$/i.test(block.language) && Boolean(document.metadata.plugins?.includes('@lincyaw/addon-content'))
 }
 /** Blocks the editor shows through their read-only runtime preview. */
-export function hasBlockPreview(block: DocumentBlock, document: TeachingDocument): boolean {
+export function hasBlockPreview(block: DocumentBlock, document: PresmiumDocument): boolean {
   return block.type === 'component' || isDiagram(block, document)
 }
 function register(blocks: readonly DocumentEditorInput[], owner: string, context: DocumentProjection): void {
@@ -51,10 +51,10 @@ function productBlock(blockId: string, context: DocumentProjection, sectionId: s
   if (block.type === 'container') return [{ id: block.id, type: 'presmiumContainer', props: { entityId: block.id, layout: block.layout, title: block.properties.title ?? '' }, children: block.children.flatMap(child => productBlock(child, context, sectionId)) }]
   if (block.type === 'image') return [{ id: block.id, type: 'image', props: { url: block.assetId ? document.assets[block.assetId]?.location ?? '' : '', caption: plain(block.caption ?? []), name: block.alt, textAlignment: block.alignment ?? 'left', ...block.width !== undefined ? { previewWidth: block.width } : {} } }]
   if (block.type === 'code' && block.value !== undefined && !isDiagram(block, document)) return [{ id: block.id, type: 'codeBlock', props: { language: block.language }, content: block.value }]
-  return [{ id: block.id, type: 'presmiumAtom', props: { entityId: block.id, kind: block.type, label: block.type === 'code' ? block.title ?? block.origin?.anchor ?? block.language : document.definitions[block.definitionId]?.kind ?? block.definitionId }, ...block.type === 'component' && block.children ? { children: block.children.flatMap(child => productBlock(child, context, sectionId)) } : {} }]
+  return [{ id: block.id, type: 'presmiumAtom', props: { entityId: block.id, kind: block.type, label: block.type === 'code' ? block.title ?? block.origin?.anchor ?? block.language : block.type === 'embed' ? block.source.document : document.definitions[block.definitionId]?.kind ?? block.definitionId }, ...block.type === 'component' && block.children ? { children: block.children.flatMap(child => productBlock(child, context, sectionId)) } : {} }]
 }
 
-export function createDocumentProjection(document: TeachingDocument): DocumentProjection {
+export function createDocumentProjection(document: PresmiumDocument): DocumentProjection {
   const context: DocumentProjection = { ...createRichProjection(), owners: new Map(), pages: new Map(), blockSections: new Map(), structures: new Map(), createdPages: new Map(), componentConfiguration: new Map(), document: structuredClone(document), content: [] }
   context.content = document.sectionOrder.flatMap(sectionId => {
     const section = document.sections[sectionId]!
@@ -80,7 +80,7 @@ export function rememberDocumentStructure(blocks: readonly DocumentEditorBlock[]
 }
 
 /** Source-owned component configuration also accompanies a missing node in native structural history. */
-export function rememberComponentConfiguration(context: DocumentProjection, source: TeachingDocument): void {
+export function rememberComponentConfiguration(context: DocumentProjection, source: PresmiumDocument): void {
   const changed = new Set<string>()
   const overrides = new Map<string, unknown[]>()
   for (const step of Object.values(source.steps)) for (const visual of step.visuals) if (visual.parameters) {
@@ -150,7 +150,7 @@ function isEntity(block: DocumentEditorBlock, context: DocumentProjection): bool
   if (block.type === 'presmiumContainer' || block.type === 'image') return true
   return block.type === 'codeBlock' && context.document.blocks[context.owners.get(block.id) ?? block.id]?.type !== 'text' && !context.rich.has(block.id)
 }
-function nativeChildren(native: readonly DocumentEditorBlock[], context: DocumentProjection, next: TeachingDocument, usedListIds: Set<string>): string[] {
+function nativeChildren(native: readonly DocumentEditorBlock[], context: DocumentProjection, next: PresmiumDocument, usedListIds: Set<string>): string[] {
   const children: string[] = []
   let buffer: DocumentEditorBlock[] = [], owner: string | undefined
   const flush = () => {
@@ -214,7 +214,7 @@ function nativeChildren(native: readonly DocumentEditorBlock[], context: Documen
 }
 
 /** A plain text transaction keeps the teaching graph and untouched rich nodes by identity. */
-function projectTextEdits(blocks: readonly DocumentEditorBlock[], context: DocumentProjection, latest: TeachingDocument): TeachingDocument | undefined {
+function projectTextEdits(blocks: readonly DocumentEditorBlock[], context: DocumentProjection, latest: PresmiumDocument): PresmiumDocument | undefined {
   const changed: { native: DocumentEditorBlock, serialized: string, owner: TextBlock }[] = []
   const visit = (blocks: readonly DocumentEditorBlock[]): boolean => blocks.every(block => {
     const serialized = JSON.stringify(block)
@@ -239,7 +239,7 @@ function projectTextEdits(blocks: readonly DocumentEditorBlock[], context: Docum
 }
 
 /** Reconstruct the normalized product tree without visiting or reparsing Markdown. */
-export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], context: DocumentProjection, latest = context.document): TeachingDocument {
+export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], context: DocumentProjection, latest = context.document): PresmiumDocument {
   const targetStructure = structureOf(blocks, context)
   if (targetStructure === context.structure) {
     const edited = projectTextEdits(blocks, context, latest)
@@ -373,7 +373,7 @@ export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], 
     if (next.production.cueTimings) delete next.production.cueTimings[node.id]
     return false
   })
-  context.document = share(context.document, structuredClone(next)) as TeachingDocument
+  context.document = share(context.document, structuredClone(next)) as PresmiumDocument
   context.blockSections = sectionOf
   for (const block of Object.values(context.document.blocks)) if (block.type === 'text') rememberRich(block.content, context)
   context.baseline.clear(); captureRichBaseline(blocks, context)
@@ -382,7 +382,7 @@ export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], 
 }
 
 /** Only an untouched, unreferenced creation default is removed with its native insertion. */
-function untouchedPageCreation(document: TeachingDocument, created: NativePageCreation): boolean {
+function untouchedPageCreation(document: PresmiumDocument, created: NativePageCreation): boolean {
   const { sectionId, blockId, stepId } = created, section = document.sections[sectionId]
   if (section?.stepOrder.length !== 1 || section.stepOrder[0] !== stepId
     || JSON.stringify(document.steps[stepId]) !== JSON.stringify(documentPageDefaults(created, '').step)

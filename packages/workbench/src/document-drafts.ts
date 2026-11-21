@@ -1,12 +1,12 @@
 import { isRecord, randomUUID, validateDocument } from '@lincyaw/kernel'
-import type { TeachingDocument } from '@lincyaw/kernel'
+import type { PresmiumDocument } from '@lincyaw/kernel'
 import { DocumentDraftStore } from './document-draft-store.ts'
 import { sha256 as tokenOf } from './sha256.ts'
 import type { DraftStoreCommit, DraftStoreOperation } from './document-draft-store.ts'
 
 export interface DocumentDraftReference { id: string, revision: number, token: string }
 export interface DocumentDraft {
-  content: TeachingDocument
+  content: PresmiumDocument
   baseVersion: string
   baseHash: string
   input: number

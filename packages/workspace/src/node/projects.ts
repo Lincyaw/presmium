@@ -3,7 +3,7 @@ import { listDocuments } from './config.ts'
 import { randomUUID } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { PROJECT_MAX_PLANS, PROJECT_PLAN_TTL_MS, PROJECT_MAX_REQUEST_CHARS, PROJECT_MAX_RESPONSE_CHARS, hasRole, jsonResponse, problemResponse, validateDocument } from '@lincyaw/kernel'
+import { PROJECT_MAX_PLANS, PROJECT_PLAN_TTL_MS, PROJECT_MAX_REQUEST_CHARS, PROJECT_MAX_RESPONSE_CHARS, hasRole, jsonResponse, problemResponse, validateDocument, DOCUMENT_ENTRY } from '@lincyaw/kernel'
 import type { CanonicalSource, DocumentChange, ProjectApplied, ProjectApply, ProjectAuthoring, ProjectCaller, ProjectOperation, ProjectPlan, ProjectPlanRequest, Route } from '@lincyaw/kernel'
 import { validateProjectApply, validateProjectPlan } from '@lincyaw/kernel/node'
 import type { WorkspaceConfig } from './config.ts'
@@ -183,7 +183,7 @@ export function createProjectAuthoring(options: { config: WorkspaceConfig, opera
           if (op.op === 'rename' || op.op === 'delete') if (existsSync(join(config.root, op.dir))) throw new RequestError(409, 'project-readback-changed', { committed: true })
           for (const change of stored.material!.changes) if ('content' in change && projectDigest(readFileSync(join(config.root, change.path))) !== projectDigest(change.content)) throw new RequestError(409, 'project-readback-changed', { committed: true })
           if (stored.plan.documentId && answer.dir) {
-            const checked = validateDocument(JSON.parse(readFileSync(join(config.root, answer.dir, 'lecture.json'), 'utf8')))
+            const checked = validateDocument(JSON.parse(readFileSync(join(config.root, answer.dir, DOCUMENT_ENTRY), 'utf8')))
             if (checked.document?.id !== stored.plan.documentId) throw new RequestError(409, 'project-readback-changed', { committed: true })
           }
           stored.receipt = bounded(receipt)

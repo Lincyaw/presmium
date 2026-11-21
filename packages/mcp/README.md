@@ -2,7 +2,7 @@
 
 Presmium's agent environment: a document's tools and resources over MCP, for agents such as Claude Code, Codex or VS Code.
 
-Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonical lecture.json teaching documents into web pages, slides, Jupyter notebooks and narrated playback.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which compiles canonical index.pmd teaching documents into web pages, slides, Jupyter notebooks and narrated playback.
 
 ## Connect
 
@@ -13,7 +13,7 @@ claude mcp add presmium -- presmium mcp /absolute/path/to/workspace
 codex mcp add presmium -- presmium mcp /absolute/path/to/workspace
 ```
 
-`presmium mcp [directory-or-lecture.json]` uses the nearest enclosing `presmium.workspace.yaml`, or the document's directory when there is no workspace configuration. It reuses an existing Studio or `presmium serve` for that workspace; otherwise it starts the workspace service using the same Presmium installation. The service is ready before MCP initialization completes, so the initial catalog offers authoring and captures. A browser window and a model are not required. Open Studio separately when an operation needs browser state or an approval window.
+`presmium mcp [directory-or-index.pmd]` uses the nearest enclosing `presmium.workspace.yaml`, or the document's directory when there is no workspace configuration. It reuses an existing Studio or `presmium serve` for that workspace; otherwise it starts the workspace service using the same Presmium installation. The service is ready before MCP initialization completes, so the initial catalog offers authoring and captures. A browser window and a model are not required. Open Studio separately when an operation needs browser state or an approval window.
 
 | Mode | Tools |
 | --- | --- |
@@ -107,7 +107,7 @@ Each tool has a kind: `read`, or one of the approval kinds `operate`, `spend`, `
 ## Documentation
 
 - [Author actions](../../docs/authoring-actions.md): the shared plan, commit and verify protocol, limits, recording, transcription, voiceover, audio, history and diagnostics.
-- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/locales/en/lecture.json): agents in your editor.
+- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/locales/en/index.pmd): agents in your editor.
 
 ## License
 

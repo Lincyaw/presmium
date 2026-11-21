@@ -2,7 +2,7 @@ import { DocumentProduction } from './document-production.ts'
 import { DocumentEditing } from './document-editing.ts'
 import { isAgentChanging } from './workbench-state.ts'
 import type { AgentAnswer, AgentDraft, AgentRequest, PlaybackKey, Pointer, PreviewSink, WebView, WorkbenchMode, WorkbenchState, WorkbenchStore } from './workbench-state.ts'
-import { enableDocumentProduction, randomUUID } from '@lincyaw/kernel'
+import { enableDocumentProduction, randomUUID, DOCUMENT_ENTRY } from '@lincyaw/kernel'
 import type { ProjectOperation, ProjectPlan, AuthoringWindowSnapshot, AuthoringWindowAction, AuthoringWindowRequest, AuthoringWindowRequestResult } from '@lincyaw/kernel'
 import { CommentDraftBank } from './document-editor/comment-drafts.ts'
 import { ComponentPropertyDrafts } from './component-property-drafts.ts'
@@ -22,7 +22,7 @@ import { documentRecordingActive, disposeDocumentRecordings } from './audio-reco
 import type { DocumentSessionState } from './document-session.ts'
 import type { DocumentDraftReference } from './document-drafts.ts'
 import type { DocumentReturnPoint } from './document-return-point.ts'
-import type { DocumentChangeAnswer, TeachingDocument } from '@lincyaw/kernel'
+import type { DocumentChangeAnswer, PresmiumDocument } from '@lincyaw/kernel'
 import type { DocumentInsertionPlace } from './document-editor/insertion-place.ts'
 import type { CanonicalSource, VoiceoverJob } from '@lincyaw/kernel'
 import { compileDocumentPreview, readPreviewWhenReady, waitForPreviewRequest } from './document-preview.ts'
@@ -467,6 +467,14 @@ export class Workbench {
     return answer
   }
 
+  /** Upgrades the workspace's documents to the current format, then refreshes the document list. */
+  async migrateWorkspace(): Promise<import('@lincyaw/kernel').WorkspaceMigrationAnswer> {
+    if (!this.client.migrateWorkspace) throw new Error('workspace-migrate-unavailable')
+    const answer = await this.client.migrateWorkspace()
+    await this.loadDocuments()
+    return answer
+  }
+
   /** Makes a document called `title` from the template, in a directory of its own; answers the directory. */
   async createDocument(title: string, template?: string): Promise<string> {
     const taken = this.#state.documents?.documents.map(doc => doc.dir) ?? []
@@ -661,7 +669,7 @@ export class Workbench {
       controller.signal.throwIfAborted()
       const ir = snapshot.ir
       if (!current()) return false
-      const entry = directory ? `${directory}/lecture.json` : 'lecture.json'
+      const entry = directory ? `${directory}/${DOCUMENT_ENTRY}` : DOCUMENT_ENTRY
       if (!unchanged() || ir.revision !== snapshot.revision || ir.sourceFingerprints?.[entry] !== fingerprint
         || ir.doc.source?.version !== version || ir.doc.source.fingerprint !== fingerprint) throw new Error('presentation-source-changed')
       if (ir.diagnostics.some(finding => finding.severity === 'error')) throw new Error('document-preview-compile-failed')
@@ -1139,7 +1147,7 @@ export class Workbench {
   stopAuditions(): void { this.#playback.stopAuditions() }
 
   /** The latest source actor value, scoped to the field/editor that captured its identity. */
-  getDocument(identity?: string): TeachingDocument | undefined {
+  getDocument(identity?: string): PresmiumDocument | undefined {
     const source = this.#state.authoring
     if (!source || source.loading || source.directory !== this.#state.document || identity !== undefined && identity !== source.identity) return undefined
     return source.content
@@ -1192,7 +1200,7 @@ export class Workbench {
       if (scope !== this.#documentScope || this.#state.authoring?.identity !== expected.identity) throw new Error('component-source-changed')
       return remember(answer)
     } catch (error) {
-      const current = this.#state.authoring, file = plan.files.find(value => value.path === (source.directory ? `${source.directory}/lecture.json` : 'lecture.json'))
+      const current = this.#state.authoring, file = plan.files.find(value => value.path === (source.directory ? `${source.directory}/${DOCUMENT_ENTRY}` : DOCUMENT_ENTRY))
       // commitExternal has independently read and reconciled this exact predicted canonical version.
       if (scope === this.#documentScope && current?.identity === expected.identity && current.content && current.version && current.fingerprint && !current.error
         && file?.version === current.version && current.version !== plan.source.version) {
@@ -1207,7 +1215,7 @@ export class Workbench {
       throw error
     }
   }
-  recordDocument(content: TeachingDocument): void { if (!isAgentChanging(this.#state)) this.#documentSession.record(content) }
+  recordDocument(content: PresmiumDocument): void { if (!isAgentChanging(this.#state)) this.#documentSession.record(content) }
   documentComposition(composing: boolean, owner = 'body', identity?: string): void { this.#documentSession.composition(composing, owner, identity) }
   retryDocument(): Promise<void> { return this.#documentSession.retry() }
   discardDocument(): Promise<void> { return this.#documentSession.discard().then(() => {}) }

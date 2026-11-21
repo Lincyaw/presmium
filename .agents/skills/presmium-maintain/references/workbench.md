@@ -96,14 +96,14 @@ external baseline resets saved-history undo/redo. Project changes/commit/discard
 author's actual Git repository. Verify save, undo/redo, explicit project commit, branch changes and a
 folder without `.git`; check the user's HEAD and staging remain untouched by ordinary saves.
 
-Three entry points share `lecture.json`: document editing, presentation and video production (sections 16
+Three entry points share `index.pmd`: document editing, presentation and video production (sections 16
 to 19). The document editor is one full-document BlockNote instance with its native selection, history and
 comments; do not add per-page editors or a second selection or comment toolbar. Present and Video read
 independent snapshots and never take focus or mode while editing. Read and Run opens the viewer’s scrolly view for continuous vertical reading, with the animation on the left
 and its step captions on the right. It keeps toolbar actions on the right and fills the available reading canvas
 instead of the ordinary text-sheet width; narrow screens stack the columns.
 
-- Read `docs/ir.md` and `TeachingDocument` before changing transactions. Web and agent changes go through
+- Read `docs/ir.md` and `PresmiumDocument` before changing transactions. Web and agent changes go through
   the same transaction boundary with `baseDocumentVersion`. Saving does not wait for compilation; a failed
   compile keeps the last good snapshot and names its source version.
 - The default stdio entry prepares a workspace service before initialization and uses one bridge. The main CLI supplies startup through the public workspace service entry, using its own bundled installation; the MCP package does not import workspace. Resolve the nearest workspace configuration, otherwise the document directory. Reuse an existing Studio or serve; a workspace lease serializes startup across clients. The owner closes its own service and releases the lease on exit, while borrowers leave existing services running. Surviving clients can acquire a replacement for subsequent requests. `--allow` configures only a newly owned service and never widens the policy of an existing service. `--compiler-only` explicitly uses the compiler host through the public SDK HTTP handler without starting or reusing a workspace service. Keep both protocol eras. Discover service identity (including PID) while idle and before new requests, then notify directory changes. Each business request owns its original transport and abort controller, with unique wire IDs for both directions. Return unknown outcomes without replay. Keep only readonly listen subscriptions across upstream termination, re-establish them on the current backend, preserve filters and stream metadata, and discard old frames. After the replacement stream acknowledges, publish changes only for its honored filters and invalidate subscribed resource values, including resource-only listeners. Frontend cancellation and stdin EOF retire the logical subscription and every owned connection. Verify cold startup, concurrent clients sharing one service, owner exit and replacement, same-address/token restart, cancellation, committed-response loss and explicit compiler-only builds in legacy and modern modes. Client-side registration and tool identity remain the AI client's responsibility.

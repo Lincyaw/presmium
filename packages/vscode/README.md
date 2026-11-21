@@ -1,12 +1,12 @@
 # Presmium for VS Code
 
-Use VS Code's native JSON and code editors for everyday authoring, with shared schema completion, teaching graph diagnostics, entity and code-anchor navigation, live preview and presentation. Open the shared visual editor when you need page layout, assets, the AI Assistant, narration, production or exports. Both entrances edit the same `lecture.json` and project files.
+Use VS Code's native JSON and code editors for everyday authoring, with shared schema completion, teaching graph diagnostics, entity and code-anchor navigation, live preview and presentation. Open the shared visual editor when you need page layout, assets, the AI Assistant, narration, production or exports. Both entrances edit the same `index.pmd` and project files.
 
 Requires VS Code Desktop 1.142 or later and Node.js 22.19 or later. Editing, preview and presentation do not need a model. AI and speech features use the same settings and service prerequisites as browser Studio.
 
 ## Author a document
 
-Open a trusted workspace containing `lecture.json`. VS Code supplies JSON completion from the schema generated directly from the public kernel `DOCUMENT_JSON_SCHEMA`. The bundled language server adds compiler and graph diagnostics, including diagnostics for unsaved buffers. Use **Go to Definition** on entity references, or on a code block's `origin.anchor`, to navigate to the authoritative JSON entity or project code.
+Open a trusted workspace containing `index.pmd`. VS Code supplies JSON completion from the schema generated directly from the public kernel `DOCUMENT_JSON_SCHEMA`. The bundled language server adds compiler and graph diagnostics, including diagnostics for unsaved buffers. Use **Go to Definition** on entity references, or on a code block's `origin.anchor`, to navigate to the authoritative JSON entity or project code.
 
 The editor toolbar and Command Palette provide:
 

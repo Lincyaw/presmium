@@ -1,4 +1,4 @@
-// Scaffold a new paper film: `examples/papers/papers/<slug>/` with a lecture.json in the series' standard order, the opening page
+// Scaffold a new paper film: `examples/papers/papers/<slug>/` with a index.pmd in the series' standard order, the opening page
 // with its fixed line, a placeholder scene for every other page, a storyboard to fill in and a data module stub.
 //
 //   node tools/new-paper.mjs <slug> --title <文稿标题> --institution <单位> --paper <English title> \
@@ -10,11 +10,12 @@
 // The pages, in the order every film follows (CLAUDE.md, 标准): opening; problem (问题, 为什么重要, 论文要解决什么);
 // method; evidence; close (条件, 结论); the ending with its fixed closing line; then the reading-only sources page, which the
 // video skips (its content is only in the web form). Each step has a TODO narration and its scene a placeholder that shows the page and the step, so the document compiles and can be previewed at once.
-// Narration, steps and scenes are then written in lecture.json and scenes/; the skeleton is never generated again.
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+// Narration, steps and scenes are then written in index.pmd and scenes/; the skeleton is never generated again.
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
+import { generateKeyBetween } from 'fractional-indexing'
 
 const WORKSPACE = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -87,8 +88,16 @@ sections['p-notes'] = { id: 'p-notes', title: '来源与说明', level: 2, child
 steps['notes--step-0'] = { id: 'notes--step-0', sectionId: 'p-notes', visuals: [{ blockId: notes, visible: true }], narrationIds: [] }
 order.push('p-notes')
 
+// The new paper goes at the end of the workspace's top level: after the last rank there.
+const papers = join(WORKSPACE, 'papers')
+const ranks = readdirSync(papers).flatMap((name) => {
+  const file = join(papers, name, 'index.pmd')
+  if (!existsSync(file)) return []
+  const { placement } = JSON.parse(readFileSync(file, 'utf8'))
+  return placement?.parent === null && typeof placement.rank === 'string' ? [placement.rank] : []
+}).sort()
 const doc = {
-  schemaVersion: 1, id: slug,
+  schemaVersion: 2, id: slug, placement: { parent: null, rank: generateKeyBetween(ranks.at(-1) ?? null, null) },
   metadata: {
     title: v.title, lang: 'zh-CN', description: `TODO：用一句话说清这篇论文解决什么问题、如何解决（三分钟读完 ${v.paper}，${v.institution}，${v.year}）。`,
     tags: ['论文'], plugins: ['@lincyaw/addon-motion', '@lincyaw/addon-lecture', '@lincyaw/addon-speech'], renderers: { web: {}, slides: {}, lecture: {} },
@@ -102,7 +111,7 @@ const doc = {
 
 mkdirSync(join(dir, 'scenes', 'data'), { recursive: true })
 mkdirSync(join(dir, 'figures'), { recursive: true })
-writeFileSync(join(dir, 'lecture.json'), JSON.stringify(doc, null, 1) + '\n')
+writeFileSync(join(dir, 'index.pmd'), JSON.stringify(doc, null, 1) + '\n')
 writeFileSync(join(dir, 'scenes', 'opening.ts'), "export { default } from '../../../kit/opening.ts'\n")
 writeFileSync(join(dir, 'scenes', 'ending.ts'), "export { default } from '../../../kit/closing.ts'\n")
 writeFileSync(join(dir, 'scenes', 'paper.ts'), `// The data and the colours every scene of this film shares. Every number on screen is read from data/*.json, which
@@ -145,7 +154,7 @@ Print each number the film quotes next to the paper's value; a number that does 
 `)
 writeFileSync(join(dir, 'storyboard.md'), `# 分镜：${v['paper-zh']}（${v.paper}，arXiv ${v.arxiv}）
 
-每个参与制作的 agent 开工前读这份文件，改动后再读一遍。讲稿在 \`lecture.json\` 的 \`narrations\` 里，这里的“讲稿要点”只是对照；数字一律来自 \`scenes/data/\`。
+每个参与制作的 agent 开工前读这份文件，改动后再读一遍。讲稿在 \`index.pmd\` 的 \`narrations\` 里，这里的“讲稿要点”只是对照；数字一律来自 \`scenes/data/\`。
 
 ## A. 简报
 
@@ -208,12 +217,12 @@ TODO：\`scenes/data/derive.py\` 算出的每个数字与论文值的对照；�
 - 场景的样子只由时间决定：只用补间（tween）和 \`set\`，不用 \`onUpdate\`、\`call\` 之类的回调（按时间定位时 GSAP 跳过回调）。
 - 节拍用 \`clock\` 的 \`T(k, f)\`：讲授时每个状态的时长就是这一步配音的长度，节拍跟着句子走。
 - 不用 SVG 的 \`id\` 和 \`url(#…)\`；颜色变化不补间 \`var()\` 或 \`color-mix()\`。
-- 只有协调者改 \`lecture.json\`、\`kit/\`、数据模块；每个 agent 只改分给自己的场景文件，保存前确认能编译。
+- 只有协调者改 \`index.pmd\`、\`kit/\`、数据模块；每个 agent 只改分给自己的场景文件，保存前确认能编译。
 - 看结果用 \`pnpm exec presmium mcp call capture_slides '{"document":"${slug}","section":"p-<页>"}' --out <目录>\`，\`capture_overview\` 一次看全部页面。
 
 ## J. 评审记录
 
 （每轮评审追加在这里：时间、谁看的、发现、改了什么。）
 `)
-console.log(`wrote papers/${slug}/: lecture.json (${order.length} pages), storyboard.md, scenes/ (opening, ${PAGES.map(p => p[0]).join(', ')}, paper.ts), scenes/data/derive.py, figures/`)
-console.log(`next: pnpm exec presmium check papers/${slug}; fill storyboard.md A–H; write the narration in lecture.json`)
+console.log(`wrote papers/${slug}/: index.pmd (${order.length} pages), storyboard.md, scenes/ (opening, ${PAGES.map(p => p[0]).join(', ')}, paper.ts), scenes/data/derive.py, figures/`)
+console.log(`next: pnpm exec presmium check papers/${slug}; fill storyboard.md A–H; write the narration in index.pmd`)

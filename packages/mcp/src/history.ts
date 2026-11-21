@@ -19,7 +19,7 @@ export const HISTORY_TOOLS: ToolSpec[] = [
   },
   {
     name: 'read_history_file', kind: 'read', structured: true, inputSchema: readSchema(DOCUMENT_HISTORY_READ_SCHEMA),
-    description: 'Reads a regular UTF-8 file at an exact reachable historical commit, scoped to this served document. Defaults to its lecture.json. Replies are bounded text fragments with actual SHA-256 and nextOffset; append decoded text and parse JSON only after complete. Rejects hidden, binary, symlink, cross-document and oversized files. This is a historical view, never checkout, restore, discard, compile or validation of the current document.',
+    description: 'Reads a regular UTF-8 file at an exact reachable historical commit, scoped to this served document. Defaults to its index.pmd. Replies are bounded text fragments with actual SHA-256 and nextOffset; append decoded text and parse JSON only after complete. Rejects hidden, binary, symlink, cross-document and oversized files. This is a historical view, never checkout, restore, discard, compile or validation of the current document.',
     run: async call => { const query = readArgs(call); if (!validateDocumentHistoryRead(query)) throw Object.assign(new Error('history-read-invalid'), { status: 400 }); return service(call).read(await call.document(), query, call.caller.member) },
   },
   ...(['undo', 'redo', 'revert'] as const).map((which): ToolSpec => ({

@@ -47,7 +47,7 @@ export function createDocumentVoiceAuthoring({ editor, services, prepareExecutio
     const opened = readAuthoringDocument(editor, { document, member })
     const source = { documentId: opened.content.id, version: opened.source.version, fingerprint: fnv1a64(opened.source.content) }
     if (expected && !same(source, expected)) throw new RequestError(409, 'document-version-changed', { currentSource: source })
-    return { source, lang: opened.content.metadata.lang }
+    return { source, lang: opened.effective.metadata.lang }
   }
   const work = <T>(signal: AbortSignal | undefined, run: (signal: AbortSignal) => Promise<T>): Promise<T> => {
     if (closed) throw new RequestError(503, 'voice-authoring-closed')

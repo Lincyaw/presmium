@@ -33,28 +33,28 @@ ABT：问答可以逐步逼近论文方法，而且每次提问都可追踪；�
 ## F. 结束画面分镜
 | 页/步 | 结束画面 | 对应理解 |
 |---|---|---|
-| opening/opening | 沿着提问树，寻找答案；Re-Search / 研究构思 / Texas A&M · Johns Hopkins | 讲稿见 lecture.json |
-| game/problem | 只给研究问题，隐藏论文方法；提问者：只看问题 / 回答者：读完整论文 / 目标：找回核心想法 | 讲稿见 lecture.json |
-| game/feedback | 每次提问，留下一个节点；是 / 否 / 未知 / 最多 100 问 / 反馈写入历史 | 讲稿见 lecture.json |
-| game/cards | 每十问，保存一次当前想法；想法卡 / 每 10 问保存 / 三个模型评审 · 1—10 分 | 讲稿见 lecture.json |
-| early/early-progress | 多数模型在前 30 问后放缓；横轴：提问次数 / 纵轴：想法恢复程度 / 前 30 问 | 讲稿见 lecture.json |
-| early/early-exception | GPT-5.4 仍在继续接近答案；GPT-5.4：持续上升 / 相同问题预算 / 不同搜索轨迹 | 讲稿见 lecture.json |
-| trees/deep | 钻得太深：反复枚举同一方向；深而集中的分支 / 反复枚举变体 / 平均 5.2—5.5 个主分支 | 讲稿见 lecture.json |
-| trees/wide | 换得太勤：线索还没追，就换方向；宽而浅的分支 / 确认后仍转向 / 平均 13.7 个主分支 | 讲稿见 lecture.json |
-| trees/balanced | 有进有退：沿有效线索追问；确认 → 深入 / 遇阻 → 回退 / 平均 7.2—8.2 个主分支 | 讲稿见 lecture.json |
-| trees/paper-trees | 原始轨迹里，也能看见三种树形；左：过度深入 / 中：过度探索 / 右：较均衡 | 讲稿见 lecture.json |
-| candidates/pool | 让同一个模型，从外部问题池里挑；四个模型各提一问 / 同一个模型负责挑选 / 提议与判断分开 | 讲稿见 lecture.json |
-| candidates/controls | GPT-OSS 从外部候选中获益；第 30 问 / 4.16 → 5.20 / GPT-5.4：−0.59 | 讲稿见 lecture.json |
-| survey/survey | 候选里出现正确想法，弱模型更易接近它；方法方向的候选清单 / 仅替换一个方法名 / DeepSeek：4.93 → 6.18 / 第 100 问 | 讲稿见 lecture.json |
-| scope/scope | 把新候选带进来，再沿反馈搜索；200 篇 ICML 2026 方法论文 / 6 个模型 · 找回已有想法 / 评分与树形由模型评估 | 讲稿见 lecture.json |
-| ending/ending | 让好候选，进入提问树；一句话总结 / 想看哪篇论文？ / 评论区告诉我们 | 讲稿见 lecture.json |
+| opening/opening | 沿着提问树，寻找答案；Re-Search / 研究构思 / Texas A&M · Johns Hopkins | 讲稿见 index.pmd |
+| game/problem | 只给研究问题，隐藏论文方法；提问者：只看问题 / 回答者：读完整论文 / 目标：找回核心想法 | 讲稿见 index.pmd |
+| game/feedback | 每次提问，留下一个节点；是 / 否 / 未知 / 最多 100 问 / 反馈写入历史 | 讲稿见 index.pmd |
+| game/cards | 每十问，保存一次当前想法；想法卡 / 每 10 问保存 / 三个模型评审 · 1—10 分 | 讲稿见 index.pmd |
+| early/early-progress | 多数模型在前 30 问后放缓；横轴：提问次数 / 纵轴：想法恢复程度 / 前 30 问 | 讲稿见 index.pmd |
+| early/early-exception | GPT-5.4 仍在继续接近答案；GPT-5.4：持续上升 / 相同问题预算 / 不同搜索轨迹 | 讲稿见 index.pmd |
+| trees/deep | 钻得太深：反复枚举同一方向；深而集中的分支 / 反复枚举变体 / 平均 5.2—5.5 个主分支 | 讲稿见 index.pmd |
+| trees/wide | 换得太勤：线索还没追，就换方向；宽而浅的分支 / 确认后仍转向 / 平均 13.7 个主分支 | 讲稿见 index.pmd |
+| trees/balanced | 有进有退：沿有效线索追问；确认 → 深入 / 遇阻 → 回退 / 平均 7.2—8.2 个主分支 | 讲稿见 index.pmd |
+| trees/paper-trees | 原始轨迹里，也能看见三种树形；左：过度深入 / 中：过度探索 / 右：较均衡 | 讲稿见 index.pmd |
+| candidates/pool | 让同一个模型，从外部问题池里挑；四个模型各提一问 / 同一个模型负责挑选 / 提议与判断分开 | 讲稿见 index.pmd |
+| candidates/controls | GPT-OSS 从外部候选中获益；第 30 问 / 4.16 → 5.20 / GPT-5.4：−0.59 | 讲稿见 index.pmd |
+| survey/survey | 候选里出现正确想法，弱模型更易接近它；方法方向的候选清单 / 仅替换一个方法名 / DeepSeek：4.93 → 6.18 / 第 100 问 | 讲稿见 index.pmd |
+| scope/scope | 把新候选带进来，再沿反馈搜索；200 篇 ICML 2026 方法论文 / 6 个模型 · 找回已有想法 / 评分与树形由模型评估 | 讲稿见 index.pmd |
+| ending/ending | 让好候选，进入提问树；一句话总结 / 想看哪篇论文？ / 评论区告诉我们 | 讲稿见 index.pmd |
 
 ## G. 数据来源与边界
 数值逐项录自原始 main.tex 的 §5.2、表 2、§5.3、§6.1；无需位图估值。原始压缩包只解包和读取，不执行。figures 的 JSON 记录源文件及裁切区域。
 概念树标“示意”；原图页展示实际轨迹。分支组统计不作为最优阈值。共享问题池并不改善所有模型：GPT-5.4 反而下降 0.59。恢复论文想法不等同于完成真实科研。分数不反馈给提问者，回答包括未知。
 
 ## H. 制作
-文稿、标题、图例、参数、数字、讲稿与停留时间仅在 lecture.json。scenes/story.ts 是复用的可任意跳转 GSAP 场景，读取文稿参数；片头和片尾转发到系列 kit，片头通过公开 compact 参数为字幕留出空间；不另存逐页内容，不创建生成文稿的临时脚本。
+文稿、标题、图例、参数、数字、讲稿与停留时间仅在 index.pmd。scenes/story.ts 是复用的可任意跳转 GSAP 场景，读取文稿参数；片头和片尾转发到系列 kit，片头通过公开 compact 参数为字幕留出空间；不另存逐页内容，不创建生成文稿的临时脚本。
 通过 MCP 创建文稿、原子保存文稿与场景、检查、截帧和构建。论文下载与裁切使用已有 fetch.sh 和 figure.py；MCP 当前无对应能力。
 作者已确认联系表及提问树主线，并选择先完成带字幕的无声预览。已加入枝条生长、死路回退、候选汇入与柱形对照；每步最终画面保持静止。封面与发布文案已制作。后续作者提供语音凭据并确认付费生成：15 段讲稿、约 1199 个字符，使用火山引擎“甜美桃子 2.0”；音频已全部生成并保存匹配缓存与 speech.lock.json。实测语音合计 243.386 秒，包含动画停留的全片 284.465 秒。
 

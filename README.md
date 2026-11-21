@@ -3,7 +3,7 @@
 [![npm](https://img.shields.io/npm/v/@lincyaw/presmium?label=npm)](https://www.npmjs.com/package/@lincyaw/presmium)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
-Presmium is an open-source presentation toolkit for teaching and technical communication. A single document, `lecture.json`, holds the text, equations, code, data, animation and narration of a lecture, and Presmium builds it into a website, slides, a Jupyter notebook and a narrated video.
+Presmium is an open-source presentation toolkit for teaching and technical communication. A single document, `index.pmd`, holds the text, equations, code, data, animation and narration of a lecture, and Presmium builds it into a website, slides, a Jupyter notebook and a narrated video.
 
 **Live examples:** [profile.aoyangfang.top/presmium](https://profile.aoyangfang.top/presmium/) — feature collections, tutorials, complete courses and an animation reference, all built from the [gallery](examples/gallery/README.md) in this repository.
 
@@ -39,7 +39,7 @@ To preview the site locally, run `pnpm serve` and open the address it prints.
 
 ## Editing
 
-`lecture.json` is read and written by tools rather than edited by hand. There are two ways to edit a document:
+`index.pmd` is read and written by tools rather than edited by hand. There are two ways to edit a document:
 
 - **In the browser.** Install Presmium with `pnpm add -g @lincyaw/presmium` and run `presmium studio` in the project. Studio is included (experimental, about 865 MB with its dependencies). The workbench provides pages, rich text, step scripts, comments, version history, slides and video production. Editing and previewing need no language model; the AI assistant uses the API key entered under *Settings → Model*.
 - **With the Claude Code plugin.** In Claude Code, run `/plugin marketplace add Lincyaw/presmium` and `/plugin install presmium@presmium`. It brings the authoring, animation, SVG figure and plugin skills, the `presmium` MCP tools (started with `pnpm dlx @lincyaw/presmium mcp`, excluding Presmium's packages from pnpm's `minimumReleaseAge`, in the project, so pnpm is the only requirement), and the commands `/presmium:new`, `/presmium:studio` and `/presmium:export-svg`.
@@ -63,7 +63,7 @@ Install Presmium, including Studio, the command line, renderers and official plu
 
 When a server runs behind a reverse proxy or under a path, pass the public address with `--public-url` (and, for the studio, the preview address with `--preview-url`), for example `https://example.com/studio/`.
 
-Further reading: the [author guide](site/guide/lecture.json), the [plugin guide](site/plugins/lecture.json), [site themes and publishing](docs/site-themes.md) and the [architecture](docs/architecture.md).
+Further reading: the [author guide](site/guide/index.pmd), the [plugin guide](site/plugins/index.pmd), [site themes and publishing](docs/site-themes.md) and the [architecture](docs/architecture.md).
 
 ## Development
 

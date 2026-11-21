@@ -65,12 +65,12 @@ Scenes import them with relative `.ts` imports ([Libraries](libraries.md), Rules
 
 ## 3. One document, many writers
 
-There is one `lecture.json`, so writers must not overwrite each other.
+There is one `index.pmd`, so writers must not overwrite each other.
 
 - **One service.** Give every agent the same explicit workspace path in its native stdio connection, `presmium mcp <absolute-workspace-path>`. It reuses Studio or `presmium serve`, or prepares the shared workspace service before its first catalog; agents use the connected native tools. The coordinator opens Studio with default local listener settings when browser actions or an approval window are needed; it borrows the existing service. Keep the original owning stdio connection open for the team's work: its exit stops that service and ends a borrowing Studio. Agents do not manually start, stop or restart the shared service and do not run `presmium dev` or builds; the service compiles changed files so everyone sees the current pages. Canonical editing uses the owner's authorization; source-file writes, execution, paid generation and browser control retain their policy. Agents never add `--allow` to bypass a pending or refused approval. After an interruption, inspect history before repeating an action with an unknown result.
 - **Author actions are transactions.** A page is created with `plan_page_change` and `apply_page_change`; its blocks, steps, narration and the definition of its scene with `plan_document_change` and `apply_document_change`, which can carry the page's scene file in the same change so that the definition and its code land together. A plan names the source version it was read from. When another agent saved in between, the apply returns 409: read again with `read_document_part`, plan again on the new version and apply that, never the old plan. Changes kept to one page at a time rarely collide.
-- **Without the MCP server**, the coordinator alone edits `lecture.json`. Each agent changes its own scene files and reports the intended page changes by stable entity ID. Before applying those changes, the coordinator reads the latest saved document and updates only the named entities, preserving all other fields and author edits. Page order, titles, narration, steps, parameters, timing and comments stay in the document. Concurrent Web editing requires the author service and its versioned actions.
-- **One editable source.** Keep page content in `lecture.json`; scene code, data and media remain referenced project files. Do not maintain per-page content mirrors or scripts that reconstruct an existing document from another content source. Checks, builds and publishing consume the saved document without rewriting it.
+- **Without the MCP server**, the coordinator alone edits `index.pmd`. Each agent changes its own scene files and reports the intended page changes by stable entity ID. Before applying those changes, the coordinator reads the latest saved document and updates only the named entities, preserving all other fields and author edits. Page order, titles, narration, steps, parameters, timing and comments stay in the document. Concurrent Web editing requires the author service and its versioned actions.
+- **One editable source.** Keep page content in `index.pmd`; scene code, data and media remain referenced project files. Do not maintain per-page content mirrors or scripts that reconstruct an existing document from another content source. Checks, builds and publishing consume the saved document without rewriting it.
 
 ## 4. Each agent's loop
 
@@ -96,7 +96,7 @@ Each review, the cold read and then the author's, ends in a new section at the e
 
 Decisions about the subject itself (a rule of the method, what counts as a cost) belong to the author: ask, don't settle them in a convention.
 
-Before the author sees a round, sweep for terms: search the narration and text in `lecture.json` and the on-screen words in `scenes/*.ts` for every banned synonym and calque in the term table, and for the colloquial words the register rules out. A hit is renamed, not explained. Whether a first mention defines its term, whether a sentence carries information and whether the argument holds are judged by reading, in the cold read's third pass (section 7), not by a search.
+Before the author sees a round, sweep for terms: search the narration and text in `index.pmd` and the on-screen words in `scenes/*.ts` for every banned synonym and calque in the term table, and for the colloquial words the register rules out. A hit is renamed, not explained. Whether a first mention defines its term, whether a sentence carries information and whether the argument holds are judged by reading, in the cold read's third pass (section 7), not by a search.
 
 What the explainer's two rounds had to add, usable as a checklist for the first version:
 

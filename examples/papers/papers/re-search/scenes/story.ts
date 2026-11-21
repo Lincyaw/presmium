@@ -5,7 +5,7 @@ import progress from '../figures/progress.png'
 import trees from '../figures/search-trees.png'
 import survey from '../figures/naming-gain.png'
 
-// Seekable motion: every frame follows the authored state and timeline; all content stays in lecture.json.
+// Seekable motion: every frame follows the authored state and timeline; all content stays in index.pmd.
 interface Shot {
   id: string
   kind: string

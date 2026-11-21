@@ -1,6 +1,7 @@
-// `presmium import`: a folder of Markdown notes (or one note) to documents, one `lecture.json` per note.
+// `presmium import`: a folder of Markdown notes (or one note) to documents, one `index.pmd` per note, placed at the top
+// level of the workspace after its documents, in note order.
 //
-// `a/b/note.md` becomes `<out>/a/b/note/lecture.json`. Wikilinks resolve as note-taking apps resolve them: by path,
+// `a/b/note.md` becomes `<out>/a/b/note/index.pmd`. Wikilinks resolve as note-taking apps resolve them: by path,
 // then by file name or alias (case-insensitive), the nearest note winning when several share a name; a folder's
 // `index` or `README` note also answers to the folder's name. A local file a note links to is copied into its
 // document's `attachments/`, since a document publishes only files inside the workspace; an excluded folder (`raw`,
@@ -9,6 +10,7 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpat
 import { basename, dirname, extname, join, posix, relative, resolve, sep } from 'node:path'
 import type { MdastNode } from '@lincyaw/kernel'
 import { DOCUMENT_ENTRY } from '@lincyaw/kernel'
+import { topLevelRanks } from './document-tree.ts'
 import { headingSlug, markdownDocument, noteTitle, splitFrontmatter } from './markdown.ts'
 
 export interface ImportOptions {
@@ -20,6 +22,8 @@ export interface ImportOptions {
   group?: number
   /** Retains the exact source beside the editable converted document. */
   preserveOriginal?: boolean
+  /** The workspace the documents join, whose top level they are placed at the end of; `out` when not given. */
+  workspaceRoot?: string
 }
 
 export interface ImportReport {
@@ -139,7 +143,8 @@ function writeNotes({ root, out, isExcluded }: ReturnType<typeof discover>, opti
 
   const report: ImportReport = { documents: [], files: 0, unresolved: [] }
   const copied = new Map<string, string | Uint8Array>()
-  for (const note of notes) {
+  const ranks = topLevelRanks(options.workspaceRoot ?? out, notes.length)
+  for (const [index, note] of notes.entries()) {
     const docDir = join(out, note.dir)
     const names = new Map<string, string>()
     /** A file inside the imported folder to its copy in the document's attachments; undefined for anything else. */
@@ -175,6 +180,7 @@ function writeNotes({ root, out, isExcluded }: ReturnType<typeof discover>, opti
       title: note.title,
       tree: note.tree,
       lang: options.lang,
+      rank: ranks[index]!,
       links: {
         page: (target, fragment) => {
           const direct = pathNote(posix.join(posix.dirname(note.path), target)) ?? pathNote(target)
@@ -202,9 +208,4 @@ function writeNotes({ root, out, isExcluded }: ReturnType<typeof discover>, opti
   }
   report.files = copied.size
   return report
-}
-
-/** The `documents` patterns that cover these folders: one per depth, as workspace patterns do not cross folders. */
-export function documentPatterns(dirs: string[]): string[] {
-  return [...new Set(dirs.map(dir => dir.split('/').length))].sort((a, b) => a - b).map(depth => `${'*/'.repeat(depth)}${DOCUMENT_ENTRY}`)
 }

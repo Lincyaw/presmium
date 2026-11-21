@@ -1,8 +1,8 @@
 # 三分钟读完一篇论文（翰林院传达室）
 
-这个目录是一个 Presmium 工作区：每篇论文一份文稿 `papers/<slug>/lecture.json`，做成一段三分钟左右（一般不超过六分钟）的配音动画（讲授视频），同时是网页（画面固定、讲稿在旁边滚动）和幻灯片。在本目录 `pnpm serve` 预览整个网站，`pnpm build` 导出网站到 `dist/web/`。
+这个目录是一个 Presmium 工作区：每篇论文一份文稿 `papers/<slug>/index.pmd`，做成一段三分钟左右（一般不超过六分钟）的配音动画（讲授视频），同时是网页（画面固定、讲稿在旁边滚动）和幻灯片。在本目录 `pnpm serve` 预览整个网站，`pnpm build` 导出网站到 `dist/web/`。
 
-工作区在仓库的 `examples/papers/`，每篇论文放在 `papers/` 下的独立子目录。CI 检查并构建所有论文；推送到 `main` 后，Pages 工作流以示例站的 `/papers/` 为基础路径构建，并将产物合入同一次部署。新增论文由 `presmium.workspace.yaml` 的 `papers/*/lecture.json` 自动收录。
+工作区在仓库的 `examples/papers/`，每篇论文放在 `papers/` 下的独立子目录。CI 检查并构建所有论文；推送到 `main` 后，Pages 工作流以示例站的 `/papers/` 为基础路径构建，并将产物合入同一次部署。工作区自动收录 `papers/` 下每篇论文的 `index.pmd`，按各文稿的 `placement` 排序；新建论文放在顶层末尾。
 
 写文稿、做动画、配音与导出的通用规则在仓库的技能 `presmium-author`、`presmium-animate`（`.agents/skills/`）里；这里只写这个系列自己的标准和流水线。
 
@@ -37,7 +37,7 @@
 |---|---|
 | `kit/` | 所有论文共用：画面与类型（`frame.ts`）、图表（`chart.ts`）、论文原图的镜头与标注（`figure.ts`）、品牌（`brand.ts`）、开场（`opening.ts`）与结尾（`closing.ts`） |
 | `papers/` | 所有论文文稿，每篇论文一个独立的 `<slug>/` 子目录 |
-| `papers/<slug>/lecture.json` | 文稿：唯一的内容来源（讲稿、步骤、场景引用、配音设置） |
+| `papers/<slug>/index.pmd` | 文稿：唯一的内容来源（讲稿、步骤、场景引用、配音设置） |
 | `papers/<slug>/storyboard.md` | 分镜：简报、论点、配色、术语表、定义表、每一步的结束画面、数字来源、制作规则、评审记录 |
 | `papers/<slug>/publish.md` | 发布标题、正文文案，以及对应封面和成片的相对链接 |
 | `papers/<slug>/cover.png` | 与成片对应的发布封面，默认横版 4:3 |
@@ -54,7 +54,7 @@
 1. **取源码**：`tools/fetch.sh <arxiv-id> <slug>` 下载 arXiv 源码（`https://arxiv.org/e-print/<id>`）到 `.cache/<id>/`，渲染全部图的预览，列出每张图的 LaTeX 说明。读 `Sections/*.tex` 比读 PDF 准确；论文有代码与数据仓库时克隆到 `.cache/` 并找到画面要用的结果表。没有仓库链接的论文照常生成图预览。当前 MCP 没有远程论文下载、源码解包或 PDF 裁切动作，这一步复用已有素材工具；创建文稿、编辑、检查与截帧通过 MCP 作者动作完成。
 2. **简报与论点**：在 `storyboard.md` 写 A 到 F 节：观众、观看前后、论点（“看完后，观众明白 X，因为他们看到了 Y”）、ABT、配色、术语表、定义表。中心画面要让论点成为画面中随步骤变化、可直接看见的属性。
 3. **数据**：写 `scenes/data/derive.py`，从论文公开的数据算出每个要上屏的数字，打印与论文值的对照；对不上就先查原因，不上屏。
-4. **讲稿与分镜**：`storyboard.md` 的 G 节一行一步，写清结束画面与讲稿要点，并按 `presmium-animate/references/acceptance.md` 填元素与操作表：对象含义、编码、初末状态、动作路径、讲稿触发点、结果时机与跨步保留关系。先完成这些设计再写场景；只有结束帧关键词不算分镜完成。每步承载一个意思，长度随内容安排。用 `tools/new-paper.mjs` 生成文稿骨架（开场页与标准顺序的空页面），把讲稿写进 `lecture.json`。
+4. **讲稿与分镜**：`storyboard.md` 的 G 节一行一步，写清结束画面与讲稿要点，并按 `presmium-animate/references/acceptance.md` 填元素与操作表：对象含义、编码、初末状态、动作路径、讲稿触发点、结果时机与跨步保留关系。先完成这些设计再写场景；只有结束帧关键词不算分镜完成。每步承载一个意思，长度随内容安排。用 `tools/new-paper.mjs` 生成文稿骨架（开场页与标准顺序的空页面），把讲稿写进 `index.pmd`。
 5. **原图**：`uv run --no-project --with pymupdf python -I <figure.py> <图.pdf> papers/<slug>/figures/<名>.png --crop x0,y0,x1,y1`，`figure.py` 在 `presmium-animate` 技能的 `gallery/catalog/paper-figure/tools/`（先加 `--words` 看每个词的位置再定裁切），输出的 JSON 给出每个刻度与图例词的位置，标注按它放。
 6. **场景**：协调者先写共用的数据模块和前几个场景定下画风，再把其余页面分给 agent 并行（每个 agent 只改自己的场景文件，见 `storyboard.md` 的 I 节）。规则：只用补间与 `set`，不用回调；节拍用 `clock` 的 `T(k, f)`，讲授时每个状态的时长就是这一步配音的长度，节拍跟着句子走；不用 SVG 的 `id`；要读的东西放在 77% 高度以上（下面是两行字幕的位置；坐标图的底边放在 61 个 SVG 单位，横轴标题就在这条线以上）；虚线用 `wipe` 展开。
 7. **看**：连接原生 MCP `presmium` 后直接调用 `capture_slides`，用 `document: "papers/<slug>"`、`section: "p-<页>"` 取结束帧和 direct 加 `at` 的操作前中后画面；倒退检查另用不带 `at` 的 `arrive: "backward"`，不把两者合并或记成倒退定时验证。`appearance: "dark"` 看暗色，`capture_reading` 看网页（`width: 390` 看手机），`capture_overview` 看全部页面。重要验收用 `retain: true`，通过 `capture.manifestFile` 交接本轮文件，同时核对 `source` 与 `codeBundle`，不混旧图。默认 `presmium mcp <本工作区绝对路径>` 在初始化前启动或复用服务；没有 MCP 客户端的脚本才使用 `presmium mcp call ... --out <目录>`。

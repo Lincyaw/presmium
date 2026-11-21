@@ -1,4 +1,4 @@
-import type { StepProduction, TeachingDocument, VoiceSource } from './contracts/document.ts'
+import type { StepProduction, PresmiumDocument, VoiceSource } from './contracts/document.ts'
 
 /** Authoring scopes use stable source IDs, independent of compiled numerical step bindings. */
 export type DocumentVoiceScope = { kind: 'document' } | { kind: 'page', sectionId: string } | { kind: 'step', stepId: string } | { kind: 'steps', stepIds: readonly string[] }
@@ -20,20 +20,20 @@ export interface DocumentVoiceImpact {
   overrides: { pages: number, steps: number, none: number, tts: number, recording: number }
 }
 
-function page(document: TeachingDocument, id: string) {
+function page(document: PresmiumDocument, id: string) {
   const section = Object.hasOwn(document.sections, id) && document.sections[id]
   if (!section || !document.sectionOrder.includes(id)) throw new Error(`document-voice-page-missing: ${id}`)
   return section
 }
 
-function step(document: TeachingDocument, id: string) {
+function step(document: PresmiumDocument, id: string) {
   const value = Object.hasOwn(document.steps, id) && document.steps[id]
   if (!value || !page(document, value.sectionId).stepOrder.includes(id)) throw new Error(`document-voice-step-missing: ${id}`)
   return value
 }
 
 /** Deduplicated in authored page/step order; every requested ID is checked before any change. */
-export function documentVoiceStepIds(document: TeachingDocument, scope: DocumentVoiceScope): string[] {
+export function documentVoiceStepIds(document: PresmiumDocument, scope: DocumentVoiceScope): string[] {
   const ordered = () => [...new Set(document.sectionOrder.flatMap(id => page(document, id).stepOrder))]
   switch (scope.kind) {
     case 'document': return ordered()
@@ -50,7 +50,7 @@ export function documentVoiceStepIds(document: TeachingDocument, scope: Document
 }
 
 /** An absent voice remains unset; none and recording retain their canonical identities. */
-export function resolveDocumentStepVoice(document: TeachingDocument, stepId: string): DocumentStepVoice {
+export function resolveDocumentStepVoice(document: PresmiumDocument, stepId: string): DocumentStepVoice {
   const { sectionId } = step(document, stepId), production = document.production
   const layers = [[production.stepOverrides[stepId]?.voiceSource, 'step'], [production.sectionOverrides?.[sectionId]?.voiceSource, 'page'], [production.defaults.voiceSource, 'document']] as const
   for (const [value, inheritedFrom] of layers) if (value !== undefined) return { stepId, sectionId, value, inheritedFrom }
@@ -64,7 +64,7 @@ function same(left: unknown, right: unknown): boolean {
   return a.length === b.length && a.every(key => Object.hasOwn(right, key) && same((left as Record<string, unknown>)[key], (right as Record<string, unknown>)[key]))
 }
 
-function checkVoice(document: TeachingDocument, source: VoiceSource | null | undefined): void {
+function checkVoice(document: PresmiumDocument, source: VoiceSource | null | undefined): void {
   if (source === null || source === undefined) return
   const keys = (value: object, allowed: string[]) => Object.keys(value).every(key => allowed.includes(key))
   if (typeof source !== 'object' || Array.isArray(source)) throw new Error('document-voice-source-invalid')
@@ -84,7 +84,7 @@ function checkVoice(document: TeachingDocument, source: VoiceSource | null | und
   throw new Error('document-voice-source-invalid')
 }
 
-function protectedStep(document: TeachingDocument, scope: DocumentVoiceScope, id: string): boolean {
+function protectedStep(document: PresmiumDocument, scope: DocumentVoiceScope, id: string): boolean {
   if (scope.kind === 'step') return false
   if (document.production.stepOverrides[id]?.voiceSource !== undefined) return true
   return scope.kind === 'document' && document.production.sectionOverrides?.[document.steps[id]!.sectionId]?.voiceSource !== undefined
@@ -104,7 +104,7 @@ function settings(previous: StepProduction | undefined, source: VoiceSource | nu
  * null/undefined removes only voiceSource under the same scope/protection rules. Timing and opaque
  * sibling fields survive, including when the last voice setting is removed. A no-op retains identity.
  */
-export function changeDocumentVoice(document: TeachingDocument, scope: DocumentVoiceScope, source: VoiceSource | null | undefined, options: DocumentVoiceOptions = {}): TeachingDocument {
+export function changeDocumentVoice(document: PresmiumDocument, scope: DocumentVoiceScope, source: VoiceSource | null | undefined, options: DocumentVoiceOptions = {}): PresmiumDocument {
   const ids = documentVoiceStepIds(document, scope)
   checkVoice(document, source)
   const previous = document.production
@@ -138,7 +138,7 @@ export function changeDocumentVoice(document: TeachingDocument, scope: DocumentV
 }
 
 /** Override counts include every existing local slot, even a page slot shadowed by a step slot. */
-export function previewDocumentVoiceChange(document: TeachingDocument, scope: DocumentVoiceScope, source: VoiceSource | null | undefined, options: DocumentVoiceOptions = {}): DocumentVoiceImpact {
+export function previewDocumentVoiceChange(document: PresmiumDocument, scope: DocumentVoiceScope, source: VoiceSource | null | undefined, options: DocumentVoiceOptions = {}): DocumentVoiceImpact {
   const ids = documentVoiceStepIds(document, scope), next = changeDocumentVoice(document, scope, source, options)
   const impact: DocumentVoiceImpact = { total: ids.length, updated: 0, preserved: 0, unchanged: 0, overrides: { pages: 0, steps: 0, none: 0, tts: 0, recording: 0 } }
   const count = (value: VoiceSource | undefined, kind: 'pages' | 'steps') => { if (value) { impact.overrides[kind]++; impact.overrides[value.type]++ } }

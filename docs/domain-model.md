@@ -1,12 +1,12 @@
 # Presmium 领域模型
 
-本文按领域驱动设计列出 Presmium 的限界上下文、上下文之间的关系与代码中的用词。核心域是教学文稿：`lecture.json` 中的 `TeachingDocument` 与由它派生的运行快照 `IRDocument`，见 [ir.md](ir.md)。包、分层与跨上下文契约的细节见 [architecture.md](architecture.md)，工作台见 [studio.md](studio.md)，作者动作见 [authoring-actions.md](authoring-actions.md)，云空间见 [cloud.md](cloud.md)，界面用词见 [glossary.md](glossary.md)。
+本文按领域驱动设计列出 Presmium 的限界上下文、上下文之间的关系与代码中的用词。核心域是教学文稿：`index.pmd` 中的 `PresmiumDocument` 与由它派生的运行快照 `IRDocument`，见 [ir.md](ir.md)。包、分层与跨上下文契约的细节见 [architecture.md](architecture.md)，工作台见 [studio.md](studio.md)，作者动作见 [authoring-actions.md](authoring-actions.md)，云空间见 [cloud.md](cloud.md)，界面用词见 [glossary.md](glossary.md)。
 
 ## 1. 限界上下文
 
 | 上下文 | 职责 | 主要包 | 关键聚合与实体 |
 |---|---|---|---|
-| 文稿 Document（核心域） | 可编辑文稿的结构、身份、引用与校验；各上下文共用的公开语言 | `@lincyaw/kernel`（`contracts/document.ts`、`document.ts`） | `TeachingDocument`（聚合根）、`Section`、`DocumentBlock`、`Step`、`Narration`、`Asset`、`Definition`、`Production`、`DocumentThread` |
+| 文稿 Document（核心域） | 可编辑文稿的结构、身份、引用与校验；文稿树中的位置与继承的设置；各上下文共用的公开语言 | `@lincyaw/kernel`（`contracts/document.ts`、`document.ts`、`document-settings.ts`、`document-tree.ts`） | `PresmiumDocument`（聚合根）、`DocumentPlacement`、`Section`、`DocumentBlock`（含同步块 `EmbedBlock`）、`ReferenceNode`、`Step`、`Narration`、`Asset`、`Definition`、`Production`、`DocumentThread` |
 | 内核 Kernel | 插件与服务的注册和启动、锚点、检查、诊断、跨插件的服务契约 | `@lincyaw/kernel` | `Kernel`（聚合根）、`PluginDefinition`、`PluginManifest`、`ServiceToken`、`ServiceRegistry`、`Resolution`、`Finding` |
 | 编译 Compilation | 校验文稿、lowering、解析步骤状态、运行编译步骤、代码引用与执行、受众筛选、派生运行快照与诊断 | `@lincyaw/compiler`、`@lincyaw/cli`、`@lincyaw/presmium` | `Compilation`、`IRDocument`、`IRSection`、`IRBlock`、`IRPass`、`RunCache` |
 | 渲染 Rendering | 从运行快照生成网页、幻灯片、notebook；查看器运行时、站点外壳、文件发布、工作区站点 | `@lincyaw/viewer`、`@lincyaw/web`、`@lincyaw/render-slides`、`@lincyaw/render-notebook` | `Renderer`、`Support`、`ViewDefinition`、`SiteSpec`、`WebPage`、`RenderOutput` |
@@ -20,7 +20,7 @@
 | 课堂 Classroom | 课堂会话、同步传输、跟随、笔记、测验、练习、提问、理解度、先预测再揭示 | `@lincyaw/addon-session`、`@lincyaw/addon-classroom`、`@lincyaw/classroom-server` | `SessionSnapshot`、`Participant`、`ClassroomStore`、`Answer`、`Question` |
 | 讲授 Lecture | 讲授计划、讲授轨、录制与回放、导出视频、字幕 | `@lincyaw/addon-lecture` | `LectureTrack`（聚合根）、`ProductionPlan`、`LecturePlan`、`Utterance`、`TrackEvent` |
 | 语音 Speech | 合成与转写、引擎适配、合成缓存、克隆音色的同意记录 | `@lincyaw/addon-speech` | `SpeechService`、`Synthesis`、`Transcript`、合成缓存（聚合根）、`ConsentRecord` |
-| 工作区 Workspace | 多份文档的工程：文档操作、文稿事务、修改历史与撤销、锁、编译会话、修改审阅、工作区站点 | `@lincyaw/workspace` | `Workspace`（聚合根）、`Document`、`Revision`、`RevisionService`、`DocumentLockService`、`DocumentFiles`、`CompileSession`、`ChangeReview`（聚合根） |
+| 工作区 Workspace | 多份文档的工程：发现文稿与文稿树、继承的设置的根（`defaults:`）、文档操作、文稿事务、修改历史与撤销、锁、编译会话、修改审阅、格式升级、工作区站点 | `@lincyaw/workspace`；扫描与继承链在 `@lincyaw/compiler`（`document-tree.ts`），升级在 `@lincyaw/compiler/migrate` | `Workspace`（聚合根）、`Document`、`DocumentTree`、`Revision`、`RevisionService`、`DocumentLockService`、`DocumentFiles`、`CompileSession`、`ChangeReview`（聚合根） |
 | 智能体 Agent | agent 环境（MCP 工具与资源）、焦点、读者问答 | `@lincyaw/mcp`、`@lincyaw/addon-assistant` | `AgentContext`、`Focus`、`AgentTool`、`AskClient` |
 | 工作台 Workbench | 作者界面：文稿列表、文稿编辑、批注、AI 改写、历史、对话；DeepSeek Harness 的防腐层 | `@lincyaw/workbench`、`@lincyaw/dsh`、`@lincyaw/studio`、`@lincyaw/design` | bundle、`DiagnosticSnapshot`、预览协议 `PREVIEW_PROTOCOL` |
 | 编辑器集成 Editing | 代码编辑器中的诊断、跳转、悬停、补全与预览同步 | `@lincyaw/language-server`、`presmium-vscode` | `AnchorRef`、`SectionLocation` |
@@ -28,7 +28,9 @@
 
 主要不变量：
 
-- **文稿**：映射键等于 ID，内容树单父无环，引用、参数与状态有效，每页至少一步，任意定位可重建画面（[ir.md](ir.md) 第 2、3 节）。
+- **文稿**：映射键等于 ID，内容树单父无环，引用、参数与状态有效，每页至少一步，任意定位可重建画面（[ir.md](ir.md) 第 2、3 节）。文稿只接受当前格式版本，旧版本经升级转换（[ir.md](ir.md) 2.17 节）。
+- **文稿树**：每份文稿在工作区中有唯一的 `id` 与一个 `placement { parent, rank }`；树由全部文稿的位置派生，不另存；移动只改被移动的文稿，文件夹不动；无效位置（未知上级、成环、同序）降级显示并诊断，不使列表失败。跨文稿的引用与同步块只用 `id`。
+- **继承的设置**：文稿只存自己设置的值；语言、插件、插件与渲染端配置、执行、检查与讲授默认值按“工作区 `defaults:` → 祖先 → 本文稿”生效，越近越优先；生效的文稿只用于判断，从不保存（[ir.md](ir.md) 2.1.2 节）。
 - **内核**：插件 ID 唯一；一个服务令牌在一个作用域内只有一个实现；插件按服务依赖拓扑启动，环上插件全部禁用；必需依赖缺失或内核版本不兼容时禁用，可选依赖缺失时降级；单个插件初始化失败只禁用它与必需依赖它的插件。
 - **锚点解析**：`Resolution` 为 `exact`、`moved`、`fuzzy`、`lost`；只有前两种直接用于渲染，后两种必须产生诊断。
 - **渲染**：渲染端只读运行快照，不读不写文稿；网页渲染端对所有节点为 `full`；`none` 的块出现在构建报告中。
@@ -43,7 +45,7 @@
 ## 2. 上下文映射
 
 ```text
-lecture.json ──► 编译 ──► 运行快照 ──► 渲染：网页 · 幻灯片 · notebook · 讲授
+index.pmd ──► 编译 ──► 运行快照 ──► 渲染：网页 · 幻灯片 · notebook · 讲授
                   ▲                       │
    插件：编译步骤、执行器、    ▼
    环境提供方、渲染端扩展          宿主适配（浏览器）＋ 服务端（Node）
@@ -61,7 +63,7 @@ lecture.json ──► 编译 ──► 运行快照 ──► 渲染：网页 �
 
 | 上游 | 下游 | 关系 | 经由 |
 |---|---|---|---|
-| 文稿 | 编译、工作区、智能体、工作台 | 公开语言 | `TeachingDocument`、`validateDocument`、`DocumentEditOperation` |
+| 文稿 | 编译、工作区、智能体、工作台 | 公开语言 | `PresmiumDocument`、`validateDocument`、`DocumentEditOperation` |
 | 编译 | 渲染、讲授、智能体、工作台 | 公开语言 | `IRDocument`、`CanonicalSource` |
 | 内核 | 全部 | 共享内核 | `PresmiumNodePlugin`、`ServiceToken`、服务契约 |
 | 执行环境 | 代码执行 | 客户与供应商：环境的执行器登记到路由，按 ID 选择 | `EnvironmentProvider`、`EXECUTOR` |
@@ -83,10 +85,14 @@ lecture.json ──► 编译 ──► 运行快照 ──► 渲染：网页 �
 
 | 词 | 含义 | 代码名 |
 |---|---|---|
-| 文稿 | `lecture.json` 中的可编辑教学文稿 | `TeachingDocument` |
+| 文稿 | 一个文件夹中 `index.pmd` 里的可编辑文稿 | `PresmiumDocument` |
+| 文稿树 | 工作区中文稿的上下级与同级顺序，由各文稿的位置派生 | `DocumentTree`、`DocumentPlacement`（`placement`） |
+| 继承的设置 | 文稿没有设置、从祖先与工作区 `defaults:` 得到的值 | `DocumentDefaults`、`EffectiveSettings`、`EffectiveDocument` |
+| 引用 | 正文中按 ID 指向一份文稿、一页或一个块的行内节点 | `ReferenceNode` |
+| 同步块 | 显示另一文稿中某个块当前内容的块，内容只在源处编辑 | `EmbedBlock`（`embed`） |
 | 文档 | 工作区中的一份文稿：目录、入口、标题、语言、标签 | `Document` |
 | 页面 | 文稿的一页；运行快照中是章节 | `Section`、`IRSection` |
-| 内容块 | 富文本、容器、图片、代码或组件实例 | `DocumentBlock`、`IRBlock` |
+| 内容块 | 富文本、容器、图片、代码、组件实例或同步块 | `DocumentBlock`、`IRBlock` |
 | 步骤 | 一页中的一个完整画面状态 | `Step`、`VisualState` |
 | 讲稿 | 绑定步骤的结构化讲解：文字、读音、提示 | `Narration`、`NarrationNode` |
 | 提示 | 讲稿中在某处触发的动作 | cue（`NarrationNode` 的 `cue`、`CueTarget`） |
@@ -108,7 +114,7 @@ lecture.json ──► 编译 ──► 运行快照 ──► 渲染：网页 �
 | kernel | `@lincyaw/kernel`、`Kernel`、插件契约的版本 | Jupyter 内核 `jupyterKernel`；浏览器端插件的启动停止 runtime |
 | session | 课堂会话（`SessionService`、`SESSION`） | 执行会话 runSession（字段 `RunSpec.session` 不改）；一份文档的编译与开发服务器 `CompileSession`；dsh 的会话 agentSession；`dev()` 的一组服务器 `DevServers` |
 | service | 内核服务：`ServiceToken` 标识、经 `provide`、`get`、`tryGet` 取得 | 进程或 HTTP 服务 server；`serviceWorker`；懒加载模块 `load<库名>` |
-| place | 文档中的位置 `{ section, block }` | 代码在哪运行 runsIn；界面位置 slot、placement；源码位置 source（`SourcePos`）；主讲位置 position |
+| place | 文档中的位置 `{ section, block }` | 文稿在文稿树中的位置 placement（`DocumentPlacement`）；代码在哪运行 runsIn；界面位置 slot；源码位置 source（`SourcePos`）；主讲位置 position |
 | runner | 子进程或 Worker 中的运行器脚本 | 执行服务 executor；启动说明 launch spec；一次运行 run |
 | follow | 课堂中学习者跟随主讲 | 订阅流 subscribe；同步状态 record、sync；监视文件 watch |
 | view | 查看器的视图 `ViewDefinition` 与 `ViewRole`；一个渲染端看到的 IR（`viewFor`） | 按受众筛选的 IR `audienceDocument`；预览的媒介 renderer；分栏 layout |

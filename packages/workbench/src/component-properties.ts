@@ -1,5 +1,5 @@
 import { applyDocumentComponentAction, createDocumentParameterChanges, effectiveComponentParameters } from '@lincyaw/kernel'
-import type { CanonicalSource, DocumentAnswer, DocumentComponentAction, JsonObject, TeachingDocument } from '@lincyaw/kernel'
+import type { CanonicalSource, DocumentAnswer, DocumentComponentAction, JsonObject, PresmiumDocument } from '@lincyaw/kernel'
 import type { ComponentPropertyDraft } from './component-property-drafts.ts'
 
 export const sameComponentSource = (a: CanonicalSource, b: CanonicalSource) => a.documentId === b.documentId && a.version === b.version && a.fingerprint === b.fingerprint
@@ -15,7 +15,7 @@ export function componentPropertyAction(draft: ComponentPropertyDraft): Document
 }
 
 /** A checked rebase borrows the same reducer as the service, preserving unrelated current data. */
-export function rebaseComponentPropertyDraft(document: TeachingDocument, draft: ComponentPropertyDraft): JsonObject {
+export function rebaseComponentPropertyDraft(document: PresmiumDocument, draft: ComponentPropertyDraft): JsonObject {
   const block = document.blocks[draft.target.blockId]
   if (block?.type !== 'component' || block.definitionId !== draft.definitionId) throw new Error('component-definition-changed')
   const action = componentPropertyAction(draft)
@@ -24,7 +24,7 @@ export function rebaseComponentPropertyDraft(document: TeachingDocument, draft: 
 }
 
 /** An external acknowledgement owns its parameter paths, never a later body tree or sibling form. */
-export function reconcileComponentAction(action: DocumentComponentAction, before: TeachingDocument, answer: DocumentAnswer, current: TeachingDocument): TeachingDocument | undefined {
+export function reconcileComponentAction(action: DocumentComponentAction, before: PresmiumDocument, answer: DocumentAnswer, current: PresmiumDocument): PresmiumDocument | undefined {
   try {
     if (answer.content.id !== before.id || current.id !== before.id) return
     const expected = applyDocumentComponentAction(before, action).content

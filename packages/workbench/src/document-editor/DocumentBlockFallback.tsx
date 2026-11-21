@@ -1,4 +1,4 @@
-import type { DocumentBlock, TeachingDocument } from '@lincyaw/kernel'
+import type { DocumentBlock, PresmiumDocument } from '@lincyaw/kernel'
 import type { Locale } from '../messages.ts'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
 import { BLOCK_PREVIEW_MESSAGES } from './block-preview-messages.ts'
@@ -14,9 +14,10 @@ const authorText = (value: unknown) => typeof value === 'string' && value.trim()
  * A readable source fallback while the independent component snapshot is unavailable. It names the content only by what
  * the author wrote (a title) or by its kind, never by its code (the component, file or definition names).
  */
-export function DocumentBlockFallback({ block, document, locale }: { block: DocumentBlock, document: TeachingDocument, locale: Locale }) {
+export function DocumentBlockFallback({ block, document, locale }: { block: DocumentBlock, document: PresmiumDocument, locale: Locale }) {
   const t = DOCUMENT_EDITOR_MESSAGES[locale], p = BLOCK_PREVIEW_MESSAGES[locale]
   if (isDiagram(block, document)) return <PmNotice>{t.diagram(block.type === 'code' && block.title || '')}</PmNotice>
+  if (block.type === 'embed') return <PmNotice>{t.syncedBlock(block.source.document)}</PmNotice>
   if (block.type === 'code') return <PmNotice>{t.codeReference(block.title ?? block.origin?.anchor ?? block.language)}</PmNotice>
   if (block.type !== 'component') return null
   const definition = document.definitions[block.definitionId]

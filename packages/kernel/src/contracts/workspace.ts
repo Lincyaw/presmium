@@ -1,5 +1,5 @@
 import type { IRDocument } from '../ir.ts'
-import type { TeachingDocument, DocumentEditOperation, DocumentIssue } from './document.ts'
+import type { PresmiumDocument, DocumentEditOperation, DocumentIssue, EffectiveSettings } from './document.ts'
 import type { Focus } from './agent.ts'
 import type { Finding } from './checks.ts'
 import type { Member } from './server.ts'
@@ -90,6 +90,10 @@ export const DOCUMENT_FILES = defineService<DocumentFiles>('presmium.documentFil
 /** A document as lists show it: its directory (its identity), title, description, language and tags. */
 export interface DocumentSummary {
   dir: string
+  /** The document's ID and its place in the workspace tree; absent for a single document. */
+  id?: string
+  parent?: string | null
+  depth?: number
   title: string
   description?: string
   lang?: string
@@ -107,6 +111,22 @@ export interface DocumentsAnswer {
   branch?: string
   uncommitted?: number
   single: boolean
+  /** What `POST workspace/migrate` (Studio's Upgrade) would convert; absent when nothing needs it. */
+  migration?: WorkspaceMigrationNeed
+}
+
+/** @experimental Documents in an older format, and whether the workspace file still lists `documents:`. */
+export interface WorkspaceMigrationNeed {
+  documents: string[]
+  workspaceFile: boolean
+}
+
+/** @experimental The answer to `POST workspace/migrate`: the upgraded document folders, the revisions that record them, and documents left alone. */
+export interface WorkspaceMigrationAnswer {
+  documents: string[]
+  workspaceFile: boolean
+  problems: { path: string, message: string }[]
+  revisions: string[]
 }
 
 /** @experimental */
@@ -187,7 +207,9 @@ export interface DocumentAnswer {
   version: string
   /** FNV-1a-64 of the exact authoritative bytes used to match a runtime snapshot. */
   fingerprint: string
-  content: TeachingDocument
+  content: PresmiumDocument
+  /** On a read: the settings `content` decides with, inherited ones filled in from its ancestors and the workspace defaults. */
+  settings?: EffectiveSettings
   issues: DocumentIssue[]
 }
 
@@ -195,7 +217,7 @@ export interface DocumentAnswer {
 export interface DocumentChange {
   id: string
   baseDocumentVersion: string
-  replacement?: TeachingDocument
+  replacement?: PresmiumDocument
   operations?: DocumentEditOperation[]
   fileChanges?: SourceTransactionChange[]
 }

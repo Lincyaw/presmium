@@ -1,7 +1,7 @@
 {
   "name": "@lincyaw/language-server",
   "version": "1.0.0-rc.118",
-  "description": "Language server for canonical lecture.json documents: validation, entity navigation, code anchors and preview sync",
+  "description": "Language server for canonical index.pmd documents: validation, entity navigation, code anchors and preview sync",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

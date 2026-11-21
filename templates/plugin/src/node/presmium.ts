@@ -1,7 +1,7 @@
 /**
  * The plugin in Node: what the compiler loads (`./presmium` in package.json).
  *
- * A lecture.json component definition names this plugin and GreetingCard. The component is
+ * A index.pmd component definition names this plugin and GreetingCard. The component is
  * shared by the web page and slides; its definition supplies the static fallback.
  *
  * Under `presmium dev` and `presmium serve`, its route `/__presmium/<id>/waves` counts the waves

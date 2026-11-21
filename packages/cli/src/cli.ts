@@ -15,7 +15,7 @@ import type { ApprovalPolicy } from '@lincyaw/server'
 import { buildWorkspace, isWorkspaceRoot, serveWorkspace } from '@lincyaw/workspace'
 import type { WorkspaceBuild } from '@lincyaw/workspace'
 import { runCheck } from './check.ts'
-import { documentPatterns, importDocuments } from '@lincyaw/compiler'
+import { effectiveDocument, findWorkspaceRoot, importDocuments, WORKSPACE_CONFIG } from '@lincyaw/compiler'
 import type { CheckResult } from './check.ts'
 import { devHost } from './dev-host.ts'
 import { DocumentFileError, readDocumentFile, saveDocumentFile } from './document-file.ts'
@@ -74,6 +74,7 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
   if (argv[0] === 'studio') return runStudioCommand(argv.slice(1), bundled, options.bin ?? PRESMIUM_BIN)
   if (argv[0] === 'mcp') return runMcpCommand(argv.slice(1), bundled)
   if (argv[0] === 'import') return runImportCommand(argv.slice(1))
+  if (argv[0] === 'migrate') return (await import('./migrate.ts')).runMigrateCommand(argv.slice(1), t)
   if (argv[0] === 'voiceover') return runVoiceoverCommand(argv.slice(1), bundled)
   if (argv[0] === 'speech') return runSpeechCommand(argv.slice(1))
   if (argv[0] === 'script') return runScriptCommand(argv.slice(1))
@@ -140,7 +141,7 @@ function parseCommand(argv: string[]): Command | 'help' {
   if (values.audience !== undefined && !/^[\w.-]+$/.test(audience ?? '')) throw new Error(t.badAudience(values.audience))
   const directory = name === 'serve'
   const entry = directory || workspace ? resolve(deck) : resolveEntry(deck)
-  if (!existsSync(entry) || (directory && !statSync(entry).isDirectory())) throw new Error(t.notFound(entry))
+  if (!existsSync(entry) || (directory && !statSync(entry).isDirectory())) throw new Error(missing(entry))
   const to = values.to?.split(',').map(id => id.trim()).filter(Boolean)
   if (to?.length === 0) throw new Error(t.emptyTo)
   const allow = values.allow?.split(',').map(kind => kind.trim()).filter(Boolean) ?? []
@@ -347,7 +348,7 @@ async function runNewCommand(argv: string[], bundled: string): Promise<number> {
   return createMain(argv)
 }
 
-/** Markdown notes to documents; prints what it wrote, the links it could not resolve and the patterns that list them. */
+/** Markdown notes to documents; prints what it wrote and the links it could not resolve. */
 async function runImportCommand(argv: string[]): Promise<number> {
   let parsed
   try {
@@ -382,11 +383,12 @@ async function runImportCommand(argv: string[]): Promise<number> {
     return 2
   }
   const out = resolve(values.out ?? '.')
-  const report = await importDocuments(input, { out, exclude: values.exclude, lang: values.lang, group, preserveOriginal: true }).catch(() => undefined)
+  const found = await findWorkspaceRoot(out).catch(() => out)
+  const workspaceRoot = existsSync(join(found, WORKSPACE_CONFIG)) ? found : out
+  const report = await importDocuments(input, { out, exclude: values.exclude, lang: values.lang, group, preserveOriginal: true, workspaceRoot }).catch(() => undefined)
   if (!report) return fail(t.importFailed, 1)
   for (const { note, link } of report.unresolved) process.stderr.write(`${t.importUnresolved(note, link)}\n`)
   process.stdout.write(`${t.imported(report.documents.length, report.files, relative(process.cwd(), out) || '.')}\n`)
-  if (report.documents.length > 0) process.stdout.write(`${t.importPatterns(documentPatterns(report.documents))}\n`)
   return 0
 }
 
@@ -413,11 +415,16 @@ function documentFileMessage(error: DocumentFileError): string {
 }
 
 /** The deck's entry, or a usage error already printed. */
+/** Why a document's entry is missing: the older format's file is there instead, or nothing is. */
+function missing(entry: string): string {
+  return existsSync(join(dirname(entry), 'lecture.json')) ? t.olderFormat(relative(process.cwd(), dirname(entry)) || '.') : t.notFound(entry)
+}
+
 function deckEntry(deck: string): string | undefined {
   try {
     const entry = resolveEntry(deck)
     if (existsSync(entry)) return entry
-    fail(t.notFound(entry), 2)
+    fail(missing(entry), 2)
   } catch (error) {
     fail(errorMessage(error), 2)
   }
@@ -478,7 +485,7 @@ async function runSpeechCommand(argv: string[]): Promise<number> {
   }
 }
 
-/** The narration as one Markdown file to polish (`export`), and the polished file back into lecture.json (`import`). */
+/** The narration as one Markdown file to polish (`export`), and the polished file back into index.pmd (`import`). */
 async function runScriptCommand(argv: string[]): Promise<number> {
   let parsed
   try {
@@ -504,7 +511,8 @@ async function runScriptCommand(argv: string[]): Promise<number> {
     const source = readDocumentFile(entry)
     if (action === 'export') {
       const out = resolve(values.out ?? fallback)
-      const written = exportScript(source.document, CLI_MESSAGES[deckLocale(source.document.metadata.lang)].scriptInstructions)
+      const { lang } = (await effectiveDocument(entry, source.document)).metadata
+      const written = exportScript(source.document, CLI_MESSAGES[deckLocale(lang)].scriptInstructions)
       await mkdir(dirname(out), { recursive: true })
       await writeFile(out, written.text)
       process.stdout.write(`${t.scriptExported(shownPath(out), written.narrations, written.steps)}\n`)

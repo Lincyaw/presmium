@@ -1,5 +1,5 @@
 import type { CanonicalSource } from '../ir.ts'
-import type { DocumentEditOperation, DocumentIssue, TeachingDocument } from './document.ts'
+import type { DocumentEditOperation, DocumentIssue, PresmiumDocument } from './document.ts'
 import type { Member } from './server.ts'
 import type { DocumentAnswer, DocumentChange, DocumentChangeAnswer, RevisionOrigin } from './workspace.ts'
 import type { DocumentOutlineAnswer, DocumentOutlineQuery, DocumentPartAnswer, DocumentPartQuery } from './document-reads.ts'
@@ -28,7 +28,7 @@ export interface AuthoringCapabilities {
   review: 'required-unsupported' | 'locks-and-history' | 'locks-only' | 'unavailable'
 }
 
-/** A pure local preflight. Files include lecture.json and their predicted post-save versions. */
+/** A pure local preflight. Files include index.pmd and their predicted post-save versions. */
 export interface DocumentChangePlan {
   apiVersion: typeof AUTHORING_API_VERSION
   planId: string
@@ -37,7 +37,7 @@ export interface DocumentChangePlan {
   source: CanonicalSource
   digest: string
   expiresAt: string
-  content: TeachingDocument
+  content: PresmiumDocument
   issues: DocumentIssue[]
   files: { path: string, base: string | null, version: string }[]
   impact: { sections: string[], blocks: string[], steps: string[], narrations: string[], assets: string[], definitions: string[], sectionOrder: boolean, production: boolean, comments: boolean, metadata: boolean }

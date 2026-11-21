@@ -1,6 +1,6 @@
 # 网站主题、首页与发布
 
-工作区的 `presmium.workspace.yaml` 选择网站主题与品牌；首页可以单独设计；教学文稿仍只在 `lecture.json` 中编写。主题决定整个网站的外观与导航，文稿的 `layout` 只决定这份文稿的正文排版。
+工作区的 `presmium.workspace.yaml` 选择网站主题与品牌；首页可以单独设计；教学文稿仍只在 `index.pmd` 中编写。主题决定整个网站的外观与导航，文稿的 `layout` 只决定这份文稿的正文排版。
 
 ## 1. 新建网站
 
@@ -12,7 +12,7 @@ pnpm serve    # 实时预览，打开终端打印的网址
 pnpm build    # 静态网站在 dist/web/
 ```
 
-生成 `presmium.workspace.yaml`、独立首页 `site/home.json`、第一份文稿 `intro/lecture.json` 与 GitHub Pages 工作流 `.github/workflows/pages.yml`。`--theme` 可选 `course`、`docs`、`showcase`，默认 `course`。产物包含网页、搜索索引、查看器与引用的本地文件，读者端不需要 Presmium 服务。
+生成 `presmium.workspace.yaml`、独立首页 `site/home.json`、第一份文稿 `intro/index.pmd` 与 GitHub Pages 工作流 `.github/workflows/pages.yml`。`--theme` 可选 `course`、`docs`、`showcase`，默认 `course`。产物包含网页、搜索索引、查看器与引用的本地文件，读者端不需要 Presmium 服务。
 
 ## 2. 主题与参数
 
@@ -24,13 +24,12 @@ pnpm build    # 静态网站在 dist/web/
 
 三个主题共用一套外观：冷灰的浅色页面（暗色为近黑），页面顶部有淡淡的蓝、青、紫色光晕；页头半透明，左侧是网站名称与导航（当前页的导航项下有强调色短线），右侧是搜索与工具，与正文的栏对齐；界面与 `sans` 正文用 Hanken Grotesk（中文用系统黑体），按钮、搜索框与分段选项是胶囊形。左侧当前文稿浮起为白色条目，章节与右侧大纲的当前项是强调色竖线加深色文字。工作台的界面不受网站外观影响。
 
-每份文稿是一个完整的网页，所有节依次排列，与静态建站工具中一个源文件一页相同。左侧列出工作区的文稿，按每份文稿 `metadata.tags` 的第一个标签分组、按 `documents` 中的顺序排列，并展开当前文稿的各章；`site.sidebar: directories` 改为按工作区的文件夹排成可折叠的树：一个文件夹自己的文稿是其中文稿的上一级，没有文稿的文件夹以文件夹名作标题，同级按名称排序，当前文稿所在的各级文件夹展开，翻页也按这棵树的顺序；适合按项目与类别分文件夹存放大量文稿的工作区。写成 `site.sidebar: { by: directories, order: [rcabench, idea, log] }` 时，`order` 中的文件夹排在同级之前、按列出的顺序：带 `/` 的路径指那一个文件夹，单独的名称指任何一级中同名的文件夹。右侧“本页大纲”列出各节，章内的节缩进。节标题在指针移过时显示可复制的锚点 `#`。早先按章拆出的页面地址（如 `sort.html`）构建为跳转页，打开后到达整页中该章的位置。右侧大纲显示时（1280 px 及以上），没有分章的文稿不在左侧重复列出各节；网站只有这一份没有分章的文稿时不显示左栏，页面为正文加右侧大纲。1280 px 以下右侧大纲隐藏，左侧展开当前文稿的各节。正文按阅读宽度排；页面中有图与文字并排的滚动叙事节时（`article` 布局），这些节铺开到两侧目录之间的全部宽度，最宽 `--pm-site-spread-width`（75rem），其余节仍按阅读宽度、与它们左对齐。从链接或地址中的 `#节` 到达时，节标题停在页头（窄屏还有其下的目录栏）下方。窄屏时两侧目录收进“目录”与“本页大纲”两个按钮。
+每份文稿是一个完整的网页，所有节依次排列，与静态建站工具中一个源文件一页相同。左侧列出工作区的文稿，按每份文稿 `metadata.tags` 的第一个标签分组、按文稿树的顺序（深度优先，同级按 `placement.rank`）排列，并展开当前文稿的各章；`site.sidebar: directories` 改为按工作区的文件夹排成可折叠的树：一个文件夹自己的文稿是其中文稿的上一级，没有文稿的文件夹以文件夹名作标题，同级按名称排序，当前文稿所在的各级文件夹展开，翻页也按这棵树的顺序；适合按项目与类别分文件夹存放大量文稿的工作区。写成 `site.sidebar: { by: directories, order: [rcabench, idea, log] }` 时，`order` 中的文件夹排在同级之前、按列出的顺序：带 `/` 的路径指那一个文件夹，单独的名称指任何一级中同名的文件夹。右侧“本页大纲”列出各节，章内的节缩进。节标题在指针移过时显示可复制的锚点 `#`。早先按章拆出的页面地址（如 `sort.html`）构建为跳转页，打开后到达整页中该章的位置。右侧大纲显示时（1280 px 及以上），没有分章的文稿不在左侧重复列出各节；网站只有这一份没有分章的文稿时不显示左栏，页面为正文加右侧大纲。1280 px 以下右侧大纲隐藏，左侧展开当前文稿的各节。正文按阅读宽度排；页面中有图与文字并排的滚动叙事节时（`article` 布局），这些节铺开到两侧目录之间的全部宽度，最宽 `--pm-site-spread-width`（75rem），其余节仍按阅读宽度、与它们左对齐。从链接或地址中的 `#节` 到达时，节标题停在页头（窄屏还有其下的目录栏）下方。窄屏时两侧目录收进“目录”与“本页大纲”两个按钮。
 
 未写 `theme` 时为 `docs`。
 
 ```yaml
 title: 我的课程
-documents: ['*/lecture.json']
 site:
   base: /
   theme: course
@@ -59,7 +58,7 @@ site:
 | `site.params.accent` | `blue`、`teal`、`violet`、`amber` | `blue` / `violet` |
 | `site.params.typography` | `reading`（衬线正文）、`sans` | `sans` / `sans` |
 | `site.params.contentWidth` | `comfortable`、`wide` | `comfortable` / `wide` |
-| `site.params.logo` | 工作区内的图片路径，相对 `presmium.workspace.yaml`（单独构建的文稿相对 `lecture.json`）；文稿的放映沿用这个路径 | 不显示 |
+| `site.params.logo` | 工作区内的图片路径，相对 `presmium.workspace.yaml`（单独构建的文稿相对 `index.pmd`）；文稿的放映沿用这个路径 | 不显示 |
 | `site.params.logoAlt` | 替代文字，可为空字符串 | 空，按装饰图处理 |
 
 - 显式参数覆盖主题默认值；换主题时删掉旧参数即可用新主题的默认值。参数只接受上表的取值，不接受 CSS 或 HTML。
@@ -71,7 +70,7 @@ site:
 
 ### 2.1 工作区主题
 
-`site.theme` 也可以写主题目录（`./theme`，相对工作区；单独构建的文稿相对 `lecture.json`）或已安装的主题包名。主题包的 `package.json` 用 `presmium.theme` 指向含 `theme.json` 的目录，没有时取包的根目录。
+`site.theme` 也可以写主题目录（`./theme`，相对工作区；单独构建的文稿相对 `index.pmd`）或已安装的主题包名。主题包的 `package.json` 用 `presmium.theme` 指向含 `theme.json` 的目录，没有时取包的根目录。
 
 ```json
 {
@@ -169,7 +168,7 @@ site:
 
 ## 4. 文稿的页面布局
 
-在 `lecture.json` 中设置 `metadata.renderers.web.layout`：
+在 `index.pmd` 中设置 `metadata.renderers.web.layout`：
 
 | 布局 | 行为 |
 |---|---|

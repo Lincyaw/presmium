@@ -18,7 +18,7 @@ const zh = {
   copied: '已复制',
   refresh: '刷新',
 
-  welcomeTitle: '在浏览器中用 AI 写讲义',
+  welcomeTitle: '在浏览器中用 AI 写文稿',
   welcomeHint: '登录后即可使用完整的 Presmium Studio：AI 助手、文稿编辑、网站与幻灯片预览、放映、讲授制作与导出。你的文稿保存在自己的空间中。',
   login: '登录',
   register: '注册',

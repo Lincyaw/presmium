@@ -3,6 +3,7 @@ import { createRequire } from 'node:module'
 import { DOCUMENT_ENTRY, fnv1a64, hasRole, isRecord, jsonResponse, problemResponse, PRODUCTION_AUDIO_AUTHORING, pushStream, SPEECH, sseResponse } from '@lincyaw/kernel'
 import type { CompileJob, DocumentsAnswer, JobsAnswer, PresmiumNodePlugin, RequestContext, Route, SavedAnswer, ServerContribution, SourceTransactionAnswer, SourceTransactionChange } from '@lincyaw/kernel'
 import { hasBearerToken } from '@lincyaw/server'
+import { migrationNeed } from '@lincyaw/compiler/migrate'
 import { saveSummary } from '../domain/commit-message.ts'
 import { documentSummaries, listDocuments } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
@@ -62,6 +63,7 @@ export interface WorkspaceRoutesOptions {
   authoringClientRoutes?: Record<string, Route>
   projectRoutes?: Record<string, Route>
   documentImport?: Route
+  workspaceMigrate?: Route
   mcpSettings?: Route
   speechSettings?: Route
   changesRoutes?: Record<string, Route>
@@ -124,7 +126,8 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
       handle: (request, ctx) => catchRequestErrors(async () => {
         if (request.method === 'GET') {
           const status = options.projectRevisions ? await options.projectRevisions.status(editor.roots(scopeOf(ctx))) : {}
-          return jsonResponse({ title: config.title, documents: documentSummaries(config), templates: listTemplates(config), git: Boolean(revisions), ...status, single: config.singleDeck } satisfies DocumentsAnswer)
+          const migration = migrationNeed(config.root)
+          return jsonResponse({ title: config.title, documents: documentSummaries(config), templates: listTemplates(config), git: Boolean(revisions), ...status, single: config.singleDeck, ...migration ? { migration } : {} } satisfies DocumentsAnswer)
         }
         if (request.method !== 'POST') return problemResponse(405, 'GET or POST')
         return problemResponse(409, 'project-plan-required')
@@ -134,6 +137,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
     ...options.authoringClientRoutes,
     ...options.projectRoutes,
     ...options.documentImport ? { 'documents/import': options.documentImport } : {},
+    ...options.workspaceMigrate ? { 'workspace/migrate': options.workspaceMigrate } : {},
     'files': {
       role: 'editor',
       handle: (request, ctx) => catchRequestErrors(async () => {

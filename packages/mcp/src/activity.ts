@@ -1,8 +1,8 @@
 import { isRecord } from '@lincyaw/kernel'
-import type { AgentActivityOperation, AgentActivityTarget, TeachingDocument } from '@lincyaw/kernel'
+import type { AgentActivityOperation, AgentActivityTarget, PresmiumDocument } from '@lincyaw/kernel'
 
 /** Only structural IDs are copied to the UI, never arbitrary arguments or source text. */
-export function activityTargets(args: Record<string, unknown>, document?: TeachingDocument): AgentActivityTarget[] {
+export function activityTargets(args: Record<string, unknown>, document?: PresmiumDocument): AgentActivityTarget[] {
   const id = (value: unknown) => typeof value === 'string' && value.length > 0 && value.length <= 200 ? value : undefined
   const values = [args, args.action, args.request, args.target, ...Array.isArray(args.operations) ? args.operations.slice(0, 16) : [],
     ...isRecord(args.change) && Array.isArray(args.change.operations) ? args.change.operations.slice(0, 16) : []]

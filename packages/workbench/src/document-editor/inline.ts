@@ -43,6 +43,7 @@ function label(node: InlineNode): string {
   if (node.type === 'math') return node.value
   if (node.type === 'break') return '\n'
   if (node.type === 'extension') return node.fallback
+  if (node.type === 'reference') return node.label ?? node.fallback
   return node.children.map(label).join('') || node.href
 }
 

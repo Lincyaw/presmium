@@ -1,8 +1,8 @@
 import { randomBytes } from 'node:crypto'
 import { relative } from 'node:path'
 import { changeDocumentVoice, errorMessage, SPEECH, speechEngineId, speechFailureCode, VOICEOVER_EXECUTION } from '@lincyaw/kernel'
-import type { SpeechCachePrune, SpeechEngineInfo, SpeechService, SpeechVoice, TeachingDocument, VoiceoverExecution, VoiceoverRunResult, VoiceoverSentence, VoiceoverSentences, VoiceScope } from '@lincyaw/kernel'
-import { Compiler } from '@lincyaw/compiler'
+import type { SpeechCachePrune, SpeechEngineInfo, SpeechService, SpeechVoice, PresmiumDocument, VoiceoverExecution, VoiceoverRunResult, VoiceoverSentence, VoiceoverSentences, VoiceScope } from '@lincyaw/kernel'
+import { Compiler, effectiveDocument } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import { readDocumentFile, saveDocumentFile } from './document-file.ts'
 import type { CliMessages } from './messages.ts'
@@ -52,7 +52,7 @@ export function voiceLabel(voice: SpeechVoice): string {
 const sameVoice = (a: SpeechVoice, b: SpeechVoice) => a.voice === b.voice && speechEngineId(a.engine ?? '') === speechEngineId(b.engine ?? '')
 
 /** The document's default voice, or why it has none. */
-function defaultVoice(document: TeachingDocument): SpeechVoice | 'none' | undefined {
+function defaultVoice(document: PresmiumDocument): SpeechVoice | 'none' | undefined {
   const source = document.production.defaults.voiceSource
   return source?.type === 'tts' ? source.voice : source?.type === 'none' ? 'none' : undefined
 }
@@ -132,7 +132,8 @@ async function voiceover(options: VoiceoverOptions, t: CliMessages, signal: Abor
   const fallback = await speech?.defaultSynthesisEngine?.().catch(() => undefined)
   if (fallback) engines.fallback = fallback
 
-  const before = defaultVoice(file.document)
+  const effective = await effectiveDocument(options.entry, file.document)
+  const before = defaultVoice(effective)
   const changesVoice = options.voice !== undefined && !(typeof before === 'object' && sameVoice(before, options.voice))
   const planned = changesVoice ? changeDocumentVoice(file.document, { kind: 'document' }, { type: 'tts', voice: options.voice! }) : file.document
   let listing: VoiceoverSentences = await execution.sentences(changesVoice ? { defaultVoice: options.voice! } : {}, signal)
@@ -140,7 +141,7 @@ async function voiceover(options: VoiceoverOptions, t: CliMessages, signal: Abor
 
   const json: Record<string, unknown> = { document: compilation.deckDir }
   say(`${t.voiceoverLabels.document}  ${relative(process.cwd(), compilation.deckDir) || '.'}`)
-  const now = defaultVoice(planned)
+  const now = defaultVoice(changesVoice ? planned : effective)
   const shown = typeof now === 'object' ? voiceLabel(now) : now === 'none' ? t.voiceoverNoVoice : t.voiceoverUnset
   say(`${t.voiceoverLabels.voice}  ${changesVoice ? t.voiceoverVoiceChange(shown, typeof before === 'object' ? voiceLabel(before) : before === 'none' ? t.voiceoverNoVoice : t.voiceoverUnset) : t.voiceoverVoiceDefault(shown)}`)
   json.voice = { default: typeof now === 'object' ? now : null, changed: changesVoice }

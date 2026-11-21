@@ -46,21 +46,6 @@ export function invalidDocumentDir(dir: string): string | undefined {
   return undefined
 }
 
-function segmentPattern(segment: string): RegExp {
-  const escaped = segment.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*').replace(/\?/g, '[^/]')
-  return new RegExp(`^${escaped}$`)
-}
-
-export function matchesPattern(pattern: string, path: string): boolean {
-  const want = pattern.replace(/^\.\//, '').split('/')
-  const have = path.split('/')
-  return want.length === have.length && want.every((segment, i) => segmentPattern(segment).test(have[i]!))
-}
-
-export function patternSegments(pattern: string): (string | RegExp)[] {
-  return pattern.replace(/^\.\//, '').split('/').map(segment => (/[*?]/.test(segment) ? segmentPattern(segment) : segment))
-}
-
 const NOT_RELATIVE = /^(?:[a-z][a-z\d+.-]*:|\/|#|\?)/i
 
 export function movedUrl(url: string, file: string, was: string, from: string, to: string): string | undefined {

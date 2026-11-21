@@ -1,6 +1,6 @@
 export { systemLocale } from '@lincyaw/kernel/node'
 import { DOCUMENT_ENTRY } from '@lincyaw/kernel'
-import type { DocumentChange, Locale, TeachingDocument } from '@lincyaw/kernel'
+import type { DocumentChange, Locale, PresmiumDocument } from '@lincyaw/kernel'
 
 export interface McpMessages {
   navigate(section: string, step: number): string
@@ -569,7 +569,7 @@ export const MCP_ERROR_TEXT: Record<Locale, Record<string, (detail: Detail) => s
 }
 
 /** A short, readable account of a document change for its approval: by page, what it does; no ids and no source. */
-export function documentChangeSummary(t: McpMessages, change: DocumentChange, content: TeachingDocument): string {
+export function documentChangeSummary(t: McpMessages, change: DocumentChange, content: PresmiumDocument): string {
   const pageOf = new Map<string, string>()
   const walk = (section: string, blocks: readonly string[]) => {
     for (const id of blocks) {

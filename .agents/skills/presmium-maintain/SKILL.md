@@ -9,10 +9,10 @@ This skill is for the Presmium monorepo and is not shipped. The plugin contract 
 `presmium-develop/references/plugin.md`; documents, their writing, presenting and producing are
 `presmium-author`, animations `presmium-animate`, step-built SVG figures `presmium-figure`.
 
-Terms: a **document** is a folder with `lecture.json`; a **workspace** is a folder with
+Terms: a **document** is a folder with `index.pmd`; a **workspace** is a folder with
 `presmium.workspace.yaml` holding several documents; a **form** is what a document is built into (`web`,
 `slides`, `notebook`, `lecture`); the **studio** is the browser workbench started by `presmium studio`
-(`pnpm studio` in the repository). `lecture.json` is the sole editable document IR
+(`pnpm studio` in the repository). `index.pmd` is the sole editable document IR
 (`packages/kernel/src/contracts/document.ts`, validated by `validateDocument`); the compiler derives a
 runtime snapshot (`packages/kernel/src/ir.ts`).
 
@@ -38,7 +38,7 @@ shows it ([Verify](#verify-the-behavior-you-changed)).
 
 Read the root `AGENTS.md` (a link to `CLAUDE.md`) first; its verification rules are authoritative. The
 design docs in `docs/` are in Chinese and cited by section number. Version rules for packages, `IR_VERSION` and
-`KERNEL_VERSION` are in the site page `site/reference/lecture.json` ("接口与版本").
+`KERNEL_VERSION` are in the site page `site/reference/index.pmd` ("接口与版本").
 
 The source is the contract: `packages/kernel/src/contracts/` (re-exported by
 `packages/kernel/src/contracts.ts`), `packages/kernel/src/ir.ts`, `packages/host/src/contracts.ts`. When
@@ -49,7 +49,7 @@ section 15.
 
 ## Put the behavior at the right boundary
 
-`lecture.json` is the single source of truth; the web page (primary form), slides, notebook and exports
+`index.pmd` is the single source of truth; the web page (primary form), slides, notebook and exports
 consume the IR. For an interactive feature also decide what a user sees in static output, offline and
 without an executor. Prefer an existing plugin, service or extension point.
 

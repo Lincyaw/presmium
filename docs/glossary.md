@@ -42,7 +42,9 @@ zh-CN 以 Microsoft Office 的简体中文本地化为首选，没有对应时�
 
 | zh-CN | English | 含义与用法 | 不用 |
 |---|---|---|---|
-| 文稿 | Document | 作者编辑的一份讲义（`lecture.json`）；列表、标题栏与消息中都叫文稿 | `文档稿`、`讲义文件`、`Lecture file` |
+| 文稿 | Document | 作者编辑的一份文稿，保存在一个文件夹的 `index.pmd` 中；列表、标题栏与消息中都叫文稿，泛指时不写“讲义” | `文档稿`、`讲义文件`、`Lecture file` |
+| 文稿树 | Document Tree | 工作区中文稿的上下级关系与顺序；下级文稿继承上级没有改写的设置 | `目录树`（指文稿树时） |
+| 同步块 | Synced Block | 显示另一份文稿中某个内容块当前内容的内容块，只在原处编辑 | `嵌入块`、`镜像块`、`Embed block` |
 | 工作区 | Workspace | 存放若干文稿的文件夹，首页列出其中的文稿 | `项目目录`、`Project folder` |
 | 页面 | Page | 文稿中的一页（`Section`）；在幻灯片视图与放映中显示为一张幻灯片 | `章节页`、节（指页面时） |
 | 幻灯片 | Slide | 页面在幻灯片视图、放映与导出中的呈现；只在这些形态中使用 | `胶片`、`投影片` |
@@ -141,6 +143,7 @@ zh-CN 以 Microsoft Office 的简体中文本地化为首选，没有对应时�
 | 插入 | Insert | 插入内容块、图片、公式：“插入图片 / Insert Picture” | `添加块` |
 | 图片 | Picture | 命令与窗格中的图片（“插入图片 / Insert Picture”“替换图片 / Replace Picture”），消息中也写 picture | Image（命令与窗格中） |
 | 重命名 | Rename… | 重命名文稿或页面 | `改名`、`修改名称` |
+| 升级 | Upgrade | 把旧格式的文稿转换为当前格式（与 `presmium migrate` 相同） | 迁移（界面中）、Migrate（界面中） |
 | 上移 / 下移 | Move Up / Move Down | 调整页面顺序 | `往上挪`、`往下挪` |
 | 搜索 | Search | 在列表中搜索 | `检索`、`查询` |
 | 开始阅读 | Start Reading | 网站首页进入第一份文稿的命令 | |

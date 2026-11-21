@@ -59,7 +59,7 @@ it('writes the poll\'s question into the notebook', async () => {
   their keys in both languages.
 - `<out>/ir.json` is the derived runtime snapshot: find the stable authored section `id` and inspect
   `blocks[].node`. Numeric runtime step positions are not authoring data.
-- A case that needs another document (an error case, other options) writes a small normalized `lecture.json` into a
+- A case that needs another document (an error case, other options) writes a small normalized `index.pmd` into a
   temporary directory with `metadata.plugins: ['<absolute path of the plugin>']` and the `metadata.renderers`
   it needs. Set `metadata.lang` to `en` or `zh-CN` explicitly when asserting text.
 - Build only the renderers the case reads (`--to notebook` is the fastest; `--to web,slides` builds the

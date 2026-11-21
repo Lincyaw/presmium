@@ -43,7 +43,7 @@ function valid(value: unknown, target: ComponentPropertyTarget): value is Compon
     && typeof value.reset === 'boolean' && typeof value.composing === 'boolean' && typeof value.updatedAt === 'string' && Number.isFinite(Date.parse(value.updatedAt))
 }
 
-/** Unapplied form input borrows the existing strict backup actor; only lecture.json is authoring content. */
+/** Unapplied form input borrows the existing strict backup actor; only index.pmd is authoring content. */
 export class ComponentPropertyDrafts {
   readonly #entries = new Map<string, Entry>()
   readonly #listeners = new Set<() => void>()

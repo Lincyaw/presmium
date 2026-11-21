@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { applyDocumentComponentAction, effectiveComponentParameters, isRecord, randomUUID, validateDocumentParameters } from '@lincyaw/kernel'
-import type { CanonicalSource, DocumentComponentAction, DocumentParameterValidation, JsonObject, TeachingDocument } from '@lincyaw/kernel'
+import type { CanonicalSource, DocumentComponentAction, DocumentParameterValidation, JsonObject, PresmiumDocument } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmNotice, PmSelect } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { isAgentChanging } from '../workbench-state.ts'
@@ -13,7 +13,7 @@ import { ComponentMaterials, componentDefinitionLabel } from './ComponentMateria
 
 const subscribeEmpty = () => () => {}, snapshotEmpty = () => 0
 const targetKey = (target: ComponentPropertyTarget) => JSON.stringify([target.identity, target.memberId, target.blockId, target.stepId ?? null])
-function fresh(document: TeachingDocument, source: CanonicalSource, target: ComponentPropertyTarget): ComponentPropertyDraft {
+function fresh(document: PresmiumDocument, source: CanonicalSource, target: ComponentPropertyTarget): ComponentPropertyDraft {
   const block = document.blocks[target.blockId]
   if (block?.type !== 'component') throw new Error('component-block-missing')
   const value = effectiveComponentParameters(document, block.id, target.stepId).parameters

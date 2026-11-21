@@ -1,4 +1,4 @@
-> Document authority: `lecture.json` uses normalized entities; scene implementations below are project code. Bind scenes through `definitions`, component blocks and declared step states.
+> Document authority: `index.pmd` uses normalized entities; scene implementations below are project code. Bind scenes through `definitions`, component blocks and declared step states.
 
 # Choosing a library and writing the moves
 
@@ -56,7 +56,7 @@ One scene uses one library. A section that needs a diagram and a 3D view gets tw
 
 ## Find an effect
 
-Each entry ``<library> `<name>` `` is the file `gallery/<library>/scenes/<name>.ts` in this skill's folder, and ``catalog/<deck> `<name>` `` is `gallery/catalog/<deck>/scenes/<name>.ts` (ready pieces with an author's parameters for text, images and data, most adapted from the HyperFrames catalog); the scenario document that shows it (`gallery/<scenario>/lecture.json`, its definition path `scenes/<library or deck>/<name>.ts`) has its declared durations and parameters. Scenes import helpers from their deck's `scenes/lib/` or `scenes/kit/` and from `gallery/lengths/scenes/kit/`: copy those along with them.
+Each entry ``<library> `<name>` `` is the file `gallery/<library>/scenes/<name>.ts` in this skill's folder, and ``catalog/<deck> `<name>` `` is `gallery/catalog/<deck>/scenes/<name>.ts` (ready pieces with an author's parameters for text, images and data, most adapted from the HyperFrames catalog); the scenario document that shows it (`gallery/<scenario>/index.pmd`, its definition path `scenes/<library or deck>/<name>.ts`) has its declared durations and parameters. Scenes import helpers from their deck's `scenes/lib/` or `scenes/kit/` and from `gallery/lengths/scenes/kit/`: copy those along with them.
 
 | Effect | Where |
 |---|---|

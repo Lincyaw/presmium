@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { isRecord } from '@lincyaw/kernel'
-import { applyDocumentOperations, AUTHORING_API_VERSION, createDocumentPage, DOCUMENT_ENTRY, DOCUMENT_OPERATION_TYPES, DOCUMENT_READ_MAX_REQUEST_CHARS, DOCUMENT_READ_MAX_RESPONSE_CHARS, DOCUMENT_SCHEMA_VERSION, documentOutline, documentPart, DocumentReadError, duplicateDocumentPage, fnv1a64, hasRole, moveDocumentPage, pageDeletionImpact, removeDocumentPage, renameDocumentPage, validateDocument } from '@lincyaw/kernel'
+import { applyDocumentOperations, AUTHORING_API_VERSION, documentSettings, createDocumentPage, DOCUMENT_ENTRY, DOCUMENT_OPERATION_TYPES, DOCUMENT_READ_MAX_REQUEST_CHARS, DOCUMENT_READ_MAX_RESPONSE_CHARS, DOCUMENT_SCHEMA_VERSION, documentOutline, documentPart, DocumentReadError, duplicateDocumentPage, fnv1a64, hasRole, moveDocumentPage, pageDeletionImpact, removeDocumentPage, renameDocumentPage, validateDocument } from '@lincyaw/kernel'
 import { validateDocumentChange, validateDocumentPageChange, validateDocumentPageChangeApply, validateDocumentPageDuplication, validateDocumentPageDuplicationApply, validateDocumentOutlineQuery, validateDocumentPartQuery } from '@lincyaw/kernel/node'
-import type { AppliedDocumentChange, ApplyDocumentChange, CanonicalSource, DocumentAnswer, DocumentAuthoring, DocumentChange, DocumentChangeAnswer, DocumentChangePlan, DocumentIssue, DocumentPageAction, DocumentPageChangePlan, DocumentPageDuplicationPlan, Member, RequestContext, SourceTransactionChange, TeachingDocument } from '@lincyaw/kernel'
+import type { AppliedDocumentChange, ApplyDocumentChange, CanonicalSource, DocumentAnswer, DocumentAuthoring, DocumentChange, DocumentChangeAnswer, DocumentChangePlan, DocumentIssue, DocumentPageAction, DocumentPageChangePlan, DocumentPageDuplicationPlan, Member, RequestContext, SourceTransactionChange, PresmiumDocument } from '@lincyaw/kernel'
 import { RequestError } from './errors.ts'
 import { applyDocumentAuthoringAction, DOCUMENT_ACTION_MAX_REQUEST_CHARS, DOCUMENT_ACTION_MAX_RESPONSE_CHARS, DOCUMENT_AUTHORING_ACTION_TYPES, DOCUMENT_PARAMETER_MAX_CHANGES, DOCUMENT_PARAMETER_MAX_PATH_DEPTH, DocumentCommentError, DocumentComponentError, DocumentCaptionTimingError, ProductionAudioRefusal } from '@lincyaw/kernel'
 import { validateDocumentAuthoringAction, validateDocumentAuthoringActionReference, validateDocumentAuthoringActionImpact } from '@lincyaw/kernel/node'
@@ -18,7 +18,7 @@ const signatureOf = (change: DocumentChange) => createHash('sha256').update(JSON
 const keyOf = (document: string, member: Member, id: string) => JSON.stringify([document, member.id, id])
 const sourceOf = (answer: DocumentAnswer) => ({ documentId: answer.content.id, version: answer.version, fingerprint: answer.fingerprint })
 
-export function decodeAuthoringDocument(content: string): { document?: TeachingDocument, issues: DocumentIssue[] } {
+export function decodeAuthoringDocument(content: string): { document?: PresmiumDocument, issues: DocumentIssue[] } {
   let value: unknown
   try { value = JSON.parse(content.replace(/^\uFEFF/, '')) }
   catch { return { issues: [{ path: '', code: 'json-syntax', message: 'The document is not valid JSON.', severity: 'error' }] } }
@@ -30,7 +30,7 @@ export function readAuthoringDocument(editor: SourceEditor, ctx: Pick<RequestCon
   const source = editor.read(editor.scope(ctx.document), entryOf(ctx.document), ctx.member)
   const checked = decodeAuthoringDocument(source.content)
   if (!checked.document || checked.issues.some(issue => issue.severity === 'error')) throw new RequestError(422, 'document-invalid', { issues: checked.issues })
-  return { source, content: checked.document, issues: checked.issues }
+  return { source, content: checked.document, effective: editor.effective(ctx.document, checked.document), issues: checked.issues }
 }
 
 export interface DocumentEditor extends DocumentAuthoring {
@@ -59,10 +59,10 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
     while (table.size > MAX_RECEIPTS) table.delete(table.keys().next().value!)
   }
   const read = async (document: string, member: Member): Promise<DocumentAnswer> => {
-    const { source, content, issues } = readAuthoringDocument(editor, { document, member })
-    return { document, version: source.version, fingerprint: fnv1a64(source.content), content, issues }
+    const { source, content, effective, issues } = readAuthoringDocument(editor, { document, member })
+    return { document, version: source.version, fingerprint: fnv1a64(source.content), content, settings: documentSettings(effective), issues }
   }
-  const readSelection = <T>(document: string, expected: CanonicalSource | undefined, member: Member, select: (content: TeachingDocument, source: CanonicalSource) => T): T => {
+  const readSelection = <T>(document: string, expected: CanonicalSource | undefined, member: Member, select: (content: PresmiumDocument, source: CanonicalSource) => T): T => {
     if (!hasRole(member, 'editor')) throw new RequestError(403, 'authoring-permission-denied')
     const scope = editor.scope(document), path = entryOf(document)
     const readSource = () => {
@@ -94,7 +94,7 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
     if (!checked.change) throw new RequestError(400, 'document-change-invalid', { issues: checked.issues })
     return checked.change
   }
-  const filesOf = async (document: string, current: DocumentAnswer, change: DocumentChange): Promise<{ content: TeachingDocument, issues: DocumentIssue[], changes: SourceTransactionChange[] }> => {
+  const filesOf = async (document: string, current: DocumentAnswer, change: DocumentChange): Promise<{ content: PresmiumDocument, issues: DocumentIssue[], changes: SourceTransactionChange[] }> => {
     if (current.version !== change.baseDocumentVersion) throw new RequestError(409, 'document-version-changed', { version: current.version })
     let candidate: unknown = change.replacement
     if (change.operations) {
@@ -326,7 +326,7 @@ export function createDocumentEditor({ editor, revisions, reviewRequired = false
       })
       const planId = randomUUID(), record: Plan = { key, signature: '', expires: Date.now() + PLAN_LIFETIME_MS, ready: false }
       const result = (async (): Promise<DocumentPageChangePlan> => {
-        let candidate: TeachingDocument, sectionId: string, created
+        let candidate: PresmiumDocument, sectionId: string, created
         try {
           if (action.type === 'create') { const next = createDocumentPage(current, action.after ?? null, action.title, randomUUID); candidate = next.document; created = next.ids; sectionId = next.ids.sectionId }
           else {

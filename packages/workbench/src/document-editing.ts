@@ -1,5 +1,5 @@
 import { duplicateDocumentPage, errorMessage, moveDocumentPage, pageDeletion, randomUUID, removeDocumentPage, renameDocumentPage } from '@lincyaw/kernel'
-import type { PageDeletePlan, TeachingDocument } from '@lincyaw/kernel'
+import type { PageDeletePlan, PresmiumDocument } from '@lincyaw/kernel'
 import { undoDepth, redoDepth } from '@tiptap/pm/history'
 import { TextSelection } from '@tiptap/pm/state'
 import { isAgentChanging } from './workbench-state.ts'
@@ -35,7 +35,7 @@ export class DocumentEditing {
   #documentViewport?: { element: HTMLElement, identity: string, returnScrollTop?: number, stop(): void }
   #stopDocumentReturnScroll?: () => void
   #openingDocument?: { directory: string, scope: number, generation: number, focus?: 'body', initial?: boolean, stop(): void,
-    basis?: { identity: string, reset: number, version?: string, content: TeachingDocument }, point?: DocumentReturnPoint, fallback?: DocumentReturnPoint }
+    basis?: { identity: string, reset: number, version?: string, content: PresmiumDocument }, point?: DocumentReturnPoint, fallback?: DocumentReturnPoint }
   #stopDocumentLayoutScroll?: () => void
   #activeDocumentHistory?: DocumentHistoryEditor
   #unsubscribeDocumentHistory?: () => void
@@ -58,7 +58,7 @@ export class DocumentEditing {
       || pending.field.blockId !== undefined && !authoring.content?.blocks[pending.field.blockId]
       || !authoring.content?.steps[pending.field.stepId])) this.#pendingDocumentField = undefined
   }
-  rememberComponent(content: TeachingDocument, identity: string): void {
+  rememberComponent(content: PresmiumDocument, identity: string): void {
     if (this.#documentEditorBinding?.identity === identity) this.#documentEditorCommands?.rememberComponentConfiguration(content)
   }
   beforePosition(): void { this.cancelOpening(); this.#stopDocumentReturnScroll?.() }
@@ -339,7 +339,7 @@ export class DocumentEditing {
     }
   }
 
-  async #changeDocumentPage(change: (document: TeachingDocument) => void): Promise<boolean> {
+  async #changeDocumentPage(change: (document: PresmiumDocument) => void): Promise<boolean> {
     const source = this.#store.state.authoring, directory = this.#store.state.document
     if (!source?.content || directory === undefined || isAgentChanging(this.#store.state)) return false
     const scope = this.#options.scope(), identity = source.identity, documentId = source.content.id

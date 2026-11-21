@@ -3,7 +3,7 @@ import { closeSync, constants, existsSync, fstatSync, lstatSync, mkdirSync, mkdt
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import type { DocumentFileChange, HistoryRevision, Member, RevertResult, Revision, RevisionsAnswer, RevisionService, UncommittedFile } from '@lincyaw/kernel'
-import { CHANGES_MAX_BYTES, LOCAL_AUTHOR, SOURCE_MAX_BYTES } from '@lincyaw/kernel'
+import { CHANGES_MAX_BYTES, LOCAL_AUTHOR, SOURCE_MAX_BYTES, DOCUMENT_ENTRY } from '@lincyaw/kernel'
 import { leavesRoot } from '../domain/paths.ts'
 import { commitMessage, memberAddress, originOf } from '../domain/commit-message.ts'
 import type { CommitOrigin } from '../domain/commit-message.ts'
@@ -509,7 +509,7 @@ export class Revisions implements RevisionService {
         while (at < tree.length) {
           const space = tree.indexOf(32, at), zero = tree.indexOf(0, space + 1)
           if (space < at || zero < space || zero + 1 + oidBytes > tree.length) throw new RequestError(500, 'history-tree-read-failed')
-          if (tree.subarray(space + 1, zero).toString('utf8') === 'lecture.json') found = ['100644', '100755'].includes(tree.subarray(at, space).toString('ascii'))
+          if (tree.subarray(space + 1, zero).toString('utf8') === DOCUMENT_ENTRY) found = ['100644', '100755'].includes(tree.subarray(at, space).toString('ascii'))
           at = zero + 1 + oidBytes
         }
         regular.set(oid, found); cursor = end + 1

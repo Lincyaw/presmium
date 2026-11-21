@@ -1,5 +1,5 @@
 import { documentAnchorKey, documentCommentTargets, isDocumentPlaceAnchor, isRecord, randomUUID, validateDocument, validateDocumentCommentAnchor } from '@lincyaw/kernel'
-import type { DocumentComment, DocumentThread, DocumentThreadAnchor, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
+import type { DocumentComment, DocumentThread, DocumentThreadAnchor, RichTextNode, PresmiumDocument } from '@lincyaw/kernel'
 import { DocumentDraftStore, waitForDraft } from '../document-draft-store.ts'
 import { sha256 as tokenOf } from '../sha256.ts'
 import type { DraftStoreResult } from '../document-draft-store.ts'
@@ -8,7 +8,7 @@ export interface CommentDraftTarget { threadId: string, commentId?: string, thre
 export interface NewCommentDraftTarget { kind: 'create', intentId: string, documentId: string, anchor?: DocumentThreadAnchor, signature?: string }
 export type CommentComposerTarget = CommentDraftTarget | NewCommentDraftTarget
 export const isNewCommentDraft = (target: CommentComposerTarget): target is NewCommentDraftTarget => 'kind' in target && target.kind === 'create'
-export function newCommentDraftSignature(document: TeachingDocument, anchor: DocumentThreadAnchor | undefined): string | undefined {
+export function newCommentDraftSignature(document: PresmiumDocument, anchor: DocumentThreadAnchor | undefined): string | undefined {
   if (!anchor) return
   try {
     validateDocumentCommentAnchor(document, anchor)
@@ -90,7 +90,7 @@ export class CommentDrafts {
   #closed = false
   #started = false
   #read = 0
-  #document?: TeachingDocument
+  #document?: PresmiumDocument
   #version?: string
   #acknowledged = false
   #revision = 0
@@ -276,7 +276,7 @@ export class CommentDrafts {
     return Boolean(thread && !thread.deletedAt && thread.createdAt === (created ? record.pending.threadCreatedAt : target.threadCreatedAt)
       && (!created || documentAnchorKey(thread.anchor) === documentAnchorKey(target.anchor)) && comment && !comment.deletedAt && committedValue(comment) === record.pending.value)
   }
-  synchronize(document: TeachingDocument, version: string | undefined, acknowledged = false): void {
+  synchronize(document: PresmiumDocument, version: string | undefined, acknowledged = false): void {
     this.#document = document; this.#version = version; this.#acknowledged = acknowledged
     for (const value of this.#writing.values()) if (this.#isCommitted(value.record)) void this.clearOwn(value.record)
     if (this.#started) void this.refresh()

@@ -1,8 +1,8 @@
-import type { AgentActivity, TeachingDocument } from '@lincyaw/kernel'
+import type { AgentActivity, PresmiumDocument } from '@lincyaw/kernel'
 import type { DocumentProjection } from './projection.ts'
 
 /** Decorative attributes only: canonical IDs resolve through the editor's existing projection. */
-export function markAgentTargets(root: HTMLElement, projection: DocumentProjection, document: TeachingDocument, activities: readonly AgentActivity[]): () => void {
+export function markAgentTargets(root: HTMLElement, projection: DocumentProjection, document: PresmiumDocument, activities: readonly AgentActivity[]): () => void {
   const marked = new Set<HTMLElement>()
   const mark = (element: HTMLElement | null, state: AgentActivity['state']) => {
     if (!element || marked.has(element)) return

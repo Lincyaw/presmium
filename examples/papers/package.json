@@ -19,6 +19,7 @@
     "@lincyaw/presmium": "workspace:*",
     "@lincyaw/render-slides": "workspace:*",
     "@lincyaw/web": "workspace:*",
+    "fractional-indexing": "3.2.0",
     "yaml": "^2.9.1"
   }
 }

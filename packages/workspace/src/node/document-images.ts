@@ -4,7 +4,7 @@ import { lstat, open, stat } from 'node:fs/promises'
 import { basename, extname, join, relative } from 'node:path'
 import { imageSize } from 'image-size'
 import { ASSET_TITLE_MAX_LENGTH, DOCUMENT_IMAGE_MAX_BYTES, fnv1a64, hasRole, isRecord, jsonResponse } from '@lincyaw/kernel'
-import type { Asset, CanonicalSource, DocumentImageAuthoring, DocumentImageImport, DocumentImageImportAnswer, DocumentWorkspaceImageImport, Member, RequestContext, Route, TeachingDocument, VerifiedDocumentImageImport } from '@lincyaw/kernel'
+import type { Asset, CanonicalSource, DocumentImageAuthoring, DocumentImageImport, DocumentImageImportAnswer, DocumentWorkspaceImageImport, Member, RequestContext, Route, PresmiumDocument, VerifiedDocumentImageImport } from '@lincyaw/kernel'
 import { productionAssetFile, validateDocumentWorkspaceImageImport, validateDocumentWorkspaceImageInspect } from '@lincyaw/kernel/node'
 import { readAuthoringDocument } from './document-editor.ts'
 import { catchRequestErrors, RequestError } from './errors.ts'
@@ -78,7 +78,7 @@ export function createDocumentImageAuthoring({ root, editor, revisions, reviewRe
     receipts.set(key, receipt)
     while (receipts.size > 64) receipts.delete(receipts.keys().next().value!)
   }
-  const history = (ctx: RequestContext, document: TeachingDocument, signal: AbortSignal, origin: 'editor' | 'agent'): SourceTransactionHistory => ({
+  const history = (ctx: RequestContext, document: PresmiumDocument, signal: AbortSignal, origin: 'editor' | 'agent'): SourceTransactionHistory => ({
     run: work => {
       const guarded = () => { signal.throwIfAborted(); return work() }
       return revisions ? revisions.transaction(guarded) : guarded()
@@ -87,7 +87,7 @@ export function createDocumentImageAuthoring({ root, editor, revisions, reviewRe
       if (!revisions) return undefined
       const ignored = (await Promise.all(paths.map(async path => await revisions.ignores(path) ? path : undefined))).filter((path): path is string => Boolean(path))
       if (ignored.length) throw new RequestError(409, 'document-files-ignored', { ignored })
-      return revisions.commitWhileLocked({ paths, summary: document.metadata.lang.startsWith('en') ? 'Import image' : '导入图片', body: '', origin: { kind: origin, member: ctx.member } })
+      return revisions.commitWhileLocked({ paths, summary: editor.effective(ctx.document, document).metadata.lang.startsWith('en') ? 'Import image' : '导入图片', body: '', origin: { kind: origin, member: ctx.member } })
     },
   })
   const signatureOf = (change: DocumentImageImport, title: string, hash: string, origin: 'editor' | 'agent', source?: CanonicalSource, inputPath?: string | { upload: string }) => createHash('sha256').update(JSON.stringify([change.id, change.baseDocumentVersion, source?.documentId ?? null, source?.fingerprint ?? null, origin, inputPath ?? null, title, hash])).digest('hex')

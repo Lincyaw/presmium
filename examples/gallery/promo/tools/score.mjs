@@ -5,7 +5,7 @@
 //   node promo/tools/score.mjs
 //
 // Writes `audio/score.wav` (not committed), `audio/score.ogg` (Opus, what the document plays) and `audio/score.json`,
-// then brings `lecture.json` up to date: the score's fingerprint, one music clip per step, the step holds and the
+// then brings `index.pmd` up to date: the score's fingerprint, one music clip per step, the step holds and the
 // scene's state durations. Needs FFmpeg with libopus; downloads the recording once into `audio/source/` (not committed).
 import { execFileSync, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -83,7 +83,7 @@ writeFileSync(join(audio, 'score.json'), `${JSON.stringify({
 }, null, 2)}\n`)
 
 // The document follows: one clip of the score per step (a clip lies within its step), the holds and the durations.
-const lecturePath = join(promo, 'lecture.json')
+const lecturePath = join(promo, 'index.pmd')
 const lecture = JSON.parse(readFileSync(lecturePath, 'utf8'))
 lecture.assets['film-score'].fingerprint = fingerprint
 lecture.production.stepOverrides = Object.fromEntries(STEPS.map(step => [step.id, { minimumHoldMs: stepMs(step), trailingPauseMs: 0 }]))

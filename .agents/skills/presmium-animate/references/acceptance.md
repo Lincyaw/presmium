@@ -15,7 +15,7 @@ Adapt the rules to the new subject. Do not copy a sequence that no longer explai
 
 ## 2. Plan the elements and their operations
 
-Before scene code, save the step sequence and both linked tables below in `storyboard.md`. Resolve them for every core explanation, including figures, labels, counters, connections, highlights and camera regions that affect understanding. Group repeated objects when they share the same rule; identify the objects whose individual identity matters. This is a design record: teaching text, parameters and step bindings still belong in `lecture.json`.
+Before scene code, save the step sequence and both linked tables below in `storyboard.md`. Resolve them for every core explanation, including figures, labels, counters, connections, highlights and camera regions that affect understanding. Group repeated objects when they share the same rule; identify the objects whose individual identity matters. This is a design record: teaching text, parameters and step bindings still belong in `index.pmd`.
 
 **Element design** establishes what a viewer is following:
 

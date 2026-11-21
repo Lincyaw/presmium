@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import type { DocumentTranscriptionRequest, TeachingDocument, TranscriptionCapabilities, TranscriptionListAnswer, TranscriptionRevision, TranscriptionTask } from '@lincyaw/kernel'
+import type { DocumentTranscriptionRequest, PresmiumDocument, TranscriptionCapabilities, TranscriptionListAnswer, TranscriptionRevision, TranscriptionTask } from '@lincyaw/kernel'
 import { randomUUID } from '@lincyaw/kernel'
 import { PmBadge, PmButton, PmCard, PmDialog, PmField, PmIconButton, PmNotice, PmSelect } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
@@ -7,7 +7,7 @@ import { documentTranscriptionSession } from '../transcription-session.ts'
 import { TRANSCRIPTION_MESSAGES, transcriptionFailure } from '../transcription-messages.ts'
 import { TranscriptionAdoption } from './TranscriptionAdoption.tsx'
 
-interface Props { identity: string, directory: string, document: TeachingDocument, sectionId: string, stepId: string, disabled: boolean, active: boolean, selectedAsset?: { id: string, revision: number }, onSelectAsset(): void }
+interface Props { identity: string, directory: string, document: PresmiumDocument, sectionId: string, stepId: string, disabled: boolean, active: boolean, selectedAsset?: { id: string, revision: number }, onSelectAsset(): void }
 
 /** ASR creates material; a separate, source-bound review is the only script write. */
 export function ProductionTranscription({ identity, directory, document, sectionId, stepId, disabled, active, selectedAsset, onSelectAsset }: Props) {

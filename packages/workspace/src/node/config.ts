@@ -1,28 +1,29 @@
-import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { WORKSPACE_CONFIG } from '@lincyaw/compiler'
+import { effectiveDocumentIn, WORKSPACE_CONFIG, workspaceDefaults, workspaceDocuments } from '@lincyaw/compiler'
 import type { OperatorSettings } from '@lincyaw/compiler'
 import { APPROVAL_KINDS, DOCUMENT_ENTRY, errorMessage, isRecord } from '@lincyaw/kernel'
-import type { ApprovalKind, DocumentSummary } from '@lincyaw/kernel'
+import type { ApprovalKind, DocumentDefaults, DocumentSummary, EffectiveDocument, PresmiumDocument } from '@lincyaw/kernel'
 import type { ApprovalPolicy } from '@lincyaw/server'
 import { parse as parseYaml } from 'yaml'
-import { matchesPattern, patternSegments } from '../domain/paths.ts'
 
-export const DEFAULT_DOCUMENTS = [`*/${DOCUMENT_ENTRY}`]
-
-const SKIPPED = new Set(['node_modules', '.git', '.presmium', 'dist'])
+const SKIPPED = new Set(['node_modules', '.git', '.presmium', 'dist', '.trash'])
 
 const POLICIES = new Set<ApprovalPolicy>(['off', 'ask', 'allow'])
 
 export interface WorkspaceConfig {
   root: string
   title: string
-  documents: string[]
+  /** A folder whose own entry file is the only document. */
   singleDeck: boolean
   site: Record<string, unknown>
   approvals: Partial<Record<ApprovalKind, ApprovalPolicy>>
   templates?: string
   settings: OperatorSettings
+  /** The root of the documents' inherited settings. */
+  defaults: DocumentDefaults
+  /** The workspace file still lists `documents:`; `presmium migrate` or Studio's Upgrade removes it. */
+  needsMigration: boolean
 }
 
 function strings(value: unknown): string[] {
@@ -41,23 +42,23 @@ export function readWorkspaceConfig(root: string): WorkspaceConfig {
       throw new Error(`${file}: ${errorMessage(error)}`)
     }
   }
-  const declared = strings(data.documents)
-  const singleDeck = declared.length === 0 && existsSync(join(dir, DOCUMENT_ENTRY))
+  const singleDeck = existsSync(join(dir, DOCUMENT_ENTRY))
   const approvals = isRecord(data.approvals) ? data.approvals : {}
   const settings = isRecord(data.settings) ? data.settings : {}
   const renderers = isRecord(data.renderers) ? data.renderers : {}
   for (const [path, value] of [['renderers.lecture', renderers.lecture], ['settings.presmium.lecture', settings['presmium.lecture']]] as const) {
-    if (isRecord(value) && Object.hasOwn(value, 'script')) throw new Error(`${file}: ${path}.script: External lecture scripts are not supported. Author narration in each document's lecture.json narrations.`)
+    if (isRecord(value) && Object.hasOwn(value, 'script')) throw new Error(`${file}: ${path}.script: External lecture scripts are not supported. Author narration in each document's narrations.`)
   }
   return {
     root: dir,
     title: typeof data.title === 'string' && data.title.trim() ? data.title.trim() : dir.split('/').at(-1) ?? 'Presmium',
-    documents: singleDeck ? [DOCUMENT_ENTRY] : declared.length > 0 ? declared : DEFAULT_DOCUMENTS,
     singleDeck,
     site: isRecord(data.site) ? data.site : {},
     approvals: Object.fromEntries(APPROVAL_KINDS.flatMap(kind => (POLICIES.has(approvals[kind] as ApprovalPolicy) ? [[kind, approvals[kind] as ApprovalPolicy]] : []))),
     ...typeof data.templates === 'string' && data.templates.trim() ? { templates: resolve(dir, data.templates.trim()) } : {},
     settings: Object.fromEntries(Object.entries(settings).map(([id, value]) => [id, isRecord(value) ? value : {}])),
+    defaults: workspaceDefaults(data.defaults),
+    needsMigration: data.documents !== undefined,
   }
 }
 
@@ -70,34 +71,6 @@ export function isWorkspaceRoot(dir: string): boolean {
   }
 }
 
-function entries(config: WorkspaceConfig): string[] {
-  const found: string[] = []
-  for (const pattern of config.documents) {
-    const parts = patternSegments(pattern)
-    const walk = (dir: string, rel: string, i: number): string[] => {
-      const part = parts[i]!
-      const last = i === parts.length - 1
-      const names = typeof part === 'string'
-        ? [part]
-        : (() => {
-            try {
-              return readdirSync(dir).filter(name => !SKIPPED.has(name) && !name.startsWith('.') && part.test(name)).sort()
-            } catch {
-              return []
-            }
-          })()
-      return names.flatMap((name) => {
-        const path = join(dir, name)
-        const next = rel ? `${rel}/${name}` : name
-        if (last) return name === DOCUMENT_ENTRY && existsSync(path) && statSync(path).isFile() ? [next] : []
-        return existsSync(path) && statSync(path).isDirectory() ? walk(path, next, i + 1) : []
-      })
-    }
-    for (const entry of walk(config.root, '', 0)) if (!found.includes(entry)) found.push(entry)
-  }
-  return found
-}
-
 export interface DocumentEntry {
   dir: string
   entry: string
@@ -105,16 +78,39 @@ export interface DocumentEntry {
 
 export interface FoundDocument extends DocumentSummary, DocumentEntry {}
 
-/** The configured documents that exist on disk, without reading their content. */
+const entryOf = (path: string): DocumentEntry => ({ dir: path.split('/').slice(0, -1).join('/'), entry: path })
+
+/**
+ * The documents on disk, without validating them: in a workspace every entry file found by the scan, in tree order
+ * (depth first, siblings by rank); entries the tree leaves out (a second document with a taken ID) follow by path.
+ */
 export function listDocumentEntries(config: WorkspaceConfig): DocumentEntry[] {
-  return entries(config).map(entry => ({ dir: entry.split('/').slice(0, -1).join('/'), entry }))
+  if (config.singleDeck) return [{ dir: '', entry: DOCUMENT_ENTRY }]
+  const { documents, tree } = workspaceDocuments(config.root)
+  const ordered = tree.order.map(node => node.path)
+  const listed = new Set(ordered)
+  return [...ordered, ...documents.map(document => document.path).filter(path => !listed.has(path))].map(entryOf)
+}
+
+/** The tree position of every listed document, by folder. */
+export function documentPlaces(config: WorkspaceConfig): Map<string, { id: string, parent: string | null, depth: number, schemaVersion: unknown }> {
+  if (config.singleDeck) return new Map()
+  const { documents, tree } = workspaceDocuments(config.root)
+  const versions = new Map(documents.map(document => [document.path, document.schemaVersion]))
+  return new Map(tree.order.map(node => [entryOf(node.path).dir, { id: node.id, parent: node.parent, depth: node.depth, schemaVersion: versions.get(node.path) }]))
+}
+
+/** The metadata a document decides with (its language, plugins, renderers), inherited settings filled in. */
+function effectiveMetadata(config: WorkspaceConfig, entry: string, parsed: unknown): Record<string, unknown> {
+  if (!isRecord(parsed) || !isRecord(parsed.metadata)) return {}
+  if (!isRecord(parsed.production) || !isRecord(parsed.placement)) return parsed.metadata
+  return effectiveDocumentIn(config.root, join(config.root, entry), parsed as unknown as PresmiumDocument).metadata as unknown as Record<string, unknown>
 }
 
 export function readDocumentSummary(config: WorkspaceConfig, { dir, entry }: DocumentEntry): FoundDocument {
   let headmatter: Record<string, unknown> = {}
   try {
-    const parsed: unknown = JSON.parse(readFileSync(join(config.root, entry), 'utf8'))
-    headmatter = isRecord(parsed) && isRecord(parsed.metadata) ? parsed.metadata : {}
+    headmatter = effectiveMetadata(config, entry, JSON.parse(readFileSync(join(config.root, entry), 'utf8')))
   } catch {
   }
   const tags = strings(headmatter.tags)
@@ -134,9 +130,21 @@ export function listDocuments(config: WorkspaceConfig): FoundDocument[] {
 }
 
 export function documentSummaries(config: WorkspaceConfig): DocumentSummary[] {
-  return listDocuments(config).map(({ entry: _entry, ...document }) => document)
+  const places = documentPlaces(config)
+  return listDocuments(config).map(({ entry: _entry, ...document }) => {
+    const place = places.get(document.dir)
+    return place ? { ...document, id: place.id, parent: place.parent, depth: place.depth } : document
+  })
 }
 
+/** Whether a document may live in this folder: in a workspace any folder outside the skipped ones and translations. */
 export function isDocumentDir(config: WorkspaceConfig, dir: string): boolean {
-  return config.documents.some(pattern => matchesPattern(pattern, dir ? `${dir}/${DOCUMENT_ENTRY}` : DOCUMENT_ENTRY))
+  if (config.singleDeck) return dir === ''
+  const parts = dir.split('/')
+  return dir !== '' && !parts.some(part => part === '' || part.startsWith('.') || SKIPPED.has(part)) && !parts.some((part, index) => part === 'locales' && index === parts.length - 2)
+}
+
+/** The document in `dir` with the settings it inherits from its ancestors and the workspace defaults; never saved. */
+export function effectiveContent(config: WorkspaceConfig, dir: string, content: PresmiumDocument): EffectiveDocument {
+  return effectiveDocumentIn(config.root, join(config.root, dir ? `${dir}/${DOCUMENT_ENTRY}` : DOCUMENT_ENTRY), content)
 }

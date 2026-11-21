@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, fnv1a64, isRecord, productionAssetIds, validateDocument } from '@lincyaw/kernel'
 import { operatorSpeechSecrets, productionAssetFile } from '@lincyaw/kernel/node'
-import type { AnchorResolverRegistry, CanonicalSource, CodeNode, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceCapabilities, SourceReader, TeachingDocument } from '@lincyaw/kernel'
+import type { AnchorResolverRegistry, CanonicalSource, CodeNode, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceCapabilities, SourceReader, PresmiumDocument } from '@lincyaw/kernel'
 import { audienceDocument, emptyReferences, filterForAudience, scanOutputs, withheld } from './audience.ts'
 import type { AudienceMark, Withheld } from './audience.ts'
 import { runAllChecks } from './compilation-actions.ts'
@@ -27,7 +27,8 @@ import { resolveReferences } from './references.ts'
 import { applyTranslations, translationFields } from './translations.ts'
 import { validateIR } from './validate.ts'
 import { createSourceReader, findWorkspaceRoot } from './workspace.ts'
-import { operatorDir, operatorPlugins, workspaceSettings } from './workspace-settings.ts'
+import { operatorDir, operatorPlugins, WORKSPACE_CONFIG, workspaceSettings } from './workspace-settings.ts'
+import { effectiveDocumentIn } from './document-tree.ts'
 import type { OperatorSettings } from './workspace-settings.ts'
 
 export { DECK_ENTRY }
@@ -124,6 +125,7 @@ interface Workspace {
   src: SourceReader
   settings: OperatorSettings
   problem?: string
+  needsMigration: boolean
   sources: PluginSources
   operatorDir?: string
   operatorProblem?: string
@@ -162,7 +164,9 @@ interface CompileRun {
   report: Report
   at: HeadmatterLine
   signal?: AbortSignal
-  document: TeachingDocument
+  /** The document with its inherited settings; `stored` is it as saved. */
+  document: PresmiumDocument
+  stored: PresmiumDocument
   rawSource: string
 }
 
@@ -275,12 +279,15 @@ export class Compiler {
     try { parsed = JSON.parse(text) } catch (error) { throw new Error(`Invalid ${DECK_ENTRY}: ${errorMessage(error)}`) }
     const validated = validateDocument(parsed)
     if (!validated.document) throw new Error(validated.issues.map(issue => `${issue.path || '/'}: ${issue.message}`).join('\n'))
-    const document = validated.document
+    if (workspace.needsMigration) report({ checkId: 'presmium.workspace', severity: 'error', message: `${WORKSPACE_CONFIG} still lists documents:, which documents no longer use; run presmium migrate to place them in the document tree`, source: { file: join(workspaceRoot, WORKSPACE_CONFIG), line: 1 } })
+    // Settings the document leaves out come from its ancestors and the workspace defaults.
+    const stored = validated.document
+    const document = effectiveDocumentIn(existsSync(join(workspaceRoot, WORKSPACE_CONFIG)) ? workspaceRoot : this.deckDir, this.entry, stored)
     const headmatter = withHeadmatter({ ...document.metadata }, this.options.headmatter)
     const defaultVoice = document.production.defaults.voiceSource
     const declared = isRecord((headmatter.renderers as Record<string, unknown> | undefined)?.lecture)
     const lecture = declared ? (headmatter.renderers as Record<string, Record<string, unknown>>).lecture : {}
-    if (lecture && Object.hasOwn(lecture, 'script')) throw new Error('/metadata/renderers/lecture/script: External lecture scripts are not supported. Author narration in lecture.json narrations and bind it through each step narrationIds.')
+    if (lecture && Object.hasOwn(lecture, 'script')) throw new Error('/metadata/renderers/lecture/script: External lecture scripts are not supported. Author narration in the document narrations and bind it through each step narrationIds.')
     // The production defaults configure the lecture form where the document builds it; they never add the form.
     if (declared && (defaultVoice?.type === 'tts' || document.production.defaults.trailingPauseMs !== undefined || Object.keys(lecture ?? {}).length)) headmatter.renderers = { ...(isRecord(headmatter.renderers) ? headmatter.renderers : {}), lecture: { ...lecture, ...defaultVoice?.type === 'tts' ? { voice: defaultVoice.voice } : {}, ...document.production.defaults.trailingPauseMs !== undefined ? { gap: document.production.defaults.trailingPauseMs } : {} } }
     const lang = typeof headmatter.lang === 'string' && headmatter.lang.trim() ? headmatter.lang.trim() : DEFAULT_LANG
@@ -316,7 +323,7 @@ export class Compiler {
     }
     const execute = toExecuteConfig(headmatter.execute, report, at)
     checkSecrets(headmatter, report, at)
-    return { workspace, headmatter, lang, plugins, configOf, service, execute, inputs, findings, report, at, signal: options.signal, document, rawSource: read }
+    return { workspace, headmatter, lang, plugins, configOf, service, execute, inputs, findings, report, at, signal: options.signal, document, stored, rawSource: read }
   }
 
   /** Collects the plugins' anchor resolvers, executors, environment providers and components. */
@@ -352,7 +359,7 @@ export class Compiler {
 
   /** Validated JSON is the sole runtime source; compiler output remains a derived snapshot. */
   async #compileSections(run: CompileRun, _contributions: Contributions): Promise<{ sections: IRSection[], marks: AudienceMark[], sourceFiles: string[], sourceFingerprints: Record<string, string> }> {
-    const sections = lowerDocument(run.document, this.entry, this.deckDir, run.report, (...files) => run.inputs.watch(...files))
+    const sections = lowerDocument(run.document, this.entry, this.deckDir, run.report, (...files) => run.inputs.watch(...files), run.stored)
     for (const id of productionAssetIds(run.document.production, run.document.sectionOrder.map(id => ({ id, stepIds: run.document.sections[id]!.stepOrder })))) {
       const asset = run.document.assets[id], file = asset && productionAssetFile(this.deckDir, asset.location)
       if (file) run.inputs.watch(file)
@@ -506,9 +513,10 @@ export class Compiler {
 
   async #openWorkspace(): Promise<Workspace> {
     const root = this.options.workspaceRoot ? resolve(this.options.workspaceRoot) : await findWorkspaceRoot(this.deckDir)
-    const read = this.options.settings ? { settings: this.options.settings } : workspaceSettings(root)
-    const sources: PluginSources = { workspaceRoot: root, listed: operatorPlugins(read.settings), bundled: this.options.bundled }
-    const workspace: Workspace = { root, src: createSourceReader(root), settings: read.settings, problem: read.problem, sources }
+    const read = workspaceSettings(root)
+    const settings = this.options.settings ?? read.settings
+    const sources: PluginSources = { workspaceRoot: root, listed: operatorPlugins(settings), bundled: this.options.bundled }
+    const workspace: Workspace = { root, src: createSourceReader(root), settings, problem: this.options.settings ? undefined : read.problem, needsMigration: Boolean(read.needsMigration), sources }
     try {
       workspace.operatorDir = operatorDir(root, this.options.operatorDir ?? process.env.PRESMIUM_OPERATOR_DIR)
     } catch (error) {

@@ -30,7 +30,7 @@ pnpm add -D @lincyaw/cli @lincyaw/web @lincyaw/render-slides @lincyaw/render-not
 | `presmium serve [dir]` | The workspace service, on this machine: the documents and their sites, compiled on demand (`--port`, `--host`, `--operator-dir`, `--preview-origin`) |
 | `presmium studio [dir]` | The workbench (experimental), included with Presmium (`--port`, `--host`); uses the running command's bundled version |
 
-`[deck]` is a directory with `lecture.json` or an entry file, by default the current directory. Exit codes: 0 no errors, 1 error findings, 2 usage or internal error. `presmium --help` lists every option.
+`[deck]` is a directory with `index.pmd` or an entry file, by default the current directory. Exit codes: 0 no errors, 1 error findings, 2 usage or internal error. `presmium --help` lists every option.
 
 ## Testing plugins
 
@@ -44,8 +44,8 @@ const { code, stdout } = await presmium(dir, ['build', '--to', 'web'])
 
 ## Documentation
 
-- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/locales/en/lecture.json)
-- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/locales/en/lecture.json)
+- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/locales/en/index.pmd)
+- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/locales/en/index.pmd)
 
 ## License
 

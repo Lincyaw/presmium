@@ -90,7 +90,7 @@ export function startServer(): void {
     if (!deck?.compilation) return undefined
     const origin = findNodeAtLocation(found.tree, found.path.slice(0, -1)), pin = origin && getNodeValue(origin)?.pin
     const ref: AnchorRef = { anchor: found.node.value as AnchorString, blockId: block.id, range: offsetRange(found.document, found.node.offset + 1, found.node.length - 2), ...typeof pin === 'string' ? { pin } : {} }
-    return { compilation: deck.compilation, ref, t: LS_MESSAGES[found.content.metadata.lang === 'en' ? 'en' : 'zh-CN'] }
+    return { compilation: deck.compilation, ref, t: LS_MESSAGES[deck.compilation.doc.meta.lang === 'en' ? 'en' : 'zh-CN'] }
   }
   connection.onDefinition(async ({ textDocument, position }) => {
     const anchor = await anchorOf(textDocument.uri, position)

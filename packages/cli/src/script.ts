@@ -1,6 +1,6 @@
-import type { NarrationNode, TeachingDocument } from '@lincyaw/kernel'
+import type { NarrationNode, PresmiumDocument } from '@lincyaw/kernel'
 
-// The narration of a document as one Markdown file to polish, and back; lecture.json stays the only source. Each step
+// The narration of a document as one Markdown file to polish, and back; index.pmd stays the only source. Each step
 // is a heading; under it each narration follows its marker line `<!-- n: <narration> -->` up to the next marker or
 // heading. Each line break of a narration starts a new line of the file, and a blank line stands for a blank line
 // (`\n\n`; several read back as one).
@@ -44,7 +44,7 @@ function linesToText(lines: readonly string[]): string {
 }
 
 /** The narrated steps in reading order, each with the narrations it is the first to say (a shared one is listed once). */
-export function narratedSteps(document: TeachingDocument): { section: string, title: string, step: string, stepTitle: string, narrations: string[] }[] {
+export function narratedSteps(document: PresmiumDocument): { section: string, title: string, step: string, stepTitle: string, narrations: string[] }[] {
   const seen = new Set<string>()
   return document.sectionOrder.flatMap(sectionId => {
     const section = document.sections[sectionId]!
@@ -57,7 +57,7 @@ export function narratedSteps(document: TeachingDocument): { section: string, ti
   })
 }
 
-export function exportScript(document: TeachingDocument, instructions: string): { text: string, steps: number, narrations: number } {
+export function exportScript(document: PresmiumDocument, instructions: string): { text: string, steps: number, narrations: number } {
   const steps = narratedSteps(document)
   const parts = [`# ${document.metadata.title}`, '', `<!-- ${instructions} -->`, '']
   let page: string | undefined
@@ -130,7 +130,7 @@ function contentOf(id: string, text: string, before: NarrationNode[]): Narration
  * Applies the file to the document: every narrated step's markers must be there exactly once; only the narrations whose
  * text differs from what an untouched export reads back as are changed. Returns the same document when nothing changed.
  */
-export function importScript(document: TeachingDocument, text: string): { document: TeachingDocument, changed: string[] } {
+export function importScript(document: PresmiumDocument, text: string): { document: PresmiumDocument, changed: string[] } {
   const found = readScript(text)
   const expected = narratedSteps(document).flatMap(step => step.narrations)
   const unknown = [...found.keys()].filter(id => !expected.includes(id))

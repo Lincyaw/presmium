@@ -1,4 +1,4 @@
-import type { TeachingDocument } from '@lincyaw/kernel'
+import type { PresmiumDocument } from '@lincyaw/kernel'
 import { stepTimingValue } from './step-production.ts'
 import type { ProductionSource, StepDurationDraft, StepDurationKey } from './step-production.ts'
 
@@ -39,13 +39,13 @@ export class DocumentTimingDrafts {
     }
     return values
   }
-  get(identity: string, document: TeachingDocument, stepId: string, key: StepDurationKey): StepDurationDraft | undefined {
+  get(identity: string, document: PresmiumDocument, stepId: string, key: StepDurationKey): StepDurationDraft | undefined {
     const draft = this.#load(identity).get(JSON.stringify([stepId, key]))
     if (!draft) return undefined
     const actual = stepTimingValue(document, stepId, key)
     return { text: draft.text, error: draft.error, review: draft.review || draft.baseValue !== actual.value || draft.baseSource !== actual.source }
   }
-  has(identity: string, document: TeachingDocument): boolean {
+  has(identity: string, document: PresmiumDocument): boolean {
     return [...this.#load(identity).keys()].some(target => Object.hasOwn(document.steps, JSON.parse(target)[0]))
   }
   partial(identity: string): boolean { this.#load(identity); try { return this.#unreadable.has(identity) || sessionStorage.getItem(this.#storage(identity)) !== this.#stored.get(identity) } catch { return true } }
@@ -64,7 +64,7 @@ export class DocumentTimingDrafts {
       return true
     } catch { this.failed = true; return false }
   }
-  set(identity: string, document: TeachingDocument, stepId: string, key: StepDurationKey, draft: StepDurationDraft | undefined): boolean {
+  set(identity: string, document: PresmiumDocument, stepId: string, key: StepDurationKey, draft: StepDurationDraft | undefined): boolean {
     const values = this.#load(identity), target = JSON.stringify([stepId, key]), previous = values.get(target), actual = stepTimingValue(document, stepId, key)
     if (draft && draft.text.length > 256 || draft && !previous && values.size >= 512) { this.failed = true; return true }
     if (previous?.text === draft?.text && previous?.error === draft?.error && !previous?.review && (!previous || previous.baseValue === actual.value && previous.baseSource === actual.source)) return false

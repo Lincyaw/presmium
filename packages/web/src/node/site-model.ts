@@ -9,7 +9,7 @@ import type { DocumentPage } from './publish.ts'
 
 /**
  * A site of the web form: one document at its root, or a workspace's documents below their directories with a home page
- * that lists them. The links between documents (a link to another document's `lecture.json` goes to its page), the pager
+ * that lists them. The links between documents (a link to another document's `index.pmd` goes to its page), the pager
  * that goes on from one to the next and the search that finds the others' sections are the workspace's. The built site
  * (`site-build.ts`) and the dev server (`site-server.ts`) share these.
  */

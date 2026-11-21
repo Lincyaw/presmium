@@ -11,7 +11,7 @@ export type SiteLandingSection =
   | SiteSection & { type: 'text', body: string }
   | SiteSection & { type: 'cta', title: string, actions: SiteAction[] }
 
-/** Website content is independent of teaching documents and may reference their published collection. */
+/** Website content is independent of documents and may reference their published collection. */
 export interface SiteLandingPage { schemaVersion: 1, title: string, description?: string, hero?: SiteHero, sections: SiteLandingSection[] }
 
 /** A document of the site for a template: its pages at `href`, and its presentation at `slides` when it has one. */

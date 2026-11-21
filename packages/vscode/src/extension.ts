@@ -14,7 +14,7 @@ import { installProjectSkills } from './skills.ts'
 const SERVER_PACKAGE = '@lincyaw/language-server'
 const SERVER_BIN = 'bin/presmium-language-server.mjs'
 const BROWSER_COMMAND = 'workbench.action.browser.open'
-const isDocument = (document: vscode.TextDocument) => document.uri.scheme === 'file' && document.languageId === 'json' && basename(document.uri.fsPath) === 'lecture.json'
+const isDocument = (document: vscode.TextDocument) => document.uri.scheme === 'file' && document.languageId === 'json' && basename(document.uri.fsPath) === 'index.pmd'
 
 let client: LanguageClient | undefined
 let studios: StudioLauncher | undefined
@@ -69,7 +69,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const activeDocument = async () => {
     const editor = vscode.window.activeTextEditor
     if (!editor || !isDocument(editor.document)) {
-      void vscode.window.showInformationMessage(vscode.l10n.t('Open lecture.json to preview or present this document.'))
+      void vscode.window.showInformationMessage(vscode.l10n.t('Open index.pmd to preview or present this document.'))
       return
     }
     if (editor.document.isDirty && !await editor.document.save()) return
@@ -79,7 +79,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const languageClient = (): Promise<LanguageClient> => language ??= (async () => {
     if (!client) {
       const candidate = new LanguageClient('presmium', 'Presmium', { module: serverModule(context), runtime: runtime(), transport: TransportKind.ipc }, {
-        documentSelector: [{ scheme: 'file', language: 'json', pattern: '**/lecture.json' }], outputChannel: output,
+        documentSelector: [{ scheme: 'file', language: 'json', pattern: '**/index.pmd' }], outputChannel: output,
       })
       client = candidate
       try { await candidate.start() } catch (error) { if (client === candidate) client = undefined; throw error }
@@ -118,7 +118,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const request = ++studioRequest
       const current = () => lifetime === lifecycle && request === studioRequest
       const editor = vscode.window.activeTextEditor
-      const selected = resource instanceof vscode.Uri && resource.scheme === 'file' && basename(resource.fsPath) === 'lecture.json'
+      const selected = resource instanceof vscode.Uri && resource.scheme === 'file' && basename(resource.fsPath) === 'index.pmd'
         ? await vscode.workspace.openTextDocument(resource) : editor?.document
       const document = selected && isDocument(selected) ? selected : undefined
       if (document?.isDirty && !await document.save()) return
@@ -150,7 +150,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (tab && current()) studioTabs.set(address, tab)
     })),
     vscode.commands.registerCommand('presmium.installSkills', run(vscode.l10n.t('Couldn’t install the project skills. Check the Presmium output and try again.'), async resource => {
-      const selected = resource instanceof vscode.Uri && resource.scheme === 'file' && basename(resource.fsPath) === 'lecture.json'
+      const selected = resource instanceof vscode.Uri && resource.scheme === 'file' && basename(resource.fsPath) === 'index.pmd'
         ? await vscode.workspace.openTextDocument(resource) : vscode.window.activeTextEditor?.document
       const document = selected && isDocument(selected) ? selected : undefined
       const directory = resource instanceof vscode.Uri && resource.scheme === 'file' && ((await vscode.workspace.fs.stat(resource)).type & vscode.FileType.Directory) !== 0

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { AUTHORING_CLIENT_MAX_CLIENTS, DOCUMENT_PAGE_DUPLICATION_SCHEMA, deckLocale, errorMessage, narrationCaptionText, replaceStepNarrationText } from '@lincyaw/kernel'
 import { DOCUMENT_CHANGE_JSON_SCHEMA } from '@lincyaw/kernel/node'
-import type { AuthoringClientDescriptor, CanonicalSource, DocumentAnswer, DocumentChange, DocumentEditOperation, TeachingDocument } from '@lincyaw/kernel'
+import type { AuthoringClientDescriptor, CanonicalSource, DocumentAnswer, DocumentChange, DocumentEditOperation, PresmiumDocument } from '@lincyaw/kernel'
 import type { Call, ToolSpec } from './mcp.ts'
 import { documentChangeSummary, MCP_MESSAGES } from './messages.ts'
 
@@ -55,13 +55,13 @@ async function editorFeedback(call: Call, document: string, source: CanonicalSou
   }
 }
 
-async function edit(call: Call, opened: Awaited<ReturnType<typeof open>>, changes: DocumentEditOperation[] | TeachingDocument, sectionId?: string) {
+async function edit(call: Call, opened: Awaited<ReturnType<typeof open>>, changes: DocumentEditOperation[] | PresmiumDocument, sectionId?: string) {
   const { own, document, current, source } = opened
   const change: DocumentChange = { id: String(call.args.requestId ?? randomUUID()), baseDocumentVersion: source.version,
     ...Array.isArray(changes) ? { operations: changes } : { replacement: changes } }
   const plan = await own.plan(document, change, call.caller.member)
-  const summary = documentChangeSummary(MCP_MESSAGES[deckLocale(current.content.metadata.lang)], change, current.content)
-  await call.approve('operate', messages => messages.applyDocumentChange, { lang: current.content.metadata.lang, detail: summary, check: () => own.checkApply(document, { change, planId: plan.planId }, call.caller.member) })
+  const summary = documentChangeSummary(MCP_MESSAGES[deckLocale(current.settings?.lang ?? current.content.metadata.lang)], change, current.content)
+  await call.approve('operate', messages => messages.applyDocumentChange, { lang: current.settings?.lang ?? current.content.metadata.lang, detail: summary, check: () => own.checkApply(document, { change, planId: plan.planId }, call.caller.member) })
   call.signal.throwIfAborted()
   const applied = await own.apply(document, { change, planId: plan.planId }, call.caller.member)
   const saved = sourceOf(applied)
@@ -145,7 +145,7 @@ export const EDITING_TOOLS: ToolSpec[] = [
       oneOf: [{ required: ['find', 'replace'], not: { required: ['remove'] } }, { required: ['remove'], not: { anyOf: ['find', 'replace'].map(key => ({ required: [key] })) } }] },
     run: async call => {
       const opened = await open(call), context = await target(call, opened, true)
-      let content: TeachingDocument | DocumentEditOperation[]
+      let content: PresmiumDocument | DocumentEditOperation[]
       if (call.args.remove !== undefined) {
         const id = typeof call.args.remove === 'number' ? context.step.narrationIds[call.args.remove - 1] : String(call.args.remove)
         if (!id || !context.step.narrationIds.includes(id)) throw Object.assign(new Error('document-narration-target'), { status: 409 })

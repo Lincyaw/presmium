@@ -1,11 +1,11 @@
 import { Validator } from '@cfworker/json-schema'
 import { DOCUMENT_JSON_SCHEMA } from './document-schema.ts'
-import type { Narration, TeachingDocument } from './contracts/document.ts'
+import type { Narration, PresmiumDocument } from './contracts/document.ts'
 
 const schema = new Validator({ $id: 'urn:presmium:step-narrations:1', $defs: structuredClone(DOCUMENT_JSON_SCHEMA.$defs), type: 'array', items: { $ref: '#/$defs/Narration' } }, '2020-12', false)
 
 /** Replace one step's ordered script blocks, retaining entities still used by other steps. */
-export function replaceStepNarrations(source: TeachingDocument, stepId: string, narrations: readonly Narration[]): TeachingDocument {
+export function replaceStepNarrations(source: PresmiumDocument, stepId: string, narrations: readonly Narration[]): PresmiumDocument {
   const step = source.steps[stepId]
   if (!step || !source.sections[step.sectionId]?.stepOrder.includes(stepId)) throw new Error('document-narration-target')
   if (!schema.validate(narrations).valid) throw new Error('document-narration-content')
@@ -33,7 +33,7 @@ export function replaceStepNarrations(source: TeachingDocument, stepId: string, 
 }
 
 /** An exact, unique text edit keeps the existing pronunciation and cue atoms intact. */
-export function replaceStepNarrationText(source: TeachingDocument, stepId: string, find: string, replacement: string): TeachingDocument {
+export function replaceStepNarrationText(source: PresmiumDocument, stepId: string, find: string, replacement: string): PresmiumDocument {
   const step = source.steps[stepId]
   if (!step || !find) throw new Error('document-narration-target')
   const narrations = step.narrationIds.map(id => source.narrations[id]!)

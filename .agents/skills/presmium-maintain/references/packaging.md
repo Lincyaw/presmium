@@ -53,10 +53,10 @@ and `commands/` holds the slash commands. `claude plugin validate plugins/presmi
 ## Published example sites
 
 `examples/gallery/` is the main example site. `examples/papers/` is the paper-explainer workspace, with
-one `papers/<slug>/lecture.json` per paper and a shared `kit/`, `site/` and `tools/`. CI checks and builds
+one `papers/<slug>/index.pmd` per paper and a shared `kit/`, `site/` and `tools/`. CI checks and builds
 the paper workspace. The Pages workflow builds the gallery at the configured base path and the paper site
 at `<base>/papers/`, then copies the paper site's `dist/web/` into the gallery output's `papers/` before
-uploading the combined artifact. New paper directories matching `papers/*/lecture.json` are included
+uploading the combined artifact. New paper directories matching `papers/*/index.pmd` are included
 automatically. After moving a workspace, update its pnpm importer, tool resource paths and production
 instructions; keep the document's identity and committed speech cache with it.
 

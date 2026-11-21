@@ -1,4 +1,4 @@
-> Document authority: `lecture.json` uses normalized entities; scene implementations below are project code. Bind scenes through `definitions`, component blocks and declared step states.
+> Document authority: `index.pmd` uses normalized entities; scene implementations below are project code. Bind scenes through `definitions`, component blocks and declared step states.
 
 # Teaching scenarios and how to animate them
 
@@ -26,7 +26,7 @@ Write a scene when something must **move, morph, grow or be computed** between s
 | Code evolving: refactor, fix, add a feature | Code variants with explicit source/value references | Lines move to their new places (Shiki Magic Move); honours reduced motion |
 | Line-by-line execution with variables | A step-execution component definition (Python) | The learner can step it themselves in the document view |
 | Show it runs | Code execution settings; an explicit playground component definition | Output recorded at build |
-| The data structure behind the code changing (array, pointers, stack, tree) | Code block + a **GSAP** scene in the same section; narration cues a spot cue targeting the code block with lines 3–4 at the moment the scene moves | Gallery: gsap `keyframes` (binary search), `nested` (selection sort); the last section of `gallery/timeline/lecture.json` (scene `bubble` beside its code, with the cues) |
+| The data structure behind the code changing (array, pointers, stack, tree) | Code block + a **GSAP** scene in the same section; narration cues a spot cue targeting the code block with lines 3–4 at the moment the scene moves | Gallery: gsap `keyframes` (binary search), `nested` (selection sort); the last section of `gallery/timeline/index.pmd` (scene `bubble` beside its code, with the cues) |
 | Typing code as if live | GSAP `text-plugin` (`preserveSpaces: true`), Remotion `typewriter` | Prefer real code blocks when learners must copy it |
 
 ## 3. Algorithms and data structures (GSAP first)
@@ -136,7 +136,7 @@ Run the algorithm in plain JS while building the scene, record its events (compa
 
 ## 11. Promotion: products, papers and benchmarks
 
-Pieces with a fixed length (1, 5, 10, 30 or 60 s), exported as video. What each second shows and how to compose the longer ones from the shorter: `lengths.md` (this folder). The gallery document is `gallery/lengths/lecture.json` (every animation once; its scenes are under `gallery/lengths/scenes/`); the films built from them are `gallery/films/lecture.json`.
+Pieces with a fixed length (1, 5, 10, 30 or 60 s), exported as video. What each second shows and how to compose the longer ones from the shorter: `lengths.md` (this folder). The gallery document is `gallery/lengths/index.pmd` (every animation once; its scenes are under `gallery/lengths/scenes/`); the films built from them are `gallery/films/index.pmd`.
 
 | Scenario | Length | Gallery |
 |---|---|---|

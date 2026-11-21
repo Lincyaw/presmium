@@ -1,0 +1,1454 @@
+{
+  "schemaVersion": 2,
+  "id": "348c5714-f15a-43db-b677-536fc0b2276e",
+  "placement": {
+    "parent": null,
+    "rank": "a5"
+  },
+  "metadata": {
+    "title": "DAIL：把专家解法变成模型学得会的推理",
+    "lang": "zh-CN",
+    "description": "沿着同一条专家解法，展开省略步骤、跟踪混合采样，再区分有效推导与答案捷径。",
+    "tags": [
+      "论文",
+      "大模型",
+      "专家数据",
+      "推理蒸馏"
+    ],
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-lecture",
+      "@lincyaw/addon-speech"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "notebook": {},
+      "lecture": {
+        "maximumDurationMs": 360000,
+        "video": {
+          "burn": "zh-CN",
+          "contactSheet": true,
+          "size": [
+            1920,
+            1080
+          ],
+          "fps": 30
+        }
+      }
+    }
+  },
+  "sectionOrder": [
+    "p-opening",
+    "p-gap",
+    "p-mix",
+    "p-contrast",
+    "p-evidence",
+    "p-limits",
+    "p-ending",
+    "p-notes"
+  ],
+  "sections": {
+    "p-opening": {
+      "id": "p-opening",
+      "title": "专家会解，模型怎样学会",
+      "level": 2,
+      "children": [
+        "opening--scene"
+      ],
+      "stepOrder": [
+        "opening--opening"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-gap": {
+      "id": "p-gap",
+      "title": "先把专家省略的推导补齐",
+      "level": 2,
+      "children": [
+        "gap--scene"
+      ],
+      "stepOrder": [
+        "gap--missing",
+        "gap--expanded",
+        "gap--conditioned"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-mix": {
+      "id": "p-mix",
+      "title": "学生先写，教师在必要时介入",
+      "level": 2,
+      "children": [
+        "mix--scene"
+      ],
+      "stepOrder": [
+        "mix--accept",
+        "mix--replace",
+        "mix--continue"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-contrast": {
+      "id": "p-contrast",
+      "title": "展开之后，还要抑制强凑答案",
+      "level": 2,
+      "children": [
+        "contrast--scene"
+      ],
+      "stepOrder": [
+        "contrast--reference",
+        "contrast--contrast"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-evidence": {
+      "id": "p-evidence",
+      "title": "看覆盖提升，也看单次表现",
+      "level": 2,
+      "children": [
+        "evidence--scene"
+      ],
+      "stepOrder": [
+        "evidence--paper",
+        "evidence--metrics"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-limits": {
+      "id": "p-limits",
+      "title": "少量专家数据，也需要合适的学生",
+      "level": 2,
+      "children": [
+        "limits--scene"
+      ],
+      "stepOrder": [
+        "limits--scope"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-ending": {
+      "id": "p-ending",
+      "title": "把专家方法写成学生能学习的过程",
+      "level": 2,
+      "children": [
+        "ending--scene"
+      ],
+      "stepOrder": [
+        "ending--ending"
+      ],
+      "layout": {
+        "type": "scrolly",
+        "renderers": {
+          "web": {
+            "layout": "scrolly"
+          },
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "p-notes": {
+      "id": "p-notes",
+      "title": "来源与说明",
+      "children": [
+        "notes-web",
+        "notes-slides"
+      ],
+      "stepOrder": [
+        "notes--source"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    }
+  },
+  "blocks": {
+    "opening--scene": {
+      "id": "opening--scene",
+      "type": "component",
+      "definitionId": "opening--definition",
+      "parameters": {
+        "mode": "opening",
+        "heads": [
+          "专家会解，模型怎样学会"
+        ],
+        "labels": [],
+        "alt": "专家会解，模型怎样学会",
+        "source": "arXiv 2602.02405v2 · 机制图为教学示意",
+        "institution": "Georgia Tech",
+        "title": "DAIL",
+        "titleZh": "让专家推理可学习",
+        "authors": "Ethan Mendes · Jungsoo Park · Alan Ritter",
+        "venue": "ICML 2026 · arXiv 2602.02405v2",
+        "compact": true
+      }
+    },
+    "gap--scene": {
+      "id": "gap--scene",
+      "type": "component",
+      "definitionId": "gap--definition",
+      "parameters": {
+        "mode": "gap",
+        "heads": [
+          "专家解法里，常有被省略的中间步骤",
+          "同一条解法，补上可学习的推导",
+          "同样的权重，不同的信息"
+        ],
+        "labels": [
+          "2x＋3＝11 · 推导示意",
+          "2x＋3＝11",
+          "x＝4",
+          "中间省略",
+          "两边减3",
+          "2x＝8",
+          "两边除2",
+          "学生：只看题目",
+          "教师：题目＋专家解法",
+          "相同初始权重",
+          "完整参考"
+        ],
+        "alt": "先把专家省略的推导补齐",
+        "source": "arXiv 2602.02405v2 · 机制图为教学示意"
+      }
+    },
+    "mix--scene": {
+      "id": "mix--scene",
+      "type": "component",
+      "definitionId": "mix--definition",
+      "parameters": {
+        "mode": "mix",
+        "heads": [
+          "学生先提议一个词",
+          "概率不足，替换当前候选",
+          "保留学生的推理方式，形成训练轨迹"
+        ],
+        "labels": [
+          "学生提议",
+          "教师检查",
+          "额外看完整专家解法",
+          "列式",
+          "跳步",
+          "检查",
+          "补推导",
+          "概率达到阈值",
+          "概率未达阈值",
+          "已接受轨迹",
+          "混合采样 · 词与动作示意"
+        ],
+        "alt": "学生先写，教师在必要时介入",
+        "source": "arXiv 2602.02405v2 · 机制图为教学示意"
+      }
+    },
+    "contrast--scene": {
+      "id": "contrast--scene",
+      "type": "component",
+      "definitionId": "contrast--definition",
+      "parameters": {
+        "mode": "contrast",
+        "heads": [
+          "只给中间结果，会诱发推导捷径",
+          "对比两种参考，让训练关注方法"
+        ],
+        "labels": [
+          "完整专家解法",
+          "仅保留稀疏中间结果",
+          "有效推导",
+          "强凑中间结果",
+          "训练中的学生",
+          "对比目标：加强专家方法，削弱捷径",
+          "2x＋3＝11",
+          "两边减3",
+          "2x＝8",
+          "两边除2",
+          "x＝4"
+        ],
+        "alt": "展开之后，还要抑制强凑答案",
+        "source": "arXiv 2602.02405v2 · 机制图为教学示意"
+      }
+    },
+    "evidence--scene": {
+      "id": "evidence--scene",
+      "type": "component",
+      "definitionId": "evidence--definition",
+      "parameters": {
+        "mode": "evidence",
+        "heads": [
+          "原图：采样次数增加时，比较覆盖",
+          "同一模型，两个指标分别比较"
+        ],
+        "labels": [
+          "横轴：采样次数 k；纵轴：pass@k · 绿色DAIL，灰色直接SFT",
+          "论文图3 · 绿色 DAIL；灰色直接 SFT",
+          "Qwen2.5-7B · AIME 2024/2025",
+          "基础",
+          "DAIL",
+          "基础",
+          "DAIL",
+          "pass@128",
+          "pass@1",
+          "灰色：基础模型；绿色：DAIL"
+        ],
+        "alt": "看覆盖提升，也看单次表现",
+        "source": "arXiv 2602.02405v2 · 图3／附录 Exact pass@k 表",
+        "values": [
+          51.7,
+          63.3,
+          9.8,
+          8.8
+        ]
+      }
+    },
+    "limits--scene": {
+      "id": "limits--scene",
+      "type": "component",
+      "definitionId": "limits--definition",
+      "parameters": {
+        "mode": "limits",
+        "heads": [
+          "专家解法、数据难度与学生能力一起考虑"
+        ],
+        "labels": [
+          "417 道 AIME 难题",
+          "669 道奥赛证明题",
+          "轨迹展开＋对比训练",
+          "学生模型",
+          "基础能力不足时，收益可能消失"
+        ],
+        "alt": "少量专家数据，也需要合适的学生",
+        "source": "arXiv 2602.02405v2 · 机制图为教学示意"
+      }
+    },
+    "ending--scene": {
+      "id": "ending--scene",
+      "type": "component",
+      "definitionId": "ending--definition",
+      "parameters": {
+        "mode": "ending",
+        "heads": [
+          "把专家方法写成学生能学习的过程"
+        ],
+        "labels": [],
+        "alt": "把专家方法写成学生能学习的过程",
+        "source": "arXiv 2602.02405v2 · 机制图为教学示意",
+        "summary": "展开专家推导，再抑制答案捷径",
+        "paper": "DAIL · ICML 2026"
+      }
+    },
+    "notes-web": {
+      "id": "notes-web",
+      "type": "text",
+      "only": [
+        "web",
+        "notebook"
+      ],
+      "content": [
+        {
+          "id": "notes-p1",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "href": "https://arxiv.org/abs/2602.02405v2",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Making Expert Reasoning Learnable with Self-Distillation，arXiv 2602.02405v2，ICML 2026。"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "notes-p2",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "机制步骤和词带为教学示意。原图来自figures/baselines_optimized.pdf；AIME数值来自附录tab:pass_at_k_exact_numerical。pass@k为k次采样至少成功一次的覆盖，非单次准确率。417/669题来自§3.1；基础能力限制见附录tab:dail_limitations。"
+            }
+          ]
+        }
+      ]
+    },
+    "notes-slides": {
+      "id": "notes-slides",
+      "type": "text",
+      "only": [
+        "slides"
+      ],
+      "content": [
+        {
+          "id": "notes-p3",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "见网页版：来源与说明"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": {
+    "opening--opening": {
+      "id": "opening--opening",
+      "sectionId": "p-opening",
+      "title": "专家会解，模型怎样学会",
+      "visuals": [
+        {
+          "blockId": "opening--scene",
+          "visible": true,
+          "state": "opening"
+        }
+      ],
+      "narrationIds": [
+        "opening--opening--narration"
+      ]
+    },
+    "gap--missing": {
+      "id": "gap--missing",
+      "sectionId": "p-gap",
+      "title": "专家解法里，常有被省略的中间步骤",
+      "visuals": [
+        {
+          "blockId": "gap--scene",
+          "visible": true,
+          "state": "missing"
+        }
+      ],
+      "narrationIds": [
+        "gap--missing--narration"
+      ]
+    },
+    "gap--expanded": {
+      "id": "gap--expanded",
+      "sectionId": "p-gap",
+      "title": "同一条解法，补上可学习的推导",
+      "visuals": [
+        {
+          "blockId": "gap--scene",
+          "visible": true,
+          "state": "expanded"
+        }
+      ],
+      "narrationIds": [
+        "gap--expanded--narration"
+      ]
+    },
+    "gap--conditioned": {
+      "id": "gap--conditioned",
+      "sectionId": "p-gap",
+      "title": "同样的权重，不同的信息",
+      "visuals": [
+        {
+          "blockId": "gap--scene",
+          "visible": true,
+          "state": "conditioned"
+        }
+      ],
+      "narrationIds": [
+        "gap--conditioned--narration"
+      ]
+    },
+    "mix--accept": {
+      "id": "mix--accept",
+      "sectionId": "p-mix",
+      "title": "学生先提议一个词",
+      "visuals": [
+        {
+          "blockId": "mix--scene",
+          "visible": true,
+          "state": "accept"
+        }
+      ],
+      "narrationIds": [
+        "mix--accept--narration"
+      ]
+    },
+    "mix--replace": {
+      "id": "mix--replace",
+      "sectionId": "p-mix",
+      "title": "概率不足，替换当前候选",
+      "visuals": [
+        {
+          "blockId": "mix--scene",
+          "visible": true,
+          "state": "replace"
+        }
+      ],
+      "narrationIds": [
+        "mix--replace--narration"
+      ]
+    },
+    "mix--continue": {
+      "id": "mix--continue",
+      "sectionId": "p-mix",
+      "title": "保留学生的推理方式，形成训练轨迹",
+      "visuals": [
+        {
+          "blockId": "mix--scene",
+          "visible": true,
+          "state": "continue"
+        }
+      ],
+      "narrationIds": [
+        "mix--continue--narration"
+      ]
+    },
+    "contrast--reference": {
+      "id": "contrast--reference",
+      "sectionId": "p-contrast",
+      "title": "只给中间结果，会诱发推导捷径",
+      "visuals": [
+        {
+          "blockId": "contrast--scene",
+          "visible": true,
+          "state": "reference"
+        }
+      ],
+      "narrationIds": [
+        "contrast--reference--narration"
+      ]
+    },
+    "contrast--contrast": {
+      "id": "contrast--contrast",
+      "sectionId": "p-contrast",
+      "title": "对比两种参考，让训练关注方法",
+      "visuals": [
+        {
+          "blockId": "contrast--scene",
+          "visible": true,
+          "state": "contrast"
+        }
+      ],
+      "narrationIds": [
+        "contrast--contrast--narration"
+      ]
+    },
+    "evidence--paper": {
+      "id": "evidence--paper",
+      "sectionId": "p-evidence",
+      "title": "原图：采样次数增加时，比较覆盖",
+      "visuals": [
+        {
+          "blockId": "evidence--scene",
+          "visible": true,
+          "state": "paper"
+        }
+      ],
+      "narrationIds": [
+        "evidence--paper--narration"
+      ]
+    },
+    "evidence--metrics": {
+      "id": "evidence--metrics",
+      "sectionId": "p-evidence",
+      "title": "同一模型，两个指标分别比较",
+      "visuals": [
+        {
+          "blockId": "evidence--scene",
+          "visible": true,
+          "state": "metrics"
+        }
+      ],
+      "narrationIds": [
+        "evidence--metrics--narration"
+      ]
+    },
+    "limits--scope": {
+      "id": "limits--scope",
+      "sectionId": "p-limits",
+      "title": "专家解法、数据难度与学生能力一起考虑",
+      "visuals": [
+        {
+          "blockId": "limits--scene",
+          "visible": true,
+          "state": "scope"
+        }
+      ],
+      "narrationIds": [
+        "limits--scope--narration"
+      ]
+    },
+    "ending--ending": {
+      "id": "ending--ending",
+      "sectionId": "p-ending",
+      "title": "把专家方法写成学生能学习的过程",
+      "visuals": [
+        {
+          "blockId": "ending--scene",
+          "visible": true,
+          "state": "ending"
+        }
+      ],
+      "narrationIds": [
+        "ending--ending--narration"
+      ]
+    },
+    "notes--source": {
+      "id": "notes--source",
+      "sectionId": "p-notes",
+      "visuals": [
+        {
+          "blockId": "notes-web",
+          "visible": true
+        },
+        {
+          "blockId": "notes-slides",
+          "visible": true
+        }
+      ],
+      "narrationIds": []
+    }
+  },
+  "narrations": {
+    "opening--opening--narration": {
+      "id": "opening--opening--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "三分钟读完一篇论文。大家好，这里是翰林院传达室，今天给大家带来佐治亚理工学院的《让专家推理变得可学习》。专家写得精炼，模型却可能学不会。DAIL研究的是，怎样把可靠的专家解法，改造成模型能吸收的训练轨迹。"
+        }
+      ]
+    },
+    "gap--missing--narration": {
+      "id": "gap--missing--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先看一个简单示意：二x加三等于十一，专家直接写出x等于四。中间这条线省去了运算过程。模型需要学习的推理轨迹，就是怎样一步步从方程走到解；只模仿最后的跳步，可能没有学会怎样继续。"
+        }
+      ]
+    },
+    "gap--expanded--narration": {
+      "id": "gap--expanded--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "沿着同一条解法展开：两边减三，得到二x等于八，再把两边除以二，得到x等于四。绿色步骤补回了省略的逻辑。DAIL在真实专家解法上做类似改造，保留专家方法，同时让过程接近学生自己能够生成的表达。"
+        }
+      ]
+    },
+    "gap--conditioned--narration": {
+      "id": "gap--conditioned--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "这里的教师和学生来自同一份初始权重。蓝色学生只看题目，绿色教师还能看完整专家解法。额外的参考信息帮助教师展开推导；方法的重点，是改变训练轨迹及其信息条件。"
+        }
+      ]
+    },
+    "mix--accept--narration": {
+      "id": "mix--accept--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "对于会长时间思考的模型，论文使用混合采样。先让学生提出下一个词，再由能看专家解法的教师检查：这个词在教师分布下的概率，是否达到预设阈值。达到阈值，就保留学生的词，加入下面的轨迹。"
+        }
+      ]
+    },
+    "mix--replace--narration": {
+      "id": "mix--replace--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "下一个候选仍由学生提出。如果教师给它的概率不足，就拒绝这个候选，改由教师采样一个词。注意下面已经接受的部分始终保留，只替换当前这一步。画面用三个词压缩演示，实际算法逐词进行。"
+        }
+      ]
+    },
+    "mix--continue--narration": {
+      "id": "mix--continue--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "接着重复提议、检查和接续。这样生成的轨迹尽量保留学生自然的推理方式，同时由专家解法约束方向。得到这些展开后的轨迹，再进入离线训练，推理时模型自己回答新问题。"
+        }
+      ]
+    },
+    "contrast--reference--narration": {
+      "id": "contrast--reference--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "展开也有新问题：看到标准解法的模型，可能为了到达已知结果而强行拼接推导。论文因此构造负参考：把完整解法中的中间过程删掉，只留下数字、符号等稀疏结果。这种信息更容易诱发推导捷径。"
+        }
+      ]
+    },
+    "contrast--contrast--narration": {
+      "id": "contrast--contrast--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "训练时，对比完整参考与负参考提供的信号，让学生更关注专家方法，并抑制模仿捷径。画面中的绿色推导被强调，橙色捷径被削弱，表示训练目标的方向。"
+        }
+      ]
+    },
+    "evidence--paper--narration": {
+      "id": "evidence--paper--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "现在看论文原图。横轴是采样次数，纵轴是pass@k，衡量多次生成中至少得到一次正确解的覆盖。先辨认绿色DAIL和灰色直接SFT，再沿曲线向右看。绿色曲线在这个汇总对照中更高。"
+        }
+      ]
+    },
+    "evidence--metrics--narration": {
+      "id": "evidence--metrics--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "再单独看附录的AIME二零二四和二零二五结果。同一个Qwen二点五七B模型，pass@一百二十八从百分之五十一点七升到六十三点三；但pass@一从九点八变为八点八。这组证据支持多次采样覆盖改善，单次表现需要另看。"
+        }
+      ]
+    },
+    "limits--scope--narration": {
+      "id": "limits--scope--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "训练数据包括四百一十七道AIME难题，以及六百六十九道奥赛证明题。前一组题是目标模型尝试三十二次仍未解出的题，后一组来自专家证明。论文也发现，基础数学能力较弱的模型可能退步。使用这种改写方法时，要一起检查专家解法质量、题目难度和学生能力。"
+        }
+      ]
+    },
+    "ending--ending--narration": {
+      "id": "ending--ending--narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "一句话总结：DAIL先把专家解法展开成学生能学习的推理，再用对比训练抑制答案捷径。想看哪篇论文，欢迎在评论区留言。翰林院传达室为您分享最新论文，我们下期见。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "opening--definition": {
+      "id": "opening--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/opening.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "heads": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "alt": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "opening",
+          "title": "专家会解，模型怎样学会"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          23000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "专家会解，模型怎样学会"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "gap--definition": {
+      "id": "gap--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/mechanism.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "heads": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "alt": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "missing",
+          "title": "专家解法里，常有被省略的中间步骤"
+        },
+        {
+          "id": "expanded",
+          "title": "同一条解法，补上可学习的推导"
+        },
+        {
+          "id": "conditioned",
+          "title": "同样的权重，不同的信息"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          19000,
+          19000,
+          18000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "先把专家省略的推导补齐"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "mix--definition": {
+      "id": "mix--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/mechanism.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "heads": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "alt": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "accept",
+          "title": "学生先提议一个词"
+        },
+        {
+          "id": "replace",
+          "title": "概率不足，替换当前候选"
+        },
+        {
+          "id": "continue",
+          "title": "保留学生的推理方式，形成训练轨迹"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          20000,
+          18000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "学生先写，教师在必要时介入"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "contrast--definition": {
+      "id": "contrast--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/mechanism.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "heads": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "alt": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "reference",
+          "title": "只给中间结果，会诱发推导捷径"
+        },
+        {
+          "id": "contrast",
+          "title": "对比两种参考，让训练关注方法"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          19000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "展开之后，还要抑制强凑答案"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "evidence--definition": {
+      "id": "evidence--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/mechanism.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "heads": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "alt": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "paper",
+          "title": "原图：采样次数增加时，比较覆盖"
+        },
+        {
+          "id": "metrics",
+          "title": "同一模型，两个指标分别比较"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          20000,
+          24000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "看覆盖提升，也看单次表现"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "limits--definition": {
+      "id": "limits--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/mechanism.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "heads": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "alt": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "scope",
+          "title": "专家解法、数据难度与学生能力一起考虑"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          27000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "少量专家数据，也需要合适的学生"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    },
+    "ending--definition": {
+      "id": "ending--definition",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/ending.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "heads": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "alt": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "institution": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleZh": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "paper": {
+            "type": "string"
+          }
+        }
+      },
+      "states": [
+        {
+          "id": "ending",
+          "title": "把专家方法写成学生能学习的过程"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          18000
+        ],
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "把专家方法写成学生能学习的过程"
+                }
+              ]
+            }
+          ]
+        },
+        "language": "typescript"
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "tts",
+        "voice": {
+          "engine": "volcengine",
+          "voice": "zh_female_tianmeitaozi_uranus_bigtts"
+        }
+      },
+      "narrationStart": "with-animation",
+      "trailingPauseMs": 350
+    },
+    "sectionOverrides": {
+      "p-opening": {
+        "captionVisible": false
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

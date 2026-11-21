@@ -1,8 +1,9 @@
 import type { ExecuteConfig } from './execution.ts'
 import type { SpeechVoice } from './speech.ts'
 
-export const DOCUMENT_SCHEMA_VERSION = 1 as const
-export const DOCUMENT_ENTRY = 'lecture.json'
+export const DOCUMENT_SCHEMA_VERSION = 2 as const
+/** The file that holds one document (JSON); translations sit at `locales/<lang>/index.pmd` beside it. */
+export const DOCUMENT_ENTRY = 'index.pmd'
 export const ASSET_TITLE_MAX_LENGTH = 200
 
 export type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject
@@ -19,7 +20,8 @@ export type ClipId = string
 
 export interface DocumentMetadata {
   title: string
-  lang: string
+  /** Inherited when absent (see `DocumentDefaults`); the effective default is `zh-CN`. */
+  lang?: string
   description?: string
   tags?: string[]
   plugins?: string[]
@@ -31,10 +33,37 @@ export interface DocumentMetadata {
   translationOf?: { entry: string, digest: string }
 }
 
+/** Where a document sits in the workspace tree: under `parent` (null = top level), ordered among siblings by `rank`. */
+export interface DocumentPlacement {
+  parent: DocumentId | null
+  /** A fractional index; siblings sort ascending by it, equal ranks by document ID. */
+  rank: string
+}
+
+/**
+ * The document settings a child inherits from its ancestors, rooted at the workspace `defaults`.
+ * `lang` and `plugins` take the nearest value; the records and `execute`/`checks` merge deeply, nearest leaf wins.
+ */
+export interface DocumentDefaults {
+  lang?: string
+  plugins?: string[]
+  presmium?: Record<string, JsonObject>
+  renderers?: Record<string, JsonObject>
+  execute?: ExecuteConfig
+  checks?: JsonObject
+  production?: { defaults?: ProductionDefaults, captions?: CaptionStyle }
+}
+
+/** The settings a document decides with: its own, filled in from its ancestors and the workspace defaults. */
+export interface EffectiveSettings extends DocumentDefaults {
+  lang: string
+}
+
 /** Canonical authoring data. Runtime positions, resolved assets and playback plans are derived. */
-export interface TeachingDocument {
+export interface PresmiumDocument {
   schemaVersion: typeof DOCUMENT_SCHEMA_VERSION
   id: DocumentId
+  placement: DocumentPlacement
   metadata: DocumentMetadata
   sectionOrder: SectionId[]
   sections: Record<SectionId, Section>
@@ -73,7 +102,13 @@ export type InlineNode =
   | { type: 'link', href: string, children: InlineNode[] }
   | { type: 'math', value: string }
   | { type: 'break' }
+  | ReferenceNode
   | InlineExtensionNode
+
+/** A reference to a document, one of its pages or one of its blocks, by ID; `target.document` may be this document. */
+export interface ReferenceTarget { document: DocumentId, section?: SectionId, block?: BlockId }
+/** Shows `label`, otherwise the target's current title; `fallback` is the last known title, shown when the target is gone. */
+export interface ReferenceNode { type: 'reference', target: ReferenceTarget, label?: string, fallback: string }
 
 /** A registered extension retains its own versioned semantics and an explicit readable fallback. */
 export interface InlineExtensionNode { type: 'extension', kind: string, schemaVersion: number, data: JsonObject, fallback: string }
@@ -113,7 +148,9 @@ export interface CodeBlock extends BlockScope {
   echo?: boolean
 }
 export interface ComponentBlock extends BlockScope { id: BlockId, type: 'component', definitionId: DefinitionId, parameters: JsonObject, children?: BlockId[] }
-export type DocumentBlock = TextBlock | ContainerBlock | ImageBlock | CodeBlock | ComponentBlock
+/** A synced block: shows the source block and its content as they are in the source document now; it has no content of its own. */
+export interface EmbedBlock extends BlockScope { id: BlockId, type: 'embed', source: { document: DocumentId, block: BlockId } }
+export type DocumentBlock = TextBlock | ContainerBlock | ImageBlock | CodeBlock | ComponentBlock | EmbedBlock
 
 /** State is independent from ordering and production timing. Omitted blocks are invisible. */
 export interface Step {
@@ -240,7 +277,7 @@ export interface DocumentThread {
 }
 
 export interface DocumentIssue { path: string, code: string, message: string, severity: 'error' | 'warning' }
-export interface DocumentValidation { document?: TeachingDocument, issues: DocumentIssue[] }
+export interface DocumentValidation { document?: PresmiumDocument, issues: DocumentIssue[] }
 
 /** A source-document transaction. Its CAS version is unrelated to a compiled snapshot ID. */
 export type DocumentEditOperation =

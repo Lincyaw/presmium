@@ -5,11 +5,11 @@ description: "Develop and debug Presmium plugins: versioned component definition
 
 # Developing a Presmium plugin
 
-A document is a folder with `lecture.json`: Presmium's normalized editable document IR. Its metadata lists plugins; content component blocks reference a versioned definition with an implementation, parameter Schema and declared states. The compiler derives the runtime snapshot consumed by the web page, slides, notebook and other renderers. Do not introduce MyST syntax or another editable content file.
+A document is a folder with `index.pmd`: Presmium's normalized editable document IR. Its metadata lists plugins; content component blocks reference a versioned definition with an implementation, parameter Schema and declared states. The compiler derives the runtime snapshot consumed by the web page, slides, notebook and other renderers. Do not introduce MyST syntax or another editable content file.
 
 ## Start from the public example
 
-`presmium new plugin-name --type plugin` creates the Node entry `src/node/presmium.ts`, shared pure TypeScript in `src/domain`, `components/GreetingCard.tsx` and `example/lecture.json`. The example defines a component using the plugin and a server route that counts waves. Read [the plugin contract](references/plugin.md) and [verification](references/testing.md).
+`presmium new plugin-name --type plugin` creates the Node entry `src/node/presmium.ts`, shared pure TypeScript in `src/domain`, `components/GreetingCard.tsx` and `example/index.pmd`. The example defines a component using the plugin and a server route that counts waves. Read [the plugin contract](references/plugin.md) and [verification](references/testing.md).
 
 ```sh
 pnpm install

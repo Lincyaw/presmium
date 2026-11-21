@@ -23,4 +23,4 @@ const schema = await build({
 })
 const { DOCUMENT_JSON_SCHEMA } = await import(`data:text/javascript,${encodeURIComponent(schema.outputFiles[0].text)}`)
 await mkdir(new URL('../dist/', import.meta.url), { recursive: true })
-await writeFile(new URL('../dist/lecture.schema.json', import.meta.url), JSON.stringify(DOCUMENT_JSON_SCHEMA, null, 2) + '\n')
+await writeFile(new URL('../dist/document.schema.json', import.meta.url), JSON.stringify(DOCUMENT_JSON_SCHEMA, null, 2) + '\n')

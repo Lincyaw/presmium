@@ -1,6 +1,6 @@
 # Presmium Gallery
 
-This workspace contains 25 main documents: two complete courses, five feature collections, two tutorials, a Fourier lesson, a product film and 14 animation references (ten by scenario, plus pieces by length, films, a storyboard example and the timeline). Every lecture.json is its document’s editable authority.
+This workspace contains 25 main documents: two complete courses, five feature collections, two tutorials, a Fourier lesson, a product film and 14 animation references (ten by scenario, plus pieces by length, films, a storyboard example and the timeline). Every index.pmd is its document’s editable authority.
 
 - `learn/` is the Fourier lesson, with its English translation.
 - `promo/` is the product film; read its storyboard before editing its scenes.
@@ -14,7 +14,7 @@ The two original complete courses are:
 
 In each lecture's directory:
 
-- `lecture.json` is the document. Its ordered sections, content blocks, steps, narration and production settings are the editable authority. Narration cues explicitly click, point or pause at their authored positions.
-- `scenes/<name>.ts` implements an animation definition referenced from `lecture.json`. Its declared states map to stable document steps; scene-internal animation durations stay with the definition, while narration start, holds, pauses and voice source belong only in `production`.
+- `index.pmd` is the document. Its ordered sections, content blocks, steps, narration and production settings are the editable authority. Narration cues explicitly click, point or pause at their authored positions.
+- `scenes/<name>.ts` implements an animation definition referenced from `index.pmd`. Its declared states map to stable document steps; scene-internal animation durations stay with the definition, while narration start, holds, pauses and voice source belong only in `production`.
 - `components/*.tsx` are the lecture's own components, such as the counter whose named action the narration clicks.
 - `.presmium/speech/` and `.presmium/speech.lock.json` are the synthesis cache of the narration (voice `edge`, Microsoft Edge's read-aloud voice through a local bridge). A sentence that is not in the cache needs a speech engine to be said: without one, the check reports it, and the rest of the lecture still plays. Keep the cache with the lecture.

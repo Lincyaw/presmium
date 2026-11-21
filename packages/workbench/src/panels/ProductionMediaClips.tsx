@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { DocumentChangeAnswer, MediaClip, ProductionAssetInspection, ProductionBinding, TeachingDocument } from '@lincyaw/kernel'
+import type { DocumentChangeAnswer, MediaClip, ProductionAssetInspection, ProductionBinding, PresmiumDocument } from '@lincyaw/kernel'
 import { randomUUID } from '@lincyaw/kernel'
 import { MediaClipEditor } from '../MediaClipEditor.tsx'
 import type { MediaClipDraft } from '../MediaClipEditor.tsx'
@@ -11,7 +11,7 @@ import { MEDIA_MESSAGES, mediaFailure } from '../media-messages.ts'
 interface Props {
   identity: string
   version: string
-  document: TeachingDocument
+  document: PresmiumDocument
   sectionId: string
   stepId: string
   binding?: ProductionBinding

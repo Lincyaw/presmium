@@ -1,4 +1,4 @@
-import type { TeachingDocument } from '@lincyaw/kernel'
+import type { PresmiumDocument } from '@lincyaw/kernel'
 import { PmButton, PmField, PmSegmented } from '../components.tsx'
 import { useWorkbenchState } from '../context.tsx'
 import type { DocumentVoiceScope } from '../document-voices.ts'
@@ -6,7 +6,7 @@ import { PRODUCTION_MESSAGES } from '../production-messages.ts'
 import { VOICE_MESSAGES } from '../voice-messages.ts'
 
 /** Scope selection uses authored IDs and stays available before runtime compilation. */
-export function VoiceScopeField({ document, stepId, value, disabled, onChange }: { document: TeachingDocument, stepId: string, value: DocumentVoiceScope, disabled?: boolean, onChange(value: DocumentVoiceScope): void }) {
+export function VoiceScopeField({ document, stepId, value, disabled, onChange }: { document: PresmiumDocument, stepId: string, value: DocumentVoiceScope, disabled?: boolean, onChange(value: DocumentVoiceScope): void }) {
   const locale = useWorkbenchState(state => state.locale), t = VOICE_MESSAGES[locale], p = PRODUCTION_MESSAGES[locale]
   const sectionId = document.steps[stepId]?.sectionId
   return <>

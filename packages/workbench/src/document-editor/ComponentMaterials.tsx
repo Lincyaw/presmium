@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { applyDocumentComponentAction } from '@lincyaw/kernel'
-import type { TeachingDocument } from '@lincyaw/kernel'
+import type { PresmiumDocument } from '@lincyaw/kernel'
 import { PmButton, PmMenu, PmSearchList } from '../components.tsx'
 import type { ComponentPropertyMessages } from '../component-property-messages.ts'
 import { componentDefinitionLabel } from './component-label.ts'
@@ -9,7 +9,7 @@ export { componentDefinitionLabel } from './component-label.ts'
 
 /** Selection is a proposal; only the caller's source-bound Apply changes a binding. */
 export function ComponentMaterials({ document, blockId, selected, onSelect, onLocate, disabled, messages: t }: {
-  document: TeachingDocument, blockId: string, selected: string, onSelect(id: string): void,
+  document: PresmiumDocument, blockId: string, selected: string, onSelect(id: string): void,
   onLocate(blockId: string): void, disabled: boolean, messages: ComponentPropertyMessages,
 }) {
   const current = document.blocks[blockId]

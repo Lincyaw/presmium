@@ -106,7 +106,7 @@ top-k：默认128，32在所测设置表现相当；JAX同硬件额外墙钟时�
 正式成片完成：任务mwiyc1zp75af4605，source7cfeef683d2ea307e9de，1920×1080/30fps、H.264/AAC、46567帧、1552.233秒。完整解码通过，峰值-1.6dB、均值-20.2dB，未检出低于-45dB且持续至少1.5秒的静音。实际首帧是完整封面无字幕，字幕首条从22.895秒开始。独立审阅实际视频联系表148个时点与重点分区，并从同一MP4解码查看08:35 center、14:45 tail、15:48 loss、19:24 noise、20:22 quant、21:28 stale、22:56 scale七张1080p帧，所查范围未见空白、旧版结果、关键遮挡或原图不可读；协调者另抽首帧、tail、loss。此为完整技术解码与实际成片抽查，未连续播放并听完整片。实际文件与哈希见publish.md、dist/qa.json。本次不发布平台。
 
 ## I. 分工
-协调者：lecture.json唯一写入、共享数据、封面/片头/片尾、evidence.ts与原图、全局术语、配音导出。
+协调者：index.pmd唯一写入、共享数据、封面/片头/片尾、evidence.ts与原图、全局术语、配音导出。
 core作者：只编辑scenes/core.ts，负责loop到compose（11页）。
 implementation作者：只编辑scenes/implementation.ts，负责topk/tail/loss/code（4页）。
-各作者先读此分镜；不改共享kit、不改lecture.json、不提交仓库、不生成配音。通过原生MCP edit_source保存自己文件。独立审阅者之后读同一候选证据。
+各作者先读此分镜；不改共享kit、不改index.pmd、不提交仓库、不生成配音。通过原生MCP edit_source保存自己文件。独立审阅者之后读同一候选证据。

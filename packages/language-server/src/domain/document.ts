@@ -1,5 +1,5 @@
 import { isDocumentPlaceAnchor, isRecord, validateDocument } from '@lincyaw/kernel'
-import type { TeachingDocument } from '@lincyaw/kernel'
+import type { PresmiumDocument } from '@lincyaw/kernel'
 import { findNodeAtLocation, findNodeAtOffset, getNodePath, getNodeValue, parseTree } from 'jsonc-parser'
 import type { JSONPath, Node, ParseError } from 'jsonc-parser'
 
@@ -28,7 +28,7 @@ export function nodeAtPointer(tree: Node, pointer: string): Node {
   return node
 }
 
-function owners(document: TeachingDocument): Map<string, string> {
+function owners(document: PresmiumDocument): Map<string, string> {
   const result = new Map<string, string>()
   const rich = (node: unknown, section: string) => {
     if (!isRecord(node)) return
@@ -50,11 +50,11 @@ function owners(document: TeachingDocument): Map<string, string> {
 }
 
 /** Entity ownership determines the page even if normalized maps are reordered or minified. */
-export function sectionAtPath(document: TeachingDocument, path: JSONPath): string | undefined {
+export function sectionAtPath(document: PresmiumDocument, path: JSONPath): string | undefined {
   const [map, id, field, key] = path
   const owner = owners(document)
   const narration = (id: string) => document.sectionOrder.find(section => document.sections[section]!.stepOrder.some(step => document.steps[step]!.narrationIds.includes(id)))
-  const usedBlock = (predicate: (block: TeachingDocument['blocks'][string]) => boolean) => Object.values(document.blocks).find(predicate)?.id
+  const usedBlock = (predicate: (block: PresmiumDocument['blocks'][string]) => boolean) => Object.values(document.blocks).find(predicate)?.id
   if (map === 'sections' && typeof id === 'string') return document.sections[id]?.id
   if (map === 'sectionOrder' && typeof id === 'number') return document.sectionOrder[id]
   if (map === 'blocks' && typeof id === 'string') return owner.get(id)
@@ -80,7 +80,7 @@ export function sectionAtPath(document: TeachingDocument, path: JSONPath): strin
   return map === 'metadata' || !path.length ? document.sectionOrder[0] : undefined
 }
 
-export function entityReference(document: TeachingDocument, path: JSONPath, value: unknown): JSONPath | undefined {
+export function entityReference(document: PresmiumDocument, path: JSONPath, value: unknown): JSONPath | undefined {
   if (typeof value !== 'string') return undefined
   const [root, , field] = path, last = path.at(-1)
   const child = path.length === 4 && field === 'children' && (root === 'sections' || root === 'blocks')

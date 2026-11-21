@@ -1,17 +1,15 @@
 import { randomUUID } from 'node:crypto'
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { importDocuments, WORKSPACE_CONFIG } from '@lincyaw/compiler'
-import { DOCUMENT_ENTRY, DOCUMENT_IMPORT_MAX_BYTES, DOCUMENT_IMPORT_MAX_FILES, hasRole, isRecord, jsonResponse, validateDocument } from '@lincyaw/kernel'
+import { importDocuments } from '@lincyaw/compiler'
+import { DOCUMENT_ENTRY, DOCUMENT_IMPORT_MAX_BYTES, DOCUMENT_IMPORT_MAX_FILES, hasRole, jsonResponse, validateDocument } from '@lincyaw/kernel'
 import type { DocumentImportAnswer, Route } from '@lincyaw/kernel'
-import { parse, stringify } from 'yaml'
 import { readWorkspaceConfig } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
 import { catchRequestErrors, RequestError } from './errors.ts'
 import type { DocumentLocks } from './locks.ts'
 import type { Revisions } from './revisions.ts'
-import { writeChanges } from './writer.ts'
 import type { DocumentWriter } from './writer.ts'
 import type { DocumentsChange } from './document-operations.ts'
 
@@ -47,7 +45,7 @@ export function documentImportRoute(options: { config: WorkspaceConfig, writer: 
           mkdirSync(dirname(join(source, path)), { recursive: true })
           writeFileSync(join(source, path), Buffer.from(await file.arrayBuffer()), { flag: 'wx' })
         }
-        const report = await importDocuments(source, { out: output, preserveOriginal: true }).catch(() => bad(422, 'conversion'))
+        const report = await importDocuments(source, { out: output, preserveOriginal: true, workspaceRoot: config.root }).catch(() => bad(422, 'conversion'))
         if (report.documents.length === 0) return bad(422, 'empty')
         const files: { path: string, content: Buffer }[] = []
         let bytes = 0
@@ -76,37 +74,22 @@ export function documentImportRoute(options: { config: WorkspaceConfig, writer: 
             request.signal.throwIfAborted()
             const directory = `imported-${randomUUID().slice(0, 8)}`
             if (existsSync(join(config.root, directory))) return bad(409, 'changed')
-            const file = join(config.root, WORKSPACE_CONFIG)
-            const stat = lstatSync(file, { throwIfNoEntry: false })
-            if (stat && !stat.isFile()) return bad(403, 'forbidden')
-            let settings: unknown
-            try { settings = stat ? parse(readFileSync(file, 'utf8')) : {} } catch { return bad(422, 'configuration') }
-            if (!isRecord(settings)) return bad(422, 'configuration')
-            const entries = documents.map(doc => `${directory}/${doc.dir}/${DOCUMENT_ENTRY}`)
-            const previous = [...config.documents]
-            const current = readWorkspaceConfig(config.root)
-            if (current.singleDeck) return bad(409, 'unavailable')
-            const patterns = [...new Set([...current.documents, ...entries])]
-            const next = Buffer.from(stringify({ ...settings, documents: patterns }))
-            if (await revisions.ignoresAny([WORKSPACE_CONFIG, ...files.map(item => `${directory}/${item.path}`)])) return bad(403, 'forbidden')
-            await revisions.checkpoint([directory, WORKSPACE_CONFIG])
-            const checkpoint = await writer.checkpoint([directory], undefined, [WORKSPACE_CONFIG])
+            if (readWorkspaceConfig(config.root).singleDeck) return bad(409, 'unavailable')
+            if (await revisions.ignoresAny(files.map(item => `${directory}/${item.path}`))) return bad(403, 'forbidden')
+            await revisions.checkpoint([directory])
+            const checkpoint = await writer.checkpoint([directory])
             const before = await revisions.head()
             let committed = false
             try {
               for (const item of files) { request.signal.throwIfAborted(); await writer.create(`${directory}/${item.path}`, item.content, true) }
               request.signal.throwIfAborted()
-              writeChanges(config, [{ path: WORKSPACE_CONFIG, content: next }], true)
-              config.documents.splice(0, config.documents.length, ...patterns)
-              request.signal.throwIfAborted()
-              const revision = await revisions.commitWhileLocked({ paths: [directory, WORKSPACE_CONFIG], summary: `Import ${documents.length} documents`, body: '', origin: { kind: 'document', member: ctx.member, operation: { op: 'create', dir: directory } } })
+              const revision = await revisions.commitWhileLocked({ paths: [directory], summary: `Import ${documents.length} documents`, body: '', origin: { kind: 'document', member: ctx.member, operation: { op: 'create', dir: directory } } })
               if (!revision) return bad(409, 'changed')
               committed = true
               return { directory, documents: documents.map(doc => ({ ...doc, dir: `${directory}/${doc.dir}` })), files: files.length, unresolved: report.unresolved.length, warnings: report.warnings ?? 0, ...revision ? { revision } : {} }
             } catch (error) {
               if (await revisions.head() !== before) { committed = true; throw new RequestError(409, 'document-import-changed', { committed: true }) }
               await checkpoint.restore()
-              config.documents.splice(0, config.documents.length, ...previous)
               throw error
             } finally { if (committed || await revisions.head() === before) checkpoint.dispose() }
           })

@@ -1,4 +1,4 @@
-import type { CaptionTimingSource, TeachingDocument } from '@lincyaw/kernel'
+import type { CaptionTimingSource, PresmiumDocument } from '@lincyaw/kernel'
 
 export interface CaptionTimingRow { id: string, from: number, to: number, start: string, end: string }
 export interface CaptionTimingDraft { version: string, text: string, basis: CaptionTimingSource, rows: CaptionTimingRow[] }
@@ -60,7 +60,7 @@ export class CaptionTimingDrafts {
       return true
     } catch { entry.failed = true; return false }
   }
-  steps(scope: Scope, document: TeachingDocument): string[] { return [...this.#entry(scope).values.keys()].filter(id => Object.hasOwn(document.steps, id)) }
+  steps(scope: Scope, document: PresmiumDocument): string[] { return [...this.#entry(scope).values.keys()].filter(id => Object.hasOwn(document.steps, id)) }
   failed(scope: Scope): boolean { return this.#entry(scope).failed }
   set(scope: Scope, stepId: string, value: CaptionTimingDraft | undefined): void {
     const entry = this.#entry(scope)

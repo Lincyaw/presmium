@@ -80,6 +80,8 @@ export interface WorkspaceClient {
   subscribeRequests?(listener: (event: WorkspaceRequestEvent) => void): () => void
   readDocuments(document?: string): Promise<DocumentsAnswer>
   importDocuments?(files: readonly File[], signal?: AbortSignal): Promise<import('@lincyaw/kernel').DocumentImportAnswer>
+  /** Converts the workspace's documents to the current format, one revision per document. */
+  migrateWorkspace?(): Promise<import('@lincyaw/kernel').WorkspaceMigrationAnswer>
   planProjectChange(request: ProjectPlanRequest): Promise<ProjectPlan>
   operateDocument(operation: ProjectOperation, planned?: ProjectPlan): Promise<OperationAnswer>
   readSource(document: string, path: string): Promise<SourceAnswer>
@@ -377,6 +379,7 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
       for (const file of files) body.append('files', file, file.name)
       return call(url('documents/import'), { method: 'POST', body, signal })
     },
+    migrateWorkspace: () => call(url('workspace/migrate'), { method: 'POST' }),
     readSource: (document, path) => call(url('source', document, { path })),
     saveSource: (document, path, content, base, message) => post(url('source', document), { path, content, base, ...message ? { message } : {} }),
     saveSourceTransaction: (document, changes, message) => post(url('source/transaction', document), { changes, ...message ? { message } : {} }),

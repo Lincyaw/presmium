@@ -1,4 +1,4 @@
-import type { DocumentAnswer, DocumentRecordingAdoption, TeachingDocument, VoiceSource } from '@lincyaw/kernel'
+import type { DocumentAnswer, DocumentRecordingAdoption, PresmiumDocument, VoiceSource } from '@lincyaw/kernel'
 
 const same = (a: unknown, b: unknown): boolean => {
   if (a === b) return true
@@ -7,13 +7,13 @@ const same = (a: unknown, b: unknown): boolean => {
   const left = a as Record<string, unknown>, right = b as Record<string, unknown>, keys = Object.keys(left)
   return keys.length === Object.keys(right).length && keys.every(key => Object.hasOwn(right, key) && same(left[key], right[key]))
 }
-function source(document: TeachingDocument, stepId: string): VoiceSource | undefined {
+function source(document: PresmiumDocument, stepId: string): VoiceSource | undefined {
   const step = document.steps[stepId]
   return step && (document.production.stepOverrides[stepId]?.voiceSource ?? document.production.sectionOverrides?.[step.sectionId]?.voiceSource ?? document.production.defaults.voiceSource)
 }
 
 /** Accept only the submitted recording delta; later author input remains the sole local draft. */
-export function reconcileRecordingAdoption(request: DocumentRecordingAdoption, before: TeachingDocument, answer: DocumentAnswer, current: TeachingDocument): TeachingDocument | undefined {
+export function reconcileRecordingAdoption(request: DocumentRecordingAdoption, before: PresmiumDocument, answer: DocumentAnswer, current: PresmiumDocument): PresmiumDocument | undefined {
   if (before.id !== request.source.documentId || current.id !== before.id || answer.content.id !== before.id) return
   const step = before.steps[request.stepId], asset = before.assets[request.assetId]
   if (!step || asset?.kind !== 'audio') return
@@ -25,7 +25,7 @@ export function reconcileRecordingAdoption(request: DocumentRecordingAdoption, b
   const content = structuredClone(current), localAsset = content.assets[asset.id]
   const assetUnchanged = same(localAsset, asset) || same(localAsset, expected.assets[asset.id])
   if (assetUnchanged) content.assets[asset.id]!.fingerprint = `sha256:${request.sha256}`
-  const own = (document: TeachingDocument) => document.production.stepOverrides[step.id]?.voiceSource
+  const own = (document: PresmiumDocument) => document.production.stepOverrides[step.id]?.voiceSource
   if (assetUnchanged && content.steps[step.id] && same(own(current), own(before)) && same(source(current, step.id), source(before, step.id))) {
     content.production.stepOverrides[step.id] = { ...content.production.stepOverrides[step.id], voiceSource: voice }
   }

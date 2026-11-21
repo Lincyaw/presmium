@@ -1,15 +1,15 @@
 ---
 name: presmium-animate
-description: "Choose and implement teaching animation in a Presmium lecture.json document: explicit step states, code walkthroughs or project-file scenes using GSAP, Anime.js, Motion, D3, Three.js or Remotion. 讲义需要动画、演示过程、选动画库、找效果、让动画对上步骤和讲解时使用。"
+description: "Choose and implement teaching animation in a Presmium index.pmd document: explicit step states, code walkthroughs or project-file scenes using GSAP, Anime.js, Motion, D3, Three.js or Remotion. 讲义需要动画、演示过程、选动画库、找效果、让动画对上步骤和讲解时使用。"
 ---
 
 # Teaching with animation
 
-Work top down: each layer decides the next, and its details are in the reference it names. Read the teaching document's `lecture.json` and the relevant project code before choosing anything.
+Work top down: each layer decides the next, and its details are in the reference it names. Read the teaching document's `index.pmd` and the relevant project code before choosing anything.
 
 ## 1. Ground rules
 
-- Presmium-owned normalized document IR is the only editable authority; animation implementations are referenced project files. Keep page titles, narration, steps, parameters, timing and comments in `lecture.json`. Do not add per-page content files, a MyST directive or Markdown as a second input, or a generator that reconstructs the saved document from them.
+- Presmium-owned normalized document IR is the only editable authority; animation implementations are referenced project files. Keep page titles, narration, steps, parameters, timing and comments in `index.pmd`. Do not add per-page content files, a MyST directive or Markdown as a second input, or a generator that reconstructs the saved document from them.
 - A step rests on the final frame of its state, and that frame is at once the still on the web page, the slide and the held shot of the video. So a piece is designed as a strip of rest frames, and motion is what carries one into the next.
 - Every state is reconstructible when selected in any order: the look is a function of the step and the time only. An earlier playback side effect is not state.
 

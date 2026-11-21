@@ -7,16 +7,16 @@ import { changeDocumentVoice, documentVoiceStepIds, previewDocumentVoiceChange }
 import { applyDocumentComponentAction } from './document-components.ts'
 import type { DocumentAuthoringAction, DocumentAuthoringActionEffect } from './contracts/authoring-actions.ts'
 import type { DocumentCommentContext } from './contracts/document-comments.ts'
-import type { TeachingDocument } from './contracts/document.ts'
+import type { PresmiumDocument } from './contracts/document.ts'
 
-export function enableDocumentProduction(document: TeachingDocument): TeachingDocument {
+export function enableDocumentProduction(document: PresmiumDocument): PresmiumDocument {
   const plugins = [...new Set([...(document.metadata.plugins ?? []), '@lincyaw/addon-lecture', '@lincyaw/addon-speech'])]
   if (JSON.stringify(plugins) === JSON.stringify(document.metadata.plugins) && document.metadata.renderers?.lecture) return document
   return { ...document, metadata: { ...document.metadata, plugins, renderers: { ...document.metadata.renderers, lecture: document.metadata.renderers?.lecture ?? {} } } }
 }
 
 /** Fixed context is supplied by the owning adapter exactly once per semantic plan. */
-export function applyDocumentAuthoringAction(document: TeachingDocument, action: DocumentAuthoringAction, context: DocumentCommentContext): { content: TeachingDocument, effect: DocumentAuthoringActionEffect } {
+export function applyDocumentAuthoringAction(document: PresmiumDocument, action: DocumentAuthoringAction, context: DocumentCommentContext): { content: PresmiumDocument, effect: DocumentAuthoringActionEffect } {
   if (!context.member || !hasRole(context.member, 'editor')) throw new DocumentCommentError(403, 'authoring-permission-denied')
   if (action.type === 'production.enable') {
     const content = enableDocumentProduction(document)

@@ -23,7 +23,7 @@ export function createMediaUploads({ editor, url, lifetimeMs = LIFETIME_MS }: { 
   const current = (document: string, member: Member) => {
     if (closed) return fail(503, 'media-upload-unavailable')
     if (!hasRole(member, 'editor')) return fail(403, 'media-upload-permission-denied')
-    return readAuthoringDocument(editor, { document, member }).content
+    return readAuthoringDocument(editor, { document, member }).effective
   }
   const release = (entry: Entry) => { reserved -= entry.reserved; entry.reserved = 0; delete entry.bytes }
   const retire = (upload: string, entry: Entry) => {

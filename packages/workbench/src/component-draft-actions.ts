@@ -6,7 +6,7 @@ import type { ComponentPropertyDraft, ComponentPropertyDrafts } from './componen
 export const sameComponentDraftReference = (a: ClientComponentDraftReference | null, b: ClientComponentDraftReference | null): boolean => a === null || b === null ? a === b
   : a.id === b.id && a.revision === b.revision && a.token === b.token && a.blockId === b.blockId && a.stepId === b.stepId
 
-/** Explicit form actions reuse the human bank; they never apply parameters to lecture.json. */
+/** Explicit form actions reuse the human bank; they never apply parameters to index.pmd. */
 export async function mutateComponentDrafts(bank: ComponentPropertyDrafts, context: { identity: string, memberId: string, source: CanonicalSource }, action: Extract<AuthoringClientAction, { type: 'component-drafts.restore' | 'component-drafts.discard' }>, signal: AbortSignal, owned: (draft?: ComponentPropertyDraft) => void, fits: (result: AuthoringClientActionResult) => boolean): Promise<AuthoringClientActionResult> {
   const read = await bank.readForAgent(context, signal, action.draft)
   owned()

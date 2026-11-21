@@ -12,7 +12,8 @@ import { mathFromMarkdown } from 'mdast-util-math'
 import { gfm } from 'micromark-extension-gfm'
 import { math } from 'micromark-extension-math'
 import { parse as parseYaml } from 'yaml'
-import type { Asset, DocumentBlock, InlineNode, MdastNode, RichTextNode, Section, Step, TeachingDocument, TextMark } from '@lincyaw/kernel'
+import { DOCUMENT_SCHEMA_VERSION } from '@lincyaw/kernel'
+import type { Asset, DocumentBlock, InlineNode, MdastNode, RichTextNode, Section, Step, PresmiumDocument, TextMark } from '@lincyaw/kernel'
 
 export interface Frontmatter {
   title?: string
@@ -32,7 +33,7 @@ export interface MarkdownLinks {
 }
 
 export interface ImportedMarkdown {
-  document: TeachingDocument
+  document: PresmiumDocument
   /** Wikilinks and relative links that `links` could not resolve, as written. */
   unresolved: string[]
 }
@@ -107,7 +108,7 @@ function restoreLabels(node: MdastNode): void {
   node.children?.forEach(restoreLabels)
 }
 
-export function markdownDocument(source: string, options: { id: string, title: string, lang?: string, tree?: MdastNode, links: MarkdownLinks }): ImportedMarkdown {
+export function markdownDocument(source: string, options: { id: string, title: string, lang?: string, rank: string, tree?: MdastNode, links: MarkdownLinks }): ImportedMarkdown {
   const { frontmatter, body } = splitFrontmatter(source)
   const protectedBody = body.replace(/\[\[([^\]|\n]+)\|([^\]\n]+)\]\]/g, (_, target: string, label: string) => `[[${target}${LABEL}${label}]]`)
   const root = options.tree ? structuredClone(options.tree) : fromMarkdown(protectedBody, { extensions: [gfm(), math()], mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()] }) as unknown as MdastNode
@@ -291,8 +292,9 @@ export function markdownDocument(source: string, options: { id: string, title: s
 
   return {
     document: {
-      schemaVersion: 1,
+      schemaVersion: DOCUMENT_SCHEMA_VERSION,
       id: unique(options.id),
+      placement: { parent: null, rank: options.rank },
       metadata: {
         title,
         lang: frontmatter.lang ?? options.lang ?? guessLang(body),
@@ -303,7 +305,7 @@ export function markdownDocument(source: string, options: { id: string, title: s
       },
       sectionOrder, sections, blocks, steps, narrations: {}, assets, definitions: {},
       production: { defaults: {}, stepOverrides: {}, mediaClips: [] },
-    } as TeachingDocument,
+    } as PresmiumDocument,
     unresolved: [...new Set(unresolved)],
   }
 }

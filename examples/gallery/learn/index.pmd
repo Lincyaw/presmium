@@ -1,0 +1,1101 @@
+{
+  "schemaVersion": 2,
+  "id": "presmium-fourier-lesson",
+  "placement": {
+    "parent": null,
+    "rank": "a7"
+  },
+  "metadata": {
+    "title": "转动的圆，怎样画出一个音符？",
+    "lang": "zh-CN",
+    "description": "把一个轮廓拆成一串转动的圆：圆越多，画出的曲线越接近原来的形状。每一步都由真实的傅里叶系数算出，可以自己一步一步再看。",
+    "tags": [
+      "课程",
+      "傅里叶级数",
+      "复数",
+      "离散傅里叶变换"
+    ],
+    "plugins": [
+      "@lincyaw/addon-motion",
+      "@lincyaw/addon-code",
+      "@lincyaw/addon-lecture"
+    ],
+    "renderers": {
+      "web": {},
+      "slides": {},
+      "lecture": {}
+    },
+    "presmium": {
+      "presmium.web": {
+        "slidesUrl": "./slides/"
+      }
+    },
+    "translations": {
+      "en": "locales/en/index.pmd"
+    }
+  },
+  "sectionOrder": [
+    "question",
+    "circles",
+    "fit",
+    "try"
+  ],
+  "sections": {
+    "question": {
+      "id": "question",
+      "title": "转动的圆，怎样画出一个音符？",
+      "level": 1,
+      "children": [
+        "question-body",
+        "question-keywords",
+        "question-equation",
+        "question-terms"
+      ],
+      "stepOrder": [
+        "question-step"
+      ],
+      "layout": {
+        "type": "stack"
+      }
+    },
+    "circles": {
+      "id": "circles",
+      "title": "一个圆画不出角，两个圆可以",
+      "level": 2,
+      "children": [
+        "circles-body",
+        "circles-scene"
+      ],
+      "stepOrder": [
+        "one-circle-step",
+        "two-circles-step"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "fit": {
+      "id": "fit",
+      "title": "圆越多，曲线越像",
+      "level": 2,
+      "children": [
+        "fit-body",
+        "fit-scene"
+      ],
+      "stepOrder": [
+        "fit-1-step",
+        "fit-2-step",
+        "fit-4-step",
+        "fit-8-step",
+        "fit-16-step",
+        "fit-32-step",
+        "fit-64-step"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    },
+    "try": {
+      "id": "try",
+      "title": "五角星：两个圆就有五个角",
+      "level": 2,
+      "children": [
+        "try-keywords",
+        "try-body",
+        "try-scene",
+        "code-body",
+        "series-code",
+        "next-body"
+      ],
+      "stepOrder": [
+        "star-2-step",
+        "star-4-step",
+        "star-16-step",
+        "star-64-step"
+      ],
+      "layout": {
+        "type": "stack",
+        "renderers": {
+          "slides": {
+            "layout": "full"
+          }
+        }
+      }
+    }
+  },
+  "blocks": {
+    "question-body": {
+      "id": "question-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "question-ask",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "圆没有尖角，可是把几个转动的圆首尾相接，最后一个圆上的笔能画出带尖角的音符。每个圆的半径、转速和起始角度都由轮廓的傅里叶系数给出。圆按半径从大到小加进来，笔画出的曲线就越来越接近轮廓，只在尖角处留下不会完全消失的波纹。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "circles-body": {
+      "id": "circles-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "circles-explain",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "一个圆只能画出圆。在它的边上放一个半径为 0.36 的小圆，大圆转一圈时小圆反向转两圈，笔画出的曲线就出现三个圆角。这条曲线写成："
+            }
+          ]
+        },
+        {
+          "id": "two-circles-equation",
+          "type": "math",
+          "value": "z(t)=e^{\\,it}+0.36\\,e^{-2it}"
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "circles-scene": {
+      "id": "circles-scene",
+      "type": "component",
+      "definitionId": "circle-chain",
+      "parameters": {}
+    },
+    "fit-body": {
+      "id": "fit-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "fit-explain",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "圆的半径和起始角度由离散傅里叶变换算出。先在音符的轮廓上等距取 M = 1024 个点 zₖ，再按下式求出每个系数 cₙ。图中只保留半径最大的 N 个圆，按半径从大到小串起来；虚线是目标轮廓，右边的误差是各点与笔的位置之差的均方根，相对于轮廓的大小。"
+            }
+          ]
+        },
+        {
+          "id": "dft-equation",
+          "type": "math",
+          "value": "c_n=\\frac1M\\sum_{k=0}^{M-1} z_k\\,e^{-2\\pi i nk/M},\\qquad M=1024"
+        },
+        {
+          "id": "fit-corners",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "误差随圆数迅速下降：1 个圆时约 64%，8 个圆时约 8%，32 个圆时约 1%，64 个圆时不到 0.5%。尖角最难逼近：圆少时，曲线在尖角处冲过头又绕回来，留下波纹；圆越多，波纹越贴近尖角，但不会完全消失。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "fit-scene": {
+      "id": "fit-scene",
+      "type": "component",
+      "definitionId": "fourier-fit",
+      "parameters": {
+        "shape": "note",
+        "terms": [
+          1,
+          2,
+          4,
+          8,
+          16,
+          32,
+          64
+        ]
+      }
+    },
+    "try-body": {
+      "id": "try-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "try-predict",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "五角星有十个尖角、十条直边。只用两个圆，曲线就已经有五个角；四个圆时尖角更尖、边更直；十六个圆时边已经是直的，只在尖角处略圆；六十四个圆时几乎和原来的五角星分不出来。两个圆就有五个角，原因是对称：五角星转过五分之一圈后与原来重合，所以只有转速 n 除以 5 余 1 的圆不为零。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "try-scene": {
+      "id": "try-scene",
+      "type": "component",
+      "definitionId": "fourier-star",
+      "parameters": {
+        "shape": "star",
+        "terms": [
+          2,
+          4,
+          16,
+          64
+        ]
+      }
+    },
+    "code-body": {
+      "id": "code-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "code-explain",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "下面是本课计算系数的函数 series：输入轮廓上一圈等距的点，返回第一个圆的圆心 c₀ 和其余各圆，按半径从大到小排列。换一组点，就能画出别的轮廓。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "series-code": {
+      "id": "series-code",
+      "type": "code",
+      "language": "typescript",
+      "title": "计算傅里叶系数",
+      "origin": {
+        "anchor": "symbol:learn/scenes/epicycles.ts#series"
+      },
+      "only": [
+        "web"
+      ]
+    },
+    "next-body": {
+      "id": "next-body",
+      "type": "text",
+      "content": [
+        {
+          "id": "next-try",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "任何闭合轮廓都能这样拆成一串转动的圆：傅里叶系数给出每个圆的大小、转速和起始角度，圆越多，曲线越接近轮廓，尖角处的波纹只会变短。可以改 epicycles.ts 里的形状，先按对称性预测要几个圆，再看结果。"
+            }
+          ]
+        },
+        {
+          "id": "back-to-site",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "link",
+              "href": "../promo/index.pmd",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "看看用 Presmium 做的 60 秒影片。"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "question-equation": {
+      "id": "question-equation",
+      "type": "text",
+      "content": [
+        {
+          "id": "series-equation",
+          "type": "math",
+          "value": "z(t)=c_0+\\sum_{n\\ne 0} c_n e^{\\,int},\\qquad 0\\le t<2\\pi"
+        }
+      ]
+    },
+    "question-terms": {
+      "id": "question-terms",
+      "type": "text",
+      "content": [
+        {
+          "id": "question-reading",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "上式把平面上的点记作复数 z = x + iy。式中每一项 cₙeⁱⁿᵗ 是一个圆：半径为 |cₙ|，笔走完一圈时它转 n 圈，n 的正负决定转动方向；c₀ 是第一个圆的圆心。"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "web"
+      ]
+    },
+    "question-keywords": {
+      "id": "question-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "question-keywords--draw",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "转动的圆 → 带尖角的音符"
+            }
+          ]
+        },
+        {
+          "id": "question-keywords--coefficients",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "半径、转速、起始角度：傅里叶系数"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    },
+    "try-keywords": {
+      "id": "try-keywords",
+      "type": "text",
+      "content": [
+        {
+          "id": "try-keywords--claim",
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "text": "圆越多越像，尖角留下波纹"
+            }
+          ]
+        }
+      ],
+      "only": [
+        "slides",
+        "lecture"
+      ]
+    }
+  },
+  "steps": {
+    "question-step": {
+      "id": "question-step",
+      "sectionId": "question",
+      "title": "提出问题",
+      "visuals": [
+        {
+          "blockId": "question-body",
+          "visible": true
+        },
+        {
+          "blockId": "question-keywords",
+          "visible": true
+        },
+        {
+          "blockId": "question-equation",
+          "visible": true
+        },
+        {
+          "blockId": "question-terms",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "question-step-narration"
+      ]
+    },
+    "one-circle-step": {
+      "id": "one-circle-step",
+      "sectionId": "circles",
+      "title": "一个圆",
+      "visuals": [
+        {
+          "blockId": "circles-body",
+          "visible": true
+        },
+        {
+          "blockId": "circles-scene",
+          "visible": true,
+          "state": "one"
+        }
+      ],
+      "narrationIds": [
+        "one-circle-step-narration"
+      ]
+    },
+    "two-circles-step": {
+      "id": "two-circles-step",
+      "sectionId": "circles",
+      "title": "再加一个圆",
+      "visuals": [
+        {
+          "blockId": "circles-body",
+          "visible": true
+        },
+        {
+          "blockId": "circles-scene",
+          "visible": true,
+          "state": "two"
+        }
+      ],
+      "narrationIds": [
+        "two-circles-step-narration"
+      ]
+    },
+    "fit-1-step": {
+      "id": "fit-1-step",
+      "sectionId": "fit",
+      "title": "1 个圆",
+      "visuals": [
+        {
+          "blockId": "fit-body",
+          "visible": true
+        },
+        {
+          "blockId": "fit-scene",
+          "visible": true,
+          "state": "n1"
+        }
+      ],
+      "narrationIds": [
+        "fit-1-step-narration"
+      ]
+    },
+    "fit-2-step": {
+      "id": "fit-2-step",
+      "sectionId": "fit",
+      "title": "2 个圆",
+      "visuals": [
+        {
+          "blockId": "fit-body",
+          "visible": true
+        },
+        {
+          "blockId": "fit-scene",
+          "visible": true,
+          "state": "n2"
+        }
+      ],
+      "narrationIds": [
+        "fit-2-step-narration"
+      ]
+    },
+    "fit-4-step": {
+      "id": "fit-4-step",
+      "sectionId": "fit",
+      "title": "4 个圆",
+      "visuals": [
+        {
+          "blockId": "fit-body",
+          "visible": true
+        },
+        {
+          "blockId": "fit-scene",
+          "visible": true,
+          "state": "n4"
+        }
+      ],
+      "narrationIds": [
+        "fit-4-step-narration"
+      ]
+    },
+    "fit-8-step": {
+      "id": "fit-8-step",
+      "sectionId": "fit",
+      "title": "8 个圆",
+      "visuals": [
+        {
+          "blockId": "fit-body",
+          "visible": true
+        },
+        {
+          "blockId": "fit-scene",
+          "visible": true,
+          "state": "n8"
+        }
+      ],
+      "narrationIds": [
+        "fit-8-step-narration"
+      ]
+    },
+    "fit-16-step": {
+      "id": "fit-16-step",
+      "sectionId": "fit",
+      "title": "16 个圆",
+      "visuals": [
+        {
+          "blockId": "fit-body",
+          "visible": true
+        },
+        {
+          "blockId": "fit-scene",
+          "visible": true,
+          "state": "n16"
+        }
+      ],
+      "narrationIds": [
+        "fit-16-step-narration"
+      ]
+    },
+    "fit-32-step": {
+      "id": "fit-32-step",
+      "sectionId": "fit",
+      "title": "32 个圆",
+      "visuals": [
+        {
+          "blockId": "fit-body",
+          "visible": true
+        },
+        {
+          "blockId": "fit-scene",
+          "visible": true,
+          "state": "n32"
+        }
+      ],
+      "narrationIds": [
+        "fit-32-step-narration"
+      ]
+    },
+    "fit-64-step": {
+      "id": "fit-64-step",
+      "sectionId": "fit",
+      "title": "64 个圆",
+      "visuals": [
+        {
+          "blockId": "fit-body",
+          "visible": true
+        },
+        {
+          "blockId": "fit-scene",
+          "visible": true,
+          "state": "n64"
+        }
+      ],
+      "narrationIds": [
+        "fit-64-step-narration"
+      ]
+    },
+    "star-2-step": {
+      "id": "star-2-step",
+      "sectionId": "try",
+      "title": "五角星，2 个圆",
+      "visuals": [
+        {
+          "blockId": "try-keywords",
+          "visible": true
+        },
+        {
+          "blockId": "try-body",
+          "visible": true
+        },
+        {
+          "blockId": "try-scene",
+          "visible": true,
+          "state": "n2"
+        },
+        {
+          "blockId": "code-body",
+          "visible": true
+        },
+        {
+          "blockId": "series-code",
+          "visible": true
+        },
+        {
+          "blockId": "next-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "star-2-step-narration"
+      ]
+    },
+    "star-4-step": {
+      "id": "star-4-step",
+      "sectionId": "try",
+      "title": "五角星，4 个圆",
+      "visuals": [
+        {
+          "blockId": "try-keywords",
+          "visible": true
+        },
+        {
+          "blockId": "try-body",
+          "visible": true
+        },
+        {
+          "blockId": "try-scene",
+          "visible": true,
+          "state": "n4"
+        },
+        {
+          "blockId": "code-body",
+          "visible": true
+        },
+        {
+          "blockId": "series-code",
+          "visible": true
+        },
+        {
+          "blockId": "next-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "star-4-step-narration"
+      ]
+    },
+    "star-16-step": {
+      "id": "star-16-step",
+      "sectionId": "try",
+      "title": "五角星，16 个圆",
+      "visuals": [
+        {
+          "blockId": "try-keywords",
+          "visible": true
+        },
+        {
+          "blockId": "try-body",
+          "visible": true
+        },
+        {
+          "blockId": "try-scene",
+          "visible": true,
+          "state": "n16"
+        },
+        {
+          "blockId": "code-body",
+          "visible": true
+        },
+        {
+          "blockId": "series-code",
+          "visible": true
+        },
+        {
+          "blockId": "next-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "star-16-step-narration"
+      ]
+    },
+    "star-64-step": {
+      "id": "star-64-step",
+      "sectionId": "try",
+      "title": "五角星，64 个圆",
+      "visuals": [
+        {
+          "blockId": "try-keywords",
+          "visible": true
+        },
+        {
+          "blockId": "try-body",
+          "visible": true
+        },
+        {
+          "blockId": "try-scene",
+          "visible": true,
+          "state": "n64"
+        },
+        {
+          "blockId": "code-body",
+          "visible": true
+        },
+        {
+          "blockId": "series-code",
+          "visible": true
+        },
+        {
+          "blockId": "next-body",
+          "visible": true
+        }
+      ],
+      "narrationIds": [
+        "star-64-step-narration"
+      ]
+    }
+  },
+  "narrations": {
+    "question-step-narration": {
+      "id": "question-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "圆没有尖角。可是把转动的圆一个接一个串起来，就能画出带尖角的音符。每个圆多大、转多快，都由傅里叶系数决定。"
+        }
+      ]
+    },
+    "one-circle-step-narration": {
+      "id": "one-circle-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "先看一个圆。它转一圈，笔就画出一个圆，不会有任何角。"
+        }
+      ]
+    },
+    "two-circles-step-narration": {
+      "id": "two-circles-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "在它的边上再放一个小圆，大圆转一圈，它反向转两圈。笔的轨迹被掰弯，出现了三个圆角。"
+        }
+      ]
+    },
+    "fit-1-step-narration": {
+      "id": "fit-1-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "现在换成音符。圆的大小由离散傅里叶变换算出。只用最大的一个圆，画出的还是圆，误差约百分之六十四。"
+        }
+      ]
+    },
+    "fit-2-step-narration": {
+      "id": "fit-2-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "两个圆，圆被压成一个斜着的椭圆，方向已经和音符一致。"
+        }
+      ]
+    },
+    "fit-4-step-narration": {
+      "id": "fit-4-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "四个圆，开始分出符头和符尾。"
+        }
+      ]
+    },
+    "fit-8-step-narration": {
+      "id": "fit-8-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "八个圆，已经能认出是一个音符，误差降到约百分之八。"
+        }
+      ]
+    },
+    "fit-16-step-narration": {
+      "id": "fit-16-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "十六个圆，符杆变直了。可是在尖角附近，曲线冲过头又绕了回来。"
+        }
+      ]
+    },
+    "fit-32-step-narration": {
+      "id": "fit-32-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "三十二个圆，误差约百分之一，尖角处的波纹变短。"
+        }
+      ]
+    },
+    "fit-64-step-narration": {
+      "id": "fit-64-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "六十四个圆，曲线几乎贴着轮廓，误差不到百分之零点五。圆越多，越接近原来的形状。"
+        }
+      ]
+    },
+    "star-2-step-narration": {
+      "id": "star-2-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "换成五角星。先猜猜，要几个圆？只用两个，就已经有了五个角，因为五角星转五分之一圈就和原来重合。"
+        }
+      ]
+    },
+    "star-4-step-narration": {
+      "id": "star-4-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "四个圆，五个尖角变得更尖，边也变直了一些。"
+        }
+      ]
+    },
+    "star-16-step-narration": {
+      "id": "star-16-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "十六个圆，边已经是直的，只在尖角处还有一点圆。"
+        }
+      ]
+    },
+    "star-64-step-narration": {
+      "id": "star-64-step-narration",
+      "content": [
+        {
+          "type": "text",
+          "text": "六十四个圆，和原来的五角星几乎分不出来。任何闭合的轮廓，都能这样拆成一串转动的圆。"
+        }
+      ]
+    }
+  },
+  "assets": {},
+  "definitions": {
+    "circle-chain": {
+      "id": "circle-chain",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/circles.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "one"
+        },
+        {
+          "id": "two"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          4000,
+          4500
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "一个圆画出一个圆；加一个反向转两圈的小圆，曲线出现三个圆角。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "fourier-fit": {
+      "id": "fourier-fit",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/fourier.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shape": {
+            "type": "string",
+            "enum": [
+              "note",
+              "star"
+            ]
+          },
+          "terms": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 511
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "n1"
+        },
+        {
+          "id": "n2"
+        },
+        {
+          "id": "n4"
+        },
+        {
+          "id": "n8"
+        },
+        {
+          "id": "n16"
+        },
+        {
+          "id": "n32"
+        },
+        {
+          "id": "n64"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          5000,
+          5000,
+          5000,
+          5000,
+          5000,
+          5000,
+          5000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "音符轮廓的傅里叶级数：圆从 1 个加到 64 个，误差从约 64% 降到约 0.4%，尖角处留有波纹。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "fourier-star": {
+      "id": "fourier-star",
+      "kind": "scene",
+      "schemaVersion": 1,
+      "implementation": {
+        "type": "file",
+        "path": "scenes/fourier.ts"
+      },
+      "parameterSchema": {
+        "type": "object",
+        "properties": {
+          "shape": {
+            "type": "string",
+            "enum": [
+              "note",
+              "star"
+            ]
+          },
+          "terms": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 511
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "states": [
+        {
+          "id": "n2"
+        },
+        {
+          "id": "n4"
+        },
+        {
+          "id": "n16"
+        },
+        {
+          "id": "n64"
+        }
+      ],
+      "data": {
+        "plugin": "presmium.motion",
+        "name": "PmScene",
+        "durations": [
+          5000,
+          5000,
+          5000,
+          5000
+        ],
+        "language": "typescript",
+        "fallback": {
+          "type": "root",
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "五角星的傅里叶级数：2 个圆已有五个角，64 个圆几乎与原形一致。"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "production": {
+    "defaults": {
+      "voiceSource": {
+        "type": "none"
+      },
+      "minimumHoldMs": 1800,
+      "trailingPauseMs": 0
+    },
+    "sectionOverrides": {
+      "fit": {
+        "minimumHoldMs": 6500
+      },
+      "try": {
+        "minimumHoldMs": 6500
+      }
+    },
+    "stepOverrides": {},
+    "mediaClips": []
+  }
+}

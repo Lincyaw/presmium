@@ -1,6 +1,6 @@
 # {{name}}: a Presmium plugin
 
-Presmium uses normalized editable teaching document IR in `lecture.json` as its sole content authority. The compiler derives runtime snapshots for web pages, slides, notebooks and more. A plugin adds versioned component definitions, React components shared by web and slides, services and routes.
+Presmium uses normalized editable teaching document IR in `index.pmd` as its sole content authority. The compiler derives runtime snapshots for web pages, slides, notebooks and more. A plugin adds versioned component definitions, React components shared by web and slides, services and routes.
 This project is one plugin, `{{id}}`: `README.md` lists its files.
 
 ## Skills
@@ -10,7 +10,7 @@ This project is one plugin, `{{id}}`: `README.md` lists its files.
   server routes, renderer extensions, the design system, and integration tests with real runs. Its
   `references/plugin.md` is the plugin contract with examples, `references/testing.md` how to prove
   behavior. It is self-contained: it needs only this project and the installed packages.
-- `.agents/skills/presmium-author`: how documents are written, for `example/lecture.json`.
+- `.agents/skills/presmium-author`: how documents are written, for `example/index.pmd`.
 
 ## Conventions
 

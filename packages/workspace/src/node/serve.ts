@@ -51,6 +51,7 @@ import { createWorkbenchBackend } from './workbench-api.ts'
 import type { WorkbenchBackend } from './workbench-api.ts'
 import { localWriter } from './writer.ts'
 import { documentImportRoute } from './document-import.ts'
+import { workspaceMigrateRoute } from './workspace-migrate.ts'
 import { hostUpgradeRoute } from './host-upgrade.ts'
 import { createHostActivity } from './host-activity.ts'
 
@@ -509,6 +510,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
       authoringClientRoutes: { ...authoringClients.routes, ...authoringWindows.routes, ...agentActivity.routes },
       projectRoutes: projectAuthoring.routes,
       documentImport: documentImportRoute({ config, writer, locks, revisions: history?.revisions, changed: documentsChanged }),
+      workspaceMigrate: workspaceMigrateRoute({ config, locks, revisions: history?.revisions, changed: documentsChanged }),
       locks,
       ...history ? { revisions: history.revisions, operations: history.operations, reviews: history.agentSessionReviews } : {},
       documentsChanged,

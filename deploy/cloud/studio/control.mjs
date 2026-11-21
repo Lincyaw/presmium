@@ -29,10 +29,10 @@ function mcp() {
 }
 
 async function documents() {
-  const { stdout } = await git(['ls-files', '-z', '--', '*/lecture.json'])
+  const { stdout } = await git(['ls-files', '-z', '--', '*/index.pmd'])
   const found = []
   for (const file of stdout.split('\0').filter(Boolean)) {
-    const dir = file.slice(0, -'/lecture.json'.length)
+    const dir = file.slice(0, -'/index.pmd'.length)
     if (dir.includes('/')) continue
     let title = dir, id = ''
     try {
@@ -50,7 +50,7 @@ const snapshots = new Map()
 
 /** A shared document as it is committed now: its source archive, and its web site built for `base`. */
 async function snapshot(document, base) {
-  if (!DOCUMENT.test(document) || !existsSync(join(SPACE, document, 'lecture.json'))) throw Object.assign(new Error('document-not-found'), { status: 404 })
+  if (!DOCUMENT.test(document) || !existsSync(join(SPACE, document, 'index.pmd'))) throw Object.assign(new Error('document-not-found'), { status: 404 })
   if (!/^\/[A-Za-z0-9/_-]+\/$/.test(base)) throw Object.assign(new Error('share-base-invalid'), { status: 400 })
   const id = randomBytes(16).toString('hex'), dir = join(SCRATCH, id)
   await mkdir(dir, { recursive: true, mode: 0o700 })
@@ -90,13 +90,13 @@ async function importCopy(request, title) {
     await run('tar', ['-xzf', archive, '-C', join(dir, 'files'), '--no-same-owner', '--no-same-permissions', '--no-overwrite-dir'])
     const source = join(dir, 'files', 'document')
     await plain(join(dir, 'files'))
-    if (!existsSync(join(source, 'lecture.json'))) throw Object.assign(new Error('fork-archive-invalid'), { status: 422 })
+    if (!existsSync(join(source, 'index.pmd'))) throw Object.assign(new Error('fork-archive-invalid'), { status: 422 })
     let name = slug(title), n = 1
     while (existsSync(join(SPACE, name))) name = `${slug(title)}-${++n}`
     await rename(source, join(SPACE, name))
     await git(['add', '--', name])
     await git(['commit', '-q', '-m', `Fork: ${title.replace(/[\r\n]/g, ' ').slice(0, 200)}`, '--', name])
-    const id = JSON.parse(await readFile(join(SPACE, name, 'lecture.json'), 'utf8')).id
+    const id = JSON.parse(await readFile(join(SPACE, name, 'index.pmd'), 'utf8')).id
     return { document: name, id: typeof id === 'string' ? id : '' }
   } finally {
     await rm(dir, { recursive: true, force: true })

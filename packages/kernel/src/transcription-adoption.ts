@@ -1,4 +1,4 @@
-import type { Narration, NarrationNode, TeachingDocument } from './contracts/document.ts'
+import type { Narration, NarrationNode, PresmiumDocument } from './contracts/document.ts'
 import type { TranscriptionRevision } from './contracts/transcription.ts'
 import type { TranscriptionAdoptionDraft, TranscriptionAdoptionPreview } from './contracts/transcription-adoption.ts'
 import { fnv1a64 } from './fingerprint.ts'
@@ -10,7 +10,7 @@ const sameIds = (a: string[], b: string[]) => { const sorted = [...b].sort(); re
 const atomKey = (index: number, node: NarrationNode) => `atom:${index}:${fnv1a64(JSON.stringify(node))}`
 
 /** Builds one typed candidate from explicit author decisions, without I/O or writing the input document. */
-export function prepareTranscriptionAdoption(document: TeachingDocument, candidate: TranscriptionRevision, draft: TranscriptionAdoptionDraft): TranscriptionAdoptionPreview & { content?: TeachingDocument } {
+export function prepareTranscriptionAdoption(document: PresmiumDocument, candidate: TranscriptionRevision, draft: TranscriptionAdoptionDraft): TranscriptionAdoptionPreview & { content?: PresmiumDocument } {
   const result: TranscriptionAdoptionPreview = { targets: [], conflicts: [], impact: { narrationIds: [], stepIds: [], sharedStepIds: [], forks: [], removedAtoms: [], removedCueTimings: [] } }
   const conflict = (code: string, target?: number, key?: string, stepIds?: string[]) => { result.conflicts.push({ code, ...target !== undefined ? { target } : {}, ...key ? { key } : {}, ...stepIds ? { stepIds } : {} }) }
   if (candidate.transcriptionId !== draft.candidate.id || candidate.revision !== draft.candidate.revision || candidate.source.documentId !== document.id || draft.source.documentId !== document.id) {

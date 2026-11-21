@@ -5,7 +5,7 @@ import type { CommentData, ThreadData } from '@blocknote/core/comments'
 import { AddMarkStep, RemoveMarkStep } from '@tiptap/pm/transform'
 import { Plugin } from '@tiptap/pm/state'
 import { applyDocumentCommentAction, degradeDocumentCommentAnchor, hasRole, isDocumentPlaceAnchor, isDocumentTextAnchor, LOCAL_AUTHOR, randomUUID, validateDocumentCommentAnchor } from '@lincyaw/kernel'
-import type { DocumentComment, DocumentCommentAction, DocumentPlaceAnchor, DocumentThread, DocumentThreadAnchor, Member, RichTextNode, TeachingDocument } from '@lincyaw/kernel'
+import type { DocumentComment, DocumentCommentAction, DocumentPlaceAnchor, DocumentThread, DocumentThreadAnchor, Member, RichTextNode, PresmiumDocument } from '@lincyaw/kernel'
 import { createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
 import type { RichProjection } from './rich-text.ts'
 import type { Transaction } from '@tiptap/pm/state'
@@ -16,7 +16,7 @@ import type { CommentComposerTarget, CommentDraftTarget, NewCommentDraftTarget }
 import { nativeProductText, nativeTextPoint, nativeTextPosition, nativeTextPositionInDocument } from './selection.ts'
 
 type NewComment = { body: unknown, metadata?: unknown }
-type Threads = NonNullable<TeachingDocument['comments']>
+type Threads = NonNullable<PresmiumDocument['comments']>
 const date = (value: string) => new Date(value)
 const jsonObject = (value: unknown) => value && typeof value === 'object' && !Array.isArray(value) ? structuredClone(value) as DocumentThread['metadata'] : undefined
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
@@ -70,7 +70,7 @@ export class DocumentThreadStore extends ThreadStore {
   #threads = new Map<string, ThreadData>()
   #canonical: Threads = {}
   #version?: string
-  #document: TeachingDocument
+  #document: PresmiumDocument
   #synchronizing = false
   readonly #edits = new Map<string, CommentEditing>()
   #submitting?: CommentEditing
@@ -78,13 +78,13 @@ export class DocumentThreadStore extends ThreadStore {
   readonly #rich: RichProjection = createRichProjection()
   readonly #anchors = new Map<string, DocumentThread['anchor']>()
   readonly #initialBodies = new Map<string, { body: unknown, content: RichTextNode[] }>()
-  constructor(document: TeachingDocument, member?: Member, version?: string, identity?: string, drafts?: CommentDrafts) {
+  constructor(document: PresmiumDocument, member?: Member, version?: string, identity?: string, drafts?: CommentDrafts) {
     super(new DocumentThreadAuth(member)); this.member = member; this.#version = version; this.#document = document; this.#replace(document.comments ?? {})
     this.#ownsDrafts = !drafts
     if (drafts || identity && member?.id) { this.drafts = drafts ?? new CommentDrafts(identity!, member!.id) }
   }
   get version(): string | undefined { return this.#version }
-  get document(): TeachingDocument { return this.#document }
+  get document(): PresmiumDocument { return this.#document }
   threadSnapshot(threadId: string): DocumentThread | undefined { return this.#canonical[threadId] }
   anchorOf(threadId: string): DocumentThreadAnchor | undefined { const anchor = this.#anchors.get(threadId); return anchor ? structuredClone(anchor) : undefined }
   placeAnchorOf(threadId: string): DocumentPlaceAnchor | undefined { const anchor = this.#anchors.get(threadId); return anchor && isDocumentPlaceAnchor(anchor) ? structuredClone(anchor) : undefined }
@@ -277,7 +277,7 @@ export class DocumentThreadStore extends ThreadStore {
   }
 
   /** Source adoption is not another native edit; preserve selected thread and unchanged comment bodies. */
-  synchronize(document: TeachingDocument, version: string | undefined, editor: NativeDocumentEditor, transaction?: Transaction, acknowledged = false): void {
+  synchronize(document: PresmiumDocument, version: string | undefined, editor: NativeDocumentEditor, transaction?: Transaction, acknowledged = false): void {
     if (this.#synchronizing) return
     this.#document = document
     this.drafts?.synchronize(document, version, acknowledged)
@@ -314,7 +314,7 @@ export class DocumentThreadStore extends ThreadStore {
       transaction.setMeta('addToHistory', false)
     })
   }
-  snapshot(editor: NativeDocumentEditor, source: TeachingDocument = this.#document): Threads {
+  snapshot(editor: NativeDocumentEditor, source: PresmiumDocument = this.#document): Threads {
     const positions = editor.getExtension(CommentsExtension)!.store.state.threadPositions
     const result = Object.fromEntries([...this.#threads.values()].map(thread => {
       const stored = this.#anchors.get(thread.id)

@@ -25,7 +25,7 @@ const ASK: Chain = {
   ],
 }
 
-/** The film's sections; `parameters.shot` picks one. Each section of `lecture.json` is a bare cut to the next. */
+/** The film's sections; `parameters.shot` picks one. Each section of `index.pmd` is a bare cut to the next. */
 const SHOTS: Record<string, Shot | Chain> = { question, board, ask: ASK, brand }
 
 /**

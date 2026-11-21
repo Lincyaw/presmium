@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { TeachingDocument } from '@lincyaw/kernel'
+import type { PresmiumDocument } from '@lincyaw/kernel'
 import { PmButton, PmField, PmInput, PmSegmented } from './components.tsx'
 import type { Locale } from './messages.ts'
 import { stepNarrationStarts, stepTimingValue } from './step-production.ts'
@@ -85,7 +85,7 @@ function DurationField({ label, value, source, locale, readOnly, draft, onDraft,
 }
 
 export interface StepProductionEditorProps {
-  document: TeachingDocument
+  document: PresmiumDocument
   stepId: string
   locale: Locale
   readOnly?: boolean

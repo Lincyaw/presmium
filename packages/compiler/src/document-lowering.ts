@@ -1,5 +1,5 @@
-import { captionSourceFingerprint, documentColorValue, isRecord, voiceTarget } from '@lincyaw/kernel'
-import type { CodeNode, ComponentNode, DocumentBlock, Finding, InlineNode, IRBlock, IRSection, JsonObject, MdastNode, NarrationNode, RichTextNode, SourcePos, TeachingDocument, TextStyle, VisualState } from '@lincyaw/kernel'
+import { captionSourceFingerprint, DEFAULT_LANG, documentColorValue, isRecord, voiceTarget } from '@lincyaw/kernel'
+import type { CodeNode, ComponentNode, DocumentBlock, ReferenceNode, Finding, InlineNode, IRBlock, IRSection, JsonObject, MdastNode, NarrationNode, RichTextNode, SourcePos, PresmiumDocument, TextStyle, VisualState } from '@lincyaw/kernel'
 import { resolve } from 'node:path'
 
 const pointerKey = (id: string) => id.replaceAll('~', '~0').replaceAll('/', '~1')
@@ -7,7 +7,11 @@ const source = (entry: string, pointer: string): SourcePos => ({ file: entry, li
 const root = (children: MdastNode[]): MdastNode => ({ type: 'root', children })
 
 /** Lower the validated authoring graph directly; no Markdown is generated or parsed. */
-export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: string, report: (finding: Finding) => void, watch: (...files: string[]) => void): IRSection[] {
+/** `stored` is the document as saved, before inherited settings are filled in: caption timings were fingerprinted from it. */
+export function lowerDocument(doc: PresmiumDocument, entry: string, deckDir: string, report: (finding: Finding) => void, watch: (...files: string[]) => void, stored: PresmiumDocument = doc): IRSection[] {
+  const english = (doc.metadata.lang ?? DEFAULT_LANG).startsWith('en')
+  const inlineText = (nodes: InlineNode[]) => inlineNodes(nodes, doc)
+  const richText = (node: RichTextNode) => richNode(node, doc)
   const resolved = new Map<string, Map<string, VisualState>>()
   const visuals = (id: string): Map<string, VisualState> => {
     const known = resolved.get(id)
@@ -42,7 +46,7 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
         case 'text': return { type: 'markdown', mdast: root(block.content.map(richText)), ...block.reveal ? { reveal: 'items' } : {} }
         case 'image': {
           if (!block.assetId) {
-            const message = doc.metadata.lang.startsWith('en') ? 'No image selected.' : '未选择图片。'
+            const message = english ? 'No image selected.' : '未选择图片。'
             report({ checkId: 'presmium.document.image', severity: 'warning', message, source: where })
             return { type: 'markdown', mdast: root([{ type: 'paragraph', children: [{ type: 'text', value: message }] }]) }
           }
@@ -61,6 +65,12 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
           if (block.highlight) node.highlight = stepIds.map(id => block.highlight?.[id] ?? [])
           if (block.variants) node.variants = block.variants.map(variant => ({ label: variant.title, value: variant.value ?? '' }))
           return node
+        }
+        case 'embed': {
+          // Synced blocks are shown in place by a later version; until then the page says so where the block is.
+          const message = english ? `Synced block from ${block.source.document}: synced blocks are shown in a later version of Presmium.` : `来自 ${block.source.document} 的同步块：同步块将在后续版本中显示。`
+          report({ checkId: 'embed.unresolved', severity: 'warning', message, source: where })
+          return { type: 'markdown', mdast: root([{ type: 'paragraph', children: [{ type: 'text', value: message }], data: { hProperties: { className: ['pm-embed-placeholder'] } } }]) }
         }
         case 'container': return { type: 'component', plugin: 'presmium.layout', name: block.layout === 'columns' ? 'PmColumns' : block.layout === 'tabs' ? 'PmTabs' : 'PmStack', props: { ...block.properties }, children: block.children.map(child) }
         case 'component': {
@@ -105,7 +115,7 @@ export function lowerDocument(doc: TeachingDocument, entry: string, deckDir: str
       const target = advances ? undefined : voiceTarget({ id: sectionId, steps: section.stepOrder.length - 1, stepIds: section.stepOrder, blocks }, block.at)
       return [block.id, { ...target ? { target } : {}, ...advances && section.stepOrder.some(id => doc.production.stepOverrides[id]?.voiceSource) ? { issue: 'cue-step' } : voice?.type === 'tts' ? { voice: voice.voice } : { issue: voice?.type === 'recording' ? 'recording-unavailable' : 'voice-unset' } }]
     }))
-    return { id: sectionId, index: index + 1, title: section.title, depth: index === 0 && (section.level ?? 1) === 1 ? 0 : section.level ?? 1, source: source(entry, `/sections/${pointerKey(sectionId)}`), steps: Math.max(0, section.stepOrder.length - 1), stepIds: [...section.stepOrder], stepNarrations, captionSources: Object.fromEntries(section.stepOrder.map(id => [id, captionSourceFingerprint(doc, id)])), hints: section.layout.renderers ?? {}, ...section.audience ? { audience: section.audience } : {}, config: { ...section.config, 'presmium.lecture': { ...section.config?.['presmium.lecture'], resolvedNarrationVoices } }, blocks }
+    return { id: sectionId, index: index + 1, title: section.title, depth: index === 0 && (section.level ?? 1) === 1 ? 0 : section.level ?? 1, source: source(entry, `/sections/${pointerKey(sectionId)}`), steps: Math.max(0, section.stepOrder.length - 1), stepIds: [...section.stepOrder], stepNarrations, captionSources: Object.fromEntries(section.stepOrder.map(id => [id, captionSourceFingerprint(stored, id)])), hints: section.layout.renderers ?? {}, ...section.audience ? { audience: section.audience } : {}, config: { ...section.config, 'presmium.lecture': { ...section.config?.['presmium.lecture'], resolvedNarrationVoices } }, blocks }
   })
 }
 
@@ -117,7 +127,34 @@ function styled(node: MdastNode, style: TextStyle | undefined): MdastNode {
   return { ...node, data: { hProperties: properties } }
 }
 
-export function inlineText(nodes: InlineNode[]): MdastNode[] {
+/** A reference's text: its label, the current title of a target in this document, or the last known title. */
+function referenceText(node: ReferenceNode, doc: PresmiumDocument): string {
+  if (node.label) return node.label
+  if (node.target.document !== doc.id) return node.fallback
+  const section = node.target.section ?? (node.target.block ? Object.values(doc.sections).find(section => sectionOwns(doc, section.children, node.target.block!))?.id : undefined)
+  if (node.target.block === undefined && section !== undefined && Object.hasOwn(doc.sections, section)) return doc.sections[section]!.title
+  if (node.target.block === undefined && section === undefined) return doc.metadata.title
+  return node.fallback
+}
+
+function sectionOwns(doc: PresmiumDocument, children: string[], id: string): boolean {
+  return children.some((child) => {
+    if (child === id) return true
+    const block = doc.blocks[child]
+    return block !== undefined && (block.type === 'container' || block.type === 'component') && sectionOwns(doc, block.children ?? [], id)
+  })
+}
+
+/** Cross-document references are plain text until the site links documents; a page of this document is linked as before. */
+function referenceNode(node: ReferenceNode, doc: PresmiumDocument): MdastNode {
+  const text: MdastNode = { type: 'text', value: referenceText(node, doc) }
+  if (node.target.document !== doc.id) return text
+  const section = node.target.section ?? (node.target.block ? Object.values(doc.sections).find(section => sectionOwns(doc, section.children, node.target.block!))?.id : undefined)
+  return section !== undefined && Object.hasOwn(doc.sections, section) ? { type: 'link', url: `#${section}`, children: [text] } : text
+}
+
+export function inlineNodes(nodes: InlineNode[], doc: PresmiumDocument): MdastNode[] {
+  const inlineText = (nodes: InlineNode[]) => inlineNodes(nodes, doc)
   return nodes.map(node => {
     if (node.type === 'text') {
       let result: MdastNode = { type: node.marks?.some(mark => mark.type === 'code') ? 'inlineCode' : 'text', value: node.text }
@@ -131,11 +168,14 @@ export function inlineText(nodes: InlineNode[]): MdastNode[] {
     if (node.type === 'link') return { type: 'link', url: node.href, children: inlineText(node.children) }
     if (node.type === 'math') return { type: 'inlineMath', value: node.value }
     if (node.type === 'break') return { type: 'break' }
+    if (node.type === 'reference') return referenceNode(node, doc)
     return extensionNode(node.kind, node.schemaVersion, node.data, [{ type: 'text', value: node.fallback }])
   })
 }
 
-export function richText(node: RichTextNode): MdastNode {
+export function richNode(node: RichTextNode, doc: PresmiumDocument): MdastNode {
+  const inlineText = (nodes: InlineNode[]) => inlineNodes(nodes, doc)
+  const richText = (node: RichTextNode) => richNode(node, doc)
   let result: MdastNode
   switch (node.type) {
     case 'paragraph': result = styled({ type: 'paragraph', children: inlineText(node.children) }, node.style); break
@@ -156,7 +196,7 @@ function extensionNode(kind: string, schemaVersion: number, data: JsonObject, fa
   return { type: 'presmiumExtension', kind, schemaVersion, data: structuredClone(data), children: fallback }
 }
 
-function narrationText(node: NarrationNode, doc: TeachingDocument): MdastNode {
+function narrationText(node: NarrationNode, doc: PresmiumDocument): MdastNode {
   if (node.type === 'text') return { type: 'text', value: node.text }
   if (node.type === 'pronunciation') return { type: 'presmiumRole', plugin: 'presmium.lecture', name: 'say', options: { value: node.display, alias: node.spoken }, children: [{ type: 'text', value: node.display }] }
   const arg = node.action === 'pause' ? `${doc.production.cueTimings?.[node.id]?.pauseMs ?? node.parameters?.arg ?? 0}${doc.production.cueTimings?.[node.id] ? 'ms' : ''}` : node.parameters?.arg

@@ -113,7 +113,7 @@ function presentations(compilation: Compilation, base: string, prefix: string, l
   if (to.length === 0) return to
   if (to.includes('slides')) {
     const own = isRecord(renderers.slides) ? renderers.slides : {}
-    // Parameters the document sets for its slides are written in its lecture.json, not in the workspace's file.
+    // Parameters the document sets for its slides are written in its index.pmd, not in the workspace's file.
     const { siteFile, ...shared } = look
     renderers.slides = { ...shared, ...own.params === undefined && siteFile !== undefined ? { siteFile } : {}, ...own, base: `${prefix}${SLIDES_DIR}/`, appBase: base }
   }

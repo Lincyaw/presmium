@@ -1,6 +1,6 @@
 # 分镜：对抗式推测推理（Adversarial Speculative Reasoning Improves Long Horizon Agents，arXiv 2611.05345）
 
-每个参与制作的 agent 先读完整文件，再读 `presmium-animate` 的 `SKILL.md`、`story.md`、`lengths.md`、`libraries.md` 和 `presmium-author` 的 `writing.md`。只改分配给自己的一页场景文件；`lecture.json`、本文件、共享 `paper.ts` 与数据由协调者维护。
+每个参与制作的 agent 先读完整文件，再读 `presmium-animate` 的 `SKILL.md`、`story.md`、`lengths.md`、`libraries.md` 和 `presmium-author` 的 `writing.md`。只改分配给自己的一页场景文件；`index.pmd`、本文件、共享 `paper.ts` 与数据由协调者维护。
 
 ## A. 简报
 
@@ -138,7 +138,7 @@ ABT：speculative decoding 用 draft model 加速 target model，而且 exact ve
 
 | owner | 文件 |
 |---|---|
-| 协调者 | `lecture.json`、`storyboard.md`、`scenes/paper.ts`、`scenes/data/*`、最终集成 |
+| 协调者 | `index.pmd`、`storyboard.md`、`scenes/paper.ts`、`scenes/data/*`、最终集成 |
 | problem agent | `scenes/problem.ts` |
 | method agent | `scenes/method.ts` |
 | training agent | `scenes/training.ts` |

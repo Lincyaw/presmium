@@ -43,7 +43,7 @@ const messages = {
     ],
     faqTitle: '常见问题',
     faqs: [
-      ['首页必须是一份文稿吗？', '不必。首页可以用站点 JSON 组合内容区块，也可以用 HTML、CSS 与 JavaScript 自由编写；文稿仍写在 lecture.json 中。'],
+      ['首页必须是一份文稿吗？', '不必。首页可以用站点 JSON 组合内容区块，也可以用 HTML、CSS 与 JavaScript 自由编写；文稿仍写在 index.pmd 中。'],
       ['能把整个工作区发布为网站吗？', '可以。构建时会收集工作区内的全部文稿，为每份文稿生成独立地址与导航，并打包所用素材。'],
       ['网站能播放视频吗？', '可以。视频可以用浏览器自带的播放器播放并附加字幕，也可以像本页一样嵌入文稿的放映页直接运行。本页的影片就是一份 Presmium 文稿，可下载的视频文件也由它导出。'],
       ['已有内容，如何开始？', '先新建站点并选择主题，再把文稿放入。如需自行设计首页，将 site.landing 指向首页文件即可。'],
@@ -86,7 +86,7 @@ const messages = {
     ],
     faqTitle: 'A few things before you begin',
     faqs: [
-      ['Does the homepage have to be a document?', 'No. Compose sections in site JSON, or write it freely in HTML, CSS and JavaScript. Documents stay in lecture.json.'],
+      ['Does the homepage have to be a document?', 'No. Compose sections in site JSON, or write it freely in HTML, CSS and JavaScript. Documents stay in index.pmd.'],
       ['Can I turn a whole workspace into a website?', 'Yes. The build collects every document in the workspace, gives each its own address, generates the navigation and bundles the assets they use.'],
       ['Can the website play video?', 'Yes. Play videos with captions in the browser\'s own player, or, as here, embed a document\'s presentation and play it live. This film is itself a Presmium document, and the downloadable video was exported from it.'],
       ['I already have material. How do I start?', 'Create a site, pick a theme and add your documents. For your own homepage, point site.landing at your homepage file.'],
@@ -187,7 +187,7 @@ function home() {
   return `
       <section class="hero wrap">
         <div class="hero-copy"><p class="eyebrow">${t.eyebrow}</p><h1>${t.hero.replace('\n','<br>')}</h1><p class="lead">${t.lead.replace('\n','<br>')}</p><div class="hero-actions">${button('#film',t.watch,true)}${button(docUrl,t.source)}</div><p class="hero-note">${t.sourceLabel}</p></div>
-        <div class="hero-art" role="img" aria-label="${t.sourceLabel}"><div class="document-card"><div class="window-bar"><span>lecture.json</span>${icon('document')}</div><span class="tiny-label">PRESMIUM / 001</span><h2>${t.file}</h2><p>${t.sourceNote}</p><div class="content-lines"><i></i><i></i></div>${chart()}<div class="document-bottom"><span>${icon('check')} ${t.ready}</span><span>01 / 03</span></div></div><div class="output-row">${t.formats.map((f,i)=>`<div class="output-card">${icon((['website','slides','video'] as const)[i]!)}<span>${f}</span><b>0${i+1}</b></div>`).join('')}</div><div class="art-caption"><span class="status-dot"></span>${t.sourceLabel}</div></div>
+        <div class="hero-art" role="img" aria-label="${t.sourceLabel}"><div class="document-card"><div class="window-bar"><span>index.pmd</span>${icon('document')}</div><span class="tiny-label">PRESMIUM / 001</span><h2>${t.file}</h2><p>${t.sourceNote}</p><div class="content-lines"><i></i><i></i></div>${chart()}<div class="document-bottom"><span>${icon('check')} ${t.ready}</span><span>01 / 03</span></div></div><div class="output-row">${t.formats.map((f,i)=>`<div class="output-card">${icon((['website','slides','video'] as const)[i]!)}<span>${f}</span><b>0${i+1}</b></div>`).join('')}</div><div class="art-caption"><span class="status-dot"></span>${t.sourceLabel}</div></div>
       </section>
       <section class="features wrap" id="features"><div class="section-heading"><p class="eyebrow">PRESMIUM / ${t.substatement}</p><h2>${t.statement}</h2></div><div class="feature-grid">${t.features.map(([n,title,body,i])=>`<article><div class="feature-top"><span>${n}</span>${icon(i as Parameters<typeof iconMarkup>[0])}</div><h3>${title}</h3><p>${body}</p></article>`).join('')}</div></section>
       <section class="film-section wrap" id="film"><div class="section-heading film-heading"><div><p class="eyebrow">${t.filmTag}</p><h2>${t.filmTitle}</h2></div><p>${t.filmLead}</p></div><div class="player-frame" id="film-frame"><button class="film-poster" id="film-play" aria-label="${t.filmPlay}"><img src="${base}presmium-60s-poster.jpg" alt=""><span class="film-play">${icon('play')}</span></button></div><div class="film-meta"><span>${t.filmHint}</span><div><a class="pm-ui-link" href="${base}presmium-60s.webm" download>${t.filmDownload}${icon('download')}</a><a class="pm-ui-link" href="${docUrl}">${t.filmSource}${icon('chevron-right')}</a><a class="pm-ui-link" href="${promoUrl}">${t.filmScript}${icon('chevron-right')}</a></div></div><div class="chapter-list">${t.chapters.map((c,i)=>`<button class="pm-ui-button pm-ui-button--ghost" data-section="${CHAPTERS[i]![0]}" data-step="${CHAPTERS[i]![1]}"><span>${CHAPTERS[i]![2]}</span>${c}</button>`).join('')}</div></section>

@@ -5,7 +5,7 @@ import { documentBlockSection } from './document-places.ts'
 import { documentParameterAccess } from './parameters.ts'
 import { DOCUMENT_PARAMETER_MAX_CHANGES, DOCUMENT_PARAMETER_MAX_PATH_DEPTH } from './contracts/authoring-actions.ts'
 import type { DocumentComponentAction, DocumentComponentEffect, DocumentParameterChange } from './contracts/authoring-actions.ts'
-import type { ComponentBlock, Definition, JsonObject, JsonSchema, JsonValue, TeachingDocument, VisualState } from './contracts/document.ts'
+import type { ComponentBlock, Definition, JsonObject, JsonSchema, JsonValue, PresmiumDocument, VisualState } from './contracts/document.ts'
 
 const { applyPatch, compare } = jsonPatch
 
@@ -19,19 +19,19 @@ const own = (value: object, key: string) => Object.hasOwn(value, key)
 const fail = (status: number, code: string, detail?: Record<string, unknown>): never => { throw new DocumentComponentError(status, code, detail) }
 const pointer = (path: readonly string[]) => '/' + path.map(key => key.replaceAll('~', '~0').replaceAll('/', '~1')).join('/')
 const unpointer = (path: string) => path.slice(1).split('/').map(key => key.replaceAll('~1', '/').replaceAll('~0', '~'))
-function component(document: TeachingDocument, id: string): ComponentBlock {
+function component(document: PresmiumDocument, id: string): ComponentBlock {
   const block = own(document.blocks, id) ? document.blocks[id] : undefined
   if (!block) return fail(404, 'component-block-missing', { blockId: id })
   if (block.type !== 'component') return fail(422, 'component-block-type', { blockId: id })
   return block
 }
-export function documentComponentSection(document: TeachingDocument, blockId: string): string {
+export function documentComponentSection(document: PresmiumDocument, blockId: string): string {
   component(document, blockId)
   const section = documentBlockSection(document, blockId)
   if (!section) return fail(422, 'component-block-owner-missing', { blockId })
   return section
 }
-function stepOf(document: TeachingDocument, stepId: string, sectionId: string) {
+function stepOf(document: PresmiumDocument, stepId: string, sectionId: string) {
   const step = own(document.steps, stepId) ? document.steps[stepId] : undefined
   if (!step) return fail(404, 'component-step-missing', { stepId })
   if (step.sectionId !== sectionId) return fail(422, 'component-step-owner', { stepId, sectionId })
@@ -39,7 +39,7 @@ function stepOf(document: TeachingDocument, stepId: string, sectionId: string) {
 }
 
 /** Resolve the canonical shallow overlays, including all stable-step ancestors; no runtime snapshot is read. */
-export function effectiveComponentParameters(document: TeachingDocument, blockId: string, stepId?: string): { parameters: JsonObject, visual?: VisualState, ownParameters?: JsonObject } {
+export function effectiveComponentParameters(document: PresmiumDocument, blockId: string, stepId?: string): { parameters: JsonObject, visual?: VisualState, ownParameters?: JsonObject } {
   const block = component(document, blockId)
   if (stepId === undefined) return { parameters: structuredClone(block.parameters) }
   const sectionId = documentComponentSection(document, blockId), target = stepOf(document, stepId, sectionId), chain: string[] = [], seen = new Set<string>()
@@ -194,7 +194,7 @@ export function createDocumentParameterChanges(before: JsonObject, after: JsonOb
 }
 
 /** One source-bound component edit. Definition implementations and every unrelated authored field stay shared. */
-export function applyDocumentComponentAction(source: TeachingDocument, action: DocumentComponentAction): { content: TeachingDocument, effect: DocumentComponentEffect } {
+export function applyDocumentComponentAction(source: PresmiumDocument, action: DocumentComponentAction): { content: PresmiumDocument, effect: DocumentComponentEffect } {
   const original = component(source, action.blockId), sectionId = documentComponentSection(source, original.id), content = structuredClone(source), block = component(content, original.id)
   const stepId = action.type === 'component.step-parameters.patch' || action.type === 'component.step-parameters.reset' ? action.stepId : undefined
   if (action.type === 'component.parameters.patch') block.parameters = patchParameters(block.parameters, action.changes)
