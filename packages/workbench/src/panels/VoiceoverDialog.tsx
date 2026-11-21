@@ -188,7 +188,7 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
   return <PmDialog open label={t.generation} closeLabel={closeLabel} onClose={close} footer={<>
     <PmButton small onClick={close}>{closeLabel}</PmButton>
     <PmButton small loading={loading} disabled={submitting} onClick={() => setAttempt(value => value + 1)}>{changed ? t.recheck : t.refresh}</PmButton>
-    <PmButton small variant="accent" loading={submitting} disabled={loading || changed || readOnly || hasActive || !selection?.missing || !selection.providers.length || !status?.capability.available} onClick={() => void start()}>{t.confirmGenerate}</PmButton>
+    <PmButton small variant="primary" loading={submitting} disabled={loading || changed || readOnly || hasActive || !selection?.missing || !selection.providers.length || !status?.capability.available} onClick={() => void start()}>{t.confirmGenerate}</PmButton>
   </>}>
     <div className="pmw-operation">
     {(source?.content || checked?.document) && <VoiceScopeField document={checked?.document ?? source!.content!} stepId={stepId} value={scope} disabled={loading || submitting || readOnly} onChange={chooseScope} />}

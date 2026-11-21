@@ -201,7 +201,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
       }}
       onCompositionStart={() => current.current.onComposition?.(true)}
       onCompositionEnd={() => queueMicrotask(() => current.current.onComposition?.(false))}>
-      {fileErrors?.identity === props.identity && <PmNotice tone="danger"><div className="pm-document-editor__file-errors"><ul>{fileErrors.failures.map((failure, index) => <li key={index}>{failure.name} · {fileMessages[failure.kind]}</li>)}</ul><PmIconButton small icon="close" label={fileMessages.dismiss} onClick={() => setFileErrors(undefined)} /></div></PmNotice>}
+      {fileErrors?.identity === props.identity && <PmNotice tone="danger" action={<PmIconButton small icon="close" label={fileMessages.dismiss} onClick={() => setFileErrors(undefined)} />}><ul className="pm-document-editor__file-errors">{fileErrors.failures.map((failure, index) => <li key={index}>{failure.name} · {fileMessages[failure.kind]}</li>)}</ul></PmNotice>}
       <BlockNoteView editor={editor} editable={!props.readOnly} theme={DOCUMENT_EDITOR_THEME} formattingToolbar={false} slashMenu={false} linkToolbar={false} sideMenu={false} tableHandles={false} renderEditor={false} comments={false}
         onChange={() => current.current.onChange(editor.document, editor)}
         onSelectionChange={() => current.current.onSelection?.(documentSelection(editor))}>

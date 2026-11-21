@@ -381,15 +381,13 @@ function DocumentToolbar({ narrow, presentButton, framed, onBack, actions, aside
       </>}
       <SaveStatus />
       <span className="pmw-spacer" />
-      {!narrow && <>
-        {capabilities?.production !== false && <PmToolbarButton asChild><PmButton small icon="arrange" loading={changingView} disabled={busy || !hasStep} onClick={onProduction}>{t.video}</PmButton></PmToolbarButton>}
-        {capabilities?.narration !== false && <PmToolbarButton asChild><PmIconButton small icon="captions" label={t.documentNarration} hint={t.documentNarrationHint} aria-pressed={aside === 'narration'} disabled={!hasStep} onClick={() => onAside('narration')} /></PmToolbarButton>}
-      </>}
-      {!compactCommands && <PmToolbarButton asChild><PmIconButton small icon="comment" label={commentsLabel} aria-pressed={aside === 'comments'} onClick={() => onAside('comments')} /></PmToolbarButton>}
-      {!narrow && <span className="pmw-toolbar__history"><PmToolbarButton asChild><PmIconButton small icon="versions" label={historyLabel} aria-pressed={aside === 'history'} onClick={() => onAside('history')} /></PmToolbarButton>{(draftCount > 0 || draftReadFailure) && <PmBadge tone={draftReadFailure ? 'warn' : 'neutral'}>{draftCount || <PmIcon name="warning" />}</PmBadge>}</span>}
-      <span className="pmw-toolbar__divider" aria-hidden="true" />
       <PmToolbarButton asChild><PmIconButton small icon="eye" label={t.readDocument} disabled={blocked || changingView} onClick={onRead} /></PmToolbarButton>
       <PmToolbarButton asChild><PmIconButton ref={presentButton} small icon="slides" label={t.present} hint={preparing || changingView ? t.presentationPreparing : timingDrafts ? t.timingDraftPending : blocked ? t.presentationPending : t.presentHint} loading={preparing || changingView} disabled={blocked || changingView} onClick={onPresent} /></PmToolbarButton>
+      {!narrow && capabilities?.production !== false && <PmToolbarButton asChild><PmIconButton small icon="video" label={p.title} loading={changingView} disabled={busy || !hasStep} onClick={onProduction} /></PmToolbarButton>}
+      <span className="pmw-toolbar__divider" aria-hidden="true" />
+      {!narrow && capabilities?.narration !== false && <PmToolbarButton asChild><PmIconButton small icon="captions" label={t.documentNarration} hint={t.documentNarrationHint} aria-pressed={aside === 'narration'} disabled={!hasStep} onClick={() => onAside('narration')} /></PmToolbarButton>}
+      {!compactCommands && <PmToolbarButton asChild><PmIconButton small icon="comment" label={commentsLabel} aria-pressed={aside === 'comments'} onClick={() => onAside('comments')} /></PmToolbarButton>}
+      {!narrow && <span className="pmw-toolbar__history"><PmToolbarButton asChild><PmIconButton small icon="versions" label={historyLabel} aria-pressed={aside === 'history'} onClick={() => onAside('history')} /></PmToolbarButton>{(draftCount > 0 || draftReadFailure) && <PmBadge tone={draftReadFailure ? 'warn' : 'neutral'}>{draftCount || <PmIcon name="warning" />}</PmBadge>}</span>}
       {capabilities?.export !== false && <PmToolbarButton asChild><PmIconButton small icon="export" label={t.exportPane} aria-pressed={aside === 'export'} onClick={() => onAside('export')} /></PmToolbarButton>}
       {actions}
       {narrow && <PmMenu toolbarItem label={t.moreCommands} items={[
@@ -398,7 +396,7 @@ function DocumentToolbar({ narrow, presentButton, framed, onBack, actions, aside
           { id: 'redo', label: t.redo, icon: 'redo' as const, shortcut: SHORTCUTS.redo, disabled: redoDisabled },
           { id: 'comments', label: commentsLabel, icon: 'comment' as const, checked: aside === 'comments', separator: true },
         ] : [],
-        ...capabilities?.production !== false ? [{ id: 'production', label: p.title, icon: 'arrange' as const, disabled: busy || !hasStep || changingView }] : [],
+        ...capabilities?.production !== false ? [{ id: 'production', label: p.title, icon: 'video' as const, disabled: busy || !hasStep || changingView }] : [],
         ...capabilities?.narration !== false ? [{ id: 'narration', label: t.documentNarration, icon: 'captions' as const, disabled: !hasStep }] : [],
         { id: 'history', label: historyLabel, icon: 'versions' },
       ]} onSelect={id => { if (id === 'undo') void workbench.undo(); else if (id === 'redo') void workbench.redo(); else if (id === 'production') onProduction(); else onAside(id as DocumentAside) }} />}
@@ -442,12 +440,11 @@ function DocumentNotices() {
   return (
     <div className="pmw-notices">
       {review && !review.running && review.changes.length > 0 && (
-        <PmNotice tone="accent">
-          <span>{t.agentWaiting(review.changes.length)}</span>
-          <span className="pmw-notice__actions">
-            <PmButton small onClick={() => void workbench.rejectReview()}>{t.reject}</PmButton>
-            <PmButton small variant="primary" onClick={() => void workbench.acceptReview()}>{t.accept}</PmButton>
-          </span>
+        <PmNotice tone="accent" action={<>
+          <PmButton small onClick={() => void workbench.rejectReview()}>{t.reject}</PmButton>
+          <PmButton small variant="primary" onClick={() => void workbench.acceptReview()}>{t.accept}</PmButton>
+        </>}>
+          {t.agentWaiting(review.changes.length)}
         </PmNotice>
       )}
       {save.kind === 'locked' && <PmNotice tone="warn">{t.saveLocked}</PmNotice>}
@@ -475,13 +472,13 @@ function ProblemsNotice() {
   const problems = (snapshot?.diagnostics ?? []).filter(diagnostic => diagnostic.severity === 'error' && !diagnostic.checkId.startsWith('presmium.workbench.'))
   if (unavailable) return <PmNotice tone="warn"><span>{t.diagnosticsUnavailable}</span><PmButton small onClick={() => workbench.retryDiagnostics()}>{t.retry}</PmButton></PmNotice>
   if (problems.length === 0) return repairFailure ? <PmNotice tone="danger">{t.fixFailed(failureReason(t, repairFailure))}</PmNotice> : null
-  const repair = canRepair && <PmButton small variant="accent" icon="sparkle" disabled={repairing} onClick={() => void workbench.requestRepairDiagnostics()}>{repairing ? t.fixing : t.fixWithAi}</PmButton>
+  const repair = canRepair && <PmButton small variant="primary" icon="sparkle" disabled={repairing} onClick={() => void workbench.requestRepairDiagnostics()}>{repairing ? t.fixing : t.fixWithAi}</PmButton>
   return (
     <PmNotice tone="warn">
       <div className="pmw-problems">
         <div className="pmw-problems__summary">
           <span>{t.problems(problems.length)}</span>
-          <PmButton small variant="ghost" onClick={() => setOpen(true)}>{t.details}</PmButton>
+          <PmButton small variant="text" onClick={() => setOpen(true)}>{t.details}</PmButton>
           {repair}
         </div>
         {repairFailure && <p className="pmw-problems__failure">{t.fixFailed(failureReason(t, repairFailure))}</p>}

@@ -224,19 +224,6 @@
   padding: var(--pm-space-2) var(--pm-space-3) 0;
 }
 
-.pmw-notices > .pm-ui-notice {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--pm-space-2);
-}
-
-.pmw-notice__actions {
-  display: inline-flex;
-  gap: var(--pm-space-2);
-  margin-left: auto;
-}
-
 .pmw-problems {
   display: flex;
   flex: 1;

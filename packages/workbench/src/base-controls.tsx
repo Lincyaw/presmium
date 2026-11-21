@@ -1,7 +1,7 @@
 import { ICONS } from '@lincyaw/design'
 import type { IconName } from '@lincyaw/design'
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { createElement, forwardRef } from 'react'
+import { createElement, forwardRef, useEffect, useRef, useState } from 'react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
 const cls = (...names: (string | false | undefined | null)[]) => names.filter(Boolean).join(' ')
@@ -14,7 +14,7 @@ export function PmIcon({ name, size: _size, strokeWidth = 1.7 }: { name: IconNam
   )
 }
 
-export type ButtonVariant = 'default' | 'primary' | 'accent' | 'ghost' | 'danger'
+export type ButtonVariant = 'default' | 'primary' | 'ghost' | 'text' | 'danger'
 
 export type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> & { type?: 'button' | 'submit' | 'reset' }
 export type ControlDensity = 'compact' | 'regular' | 'touch'
@@ -28,11 +28,32 @@ export const PmButton = forwardRef<HTMLButtonElement, ButtonProps & ControlProps
   )
 })
 
-/** Radix opens on keyboard focus immediately; pointer hover uses the I11 delay. */
+const TOOLTIP_DELAY = 500
+const TOOLTIP_SKIP = 300
+let tooltipClosedAt = 0
+
+/** A pointer shows the tooltip after 500 ms, keyboard focus at once; within 300 ms of one closing, the next opens at
+ * once, so moving along a toolbar does not wait again. The timing is shared by every tooltip on the page. */
 export function PmTooltip({ label, shortcut, children }: { label: string, shortcut?: string, children: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  const shown = useRef(false)
+  const pointer = useRef(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useEffect(() => () => clearTimeout(timer.current), [])
+  const change = (next: boolean) => {
+    clearTimeout(timer.current)
+    if (!next) {
+      if (shown.current) tooltipClosedAt = Date.now()
+      shown.current = false
+      setOpen(false)
+      return
+    }
+    const wait = pointer.current && Date.now() - tooltipClosedAt > TOOLTIP_SKIP ? TOOLTIP_DELAY : 0
+    timer.current = setTimeout(() => { shown.current = true; setOpen(true) }, wait)
+  }
   return (
-    <Tooltip.Provider delayDuration={300} skipDelayDuration={0}>
-      <Tooltip.Root><Tooltip.Trigger asChild>{children}</Tooltip.Trigger><Tooltip.Portal><div className="pm-ui-tooltip-layer"><Tooltip.Content className="pm-ui-tooltip pm-ui" side="bottom" sideOffset={6} collisionPadding={8}>
+    <Tooltip.Provider delayDuration={0} skipDelayDuration={0}>
+      <Tooltip.Root open={open} onOpenChange={change}><Tooltip.Trigger asChild onPointerEnter={() => { pointer.current = true }} onPointerLeave={() => { pointer.current = false }}>{children}</Tooltip.Trigger><Tooltip.Portal><div className="pm-ui-tooltip-layer"><Tooltip.Content className="pm-ui-tooltip pm-ui" side="bottom" sideOffset={6} collisionPadding={8}>
         {label}{shortcut && <kbd className="pm-ui-shortcut">{shortcut}</kbd>}
       </Tooltip.Content></div></Tooltip.Portal></Tooltip.Root>
     </Tooltip.Provider>

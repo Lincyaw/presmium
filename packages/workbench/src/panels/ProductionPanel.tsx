@@ -196,12 +196,12 @@ export function ProductionPanel({ onClose, closing, active = true, actions }: { 
           </div>
         </PmPopover>}
         <PmIconButton small icon="refresh" label={p.prepare} loading={preparing} disabled={blocked || closing} onClick={() => void compile()} />
-        {wide ? <PmButton small variant="accent" icon="export" disabled={closing} onClick={openOutputs}>{p.outputs}</PmButton>
+        {wide ? <PmButton small variant="primary" icon="export" disabled={closing} onClick={openOutputs}>{p.outputs}</PmButton>
           : <PmIconButton small icon="export" label={p.outputs} disabled={closing} onClick={openOutputs} />}
       </>} />
-    {!declared && <PmNotice tone="accent"><span>{p.enableHint}</span><PmButton small loading={enabling} disabled={blocked || closing} onClick={() => void enable()}>{p.enable}</PmButton></PmNotice>}
+    {!declared && <PmNotice tone="accent" action={<PmButton small loading={enabling} disabled={blocked || closing} onClick={() => void enable()}>{p.enable}</PmButton>}>{p.enableHint}</PmNotice>}
     {!wide && <PmSegmented label={p.title} value={tab} options={[{ value: 'library', label: p.library }, { value: 'preview', label: p.preview }, { value: 'properties', label: p.properties }, { value: 'timeline', label: p.timeline }]} onChange={setTab} />}
-    {voicePlayback.failure && <PmNotice tone="danger">{voicePlayback.failure}{workbench.client.openSpeechSettings && <PmButton small variant="ghost" icon="sliders" onClick={() => { voicePlayback.stop(); workbench.client.openSpeechSettings?.() }}>{p.serviceSettings}</PmButton>}</PmNotice>}
+    {voicePlayback.failure && <PmNotice tone="danger" action={workbench.client.openSpeechSettings && <PmButton small variant="ghost" icon="sliders" onClick={() => { voicePlayback.stop(); workbench.client.openSpeechSettings?.() }}>{p.serviceSettings}</PmButton>}>{voicePlayback.failure}</PmNotice>}
     {voicePlayback.busy && <div role="status"><PmNotice>{voicePlayback.progress ? p.generatingProgress(voicePlayback.progress.completed, voicePlayback.progress.total) : p.generatingPlayback}</PmNotice></div>}
     <PmSplitGroup orientation="vertical" disabled={!wide} className="pmw-production__workarea">
       <PmSplitPanel id="production-main" defaultSize="71%" minSize={wide ? '32%' : 0} className="pmw-production__main" background={backgroundBody}>

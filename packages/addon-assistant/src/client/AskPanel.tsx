@@ -111,7 +111,7 @@ export default function AskPanel(props: {
                 <p className="pm-assistant__selection">
                   <span>{t.panel.selection}</span>
                   <code className="pm-ui-code">{excerpt}</code>
-                  <PmButton variant="ghost" small onClick={drop}>
+                  <PmButton variant="text" small onClick={drop}>
                     {t.panel.dropSelection}
                   </PmButton>
                 </p>

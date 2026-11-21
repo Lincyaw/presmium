@@ -29,7 +29,8 @@
 - 组件与界面的 CSS 不写原始颜色（十六进制、`rgb()` 等）、px、ms 与 s。px 只出现在 `@media` 断点中。没有合适的令牌时先在 `tokens.css` 加一个。
 - 颜色混合、控件与图标尺寸、栏高与窗格宽、圆角、阴影、时长都引用令牌。React 组件中图标与标志的大小由 CSS 尺寸令牌决定，组件里不写数字。
 - 亮色在 `:root`，暗色在 `:root.dark` 只覆盖颜色与阴影；几何、字体层级与热区不变。业务组件不提供自己的暗色取值。
-- 悬停、按下、禁用透明度取语义令牌（`--pm-color-primary-hover`、`--pm-color-primary-pressed`、`--pm-color-accent-hover`、`--pm-color-accent-pressed`、`--pm-opacity-disabled`），页面不另写比例。
+- 配色：页面与正文是白色，侧栏、停靠区用浅冷灰 `chrome`，舞台与放映的底是 `canvas`；唯一的强调色是蓝色 `accent`，只表示主要操作、选中、链接与焦点；`ok`、`warn`、`danger` 各有自己的 `*-soft` 底色。Tooltip 用反色 `inverse`、`on-inverse`、`on-inverse-muted`（墨色与页面色互换）。
+- 悬停、按下、禁用透明度取语义令牌（`--pm-color-hover`、`--pm-color-pressed`、`--pm-color-accent-hover`、`--pm-color-accent-pressed`、`--pm-color-danger-hover`、`--pm-color-danger-pressed`、`--pm-opacity-disabled`），页面不另写比例。实心控件悬停与按下向墨色靠一步、两步：亮色下变深，暗色下变浅。
 - 嵌套形状间隙小于 2rem 时内层圆角等于外层减间隙，差值不大于 2px 时内层保留自己的圆角。成对取值写成令牌（`--pm-radius-control-inset`、`--pm-radius-menu-item`）或 `calc()`。
 - 分类色 `--pm-color-category-1` 到 `--pm-color-category-8`（各有填充 `--pm-color-category-<n>-soft`）用于图示与动画，表示身份（角色、系列、类别），不表示状态；一份作品中一种颜色只代表一样东西，状态仍用 `ok`、`warn`、`danger`，强调仍用 `accent`。按编号顺序取用：相邻两色对色觉异常的读者也分得开，前四色两两分得开，超过四样时另加文字标签。分类色在 `bg`、`surface` 上作线与文字都不低于 4.5:1；在自己的填充上文字用 `ink`，分类色只画边框。
 
@@ -37,8 +38,8 @@
 
 | 密度 | 用途 | 单行最小高度 | 文字 |
 |---|---|---|---|
-| compact | 桌面属性栏、工具栏、播放与时间参数、互斥选项 | `--pm-size-tool`（30 px） | `--pm-text-sm`（13 px） |
-| regular | 创建、导出、确认等对话框 | `--pm-control-height`（36 px） | `--pm-text-sm`／`--pm-text-md` |
+| compact | 桌面属性栏、工具栏、播放与时间参数、互斥选项 | `--pm-size-tool`（28 px） | `--pm-text-sm`（13 px） |
+| regular | 创建、导出、确认等对话框 | `--pm-control-height`（32 px） | `--pm-text-md`（14 px） |
 | touch | 粗指针设备上的以上两类 | 热区 `--pm-control-hit-area`（44 px） | 输入 `--pm-text-lg`（16 px） |
 
 粗指针设备由公共媒体查询补足热区与输入字号。内容换行或字号放大时控件增高，不裁切文字。
@@ -47,7 +48,7 @@
 
 控件形状：容器写 `data-shape="pill"` 时，其中按钮、图标按钮、输入与搜索框、分段控件的圆角取 `--pm-radius-pill`，密度不变。发布的网站在页头工具、首页与缺页页面使用胶囊形；工作台与文稿正文保持默认圆角。
 
-网站外观：带 `data-pm-site-theme` 的网站页面在 `tokens.css` 中把中性色换成冷灰（`bg`、`surface`、`sunk`、`chrome`、`ink`、`muted`、`line` 等，亮暗两套），界面字体用 `--pm-font-site`（Hanken Grotesk 加中文系统黑体），页头用 `--pm-site-glass` 半透明并模糊背后的内容，页面顶部的光晕取 `--pm-color-site-ambient-1` 到 `-3`。工作台与它预览中的文稿没有这些属性，保持暖色的阅读界面。
+网站外观：带 `data-pm-site-theme` 的网站页面在 `tokens.css` 中把中性色换成冷灰（`bg`、`surface`、`sunk`、`chrome`、`ink`、`muted`、`line` 等，亮暗两套），界面字体用 `--pm-font-site`（Hanken Grotesk 加中文系统黑体），页头用 `--pm-site-glass` 半透明并模糊背后的内容，页面顶部的光晕取 `--pm-color-site-ambient-1` 到 `-3`。工作台与它预览中的文稿没有这些属性，使用默认的白色界面。
 
 常用取值：
 
@@ -77,7 +78,9 @@
 | 全局应用栏 | `pm-ui-appbar` | `--pm-appbar-height`，品牌与位置在左，操作反馈与全局操作在右；常规栏高 40 px，粗指针取触屏栏高 |
 | 工作区工具栏 | `PmToolbar variant="workspace"`、`PmPanelHeader variant="workspace"` | 同一个 `--pm-toolbar-height`（40 px），border-box、横向 `--pm-space-3`、纵向零内边距；文稿和视频制作的左右边缘与控件中心线一致 |
 | 停靠窗格标题栏 | `PmPanelHeader variant="dock"`（默认） | `--pm-pane-header-height`（36 px），同样的横向内边距；标题、说明、操作三个槽位，说明不足时省略并保留完整可访问名称 |
-| 内嵌控制条 | `PmToolbar variant="inline"`（默认） | `--pm-size-tool`（30 px）起，不加工作区底色、分隔线或内边距；用于步骤、播放和时间线内部控件 |
+| 内嵌控制条 | `PmToolbar variant="inline"`（默认） | `--pm-size-tool`（28 px）起，不加工作区底色、分隔线或内边距；用于步骤、播放和时间线内部控件 |
+
+文稿工具栏右侧先是切换视图的入口：阅读、放映（`slides`）、视频制作（`video`），都是 ghost 图标按钮，名称（有快捷键时连同快捷键）在 Tooltip 中；随后一条分隔线，再是打开停靠窗格的开关（讲授、批注、版本历史、导出，以及外壳追加的操作），开启时是 `aria-pressed`。窄编辑区把视频制作、讲授与历史收入“更多”菜单。视频制作的标题栏只有“导出”一个带文字的主要按钮，其余操作是图标按钮。
 
 栏内标题与控件统一用界面字体、`--pm-text-sm`、`--pm-leading-ui`；标题用 `--pm-weight-semibold`，辅助说明用 `--pm-text-xs` 与 `muted`。品牌、正文与论文图表保持各自的语义字体层级。图标按公共尺寸令牌居中，不用页面自己的字号调整图标。长标题让出操作区并截断；窄编辑区把次要命令收入菜单，避免用横向滚动掩盖布局错误。
 
@@ -95,9 +98,9 @@ macOS 桌面端将原生标题栏与全局应用栏合并为一行，隐藏重�
 
 | 控件 | 入口 | 要点 |
 |---|---|---|
-| Button | `PmButton`（workbench、host），`pm-ui-button` | 变体 `default`、`primary`、`accent`、`ghost`、`danger`；`density`、`loading` 带 `aria-busy` 与重复提交拦截 |
+| Button | `PmButton`（workbench、host），`pm-ui-button` | 变体 `primary`（一个区域只有一个，实心强调色）、`default`（其余操作，白底细边框）、`ghost`（工具栏里带图标的操作，不用于只有文字的按钮）、`text`（没有图标的低频操作，强调色文字，悬停出现浅强调底）、`danger`（只用于确认不可撤消的删除，实心危险色）；`aria-pressed` 是开关的开启态；悬停与按下只改底色；`density`、`loading` 带 `aria-busy` 与重复提交拦截 |
 | IconButton | `PmIconButton`（workbench、host） | 必有 `label`；`hint`、`shortcut` 经 Tooltip 显示；host 的 `variant="overlay"` 是盖在媒体上的大圆形控件（如浏览器拦下自动播放时的播放），尺寸 `--pm-size-overlay-control`、`--pm-size-overlay-icon` |
-| Tooltip | `PmTooltip`（Radix） | 悬停延迟后显示，键盘聚焦立即显示；不接收指针，不承载唯一信息 |
+| Tooltip | `PmTooltip`（Radix） | 反色底；指针悬停 500 ms 后显示，键盘聚焦立即显示；一个提示关闭后 300 ms 内移到相邻控件立即显示（全页共用计时）；名称加弱化的快捷键；不接收指针，不承载唯一信息 |
 | Toolbar | `PmToolbar`、`PmToolbarButton`（workbench），`pm-ui-toolbar` | 方向键在组内移动 |
 | Field、Input、Textarea、Select | workbench `PmField`、`PmInput`、`PmTextarea`、`PmSelect`；host 用 `PmField` 加 `pm-ui-input` 等类 | 标签、说明、错误、单位同属一个 Field；`PmInput` 有前图标、后缀、`width="number"`／`"time"`；`PmTextarea` 有 `autoGrow` |
 | ChoiceSelect | `PmChoiceSelect`（workbench） | 带说明的单选下拉 |
@@ -111,7 +114,7 @@ macOS 桌面端将原生标题栏与全局应用栏合并为一行，隐藏重�
 | Menu | `PmMenu`（Radix Dropdown Menu） | 图标、危险项、禁用项、快捷键、分隔、勾选；workbench 的 `description` 与 `toolbarItem` |
 | Badge、Card | `PmBadge`（`tone`）、`PmCard`（`default`、`interactive`、`dashed`） | |
 | 操作反馈 | `PmAgentActivity`、`data-pm-agent-target` | 真实操作状态、紧凑提示、目标装饰边框；动态效果遵守第 4.6 节，不承载写入或导航权限 |
-| Notice、Empty、Skeleton | `PmNotice`、`PmEmpty`、`PmSkeleton`（`document`、`list`、`preview`） | 见第 4.5 节 |
+| Notice、Empty、Skeleton | `PmNotice`（workbench、host；`tone`：`neutral`、`accent`、`ok`、`warn`、`danger`；`action`）、`PmEmpty`、`PmSkeleton`（`document`、`list`、`preview`） | 见第 4.5 节 |
 | Range | `PmRange`（workbench，原生 range） | 拖动先本地预览，释放时提交一次；`Esc`、失焦丢弃手势；旁边读出数值时放在 `.pm-ui-range-row` 中（数值用 `<output>`，后面可以再跟按钮，放不下时换行），如字幕大小与音频片段的音量 |
 | Timeline | `PmTimeline`（workbench） | 画面、配音、字幕三轨与稳定步骤身份；未知或估算时长不开放任意定位；只有真实样本才画波形；缩放只改视图；`excluded` 表示本页不在时间线中（讲授中没有这一页），状态与提示由调用方给出，不列片段；`notice` 是关于所选步骤的提示，显示在轨道下方（如这一步不在讲授中） |
 | Split panes | workbench `PmSplitGroup`、`PmSplitPanel`、`PmSplitHandle` | 通过 react-resizable-panels 公开接口实现双轴调整、键盘与双击恢复；隐藏与后台挂载由公共适配处理 |
@@ -142,7 +145,7 @@ Checkbox、Radio、Switch 只有 `pm-ui-checkbox` 的基础着色；首次使用
 
 ### 4.2 按钮、输入与表单
 
-- 常用导航和工具用 IconButton；提交、删除确认和需要说明含义的选项用文字。主操作用 `primary`，危险动作用 `danger`。
+- 常用导航和工具用 IconButton；提交、删除确认和需要说明含义的选项用文字。主操作用 `primary`，一个区域只有一个；`danger` 只放在确认对话框里，按钮写明对象（“删除 3 页”）；页面上的删除入口用普通按钮或菜单的危险项。能撤消的操作直接执行，不先确认。
 - 纯文字按钮的标签在按钮内居中，`loading=false` 不得因空图标槽使文字偏移。纯文字加载按钮使用对称槽保持标签中心、宽度与可见动作文字稳定；有实际图标时按图标与标签的整体居中。两端公开封装共用此规则。
 - 输入字段必有可访问名称，placeholder 只作样例。错误不改写输入值，保存失败保留草稿。
 - 单行 Enter 提交当前字段，多行 Enter 换行；输入法组词期间不提交。焦点不因错误、自动保存或后台更新跳走。
@@ -159,13 +162,15 @@ Checkbox、Radio、Switch 只有 `pm-ui-checkbox` 的基础着色；首次使用
 
 ### 4.4 换行
 
-`typography.css` 用零特异度的 `:where()` 规则：标题与 `pm-ui-*__title` 用 `text-wrap: balance`；段落、列表、`pm-ui-notice`、`pm-ui-tooltip`、字幕行用 `text-wrap: pretty`；`pre`、`code`、表格单元格、输入与按钮保持默认。
+`typography.css` 用零特异度的 `:where()` 规则：标题与 `pm-ui-*__title` 用 `text-wrap: balance`；段落、列表、`pm-ui-notice__message`、`pm-ui-tooltip`、字幕行用 `text-wrap: pretty`；`pre`、`code`、表格单元格、输入与按钮保持默认。
 
 ### 4.5 加载、空与错误
 
 - 已知内容形状的加载用 `PmSkeleton`，不用转圈；转圈 `loading` 只用于不知道结果形状的动作。
 - 空面板用 `PmEmpty` 说明这里会出现什么、怎样产生第一项。
 - 错误就地显示在字段或区域（`PmNotice`、字段错误），说明什么失败、输入是否保留、下一步做什么，并给出重试。
+- `PmNotice` 一行依次是语气图标、消息、操作：`neutral` 与 `accent` 用 `info`，`ok` 用 `check`，`warn` 与 `danger` 用 `warning`，图标取语气色、对齐消息首行；消息占满剩余宽度；重试、复查等按钮放在 `action`，排在末端，消息窄于 `--pm-size-notice-message` 时操作换到下一行、仍靠末端。`danger` 是 `role="alert"`，其余是 `role="status"`。
+- 工作台没有自动消失的 Toast：操作结果留在发生的区域（`PmNotice` 或保存状态），直到下一次操作替换它。
 - 系统消息的写法见 [界面术语与文案规范](glossary.md)。
 
 ### 4.6 动效

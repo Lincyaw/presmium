@@ -112,9 +112,9 @@ export function ProductionRecordingRange({ identity, sectionId, stepId, active, 
       <PmButton small disabled={disabled || !inspected} onClick={() => edit({ range: { startMs: 0, endMs: inspected!.durationMs }, startText: undefined, endText: undefined })}>{t.restore}</PmButton>
       {busy && <PmButton small onClick={() => { request.current?.abort(); request.current = undefined; setBusy(false) }}>{AUDIO_RECORDING_MESSAGES[locale].cancelAdoption}</PmButton>}
     </div>
-    {review && <PmNotice tone="warn">{t.review}<PmButton small disabled={disabled || !inspected || busy} onClick={() => edit({ version: source!.version!, voice: structuredClone(voice) })}>{t.check}</PmButton></PmNotice>}
+    {review && <PmNotice tone="warn" action={<PmButton small disabled={disabled || !inspected || busy} onClick={() => edit({ version: source!.version!, voice: structuredClone(voice) })}>{t.check}</PmButton>}>{t.review}</PmNotice>}
     {trimmed && hasCaptions && <PmNotice tone="warn">{r.captionReview}</PmNotice>}
-    {failure && <PmNotice tone="danger">{failure}<PmButton small disabled={disabled || busy} onClick={() => { setInspection(undefined); setFailure(undefined); setReload(value => value + 1) }}>{t.retry}</PmButton></PmNotice>}
+    {failure && <PmNotice tone="danger" action={<PmButton small disabled={disabled || busy} onClick={() => { setInspection(undefined); setFailure(undefined); setReload(value => value + 1) }}>{t.retry}</PmButton>}>{failure}</PmNotice>}
     {drafts.has(key) && <span className="pm-ui-field__hint" role="status">{t.pending}</span>}
   </section>
 }

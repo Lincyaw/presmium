@@ -241,9 +241,9 @@
   min-height: var(--pm-ui-control-height, var(--pm-control-height));
   margin: 0;
   padding: var(--pm-ui-control-padding-block, var(--pm-space-1)) var(--pm-ui-control-padding-inline, var(--pm-space-3));
-  border: var(--pm-size-hairline) solid var(--pm-color-line-strong);
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
   border-radius: var(--pm-ui-control-radius, var(--pm-radius-control));
-  background: var(--pm-color-chrome);
+  background: var(--pm-color-surface);
   color: var(--pm-color-ink);
   font-family: var(--pm-font-sans);
   font-size: var(--pm-ui-control-font, var(--pm-text-md));
@@ -256,39 +256,29 @@
   transition: background-color var(--pm-duration-fast) var(--pm-ease), border-color var(--pm-duration-fast) var(--pm-ease), color var(--pm-duration-fast) var(--pm-ease);
 }
 
+/* Hover and press change only the fill: one step, then a second, toward ink. Borders and text stay put. */
 .pm-ui-button:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--pm-color-sunk);
 }
 
 .pm-ui-button:active:not(:disabled):not([aria-disabled='true']) {
-  background: var(--pm-color-hover);
+  background: color-mix(in srgb, var(--pm-color-ink) 11%, var(--pm-color-surface));
 }
 
+/* The one main action of a region. */
 .pm-ui-button--primary {
-  border-color: var(--pm-color-ink);
-  background: var(--pm-color-ink);
-  color: var(--pm-color-bg);
-}
-
-.pm-ui-button--primary:hover:not(:disabled):not([aria-disabled='true']) {
-  background: var(--pm-color-primary-hover);
-}
-
-.pm-ui-button--primary:active:not(:disabled):not([aria-disabled='true']) {
-  background: var(--pm-color-primary-pressed);
-}
-
-.pm-ui-button--accent {
   border-color: var(--pm-color-accent);
   background: var(--pm-color-accent);
   color: var(--pm-color-on-accent);
 }
 
-.pm-ui-button--accent:hover:not(:disabled):not([aria-disabled='true']) {
+.pm-ui-button--primary:hover:not(:disabled):not([aria-disabled='true']) {
+  border-color: var(--pm-color-accent-hover);
   background: var(--pm-color-accent-hover);
 }
 
-.pm-ui-button--accent:active:not(:disabled):not([aria-disabled='true']) {
+.pm-ui-button--primary:active:not(:disabled):not([aria-disabled='true']) {
+  border-color: var(--pm-color-accent-pressed);
   background: var(--pm-color-accent-pressed);
 }
 
@@ -297,26 +287,51 @@
   background: transparent;
 }
 
-.pm-ui-button[aria-pressed='true']:not(.pm-ui-button--accent) {
-  border-color: var(--pm-color-accent);
-  background: var(--pm-color-selected);
+.pm-ui-button--ghost:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--pm-color-hover);
+}
+
+.pm-ui-button--ghost:active:not(:disabled):not([aria-disabled='true']) {
+  background: var(--pm-color-pressed);
+}
+
+/* A low-frequency action with no icon: the accent-coloured label is what marks it as something to press. */
+.pm-ui-button--text {
+  border-color: transparent;
+  background: transparent;
   color: var(--pm-color-accent);
 }
 
+.pm-ui-button--text:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--pm-color-accent-soft);
+}
+
+.pm-ui-button--text:active:not(:disabled):not([aria-disabled='true']) {
+  background: color-mix(in srgb, var(--pm-color-accent) 18%, transparent);
+}
+
+/* A toggle that is on. */
+.pm-ui-button[aria-pressed='true']:not(.pm-ui-button--primary, .pm-ui-button--danger) {
+  border-color: var(--pm-color-accent-line);
+  background: var(--pm-color-accent-soft);
+  color: var(--pm-color-accent);
+}
+
+/* Only the confirming action of an irreversible removal. */
 .pm-ui-button--danger {
-  border-color: transparent;
-  background: var(--pm-color-danger-soft);
-  color: var(--pm-color-danger);
+  border-color: var(--pm-color-danger);
+  background: var(--pm-color-danger);
+  color: var(--pm-color-on-danger);
 }
 
 .pm-ui-button--danger:hover:not(:disabled):not([aria-disabled='true']) {
-  background: var(--pm-color-danger-soft);
-  box-shadow: inset 0 0 0 var(--pm-size-hairline) var(--pm-color-danger);
+  border-color: var(--pm-color-danger-hover);
+  background: var(--pm-color-danger-hover);
 }
 
 .pm-ui-button--danger:active:not(:disabled):not([aria-disabled='true']) {
-  background: var(--pm-color-danger-soft);
-  box-shadow: inset 0 0 0 var(--pm-size-stroke) var(--pm-color-danger);
+  border-color: var(--pm-color-danger-pressed);
+  background: var(--pm-color-danger-pressed);
 }
 
 .pm-ui-button__content {
@@ -438,15 +453,21 @@
   gap: var(--pm-space-2);
   max-width: min(var(--pm-tooltip-width), var(--radix-tooltip-content-available-width, var(--pm-tooltip-width)));
   padding: var(--pm-space-1) var(--pm-space-2);
-  border: var(--pm-size-hairline) solid var(--pm-color-line);
   border-radius: var(--pm-radius-small);
-  background: var(--pm-color-surface);
-  color: var(--pm-color-ink);
-  box-shadow: var(--pm-shadow-float);
+  background: var(--pm-color-inverse);
+  color: var(--pm-color-on-inverse);
+  box-shadow: var(--pm-shadow);
   font-family: var(--pm-font-sans);
   font-size: var(--pm-text-xs);
   line-height: var(--pm-leading-ui);
   pointer-events: none;
+}
+
+/* The shortcut is part of the tooltip's own content: a quieter label, without the key-cap frame used on light ground. */
+.pm-ui-tooltip > .pm-ui-shortcut {
+  padding: 0;
+  border: 0;
+  color: var(--pm-color-on-inverse-muted);
 }
 
 :is(.pm-ui-button, .pm-ui-icon-button, .pm-ui-segmented__option, .pm-ui-tab, .pm-ui-menu__item, .pm-ui-link):focus-visible {
@@ -1332,28 +1353,64 @@
   }
 }
 
+/* Icon, message, action: the icon sits on the message's first line, the action at the end;
+   where the message would get narrower than its basis, the action wraps to its own line, still at the end. */
 .pm-ui-notice {
+  --pm-ui-notice-tone: var(--pm-color-muted);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--pm-space-2);
   margin: 0;
   padding: var(--pm-space-2) var(--pm-space-3);
   border-radius: var(--pm-radius-control);
   background: var(--pm-color-sunk);
   color: var(--pm-color-ink);
   font-size: var(--pm-text-sm);
+  line-height: var(--pm-leading-ui);
+}
+
+.pm-ui-notice__icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: calc(var(--pm-text-sm) * var(--pm-leading-ui));
+  color: var(--pm-ui-notice-tone);
+}
+
+.pm-ui-notice__message {
+  flex: 1 1 var(--pm-size-notice-message);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pm-ui-notice__action {
+  display: inline-flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  align-self: center;
+  gap: var(--pm-space-2);
+  margin-inline-start: auto;
 }
 
 .pm-ui-notice--ok {
+  --pm-ui-notice-tone: var(--pm-color-ok);
   background: var(--pm-color-ok-soft);
 }
 
 .pm-ui-notice--warn {
+  --pm-ui-notice-tone: var(--pm-color-warn);
   background: var(--pm-color-warn-soft);
 }
 
 .pm-ui-notice--danger {
+  --pm-ui-notice-tone: var(--pm-color-danger);
   background: var(--pm-color-danger-soft);
 }
 
 .pm-ui-notice--accent {
+  --pm-ui-notice-tone: var(--pm-color-accent);
   background: var(--pm-color-accent-soft);
 }
 

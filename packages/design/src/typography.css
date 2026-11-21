@@ -6,7 +6,7 @@
   text-wrap: balance;
 }
 
-:where(p, li, dd, blockquote, figcaption, caption, .pm-ui-empty, .pm-ui-notice, .pm-ui-tooltip, .pm-ui-caption__line, .pm-ui-menu__description) {
+:where(p, li, dd, blockquote, figcaption, caption, .pm-ui-empty, .pm-ui-notice__message, .pm-ui-tooltip, .pm-ui-caption__line, .pm-ui-menu__description) {
   text-wrap: pretty;
 }
 

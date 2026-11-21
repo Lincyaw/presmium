@@ -422,8 +422,15 @@ export function PmSkeleton({ label, shape = 'document' }: { label: string, shape
   )
 }
 
-export function PmNotice({ tone = 'neutral', children }: { tone?: 'neutral' | 'accent' | 'ok' | 'warn' | 'danger', children?: ReactNode }) {
-  return <div className={cls('pm-ui-notice', tone !== 'neutral' && `pm-ui-notice--${tone}`)} role={tone === 'danger' ? 'alert' : 'status'}>{children}</div>
+const NOTICE_ICONS = { neutral: 'info', accent: 'info', ok: 'check', warn: 'warning', danger: 'warning' } as const satisfies Record<string, IconName>
+
+/** A tone icon, the message, and an optional action at the end (a button or a group of buttons). */
+export function PmNotice({ tone = 'neutral', action, children }: { tone?: keyof typeof NOTICE_ICONS, action?: ReactNode, children?: ReactNode }) {
+  return <div className={cls('pm-ui-notice', tone !== 'neutral' && `pm-ui-notice--${tone}`)} role={tone === 'danger' ? 'alert' : 'status'}>
+    <span className="pm-ui-notice__icon"><PmIcon name={NOTICE_ICONS[tone]} /></span>
+    <div className="pm-ui-notice__message">{children}</div>
+    {action && <div className="pm-ui-notice__action">{action}</div>}
+  </div>
 }
 
 export interface RangeProps {
@@ -621,7 +628,7 @@ export function PmTimeline({ label, tracks, labels, durationMs, durationStatus, 
       onChange={event => { const segment = pickerSegments.find(segment => segment.id === event.target.value); if (segment && !cannotSeek) onSelectSegment?.(segmentPicker.track, segment) }}>
       <option value="">{segmentPicker.placeholder}</option>{pickerSegments.map(segment => <option key={segment.id} value={segment.id} disabled={segment.disabled}>{timelineTime(segment.startMs!)} · {segment.label}</option>)}
     </PmSelect></div>}
-    {showSteps && <div className="pm-ui-timeline__steps">{steps.map(segment => <PmButton key={segment.stepId} density={density} disabled={blocked || segment.disabled} aria-pressed={segment.stepId === selectedStepId} variant={segment.stepId === selectedStepId ? 'accent' : 'default'} onClick={() => onSelectStep(segment.stepId!)}>{segment.label}</PmButton>)}</div>}
+    {showSteps && <div className="pm-ui-timeline__steps">{steps.map(segment => <PmButton key={segment.stepId} density={density} disabled={blocked || segment.disabled} aria-pressed={segment.stepId === selectedStepId} onClick={() => onSelectStep(segment.stepId!)}>{segment.label}</PmButton>)}</div>}
     {(excluded || !tracks.some(track => track.segments.length)) && <PmNotice>{excluded?.notice ?? labels.empty}</PmNotice>}
     {notice && <PmNotice>{notice}</PmNotice>}
     <p id={hintId} className="pm-ui-sr-only">{labels.seekHint}</p>

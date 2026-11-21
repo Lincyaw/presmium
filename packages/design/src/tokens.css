@@ -5,42 +5,48 @@
   /* QR codes retain contrast in both appearance modes. */
   --pm-color-qr-paper: #fff;
   --pm-color-qr-ink: #000;
-  --pm-color-bg: #f7f5f0;
+  --pm-color-bg: #ffffff;
   --pm-color-surface: #ffffff;
-  --pm-color-sunk: #efebe3;
-  /* The editor's frame around a document, and the ground the page or slide lies on. */
-  --pm-color-chrome: #f9f8f5;
-  --pm-color-canvas: #e7e5e0;
+  --pm-color-sunk: #f3f4f6;
+  /* The editor's frame around a document (sidebars, docks), and the ground the page or slide lies on. */
+  --pm-color-chrome: #f7f8fa;
+  --pm-color-canvas: #eceef1;
   /* A flat control under the mouse, and the edge of a pressed one. */
-  --pm-color-hover: color-mix(in srgb, var(--pm-color-ink) 7%, transparent);
+  --pm-color-hover: color-mix(in srgb, var(--pm-color-ink) 6%, transparent);
   /* A flat control while it is pressed: one step past its hover. */
-  --pm-color-pressed: color-mix(in srgb, var(--pm-color-ink) 12%, transparent);
-  --pm-color-primary-hover: color-mix(in srgb, var(--pm-color-ink) 88%, var(--pm-color-bg));
-  --pm-color-primary-pressed: color-mix(in srgb, var(--pm-color-ink) 80%, var(--pm-color-bg));
-  --pm-color-accent-hover: color-mix(in srgb, var(--pm-color-accent) 88%, var(--pm-color-bg));
-  --pm-color-accent-pressed: color-mix(in srgb, var(--pm-color-accent) 80%, var(--pm-color-bg));
+  --pm-color-pressed: color-mix(in srgb, var(--pm-color-ink) 11%, transparent);
+  /* Filled controls step toward ink when hovered and pressed: darker on the light page, lighter on the dark one. */
+  --pm-color-accent-hover: color-mix(in srgb, var(--pm-color-accent) 84%, var(--pm-color-ink));
+  --pm-color-accent-pressed: color-mix(in srgb, var(--pm-color-accent) 72%, var(--pm-color-ink));
   --pm-color-accent-line: color-mix(in srgb, var(--pm-color-accent) 30%, transparent);
-  --pm-color-backdrop: rgb(28 27 25 / 32%);
-  --pm-color-code: #fbfaf7;
-  --pm-color-ink: #1c1b19;
-  --pm-color-muted: #5c584f;
+  --pm-color-danger-hover: color-mix(in srgb, var(--pm-color-danger) 84%, var(--pm-color-ink));
+  --pm-color-danger-pressed: color-mix(in srgb, var(--pm-color-danger) 72%, var(--pm-color-ink));
+  /* Tooltips and toasts: the page's own ink and paper swapped. */
+  --pm-color-inverse: var(--pm-color-ink);
+  --pm-color-on-inverse: var(--pm-color-bg);
+  --pm-color-on-inverse-muted: color-mix(in srgb, var(--pm-color-bg) 68%, var(--pm-color-ink));
+  --pm-color-backdrop: rgb(31 35 41 / 32%);
+  --pm-color-code: #f8f9fb;
+  --pm-color-ink: #1f2329;
+  --pm-color-muted: #5e6570;
   /* A grey highlight behind document text, beside the other *-soft highlights. */
-  --pm-color-muted-soft: #efebe3;
-  --pm-color-line: #e3ded3;
-  --pm-color-line-strong: #8c8577;
-  --pm-color-accent: #0f5f5c;
-  --pm-color-accent-soft: #e2eeec;
+  --pm-color-muted-soft: #f0f1f4;
+  --pm-color-line: #e3e5e9;
+  --pm-color-line-strong: #8a909a;
+  --pm-color-accent: #2f5bd3;
+  --pm-color-accent-soft: #eaf0fd;
   --pm-color-on-accent: #ffffff;
-  --pm-color-selected: #eaf3f1;
-  --pm-color-ok: #2b7449;
-  --pm-color-ok-soft: #e3f0e6;
-  --pm-color-warn: #9a5b13;
-  --pm-color-warn-soft: #f7ebda;
-  --pm-color-danger: #a3321c;
-  --pm-color-danger-soft: #f8e5df;
-  --pm-color-add: #2f6b3a;
-  --pm-color-del: #a3321c;
-  --pm-color-gutter: #a39c8e;
+  --pm-color-selected: #edf2fd;
+  --pm-color-ok: #1f7a4d;
+  --pm-color-ok-soft: #e3f4ea;
+  --pm-color-warn: #a15c00;
+  --pm-color-warn-soft: #fdf1dc;
+  --pm-color-danger: #c9372c;
+  --pm-color-danger-soft: #fdecea;
+  --pm-color-on-danger: #ffffff;
+  --pm-color-add: #1f7a4d;
+  --pm-color-del: #c9372c;
+  --pm-color-gutter: #a0a6ae;
   --pm-color-syntax-key: #7a3e8e;
   --pm-color-syntax-string: #2f6b3a;
   --pm-color-syntax-keyword: #8a3b12;
@@ -151,12 +157,12 @@
   --pm-size-badge: 1.25rem;
   --pm-size-avatar: 1.75rem;
   --pm-size-divider: 1.25rem;
-  --pm-size-tool: 1.875rem;
+  --pm-size-tool: 1.75rem;
   --pm-size-touch: 2.5rem;
   --pm-size-row: 3rem;
 
   /* Target control geometry; shared primitives migrate to these together. */
-  --pm-control-height: 2.25rem;
+  --pm-control-height: 2rem;
   --pm-control-hit-area: 2.75rem;
   --pm-control-number-width: 5rem;
   --pm-control-time-width: 7rem;
@@ -172,6 +178,7 @@
   --pm-comment-width: 22rem;
   --pm-comment-editor-max-height: 18rem;
   --pm-menu-min-width: 12rem;
+  --pm-size-notice-message: 12rem; /* below this, a notice puts its action on its own line */
   --pm-search-list-max-height: 18rem;
   --pm-timeline-label-width: 5.5rem;
   --pm-timeline-tick-width: 5rem;
@@ -328,33 +335,34 @@
   --pm-color-site-ambient-3: rgb(167 139 250 / 14%);
   --pm-product-card-shadow: 0 1px 2px rgb(0 0 0 / 20%), 0 6px 20px -6px rgb(0 0 0 / 32%);
 
-  --pm-color-bg: #161614;
-  --pm-color-surface: #1f1e1b;
-  --pm-color-sunk: #2a2925;
-  --pm-color-chrome: #24231f;
-  --pm-color-canvas: #121210;
+  --pm-color-bg: #16171a;
+  --pm-color-surface: #1d1e22;
+  --pm-color-sunk: #26282d;
+  --pm-color-chrome: #1a1b1f;
+  --pm-color-canvas: #111215;
   --pm-color-backdrop: rgb(0 0 0 / 55%);
-  --pm-color-code: #1a1917;
-  --pm-color-ink: #edeae3;
-  --pm-color-muted: #a9a498;
+  --pm-color-code: #191a1e;
+  --pm-color-ink: #e8eaed;
+  --pm-color-muted: #a3a8b0;
   /* The *-soft fills are lifted off the page enough to read as highlights behind text; ink on them stays above 7:1
      and each semantic colour on its own fill above 4.5:1. */
-  --pm-color-muted-soft: #3c3a35;
-  --pm-color-line: #33312c;
-  --pm-color-line-strong: #78736a;
-  --pm-color-accent: #6fc1b9;
-  --pm-color-accent-soft: #1f4a45;
-  --pm-color-on-accent: #0e1f1d;
-  --pm-color-selected: #1b2b29;
+  --pm-color-muted-soft: #2c2e33;
+  --pm-color-line: #2e3136;
+  --pm-color-line-strong: #6e747d;
+  --pm-color-accent: #7fa2ff;
+  --pm-color-accent-soft: #1e2a4a;
+  --pm-color-on-accent: #0d1530;
+  --pm-color-selected: #1c2744;
   --pm-color-ok: #5cc08a;
-  --pm-color-ok-soft: #22482d;
-  --pm-color-warn: #e3a659;
-  --pm-color-warn-soft: #50421a;
-  --pm-color-danger: #ee9a86;
-  --pm-color-danger-soft: #61342a;
+  --pm-color-ok-soft: #1f3d2b;
+  --pm-color-warn: #e7a94f;
+  --pm-color-warn-soft: #3d3119;
+  --pm-color-danger: #f08b7f;
+  --pm-color-danger-soft: #4a2420;
+  --pm-color-on-danger: #2a0f0b;
   --pm-color-add: #8fd3a0;
-  --pm-color-del: #ee9a86;
-  --pm-color-gutter: #6f6a60;
+  --pm-color-del: #f08b7f;
+  --pm-color-gutter: #6e747d;
   --pm-color-syntax-key: #d3a3e3;
   --pm-color-syntax-string: #9ccb8f;
   --pm-color-syntax-keyword: #e59a6b;
@@ -427,8 +435,8 @@
    A workbench's embedded document has no site attributes and keeps its own design system. */
 
 /* The published website's surface, after the AegisLab design system: a near-white cool grey page, white panels,
-   a soft near-black ink and hairlines, under translucent bars over a faint ambient wash. The workbench keeps the warm
-   reading surface above. */
+   a soft near-black ink and hairlines, under translucent bars over a faint ambient wash. The workbench uses the white
+   surface above. */
 :root:has([data-pm-site-theme]),
 [data-pm-site-theme] {
   --pm-color-bg: #f7f8fa;

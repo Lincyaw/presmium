@@ -9,8 +9,8 @@ import { rememberOpenSection } from './settings-opener.ts'
 export function Logo({ size = 24, className }: { size?: number, className?: string }) {
   return (
     <svg className={className ? `pmw-logo ${className}` : 'pmw-logo'} width={size} height={size} viewBox="0 0 32 32" role="img" aria-label="Presmium">
-      <rect width="32" height="32" rx="7" fill="#0F5F5C" />
-      <path d="M11 8h7.5a6.5 6.5 0 0 1 0 13H15v4h-4zM15 12v5h3.5a2.5 2.5 0 0 0 0-5z" fill="#F7F5F0" fillRule="evenodd" />
+      <rect width="32" height="32" rx="7" fill="#2F5BD3" />
+      <path d="M11 8h7.5a6.5 6.5 0 0 1 0 13H15v4h-4zM15 12v5h3.5a2.5 2.5 0 0 0 0-5z" fill="#FFFFFF" fillRule="evenodd" />
     </svg>
   )
 }

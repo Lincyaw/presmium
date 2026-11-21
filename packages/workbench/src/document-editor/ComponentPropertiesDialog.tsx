@@ -229,10 +229,10 @@ export function ComponentPropertiesDialog({ identity, blockId, stepId, onClose }
       {error && !((stale || materialStale || source?.error) && error === t.changed) && <PmNotice tone="danger">{error}</PmNotice>}
       {!ready && error && <PmButton disabled={busy || !source} onClick={() => void retrySource()}>{t.retry}</PmButton>}
       {!ready && !error && <PmNotice>{t.loading}</PmNotice>}
-      {ready && source?.error && <PmNotice tone="warn">{t.changed}<PmButton small disabled={busy} onClick={() => void retrySource()}>{t.retry}</PmButton></PmNotice>}
+      {ready && source?.error && <PmNotice tone="warn" action={<PmButton small disabled={busy} onClick={() => void retrySource()}>{t.retry}</PmButton>}>{t.changed}</PmNotice>}
       {ready && (!document || block?.type !== 'component' || !definition) && <PmNotice tone="warn">{t.missing}</PmNotice>}
       {ready && document && definition && block?.type === 'component' && page === 'materials' && <>
-        {materialStale && <PmNotice tone="warn">{t.changed}<PmButton small disabled={!clean || busy} onClick={() => { if (canonical) { setMaterial(value => value && { ...value, source: canonical }); setError(undefined) } }}>{t.recheck}</PmButton></PmNotice>}
+        {materialStale && <PmNotice tone="warn" action={<PmButton small disabled={!clean || busy} onClick={() => { if (canonical) { setMaterial(value => value && { ...value, source: canonical }); setError(undefined) } }}>{t.recheck}</PmButton>}>{t.changed}</PmNotice>}
         <ComponentMaterials document={document} blockId={blockId} selected={material?.definitionId ?? block.definitionId} disabled={busy}
           messages={t} onSelect={definitionId => setMaterial(value => ({ definitionId, source: value?.source ?? canonical! }))}
           onLocate={id => { locateOnClose.current = true; close(); workbench.revealDocumentComponent(id, identity) }} />
@@ -241,8 +241,8 @@ export function ComponentPropertiesDialog({ identity, blockId, stepId, onClose }
         <PmSelect label={t.scope} value={scope} onChange={event => { setScope(event.currentTarget.value as 'base' | 'step'); setError(undefined); setValidation(undefined) }}>
           <option value="base">{t.base}</option><option value="step" disabled={!stepId}>{t.step}</option>
         </PmSelect>
-        {stale && <PmNotice tone="warn">{t.changed}<PmButton small disabled={!clean || busy} onClick={recheck}>{t.recheck}</PmButton></PmNotice>}
-        {stored && (stale || error) && <PmButton small variant="ghost" disabled={busy} onClick={() => void discardLocal()}>{t.discardChanges}</PmButton>}
+        {stale && <PmNotice tone="warn" action={<PmButton small disabled={!clean || busy} onClick={recheck}>{t.recheck}</PmButton>}>{t.changed}</PmNotice>}
+        {stored && (stale || error) && <PmButton small variant="text" disabled={busy} onClick={() => void discardLocal()}>{t.discardChanges}</PmButton>}
         {preview.effect && <span>{t.impact(preview.effect.affected.steps.length)}{scope === 'base' ? ` · ${t.preserved}` : ''}</span>}
         {preview.error && <PmNotice tone="danger">{preview.error}</PmNotice>}
         {bank?.status(target) === 'session-only' && <PmNotice tone="warn">{t.storage}</PmNotice>}
@@ -265,9 +265,9 @@ export function ComponentPropertiesDialog({ identity, blockId, stepId, onClose }
               else { const reset = applyDocumentComponentAction(document, { type: 'component.step-parameters.reset', blockId, stepId: target.stepId! }).content; keep(effectiveComponentParameters(reset, blockId, target.stepId).parameters, false, true) }
             } catch (error) { setError(message(error, t)) }
           }}>{draft.reset ? t.edit : t.reset}</PmButton>}
-          <PmButton variant="ghost" onClick={enterMaterials}>{t.materials}</PmButton>
+          <PmButton variant="text" onClick={enterMaterials}>{t.materials}</PmButton>
         </div>
-        {backupError && <PmNotice tone="warn">{t.storageRead}<PmButton small onClick={() => setBackupRead(value => value + 1)}>{t.retry}</PmButton></PmNotice>}
+        {backupError && <PmNotice tone="warn" action={<PmButton small onClick={() => setBackupRead(value => value + 1)}>{t.retry}</PmButton>}>{t.storageRead}</PmNotice>}
         {Boolean(backups?.unreadable) && <PmNotice tone="warn">{t.unreadable}</PmNotice>}
         {Boolean(backups?.candidates.length) && <div className="component-properties__backups">
           <PmSelect label={t.backup} value={backupIndex} disabled={backupBusy} onChange={event => setBackupIndex(Number(event.currentTarget.value))}>

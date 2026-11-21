@@ -6,7 +6,7 @@ import type { OperationClient, OperationRecord, PresmiumTelemetry } from './tele
 export const name = 'presmium-workbench'
 export const inject = ['presmium', 'connection', 'webServer', 'presmiumTelemetry']
 
-const ICON = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#0F5F5C"/><path d="M11 8h7.5a6.5 6.5 0 0 1 0 13H15v4h-4zM15 12v5h3.5a2.5 2.5 0 0 0 0-5z" fill="#F7F5F0" fill-rule="evenodd"/></svg>')}`
+const ICON = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#2F5BD3"/><path d="M11 8h7.5a6.5 6.5 0 0 1 0 13H15v4h-4zM15 12v5h3.5a2.5 2.5 0 0 0 0-5z" fill="#FFFFFF" fill-rule="evenodd"/></svg>')}`
 
 export function brandIndex(html: string): string {
   return startupIndex(html

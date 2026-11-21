@@ -113,7 +113,7 @@ export function StepProductionEditor({ document, stepId, locale, readOnly, advan
   return <section className="pm-ui-step-production" contentEditable={false} data-step-production={stepId} aria-label={t.timing}
     onFocus={() => { onInteraction?.(); onPause() }} onKeyDown={event => event.stopPropagation()} onPointerDown={event => event.stopPropagation()}>
     {advanced && <div className="pm-ui-step-production__heading"><span className="pm-ui-field__label">{t.timing}</span>
-      <PmButton small variant="ghost" disabled={readOnly || !hasStepTiming && !drafts?.minimumHoldMs && !drafts?.trailingPauseMs} title={t.restoreHint} onClick={() => { onDraft?.('minimumHoldMs', undefined); onDraft?.('trailingPauseMs', undefined); apply({ narrationStart: null, minimumHoldMs: null, trailingPauseMs: null }) }}>{t.restore}</PmButton>
+      <PmButton small variant="text" disabled={readOnly || !hasStepTiming && !drafts?.minimumHoldMs && !drafts?.trailingPauseMs} title={t.restoreHint} onClick={() => { onDraft?.('minimumHoldMs', undefined); onDraft?.('trailingPauseMs', undefined); apply({ narrationStart: null, minimumHoldMs: null, trailingPauseMs: null }) }}>{t.restore}</PmButton>
     </div>}
     {!advanced ? <PmField group label={t.start} density="compact" hint={mixed ? t.mixed : undefined}>
       <div className="pm-ui-step-production__actions"><PmSegmented label={t.start} value={mixed ? '' : narrations[0]?.value ?? start.value ?? 'with-animation'} options={options} disabled={readOnly} onChange={value => apply({ narrationStart: value as 'with-animation' | 'after-animation' })} /></div>

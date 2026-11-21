@@ -195,12 +195,11 @@ export function DraftChoices({ candidates, disabled, onRecover, onDiscard, previ
     try { await action(candidate) } finally { setBusy(false) }
   }
   if (!candidates.length) return null
-  return <PmNotice tone="accent"><PmSelect label={t.commentDrafts} value={candidate ? selected : ''} disabled={disabled || busy} onChange={event => setSelected(event.target.value)}>
+  return <PmNotice tone="accent" action={<>{onRecover && <PmButton small variant="primary" disabled={!candidate || disabled || busy || candidate.storage === 'session' || canRecover && !canRecover(candidate)} loading={busy} onClick={() => void act(onRecover)}>{t.commentRecover}</PmButton>}
+    <PmButton small disabled={!candidate || disabled || busy} onClick={() => void act(onDiscard)}>{t.commentDiscard}</PmButton></>}><PmSelect label={t.commentDrafts} value={candidate ? selected : ''} disabled={disabled || busy} onChange={event => setSelected(event.target.value)}>
     <option value="">{t.commentChooseDraft}</option>{candidates.map(value => <option key={referenceKey(value)} value={referenceKey(value)}>{new Date(value.updatedAt).toLocaleString(context?.locale)} · {isNewCommentDraft(value.target) ? t.commentNewDraft : value.target.commentId ? t.commentEditDraft : t.commentReplyDraft}{value.storage === 'session' ? ` · ${t.commentSessionOnly}` : ''}</option>)}
   </PmSelect>{candidate && preview && <DraftPreview candidate={candidate} />}
     {candidate && unavailableMessage && canRecover && !canRecover(candidate) && <PmNotice tone="warn">{unavailableMessage}</PmNotice>}
-    <span className="pmw-notice__actions">{onRecover && <PmButton small variant="primary" disabled={!candidate || disabled || busy || candidate.storage === 'session' || canRecover && !canRecover(candidate)} loading={busy} onClick={() => void act(onRecover)}>{t.commentRecover}</PmButton>}
-    <PmButton small disabled={!candidate || disabled || busy} onClick={() => void act(onDiscard)}>{t.commentDiscard}</PmButton></span>
   </PmNotice>
 }
 

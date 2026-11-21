@@ -169,7 +169,7 @@ export function DocumentVoiceDialog({ stepId, onClose }: { stepId: string, onClo
             if (event.target.value) voice.style = event.target.value; else delete voice.style
             edit({ ...draft, source: { type: 'tts', voice } })
           }}><option value="">{t.styleDefault}</option>{styles.map(style => <option key={style} value={style}>{style}</option>)}</PmSelect> : null}
-          {draft.rateInput !== undefined && !rateRange && <PmNotice tone="warn">{p.draftChanged} <PmButton small onClick={() => edit({ ...draft, rateInput: undefined })}>{t.recheck}</PmButton></PmNotice>}
+          {draft.rateInput !== undefined && !rateRange && <PmNotice tone="warn" action={<PmButton small onClick={() => edit({ ...draft, rateInput: undefined })}>{t.recheck}</PmButton>}>{p.draftChanged}</PmNotice>}
           <div className="pmw-voice__actions"><PmButton small icon="audio" disabled={busy || blocked || !draft.source.voice.voice || rateInvalid} onClick={() => void audition('sample')}>{t.standard}</PmButton><PmButton small icon="audio" disabled={busy || blocked || !draft.source.voice.voice || rateInvalid} onClick={() => void audition('step')}>{p.currentScript}</PmButton></div>
           <p className="pmw-pane__footer">{t.previewHint}</p>
         </>}

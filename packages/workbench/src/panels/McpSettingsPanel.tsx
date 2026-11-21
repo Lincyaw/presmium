@@ -75,7 +75,7 @@ export function McpSettingsPanel() {
         {transport === 'http' && <PmInput label={t.port} hint={t.portHint} error={valid ? undefined : t.invalid} inputMode="numeric" value={port} disabled={busy} onChange={event => { setPort(event.target.value); setStatus(undefined); setOutput('') }} />}
         {settings.url && <PmInput label={t.address} value={settings.url} readOnly />}
         {settings.issue && <PmNotice tone="danger">{t.portBusy}</PmNotice>}
-        <div className="pmw-speech-settings__actions"><PmButton small variant="accent" disabled={busy || !valid || !dirty && !settings.issue} onClick={() => void save()}>{t.save}</PmButton></div>
+        <div className="pmw-speech-settings__actions"><PmButton small variant="primary" disabled={busy || !valid || !dirty && !settings.issue} onClick={() => void save()}>{t.save}</PmButton></div>
       </div></PmCard>}
       <p>{t.local}</p>
       {dirty && <PmNotice>{t.applyFirst}</PmNotice>}

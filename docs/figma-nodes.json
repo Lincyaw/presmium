@@ -736,7 +736,6 @@
     },
     "tokens": {
       "collectionId": "VariableCollectionId:21:4",
-      "sourceCollectionId": "VariableCollectionId:21:3",
       "modes": {
         "Light": "21:1",
         "Dark": "21:2"
@@ -911,6 +910,234 @@
           ]
         },
         {
+          "id": "VariableID:59:546",
+          "name": "color/accent-hover",
+          "type": "COLOR",
+          "css": "var(--pm-color-accent-hover)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:59:549",
+          "name": "color/accent-pressed",
+          "type": "COLOR",
+          "css": "var(--pm-color-accent-pressed)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:230:12",
+          "name": "color/warn-soft",
+          "type": "COLOR",
+          "css": "var(--pm-color-warn-soft)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:344:2",
+          "name": "color/canvas",
+          "type": "COLOR",
+          "css": "var(--pm-color-canvas)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:344:3",
+          "name": "color/code",
+          "type": "COLOR",
+          "css": "var(--pm-color-code)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:344:4",
+          "name": "color/muted-soft",
+          "type": "COLOR",
+          "css": "var(--pm-color-muted-soft)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:344:5",
+          "name": "color/accent-line",
+          "type": "COLOR",
+          "css": "var(--pm-color-accent-line)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:344:6",
+          "name": "color/ok",
+          "type": "COLOR",
+          "css": "var(--pm-color-ok)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:344:7",
+          "name": "color/ok-soft",
+          "type": "COLOR",
+          "css": "var(--pm-color-ok-soft)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:344:8",
+          "name": "color/warn",
+          "type": "COLOR",
+          "css": "var(--pm-color-warn)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:344:9",
+          "name": "color/hover",
+          "type": "COLOR",
+          "css": "var(--pm-color-hover)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:344:10",
+          "name": "color/pressed",
+          "type": "COLOR",
+          "css": "var(--pm-color-pressed)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:344:11",
+          "name": "color/backdrop",
+          "type": "COLOR",
+          "css": "var(--pm-color-backdrop)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:354:7852",
+          "name": "color/danger-hover",
+          "type": "COLOR",
+          "css": "var(--pm-color-danger-hover)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:354:7853",
+          "name": "color/danger-pressed",
+          "type": "COLOR",
+          "css": "var(--pm-color-danger-pressed)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:354:7854",
+          "name": "color/on-danger",
+          "type": "COLOR",
+          "css": "var(--pm-color-on-danger)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:354:7855",
+          "name": "color/inverse",
+          "type": "COLOR",
+          "css": "var(--pm-color-inverse)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:354:7856",
+          "name": "color/on-inverse",
+          "type": "COLOR",
+          "css": "var(--pm-color-on-inverse)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
+          "id": "VariableID:354:7857",
+          "name": "color/on-inverse-muted",
+          "type": "COLOR",
+          "css": "var(--pm-color-on-inverse-muted)",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ]
+        },
+        {
           "id": "VariableID:21:48",
           "name": "geometry/controlHeight",
           "type": "FLOAT",
@@ -1064,54 +1291,6 @@
           ]
         },
         {
-          "id": "VariableID:59:540",
-          "name": "color/primary-hover",
-          "type": "COLOR",
-          "css": "var(--pm-color-primary-hover)",
-          "scopes": [
-            "FRAME_FILL",
-            "SHAPE_FILL",
-            "TEXT_FILL",
-            "STROKE_COLOR"
-          ]
-        },
-        {
-          "id": "VariableID:59:543",
-          "name": "color/primary-pressed",
-          "type": "COLOR",
-          "css": "var(--pm-color-primary-pressed)",
-          "scopes": [
-            "FRAME_FILL",
-            "SHAPE_FILL",
-            "TEXT_FILL",
-            "STROKE_COLOR"
-          ]
-        },
-        {
-          "id": "VariableID:59:546",
-          "name": "color/accent-hover",
-          "type": "COLOR",
-          "css": "var(--pm-color-accent-hover)",
-          "scopes": [
-            "FRAME_FILL",
-            "SHAPE_FILL",
-            "TEXT_FILL",
-            "STROKE_COLOR"
-          ]
-        },
-        {
-          "id": "VariableID:59:549",
-          "name": "color/accent-pressed",
-          "type": "COLOR",
-          "css": "var(--pm-color-accent-pressed)",
-          "scopes": [
-            "FRAME_FILL",
-            "SHAPE_FILL",
-            "TEXT_FILL",
-            "STROKE_COLOR"
-          ]
-        },
-        {
           "id": "VariableID:59:553",
           "name": "state/disabled-opacity",
           "type": "FLOAT",
@@ -1135,7 +1314,8 @@
         "css": "fraction",
         "figmaDisabled": 55,
         "cssDisabled": 0.55
-      }
+      },
+      "collectionName": "Presmium / Tokens"
     },
     "icons": {
       "plus": "22:2",
@@ -1160,7 +1340,42 @@
       "image": "40:532",
       "sparkle": "40:537",
       "loading": "65:543",
-      "grip": "158:2790"
+      "grip": "158:2790",
+      "chevron-down": "333:6",
+      "link": "333:10",
+      "sync": "333:16",
+      "trash": "333:21",
+      "star": "333:24",
+      "clock": "333:28",
+      "external": "333:33",
+      "panel-right": "333:37",
+      "home": "333:41",
+      "folder": "333:44",
+      "menu": "340:1258",
+      "people": "299:33",
+      "plug": "299:39",
+      "code": "299:44",
+      "sliders": "299:61",
+      "comment-add": "5:40",
+      "pause": "5:47",
+      "undo": "5:75",
+      "redo": "5:79",
+      "navigation": "5:97",
+      "versions": "5:102",
+      "eye": "5:106",
+      "error": "5:116",
+      "download": "5:150",
+      "copy": "5:158",
+      "arrange": "5:181",
+      "scissors": "5:196",
+      "microphone": "5:201",
+      "volume": "5:206",
+      "upload": "5:211",
+      "edit-text": "7:5",
+      "record": "7:8",
+      "timing": "7:12",
+      "minus": "18:4",
+      "fit": "18:10"
     },
     "implementationReference": "docs/studio.md#19-视频制作",
     "sourceFiles": {
@@ -1170,15 +1385,14 @@
       "host": "packages/host/src/design/components.ts"
     },
     "variableCollections": {
-      "SearchList": {
-        "collectionId": "VariableCollectionId:76:530",
+      "Tokens": {
+        "collectionId": "VariableCollectionId:21:4",
         "modes": {
-          "Light": "76:0",
-          "Dark": "76:1"
+          "Light": "21:1",
+          "Dark": "21:2"
         },
-        "semanticTokens": 25,
-        "primitiveTokens": 25,
-        "source": "packages/design/src/tokens.css"
+        "source": "packages/design/src/tokens.css",
+        "note": "The only variable collection; colours carry their light and dark values directly, as in tokens.css."
       }
     }
   },
@@ -1849,5 +2063,48 @@
       "dark touch"
     ],
     "status": "implemented; runtime verification recorded separately"
-  }
+  },
+  "pages": {
+    "controls": "21:2",
+    "workbench": "333:2",
+    "interactions": "40:4644",
+    "cloud": "299:2",
+    "archive": "5:227"
+  },
+  "workbench": {
+    "pageId": "333:2",
+    "overview": "341:1557",
+    "screens": {
+      "H1 home": "348:9326",
+      "S1 document light": "337:204",
+      "S2 document dark": "338:534",
+      "S3 interactions": "338:644",
+      "A1 AI assistant": "349:9559",
+      "R1 version history": "349:10082",
+      "E1 export": "350:10259",
+      "V1 video light": "347:9199",
+      "V2 video dark": "350:10808",
+      "P1 present": "350:10115",
+      "P2 presenter": "350:10192",
+      "S4a narrow": "340:1259",
+      "S4b narrow drawer": "340:1368",
+      "S4c narrow dark": "340:1477"
+    },
+    "components": {
+      "DocTreeItem": "333:231",
+      "DocMention": "333:259",
+      "PageDivider": "333:260",
+      "SyncedBlock": "334:226",
+      "BacklinkItem": "334:227",
+      "MentionPicker": "334:238",
+      "DocPreviewCard": "334:281",
+      "Toast": "355:7886",
+      "Notice": "355:7987",
+      "SegmentedOption": "355:7998",
+      "Segmented": "355:7999",
+      "Tooltip": "25:558"
+    },
+    "controlSpec": "356:7897"
+  },
+  "archivedPrototypes": "The nodes P00–M02 and prototypeUrl are on the archive page (99), kept for reference and no longer maintained."
 }

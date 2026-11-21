@@ -111,7 +111,7 @@ export default function AskSettings(props: {
             </PmButton>
           ) : null}
           {askSettings ? (
-            <PmButton variant="danger" small onClick={clear}>
+            <PmButton small onClick={clear}>
               {t.ask.clear}
             </PmButton>
           ) : null}

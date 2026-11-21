@@ -53,11 +53,11 @@ export function SpeechSettingsPanel() {
         {settings && <p>{t.source[settings.source]}</p>}
         <PmInput type="password" label={t.key} hint={t.keyHint} placeholder={settings?.configured ? t.keySaved : t.keyPlaceholder} value={key} disabled={disabled} autoComplete="new-password" spellCheck={false} maxLength={8192} onChange={event => { dirty.current = Boolean(event.target.value.trim() || appId.trim()); setKey(event.target.value); setStatus(undefined) }} />
         <PmInput label={t.appId} hint={t.appIdHint} placeholder={settings?.appIdConfigured ? t.keySaved : t.appIdPlaceholder} value={appId} disabled={disabled} autoComplete="off" inputMode="numeric" spellCheck={false} maxLength={32} onChange={event => { dirty.current = Boolean(event.target.value.trim() || key.trim()); setAppId(event.target.value); setStatus(undefined) }} />
-        <div className="pmw-speech-settings__actions"><PmButton small variant="accent" loading={busy} disabled={disabled || !key.trim() && !settings?.configured} onClick={() => void save()}>{t.save}</PmButton><PmButton small variant="ghost" disabled={busy || loading || dirty.current} onClick={() => void load(true)}>{t.check}</PmButton></div>
+        <div className="pmw-speech-settings__actions"><PmButton small variant="primary" loading={busy} disabled={disabled || !key.trim() && !settings?.configured} onClick={() => void save()}>{t.save}</PmButton><PmButton small variant="text" disabled={busy || loading || dirty.current} onClick={() => void load(true)}>{t.check}</PmButton></div>
       </div></PmCard>
       <PmNotice>{t.verification}</PmNotice>
       <p>{t.privacy}</p>
-      <div className="pmw-speech-settings__actions"><a className="pm-ui-link" href="https://console.volcengine.com/speech/new/setting/apikeys" target="_blank" rel="noreferrer">{t.console}</a>{settings?.stored && <PmButton small variant="ghost" disabled={disabled} onClick={() => setConfirm(true)}>{t.remove}</PmButton>}</div>
+      <div className="pmw-speech-settings__actions"><a className="pm-ui-link" href="https://console.volcengine.com/speech/new/setting/apikeys" target="_blank" rel="noreferrer">{t.console}</a>{settings?.stored && <PmButton small variant="text" disabled={disabled} onClick={() => setConfirm(true)}>{t.remove}</PmButton>}</div>
     </div>
     <PmDialog open={confirm} label={t.removeTitle} closeLabel={t.cancel} busy={busy} onClose={() => setConfirm(false)} description={t.removeHint} footer={<><PmButton disabled={busy} onClick={() => setConfirm(false)}>{t.cancel}</PmButton><PmButton variant="danger" loading={busy} onClick={() => void save(true)}>{t.remove}</PmButton></>} />
   </section>

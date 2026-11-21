@@ -1,4 +1,4 @@
-import { createContext, createElement as h, forwardRef, useContext, useEffect, useId, useRef } from 'react'
+import { createContext, createElement as h, forwardRef, useContext, useEffect, useId, useRef, useState } from 'react'
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as Popover from '@radix-ui/react-popover'
@@ -9,7 +9,7 @@ import { HOST_MESSAGES } from '../messages.ts'
 import { ICONS } from '@lincyaw/design'
 import type { IconName } from '@lincyaw/design'
 import type { ToolbarPlacement } from '../contracts.ts'
-export type ButtonVariant = 'default' | 'primary' | 'accent' | 'ghost' | 'danger'
+export type ButtonVariant = 'default' | 'primary' | 'ghost' | 'text' | 'danger'
 export type ControlDensity = 'compact' | 'regular' | 'touch'
 /** `overlay`: one large round control laid over media, such as the Play that starts a lecture the browser would not autoplay. */
 export type IconButtonVariant = 'default' | 'overlay'
@@ -28,9 +28,24 @@ export const PmButton = forwardRef<HTMLButtonElement, ButtonProps>(function PmBu
       icon || loading !== undefined ? h('span', { className: 'pm-ui-button__icon', 'aria-hidden': true }, loading ? h(PmIcon, { name: 'loading', className: 'pm-ui-loading' }) : icon ? h(PmIcon, { name: icon }) : null) : null,
       children))
 })
+const TOOLTIP_DELAY = 500
+const TOOLTIP_SKIP = 300
+let tooltipClosedAt = 0
+/** A pointer shows the tooltip after 500 ms, keyboard focus at once; within 300 ms of one closing the next opens at once. */
 export function PmTooltip({ label, shortcut, children }: { label: string, shortcut?: string, children: ReactNode }) {
-  return h(Tooltip.Provider, { delayDuration: 300, skipDelayDuration: 0, children:
-    h(Tooltip.Root, {}, h(Tooltip.Trigger, { asChild: true }, children), h(Tooltip.Portal, {},
+  const [open, setOpen] = useState(false)
+  const shown = useRef(false)
+  const pointer = useRef(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useEffect(() => () => clearTimeout(timer.current), [])
+  const change = (next: boolean) => {
+    clearTimeout(timer.current)
+    if (!next) { if (shown.current) tooltipClosedAt = Date.now(); shown.current = false; setOpen(false); return }
+    const wait = pointer.current && Date.now() - tooltipClosedAt > TOOLTIP_SKIP ? TOOLTIP_DELAY : 0
+    timer.current = setTimeout(() => { shown.current = true; setOpen(true) }, wait)
+  }
+  return h(Tooltip.Provider, { delayDuration: 0, skipDelayDuration: 0, children:
+    h(Tooltip.Root, { open, onOpenChange: change }, h(Tooltip.Trigger, { asChild: true, onPointerEnter: () => { pointer.current = true }, onPointerLeave: () => { pointer.current = false } }, children), h(Tooltip.Portal, {},
       h(Tooltip.Content, { className: 'pm-ui-tooltip pm-ui', side: 'top', sideOffset: 6, collisionPadding: 8 }, label, shortcut ? h('kbd', { className: 'pm-ui-shortcut' }, shortcut) : null))) })
 }
 export const PmIconButton = forwardRef<HTMLButtonElement, Omit<ButtonProps, 'variant'> & { variant?: IconButtonVariant, icon: IconName, label: string, hint?: string, shortcut?: string }>(function PmIconButton({ variant = 'default', icon, label, hint, shortcut, small, density = 'compact', loading, className, disabled, ...rest }, ref) {
@@ -112,7 +127,14 @@ export function PmTabs({ value, modelValue, tabs, label, children, onValueChange
     })), children)
 }
 export function PmTabPanel({ value, children, forceMount, hidden }: { value: string, children?: ReactNode, forceMount?: true, hidden?: boolean }) { return h(Tabs.Content, { value, forceMount, hidden, className: 'pm-ui-tab-panel' }, children) }
-export function PmNotice({ tone = 'neutral', children, className, ...rest }: HTMLAttributes<HTMLDivElement> & { tone?: Tone }) { return h('div', { ...rest, className: cls('pm-ui-notice', tone !== 'neutral' && `pm-ui-notice--${tone}`, className), role: tone === 'danger' ? 'alert' : 'status' }, children) }
+const NOTICE_ICONS: Record<Tone, IconName> = { neutral: 'info', outline: 'info', accent: 'info', ok: 'check', warn: 'warning', danger: 'warning' }
+/** A tone icon, the message, and an optional action at the end. */
+export function PmNotice({ tone = 'neutral', action, children, className, ...rest }: HTMLAttributes<HTMLDivElement> & { tone?: Tone, action?: ReactNode }) {
+  return h('div', { ...rest, className: cls('pm-ui-notice', tone !== 'neutral' && `pm-ui-notice--${tone}`, className), role: tone === 'danger' ? 'alert' : 'status' },
+    h('span', { className: 'pm-ui-notice__icon' }, h(PmIcon, { name: NOTICE_ICONS[tone] })),
+    h('div', { className: 'pm-ui-notice__message' }, children),
+    action ? h('div', { className: 'pm-ui-notice__action' }, action) : null)
+}
 export function PmEmpty({ title, icon, action, children }: { title?: string, icon?: IconName, action?: ReactNode, children?: ReactNode }) { return h('div', { className: 'pm-ui-empty' }, icon ? h(PmIcon, { name: icon }) : null, title ? h('p', { className: 'pm-ui-empty__title' }, title) : null, children, action) }
 /** Loading in the shape of the content: `document` headings and paragraphs, `list` rows, `preview` a slide-shaped area. */
 export function PmSkeleton({ label, shape = 'document' }: { label: string, shape?: 'document' | 'list' | 'preview' }) {

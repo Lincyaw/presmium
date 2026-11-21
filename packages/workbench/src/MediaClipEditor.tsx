@@ -110,12 +110,12 @@ export function MediaClipEditor(props: MediaClipEditorProps) {
       <div className="pm-ui-media-clip-editor__actions">
         <PmButton density={density} variant="primary" loading={busy === 'apply'} disabled={disabled || Boolean(busy) || !props.canApply || review || !valid} onClick={submit}>{selectedClipId ? t.apply : t.add}</PmButton>
         <PmButton density={density} disabled={disabled || !inspected} onClick={() => change({ clip: { ...clip, sourceRange: { startMs: 0, endMs: inspected!.durationMs } }, startText: undefined, endText: undefined })}>{t.restore}</PmButton>
-        {selectedClipId && <PmButton density={density} variant="danger" loading={busy === 'remove'} disabled={disabled || Boolean(busy) || originalRemoved} onClick={props.onRemove}>{t.remove}</PmButton>}
+        {selectedClipId && <PmButton density={density} loading={busy === 'remove'} disabled={disabled || Boolean(busy) || originalRemoved} onClick={props.onRemove}>{t.remove}</PmButton>}
       </div>
     </>}
-    {originalRemoved ? <PmNotice tone="warn">{t.removed}</PmNotice> : review ? <PmNotice tone="warn"><span>{t.review}</span><PmButton density={density} disabled={disabled || Boolean(busy) || !props.canApply || !inspected} onClick={props.onReview}>{t.check}</PmButton></PmNotice>
+    {originalRemoved ? <PmNotice tone="warn">{t.removed}</PmNotice> : review ? <PmNotice tone="warn" action={<PmButton density={density} disabled={disabled || Boolean(busy) || !props.canApply || !inspected} onClick={props.onReview}>{t.check}</PmButton>}>{t.review}</PmNotice>
       : clip.assetId && !props.canApply && !busy && <span className="pm-ui-field__hint">{t.unavailable}</span>}
-    {props.failure && <PmNotice tone="danger"><span>{props.failure}</span><PmButton density={density} disabled={disabled || Boolean(busy)} onClick={props.retryImport ? props.onRetryImport : props.onRead}>{props.retryImport ? t.retryImport : t.retry}</PmButton></PmNotice>}
+    {props.failure && <PmNotice tone="danger" action={<PmButton density={density} disabled={disabled || Boolean(busy)} onClick={props.retryImport ? props.onRetryImport : props.onRead}>{props.retryImport ? t.retryImport : t.retry}</PmButton>}>{props.failure}</PmNotice>}
     {props.storageFailed && <PmNotice tone="warn">{t.storageFailed}</PmNotice>}
     {props.pending && !props.failure && <span className="pm-ui-field__hint" role="status">{t.pending}</span>}
     {props.status && <span className="pm-ui-field__hint" role="status">{props.status}</span>}

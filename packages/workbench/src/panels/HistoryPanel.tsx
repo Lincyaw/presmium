@@ -45,9 +45,8 @@ export function HistoryPanel({ onClose, revisionAction }: HistoryPanelProps) {
     <section className="pmw-pane" aria-labelledby="pmw-history-title">
       <PmPanelHeader className="pmw-pane__header" titleId="pmw-history-title" title={t.versionHistory} actions={<PmIconButton small icon="close" label={t.close} onClick={onClose} />} />
       {outside && outside.length > 0 && (
-        <PmNotice tone="warn">
-          <span>{t.outside(outside.length)}</span>
-          <PmButton small disabled={busy} onClick={() => void workbench.recordOutsideChanges()}>{t.recordOutside}</PmButton>
+        <PmNotice tone="warn" action={<PmButton small disabled={busy} onClick={() => void workbench.recordOutsideChanges()}>{t.recordOutside}</PmButton>}>
+          {t.outside(outside.length)}
         </PmNotice>
       )}
       {source?.recoveryReadFailure && <PmNotice tone="warn">{t.documentDraftUnreadable}</PmNotice>}

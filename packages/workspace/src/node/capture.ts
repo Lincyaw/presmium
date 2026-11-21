@@ -309,7 +309,7 @@ const escapeHtml = (text: string) => text.replace(/[&<>"]/g, char => `&#${char.c
 
 /** A sheet of thumbnails with their labels: plain HTML for the capturing browser, not a page of the product. */
 function sheetHtml(cells: { label: string, png: Buffer }[], columns: number, appearance: 'light' | 'dark'): string {
-  const [paper, ink, line] = appearance === 'dark' ? ['#161614', '#ece9e2', '#3a3833'] : ['#f7f5f0', '#1c1b19', '#e3ded3']
+  const [paper, ink, line] = appearance === 'dark' ? ['#16171a', '#e8eaed', '#2e3136'] : ['#ffffff', '#1f2329', '#e3e5e9']
   return `<!doctype html><meta charset="utf-8"><style>
 body { margin: 0; padding: ${SHEET_GAP}px; background: ${paper}; color: ${ink}; font: 13px/1.4 system-ui, sans-serif; }
 main { display: grid; grid-template-columns: repeat(${columns}, ${THUMB_WIDTH}px); gap: ${SHEET_GAP}px; }

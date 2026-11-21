@@ -131,7 +131,7 @@ function NarrationSurface<T>(props: NarrationEditorProps<T>) {
       <BlockNoteView editor={editor} editable={!props.readOnly} theme={DOCUMENT_EDITOR_THEME} formattingToolbar={false} sideMenu={false} slashMenu={false} linkToolbar={false} comments={false} onChange={change}>
         {props.blockMenu && <SideMenuController sideMenu={NarrationSideMenu} />}
       </BlockNoteView>
-      {props.advanced !== false && <div className="pm-ui-narration-editor__actions"><PmButton small variant="ghost" disabled={props.readOnly} onClick={() => { setDisplay(editor.getSelectedText()); setSpoken(''); setOpen(true) }}>{t.pronunciation}</PmButton></div>}
+      {props.advanced !== false && <div className="pm-ui-narration-editor__actions"><PmButton small variant="text" disabled={props.readOnly} onClick={() => { setDisplay(editor.getSelectedText()); setSpoken(''); setOpen(true) }}>{t.pronunciation}</PmButton></div>}
       <PmDialog open={open} label={t.pronunciation} closeLabel={t.cancel} onClose={() => setOpen(false)} actions={<>
         <PmButton small onClick={() => setOpen(false)}>{t.cancel}</PmButton>
         <PmButton small variant="primary" disabled={!display} onClick={() => { editor.insertInlineContent([{ type: 'narrationAtom', props: { kind: 'pronunciation', display, spoken, cueId: '', payload: '' } }], { updateSelection: true }); setOpen(false); editor.focus() }}>{t.done}</PmButton>

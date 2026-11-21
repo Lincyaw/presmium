@@ -57,7 +57,7 @@ export function VoicePreviewDialog({ quote, snapshot, onClose, onRecheck }: { qu
     <PmButton small onClick={close}>{t.close}</PmButton>
     {changed && onRecheck && <PmButton small onClick={recheck}>{t.recheck}</PmButton>}
     {active ? <PmButton small onClick={() => audition.current?.stop()}>{t.stop}</PmButton>
-      : <PmButton small variant="accent" disabled={changed || !audition.current} onClick={confirm}>{t.confirmPreview}</PmButton>}
+      : <PmButton small variant="primary" disabled={changed || !audition.current} onClick={confirm}>{t.confirmPreview}</PmButton>}
   </>}>
     <div className="pmw-operation">
     <PmField label={t.provider}><span>{quote.provider}</span></PmField>

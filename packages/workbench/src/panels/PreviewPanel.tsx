@@ -63,9 +63,9 @@ export function PreviewPanel({ active = true, onPresentationAction, presentation
   return (
     <section className="pmw-preview" aria-label={t.preview} data-ready={(active && document !== undefined && ready && snapshotMatches) || undefined}>
       {mismatch && <PmNotice tone="warn">{t.versionMismatch}</PmNotice>}
-      {identityFailure && <PmNotice tone="danger"><span>{t.previewIdentityMismatch}</span><PmButton small onClick={() => workbench.reloadPreview()}>{t.reloadPreview}</PmButton></PmNotice>}
-      {handshakeFailure && <PmNotice tone="danger"><span>{t.previewStalled}</span><PmButton small onClick={() => workbench.reloadPreview()}>{t.reloadPreview}</PmButton></PmNotice>}
-      {failure && <PmNotice tone="danger"><span>{t.previewFailed(failureReason(t, failure))}</span><PmButton small onClick={() => workbench.retryPreview()}>{t.retry}</PmButton></PmNotice>}
+      {identityFailure && <PmNotice tone="danger" action={<PmButton small onClick={() => workbench.reloadPreview()}>{t.reloadPreview}</PmButton>}>{t.previewIdentityMismatch}</PmNotice>}
+      {handshakeFailure && <PmNotice tone="danger" action={<PmButton small onClick={() => workbench.reloadPreview()}>{t.reloadPreview}</PmButton>}>{t.previewStalled}</PmNotice>}
+      {failure && <PmNotice tone="danger" action={<PmButton small onClick={() => workbench.retryPreview()}>{t.retry}</PmButton>}>{t.previewFailed(failureReason(t, failure))}</PmNotice>}
       {(!ready || !snapshotMatches) && !failure && !handshakeFailure && !(renderer === 'slides' && preview && !preview.slides) && <p className="pmw-muted pmw-preview__loading">{presentation && ready && !snapshotMatches && !preparing ? t.presentationOutdated : address ? t.previewLoading : t.previewPreparing}</p>}
       {renderer === 'slides' && preview && !preview.slides && <p className="pmw-muted pmw-preview__loading">{t.noSlides}</p>}
       <div className="pmw-preview__stage">

@@ -43,7 +43,7 @@ export function WorkbenchApprovals({ density = 'compact' }: { density?: 'compact
   }
   return (
     <PmPopover open={open} onOpenChange={setOpen} label={t.approvalsTitle} name="pmw-approvals" trigger={
-      <PmButton data-approval-trigger="" variant="accent" density={density}>{t.approvals(pending.length)}</PmButton>
+      <PmButton data-approval-trigger="" variant="primary" density={density}>{t.approvals(pending.length)}</PmButton>
     }>
       <h2 className="pmw-approvals__heading">{t.approvalsTitle}</h2>
       <ul className="pmw-approvals__list">
