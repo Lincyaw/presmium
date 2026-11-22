@@ -1,9 +1,10 @@
 // One Markdown note to one document (`presmium import`). Pure: the caller resolves links and copies files.
 //
 // Each level-1 or level-2 heading starts a page (the first page holds what comes before it, under the note's title);
-// every page has one step that shows all its blocks. Paragraphs, headings, lists, quotes, code, math and tables become
-// rich text; a Mermaid diagram becomes a code block of its own, which is what draws it; a paragraph holding only an
-// image becomes an image block. What has no rich-text node (raw HTML, footnotes, rules, callouts) is kept as an mdast
+// every page has one step that shows all its blocks, narrated by the page's speaker notes when the given tree carries
+// them (`NARRATION_NODE`). Paragraphs, headings, lists, quotes, code, math and tables become rich text; a Mermaid
+// diagram becomes a code block of its own, which is what draws it; a paragraph holding only an image becomes an image
+// block. What has no rich-text node (raw HTML, footnotes, rules, callouts) is kept as an mdast
 // extension that the viewer renders. `[[target]]` and `[[target|label]]` wikilinks, relative links and images go through
 // the caller's `links`. Node ids come from the content, so importing an unchanged paragraph again keeps its id.
 import { fromMarkdown } from 'mdast-util-from-markdown'
@@ -13,7 +14,7 @@ import { gfm } from 'micromark-extension-gfm'
 import { math } from 'micromark-extension-math'
 import { parse as parseYaml } from 'yaml'
 import { DOCUMENT_SCHEMA_VERSION } from '@lincyaw/kernel'
-import type { Asset, DocumentBlock, InlineNode, MdastNode, RichTextNode, Section, Step, PresmiumDocument, TextMark } from '@lincyaw/kernel'
+import type { Asset, DocumentBlock, InlineNode, MdastNode, Narration, RichTextNode, Section, Step, PresmiumDocument, TextMark } from '@lincyaw/kernel'
 
 export interface Frontmatter {
   title?: string
@@ -37,6 +38,9 @@ export interface ImportedMarkdown {
   /** Wikilinks and relative links that `links` could not resolve, as written. */
   unresolved: string[]
 }
+
+/** A page's speaker notes in a given tree, as an imported deck carries them: the narration of the page's step. */
+export const NARRATION_NODE = 'presmiumNarration'
 
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/
 /** Stands in for the `|` of `[[target|label]]` while parsing, so a GFM table does not split the cell at it. */
@@ -230,7 +234,8 @@ export function markdownDocument(source: string, options: { id: string, title: s
         const align = Array.isArray(node.align) ? node.align as (string | null)[] : []
         return [{ id: idOf('table', node), type: 'table', headerRows: node.headerRows === 0 ? 0 : 1, children: children.map(row => ({ id: idOf('row', row), type: 'tableRow',
           children: (row.children ?? []).map((cell, c) => ({ id: idOf('cell', cell), type: 'tableCell', children: inline(cell.children ?? []),
-            ...align[c] ? { style: { alignment: align[c] as 'left' } } : {} })) })) }]
+            ...align[c] ? { style: { alignment: align[c] as 'left' } } : {},
+            ...Number(cell.colspan) > 1 ? { colspan: Number(cell.colspan) } : {}, ...Number(cell.rowspan) > 1 ? { rowspan: Number(cell.rowspan) } : {} })) })) }]
       }
       case 'definition':
         return []
@@ -242,16 +247,18 @@ export function markdownDocument(source: string, options: { id: string, title: s
   // Pages: a level-1 or level-2 heading starts one. The note's own title heading opens the first page and is not repeated.
   const nodes = root.children ?? []
   const title = frontmatter.title ?? (nodes[0]?.type === 'heading' && nodes[0].depth === 1 ? plain(nodes[0]).trim() : undefined) ?? options.title
-  const pages: { title: string, level: number, nodes: MdastNode[] }[] = [{ title, level: 1, nodes: [] }]
+  const pages: { title: string, level: number, nodes: MdastNode[], narration?: string }[] = [{ title, level: 1, nodes: [] }]
   nodes.forEach((node, i) => {
     const opensPage = node.type === 'heading' && Number(node.depth) <= 2
     if (opensPage && i === 0 && node.depth === 1 && plain(node).trim() === title) return
     if (opensPage) pages.push({ title: plain(node).trim() || title, level: Number(node.depth), nodes: [] })
+    else if (node.type === NARRATION_NODE) pages.at(-1)!.narration = [pages.at(-1)!.narration, String(node.value ?? '')].filter(Boolean).join('\n')
     else pages.at(-1)!.nodes.push(node)
   })
-  if (pages.length > 1 && pages[0]!.nodes.length === 0 && pages[1]!.level === 1) pages.shift()
+  if (pages.length > 1 && pages[0]!.nodes.length === 0 && !pages[0]!.narration && pages[1]!.level === 1) pages.shift()
 
   const sections: Record<string, Section> = {}, blocks: Record<string, DocumentBlock> = {}, steps: Record<string, Step> = {}, assets: Record<string, Asset> = {}
+  const narrations: Record<string, Narration> = {}
   const sectionOrder: string[] = []
   for (const page of pages) {
     const sectionId = unique(headingSlug(page.title) || `page-${hash(page.title)}`)
@@ -286,7 +293,9 @@ export function markdownDocument(source: string, options: { id: string, title: s
     flush()
     const stepId = unique(`${sectionId}--step`)
     sections[sectionId] = { id: sectionId, title: page.title, level: Math.min(2, page.level) as 1, children, stepOrder: [stepId], layout: { type: 'stack' } }
-    steps[stepId] = { id: stepId, sectionId, visuals: children.map(blockId => ({ blockId, visible: true })), narrationIds: [] }
+    const narrationId = page.narration ? unique(`${sectionId}--narration`) : undefined
+    if (narrationId) narrations[narrationId] = { id: narrationId, content: [{ type: 'text', text: page.narration! }] }
+    steps[stepId] = { id: stepId, sectionId, visuals: children.map(blockId => ({ blockId, visible: true })), narrationIds: narrationId ? [narrationId] : [] }
     sectionOrder.push(sectionId)
   }
 
@@ -303,7 +312,7 @@ export function markdownDocument(source: string, options: { id: string, title: s
         plugins: [],
         renderers: { web: {} },
       },
-      sectionOrder, sections, blocks, steps, narrations: {}, assets, definitions: {},
+      sectionOrder, sections, blocks, steps, narrations, assets, definitions: {},
       production: { defaults: {}, stepOverrides: {}, mediaClips: [] },
     } as PresmiumDocument,
     unresolved: [...new Set(unresolved)],

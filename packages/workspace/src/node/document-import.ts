@@ -14,8 +14,26 @@ import type { DocumentWriter } from './writer.ts'
 import type { DocumentsChange } from './document-operations.ts'
 
 const bad = (status: number, code: string): never => { throw new RequestError(status, `document-import-${code}`) }
+/** Word and PowerPoint files from before 2007, which the converter cannot read. */
+const LEGACY = /\.(?:doc|ppt|pps)$/i
 const plainPath = (path: unknown): path is string => typeof path === 'string' && path.length > 0 && path.length <= 500
   && !path.startsWith('/') && !/[\\\0:]/.test(path) && !path.split('/').some(part => !part || part === '.' || part === '..' || ['.git', '.presmium', 'node_modules', 'dist'].includes(part))
+
+/**
+ * Where a batch goes in the workspace: its folders at the top level under their own names when none is taken (one
+ * file imports as `<name>/`); a single folder whose name is taken gets the first free `<name>-<n>`; several folders, any
+ * of them taken, go together into the first free `imported`, `imported-<n>` (links between them stay relative).
+ */
+function placement(root: string, tops: string[]): { directory: string, place(path: string): string } {
+  const free = (name: string) => { let candidate = name; for (let n = 2; existsSync(join(root, candidate)); n++) candidate = `${name}-${n}`; return candidate }
+  if (!tops.some(top => existsSync(join(root, top)))) return { directory: tops.length === 1 ? tops[0]! : '', place: path => path }
+  if (tops.length === 1) {
+    const directory = free(tops[0]!)
+    return { directory, place: path => `${directory}${path.slice(tops[0]!.length)}` }
+  }
+  const directory = free('imported')
+  return { directory, place: path => `${directory}/${path}` }
+}
 
 /** Uploaded sources are converted before a single locked, rollback-capable workspace publication. */
 export function documentImportRoute(options: { config: WorkspaceConfig, writer: DocumentWriter, locks: DocumentLocks, revisions?: Revisions, changed(change: DocumentsChange): Promise<void> }): Route {
@@ -46,7 +64,7 @@ export function documentImportRoute(options: { config: WorkspaceConfig, writer: 
           writeFileSync(join(source, path), Buffer.from(await file.arrayBuffer()), { flag: 'wx' })
         }
         const report = await importDocuments(source, { out: output, preserveOriginal: true, workspaceRoot: config.root }).catch(() => bad(422, 'conversion'))
-        if (report.documents.length === 0) return bad(422, 'empty')
+        if (report.documents.length === 0) return bad(422, paths.some(path => LEGACY.test(path)) ? 'legacy' : 'empty')
         const files: { path: string, content: Buffer }[] = []
         let bytes = 0
         const walk = (dir: string, path = '') => {
@@ -72,21 +90,23 @@ export function documentImportRoute(options: { config: WorkspaceConfig, writer: 
         try {
           const answer = await revisions.transaction(async (): Promise<DocumentImportAnswer> => {
             request.signal.throwIfAborted()
-            const directory = `imported-${randomUUID().slice(0, 8)}`
-            if (existsSync(join(config.root, directory))) return bad(409, 'changed')
+            const { directory, place } = placement(config.root, [...new Set(files.map(item => item.path.split('/')[0]!))])
+            const placed = files.map(item => ({ ...item, path: place(item.path) }))
+            const tops = [...new Set(placed.map(item => item.path.split('/')[0]!))]
+            if (tops.some(top => existsSync(join(config.root, top)))) return bad(409, 'changed')
             if (readWorkspaceConfig(config.root).singleDeck) return bad(409, 'unavailable')
-            if (await revisions.ignoresAny(files.map(item => `${directory}/${item.path}`))) return bad(403, 'forbidden')
-            await revisions.checkpoint([directory])
-            const checkpoint = await writer.checkpoint([directory])
+            if (await revisions.ignoresAny(placed.map(item => item.path))) return bad(403, 'forbidden')
+            await revisions.checkpoint(tops)
+            const checkpoint = await writer.checkpoint(tops)
             const before = await revisions.head()
             let committed = false
             try {
-              for (const item of files) { request.signal.throwIfAborted(); await writer.create(`${directory}/${item.path}`, item.content, true) }
+              for (const item of placed) { request.signal.throwIfAborted(); await writer.create(item.path, item.content, true) }
               request.signal.throwIfAborted()
-              const revision = await revisions.commitWhileLocked({ paths: [directory], summary: `Import ${documents.length} documents`, body: '', origin: { kind: 'document', member: ctx.member, operation: { op: 'create', dir: directory } } })
+              const revision = await revisions.commitWhileLocked({ paths: tops, summary: `Import ${documents.length} documents`, body: '', origin: { kind: 'document', member: ctx.member, operation: { op: 'create', dir: directory || tops[0]! } } })
               if (!revision) return bad(409, 'changed')
               committed = true
-              return { directory, documents: documents.map(doc => ({ ...doc, dir: `${directory}/${doc.dir}` })), files: files.length, unresolved: report.unresolved.length, warnings: report.warnings ?? 0, ...revision ? { revision } : {} }
+              return { directory, documents: documents.map(doc => ({ ...doc, dir: place(doc.dir) })), files: files.length, unresolved: report.unresolved.length, warnings: report.warnings ?? 0, ...revision ? { revision } : {} }
             } catch (error) {
               if (await revisions.head() !== before) { committed = true; throw new RequestError(409, 'document-import-changed', { committed: true }) }
               await checkpoint.restore()

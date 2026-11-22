@@ -16,6 +16,8 @@ export function DocumentImportDialog({ onClose, onImported }: { onClose(): void,
   const [failure, setFailure] = useState<string>()
   const input = useRef<HTMLInputElement>(null), directory = useRef<HTMLInputElement | null>(null)
   const controller = useRef<AbortController>()
+  const legacy = files.filter(file => /\.(?:doc|ppt|pps)$/i.test(file.name)).length
+  const onlyLegacy = legacy > 0 && legacy === files.length
   useEffect(() => () => controller.current?.abort(), [])
   const select = (list: FileList | null) => {
     const selected = [...list ?? []].filter(file => !(file.webkitRelativePath || file.name).split('/').some(part => ['.git', '.presmium', 'node_modules', 'dist'].includes(part)))
@@ -41,17 +43,18 @@ export function DocumentImportDialog({ onClose, onImported }: { onClose(): void,
     <PmDialog open label={m.title} closeLabel={t.close} name="pmw-operation" busy={working} onClose={onClose}>
       <form className="pmw-operation" onSubmit={event => { event.preventDefault(); void submit() }}>
         <p>{m.description}</p><p className="pmw-muted">{m.images}</p><p className="pmw-muted">{m.limits}</p>
-        <input ref={input} type="file" multiple hidden accept=".md,.markdown,.docx,image/*" onChange={event => { select(event.currentTarget.files); event.currentTarget.value = '' }} />
+        <input ref={input} type="file" multiple hidden accept=".pptx,.docx,.md,.markdown,.ppt,.doc,image/*" onChange={event => { select(event.currentTarget.files); event.currentTarget.value = '' }} />
         <input ref={element => { directory.current = element; element?.setAttribute('webkitdirectory', '') }} type="file" multiple hidden onChange={event => { select(event.currentTarget.files); event.currentTarget.value = '' }} />
         <div className="pmw-operation__actions">
           <PmButton icon="upload" disabled={working} onClick={() => input.current?.click()}>{m.files}</PmButton>
           <PmButton icon="folder" disabled={working} onClick={() => directory.current?.click()}>{m.folder}</PmButton>
         </div>
         {files.length > 0 && <p>{m.selected(files.length)}</p>}
+        {legacy > 0 && !failure && <PmNotice tone="warn">{onlyLegacy ? m.errors['document-import-legacy'] : m.legacySelected(legacy)}</PmNotice>}
         {failure && <PmNotice tone="danger">{failure}</PmNotice>}
         <div className="pmw-operation__actions">
           <PmButton disabled={working} onClick={onClose}>{t.cancel}</PmButton>
-          <PmButton type="submit" variant="primary" loading={working} disabled={!files.length}>{m.submit}</PmButton>
+          <PmButton type="submit" variant="primary" loading={working} disabled={!files.length || onlyLegacy}>{m.submit}</PmButton>
         </div>
       </form>
     </PmDialog>

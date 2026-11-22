@@ -317,6 +317,9 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   }
 
   const documentsChanged = async (change: DocumentsChange): Promise<void> => {
+    // Folder events reach the index only for folders it watches; a document written into a new nested folder (an
+    // import) would wait for the occasional walk, and the list and the tree would miss it until then.
+    await documentIndex.changed([...change.added, ...change.removed])
     for (const dir of change.removed) {
       server?.diagnostics.forget(dir)
       compileSessions.get(dir)?.close()

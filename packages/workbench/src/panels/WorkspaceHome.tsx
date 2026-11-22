@@ -100,7 +100,12 @@ export function WorkspaceHome({ actions }: { actions?: ReactNode }) {
           })}
         </ul>}
       {importing && <DocumentImportDialog onClose={() => setImporting(false)} onImported={result => {
-        setImporting(false); workbench.tree.toast(importMessages.done(result.documents.length, result.unresolved, result.warnings)); void workbench.tree.load()
+        setImporting(false)
+        // One document opens at once; several stay listed in the tree, the first a click away.
+        const first = result.documents[0]
+        const open = () => { if (first) void workbench.openDocument(first.dir) }
+        workbench.tree.toast(importMessages.done(result.documents.length, result.unresolved, result.warnings), 'neutral', result.documents.length > 1 ? { label: importMessages.open, run: open } : undefined)
+        if (result.documents.length === 1) open()
       }} />}
       {writing && <MaterialsDialog onClose={() => setWriting(false)} />}
       {searching && <SearchDialog onClose={() => setSearching(false)} onOpen={(id, section, block) => { setSearching(false); void workbench.tree.openPlace({ document: id, ...section ? { section } : {}, ...block ? { block } : {} }) }} />}

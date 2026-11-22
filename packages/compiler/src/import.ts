@@ -44,7 +44,7 @@ const ATTACHMENTS = 'attachments'
 
 const glob = (pattern: string) => new RegExp(`^${pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`, 'i')
 const toPosix = (path: string) => path.split(sep).join('/')
-const key = (target: string) => target.trim().replace(/^\/+/, '').replace(/\.(?:md|markdown|docx)$/i, '').toLowerCase()
+const key = (target: string) => target.trim().replace(/^\/+/, '').replace(/\.(?:md|markdown|docx|pptx)$/i, '').toLowerCase()
 /** A document folder's part: letters, digits, `.`, `_` and `-`, not starting with `.`. */
 const part = (name: string) => name.replace(/[^\p{L}\p{N}._-]+/gu, '-').replace(/^[.-]+/, '') || 'note'
 
@@ -81,13 +81,18 @@ export function importMarkdown(input: string, options: ImportOptions): ImportRep
   return writeNotes(found, options, found.files.map(file => ({ file, text: new TextDecoder('utf-8', { fatal: true }).decode(readFileSync(file)) })))
 }
 
-/** One editable document per Markdown or Word source, with shared link and attachment resolution. */
+/** One editable document per Markdown, Word or PowerPoint source, with shared link and attachment resolution. */
 export async function importDocuments(input: string, options: ImportOptions): Promise<ImportReport> {
-  const found = discover(input, options, new Set([...MARKDOWN, '.docx']))
+  const found = discover(input, options, new Set([...MARKDOWN, '.docx', '.pptx']))
   const sources: { file: string, text: string, assets?: Map<string, Uint8Array>, warnings?: number, tree?: MdastNode }[] = []
-  for (const file of found.files) sources.push(extname(file).toLowerCase() === '.docx'
-    ? { file, ...await (await import('./word.ts')).wordMarkdown(readFileSync(file)) }
-    : { file, text: new TextDecoder('utf-8', { fatal: true }).decode(readFileSync(file)) })
+  for (const file of found.files) {
+    const extension = extname(file).toLowerCase()
+    sources.push(extension === '.docx'
+      ? { file, ...await (await import('./word.ts')).wordMarkdown(readFileSync(file)) }
+      : extension === '.pptx'
+        ? { file, ...await (await import('./powerpoint.ts')).powerpointMarkdown(readFileSync(file), basename(file, extension)) }
+        : { file, text: new TextDecoder('utf-8', { fatal: true }).decode(readFileSync(file)) })
+  }
   return writeNotes(found, options, sources)
 }
 
@@ -96,7 +101,7 @@ function writeNotes({ root, out, isExcluded }: ReturnType<typeof discover>, opti
   const taken = new Set<string>()
   const notes: Note[] = sources.map(({ file, text, assets, warnings, tree }) => {
     const path = toPosix(relative(root, file))
-    const parts = path.replace(/\.(?:md|markdown|docx)$/i, '').split('/').map(part)
+    const parts = path.replace(/\.(?:md|markdown|docx|pptx)$/i, '').split('/').map(part)
     if (RESERVED.has(parts[0]!)) parts[0] = `${parts[0]}-notes`
     let dir = parts.join('/')
     for (let n = 2; taken.has(dir.toLowerCase()); n++) dir = `${parts.join('/')}-${n}`
@@ -111,7 +116,7 @@ function writeNotes({ root, out, isExcluded }: ReturnType<typeof discover>, opti
   const pathNote = (path: string) => {
     const exact = byPath.get(pathKey(path))
     const candidates = byStem.get(key(posix.normalize(path))) ?? []
-    return exact ?? (!/\.(?:md|markdown|docx)$/i.test(path) && candidates.length === 1 ? candidates[0] : undefined)
+    return exact ?? (!/\.(?:md|markdown|docx|pptx)$/i.test(path) && candidates.length === 1 ? candidates[0] : undefined)
   }
   const byName = new Map<string, Note[]>()
   const register = (name: string, note: Note) => {
@@ -119,7 +124,7 @@ function writeNotes({ root, out, isExcluded }: ReturnType<typeof discover>, opti
     if (k && !byName.get(k)?.includes(note)) byName.set(k, [...byName.get(k) ?? [], note])
   }
   for (const note of notes) {
-    const stem = posix.basename(note.path).replace(/\.(?:md|markdown|docx)$/i, '')
+    const stem = posix.basename(note.path).replace(/\.(?:md|markdown|docx|pptx)$/i, '')
     register(stem, note)
     note.aliases.forEach(alias => register(alias, note))
     if (FOLDER_NOTES.has(stem.toLowerCase()) && posix.dirname(note.path) !== '.') register(posix.basename(posix.dirname(note.path)), note)

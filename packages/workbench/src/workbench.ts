@@ -486,11 +486,11 @@ export class Workbench {
     })
   }
 
-  /** Imports a batch, then refreshes the visible document list. */
+  /** Imports a batch, then refreshes the document list and the tree, so the new documents can be opened at once. */
   async importDocuments(files: readonly File[], signal?: AbortSignal): Promise<import('@lincyaw/kernel').DocumentImportAnswer> {
     if (!this.client.importDocuments) throw new Error('document-import-unavailable')
     const answer = await this.client.importDocuments(files, signal)
-    await this.loadDocuments()
+    await Promise.all([this.loadDocuments(), this.tree.available ? this.tree.load() : undefined])
     return answer
   }
 

@@ -86,5 +86,7 @@
   {"file": "packages/workbench/src/import-messages.ts", "key": "images", "rule": "Markdown", "reason": "External file import names Markdown and its .markdown extension so authors can choose a supported format (glossary section 8 import exception)."},
   {"file": "packages/workbench/src/import-messages.ts", "key": "errors.document-import-conversion", "rule": "Markdown", "reason": "External file import names Markdown and its .markdown extension so authors can choose a supported format (glossary section 8 import exception)."},
   {"file": "packages/workbench/src/import-messages.ts", "key": "errors.document-import-empty", "rule": "Markdown", "reason": "External file import names Markdown and its .markdown extension so authors can choose a supported format (glossary section 8 import exception)."},
+  {"file": "packages/workbench/src/import-messages.ts", "key": "legacySelected", "rule": "PPT", "reason": "names the .ppt extension of old PowerPoint files that must be saved as .pptx before import; an extension, not the word PPT for slides."},
+  {"file": "packages/workbench/src/import-messages.ts", "key": "errors.document-import-legacy", "rule": "PPT", "reason": "names the .ppt extension of old PowerPoint files that must be saved as .pptx before import; an extension, not the word PPT for slides."},
   {"file": "packages/cli/src/messages.ts", "key": "CLI_MESSAGES.importMissing", "rule": "Markdown", "reason": "External file import names Markdown and its .markdown extension so authors can choose a supported format (glossary section 8 import exception)."}
 ]

@@ -903,6 +903,9 @@ importers:
       '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
+      '@xmldom/xmldom':
+        specifier: ^0.8.15
+        version: 0.8.15
       content-disposition:
         specifier: 1.0.0
         version: 1.0.0
@@ -918,6 +921,9 @@ importers:
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
+      jszip:
+        specifier: ^3.10.2
+        version: 3.10.2
       mammoth:
         specifier: ^1.13.0
         version: 1.13.0

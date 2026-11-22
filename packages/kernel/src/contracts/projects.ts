@@ -16,6 +16,7 @@ export const DOCUMENT_MATERIALS_DIR = 'materials'
 /** The files added, relative to the document's folder, in the order given. */
 export interface DocumentMaterialsAnswer { files: string[], revision?: Revision }
 export interface DocumentImportAnswer {
+  /** The folder that holds the batch; empty when its folders were written at the top level of the workspace. */
   directory: string
   documents: { dir: string, title: string }[]
   files: number

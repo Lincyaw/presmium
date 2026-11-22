@@ -108,6 +108,7 @@ function DocumentListHome({ actions }: { actions?: ReactNode }) {
             )}
       {importing && <DocumentImportDialog onClose={() => setImporting(false)} onImported={answer => {
         setImporting(false); setQuery(''); setDone(importMessages.done(answer.documents.length, answer.unresolved, answer.warnings))
+        if (answer.documents.length === 1) void workbench.openDocument(answer.documents[0]!.dir)
       }} />}
       {editing && (
         <DocumentDialog
