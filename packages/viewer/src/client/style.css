@@ -691,6 +691,15 @@ html.pm-presenting {
   padding-inline-start: 1.3em;
 }
 
+/* Printed and exported slides show the markers the presentation shows. */
+.pm-slide :where(ul):not(.contains-task-list) {
+  list-style: disc;
+}
+
+.pm-slide :where(ol) {
+  list-style: decimal;
+}
+
 .pm-slide li::marker {
   color: var(--pm-color-accent);
 }
@@ -726,6 +735,12 @@ html.pm-presenting {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Content that would shrink below the presentation's smallest scale scrolls instead. */
+.pm-slide__body--scrolls {
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .pm-slide__content {

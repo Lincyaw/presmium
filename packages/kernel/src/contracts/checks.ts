@@ -10,6 +10,8 @@ export interface Finding {
   message: string
   source?: { file: string; line?: number }
   hint?: string
+  /** The page (section id) the problem is on, when it is on one: the author can go to it. */
+  section?: string
 }
 
 export interface CheckContext {

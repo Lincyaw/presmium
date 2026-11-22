@@ -95,7 +95,7 @@ export async function exportDeck(job: ExportJob): Promise<ExportResult> {
     if (written.length !== expected) throw new Error(`the export wrote ${written.length} pictures for the ${expected} pages of the slides`)
     return { format, output, pages: written.length, links: [], warnings }
   }
-  // A PowerPoint file has a picture of each slide: no links to check.
+  // The links of a PowerPoint file are not checked.
   if (format === 'pptx') return { format, output, pages: expected, links: [], warnings }
   const pages = (await pdfLinks(output)).map(uris => new Set(uris.map(normalizeUrl)))
   if (pages.length !== expected) throw new Error(`the PDF has ${pages.length} pages for the ${expected} pages of the slides`)

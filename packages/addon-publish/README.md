@@ -18,7 +18,7 @@ It is a Presmium plugin: its components work on the web page and in the slides. 
 
 - A service worker that keeps built sites readable offline (`presmium.publish.offline: false` turns it off).
 - A high-contrast switch, and remote images localized into `.presmium/assets/`.
-- `presmium-export`: the slides printed in Chromium as PDF, PowerPoint (a picture of each slide, the narration as the speaker notes) or PNG (`--format pdf|pptx|png`, `--output`, `--with-clicks`, `--range`, `--dark`, `--timeout`, `--json`); `presmium-diff`: visual differences between two commits, in the slides and the web form. Both run Chromium from `playwright-chromium`, installed in the document's project (`pnpm add -D playwright-chromium`, then `pnpm exec playwright install chromium`).
+- `presmium-export`: the slides printed in Chromium as PDF, PowerPoint (editable text boxes, tables and pictures where the slide has them, formulas, diagrams and components as pictures, the script as the speaker notes) or PNG (`--format pdf|pptx|png`, `--output`, `--with-clicks`, `--range`, `--dark`, `--timeout`, `--json`); `presmium-diff`: visual differences between two commits, in the slides and the web form. Both run Chromium from `playwright-chromium`, installed in the document's project (`pnpm add -D playwright-chromium`, then `pnpm exec playwright install chromium`).
 
 ## Documentation
 

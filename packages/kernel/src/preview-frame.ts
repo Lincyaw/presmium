@@ -53,6 +53,8 @@ export interface PreviewProblem {
   level: 'error' | 'warning'
   plugin?: string
   message: string
+  /** The page (section id) the problem is on. */
+  section?: string
   resolved?: boolean
 }
 

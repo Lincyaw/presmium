@@ -184,8 +184,9 @@ function toPreviewDiagnostics(body: unknown): PreviewDiagnostics | string {
   for (const item of body.findings) {
     if (!isRecord(item) || typeof item.checkId !== 'string' || typeof item.message !== 'string' || !['error', 'warning', 'info'].includes(String(item.severity))) return 'each diagnostic needs checkId, severity and message'
     if (item.hint !== undefined && typeof item.hint !== 'string') return 'a diagnostic hint must be text'
+    if (item.section !== undefined && typeof item.section !== 'string') return 'a diagnostic page must be a section id'
     if (item.source !== undefined && (!isRecord(item.source) || typeof item.source.file !== 'string' || (item.source.line !== undefined && (!Number.isInteger(item.source.line) || Number(item.source.line) < 1)))) return 'a diagnostic source needs a file and an optional positive line'
-    findings.push({ checkId: item.checkId, severity: item.severity as Finding['severity'], message: item.message, ...item.hint ? { hint: item.hint as string } : {}, ...item.source ? { source: item.source as Finding['source'] } : {} })
+    findings.push({ checkId: item.checkId, severity: item.severity as Finding['severity'], message: item.message, ...item.hint ? { hint: item.hint as string } : {}, ...item.section ? { section: item.section as string } : {}, ...item.source ? { source: item.source as Finding['source'] } : {} })
   }
   return { document: body.document, renderer: body.renderer, instance: body.instance, revision: body.revision, findings }
 }

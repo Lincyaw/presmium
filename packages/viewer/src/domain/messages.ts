@@ -21,6 +21,7 @@ const zh = {
     fullscreen: '全屏',
     exitFullscreen: '退出全屏',
     exit: '结束放映',
+    crowded: (page: number, percent: number, scrolls: boolean) => `第 ${page} 页内容过多，放映时文字会缩小到 ${percent}%${scrolls ? '，放不下的内容要滚动才能看到' : ''}。建议拆分成几页。`,
   },
   presenter: {
     step: (step: number, steps: number) => (steps > 0 ? zhStep(step, steps) : ''),
@@ -89,6 +90,7 @@ const en: Messages = {
     fullscreen: 'Full Screen',
     exitFullscreen: 'Exit Full Screen',
     exit: 'End Show',
+    crowded: (page, percent, scrolls) => `Page ${page} has too much content: in the presentation its text shrinks to ${percent}%${scrolls ? ', and what doesn’t fit needs scrolling' : ''}. Consider splitting it into several pages.`,
   },
   presenter: {
     step: (step, steps) => (steps > 0 ? `Step ${step + 1} of ${steps + 1}` : ''),
