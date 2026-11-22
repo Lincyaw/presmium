@@ -258,6 +258,8 @@ export type DocumentThreadAnchor = DocumentTextAnchor | DocumentPlaceAnchor
 /** A text range and a place are disjoint shapes; read the shape instead of guessing from offsets. */
 export const isDocumentTextAnchor = (anchor: DocumentThreadAnchor | undefined): anchor is DocumentTextAnchor => Boolean(anchor && 'from' in anchor && 'to' in anchor)
 export const isDocumentPlaceAnchor = (anchor: DocumentThreadAnchor | undefined): anchor is DocumentPlaceAnchor => Boolean(anchor && 'blockId' in anchor && !('from' in anchor))
+/** The author of the comments an import leaves on the pages where it could not convert something. */
+export const IMPORT_COMMENT_AUTHOR = 'presmium-import'
 export interface DocumentComment {
   id: string
   type: 'comment'

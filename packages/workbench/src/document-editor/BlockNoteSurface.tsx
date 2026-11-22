@@ -15,6 +15,7 @@ import { documentSelection, nativeBlockText, nativeTextPoint } from './selection
 import type { NativeDocumentSelection } from './selection.ts'
 import { DOCUMENT_EDITOR_MESSAGES, IMAGE_IMPORT_MESSAGES, slashAliases } from './messages.ts'
 import { blockNoteDictionary } from './blocknote-messages.ts'
+import { IMPORT_MESSAGES } from '../import-messages.ts'
 import { imageFileInput } from './file-input.ts'
 import type { ImageImportFailure } from './file-input.ts'
 import { nativeTextClipboard } from './clipboard.ts'
@@ -181,7 +182,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
     extensions: [nativeTextClipboard, documentBlockColors, documentPageBodies(), imageFileInput({
       onStart: () => { if (current.current.identity === props.identity) setFileErrors(undefined) },
       onFailure: failure => { if (current.current.identity === props.identity) setFileErrors(value => ({ identity: props.identity, failures: [...(value?.identity === props.identity ? value.failures : []), failure] })) },
-    }), ...props.comments ? [nativeCommentSelection(), nativeComments(props.comments, t.author)] : []],
+    }), ...props.comments ? [nativeCommentSelection(), nativeComments(props.comments, t.author, IMPORT_MESSAGES[props.locale].commentAuthor)] : []],
     domAttributes: { block: { 'data-document-editor-block': '' }, editor: { lang: props.contentLang ?? props.locale } },
   }, [props.identity, props.reset ?? 0])
   useEffect(() => {

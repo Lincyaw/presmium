@@ -6,7 +6,8 @@ export const IMPORT_MESSAGES = {
     limits: '最多 1000 个文件，合计 32 MiB。导入后可在工作区中继续编辑。',
     selected: (count: number) => `已选择 ${count} 个文件`,
     legacySelected: (count: number) => `其中 ${count} 个是旧版 Word（.doc）或 PowerPoint（.ppt）文件，不会导入；请先在 Word 或 PowerPoint 中另存为 .docx 或 .pptx。`,
-    done: (count: number, unresolved: number, warnings: number) => `已导入 ${count} 份文稿${unresolved ? `，${unresolved} 个链接或图片需要检查` : ''}${warnings ? `，${warnings} 项格式转换提示需要检查` : ''}。`,
+    done: (count: number, unresolved: number, warnings: number) => `已导入 ${count} 份文稿${unresolved ? `，${unresolved} 个链接或图片需要检查` : ''}${warnings ? `，${warnings} 处内容未能转换，已在相应页面留下批注` : ''}。`,
+    commentAuthor: '导入',
     failed: '导入未完成，请检查文件后重试。',
     errors: {
       'document-import-invalid': '文件路径或选择无效，请重新选择文件或文件夹。',
@@ -27,7 +28,8 @@ export const IMPORT_MESSAGES = {
     limits: 'Up to 1000 files and 32 MiB in total. Edit the imported documents in this workspace.',
     selected: (count: number) => `${count} ${count === 1 ? 'file' : 'files'} selected`,
     legacySelected: (count: number) => `${count} of them ${count === 1 ? 'is an old Word (.doc) or PowerPoint (.ppt) file' : 'are old Word (.doc) or PowerPoint (.ppt) files'} and will not be imported. Save ${count === 1 ? 'it' : 'them'} as .docx or .pptx in Word or PowerPoint first.`,
-    done: (count: number, unresolved: number, warnings: number) => `Imported ${count} ${count === 1 ? 'document' : 'documents'}${unresolved ? `; check ${unresolved} ${unresolved === 1 ? 'link or image' : 'links or images'}` : ''}${warnings ? `; check ${warnings} conversion ${warnings === 1 ? 'notice' : 'notices'}` : ''}.`,
+    done: (count: number, unresolved: number, warnings: number) => `Imported ${count} ${count === 1 ? 'document' : 'documents'}${unresolved ? `; check ${unresolved} ${unresolved === 1 ? 'link or image' : 'links or images'}` : ''}${warnings ? `; ${warnings} ${warnings === 1 ? 'item' : 'items'} could not be converted, see the comments on their pages` : ''}.`,
+    commentAuthor: 'Import',
     failed: 'Import did not finish. Check the files and try again.',
     errors: {
       'document-import-invalid': 'Invalid file paths or selection. Choose the files or folder again.',

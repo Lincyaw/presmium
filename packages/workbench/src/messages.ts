@@ -254,7 +254,19 @@ const zh = {
   historyOlder: '更早版本',
   exportPane: '导出',
   makeLabel: '导出',
-  outputLabels: { web: '网站', slides: '幻灯片网站', notebook: 'Notebook', lecture: '讲授' } as Record<string, string>,
+  outputLabels: { web: '网站', pdf: 'PDF', pptx: 'PowerPoint', video: '视频', slides: '幻灯片网站', lecture: '讲授', notebook: 'Notebook', png: '幻灯片图片', svg: '图形（SVG）' } as Record<string, string>,
+  outputHints: {
+    web: '在浏览器中阅读的网页，可下载压缩包离线打开或发布',
+    pdf: '每页幻灯片一页，便于打印与共享',
+    pptx: '每页幻灯片一张，可在 PowerPoint 中继续编辑，讲稿成为备注',
+    video: '带配音与字幕的讲授视频',
+    slides: '在浏览器中放映的幻灯片网页',
+    lecture: '在浏览器中按配音与字幕播放的讲授网页',
+    notebook: '可在 Jupyter 中运行代码的 .ipynb 文件',
+    png: '每页幻灯片一张 PNG 图片',
+    svg: '文稿中的每个图形各存为一个矢量图文件',
+  } as Record<string, string>,
+  moreFormats: '更多格式',
   makeOutput: (label: string) => `导出${spaced(label)}`,
   outputsList: '导出记录',
   noOutputs: '还没有导出过文件。',
@@ -644,7 +656,19 @@ const en: WorkbenchMessages = {
   historyOlder: 'Older versions',
   exportPane: 'Export',
   makeLabel: 'Export',
-  outputLabels: { web: 'Website', slides: 'Slides Website', notebook: 'Notebook', lecture: 'Lecture' },
+  outputLabels: { web: 'Website', pdf: 'PDF', pptx: 'PowerPoint', video: 'Video', slides: 'Slides Website', lecture: 'Lecture', notebook: 'Notebook', png: 'Slide Pictures', svg: 'Figures (SVG)' },
+  outputHints: {
+    web: 'Web pages to read in a browser; download the ZIP to open offline or publish',
+    pdf: 'One page per slide, for printing and sharing',
+    pptx: 'One slide per page, to keep editing in PowerPoint, with the script as speaker notes',
+    video: 'The lecture as a video with voiceover and captions',
+    slides: 'Slides to present in a browser',
+    lecture: 'The lecture as web pages that play with voiceover and captions',
+    notebook: 'An .ipynb file whose code runs in Jupyter',
+    png: 'One PNG picture per slide',
+    svg: 'Each figure in the document as its own vector file',
+  },
+  moreFormats: 'More Formats',
   makeOutput: (label: string) => `Export ${label}`,
   outputsList: 'Export History',
   noOutputs: 'Nothing exported yet.',
@@ -828,7 +852,7 @@ export function jobFailure(t: WorkbenchMessages, job: Pick<CompileJob, 'code' | 
 
 /** What the author calls an output: the plugin's label in the interface's language, else the catalog's, else its id. */
 export function outputLabel(t: WorkbenchMessages, locale: Locale, target: { id: string, label: Record<string, string> }): string {
-  return (target.label[locale] !== target.id ? target.label[locale] : undefined) ?? t.outputLabels[target.id] ?? target.id
+  return t.outputLabels[target.id] ?? (target.label[locale] !== target.id ? target.label[locale] : undefined) ?? target.id
 }
 
 /** Text the workbench writes into a document (new page titles, copy names) follows the document's `lang`, not the interface's. */

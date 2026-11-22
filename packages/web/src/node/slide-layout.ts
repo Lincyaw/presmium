@@ -68,6 +68,9 @@ export const PICTURE_ATTRIBUTE = 'data-pm-layout-picture'
 export async function readSlideLayouts(selector: { page: string, attribute: string }): Promise<SlideLayout[]> {
   // What is drawn as a picture: no text or table form says what it shows.
   const PICTURES = 'svg, canvas, video, iframe, object, embed, math, .katex, .katex-display, mjx-container, .pm-component-missing'
+  // The viewer's own marks on a slide (the document's title, the step dots, the page number): PowerPoint numbers its
+  // slides itself, and a deck edited there would carry stale copies of them.
+  const CHROME = '.pm-slide__footer'
   const INLINE = new Set(['inline', 'inline-block', 'inline-flex', 'inline-grid', 'contents'])
   const canvas = document.createElement('canvas')
   canvas.width = canvas.height = 1
@@ -269,7 +272,7 @@ export async function readSlideLayouts(selector: { page: string, attribute: stri
       flush()
     }
     const visit = async (target: Element) => {
-      if (!shown(target)) return
+      if (!shown(target) || target.matches(CHROME)) return
       if (target.matches(PICTURES)) return picture(target)
       if (target.localName === 'img') {
         const image = target as HTMLImageElement

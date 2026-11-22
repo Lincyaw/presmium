@@ -747,6 +747,39 @@
   list-style: none;
 }
 
+.pmw-export__more {
+  margin: var(--pm-space-2) var(--pm-space-3) 0;
+}
+
+.pmw-export__more summary {
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pmw-export__formats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-space-2);
+  margin: var(--pm-space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pmw-export__formats li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pm-space-1) var(--pm-space-2);
+}
+
+.pmw-export__hint {
+  flex: 1 1 12em;
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-xs);
+}
+
 .pmw-export__subtitle {
   margin: var(--pm-space-2) var(--pm-space-3) 0;
   color: var(--pm-color-muted);

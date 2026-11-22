@@ -63,22 +63,22 @@ const plugin: PresmiumNodePlugin = {
   kernel: '^1.0.0',
   renderer: slidesRenderer,
   exporters: [
-    slidesExporter('pdf', { 'zh-CN': '幻灯片 PDF', 'en': 'Slides as PDF' }, async (ctx) => {
+    slidesExporter('pdf', { 'zh-CN': 'PDF', 'en': 'PDF' }, async (ctx) => {
       await printed(ctx, 'pdf', join(ctx.outDir, 'slides.pdf'))
       return { files: ['slides.pdf'] }
     }),
-    slidesExporter('png', { 'zh-CN': '幻灯片图片', 'en': 'Slides as pictures' }, async (ctx) => {
+    slidesExporter('png', { 'zh-CN': '幻灯片图片', 'en': 'Slide Pictures' }, async (ctx) => {
       const { pages } = await printed(ctx, 'png', ctx.outDir)
       return { files: pages.map(page => page.file!) }
     }),
     // Each figure the slides draw (`<svg data-figure="name">`) as SVG, a file for each change it goes through.
-    slidesExporter('svg', { 'zh-CN': '图形 SVG', 'en': 'Figures as SVG' }, async (ctx) => {
+    slidesExporter('svg', { 'zh-CN': '图形（SVG）', 'en': 'Figures (SVG)' }, async (ctx) => {
       const { figures } = await printed(ctx, 'svg', ctx.outDir)
       return { files: (figures ?? []).map(figure => figure.file) }
     }),
     // Each slide as PowerPoint draws it, to be edited there: its text, tables and pictures where the slide view has them,
     // what has no such form (a formula, a figure, a component) as its picture, and its script as the speaker notes.
-    slidesExporter('pptx', { 'zh-CN': '幻灯片 PowerPoint', 'en': 'Slides as PowerPoint' }, async (ctx) => {
+    slidesExporter('pptx', { 'zh-CN': 'PowerPoint', 'en': 'PowerPoint' }, async (ctx) => {
       const pictures = join(ctx.outDir, PICTURES)
       await mkdir(pictures, { recursive: true })
       try {

@@ -2,8 +2,8 @@
 // slide order. Text boxes keep their paragraphs, emphasis and links; bulleted and numbered paragraphs become lists
 // nested by level (bullets inherited from the layout and master count, as PowerPoint shows them); tables keep their
 // merged cells; pictures become image blocks; the speaker notes become the page's narration. Positions, fonts,
-// colours, animations and transitions do not enter the document; charts, SmartArt, media and pictures a browser
-// cannot show are counted as conversion notices.
+// colours, animations and transitions do not enter the document; charts, SmartArt, embedded objects, media and
+// pictures a browser cannot show become conversion notices on the page they were on.
 import { posix } from 'node:path'
 import JSZip from 'jszip'
 import { DOMParser } from '@xmldom/xmldom'
@@ -11,10 +11,16 @@ import type { MdastNode } from '@lincyaw/kernel'
 import { toMarkdown } from 'mdast-util-to-markdown'
 import { gfmToMarkdown } from 'mdast-util-gfm'
 import { NARRATION_NODE } from './markdown.ts'
+import type { ImportNotice } from './import-notices.ts'
 
 
 const IMAGE_TYPES: Record<string, string> = { png: 'png', jpg: 'jpg', jpeg: 'jpg', gif: 'gif', webp: 'webp', svg: 'svg', bmp: 'bmp', avif: 'avif' }
 const TITLE_LENGTH = 80
+// The widest line a slide may hold alone and still be taken for its title, a CJK character (or full-width mark) 1 and
+// any other character a half.
+const SOLE_TITLE_WIDTH = 20
+const WIDE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\u2014\u3000-\u303f\uff00-\uffef]/u
+const width = (text: string) => [...text].reduce((sum, char) => sum + (WIDE.test(char) ? 1 : 0.5), 0)
 const SKIPPED_PLACEHOLDERS = new Set(['dt', 'ftr', 'sldNum', 'hdr', 'sldImg'])
 const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu
 const LETTER = /\p{L}/gu
@@ -57,7 +63,7 @@ interface Placeholder { type: string, idx?: string }
 interface Item { y: number, x: number, order: number, nodes: MdastNode[], paragraphs?: Paragraph[] }
 interface Paragraph { level: number, list?: { ordered: boolean, start?: number }, content: MdastNode[] }
 
-export async function powerpointMarkdown(buffer: Uint8Array, name: string): Promise<{ text: string, assets: Map<string, Uint8Array>, warnings: number, tree: MdastNode }> {
+export async function powerpointMarkdown(buffer: Uint8Array, name: string): Promise<{ text: string, assets: Map<string, Uint8Array>, notices: ImportNotice[], tree: MdastNode }> {
   const zip = await JSZip.loadAsync(buffer)
   const parts = new Map<string, Part | undefined>()
   const xml = async (path: string): Promise<Part | undefined> => {
@@ -93,12 +99,14 @@ export async function powerpointMarkdown(buffer: Uint8Array, name: string): Prom
   const slideHeight = Number(attr(child(presentation.root, 'sldSz'), 'cy')) || 6858000
   const assets = new Map<string, Uint8Array>()
   const media = new Map<string, string>()
-  let warnings = 0
+  const notices: ImportNotice[] = []
   const pages: { title?: string, notes: string, nodes: MdastNode[] }[] = []
 
   for (const path of slidePaths) {
     const slide = await xml(path)
-    if (!slide) { warnings++; continue }
+    // An unreadable slide has no page of its own; its notice goes on the page before it.
+    if (!slide) { notices.push({ page: Math.max(0, pages.length - 1), kind: 'slide' }); continue }
+    const notice = (kind: ImportNotice['kind']) => notices.push({ page: pages.length, kind })
     const layout = await related(slide, 'slideLayout')
     const master = layout && await related(layout, 'slideMaster')
 
@@ -212,7 +220,7 @@ export async function powerpointMarkdown(buffer: Uint8Array, name: string): Prom
       const rel = part.rels.get(relAttr(child(picture, 'blipFill', 'blip'), 'embed') ?? '')
       const extension = rel && !rel.external ? IMAGE_TYPES[posix.extname(rel.target).slice(1).toLowerCase()] : undefined
       const file = rel && zip.file(rel.target)
-      if (!rel || !extension || !file) { warnings++; return undefined }
+      if (!rel || !extension || !file) { notice('image'); return undefined }
       let name = media.get(rel.target)
       if (!name) { name = `slide-image-${media.size + 1}.${extension}`; media.set(rel.target, name) }
       const description = child(picture, 'nvPicPr', 'cNvPr')
@@ -237,13 +245,14 @@ export async function powerpointMarkdown(buffer: Uint8Array, name: string): Prom
           continue
         } else if (shape.localName === 'pic') {
           // A video or a sound shows its poster picture; the media itself does not come along.
-          if (children(child(shape, 'nvPicPr', 'nvPr')).some(item => /^(?:videoFile|audioFile|quickTimeFile|wavAudioFile)$/.test(item.localName))) { warnings++; continue }
+          if (children(child(shape, 'nvPicPr', 'nvPr')).some(item => /^(?:videoFile|audioFile|quickTimeFile|wavAudioFile)$/.test(item.localName))) { notice('media'); continue }
           const image = imageOf(shape, slide)
           if (image) nodes = [image]
         } else if (shape.localName === 'graphicFrame') {
           const table = child(shape, 'graphic', 'graphicData', 'tbl')
+          const uri = attr(child(shape, 'graphic', 'graphicData'), 'uri') ?? ''
           if (table) nodes = [tableOf(table, slide)]
-          else warnings++
+          else notice(uri.endsWith('/chart') ? 'chart' : uri.endsWith('/diagram') ? 'diagram' : 'object')
         } else if (shape.localName === 'grpSp') {
           // A group is read as one shape where it stands, its own shapes in their order.
           items.push(...(await collect(shape)).map(item => ({ ...item, ...at, order: order++ })))
@@ -253,12 +262,15 @@ export async function powerpointMarkdown(buffer: Uint8Array, name: string): Prom
       return items.sort((a, b) => a.y - b.y || a.x - b.x || a.order - b.order)
     }
     const items = await collect(child(slide.root, 'cSld', 'spTree'))
-    // A slide without a title placeholder is titled by its first line of text when that reads as one: short, not a
-    // list item, and near the top of the slide or the slide's only text.
+    // A slide without a title placeholder is titled by its first line of text when that reads as one: not a list item,
+    // not a sentence, and either a short line near the top with more of the slide below it, or a very short line that is
+    // the slide's only content (a section divider). Other text, a lone sentence in a free text box say, stays the body.
     const texts = items.filter(item => item.paragraphs)
     const lead = texts[0], first = lead?.paragraphs![0]
-    if (title === undefined && lead && first && !first.list && plainText(first.content).trim().length <= TITLE_LENGTH
-      && (lead.y < slideHeight * 0.3 || (texts.length === 1 && lead.paragraphs!.length === 1))) {
+    const line = first ? plainText(first.content).trim() : ''
+    const sole = items.length === 1 && lead?.paragraphs!.length === 1
+    if (title === undefined && lead && first && !first.list && !/[。！？；：.!?;:]$/.test(line)
+      && (sole ? width(line) <= SOLE_TITLE_WIDTH : line.length <= TITLE_LENGTH && lead.y < slideHeight * 0.3)) {
       title = plainText(first.content).trim()
       lead.nodes = blocksOf(lead.paragraphs!.slice(1))
     }
@@ -293,5 +305,5 @@ export async function powerpointMarkdown(buffer: Uint8Array, name: string): Prom
   })
   const tree: MdastNode = { type: 'root', children: body }
   const text = toMarkdown({ type: 'root', children: body.filter(node => node.type !== NARRATION_NODE) } as never, { extensions: [gfmToMarkdown()], bullet: '-', fences: true })
-  return { text, tree, assets, warnings }
+  return { text, tree, assets, notices }
 }
