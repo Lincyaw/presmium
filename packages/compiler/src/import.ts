@@ -197,6 +197,8 @@ function writeNotes({ root, out, isExcluded }: ReturnType<typeof discover>, opti
         image: attach,
       },
     })
+    // A PowerPoint deck stays a deck: it is shown and exported as slides, as well as on the site.
+    if (extname(note.file).toLowerCase() === '.pptx') document.metadata.renderers = { web: {}, slides: {}, ...document.metadata.renderers }
     const folder = options.group ? posix.dirname(note.path).split('/').slice(0, options.group).at(-1) : undefined
     if (folder && folder !== '.') document.metadata.tags = [folder, ...(document.metadata.tags ?? []).filter(tag => tag !== folder)]
     mkdirSync(docDir, { recursive: true })
