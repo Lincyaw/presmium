@@ -20,7 +20,7 @@ import type { ImageImportFailure } from './file-input.ts'
 import { nativeTextClipboard } from './clipboard.ts'
 import { documentPageBodies, focusDocumentEnd } from './page-body.ts'
 import { documentBlockColors } from './colors.ts'
-import { DOCUMENT_EDITOR_LOCALE } from './math.tsx'
+import { DOCUMENT_EDITOR_LOCALE, MATH_EDITOR } from './math.tsx'
 import { DOCUMENT_LINKS, DocumentColorButton, DocumentLinkToolbar, DocumentSideMenu, DocumentTableCellButton, DocumentTableHandle, FormulaToolbarButton, formulaSlashItems, openDocumentLink } from './authoring.tsx'
 import type { DocumentLinks } from './authoring.tsx'
 import { excludeCommentMarkHistory, nativeComments, nativeCommentSelection } from './comments.ts'
@@ -193,7 +193,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
       stopCommentHistory?.(); current.current.onReady?.(undefined)
     }
   }, [editor])
-  return <DOCUMENT_EDITOR_LOCALE.Provider value={props.locale}><DOCUMENT_LINKS.Provider value={links}><DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}><COMMENT_EDITOR_CONTEXT.Provider value={props.comments ? { store: props.comments, locale: props.locale, sidebar: Boolean(props.commentsPortal), readOnly: Boolean(props.readOnly), getPositionToken: () => current.current.getPositionToken?.(), onDraftRestore: () => current.current.onCommentDraftRestore?.(), openComments: () => current.current.onOpenComments?.() } : undefined}>
+  return <DOCUMENT_EDITOR_LOCALE.Provider value={props.locale}><MATH_EDITOR.Provider value={props.nodeViews?.mathEditor}><DOCUMENT_LINKS.Provider value={links}><DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}><COMMENT_EDITOR_CONTEXT.Provider value={props.comments ? { store: props.comments, locale: props.locale, sidebar: Boolean(props.commentsPortal), readOnly: Boolean(props.readOnly), getPositionToken: () => current.current.getPositionToken?.(), onDraftRestore: () => current.current.onCommentDraftRestore?.(), openComments: () => current.current.onOpenComments?.() } : undefined}>
     <div className="pm-document-editor pm-ui-block-editor pm-ui" data-document-editor={props.identity}
       onDragEnter={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
       onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
@@ -245,5 +245,5 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         focusDocumentEnd(editor)
       }} />
     </div>
-  </COMMENT_EDITOR_CONTEXT.Provider></DOCUMENT_NODE_VIEWS.Provider></DOCUMENT_LINKS.Provider></DOCUMENT_EDITOR_LOCALE.Provider>
+  </COMMENT_EDITOR_CONTEXT.Provider></DOCUMENT_NODE_VIEWS.Provider></DOCUMENT_LINKS.Provider></MATH_EDITOR.Provider></DOCUMENT_EDITOR_LOCALE.Provider>
 }

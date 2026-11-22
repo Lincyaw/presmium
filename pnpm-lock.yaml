@@ -1047,6 +1047,9 @@ importers:
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
+      mathlive:
+        specifier: 0.111.4
+        version: 0.111.4
       node-addon-require-builtin:
         specifier: 0.1.9
         version: 0.1.9
@@ -8663,6 +8666,9 @@ packages:
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
+
+  mathlive@0.111.4:
+    resolution: {integrity: sha512-1E5EOQnUHWn+KfEXaDTmuyxRWZrZw4WlQFyZLzJmjKEPdaX4WAnFqVfZb36mhulykcIl7/W7gKkTmutP2/9wjQ==}
 
   mdast-util-definitions@5.1.2:
     resolution: {integrity: sha512-8SVPMuHqlPME/z3gqVwWY4zVXn8lqKv/pAhC57FuJ40ImXyBpmO5ukh98zB2v7Blql2FiHjHv9LVztSIqjY+MA==}
@@ -18588,6 +18594,8 @@ snapshots:
       markmap-common: 0.18.9
 
   math-intrinsics@1.1.0: {}
+
+  mathlive@0.111.4: {}
 
   mdast-util-definitions@5.1.2:
     dependencies:

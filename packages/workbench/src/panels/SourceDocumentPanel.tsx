@@ -187,6 +187,7 @@ export function SourceDocumentPanel({ commentsPortal, onCommentDraftRestore, onO
         },
         renderReference: (target, label, fallback) => <DocumentReference document={target.document} section={target.section} block={target.block} label={label} fallback={fallback} />,
         renderEmbed: (id, embed) => <SyncedBlock id={id} document={embed.document} block={embed.block} />,
+        mathEditor: workbench.client.mathEditor,
         ...workbench.tree.available ? {
           slashItems: editor => readOnly ? [] : referenceSlashItems(editor, tt, tt.documents, workbench, () => syncedPicker.open?.(editor)),
           editorChildren: editor => readOnly ? null : <ReferenceEditorTools editor={editor} picker={syncedPicker} />,

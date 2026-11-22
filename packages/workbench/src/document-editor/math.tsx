@@ -1,12 +1,29 @@
-import { createContext, useCallback, useContext, useMemo, useRef } from 'react'
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import katex from 'katex'
-import { createReactBlockSpec, createReactInlineContentSpec, SourceBlockWithPreview, SourceInlineContentWithPreview, useSourceInlineContentPreviewPopup } from '@blocknote/react'
+import type { BlockNoteEditor } from '@blocknote/core'
+import { createReactBlockSpec, createReactInlineContentSpec, SourceBlockWithPreview, SourceInlineContentWithPreview, useSourceBlockPreviewPopup, useSourceInlineContentPreviewPopup } from '@blocknote/react'
 import type { Locale } from '../messages.ts'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
+import { MathEditorDialog, MathVisualButton } from './math-editor.tsx'
 import { useInlineSourcePopupPlacement } from './popover.tsx'
 
 export const DOCUMENT_EDITOR_LOCALE = createContext<Locale>('zh-CN')
+/** Where the host serves the visual formula editor; without it formulas are edited as LaTeX only. */
+export const MATH_EDITOR = createContext<string | undefined>(undefined)
+
+/** Edit Visually in a formula's open popup, and the dialog it opens; `write` puts the confirmed LaTeX into the formula. */
+function useVisualMath(editor: BlockNoteEditor<any, any, any>, source: string, write: (latex: string) => void) {
+  const base = useContext(MATH_EDITOR), locale = useContext(DOCUMENT_EDITOR_LOCALE)
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  const [editing, setEditing] = useState(false)
+  const controls = (open: boolean) => base && editor.isEditable ? <>
+    <MathVisualButton anchor={anchor} open={open} locale={locale} onClick={() => setEditing(true)} />
+    {editing && <MathEditorDialog base={base} initial={source} locale={locale} onClose={() => setEditing(false)}
+      onConfirm={latex => { setEditing(false); if (latex !== source) write(latex) }} onCloseAutoFocus={event => { event.preventDefault(); editor.focus() }} />}
+  </> : null
+  return { anchor: setAnchor, controls }
+}
 
 // MathML needs no font assets in the workbench bundle; the viewer typesets the same TeX with the same library.
 function typeset(source: string, display: boolean): { html?: string, error?: string } {
@@ -39,8 +56,14 @@ export const mathBlock = createReactBlockSpec({
   render: function MathBlock({ block, editor, contentRef }) {
     const source = block.content.map(part => part.text).join('')
     const math = useMathPreview(source, true)
-    return <SourceBlockWithPreview block={block} editor={editor} contentRef={contentRef} source={source} preview={math.preview} error={math.error}
-      emptySourcePlaceholder={math.empty} errorPreview={math.invalid} sourcePlaceholder={math.placeholder} />
+    const popup = useSourceBlockPreviewPopup({ editor, block })
+    const visual = useVisualMath(editor, source, latex => editor.updateBlock(block.id, { content: latex }))
+    const sourceRef = useCallback((element: HTMLElement | null) => { visual.anchor(element); contentRef(element) }, [contentRef])
+    return <>
+      <SourceBlockWithPreview block={block} editor={editor} contentRef={sourceRef} source={source} preview={math.preview} error={math.error}
+        emptySourcePlaceholder={math.empty} errorPreview={math.invalid} sourcePlaceholder={math.placeholder} />
+      {visual.controls(popup.isOpen)}
+    </>
   },
 })()
 
@@ -54,10 +77,18 @@ export const mathInline = createReactInlineContentSpec({
   render: function MathInline({ inlineContent, editor, node, getPos, contentRef }) {
     const math = useMathPreview(inlineContent.content, false)
     const { isOpen } = useSourceInlineContentPreviewPopup({ editor, node, getPos })
+    const visual = useVisualMath(editor, inlineContent.content, latex => editor.transact(transaction => {
+      const position = getPos(), current = position === undefined ? undefined : transaction.doc.nodeAt(position)
+      if (position === undefined || current?.type.name !== 'presmiumMathInline') return
+      transaction.replaceWith(position + 1, position + current.nodeSize - 1, latex ? transaction.doc.type.schema.text(latex) : [])
+    }))
     const sourceElement = useRef<HTMLElement | null>(null)
-    const sourceRef = useCallback((element: HTMLElement | null) => { sourceElement.current = element; contentRef(element) }, [contentRef])
+    const sourceRef = useCallback((element: HTMLElement | null) => { sourceElement.current = element; visual.anchor(element); contentRef(element) }, [contentRef])
     useInlineSourcePopupPlacement(useCallback(() => sourceElement.current, []), isOpen)
-    return <SourceInlineContentWithPreview editor={editor} node={node} getPos={getPos} contentRef={sourceRef} source={inlineContent.content} preview={math.preview} error={math.error}
-      emptySourcePlaceholder={math.empty} errorPreview={math.invalid} sourcePlaceholder={math.placeholder} />
+    return <>
+      <SourceInlineContentWithPreview editor={editor} node={node} getPos={getPos} contentRef={sourceRef} source={inlineContent.content} preview={math.preview} error={math.error}
+        emptySourcePlaceholder={math.empty} errorPreview={math.invalid} sourcePlaceholder={math.placeholder} />
+      {visual.controls(isOpen)}
+    </>
   },
 })

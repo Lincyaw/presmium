@@ -2,6 +2,7 @@ import { openAppSettings, registerSettingsLauncher } from './settings-launcher.t
 import { connectAgentActivity, connectAuthoringClient, connectAuthoringWindow, localeOf, Workbench, workspaceClient } from '@lincyaw/workbench'
 import type { Locale } from '@lincyaw/workbench'
 import { workspaceSubscriptions } from './workspace-events.ts'
+import { MATH_EDITOR_ROUTE } from '../math-editor.ts'
 import { registerAuthorSettings } from './author-settings.ts'
 import { registerSpeechSettings } from './speech-settings.tsx'
 import { openSpeechSettings } from './settings-opener.ts'
@@ -55,6 +56,7 @@ export function apply(ctx: DshClientContext): void {
   }, 'presmium: workspace list'))
   const workbench = new Workbench({ client: workspaceClient('api/presmium/', workspaceSubscriptions(ctx)), locale: workbenchLocale(ctx.locale.getLocale().active) })
   workbench.client.openSpeechSettings = openSpeechSettings
+  workbench.client.mathEditor = new URL(MATH_EDITOR_ROUTE, document.baseURI).href
   ctx.effect(() => connectAuthoringClient(workbench), 'presmium: authoring client control')
   ctx.effect(() => connectAuthoringWindow(workbench), 'presmium: authoring window control')
   ctx.effect(() => connectAgentActivity(workbench), 'presmium: agent activity')

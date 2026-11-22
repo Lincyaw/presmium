@@ -93,6 +93,7 @@
     "dsh-deltabox": "0.1.8",
     "eventsource": "3.0.7",
     "jiti": "^2.7.0",
+    "mathlive": "0.111.4",
     "node-addon-require-builtin": "0.1.9",
     "ws": "8.22.0",
     "zod": "4.4.3"
