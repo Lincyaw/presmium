@@ -1,5 +1,13 @@
 # @lincyaw/mcp
 
+## 1.0.0-rc.132
+
+### Patch Changes
+
+- @lincyaw/compiler@1.0.0-rc.132
+  - @lincyaw/kernel@1.0.0-rc.132
+  - @lincyaw/skills@1.0.0-rc.132
+
 ## 1.0.0-rc.131
 
 ### Patch Changes

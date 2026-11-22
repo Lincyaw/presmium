@@ -1,5 +1,9 @@
 # @lincyaw/addon-exec-local
 
+## 1.0.0-rc.132
+
+No changes in this release.
+
 ## 1.0.0-rc.131
 
 No changes in this release.

@@ -1,5 +1,38 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.132
+
+### Patch Changes
+
+- The cloud takes an author straight into Studio after sign-in, in a few seconds, with Presmium's own pages for starting, errors and sign-out (no JupyterHub pages); sharing and access tokens moved to Settings. A workspace whose tsconfig.json can't be read no longer stops its documents' code from bundling.
+- Updated dependencies
+  - @lincyaw/web@1.0.0-rc.132
+  - @lincyaw/addon-publish@1.0.0-rc.132
+  - @lincyaw/render-notebook@1.0.0-rc.132
+  - @lincyaw/render-slides@1.0.0-rc.132
+  - @lincyaw/studio@0.2.0-rc.131
+  - @lincyaw/addon-assistant@1.0.0-rc.132
+  - @lincyaw/addon-classroom@1.0.0-rc.132
+  - @lincyaw/addon-code@1.0.0-rc.132
+  - @lincyaw/addon-content@1.0.0-rc.132
+  - @lincyaw/addon-exec@1.0.0-rc.132
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.132
+  - @lincyaw/addon-exec-local@1.0.0-rc.132
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.132
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.132
+  - @lincyaw/addon-guide@1.0.0-rc.132
+  - @lincyaw/addon-lecture@1.0.0-rc.132
+  - @lincyaw/addon-motion@1.0.0-rc.132
+  - @lincyaw/addon-session@1.0.0-rc.132
+  - @lincyaw/addon-speech@1.0.0-rc.132
+  - @lincyaw/addon-stage@1.0.0-rc.132
+  - @lincyaw/cli@1.0.0-rc.132
+  - create-presmium@1.0.0-rc.132
+  - @lincyaw/host@1.0.0-rc.132
+  - @lincyaw/kernel@1.0.0-rc.132
+  - @lincyaw/mcp@1.0.0-rc.132
+  - @lincyaw/viewer@1.0.0-rc.132
+
 ## 1.0.0-rc.131
 
 ### Patch Changes

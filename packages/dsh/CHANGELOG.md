@@ -1,5 +1,15 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.131
+
+### Patch Changes
+
+- The cloud takes an author straight into Studio after sign-in, in a few seconds, with Presmium's own pages for starting, errors and sign-out (no JupyterHub pages); sharing and access tokens moved to Settings. A workspace whose tsconfig.json can't be read no longer stops its documents' code from bundling.
+- @lincyaw/cli@1.0.0-rc.132
+  - @lincyaw/kernel@1.0.0-rc.132
+  - @lincyaw/mcp@1.0.0-rc.132
+  - @lincyaw/skills@1.0.0-rc.132
+
 ## 0.2.0-rc.130
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @lincyaw/studio
 
+## 0.2.0-rc.131
+
+### Patch Changes
+
+- Updated dependencies
+  - @lincyaw/dsh@0.2.0-rc.131
+  - @lincyaw/kernel@1.0.0-rc.132
+
 ## 0.2.0-rc.130
 
 ### Patch Changes
