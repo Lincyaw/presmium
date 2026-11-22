@@ -120,6 +120,9 @@ export async function createAuthService(db: Database, config: AuthConfig): Promi
   const secure = publicUrl.protocol === 'https:'
   const sessionCookie = secure ? '__Host-pm-session' : 'pm-session'
   const flowCookie = secure ? '__Host-pm-login' : 'pm-login'
+  // The ended session's ID token, kept for the moment the browser spends at JupyterHub's sign-out on its way to
+  // /api/auth/signed-out, which hands it to the identity provider.
+  const signOutCookie = secure ? '__Host-pm-signout' : 'pm-signout'
   const cookieOptions = { httpOnly: true, secure, sameSite: 'Lax' as const, path: '/' }
   const ttl = config.sessionTtlSeconds ?? 60 * 60 * 24 * 7
   if (!Number.isSafeInteger(ttl) || ttl < 60 || ttl > 60 * 60 * 24 * 30) throw new CloudError(500, 'auth-configuration-invalid')
@@ -211,20 +214,21 @@ export async function createAuthService(db: Database, config: AuthConfig): Promi
         if (!saved) throw new CloudError(400, 'auth-flow-invalid')
         const current = new URL(callbackUrl)
         current.search = new URL(c.req.url).search
-        let user: CloudUser
+        let user: CloudUser, idToken: string | undefined
         try {
           const tokens = await oidc.authorizationCodeGrant(configuration, current, { pkceCodeVerifier: saved.verifier, expectedState: saved.state, expectedNonce: saved.nonce, idTokenExpected: true })
           const claims = tokens.claims()
           if (!claims?.sub) throw new CloudError(401, 'auth-login-failed')
           if (saved.expectedSubject && claims.sub !== saved.expectedSubject) throw new CloudError(401, 'auth-account-changed')
           user = await upsert(claims)
+          idToken = tokens.id_token
         } catch { throw new CloudError(401, 'auth-login-failed') }
         const previous = getCookie(c, sessionCookie)
         const token = random()
         await db.transaction(async client => {
           await client.query('DELETE FROM sessions WHERE expires_at <= now()')
           if (previous) await client.query('DELETE FROM sessions WHERE id_hash = $1', [digest(previous)])
-          await client.query(`INSERT INTO sessions (id_hash, user_id, expires_at) VALUES ($1, $2, now() + $3 * interval '1 second')`, [digest(token), user.id, ttl])
+          await client.query(`INSERT INTO sessions (id_hash, user_id, expires_at, id_token) VALUES ($1, $2, now() + $3 * interval '1 second', $4)`, [digest(token), user.id, ttl, idToken ?? null])
         })
         setCookie(c, sessionCookie, token, { ...cookieOptions, maxAge: ttl })
         return c.redirect(authenticationReturnPath(saved.returnTo))
@@ -240,19 +244,25 @@ export async function createAuthService(db: Database, config: AuthConfig): Promi
         const token = getCookie(c, sessionCookie)
         return c.json({ user: user ?? null, csrfToken: user && token ? digest(`csrf:${token}`) : null })
       })
-      const endSession = () => metadata.end_session_endpoint ? oidc.buildEndSessionUrl(configuration, { client_id: config.clientId, post_logout_redirect_uri: publicUrl.origin }).href : undefined
+      // With the sign-in's ID token as the hint, the identity provider ends its session at once, without a confirmation page.
+      const endSession = (idToken?: string) => metadata.end_session_endpoint ? oidc.buildEndSessionUrl(configuration, { client_id: config.clientId, post_logout_redirect_uri: publicUrl.origin, ...idToken ? { id_token_hint: idToken } : {} }).href : undefined
+      const hint = (value: string | null | undefined) => value && value.length <= 3500 ? value : undefined
       app.post('/api/auth/logout', async c => {
         await service.assertCsrf(c.req.raw)
         const token = getCookie(c, sessionCookie)
-        if (token) await db.query('DELETE FROM sessions WHERE id_hash = $1', [digest(token)])
+        const ended = token ? await db.query<{ id_token: string | null }>('DELETE FROM sessions WHERE id_hash = $1 RETURNING id_token', [digest(token)]) : undefined
+        const idToken = hint(ended?.rows[0]?.id_token)
         deleteCookie(c, sessionCookie, cookieOptions)
         c.header('Cache-Control', 'no-store')
-        const logoutUrl = config.signOutFirst ?? endSession()
+        if (config.signOutFirst && idToken) setCookie(c, signOutCookie, idToken, { ...cookieOptions, maxAge: 120 })
+        const logoutUrl = config.signOutFirst ?? endSession(idToken)
         return c.json({ loggedOut: true, ...logoutUrl ? { logoutUrl } : {} })
       })
       app.get('/api/auth/signed-out', c => {
         c.header('Cache-Control', 'no-store')
-        return c.redirect(endSession() ?? publicUrl.origin)
+        const idToken = hint(getCookie(c, signOutCookie))
+        if (idToken) deleteCookie(c, signOutCookie, cookieOptions)
+        return c.redirect(endSession(idToken) ?? publicUrl.origin)
       })
       app.get('/.well-known/oauth-protected-resource', c => c.json(service.metadata()))
       app.get('/.well-known/oauth-protected-resource/mcp', c => c.json(service.metadata()))
