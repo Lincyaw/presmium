@@ -26,9 +26,6 @@ x-cloud-environment: &cloud-environment
 
 x-cloud-service: &cloud-service
   image: ${CLOUD_IMAGE_REGISTRY:-}presmium-cloud-api:${CLOUD_IMAGE_TAG:-0.1.0}
-  build:
-    context: ../..
-    dockerfile: deploy/cloud/Dockerfile
   init: true
   restart: unless-stopped
   read_only: true
@@ -75,7 +72,6 @@ services:
 
   keycloak:
     image: ${CLOUD_IMAGE_REGISTRY:-}presmium-cloud-keycloak:${CLOUD_IMAGE_TAG:-0.1.0}
-    build: { context: ../.., dockerfile: deploy/cloud/keycloak/Dockerfile }
     command: [start, --optimized, --import-realm]
     restart: unless-stopped
     environment:
@@ -186,7 +182,6 @@ services:
   # service with Docker; Studio containers join the studios network only.
   hub:
     image: ${CLOUD_IMAGE_REGISTRY:-}presmium-cloud-hub:${CLOUD_IMAGE_TAG:-0.1.0}
-    build: { context: ../.., dockerfile: deploy/cloud/hub/Dockerfile }
     restart: unless-stopped
     environment:
       CLOUD_HUB_URL: ${CLOUD_HUB_URL:?Set CLOUD_HUB_URL}
@@ -241,11 +236,10 @@ services:
     networks: [services]
     logging: *logs
 
-  # Built or pulled once per release; the Hub starts one container of it per user.
+  # Pulled (or built with compose.build.yaml) once per release; the Hub starts one container of it per user.
   studio-image:
     profiles: [build-studio]
     image: ${CLOUD_IMAGE_REGISTRY:-}presmium-cloud-studio:${CLOUD_IMAGE_TAG:-0.1.0}
-    build: { context: ../.., dockerfile: deploy/cloud/studio/Dockerfile }
     command: [node, --version]
     network_mode: none
 

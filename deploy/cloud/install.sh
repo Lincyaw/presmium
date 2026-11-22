@@ -126,11 +126,11 @@ check_host() {
 
 dc() { # docker compose for the installed (or given) release
   local deploy=${release_dir:-$install_dir/current}/deploy/cloud
-  if [ "$(env_get CLOUD_INSTALL_MODE)" = local ] || [ "${mode:-}" = local ]; then
-    docker compose --env-file "$env_file" -f "$deploy/compose.yaml" -f "$deploy/compose.loopback.yaml" "$@"
-  else
-    docker compose --env-file "$env_file" -f "$deploy/compose.yaml" "$@"
-  fi
+  local files=(-f "$deploy/compose.yaml")
+  if [ "$(env_get CLOUD_INSTALL_MODE)" = local ] || [ "${mode:-}" = local ]; then files+=(-f "$deploy/compose.loopback.yaml"); fi
+  # Built images only: with a registry every image is pulled, and a failed pull is an error rather than a build.
+  if [ -z "$(env_get CLOUD_IMAGE_REGISTRY)" ] && [ -f "$deploy/compose.build.yaml" ]; then files+=(-f "$deploy/compose.build.yaml"); fi
+  docker compose --env-file "$env_file" "${files[@]}" "$@"
 }
 
 port_in_use() {

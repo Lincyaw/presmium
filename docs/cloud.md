@@ -116,12 +116,12 @@ bash keycloak/init-env.sh   # 生成 0600 的 .env 与全部随机密钥，不�
 | 共享内容 | `https://content.example.net` | `CLOUD_CONTENT_HOST`、`CLOUD_CONTENT_URL` |
 | Studio | `https://studio.example.net` | `CLOUD_HUB_HOST`、`CLOUD_HUB_URL` |
 
-四个地址互不同源，Caddy 自动申请证书（`CLOUD_ACME_EMAIL` 可空）。共享内容入口只转发 `/p/*`，并去掉 Cookie、Authorization 与 Set-Cookie。数据库、对象存储、Hub API 与 Studio 容器不发布宿主端口；Studio 容器只在 `<项目>-studios` 网络上。镜像名为 `${CLOUD_IMAGE_REGISTRY}presmium-cloud-<名字>:${CLOUD_IMAGE_TAG}`：拉取已发布的镜像时设 `CLOUD_IMAGE_REGISTRY=ghcr.io/lincyaw/` 并以 `pull` 代替两条 `build`（`--profile build-studio pull`）。
+四个地址互不同源，Caddy 自动申请证书（`CLOUD_ACME_EMAIL` 可空）。共享内容入口只转发 `/p/*`，并去掉 Cookie、Authorization 与 Set-Cookie。数据库、对象存储、Hub API 与 Studio 容器不发布宿主端口；Studio 容器只在 `<项目>-studios` 网络上。镜像名为 `${CLOUD_IMAGE_REGISTRY}presmium-cloud-<名字>:${CLOUD_IMAGE_TAG}`。`compose.yaml` 只拉取镜像，拉取失败即报错；在本机从完整源码构建时加 `-f compose.build.yaml`（设 `CLOUD_IMAGE_REGISTRY` 为空），如下。拉取已发布的镜像时设 `CLOUD_IMAGE_REGISTRY=ghcr.io/lincyaw/`，不加该文件，并以 `docker compose --env-file .env -f compose.yaml --profile build-studio pull` 代替两条 `build`。第三方镜像（PostgreSQL、Caddy、Versity S3 Gateway、mailpit 与构建所用的基础镜像）都固定摘要，可匿名拉取。
 
 ```sh
-docker compose --env-file .env -f compose.yaml config --quiet
-docker compose --env-file .env -f compose.yaml build
-docker compose --env-file .env -f compose.yaml --profile build-studio build studio-image
+docker compose --env-file .env -f compose.yaml -f compose.build.yaml config --quiet
+docker compose --env-file .env -f compose.yaml -f compose.build.yaml build
+docker compose --env-file .env -f compose.yaml -f compose.build.yaml --profile build-studio build studio-image
 docker compose --env-file .env -f compose.yaml up -d
 docker compose --env-file .env -f compose.yaml ps
 ```
@@ -171,8 +171,8 @@ docker compose --env-file .env -f compose.yaml up -d
 `install.sh upgrade` 按下面的顺序完成升级：取新版本的部署文件与镜像，停止运行中的 Studio 并按 8.6 节备份到 `backups/<时间>/`（含 `images.txt` 记录的版本与镜像），把 `CLOUD_IMAGE_TAG` 换为新版本，迁移并启动。手动升级时先做可恢复的备份，记录源码提交与镜像摘要，再把 `CLOUD_IMAGE_TAG` 换为新标签：
 
 ```sh
-docker compose --env-file .env -f compose.yaml build
-docker compose --env-file .env -f compose.yaml --profile build-studio build studio-image
+docker compose --env-file .env -f compose.yaml -f compose.build.yaml build
+docker compose --env-file .env -f compose.yaml -f compose.build.yaml --profile build-studio build studio-image
 docker compose --env-file .env -f compose.yaml run --rm migrate
 docker compose --env-file .env -f compose.yaml up -d
 ```

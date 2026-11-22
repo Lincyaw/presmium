@@ -1,0 +1,15 @@
+# Build the images on this host from the full source tree instead of pulling the published ones
+# (CLOUD_IMAGE_REGISTRY empty): docker compose -f compose.yaml -f compose.build.yaml build
+services:
+  migrate:
+    build: &api { context: ../.., dockerfile: deploy/cloud/Dockerfile }
+  storage-init:
+    build: *api
+  api:
+    build: *api
+  keycloak:
+    build: { context: ../.., dockerfile: deploy/cloud/keycloak/Dockerfile }
+  hub:
+    build: { context: ../.., dockerfile: deploy/cloud/hub/Dockerfile }
+  studio-image:
+    build: { context: ../.., dockerfile: deploy/cloud/studio/Dockerfile }
