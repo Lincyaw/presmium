@@ -81,6 +81,18 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
     setChangingView(true)
     const current = () => generation === transition.current && currentScope.current.active && currentScope.current.document === document && workbench.getState().authoring?.identity === identity
     try {
+      // Pending input is saved first: a command that stayed disabled until the save landed left the keys meant for the
+      // presentation on the toolbar, where Space pressed whatever button had the focus (undo, among them).
+      const source = workbench.getState().authoring
+      if (source?.dirty || source?.saving) {
+        try { await workbench.flushPendingEdits(signal) } catch {
+          signal?.throwIfAborted()
+          if (current()) setViewFailure(t.presentationPending)
+          return
+        }
+        signal?.throwIfAborted()
+        if (!current()) return
+      }
       const prepared = await workbench.preparePresentation(signal, deadline)
       signal?.throwIfAborted()
       if (!current()) return
@@ -382,7 +394,7 @@ function DocumentToolbar({ narrow, presentButton, framed, onBack, actions, aside
   const busy = useWorkbenchState(state => state.isHistoryBusy || state.isHistoryPreparing || Boolean(state.isCreatingPage) || Boolean(state.isEditingPage || state.authoring?.composing) || isAgentChanging(state))
   const timingDrafts = useWorkbenchState(state => state.hasDocumentTimingDrafts)
   const preparing = useWorkbenchState(state => Boolean(state.isPreparingPresentation))
-  const blocked = useWorkbenchState(state => Boolean(!state.authoring?.content || state.authoring.loading || state.authoring.dirty || state.authoring.saving || state.authoring.restored || state.authoring.error || state.authoring.composing || state.hasDocumentTimingDrafts || state.isEditingPage || state.isCreatingPage || isAgentChanging(state)))
+  const blocked = useWorkbenchState(state => Boolean(!state.authoring?.content || state.authoring.loading || state.authoring.restored || state.authoring.error || state.authoring.composing || state.hasDocumentTimingDrafts || state.isEditingPage || state.isCreatingPage || isAgentChanging(state)))
   const openComments = useWorkbenchState(state => Object.values(state.authoring?.content?.comments ?? {}).filter(comment => !comment.resolved && !comment.deletedAt).length)
   const hasStep = useWorkbenchState(state => !state.authoring?.loading && Boolean(state.authoring?.content?.sectionOrder.length))
   const capabilities = workbench.client.capabilities
