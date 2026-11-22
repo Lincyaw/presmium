@@ -379,6 +379,7 @@ function StatusBar() {
     <footer className="pmw-statusbar" aria-label={t.statusBar}>
       {at >= 0 && <span className="pmw-statusbar__item">{slides ? t.slideOf(at + 1, total) : t.pageOf(at + 1, total)}</span>}
       {doc && <span className="pmw-statusbar__item">{t.words(words)}</span>}
+      <ProblemsStatus />
     </footer>
   )
 }
@@ -496,35 +497,65 @@ function DocumentNotices() {
   )
 }
 
-/** The document's problems in one line above the page, with the AI to fix them; the list itself opens in a dialog. */
+// How long the document's problems must stay the same, the author not editing, before the status bar shows them.
+const PROBLEMS_SETTLE_MS = 1500
+
+/** Errors, and warnings about a page the author can go to (a slide too crowded to present readably). */
+function useProblems() {
+  const snapshot = useWorkbenchState(state => state.diagnostics)
+  return useMemo(() => (snapshot?.diagnostics ?? []).filter(diagnostic => (diagnostic.severity === 'error' || (diagnostic.severity === 'warning' && diagnostic.section)) && !diagnostic.checkId.startsWith('presmium.workbench.')), [snapshot])
+}
+
+/**
+ * The problems as the author last saw them while the document settles: a version being typed, saved, compiled and
+ * measured would have them come and go with each keystroke. A new list shows once it has stayed the same for a moment
+ * with the author not editing.
+ */
+function useSettledProblems() {
+  const problems = useProblems()
+  const editing = useWorkbenchState(state => Boolean(state.authoring?.dirty || state.authoring?.saving || state.authoring?.composing))
+  const [shown, setShown] = useState(problems)
+  const latest = useRef(problems)
+  latest.current = problems
+  const key = problems.map(problem => `${problem.id}\u0000${problem.message}`).join('\n')
+  useEffect(() => {
+    if (editing) return
+    const timer = setTimeout(() => setShown(latest.current), PROBLEMS_SETTLE_MS)
+    return () => clearTimeout(timer)
+  }, [key, editing])
+  return shown
+}
+
+/** A failure to read or fix the problems, above the page: it follows something the author did, not typing. */
 function ProblemsNotice() {
   const t = useMessages()
   const workbench = useWorkbench()
-  const snapshot = useWorkbenchState(state => state.diagnostics)
   const unavailable = useWorkbenchState(state => state.isDiagnosticsUnavailable)
+  const repairFailure = useWorkbenchState(state => state.diagnosticsRepairFailure)
+  if (workbench.client.capabilities?.diagnostics === 'none') return null
+  if (unavailable) return <PmNotice tone="warn"><span>{t.diagnosticsUnavailable}</span><PmButton small onClick={() => workbench.retryDiagnostics()}>{t.retry}</PmButton></PmNotice>
+  return repairFailure ? <PmNotice tone="danger">{t.fixFailed(failureReason(t, repairFailure))}</PmNotice> : null
+}
+
+/**
+ * The document's problems as a count in the status bar, which keeps its place and height whether there are any: the
+ * page never moves under the author's cursor. The list, with the AI to fix them, opens in a dialog.
+ */
+function ProblemsStatus() {
+  const t = useMessages()
+  const workbench = useWorkbench()
+  const problems = useSettledProblems()
   const canRepair = useWorkbenchState(state => state.canRepairDiagnostics)
   const repairing = useWorkbenchState(state => state.isRepairingDiagnostics)
-  const repairFailure = useWorkbenchState(state => state.diagnosticsRepairFailure)
   const [open, setOpen] = useState(false)
-  if (workbench.client.capabilities?.diagnostics === 'none') return null
-  // Errors, and warnings about a page the author can go to (a slide too crowded to present readably).
-  const problems = (snapshot?.diagnostics ?? []).filter(diagnostic => (diagnostic.severity === 'error' || (diagnostic.severity === 'warning' && diagnostic.section)) && !diagnostic.checkId.startsWith('presmium.workbench.'))
-  if (unavailable) return <PmNotice tone="warn"><span>{t.diagnosticsUnavailable}</span><PmButton small onClick={() => workbench.retryDiagnostics()}>{t.retry}</PmButton></PmNotice>
-  if (problems.length === 0) return repairFailure ? <PmNotice tone="danger">{t.fixFailed(failureReason(t, repairFailure))}</PmNotice> : null
+  if (workbench.client.capabilities?.diagnostics === 'none' || (problems.length === 0 && !open)) return null
   const repair = canRepair && <PmButton small variant="primary" icon="sparkle" disabled={repairing} onClick={() => void workbench.requestRepairDiagnostics()}>{repairing ? t.fixing : t.fixWithAi}</PmButton>
   return (
-    <PmNotice tone="warn">
-      <div className="pmw-problems">
-        <div className="pmw-problems__summary">
-          <span>{t.problems(problems.length)}</span>
-          <PmButton small variant="text" onClick={() => setOpen(true)}>{t.details}</PmButton>
-          {repair}
-        </div>
-        {repairFailure && <p className="pmw-problems__failure">{t.fixFailed(failureReason(t, repairFailure))}</p>}
-      </div>
+    <span className="pmw-statusbar__item pmw-statusbar__problems">
+      {problems.length > 0 && <PmButton small variant="text" icon="warning" title={t.problems(problems.length)} aria-haspopup="dialog" onClick={() => setOpen(true)}>{t.problemCount(problems.length)}</PmButton>}
       <PmDialog open={open} label={t.problemsTitle} closeLabel={t.close} actions={repair || undefined} onClose={() => setOpen(false)}>
         <ul className="pmw-problems__list">{problems.map(problem => <li key={problem.id}><p>{problem.message}</p>{problem.hint && <p className="pmw-problems__hint">{problem.hint}</p>}{problem.section && <PmButton small variant="text" onClick={() => { setOpen(false); workbench.goToSection(problem.section!) }}>{t.goToPage}</PmButton>}</li>)}</ul>
       </PmDialog>
-    </PmNotice>
+    </span>
   )
 }

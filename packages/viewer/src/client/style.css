@@ -686,6 +686,26 @@ html.pm-presenting {
   line-height: 1.6;
 }
 
+/* While captions are on, a slide keeps room at its bottom for a one-line caption, so that the caption covers none of its
+   content: the larger of the caption burned into a video (`--pm-caption-burn-*`, on a frame of the slide's height) and
+   the presentation's caption on the slide as drawn (`--pm-caption-slide-*`, at the canvas's scale `--pm-slide-scale`),
+   in the slide's own pixels. The body then fits above it. */
+.pm-slide[data-captioned] {
+  --pm-slide-caption-burned: calc(var(--pm-slide-height) * (0.028 + 0.056 * var(--pm-caption-scale) * (var(--pm-caption-burn-leading) + 0.7)));
+  --pm-slide-caption-font: clamp(calc(var(--pm-text-xs) * var(--pm-caption-scale)), calc(min(var(--pm-slide-height) * 0.056, var(--pm-slide-width) * 0.0315) * var(--pm-slide-scale, 1) * var(--pm-caption-scale)), calc(var(--pm-text-lg) * var(--pm-caption-scale)));
+  --pm-slide-caption-shown: calc(var(--pm-slide-height) * 0.028 + (var(--pm-slide-caption-font) * var(--pm-leading-ui) + 2 * var(--pm-space-2) + 2 * var(--pm-size-hairline)) / var(--pm-slide-scale, 1));
+  padding-bottom: max(2.6em, var(--pm-slide-caption-burned), var(--pm-slide-caption-shown));
+}
+
+.pm-slide--cover[data-captioned] {
+  padding-bottom: max(5.3em, var(--pm-slide-caption-burned), var(--pm-slide-caption-shown));
+}
+
+/* A full slide is a picture: the caption lies over it, as in a video. */
+.pm-slide--full[data-captioned] {
+  padding-bottom: 0;
+}
+
 .pm-slide :is(ul, ol) {
   margin: 0.67em 0;
   padding-inline-start: 1.3em;
@@ -737,10 +757,59 @@ html.pm-presenting {
   overflow: hidden;
 }
 
-/* Content that would shrink below the presentation's smallest scale scrolls instead. */
+/* Content that would shrink below the presentation's smallest scale scrolls instead: the heading stays at the top, and
+   while there is more below, the bottom fades out under a hint. */
 .pm-slide__body--scrolls {
   overflow: auto;
   overscroll-behavior: contain;
+}
+
+.pm-slide__body--scrolls .pm-slide__title {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 0;
+  padding-bottom: 0.45em;
+  background: var(--pm-color-surface);
+}
+
+.pm-slide__more {
+  display: none;
+}
+
+/* No height of its own, so that it adds nothing to the scroll range: the fade and the hint hang above it. */
+.pm-slide__body--scrolls[data-more] > .pm-slide__more {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: block;
+  height: 0;
+  pointer-events: none;
+}
+
+.pm-slide__more::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3.4em;
+  background: linear-gradient(to bottom, transparent, var(--pm-color-surface) 75%);
+}
+
+.pm-slide__more-hint {
+  position: absolute;
+  bottom: 0.6em;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 0.25em 0.9em;
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
+  border-radius: var(--pm-radius-pill);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-muted);
+  font-family: var(--pm-font-sans);
+  font-size: 0.6em;
+  line-height: 1.3;
 }
 
 .pm-slide__content {

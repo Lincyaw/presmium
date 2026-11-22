@@ -187,7 +187,7 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 - `IRSection.stepNarrations` 按步骤给出讲稿的显示文字与 ID，不含音频与时码；网页按它显示步骤字幕。
 - `IRSection.captionSources` 是每步字幕依据的指纹，与文稿版本和前面的步骤无关。
 - 讲稿块 `role: 'narration'`、`only: ['lecture']`。
-- 时序字幕播放器经宿主的 `TIMED_CAPTIONS` 租约取得字幕显示权。
+- 时序字幕播放器经宿主的 `TIMED_CAPTIONS` 租约取得字幕显示权，并告知字幕是否正在显示（`shown`），显示时幻灯片在底部为字幕留出位置。
 
 ### 5.5 节点与渲染
 

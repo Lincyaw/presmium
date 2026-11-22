@@ -6,12 +6,12 @@ import type { PageReadiness, StatusProvider, StatusRegistry, TimedCaptions, Tool
 import { createStore } from './store.ts'
 
 export function createTimedCaptions(): TimedCaptions {
-  const owners = new Set<symbol>(), active = createStore(false)
-  return { active, claim() {
+  const owners = new Set<symbol>(), active = createStore(false), shown = createStore(false)
+  return { active, shown, claim() {
     const owner = Symbol()
     owners.add(owner); active.set(true)
     return () => { if (owners.delete(owner)) active.set(owners.size > 0) }
-  } }
+  }, show(on) { shown.set(on) } }
 }
 
 export function createPageReadiness(): PageReadiness {

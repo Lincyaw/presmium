@@ -1,5 +1,5 @@
 import { isAbsolute, relative } from 'node:path'
-import { diagnosticOf, fnv1a64, isRecord, pushStream } from '@lincyaw/kernel'
+import { diagnosticOf, pushStream } from '@lincyaw/kernel'
 import type { AuthoringDiagnostics, Diagnostic, DiagnosticOrigin, DiagnosticSnapshot, Finding, IRDocument, PreviewDiagnostics } from '@lincyaw/kernel'
 
 export interface DiagnosticSource {
@@ -15,13 +15,6 @@ interface Contribution {
   keep?: 'page'
 }
 
-/** Each page's content as the document lays it out, by section id: where its source sits in the file left out. */
-function pageContents(doc: IRDocument): Map<string, string> {
-  const located = (key: string, value: unknown) => key === 'source' && isRecord(value) && typeof value.file === 'string' ? undefined : value
-  const shared = JSON.stringify([doc.meta, doc.config], located)
-  return new Map(doc.sections.map(section => [section.id, fnv1a64(`${shared}\n${JSON.stringify(section, located)}`)]))
-}
-
 export function workspaceFindings(findings: Finding[], root: string): Finding[] {
   return findings.map(finding => ({
     ...finding,
@@ -33,7 +26,6 @@ export function workspaceFindings(findings: Finding[], root: string): Finding[] 
 export class DiagnosticStore {
   readonly #contributions = new Map<string, Contribution>()
   readonly #irRevisions = new Map<string, string | undefined>()
-  readonly #pages = new Map<string, Map<string, string>>()
   readonly #watchers = new Set<(document: string) => void>()
   #version = 0
 
@@ -69,13 +61,13 @@ export class DiagnosticStore {
   }
 
   compiled(document: string, doc: IRDocument, root: string, irRevision?: string): void {
-    const pages = pageContents(doc)
     if (!this.#irRevisions.has(document) || this.#irRevisions.get(document) !== irRevision) {
-      // Findings kept by page stay, at the new revision, for the pages whose content this compile left as it was.
-      const before = this.#pages.get(document)
+      // Findings kept by page stay, at the new revision, for the pages the document still has, until their producer
+      // reports again: an edit does not make a page's warning drop out and come back while the author types.
+      const pages = new Set(doc.sections.map(section => section.id))
       for (const [key, contribution] of this.#contributions) {
         if (contribution.source.document !== document || contribution.source.origin !== 'runtime' || contribution.keep !== 'page') continue
-        const kept = contribution.diagnostics.filter(diagnostic => diagnostic.section !== undefined && before?.get(diagnostic.section) !== undefined && before.get(diagnostic.section) === pages.get(diagnostic.section))
+        const kept = contribution.diagnostics.filter(diagnostic => diagnostic.section !== undefined && pages.has(diagnostic.section))
         if (kept.length) this.#contributions.set(key, { ...contribution, diagnostics: kept.map(diagnostic => ({ ...diagnostic, ...irRevision ? { revision: irRevision } : {} })) })
         else this.#contributions.delete(key)
         this.#changed(document)
@@ -83,7 +75,6 @@ export class DiagnosticStore {
       this.#remove(document, source => source.origin === 'check' || (source.origin === 'runtime' && !this.#kept(source)))
     }
     this.#irRevisions.set(document, irRevision)
-    this.#pages.set(document, pages)
     this.replace({ document, origin: 'compile' }, doc.diagnostics, { root, irRevision })
   }
 
@@ -112,7 +103,6 @@ export class DiagnosticStore {
 
   forget(document: string): void {
     this.#irRevisions.delete(document)
-    this.#pages.delete(document)
     this.#remove(document, () => true)
   }
 

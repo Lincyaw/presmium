@@ -121,6 +121,12 @@ export default function PlayerPanel(_props: { view?: string }) {
   }, [])
   const [captions, setCaptions] = useState(false),
     [panel, setPanel] = useState<'transcript' | 'chapters'>()
+  const showing = Boolean(id && !failure && status !== 'missing' && (controlled || (exporting ? burnedCaptions : captions)))
+  useEffect(() => {
+    if (!showing || !timedCaptions) return
+    timedCaptions.show(true)
+    return () => timedCaptions.show(false)
+  }, [showing, timedCaptions])
   useEffect(() => {
     let active = true
     if (
