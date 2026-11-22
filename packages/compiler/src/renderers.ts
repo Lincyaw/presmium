@@ -82,12 +82,14 @@ export async function selectRenderers(compilation: Compilation, to?: string[]): 
 
 /**
  * Why a build made no `renderer` output, from its findings: when one of the document's plugins or the renderer's own
- * package cannot be loaded, a `JobFailure` `job-plugin-missing`; the error findings are the message either way.
+ * package cannot be loaded, a `JobFailure` `job-plugin-missing`, else the cause of the first error finding that names
+ * one; the error findings are the message either way.
  */
 export async function missingOutput(compilation: Compilation, renderer: string, findings: readonly Finding[]): Promise<Error> {
   const message = findings.filter(finding => finding.severity === 'error').map(finding => finding.message).join('\n') || `the ${renderer} renderer made nothing`
   const missing = findings.some(finding => finding.severity === 'error' && finding.checkId === 'presmium.plugins') || !(await selectRenderers(compilation, [renderer])).selected.length
-  return missing ? new JobFailure('job-plugin-missing', message) : new Error(message)
+  const failure = missing ? 'job-plugin-missing' : findings.find(finding => finding.severity === 'error' && finding.failure)?.failure
+  return failure ? new JobFailure(failure, message) : new Error(message)
 }
 
 /** The exporters of the document's plugins and of its renderers' packages; one id once, the plugins' first. */

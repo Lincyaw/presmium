@@ -1,6 +1,7 @@
 import type { IRDocument } from '../ir.ts'
 import type { AnchorLockFile, AnchorResolverRegistry, SourceReader } from './anchors.ts'
 import type { ServiceToken } from './service.ts'
+import type { JobFailureCode } from './workspace.ts'
 
 export type Severity = 'error' | 'warning' | 'info'
 
@@ -12,6 +13,8 @@ export interface Finding {
   hint?: string
   /** The page (section id) the problem is on, when it is on one: the author can go to it. */
   section?: string
+  /** An error that stops an export: its cause, which the export's job takes as its code. */
+  failure?: JobFailureCode
 }
 
 export interface CheckContext {

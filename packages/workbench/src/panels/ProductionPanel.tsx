@@ -61,7 +61,9 @@ export function ProductionPanel({ onClose, closing, active = true, actions }: { 
   const transcriptionSelection = useRef(0)
   const owner = useRef({ active: true, generation: 0 }), initial = useRef(false)
   const document = source?.content, sectionId = position && document?.sections[position.section] ? position.section : document?.sectionOrder[0]
-  const declared = Boolean(effectiveOf(document, source?.inherited)?.metadata.plugins?.includes('@lincyaw/addon-lecture'))
+  // Exporting the lecture reads its voiceover through the voice service, so production needs both plugins.
+  const plugins = effectiveOf(document, source?.inherited)?.metadata.plugins ?? []
+  const declared = plugins.includes('@lincyaw/addon-lecture') && plugins.includes('@lincyaw/addon-speech')
   const section = sectionId ? document?.sections[sectionId] : undefined
   const stepId = section?.stepOrder[position && position.section === sectionId ? position.step : 0] ?? section?.stepOrder[0]
   const sourceCurrent = Boolean(source && stamp && source.version === stamp.version && source.fingerprint === stamp.fingerprint && (source.projectRevision ?? 0) === stamp.project && !source.dirty && !source.saving && !source.error)

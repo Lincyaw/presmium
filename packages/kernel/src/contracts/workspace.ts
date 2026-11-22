@@ -388,9 +388,10 @@ export interface StartJobRequest {
 /** @experimental A build or an export of a document, run by the workspace service one at a time. */
 /**
  * Causes of a failed export the author can act on: a part of Presmium (a plugin or renderer) cannot be loaded, the
- * browser exports print or record with is missing, an MP4 needs FFmpeg, the lecture has no voiceover yet, the disk is full.
+ * browser exports print or record with is missing, an MP4 needs FFmpeg, the lecture has no voiceover yet, its script
+ * has no voice chosen, the document does not load the voice service (video production is not turned on), the disk is full.
  */
-export type JobFailureCode = 'job-plugin-missing' | 'job-browser-missing' | 'job-ffmpeg-missing' | 'job-no-voiceover' | 'job-disk-full'
+export type JobFailureCode = 'job-plugin-missing' | 'job-browser-missing' | 'job-ffmpeg-missing' | 'job-no-voiceover' | 'job-voice-unset' | 'job-speech-missing' | 'job-disk-full'
 
 export interface CompileJob {
   id: string
