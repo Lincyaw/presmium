@@ -1,6 +1,6 @@
 import type { Locale } from './messages.ts'
 import { WorkspaceServerError } from './workspace-client.ts'
-import { speechFailureCode } from '@lincyaw/kernel'
+import { speechFailureCode, zhSpaced } from '@lincyaw/kernel'
 
 const zh = {
   voice: '音色', settings: '选择音色', stepSettings: '本步音色', generate: '生成配音', generation: '生成配音', generationAll: '生成全部配音',
@@ -28,7 +28,7 @@ const zh = {
   languages: { 'zh-cn': '普通话', 'zh-hk': '粤语', 'zh-tw': '台湾国语', 'zh-cn-liaoning': '东北话', 'zh-cn-shaanxi': '陕西话', 'zh-cn-sichuan': '四川话' },
   useVoice: '使用此音色', more: '更多设置', fewer: '隐藏更多设置', sample: '试听', stepSample: '用本步讲稿试听',
   appliesTo: (count: number) => `将用于 ${count} 个步骤。`, keptSteps: (count: number) => `${count} 个步骤单独设置了声音，保持不变。`,
-  sendsText: (provider: string, local: boolean) => local ? `试听和生成配音在本机通过 ${provider} 完成。` : `试听和生成配音时，文字会发送给 ${provider}。`,
+  sendsText: (provider: string, local: boolean) => local ? zhSpaced`试听和生成配音在本机通过${provider}完成。` : zhSpaced`试听和生成配音时，文字会发送给${provider}。`,
   search: '查找音色', searchPlaceholder: '名称或语言', available: '可用音色', empty: '没有符合条件的音色',
   results: (count: number) => `${count} 个音色`, language: '语言', provider: '语音服务',
   details: '音色详情', languageMismatch: '不支持文稿的语言', 
@@ -47,7 +47,7 @@ const zh = {
   check: '检查范围', checking: '正在检查范围…', apply: '应用', saved: '音色设置已保存。', clearDefault: '清除默认音色',
   rate: '语速', rateInvalid: (min: number, max: number) => `请输入 ${min}–${max} 之间的数值。`, style: '朗读风格', styleDefault: '服务默认',
   cueStep: '此讲稿包含跨步骤提示，暂不支持单独覆盖音色。可设置页面或文稿默认音色。',
-  disclosure: (provider: string, local: boolean) => local ? `本次在本机通过 ${provider} 合成。` : `讲稿会发送给 ${provider} 合成配音。`,
+  disclosure: (provider: string, local: boolean) => local ? zhSpaced`本次在本机通过${provider}合成。` : zhSpaced`讲稿会发送给${provider}合成配音。`,
   source: '声音来源', previewHint: '确认后播放已有缓存或请求合成；选择音色本身不会生成配音。',
   refreshing: '正在检查配音…', refresh: '重新检查', missingOnly: '只生成缺失与需要更新的片段',
   confirmGenerate: '开始生成', cancelJob: '取消生成', oldVersion: '较早文稿版本', noScript: '当前范围没有可生成的讲稿。',

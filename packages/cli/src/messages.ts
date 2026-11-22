@@ -1,5 +1,5 @@
 export { systemLocale } from '@lincyaw/kernel/node'
-import { DOCUMENT_ENTRY } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, zhSpaced } from '@lincyaw/kernel'
 import type { Locale } from '@lincyaw/kernel'
 import type { SpeechSettingsError } from '@lincyaw/kernel/node'
 import type { ScriptError } from './script.ts'
@@ -316,8 +316,8 @@ lecture.json 重命名为 ${DOCUMENT_ENTRY}（保留文件的版本历史），�
     voiceoverDryRun: '以上只是预览，没有生成配音，也没有修改文件。加 --yes 执行。',
     voiceoverNothing: '每一句都有配音，没有要做的事。',
     voiceoverNothingElse: '其余语句都有配音。',
-    voiceoverVoiceRefused: (voice, reason) => `没有把默认音色设为 ${voice}：${reason}。`,
-    voiceoverVoiceSaved: voice => `已把文稿的默认音色设为 ${voice}`,
+    voiceoverVoiceRefused: (voice, reason) => zhSpaced`没有把默认音色设为${voice}：${reason}。`,
+    voiceoverVoiceSaved: voice => zhSpaced`已把文稿的默认音色设为${voice}`,
     voiceoverGenerating: (done, total) => `正在生成配音 ${done} / ${total}`,
     voiceoverCancelled: generated => `已取消；已生成的 ${generated} 句配音保留。`,
     voiceoverStale: generated => `文稿在生成时被修改，已停止；已生成的 ${generated} 句配音保留。`,

@@ -1,3 +1,4 @@
+import { zhSpaced } from '@lincyaw/kernel'
 import type { Locale } from '@lincyaw/kernel/contracts'
 
 export interface LectureMessages {
@@ -272,12 +273,12 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
     editor: {
       region: '讲授的讲稿与配音',
       transcribe: provider => `转写（${provider}）`,
-      transcribeConfirm: (id, provider, local) => (local ? `用 ${provider} 转写讲授 ${id} 的录音？` : `把讲授 ${id} 的录音发给 ${provider} 转写？转写由该服务计费。`),
+      transcribeConfirm: (id, provider, local) => (local ? zhSpaced`用${provider}转写讲授 ${id} 的录音？` : zhSpaced`把讲授 ${id} 的录音发给${provider}转写？转写由该服务计费。`),
       transcribing: '正在转写…',
       transcribed: count => `已转写 ${count} 句`,
       voice: '音色',
       synthesize: provider => `重新生成配音（${provider}）`,
-      synthesizeConfirm: (provider, voice, count, local) => `用 ${provider} 的音色“${voice}”为这段讲授的 ${count} 句话重新生成配音？${local ? '' : '生成由该服务计费，'}结果由 AI 生成。`,
+      synthesizeConfirm: (provider, voice, count, local) => zhSpaced`用${provider}的音色“${voice}”为这段讲授的 ${count} 句话重新生成配音？${local ? '' : '生成由该服务计费，'}结果由 AI 生成。`,
       synthesizing: '正在生成…',
       synthesized: '已重新生成',
       local: '本机，不外发',
@@ -286,7 +287,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       edit: id => `编辑语句 ${id}`,
       save: '保存',
       saveSay: provider => `保存并重新生成配音（${provider}）`,
-      saveSayConfirm: (provider, local) => (local ? `用 ${provider} 为改过的这句话重新生成配音？结果由 AI 生成。` : `把改过的这句话发给 ${provider} 重新生成配音？生成由该服务计费，结果由 AI 生成。`),
+      saveSayConfirm: (provider, local) => (local ? zhSpaced`用${provider}为改过的这句话重新生成配音？结果由 AI 生成。` : zhSpaced`把改过的这句话发给${provider}重新生成配音？生成由该服务计费，结果由 AI 生成。`),
       saving: '正在保存…',
       failed: reason => `无法完成：${reason}`,
     },

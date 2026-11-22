@@ -1,3 +1,4 @@
+import { zhSpaced } from '@lincyaw/kernel'
 import type { PluginStatus } from '@lincyaw/kernel/contracts'
 import type { Catalog } from './locale.ts'
 
@@ -31,7 +32,7 @@ export const HOST_MESSAGES: Catalog<HostMessages> = {
     status: { started: '已启动', degraded: '部分可用', disabled: '已禁用', failed: '启动失败' },
     because: '：',
     unnamedPlugin: '其他插件',
-    componentError: (component, message) => `${component} 出错：${message}`,
+    componentError: (component, message) => zhSpaced`${component}出错：${message}`,
     problems: count => `${count} 个问题`,
     approvals: count => `待确认 ${count}`,
     approvalsTitle: '待确认的操作',
