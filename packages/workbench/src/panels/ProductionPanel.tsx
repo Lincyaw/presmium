@@ -244,13 +244,13 @@ export function ProductionPanel({ onClose, closing, active = true, actions }: { 
               </div></PmTabPanel>
               <PmTabPanel value="voice" keepMounted><div className="pmw-production__fields">
                 <DocumentVoiceField key={`${source.identity}:${stepId}`} stepId={stepId} disabled={blocked || closing} onGenerate={() => { voicePlayback.stop(); workbench.stopAuditions(); setGenerateStep(stepId) }} />
-                <ProductionRecording key={source.identity} identity={source.identity} sectionId={sectionId} stepId={stepId} active={!outputsOpen && (wide || tab === 'properties') && inspectorTab === 'voice'} available={active && !outputsOpen} onReveal={() => { setInspectorTab('voice'); setTab('properties') }} disabled={blocked || closing}
+                <ProductionRecording key={`recording:${source.identity}`} identity={source.identity} sectionId={sectionId} stepId={stepId} active={!outputsOpen && (wide || tab === 'properties') && inspectorTab === 'voice'} available={active && !outputsOpen} onReveal={() => { setInspectorTab('voice'); setTab('properties') }} disabled={blocked || closing}
                   onImportStarted={() => transcriptionSelection.current}
                   onImported={(assetId, selection) => {
                     setMediaRefresh(true)
                     if (selection === transcriptionSelection.current) setTranscriptionAsset({ identity: source.identity!, id: assetId, revision: ++transcriptionSelection.current })
                   }} onAdopted={() => setMediaRefresh(true)} />
-                <ProductionTranscription key={source.identity} identity={source.identity} directory={source.directory} document={document} sectionId={sectionId} stepId={stepId}
+                <ProductionTranscription key={`transcription:${source.identity}`} identity={source.identity} directory={source.directory} document={document} sectionId={sectionId} stepId={stepId}
                   active={!outputsOpen && (wide || tab === 'properties') && inspectorTab === 'voice'} disabled={blocked || closing}
                   selectedAsset={transcriptionAsset?.identity === source.identity ? transcriptionAsset : undefined}
                   onSelectAsset={() => { transcriptionSelection.current++; setTranscriptionAsset(undefined) }} />
