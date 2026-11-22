@@ -13,7 +13,7 @@ import { mathFromMarkdown } from 'mdast-util-math'
 import { gfm } from 'micromark-extension-gfm'
 import { math } from 'micromark-extension-math'
 import { parse as parseYaml } from 'yaml'
-import { DOCUMENT_SCHEMA_VERSION } from '@lincyaw/kernel'
+import { DOCUMENT_SCHEMA_VERSION, enableDocumentProduction } from '@lincyaw/kernel'
 import type { Asset, DocumentBlock, InlineNode, MdastNode, Narration, RichTextNode, Section, Step, PresmiumDocument, TextMark } from '@lincyaw/kernel'
 
 export interface Frontmatter {
@@ -299,24 +299,23 @@ export function markdownDocument(source: string, options: { id: string, title: s
     sectionOrder.push(sectionId)
   }
 
-  return {
-    document: {
-      schemaVersion: DOCUMENT_SCHEMA_VERSION,
-      id: unique(options.id),
-      placement: { parent: null, rank: options.rank },
-      metadata: {
-        title,
-        lang: frontmatter.lang ?? options.lang ?? guessLang(body),
-        ...frontmatter.description ? { description: frontmatter.description } : {},
-        ...frontmatter.tags.length ? { tags: frontmatter.tags } : {},
-        plugins: [],
-        renderers: { web: {} },
-      },
-      sectionOrder, sections, blocks, steps, narrations, assets, definitions: {},
-      production: { defaults: {}, stepOverrides: {}, mediaClips: [] },
-    } as PresmiumDocument,
-    unresolved: [...new Set(unresolved)],
-  }
+  const document = {
+    schemaVersion: DOCUMENT_SCHEMA_VERSION,
+    id: unique(options.id),
+    placement: { parent: null, rank: options.rank },
+    metadata: {
+      title,
+      lang: frontmatter.lang ?? options.lang ?? guessLang(body),
+      ...frontmatter.description ? { description: frontmatter.description } : {},
+      ...frontmatter.tags.length ? { tags: frontmatter.tags } : {},
+      plugins: [],
+      renderers: { web: {} },
+    },
+    sectionOrder, sections, blocks, steps, narrations, assets, definitions: {},
+    production: { defaults: {}, stepOverrides: {}, mediaClips: [] },
+  } as PresmiumDocument
+  // Speaker notes are the script of a narrated lecture: a deck that has them is ready for video production and voiceover.
+  return { document: Object.keys(narrations).length ? enableDocumentProduction(document) : document, unresolved: [...new Set(unresolved)] }
 }
 
 function soleImage(paragraph: MdastNode): MdastNode | undefined {
