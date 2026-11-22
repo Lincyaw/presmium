@@ -10,6 +10,9 @@ import { failureReason, jobFailure, outputLabel, timeAgo } from '../messages.ts'
 const SHOWN = new Set(['text/html', 'application/pdf'])
 const isVideo = (type: string | undefined) => type?.startsWith('video/') === true
 
+// What most authors export, in this order; every other form is under More Formats with a line on what it is.
+const PRIMARY = ['web', 'pdf', 'pptx', 'video']
+
 const TONES: Record<CompileJob['state'], 'neutral' | 'accent' | 'ok' | 'warn' | 'danger'> = { queued: 'neutral', running: 'accent', done: 'ok', failed: 'danger', cancelled: 'warn' }
 
 function iconOf(target: string): IconName {
@@ -40,6 +43,11 @@ export function ExportPanel({ documentOnly = false, embedded = false, onClose }:
   const jobs = answer?.jobs ?? []
   const label = (id: string) => labelOf(targets.find(target => target.id === id) ?? { id, label: {} })
   const busy = (id: string) => jobs.some(job => job.target === id && (job.state === 'queued' || job.state === 'running'))
+  const primary = PRIMARY.flatMap(id => targets.filter(target => target.id === id))
+  const more = targets.filter(target => !PRIMARY.includes(target.id))
+  const button = (target: OutputTarget, describedBy?: string) => (
+    <PmButton small loading={preparing?.target === target.id} icon={iconOf(target.id)} aria-label={t.makeOutput(labelOf(target))} aria-describedby={describedBy} disabled={busy(target.id) || preparing !== undefined} onClick={() => void workbench.startJob(target.id)}>{labelOf(target)}</PmButton>
+  )
   return (
     <section className="pmw-pane" aria-labelledby={embedded ? undefined : 'pmw-export-title'} aria-label={embedded ? t.exportPane : undefined}>
       {!embedded && <PmPanelHeader className="pmw-pane__header" titleId="pmw-export-title" title={documentOnly ? t.documentExport : t.exportPane} actions={<PmIconButton small icon="close" label={t.close} onClick={onClose} />} />}
@@ -47,12 +55,24 @@ export function ExportPanel({ documentOnly = false, embedded = false, onClose }:
       {preparing && <PmNotice>{preparing.canCancel ? t.outputConfirmingSave : t.outputStarting} {preparing.canCancel && <PmButton small onClick={() => workbench.cancelJobPreparation()}>{t.cancelOutput}</PmButton>}</PmNotice>}
       {!embedded && <h3 id="pmw-export-make" className="pmw-export__subtitle">{t.makeLabel}</h3>}
       <ul className="pmw-export__targets" aria-labelledby={embedded ? undefined : 'pmw-export-make'} aria-label={embedded ? t.makeLabel : undefined}>
-        {targets.map(target => (
-          <li key={target.id}>
-            <PmButton small loading={preparing?.target === target.id} icon={iconOf(target.id)} aria-label={t.makeOutput(labelOf(target))} disabled={busy(target.id) || preparing !== undefined} onClick={() => void workbench.startJob(target.id)}>{labelOf(target)}</PmButton>
-          </li>
-        ))}
+        {primary.map(target => <li key={target.id}>{button(target)}</li>)}
       </ul>
+      {more.length > 0 && (
+        <details className="pmw-export__more" open={primary.length === 0 || undefined}>
+          <summary>{t.moreFormats}</summary>
+          <ul className="pmw-export__formats">
+            {more.map(target => {
+              const hint = t.outputHints[target.id]
+              return (
+                <li key={target.id}>
+                  {button(target, hint ? `pmw-export-hint-${target.id}` : undefined)}
+                  {hint && <span id={`pmw-export-hint-${target.id}`} className="pmw-export__hint">{hint}</span>}
+                </li>
+              )
+            })}
+          </ul>
+        </details>
+      )}
       <h3 className="pmw-export__subtitle">{t.outputsList}</h3>
       {jobs.length === 0
         ? <PmEmpty icon="export">{t.noOutputs}</PmEmpty>

@@ -78,7 +78,7 @@ zh-CN 以 Microsoft Office 的简体中文本地化为首选，没有对应时�
 | 演示者视图 | Presenter View | 讲者在放映时看到的、带讲稿与计时的视图 | `演讲者视图`、`演讲者窗口`、`Speaker view` |
 | 观众视图 | Audience View | 放映时观众看到的画面 | `听众视图`、`听众画面` |
 | 视频制作 | Video Production | 处理步骤、讲稿、配音、字幕与时间线的独立入口 | `视频剪辑`、`Video editing` |
-| 导出 | Export | 由已保存的版本生成网站、幻灯片、Notebook、PDF、图片、PowerPoint 或视频文件 | `生成记录`、Make（指导出时）、`Build`（作者界面中） |
+| 导出 | Export | 由已保存的版本生成网站、幻灯片、Notebook、PDF、图片、PowerPoint 或视频文件。导出窗格先列常用的四项：网站 / Website、PDF、PowerPoint、视频 / Video；其余放在“更多格式 / More Formats”中，各带一句说明：幻灯片网站 / Slides Website、讲授 / Lecture、Notebook、幻灯片图片 / Slide Pictures、图形（SVG） / Figures (SVG) | `生成记录`、Make（指导出时）、`Build`（作者界面中）、`图形 SVG`、`幻灯片 PDF`、`幻灯片 PowerPoint`（导出项名称中） |
 | 导出记录 | Export History | 导出窗格中已完成与进行中的导出列表 | `生成记录`、`Made files` |
 | 网站 | Website | 文稿导出为网页的形态 | `站点产物` |
 | 网站主题 | Site Theme | 网站的预置结构与视觉，如课程、文档、展示；配置项为 `theme` | |
@@ -194,6 +194,7 @@ zh-CN 以 Microsoft Office 的简体中文本地化为首选，没有对应时�
 | 刷新 | Refresh | 重新获取列表或预览内容，不重新加载页面 | |
 | 显示 / 隐藏 | Show / Hide | 显示或隐藏窗格 | `收起`、展开（指窗格时） |
 | 更多 | More | 打开更多命令的菜单 | 其他（指更多命令时） |
+| 更多格式 | More Formats | 导出窗格中展开不常用导出项的标题 | `其他格式`、`高级导出` |
 | 详细信息 | Details | 打开错误或项目的详细信息 | `技术详情`、`Technical details` |
 | 开始使用 | Get Started | 欢迎对话框的主按钮 | `开始吧` |
 | 全屏 / 退出全屏 | Full Screen / Exit Full Screen | 进入或退出全屏 | `最大化`（指全屏时） |
