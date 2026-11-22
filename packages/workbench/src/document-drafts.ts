@@ -2,7 +2,7 @@ import { isRecord, randomUUID, validateDocument } from '@lincyaw/kernel'
 import type { PresmiumDocument } from '@lincyaw/kernel'
 import { DocumentDraftStore } from './document-draft-store.ts'
 import { sha256 as tokenOf } from './sha256.ts'
-import type { DraftStoreCommit, DraftStoreOperation } from './document-draft-store.ts'
+import type { DraftStoreCommit, DraftStoreOperation, DraftStoreResult } from './document-draft-store.ts'
 
 export interface DocumentDraftReference { id: string, revision: number, token: string }
 export interface DocumentDraft {
@@ -47,10 +47,13 @@ function documentDraft(value: unknown, documentId: string): DocumentDraft | unde
     pendingHash: value.pendingHash, composing: value.composing, origins: value.origins }
 }
 
+interface ParsedDraft { raw: string, documentId: string, value: StoredDocumentDraft, token?: string }
+
 /** Strictly committed document backups, with old localStorage copies identified as unconfirmed rescue material. */
 export class DocumentDrafts {
   readonly #owner = randomUUID()
   readonly #owned = new Map<string, { identity: string, revision: number, raw: string }>()
+  readonly #parsed = new Map<string, ParsedDraft[]>()
   #store?: DocumentDraftStore
   #identity?: string
   #closed = false
@@ -93,23 +96,35 @@ export class DocumentDrafts {
       signal?.throwIfAborted()
       try {
         if (typeof raw !== 'string' || raw.length > MAX_CHARS) throw new Error('document-draft-size')
-        const value: unknown = JSON.parse(raw)
-        if (!isRecord(value) || value.format !== 2 || value.identity !== identity || !idRevision(value) || key !== keyOf(identity, value.id)
-          || typeof value.owner !== 'string' || !value.owner || value.owner.length > 200 || typeof value.updatedAt !== 'number' || !Number.isSafeInteger(value.updatedAt) || value.updatedAt < 0 || Number.isNaN(new Date(value.updatedAt).getTime())) throw new Error('document-draft-data')
-        const draft = documentDraft(value, documentId)
-        if (!draft) throw new Error('document-draft-document')
-        if (draft.baseHash.startsWith('json:')) draft.baseHash = await tokenOf(draft.baseHash.slice(5))
-        if (draft.pendingHash?.startsWith('json:')) draft.pendingHash = await tokenOf(draft.pendingHash.slice(5))
-        const token = await tokenOf(raw), marker = settledKey(identity, { id: value.id, revision: value.revision, token })
+        const { value, token } = await this.#parse(identity, documentId, key, raw)
+        const marker = settledKey(identity, { id: value.id, revision: value.revision, token })
         if (durable.get(marker) === token) continue
         if (source === 'rescue' && localStorage.getItem(marker) === token) continue
         const id = JSON.stringify([value.id, value.revision, token])
-        if (!records.has(id)) records.set(id, { ...draft, format: 2, identity, id: value.id, owner: value.owner, revision: value.revision, updatedAt: value.updatedAt, token, source,
+        if (!records.has(id)) records.set(id, { ...value, token, source,
           owned: source === 'durable' && value.owner === this.#owner && (this.#owned.get(value.id)?.raw === raw || store.owns(key, raw)) })
       } catch { signal?.throwIfAborted(); failed = true }
     }
+    for (const key of this.#parsed.keys()) if (key.startsWith(prefix(identity)) && !values.some(value => value.key === key)) this.#parsed.delete(key)
     signal?.throwIfAborted()
     return { records: [...records.values()], failed }
+  }
+
+  /** The same stored bytes are parsed and validated once: a long document's backup is read again after each of its writes. Contents are shared, never mutated. */
+  async #parse(identity: string, documentId: string, key: string, raw: string): Promise<{ value: StoredDocumentDraft, token: string }> {
+    const known = this.#parsed.get(key)?.find(entry => entry.raw === raw && entry.documentId === documentId)
+    if (known) return { value: known.value, token: known.token ??= await tokenOf(raw) }
+    const value: unknown = JSON.parse(raw)
+    if (!isRecord(value) || value.format !== 2 || value.identity !== identity || !idRevision(value) || key !== keyOf(identity, value.id)
+      || typeof value.owner !== 'string' || !value.owner || value.owner.length > 200 || typeof value.updatedAt !== 'number' || !Number.isSafeInteger(value.updatedAt) || value.updatedAt < 0 || Number.isNaN(new Date(value.updatedAt).getTime())) throw new Error('document-draft-data')
+    const draft = documentDraft(value, documentId)
+    if (!draft) throw new Error('document-draft-document')
+    if (draft.baseHash.startsWith('json:')) draft.baseHash = await tokenOf(draft.baseHash.slice(5))
+    if (draft.pendingHash?.startsWith('json:')) draft.pendingHash = await tokenOf(draft.pendingHash.slice(5))
+    const parsed: StoredDocumentDraft = { ...draft, format: 2, identity, id: value.id, owner: value.owner, revision: value.revision, updatedAt: value.updatedAt }
+    const token = await tokenOf(raw)
+    this.#remember(key, { raw, documentId, value: parsed, token })
+    return { value: parsed, token }
   }
 
   #record(identity: string, draft: DocumentDraft, previous?: StoredDocumentDraft): { record: StoredDocumentDraft, raw: string } | undefined {
@@ -124,14 +139,30 @@ export class DocumentDrafts {
     catch { return }
   }
 
+  // Storage holds this tab's committed write while later ones are in flight or waiting, so each key keeps those bytes, newest first.
+  #remember(key: string, entry: ParsedDraft): void {
+    this.#parsed.set(key, [entry, ...(this.#parsed.get(key) ?? []).filter(known => known.raw !== entry.raw)].slice(0, 8))
+  }
+  #settled(key: string, raw: string, result: DraftStoreResult): void {
+    const entries = this.#parsed.get(key), index = entries?.findIndex(entry => entry.raw === raw) ?? -1
+    if (!entries || index < 0) return
+    this.#parsed.set(key, result === 'committed' ? entries.slice(0, index + 1) : entries.filter((_, position) => position !== index))
+  }
+
+  // This tab's own bytes come from its open document, so reading them back does not parse them again.
+  #own(identity: string, next: { record: StoredDocumentDraft, raw: string }): void {
+    this.#owned.set(next.record.id, { identity, revision: next.record.revision, raw: next.raw })
+    this.#remember(keyOf(identity, next.record.id), { raw: next.raw, documentId: next.record.content.id, value: next.record })
+  }
+
   /** Admission is immediate; only done='committed' confirms a durable backup. */
   write(identity: string, draft: DocumentDraft, previous?: StoredDocumentDraft): DocumentDraftCommit | undefined {
     const next = this.#record(identity, draft, previous)
     if (!next) return
     const commit = this.#store!.put(keyOf(identity, next.record.id), next.raw)
     if (!commit) return
-    this.#owned.set(next.record.id, { identity, revision: next.record.revision, raw: next.raw })
-    void commit.done.then(() => this.#touch())
+    this.#own(identity, next)
+    void commit.done.then(result => { this.#settled(keyOf(identity, next.record.id), next.raw, result); this.#touch() })
     if (previous && previous.id !== next.record.id) this.archive(previous)
     return { ...commit, record: next.record, clearing: false }
   }
@@ -139,7 +170,7 @@ export class DocumentDrafts {
   async fork(identity: string, draft: DocumentDraft, operation?: DraftStoreOperation): Promise<StoredDocumentDraft | undefined> {
     const next = this.#record(identity, draft)
     if (!next || !await this.#store!.create(keyOf(identity, next.record.id), next.raw, operation)) return
-    this.#owned.set(next.record.id, { identity, revision: next.record.revision, raw: next.raw })
+    this.#own(identity, next)
     this.#touch()
     return next.record
   }
