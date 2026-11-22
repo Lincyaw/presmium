@@ -244,26 +244,6 @@
   padding: var(--pm-space-2) var(--pm-space-3) 0;
 }
 
-.pmw-problems {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: var(--pm-space-1);
-  min-width: 0;
-}
-
-.pmw-problems__summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--pm-space-2);
-}
-
-.pmw-problems__failure {
-  margin: 0;
-  color: var(--pm-color-danger);
-}
-
 .pmw-problems__list {
   display: flex;
   flex-direction: column;
@@ -417,6 +397,11 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.pmw-statusbar__problems {
+  flex: none;
+  margin-inline-start: auto;
 }
 
 /* The document on its canvas: the page draws itself in it, a slide lies on it at its own proportions. */
