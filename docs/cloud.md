@@ -19,7 +19,7 @@
 | Studio 容器（`deploy/cloud/studio`） | JupyterHub 的 single-user server，内含 Studio、工作区服务与控制服务 `control.mjs` |
 | 控制台（`presmium-cloud serve`） | 共享、创建副本、访问令牌、MCP 转发、共享网站、Studio 状态与入口；作为 JupyterHub service 访问 Hub API |
 | PostgreSQL | 账号、登录会话、访问令牌与共享记录；不存文稿 |
-| 对象存储（S3 兼容） | 共享文稿的源文件归档与网站 |
+| 对象存储（Versity S3 Gateway，`versity/versitygw`，卷 `object-data`） | 共享文稿的源文件归档与网站；每个桶是卷中的一个目录，每个对象是其中的普通文件。也可换用外部的 S3 兼容服务（`CLOUD_S3_*`） |
 | Caddy | TLS 与按主机名转发控制台、身份、共享内容、JupyterHub 四个来源 |
 
 浏览器访问控制台（`app.*`）与 JupyterHub（`studio.*`），外部 AI 助手访问控制台的 `/mcp`，读者访问共享内容（`content.*`）。JupyterHub 的用户名是 OIDC 的 `sub`，控制台按它找到同一用户的服务器。
@@ -149,7 +149,7 @@ JupyterHub 管理界面在 Studio 地址的 `/hub/admin`，管理员在 `jupyter
 
 ### 8.6 备份与恢复
 
-备份应用数据库、身份数据库、对象存储卷、`hub-data`、全部 `<实例>-work-*` 卷、`.env` 与 Caddy 证书卷。先在 `/hub/admin` 停止全部服务器，再：
+备份应用数据库、身份数据库、对象存储卷 `object-data`、`hub-data`、全部 `<实例>-work-*` 卷、`.env` 与 Caddy 证书卷。先在 `/hub/admin` 停止全部服务器，再：
 
 ```sh
 umask 077; cloud_project=presmium-cloud; cloud_instance=presmium-cloud; mkdir -p backups
@@ -157,7 +157,7 @@ docker compose --env-file .env -f compose.yaml stop entrance api hub keycloak ob
 docker compose --env-file .env -f compose.yaml exec -T database pg_dump -U presmium -d presmium -Fc > backups/presmium.dump
 docker compose --env-file .env -f compose.yaml exec -T identity-database pg_dump -U keycloak -d keycloak -Fc > backups/keycloak.dump
 backup_helper=busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
-for volume in "${cloud_project}_objects" "${cloud_project}_hub-data" "${cloud_project}_entrance-data" "${cloud_project}_entrance-config" $(docker volume ls -q --filter "name=^${cloud_instance}-work-"); do
+for volume in "${cloud_project}_object-data" "${cloud_project}_hub-data" "${cloud_project}_entrance-data" "${cloud_project}_entrance-config" $(docker volume ls -q --filter "name=^${cloud_instance}-work-"); do
   docker run --rm --network none --read-only -v "$volume:/data:ro" -v "$PWD/backups:/backup" "$backup_helper" tar -C /data -cf "/backup/$volume.tar" .
 done
 cp .env backups/deployment.env
@@ -178,3 +178,5 @@ docker compose --env-file .env -f compose.yaml up -d
 ```
 
 运行中的 Studio 继续用旧镜像，下次启动时换新。不修改已执行的迁移文件。停止但保留数据用 `docker compose … down`，不加删除卷的参数，不清理整个 Docker 主机。
+
+1.0.0-rc.129 及更早的版本用 MinIO 存放共享（卷 `<项目>_objects`），MinIO 已不再发布镜像。安装程序在服务启动后，若旧卷还在且本机仍有当时的 MinIO 镜像，就临时以它读出旧卷，用 `rclone/rclone` 把桶中的对象复制到新的对象存储，并在 `.env` 记下 `CLOUD_LEGACY_OBJECTS_COPIED=1`；旧卷保留，确认共享能打开后由运营者 `docker volume rm` 删除。本机没有 MinIO 镜像时无法复制：安装程序给出警告，这些共享对读者显示为不存在，作者重新共享即可。旧版的 `install.sh upgrade` 不做这一步，所以从这些版本升级时用新版安装程序（`curl -fsSL …/install.sh | bash -s -- upgrade`），或升级后再运行一次 `bash ~/presmium-cloud/install.sh`；`status` 在旧卷尚未复制时提示。

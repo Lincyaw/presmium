@@ -123,15 +123,22 @@ services:
     cap_drop: [ALL]
     logging: *logs
 
+  # Versity S3 Gateway over the volume: each bucket is a directory and each object a plain file in it.
   object-store:
-    image: minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
-    command: [server, /data, --console-address, ":9001"]
+    image: versity/versitygw:v1.11.0@sha256:8319a530d08d537426e2f855bae5280709795dc73a3f0c347973ef915d6343c5
+    command: [--port, ":9000", --quiet, posix, /data]
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=67108864,mode=1777
     environment:
-      MINIO_ROOT_USER: ${CLOUD_S3_ACCESS_KEY_ID:?Set CLOUD_S3_ACCESS_KEY_ID}
-      MINIO_ROOT_PASSWORD: ${CLOUD_S3_SECRET_ACCESS_KEY:?Set CLOUD_S3_SECRET_ACCESS_KEY}
-    volumes: [objects:/data]
+      ROOT_ACCESS_KEY_ID: ${CLOUD_S3_ACCESS_KEY_ID:?Set CLOUD_S3_ACCESS_KEY_ID}
+      ROOT_SECRET_ACCESS_KEY: ${CLOUD_S3_SECRET_ACCESS_KEY:?Set CLOUD_S3_SECRET_ACCESS_KEY}
+      VGW_REGION: ${CLOUD_S3_REGION:-us-east-1}
+    volumes: [object-data:/data]
     networks: [data]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
     logging: *logs
 
   migrate:
@@ -252,7 +259,7 @@ networks:
 volumes:
   database: {}
   identity-database: {}
-  objects: {}
+  object-data: {}
   entrance-data: {}
   entrance-config: {}
   hub-data: {}

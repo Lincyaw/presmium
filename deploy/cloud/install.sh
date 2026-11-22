@@ -14,6 +14,10 @@ readonly repository=Lincyaw/presmium
 readonly published_registry=ghcr.io/lincyaw/
 readonly minimum_compose=2.24.4
 readonly backup_helper=busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+# Releases up to 1.0.0-rc.129 kept the shares in MinIO (volume <project>_objects). MinIO no longer publishes images, so
+# the old server runs only from a copy already on this host; rclone copies its objects into the current store.
+readonly legacy_object_store=minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+readonly object_copier=rclone/rclone:1.75.2@sha256:2687085f718d3c628f7fdfb77c52a1d344332aed543110bb88088f2c70d43eb5
 
 usage() {
   cat <<'EOF'
@@ -445,6 +449,49 @@ print_summary() {
   say "  Manage:             bash $install_dir/install.sh status | upgrade | uninstall"
 }
 
+# --- Shares from the MinIO object store ------------------------------------------------------------------------
+
+legacy_objects_pending() { # the old MinIO volume exists and its objects were not copied yet
+  [ "$(env_get CLOUD_LEGACY_OBJECTS_COPIED)" != 1 ] && docker volume inspect "${project}_objects" >/dev/null 2>&1
+}
+
+copy_legacy_objects() { # after the services are up: copy the shares of the MinIO volume into the current store
+  legacy_objects_pending || return 0
+  local volume="${project}_objects" network="${project}_data" server="${project}-legacy-objects" bucket code=0
+  bucket=$(env_get CLOUD_S3_BUCKET); bucket=${bucket:-presmium}
+  if ! docker image inspect "$legacy_object_store" >/dev/null 2>&1; then
+    warn "the shares made before this version are in the MinIO volume $volume, but MinIO's image is not on this host"
+    warn "and can no longer be downloaded, so they cannot be copied. Their readers see them as missing until the authors"
+    warn "share those documents again. The volume stays until you remove it: docker volume rm $volume"
+    return 0
+  fi
+  step "Copying the shares from the old object store ($volume)"
+  docker rm -f "$server" >/dev/null 2>&1 || true
+  (
+    export MINIO_ROOT_USER RCLONE_CONFIG_OLD_ACCESS_KEY_ID RCLONE_CONFIG_NEW_ACCESS_KEY_ID
+    export MINIO_ROOT_PASSWORD RCLONE_CONFIG_OLD_SECRET_ACCESS_KEY RCLONE_CONFIG_NEW_SECRET_ACCESS_KEY
+    MINIO_ROOT_USER=$(env_get CLOUD_S3_ACCESS_KEY_ID); MINIO_ROOT_PASSWORD=$(env_get CLOUD_S3_SECRET_ACCESS_KEY)
+    RCLONE_CONFIG_OLD_ACCESS_KEY_ID=$MINIO_ROOT_USER RCLONE_CONFIG_NEW_ACCESS_KEY_ID=$MINIO_ROOT_USER
+    RCLONE_CONFIG_OLD_SECRET_ACCESS_KEY=$MINIO_ROOT_PASSWORD RCLONE_CONFIG_NEW_SECRET_ACCESS_KEY=$MINIO_ROOT_PASSWORD
+    docker run -d --pull never --name "$server" --network "$network" --network-alias legacy-objects \
+      -e MINIO_ROOT_USER -e MINIO_ROOT_PASSWORD -v "$volume:/data" "$legacy_object_store" server /data >/dev/null &&
+    docker run --rm --network "$network" \
+      -e RCLONE_CONFIG_OLD_TYPE=s3 -e RCLONE_CONFIG_OLD_PROVIDER=Minio -e RCLONE_CONFIG_OLD_ENDPOINT=http://legacy-objects:9000 \
+      -e RCLONE_CONFIG_OLD_ACCESS_KEY_ID -e RCLONE_CONFIG_OLD_SECRET_ACCESS_KEY \
+      -e RCLONE_CONFIG_NEW_TYPE=s3 -e RCLONE_CONFIG_NEW_PROVIDER=Other -e RCLONE_CONFIG_NEW_ENDPOINT=http://object-store:9000 \
+      -e RCLONE_CONFIG_NEW_ACCESS_KEY_ID -e RCLONE_CONFIG_NEW_SECRET_ACCESS_KEY \
+      "$object_copier" copy "old:$bucket" "new:$bucket" --config "" --retries 10 --retries-sleep 3s \
+      --stats 30s --stats-one-line --stats-log-level NOTICE
+  ) || code=$?
+  docker rm -f "$server" >/dev/null 2>&1 || true
+  if [ "$code" != 0 ]; then
+    warn "copying the old shares failed; run this installer again to retry. They stay in the volume $volume."
+    return 0
+  fi
+  env_set "$env_file" CLOUD_LEGACY_OBJECTS_COPIED 1
+  say "The old shares are in the new object store. Once they open, remove the old volume: docker volume rm $volume"
+}
+
 # --- Commands ---------------------------------------------------------------------------------------------------
 
 cmd_install() {
@@ -493,6 +540,7 @@ cmd_install() {
   step "Starting Presmium Cloud"
   dc up -d --remove-orphans
   wait_healthy
+  copy_legacy_objects
   check_entrance
   print_summary
 }
@@ -544,7 +592,7 @@ backup() {
   dc stop entrance api hub keycloak object-store
   dc exec -T database pg_dump -U presmium -d presmium -Fc >"$target/presmium.dump"
   dc exec -T identity-database pg_dump -U keycloak -d keycloak -Fc >"$target/keycloak.dump"
-  for volume in "${project}_objects" "${project}_hub-data" "${project}_entrance-data" "${project}_entrance-config" \
+  for volume in "${project}_object-data" "${project}_objects" "${project}_hub-data" "${project}_entrance-data" "${project}_entrance-config" \
     $(docker volume ls -q --filter "name=^${instance}-work-"); do
     docker volume inspect "$volume" >/dev/null 2>&1 || continue
     # Written by this shell, so the archive belongs to the operator and keeps the umask.
@@ -609,6 +657,7 @@ cmd_upgrade() {
   dc up -d --remove-orphans
   trap - EXIT
   wait_healthy
+  copy_legacy_objects
   check_entrance
   print_summary
   say "  Each Studio starts on the new version the next time its author opens it."
@@ -627,6 +676,11 @@ cmd_status() {
   studios=$(docker ps --filter "name=^$(env_get CLOUD_INSTANCE_ID)-studio-" --format '{{.Names}}  {{.Status}}')
   if [ -n "$studios" ]; then say "Running Studios:"; printf '%s\n' "$studios" | sed 's/^/  /'; else say "No Studio is running."; fi
   say "User volumes: $(docker volume ls -q --filter "name=^$(env_get CLOUD_INSTANCE_ID)-work-" | wc -l)"
+  if legacy_objects_pending; then
+    say ""
+    say "The shares made with MinIO (up to 1.0.0-rc.129) are still in the volume ${project}_objects, not in the"
+    say "current object store; copy them with: bash $install_dir/install.sh"
+  fi
 }
 
 cmd_uninstall() {
@@ -651,6 +705,7 @@ cmd_uninstall() {
     dc --profile build-studio down -v --remove-orphans
     docker volume ls -q --filter "name=^${instance}-work-" | xargs -r docker volume rm >/dev/null
     docker volume ls -q --filter "name=^${instance}-runtime-" | xargs -r docker volume rm >/dev/null
+    docker volume rm "${project}_objects" >/dev/null 2>&1 || true
     docker network rm "${project}-studios" >/dev/null 2>&1 || true
     registry=$(env_get CLOUD_IMAGE_REGISTRY)
     tag=$(env_get CLOUD_IMAGE_TAG)
