@@ -30,7 +30,8 @@ interface DefaultModel {
 
 type AssistantContext = DshContext & { settings: Settings, credentials: Credentials }
 
-const TEST_MS = 15_000
+// A test the author waits for: a service that has not answered by then is reported unreachable.
+const TEST_MS = 8_000
 const FAILED_KEPT = 50
 // The same rule as Harness's own key field: printable ASCII after trimming, not a pasted `NAME=value` line or quoted.
 const KEY = /^[\x21-\x7E]+$/

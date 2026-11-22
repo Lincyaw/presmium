@@ -29,6 +29,8 @@ function failureText(m: ClientMessages['modelSetup'], failure: ModelSetupFailure
 type Outcome = { tone: 'ok' | 'danger', text: string }
 
 const EMPTY: Draft = { key: '', baseURL: '', model: '' }
+/** The shortest a test shows that it is running. */
+const TESTING_SHOWN_MS = 600
 
 /**
  * Settings → Models in the author's terms: a short list of model services by their own names, each with where to get
@@ -89,7 +91,8 @@ function ModelSetupPanel({ workbench, selectModel }: { workbench: Workbench, sel
     const body: ModelSetupRequest = { id: state.id, ...draft.key.trim() ? { key: draft.key } : {}, ...draft.baseURL.trim() ? { baseURL: draft.baseURL } : {}, ...draft.model.trim() ? { model: draft.model } : {} }
     try {
       if (action === 'test') {
-        const tested = await post<ModelTestAnswer>(MODEL_SETUP_PATHS.test, body, controller.signal)
+        // A repeated test that answers at once still shows that it ran.
+        const [tested] = await Promise.all([post<ModelTestAnswer>(MODEL_SETUP_PATHS.test, body, controller.signal), new Promise(done => setTimeout(done, TESTING_SHOWN_MS))])
         if (controller.signal.aborted) return
         setOutcome('ok' in tested && tested.ok ? { tone: 'ok', text: m.connected } : { tone: 'danger', text: failureText(m, (tested as { failure: ModelSetupFailure }).failure, state.id) })
       } else {
@@ -182,7 +185,7 @@ function ProviderCard({ t, state, open, writable, draft, busy, outcome, onToggle
           {custom && address}
           {custom && model}
           <PmInput type="password" label={m.key} placeholder={keyPlaceholder} value={draft.key} disabled={!writable || Boolean(busy)} autoComplete="new-password" spellCheck={false} maxLength={8192} onChange={event => onDraft({ key: event.target.value })} />
-          {outcome && <PmNotice tone={outcome.tone}>{outcome.text}</PmNotice>}
+          {busy === 'test' ? <PmNotice>{m.testing}</PmNotice> : outcome && <PmNotice tone={outcome.tone}>{outcome.text}</PmNotice>}
           <div className="pmw-model-setup__actions">
             <PmButton small loading={busy === 'test'} disabled={!ready || Boolean(busy)} onClick={onTest}>{m.test}</PmButton>
             <PmButton small variant="primary" loading={busy === 'save'} disabled={!writable || !ready || Boolean(busy)} onClick={onSave}>{m.save}</PmButton>
