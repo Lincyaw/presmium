@@ -257,6 +257,16 @@ export class DocumentBindings {
     return agent ? this.#candidateRoots.get(this.rootSessionOf(agent)) : undefined
   }
 
+  /** Learns the candidate's root of an agent whose project (`projectRoot`) is in the author's workspace. */
+  async prepareCandidateRoot(agent: DshAgent, projectRoot: string): Promise<void> {
+    if (this.candidateRootOf(agent)) return
+    const { root } = await this.#server.ready
+    if (!isInside(projectRoot, root)) return
+    const id = this.rootSessionOf(agent)
+    const candidate = await this.#server.requestJson<{ root: string }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id } })
+    if (!this.#candidateRoots.has(id)) this.#candidateRoots.set(id, candidate.root)
+  }
+
   candidateViewOf(agent: DshAgent | undefined): string | undefined {
     return agent ? this.#candidateViews.get(this.rootSessionOf(agent)) : undefined
   }

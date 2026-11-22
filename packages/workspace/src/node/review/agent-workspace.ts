@@ -25,6 +25,13 @@ function stamp(file: string): FileStamp | undefined {
   if (!stat.isFile()) throw new RequestError(409, 'agent-source-type-changed')
   return { version: versionOf(readFileSync(file)), ...stat.mode & 0o111 ? { executable: true } : {} }
 }
+const SANDBOX_STATE = new Set(['.deltabox', '.deltabox-lite-state'])
+/**
+ * What a candidate copies of the author's listing: not the candidates themselves, not a sandbox's state (its live
+ * tree is a repository of its own), and not another repository inside the workspace, which git lists as `dir/`.
+ */
+const isAuthorFile = (path: string) => !!path && !path.endsWith('/') && !path.startsWith('.presmium/agent-workspaces/')
+  && !path.split('/').some(part => SANDBOX_STATE.has(part))
 const same = (a: FileStamp | undefined, b: FileStamp | undefined) => JSON.stringify(a) === JSON.stringify(b)
 async function sourceStamp(file: string): Promise<FileStamp | undefined> {
   let stat
@@ -63,7 +70,7 @@ export class AgentWorkspace {
   async refresh(): Promise<boolean> {
     const listing = ['ls-files', '--cached', '--others', '--exclude-standard', '-z', '--', '.']
     const listed = Git.isRepository(this.#config.root) ? await git(this.#config.root, listing) : await (await openLocalHistory(this.#config.root)).output(listing)
-    const paths = listed.split('\0').filter(path => path && !path.startsWith('.presmium/agent-workspaces/'))
+    const paths = listed.split('\0').filter(isAuthorFile)
     const next: Record<string, FileStamp> = {}
     for (const path of new Set(paths)) {
       const current = await sourceStamp(join(this.#config.root, path))
