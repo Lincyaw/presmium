@@ -3,7 +3,7 @@ import { cloneElement, forwardRef, memo, useCallback, useEffect, useId, useLayou
 import type { DragEvent, KeyboardEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent, ReactElement, ReactNode } from 'react'
 import { PmButton, PmIcon, PmIconButton } from './base-controls.tsx'
 import type { MenuItem } from './components.tsx'
-import { PmMenu } from './components.tsx'
+import { PmContextMenu, PmMenu } from './components.tsx'
 
 const cls = (...names: (string | false | undefined | null)[]) => names.filter(Boolean).join(' ')
 
@@ -70,8 +70,8 @@ function isWithin(nodes: DocTreeProps['nodes'], ancestor: string, id: string): b
 
 /**
  * The workspace's documents as a tree (WAI-ARIA tree view): one tab stop that the arrow keys move, Home and End,
- * typing a title's first letters, * to expand the row's siblings, Enter to open, F2 to rename and Delete to move to the
- * trash. A row can be dragged before, into or after another; the target row shows where it will land. Above 200 visible
+ * typing a title's first letters, * to expand the row's siblings, Enter to open, F2 to rename, Delete to move to the
+ * trash, and Shift+F10 or the context menu key (or a right click) for the row's menu, the same as its "⋯" menu. A row can be dragged before, into or after another; the target row shows where it will land. Above 200 visible
  * rows only those in view are drawn.
  */
 export function PmDocTree(props: DocTreeProps) {
@@ -87,6 +87,9 @@ export function PmDocTree(props: DocTreeProps) {
   const [focused, setFocused] = useState<string>()
   const [dragging, setDragging] = useState<string>()
   const [drop, setDrop] = useState<{ id: string, at: DocTreeDrop }>()
+  const [context, setContext] = useState<{ id: string, at: { x: number, y: number } }>()
+  // The menu's row once it has closed (by then `context` is cleared): focus returns to it and the chosen item acts on it.
+  const contextRow = useRef<string>()
   const container = useRef<HTMLDivElement>(null)
   const items = useRef(new Map<string, HTMLDivElement>())
   const typed = useRef({ text: '', at: 0 })
@@ -160,8 +163,22 @@ export function PmDocTree(props: DocTreeProps) {
     createChild: id => latest.current.props.onCreateChild?.(id),
     menu: id => latest.current.props.menu?.(id) ?? [],
     menuSelect: (id, action) => latest.current.props.onMenu?.(id, action),
+    contextMenu: (id, at) => {
+      const p = latest.current.props
+      if (!p.menu || !p.onMenu || p.disabled || p.renaming === id) return false
+      setFocused(id)
+      items.current.get(id)?.focus()
+      contextRow.current = id
+      setContext({ id, at })
+      return true
+    },
     keyDown: (event, row) => {
       if (event.target !== event.currentTarget || event.altKey || event.ctrlKey || event.metaKey) return
+      if (event.key === 'ContextMenu' || event.key === 'F10' && event.shiftKey) {
+        const box = event.currentTarget.getBoundingClientRect()
+        if (handlers.contextMenu(row.id, { x: box.left + box.height, y: box.bottom })) event.preventDefault()
+        return
+      }
       const { props: p, rows: all } = latest.current
       const node = p.nodes[row.id]!
       const at = all.findIndex(item => item.id === row.id)
@@ -240,12 +257,16 @@ export function PmDocTree(props: DocTreeProps) {
       {rows.slice(from, to).map(row => {
         const node = nodes[row.id]!
         return <TreeRow key={row.id} row={row} node={node} open={node.children.length > 0 && expanded.has(row.id)} selected={row.id === selected}
-          tabStop={row.id === current} drop={drop?.id === row.id ? drop.at : undefined} dragged={dragging === row.id}
+          tabStop={row.id === current} menuOpen={context?.id === row.id} drop={drop?.id === row.id ? drop.at : undefined} dragged={dragging === row.id}
           draggable={Boolean(onMove) && !disabled && renaming !== row.id} renaming={renaming === row.id && Boolean(props.onRename)}
           actions={!disabled && renaming !== row.id} canCreate={Boolean(props.onCreateChild)} hasMenu={Boolean(props.menu && props.onMenu)}
           labels={props.labels} handlers={handlers} />
       })}
       {to < rows.length && <div aria-hidden="true" style={{ height: (rows.length - to) * step }} />}
+      {props.menu && props.onMenu && <PmContextMenu label={context ? props.labels.more(nodes[context.id]?.title || props.labels.untitled) : label}
+        items={context ? props.menu(context.id) : []} at={context?.at} onClose={() => setContext(undefined)}
+        returnFocus={() => { if (contextRow.current) items.current.get(contextRow.current)?.focus() }}
+        onSelect={action => { if (contextRow.current) props.onMenu?.(contextRow.current, action) }} />}
     </div>
   )
 }
@@ -260,6 +281,8 @@ interface RowHandlers {
   createChild(id: string): void
   menu(id: string): MenuItem[]
   menuSelect(id: string, action: string): void
+  /** Opens the row's menu at a point; false when the row has none now. */
+  contextMenu(id: string, at: { x: number, y: number }): boolean
   keyDown(event: KeyboardEvent<HTMLDivElement>, row: Row): void
   dragStart(event: DragEvent<HTMLDivElement>, id: string, title: string): void
   dragEnd(): void
@@ -269,8 +292,8 @@ interface RowHandlers {
 }
 
 /** One row; it renders again only when its own node, state or drop target changes. */
-const TreeRow = memo(function TreeRow({ row, node, open, selected, tabStop, drop, dragged, draggable, renaming, actions, canCreate, hasMenu, labels, handlers }: {
-  row: Row, node: DocTreeNode, open: boolean, selected: boolean, tabStop: boolean, drop?: DocTreeDrop, dragged: boolean, draggable: boolean,
+const TreeRow = memo(function TreeRow({ row, node, open, selected, tabStop, menuOpen: contextOpen, drop, dragged, draggable, renaming, actions, canCreate, hasMenu, labels, handlers }: {
+  row: Row, node: DocTreeNode, open: boolean, selected: boolean, tabStop: boolean, menuOpen: boolean, drop?: DocTreeDrop, dragged: boolean, draggable: boolean,
   renaming: boolean, actions: boolean, canCreate: boolean, hasMenu: boolean, labels: DocTreeLabels, handlers: RowHandlers,
 }) {
   const title = node.title || labels.untitled
@@ -289,6 +312,7 @@ const TreeRow = memo(function TreeRow({ row, node, open, selected, tabStop, drop
       tabIndex={tabStop ? 0 : -1}
       data-depth={Math.min(row.depth, 8)}
       data-drop={drop}
+      data-menu-open={contextOpen || undefined}
       data-dragged={dragged || undefined}
       draggable={draggable}
       title={node.warning}
@@ -296,6 +320,7 @@ const TreeRow = memo(function TreeRow({ row, node, open, selected, tabStop, drop
       onKeyDown={event => handlers.keyDown(event, row)}
       onClick={event => { if ((event.target as HTMLElement).closest('button, input, [role="menu"]')) return; handlers.focused(row.id); handlers.open(row.id) }}
       onDoubleClick={event => { if (!(event.target as HTMLElement).closest('button')) handlers.rename(row.id) }}
+      onContextMenu={event => { if (!renaming && handlers.contextMenu(row.id, { x: event.clientX, y: event.clientY })) event.preventDefault() }}
       onDragStart={event => handlers.dragStart(event, row.id, title)}
       onDragEnd={handlers.dragEnd}
       onDragOver={event => handlers.dragOver(event, row)}

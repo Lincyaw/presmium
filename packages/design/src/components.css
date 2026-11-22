@@ -1168,7 +1168,8 @@
   border-radius: var(--pm-radius-card);
 }
 
-.pm-ui-popover[data-layer="dialog"] {
+.pm-ui-popover[data-layer="dialog"],
+.pm-ui-menu[data-layer="dialog"] {
   z-index: var(--pm-z-dialog-popover);
 }
 
@@ -2313,7 +2314,7 @@
 .pm-ui-doc-tree__item[data-depth='7'] { --pm-tree-depth: 7; }
 .pm-ui-doc-tree__item[data-depth='8'] { --pm-tree-depth: 8; }
 
-.pm-ui-doc-tree__item:hover {
+.pm-ui-doc-tree__item:is(:hover, [data-menu-open]) {
   background: var(--pm-color-hover);
 }
 
@@ -2409,6 +2410,15 @@
 
 .pm-ui-doc-tree[data-dragging] .pm-ui-doc-tree__actions {
   display: none;
+}
+
+/* The point a context menu (PmContextMenu) opens at; the menu is positioned against it. */
+.pm-ui-context-anchor {
+  position: fixed;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 /* Inline reference (PmDocMention). */

@@ -119,6 +119,8 @@ export function createLayoutStore() {
       setConversationOpen: (d: LayoutState, open: boolean) => {
         d.layoutInfo.isConversationOpen = open
         if (open && d.layoutInfo.viewportWidth < SIDE_COLLAPSE) d.layoutInfo.isSideExpanded = false
+        // The conversation history belongs to the AI Assistant: hiding the assistant brings the document tree back.
+        if (!open && d.layoutInfo.activity === 'sessions') d.layoutInfo.activity = 'documents'
       },
       revealConversation,
       showHistory,
