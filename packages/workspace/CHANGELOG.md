@@ -1,5 +1,19 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.122
+
+### Minor Changes
+
+- 5ce783a: Open a reference's target read-only on the side; write a new document from source material with the AI; list missing reference and synced-block targets under Needs Attention; say why a restored document goes to the top level; name the ancestor each inherited setting comes from; list child documents under their parents on the site home.
+
+### Patch Changes
+
+- Updated dependencies [5ce783a]
+  - @lincyaw/kernel@1.0.0-rc.122
+  - @lincyaw/compiler@1.0.0-rc.122
+  - @lincyaw/design@1.0.0-rc.122
+  - @lincyaw/server@1.0.0-rc.122
+
 ## 1.0.0-rc.121
 
 ### Patch Changes
