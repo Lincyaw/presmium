@@ -31,7 +31,8 @@ Usage: install.sh [install] [options]
 
 Address (asked interactively when none is given):
   --domain DOMAIN     your own domain; uses app., auth., content. and studio.DOMAIN (DNS: *.DOMAIN -> this server)
-  --ip [ADDRESS]      this server's IP, no domain: everything at https://ADDRESS/ (default: the detected public IP).
+  --ip [ADDRESS]      this server's IP, no domain: everything at https://ADDRESS/ (default: the detected public IP
+                      if it leads to this server; behind NAT, this server's own address on its network).
                       A public IP gets a Let's Encrypt IP certificate; otherwise (or if that fails) Caddy's own
                       certificate, which browsers warn about once
   --http              with --ip: plain http://ADDRESS/ for an intranet (no microphone recording or clipboard)
@@ -148,6 +149,12 @@ port_in_use() {
   fi
 }
 
+published_ports() { # the host ports the configured entrance publishes
+  if [ "$(env_get CLOUD_INSTALL_MODE)" = local ]; then env_get CLOUD_LOOPBACK_PORT
+  else printf '%s %s' "$(env_get CLOUD_HTTP_PORT)" "$(env_get CLOUD_HTTPS_PORT)"
+  fi
+}
+
 entrance_running() {
   [ -f "$env_file" ] && [ -e "$install_dir/current" ] &&
     [ -n "$(dc ps -q --status running entrance 2>/dev/null)" ]
@@ -160,8 +167,10 @@ check_ports() {
     ip) ports=$site_port; [ "$scheme" = https ] && [ "$site_port" = 443 ] && ports="80 443" ;;
     *) ports="80 443" ;;
   esac
-  [ "$docker_ok" = 1 ] && entrance_running && return 0
+  # The running entrance holds its own ports; after a change of address only the new ones must be free.
+  [ "$docker_ok" = 1 ] && entrance_running && { [ -n "${own_ports:-}" ] || return 0; }
   for port in $ports; do
+    case " ${own_ports:-} " in *" $port "*) continue ;; esac
     if port_in_use "$port"; then
       [ "$dry_run" = 1 ] && { warn "port $port is already in use"; continue; }
       die "port $port is already in use; free it (or with --local or --ip pick another with --port)."
@@ -207,7 +216,7 @@ choose_mode() {
   say ""
   say "Where will people open Presmium Cloud?"
   say "  1) My own domain        e.g. example.com; you point *.example.com at this server"
-  say "  2) This server's IP     no domain needed; one address, https://<IP>/"
+  say "  2) This server's IP     no domain needed; one address, https://<IP>/ (behind NAT: the address on its network)"
   say "  3) Only me, locally     a trial on 127.0.0.1, opened through an SSH tunnel"
   say "  4) sslip.io names       this server's public IP through app.<IP>.sslip.io and three more names"
   case $(ask "Choose 1, 2, 3 or 4: ") in
@@ -227,7 +236,9 @@ resolve_addresses() {
       base=$domain
       ;;
     ip|sslip)
-      if [ -z "$ip_address" ]; then
+      if [ -z "$ip_address" ] && [ "$mode" = ip ]; then
+        choose_ip_address
+      elif [ -z "$ip_address" ]; then
         ip_address=$(public_ip) || die "could not detect this server's public IP; pass it: --$mode 203.0.113.7"
       fi
       valid_ipv4 "$ip_address" || die "not an IPv4 address: '$ip_address'"
@@ -285,14 +296,154 @@ check_dns() {
   confirm "Continue anyway?" || die "stopped; run the installer again once DNS is in place."
 }
 
-check_ip_reachable() {
-  case $mode in ip|sslip) ;; *) return 0 ;; esac
-  if command -v hostname >/dev/null && ! hostname -I 2>/dev/null | tr ' ' '\n' | grep -qx "$ip_address"; then
-    say "Note: $ip_address is not on this machine's interfaces (NAT or a cloud firewall)."
-    if [ "$mode" = ip ] && [ "$site_port" != 443 ]; then say "      Forward or open TCP $site_port on it to this server."
-    else say "      Forward or open TCP 80 and 443 (and UDP 443) on it to this server."
+# --- Reachability -----------------------------------------------------------------------------------------------
+
+local_ipv4() { # local_ipv4 ADDRESS: the address is on one of this machine's interfaces
+  if command -v ip >/dev/null; then
+    ip -4 -o addr show 2>/dev/null | awk '{ sub(/\/.*/, "", $4); print $4 }' | grep -qxF "$1"
+  else
+    hostname -I 2>/dev/null | tr ' ' '\n' | grep -qxF "$1"
+  fi
+}
+
+primary_ipv4() { # the source address of the default route: where others on this network reach this machine
+  local address=
+  command -v ip >/dev/null && address=$(ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p' | head -n1)
+  [ -n "$address" ] || address=$(hostname -I 2>/dev/null | awk '{ print $1 }')
+  valid_ipv4 "$address" && printf '%s' "$address"
+}
+
+served_certificate() { # served_certificate ADDRESS PORT [NAME] -> lines "id=", "subject=", "issuer=" of the certificate
+  local output
+  if command -v openssl >/dev/null; then
+    output=$(timeout 8 openssl s_client -connect "$1:$2" ${3:+-servername "$3"} </dev/null 2>/dev/null |
+      openssl x509 -noout -fingerprint -sha256 -subject -issuer -nameopt oneline 2>/dev/null) || return 0
+    printf '%s\n' "$output" | sed -n 's/^[^=]*Fingerprint=/id=/p; s/^subject= */subject=/p; s/^issuer= */issuer=/p'
+  else
+    output=$(curl -skv -o /dev/null --max-time 8 --connect-to "::$1:$2" "https://${3:-$1}:$2/" 2>&1) || true
+    printf '%s\n' "$output" | sed -n 's/^\* *subject: */subject=/p; s/^\* *issuer: */issuer=/p' | head -n2 |
+      awk '{ print } /^subject=/ { s = $0 } /^issuer=/ { i = $0 } END { if (s != "") print "id=" s i }'
+  fi
+}
+
+field() { printf '%s\n' "$2" | sed -n "s/^$1=//p" | head -n1; } # field KEY LINES
+
+http_server() { # http_server ADDRESS PORT PATH -> the HTTP status and Server header of the answer, or nothing
+  curl -sS -o /dev/null -D - --max-time 8 "http://$1:$2$3" 2>/dev/null |
+    awk 'NR == 1 { status = $2 } tolower($1) == "server:" { sub(/^[^:]*: */, ""); sub(/\r$/, ""); server = $0 }
+      END { if (status != "") print status " " (server == "" ? "(no Server header)" : "Server: " server) }'
+}
+
+probe_address() { # probe_address ADDRESS [NAME] -> probe_result: local, forwarded, other or unknown; probe_detail
+  local address=$1 name=${2:-} theirs ours token answer listener=
+  probe_result=unknown probe_detail=
+  if local_ipv4 "$address"; then probe_result=local; return 0; fi
+  theirs=$(served_certificate "$address" 443 "$name")
+  if [ -n "$(field id "$theirs")" ]; then
+    # Anything on that address's port 443 is this server only if it shows the certificate this server shows.
+    port_in_use 443 && ours=$(served_certificate 127.0.0.1 443 "$name")
+    if [ -n "${ours:-}" ] && [ "$(field id "$ours")" = "$(field id "$theirs")" ]; then probe_result=forwarded; return 0; fi
+    probe_result=other
+    probe_detail="port 443 of $address answers with a certificate for $(field subject "$theirs") (issued by $(field issuer "$theirs")), which is not this server's"
+    return 0
+  fi
+  port_in_use 80 && return 0
+  # A short-lived web server on port 80 shows whether requests to the address arrive here.
+  token=presmium-probe-$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')
+  if [ "$dry_run" != 1 ] && [ "$docker_ok" = 1 ]; then
+    listener=$(docker run -d --rm -p 80:80 "$backup_helper" sh -c \
+      "mkdir -p /w/.well-known/acme-challenge && echo $token >/w/.well-known/acme-challenge/$token && exec httpd -f -p 80 -h /w" \
+      2>/dev/null) || listener=
+    [ -n "$listener" ] && sleep 1
+  fi
+  if [ -n "$listener" ] && [ "$(curl -fsS --max-time 8 "http://$address/.well-known/acme-challenge/$token" 2>/dev/null)" = "$token" ]; then
+    probe_result=forwarded
+  else
+    answer=$(http_server "$address" 80 "/.well-known/acme-challenge/$token")
+    if [ -n "$answer" ]; then
+      probe_result=other
+      probe_detail="port 80 of $address is answered by another device ($answer)"
     fi
   fi
+  [ -n "$listener" ] && docker rm -f "$listener" >/dev/null 2>&1
+  return 0
+}
+
+explain_nat() { # explain_nat PUBLIC-IP PRIVATE-IP
+  local inside="https://$2/"
+  [ "$mode" = ip ] && [ -n "$site_port" ] && [ "$site_port" != 443 ] && inside="https://$2:$site_port/"
+  say ""
+  say "$1 is not this server: this server is behind NAT (or the address belongs to another machine)."
+  if [ "$probe_result" = other ]; then say "  $probe_detail; it is a router or the network's gateway."
+  else say "  it is not on this machine's interfaces, and requests to it on ports 80 and 443 do not arrive here."
+  fi
+  say "People outside this network cannot reach this server directly, and no public certificate can be issued here."
+  say "People on the same network or VPN can open $inside (Caddy's own certificate; browsers warn once)."
+  say "To open it to the internet, either:"
+  say "  - ask the network's administrator for a public IP, or to forward TCP 80 and 443 of a public address to $2;"
+  say "    then install with --ip <that address>, or point a domain at it and install with --domain DOMAIN; or"
+  say "  - run a tunnel to a public host, such as Cloudflare Tunnel or frp, in front of $inside."
+  say ""
+}
+
+choose_ip_address() { # --ip without an address: the public IP if it leads here, else this machine's own address
+  local public private answer
+  public=$(public_ip || true)
+  if [ -n "$public" ]; then
+    probe_address "$public"
+    case $probe_result in local|forwarded) ip_address=$public; return 0 ;; esac
+  fi
+  private=$(primary_ipv4) || die "could not find this server's address; pass it: --ip 192.0.2.7"
+  if [ -n "$public" ]; then explain_nat "$public" "$private"
+  else say "Could not detect a public IP (no internet access?); using this server's address $private."
+  fi
+  ip_address=$private
+  if [ "$assume_yes" != 1 ] && have_tty; then
+    answer=$(ask "Address to use [$private]: ")
+    [ -z "$answer" ] || ip_address=$answer
+  fi
+  say "Using $ip_address."
+}
+
+check_reachable() { # for an address that is not on this machine: does it lead here? Offer this machine's address if not
+  local address name private
+  case $mode in
+    ip) private_ipv4 "$ip_address" && return 0; address=$ip_address name= ;;
+    sslip) address=$ip_address name=app.$base ;;
+    domain)
+      address=$(getent ahostsv4 "app.$base" 2>/dev/null | awk 'NR == 1 { print $1 }' || true)
+      [ -n "$address" ] || return 0
+      name=app.$base ;;
+    *) return 0 ;;
+  esac
+  probe_address "$address" "$name"
+  case $probe_result in
+    local|forwarded) return 0 ;;
+    unknown)
+      say "Note: $address is not on this machine's interfaces, and this machine cannot tell whether it leads here"
+      say "      (NAT or a cloud firewall; some networks do not let a machine reach its own public address)."
+      if [ "$mode" = ip ] && [ "$site_port" != 443 ]; then say "      Forward or open TCP $site_port on it to this server."
+      else say "      Forward or open TCP 80 and 443 (and UDP 443) on it to this server, or certificates cannot be issued."
+      fi
+      return 0 ;;
+  esac
+  private=$(primary_ipv4 || true)
+  say ""
+  say "!!! Another device answers on $address: HTTPS certificates cannot be issued here,"
+  say "!!! and ${name:-$address} does not reach this server."
+  if [ -n "$private" ]; then explain_nat "$address" "$private"; else say "$probe_detail."; fi
+  if [ -n "$private" ] && [ "$assume_yes" != 1 ] && [ "$dry_run" != 1 ] && have_tty; then
+    case $(ask "Use this server's own address instead (--ip $private)? [Y/n] ") in
+      [nN]|[nN][oO]) say "Keeping ${name:-$address}." ;;
+      *) mode=ip ip_address=$private scheme=https site_port='' tls=''; resolve_addresses ;;
+    esac
+  else
+    say "Continuing with ${name:-$address} as asked."
+    [ -z "$private" ] || say "To use this server's own address instead, run the installer again with --ip $private."
+  fi
+}
+
+check_ip_certificate() {
   [ "$mode" = ip ] || return 0
   case $tls in
     acme) say "Certificate: a Let's Encrypt IP certificate (six days, renewed automatically); Caddy's own if that fails." ;;
@@ -371,12 +522,34 @@ activate_release() {
 # --- Configuration ----------------------------------------------------------------------------------------------
 
 configure_env() { # configure_env FILE: writes the address, images, mail and naming settings
-  local file=$1 smtp=0
-  [ -n "$smtp_host" ] && smtp=1
+  local file=$1
   env_set "$file" CLOUD_COMPOSE_PROJECT "$project"
   env_set "$file" CLOUD_INSTANCE_ID "$project"
   env_set "$file" CLOUD_IMAGE_TAG "$version"
   if [ "$build" = 1 ]; then env_set "$file" CLOUD_IMAGE_REGISTRY ""; else env_set "$file" CLOUD_IMAGE_REGISTRY "${registry:-$published_registry}"; fi
+  env_set "$file" CLOUD_ACME_EMAIL "$acme_email"
+  configure_mail "$file"
+  configure_address "$file"
+  # The realm is imported with these addresses; a later change of address updates it (sync_identity_addresses).
+  env_set "$file" CLOUD_IDENTITY_ADDRESSES "$(identity_addresses "$file")"
+  # Written last: a .env without it was interrupted before configuration and is configured again.
+  env_set "$file" CLOUD_INSTALL_MODE "$mode"
+}
+
+identity_addresses() { # what the realm's clients and TLS requirement were last set to
+  printf '%s,%s,%s' "$(env_get CLOUD_PUBLIC_URL "$1")" "$(env_get CLOUD_HUB_URL "$1")" "$(env_get CLOUD_KEYCLOAK_SSL_REQUIRED "$1")"
+}
+
+configure_address() { # configure_address FILE: every setting that follows the address, so the mode can change
+  local file=$1
+  # Defaults for the settings of the one-address layout; the ip mode sets its own below.
+  env_set "$file" CLOUD_CADDYFILE Caddyfile
+  env_set "$file" CLOUD_SITE_ADDRESS ""
+  env_set "$file" CLOUD_TLS ""
+  env_set "$file" CLOUD_HTTP_PORT 80
+  env_set "$file" CLOUD_HTTPS_PORT 443
+  env_set "$file" CLOUD_ALLOW_INSECURE_HTTP false
+  env_set "$file" CLOUD_KEYCLOAK_SSL_REQUIRED external
   if [ "$mode" = ip ]; then
     # Every service on the one address; the four names are that address.
     env_set "$file" CLOUD_CADDYFILE Caddyfile.path
@@ -413,7 +586,14 @@ configure_env() { # configure_env FILE: writes the address, images, mail and nam
   env_set "$file" CLOUD_CONTENT_URL "$content_url"
   env_set "$file" CLOUD_HUB_URL "$hub_url"
   env_set "$file" CLOUD_OIDC_ISSUER "$auth_url/realms/presmium"
-  env_set "$file" CLOUD_ACME_EMAIL "$acme_email"
+  # The local trial's sign-in service accepts plain HTTP (compose.loopback.yaml); the realm follows it.
+  [ "$mode" = local ] && env_set "$file" CLOUD_KEYCLOAK_SSL_REQUIRED none
+  return 0
+}
+
+configure_mail() { # configure_mail FILE
+  local file=$1 smtp=0
+  [ -n "$smtp_host" ] && smtp=1
   if [ "$smtp" = 1 ]; then
     [ -n "$smtp_from" ] || die "--smtp-host needs --smtp-from (the sender address)"
     env_set "$file" CLOUD_SMTP_HOST "$smtp_host"
@@ -428,8 +608,6 @@ configure_env() { # configure_env FILE: writes the address, images, mail and nam
     env_set "$file" CLOUD_KEYCLOAK_VERIFY_EMAIL false
     env_set "$file" CLOUD_KEYCLOAK_PASSWORD_RESET false
   fi
-  # Written last: a .env without it was interrupted before configuration and is configured again.
-  env_set "$file" CLOUD_INSTALL_MODE "$mode"
 }
 
 load_installed() { # adopt the settings of an existing installation
@@ -445,7 +623,25 @@ load_installed() { # adopt the settings of an existing installation
   auth_url=$(env_get CLOUD_AUTH_URL)
   content_url=$(env_get CLOUD_CONTENT_URL)
   hub_url=$(env_get CLOUD_HUB_URL)
+  case $mode in
+    ip) ip_address=$(env_get CLOUD_APP_HOST); base=$ip_address ;;
+    sslip) base=$(env_get CLOUD_APP_HOST); base=${base#app.}; ip_address=$(printf '%s' "${base%.sslip.io}" | tr - .) ;;
+    domain) base=$(env_get CLOUD_APP_HOST); base=${base#app.}; domain=$base ;;
+    local) base=localhost ;;
+  esac
   if [ -z "$(env_get CLOUD_IMAGE_REGISTRY)" ]; then build=1; fi
+}
+
+describe_address() { # one line: the address option and where people open the cloud
+  case $mode in
+    ip) printf '%s' "--ip $ip_address"; [ "$scheme" = http ] && printf ' --http'
+      case $site_port in ''|80|443) ;; *) printf ' --port %s' "$site_port" ;; esac
+      printf ': %s' "$app_url"
+      case $tls in acme) printf ", Let's Encrypt certificate" ;; internal) printf ", Caddy's own certificate" ;; off) printf ', plain HTTP' ;; esac ;;
+    sslip) printf -- '--sslip %s: %s' "$ip_address" "$app_url" ;;
+    domain) printf -- '--domain %s: %s' "$base" "$app_url" ;;
+    local) printf -- '--local --port %s: %s' "$loopback_port" "$app_url" ;;
+  esac
 }
 
 print_env() { # the configuration with secrets hidden
@@ -536,7 +732,8 @@ check_entrance() {
       curl -fsSk -o /dev/null --max-time 10 "$app_url/ready" 2>/dev/null && { say "The console answers: $app_url"; return 0; }
       sleep 5
     done
-    warn "$app_url does not answer yet; see: docker compose logs entrance (or: bash $install_dir/install.sh status)"
+    warn "$app_url does not answer yet."
+    explain_unreachable
   else
     for _ in $(seq 1 24); do
       curl -fsS -o /dev/null --max-time 10 "$app_url/ready" 2>/dev/null && { say "HTTPS works: $app_url"; return 0; }
@@ -551,9 +748,55 @@ check_entrance() {
       fi
       sleep 5
     done
-    warn "$app_url does not answer over HTTPS yet. Certificates need ports 80/443 reachable and DNS in place;"
-    warn "see: docker compose logs entrance (or: bash $install_dir/install.sh status)"
+    warn "$app_url does not answer over HTTPS yet."
+    explain_unreachable
   fi
+}
+
+explain_unreachable() { # why the address does not answer over HTTPS from this machine, as far as this machine can tell
+  local host port name address expected ours theirs answer
+  host=${app_url#*://}; host=${host%%/*}
+  port=443; case $host in *:*) port=${host##*:}; host=${host%:*} ;; esac
+  name=$host address=$host
+  if [ "$mode" = domain ] || [ "$mode" = sslip ]; then
+    address=$(getent ahostsv4 "$host" 2>/dev/null | awk 'NR == 1 { print $1 }' || true)
+    if [ -z "$address" ]; then
+      warn "Reason: $host does not resolve. Add the DNS record (*.$base -> this server's public IP) and wait for it to spread."
+      return 0
+    fi
+    if [ "$mode" = sslip ]; then expected=$ip_address; else expected=$(public_ip || true); fi
+    if [ -n "$expected" ] && [ "$address" != "$expected" ]; then
+      warn "Reason: DNS sends $host to $address, but this server's public IP is $expected; fix the DNS record."
+      return 0
+    fi
+  else
+    name=
+  fi
+  ours=$(served_certificate 127.0.0.1 "$port" "$name")
+  theirs=$(served_certificate "$address" "$port" "$name")
+  if [ -z "$(field id "$theirs")" ]; then
+    warn "Reason: port $port of $address does not answer from this machine: it is closed by a firewall, not forwarded"
+    warn "        to this server, or the network does not let a machine reach its own public address."
+    answer=$(http_server "$address" 80 /.well-known/acme-challenge/presmium-check)
+    case $answer in
+      ''|*"Server: Caddy"*) ;;
+      *) warn "        Port 80 of $address is answered by another device ($answer): a router or gateway holds this address." ;;
+    esac
+  elif [ "$(field id "$theirs")" != "$(field id "$ours")" ]; then
+    warn "Reason: another device answers on $address:$port, with a certificate for $(field subject "$theirs")"
+    warn "        (issued by $(field issuer "$theirs")): a gateway or NAT. Certificates cannot be issued for it here."
+    [ "$mode" = ip ] || warn "        This server's own address works on its network: run this installer again with --ip $(primary_ipv4 || echo ADDRESS)."
+  else
+    warn "Reason: this server answers on $address:$port, but with Caddy's own certificate: Let's Encrypt has not issued"
+    warn "        one, because it cannot reach this server from the internet."
+    answer=$(http_server "$address" 80 /.well-known/acme-challenge/presmium-check)
+    case $answer in
+      '') warn "        Port 80 of $address does not answer: open it (and 443) to this server." ;;
+      *"Server: Caddy"*) warn "        Ports 80 and 443 answer here; check that they are open from the internet (a cloud firewall)." ;;
+      *) warn "        Port 80 of $address is answered by another device ($answer): forward it to this server." ;;
+    esac
+  fi
+  warn "See: docker compose logs entrance (or: bash $install_dir/install.sh status)"
 }
 
 print_summary() {
@@ -641,23 +884,49 @@ copy_legacy_objects() { # after the services are up: copy the shares of the MinI
 
 cmd_install() {
   check_host
-  local configured=0 requested_build=$build
+  local configured=0 requested_build=$build switching=0 old_address old_url old_mode old_issuer
+  local wanted_mode=$mode wanted_ip=$ip_address wanted_scheme=$scheme wanted_site_port=$site_port wanted_loopback=$loopback_port
   if [ -f "$env_file" ] && [ -n "$(env_get CLOUD_INSTALL_MODE)" ]; then
     configured=1
-    [ -n "$mode" ] && [ "$mode" != "$(env_get CLOUD_INSTALL_MODE)" ] &&
-      warn "keeping the existing configuration in $env_file (mode $(env_get CLOUD_INSTALL_MODE)); uninstall --purge to start over"
     load_installed
+    old_mode=$mode old_url=$app_url old_address=$(describe_address)
     [ -n "$version" ] || version=$(env_get CLOUD_IMAGE_TAG)
-    say "Presmium Cloud is already set up in $install_dir; bringing it up again."
+    if [ -n "$wanted_mode" ]; then
+      # An address on the command line: the same one brings the cloud up again, another one changes it in place.
+      mode=$wanted_mode ip_address=$wanted_ip scheme=$wanted_scheme site_port=$wanted_site_port tls=
+      # The local trial keeps its port unless --port names another.
+      { [ "$mode" = local ] && [ -z "$port_given" ] && [ -n "$loopback_port" ]; } || loopback_port=$wanted_loopback
+      resolve_addresses
+      if [ "$mode" != "$old_mode" ] || [ "$app_url" != "$old_url" ] || { [ "$mode" = ip ] && [ "$tls" != "$(env_get CLOUD_TLS)" ]; }; then
+        switching=1
+        check_dns
+        check_reachable
+        check_ip_certificate
+      fi
+    fi
+    if [ "$switching" = 1 ]; then
+      say ""
+      say "Presmium Cloud in $install_dir is set up with $old_address."
+      say "Changing it to $(describe_address)."
+      say "Accounts, documents, shares and secrets stay; running Studios stop, and people sign in again at the new address."
+    else
+      load_installed
+      say "Presmium Cloud is already set up in $install_dir ($(describe_address)); bringing it up again."
+    fi
     if [ "$dry_run" = 1 ]; then
-      say "Dry run: would fetch $version if missing, $([ "$build" = 1 ] && echo build || echo pull) the images and start the services."
+      say "Dry run: would fetch $version if missing, $([ "$build" = 1 ] && echo build || echo pull) the images$([ "$switching" = 1 ] && echo ', write the new address') and start the services."
       return 0
+    fi
+    if [ "$switching" = 1 ]; then
+      confirm "Change the address?" || die "stopped; nothing was changed"
+      [ "$docker_ok" = 1 ] && entrance_running && own_ports=$(published_ports)
     fi
   else
     choose_mode
     resolve_addresses
     check_dns
-    check_ip_reachable
+    check_reachable
+    check_ip_certificate
     [ -n "$version" ] || version=$(latest_version)
   fi
   [ "$configured" = 1 ] || case $project in ''|*[!a-z0-9_-]*|[!a-z0-9]*) die "--name must be lower-case letters, digits, - and _" ;; esac
@@ -679,6 +948,17 @@ cmd_install() {
     [ "$(env_get CLOUD_IMAGE_TAG)" = "$version" ] || env_set "$env_file" CLOUD_IMAGE_TAG "$version"
     [ "$requested_build" = 1 ] && env_set "$env_file" CLOUD_IMAGE_REGISTRY ""
     [ "$requested_build" != 1 ] && [ -n "$registry" ] && env_set "$env_file" CLOUD_IMAGE_REGISTRY "$registry"
+    if [ "$switching" = 1 ]; then
+      step "Writing the new address"
+      # Studios carry the old address; they start again at the new one when their authors open them.
+      docker ps -aq --filter "name=^$(env_get CLOUD_INSTANCE_ID)-studio-" | xargs -r docker rm -f >/dev/null
+      old_issuer=$(env_get CLOUD_OIDC_ISSUER)
+      configure_address "$env_file"
+      move_accounts "$old_issuer" "$(env_get CLOUD_OIDC_ISSUER)"
+      [ -n "$acme_email" ] && env_set "$env_file" CLOUD_ACME_EMAIL "$acme_email"
+      [ -n "$smtp_host" ] && configure_mail "$env_file"
+      env_set "$env_file" CLOUD_INSTALL_MODE "$mode"
+    fi
   fi
   activate_release "$version"
   dc config --quiet
@@ -686,9 +966,62 @@ cmd_install() {
   step "Starting Presmium Cloud"
   dc up -d --remove-orphans
   wait_healthy
+  sync_identity_addresses
   copy_legacy_objects
   check_entrance
   print_summary
+}
+
+move_accounts() { # move_accounts OLD-ISSUER NEW-ISSUER: the console knows each account by issuer and subject
+  [ "$1" = "$2" ] && return 0
+  local moved left
+  # The issuer is the sign-in service's address; the realm and its subjects stay, so the accounts move with it.
+  dc up -d --wait database >/dev/null 2>&1 || dc up -d --wait database
+  moved=$(dc exec -T database psql -U presmium -d presmium -v ON_ERROR_STOP=1 -qtA -v old="$1" -v new="$2" <<'EOF'
+WITH moved AS (
+  UPDATE users u SET issuer = :'new' WHERE issuer = :'old'
+    AND NOT EXISTS (SELECT 1 FROM users v WHERE v.issuer = :'new' AND v.subject = u.subject)
+  RETURNING 1)
+SELECT count(*) FROM moved;
+EOF
+) || die "could not move the accounts to the new address in the console's database"
+  # psql replaces :'old' only in what it reads, not in -c.
+  left=$(printf '%s\n' "SELECT count(*) FROM users WHERE issuer = :'old';" |
+    dc exec -T database psql -U presmium -d presmium -qtA -v old="$1" || echo 0)
+  say "Accounts moved to the new address: $moved."
+  [ "${left:-0}" = 0 ] || warn "$left account(s) already signed in at the new address before and keep a separate, new account there."
+}
+
+sync_identity_addresses() { # the realm is imported once: point its clients and TLS requirement at the current address
+  local wanted output
+  wanted=$(identity_addresses "$env_file")
+  [ "$(env_get CLOUD_IDENTITY_ADDRESSES)" = "$wanted" ] && return 0
+  step "Pointing the sign-in service at $(env_get CLOUD_PUBLIC_URL)"
+  # kcadm.sh runs in the Keycloak container with its environment: the URLs the realm is imported with.
+  if ! output=$(dc exec -T keycloak bash -s 2>&1 <<'EOF'
+set -eu
+kcadm() { /opt/keycloak/bin/kcadm.sh "$@" --config /tmp/presmium-kcadm.config; }
+trap 'rm -f /tmp/presmium-kcadm.config' EXIT
+kcadm config credentials --server http://localhost:8080 --realm master \
+  --user "$KC_BOOTSTRAP_ADMIN_USERNAME" --password "$KC_BOOTSTRAP_ADMIN_PASSWORD"
+client() { # client CLIENT-ID URL CALLBACK-PATH
+  local id
+  id=$(kcadm get clients -r presmium -q "clientId=$1" --fields id --format csv --noquotes)
+  [ -n "$id" ]
+  kcadm update "clients/$id" -r presmium -s "redirectUris=[\"$2$3\"]" -s "attributes.\"post.logout.redirect.uris\"=$2"
+}
+client "$CLOUD_OIDC_CLIENT_ID" "$CLOUD_PUBLIC_URL" /api/auth/callback
+client "$CLOUD_HUB_CLIENT_ID" "$CLOUD_HUB_URL" /hub/oauth_callback
+kcadm update realms/presmium -s "sslRequired=$CLOUD_KEYCLOAK_SSL_REQUIRED"
+EOF
+  ); then
+    printf '%s\n' "$output" | tail -n 5 >&2
+    warn "could not update the sign-in service (was the operator's password changed in Keycloak?). In the account admin,"
+    warn "realm presmium > Clients, set the redirect URIs of $(env_get CLOUD_OIDC_CLIENT_ID) to $(env_get CLOUD_PUBLIC_URL)/api/auth/callback"
+    warn "and of $(env_get CLOUD_HUB_CLIENT_ID) to $(env_get CLOUD_HUB_URL)/hub/oauth_callback; then run this installer again."
+    return 0
+  fi
+  env_set "$env_file" CLOUD_IDENTITY_ADDRESSES "$wanted"
 }
 
 dry_run_install() {
@@ -820,8 +1153,10 @@ cmd_status() {
   check_host
   [ -f "$env_file" ] && [ -n "$(env_get CLOUD_INSTALL_MODE)" ] || die "no installation in $install_dir"
   load_installed
-  say "Presmium Cloud $(env_get CLOUD_IMAGE_TAG) in $install_dir ($mode mode)"
-  say "  Open: $app_url"
+  say "Presmium Cloud $(env_get CLOUD_IMAGE_TAG) in $install_dir"
+  say "  Address: $(describe_address)"
+  [ "$(env_get CLOUD_IDENTITY_ADDRESSES)" = "$(identity_addresses "$env_file")" ] ||
+    say "  The sign-in service still has an earlier address; run: bash $install_dir/install.sh"
   say ""
   dc ps -a --format 'table {{.Service}}\t{{.Status}}'
   say ""

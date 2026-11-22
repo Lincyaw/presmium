@@ -79,11 +79,11 @@ curl -fsSL https://raw.githubusercontent.com/Lincyaw/presmium/main/deploy/cloud/
 | 方式 | 参数 | 地址 | 需要 |
 |---|---|---|---|
 | 自己的域名 | `--domain example.com` | `app.`、`auth.`、`content.`、`studio.example.com` | 一条 DNS 记录 `*.example.com` 指向服务器；安装程序检查四个名字是否解析到本机的公网 IP，未就绪时给出要加的记录 |
-| 服务器 IP | `--ip [地址] [--port 端口] [--http]` | `https://203.0.113.7/` 一个地址 | 不需要 DNS，单一地址布局（8.8 节）。不给地址时自动检测公网 IP。公网 IP 用 443 端口时 Caddy 向 Let's Encrypt 申请 IP 证书（`shortlived` 配置，六天有效，自动续期），申请不到时改用 Caddy 自己的 CA；私有地址（含回环、CGNAT 与链路本地）或其他端口直接用 Caddy 自己的 CA，浏览器第一次打开时警告，安装结束时说明并给出根证书的位置。`--http` 用明文 `http://地址/`，只适合内网 |
+| 服务器 IP | `--ip [地址] [--port 端口] [--http]` | `https://203.0.113.7/` 一个地址 | 不需要 DNS，单一地址布局（8.8 节）。不给地址时检测公网 IP，确认它通向本机（在本机网卡上，或临时在 80 端口放一个网页、经该地址取回）才使用；否则服务器在 NAT 之后，改用本机在所在网络中的地址（默认路由的源地址，例如 `192.168.0.21`），说明外网到不了、同一网络或 VPN 中的人打开 `https://<该地址>/`，以及对外开放的办法（请网络管理员分配公网 IP 或把 80、443 端口转发到本机后用 `--ip`/`--domain`，或用 Cloudflare Tunnel、frp 等隧道接到公网主机）；交互安装时可改填别的地址。公网 IP 用 443 端口时 Caddy 向 Let's Encrypt 申请 IP 证书（`shortlived` 配置，六天有效，自动续期），申请不到时改用 Caddy 自己的 CA；私有地址（含回环、CGNAT 与链路本地）或其他端口直接用 Caddy 自己的 CA，浏览器第一次打开时警告，安装结束时说明并给出根证书的位置。`--http` 用明文 `http://地址/`，只适合内网 |
 | sslip.io 名字 | `--sslip [地址]` | `app.203-0-113-7.sslip.io` 等四个名字 | 不需要 DNS：sslip.io 把这些名字解析回公网 IP，Caddy 照常申请证书 |
 | 本机试用 | `--local [--port 18787]` | `http://app.localhost:18787` 等 | 回环覆盖（`compose.loopback.yaml`），只发布 `127.0.0.1`；安装程序打印 `ssh -N -L` 的隧道命令 |
 
-自己的域名、sslip.io 与 443 端口上的公网 IP 需要 80 与 443 端口空闲且可从公网到达；IP 不在本机网卡上时安装程序提示转发这些端口。`--ip` 加 `--port` 时只发布这一个端口（另一个端口由 Docker 随机分配，不使用）。`--email` 是证书到期通知的邮箱，可省略。四个地址在同一个注册域下；共享内容入口照样去掉 Cookie 与认证头，需要把共享内容放到另一个注册域时按 8.2 节手动设置。
+自己的域名、sslip.io 与 443 端口上的公网 IP 需要 80 与 443 端口空闲且可从公网到达。地址（域名解析到的地址）不在本机网卡上时，安装程序在启动前探测它：该地址的 443 端口出示的证书不是本机 Caddy 的，或 80 端口由别的设备应答（例如校园网出口网关出示自己的证书），就醒目地说明另一台设备占着这个地址、这里申请不到 HTTPS 证书，交互时询问是否改用 `--ip <本机地址>`，`--yes` 时保持所选方式只打印诊断；探测不出结果时提示转发端口。安装结束时地址仍不能经 HTTPS 打开，安装程序给出具体原因：名字不解析或解析到别的地址、该端口从本机连不上、另一台设备出示别的证书，或本机只有 Caddy 自己的证书（Let's Encrypt 未签发）以及 80 端口的情况。`--ip` 加 `--port` 时只发布这一个端口（另一个端口由 Docker 随机分配，不使用）。`--email` 是证书到期通知的邮箱，可省略。四个地址在同一个注册域下；共享内容入口照样去掉 Cookie 与认证头，需要把共享内容放到另一个注册域时按 8.2 节手动设置。
 
 邮件可选：`--smtp-host`、`--smtp-from`，需要时加 `--smtp-port`、`--smtp-user`、`--smtp-password`。给出时注册验证邮箱、可找回密码；不给时写入 `CLOUD_KEYCLOAK_VERIFY_EMAIL=false` 与 `CLOUD_KEYCLOAK_PASSWORD_RESET=false`，注册不验证邮箱、没有找回密码，安装结束时说明这一点以及之后在身份域的 `/admin/` 中配置邮件或关闭注册的位置。
 
@@ -91,10 +91,12 @@ curl -fsSL https://raw.githubusercontent.com/Lincyaw/presmium/main/deploy/cloud/
 
 安装目录的内容：`.env`（0600，由 `keycloak/init-env.sh` 生成全部随机密钥，地址、镜像与邮件设置之后写入；已有时保留，不覆盖）、`releases/<版本>/`（该版本的部署文件，`--build` 时为完整源码）、`current`（指向运行中的版本）、`install.sh` 与 `backups/`。重复运行是幂等的：沿用已有的 `.env` 与版本，只补齐缺少的步骤并启动。
 
+换地址不必卸载：对已有的安装再次运行并给出另一种方式或地址（例如 `--local`、`--ip 192.168.0.21`、`--domain example.com`），安装程序说明新旧地址，确认（或 `--yes`）后改写 `.env` 中随地址变化的设置（`CLOUD_*_HOST`、`CLOUD_*_URL`、签发者、Caddyfile、端口与证书方式），停止运行中的 Studio，以新配置重建服务；密钥、数据库与各卷保留，账号与文稿不变。Keycloak 只在第一次启动时导入领域，所以服务就绪后安装程序在 Keycloak 容器中用 `kcadm.sh`（以 `.env` 中的运营者账号）把两个客户端的回调地址、登出后跳转地址与领域的 `sslRequired` 改为新地址的值，并在 `CLOUD_IDENTITY_ADDRESSES` 记下已同步的地址；签发者随 `KC_HOSTNAME` 改变。同步失败（例如运营者改过密码）时说明在管理界面中要改的项，下次运行再试。给出与当前相同的地址时只是重新启动。
+
 镜像：默认拉取 `ghcr.io/lincyaw/presmium-cloud-{api,keycloak,hub,studio}:<版本>`（`CLOUD_IMAGE_REGISTRY=ghcr.io/lincyaw/`、`CLOUD_IMAGE_TAG=<版本>`），由 `.github/workflows/cloud-images.yml` 在发布 `v` 开头的 Release 时（也可手动运行）从该标签的源码构建，含 linux/amd64 与 linux/arm64，同时更新 `latest`。`--build` 在本机构建（`CLOUD_IMAGE_REGISTRY` 为空），Studio 镜像约 5 GB。拉取失败时安装程序显示 Docker 的原始错误并给出判断：清单不存在（该版本未发布或镜像站未同步）、没有本机架构的镜像（发布的是 linux/amd64 与 linux/arm64，可改用 `--build`）、限流、拒绝访问，或本机连不上镜像仓库（改用 `--registry` 或为 Docker 配置代理；Docker 用自己的代理设置）。第三方镜像来自 Docker Hub，不受 `--registry` 影响，连不上时在 `/etc/docker/daemon.json` 设 `registry-mirrors`。之后安装程序 `docker compose up -d`，等待 `migrate` 与 `storage-init` 以 0 退出、`api`、`hub`、`keycloak` 健康，检查控制台可访问，然后打印控制台、Studio 与身份管理（`<身份域>/admin/`，账号 `CLOUD_KEYCLOAK_ADMIN`，密码是 `.env` 中的 `CLOUD_KEYCLOAK_ADMIN_PASSWORD`）的地址。第一个作者在控制台注册。
 
 ```sh
-bash ~/presmium-cloud/install.sh status               # 服务、运行中的 Studio 与用户卷数
+bash ~/presmium-cloud/install.sh status               # 方式与地址、服务、运行中的 Studio 与用户卷数
 bash ~/presmium-cloud/install.sh upgrade [--version V] # 先取新镜像，再按 8.6 节备份，迁移并启动新版本
 bash ~/presmium-cloud/install.sh uninstall [--purge]   # 停止；--purge 在输入项目名确认后删除全部卷与配置，保留 backups/
 ```
