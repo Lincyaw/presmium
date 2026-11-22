@@ -34,6 +34,18 @@ function stream(step: Step, n: number): string {
   ].join('')
 }
 
+/** A request without tools is Harness's title request: the first ten characters of the first message it names. */
+function titleOf(body: Record<string, any>): string {
+  const content = body.messages?.at(-1)?.content
+  const text = typeof content === 'string' ? content : Array.isArray(content) ? content.map((block: any) => block?.text ?? '').join('') : ''
+  try {
+    const first = (JSON.parse(text.slice(text.indexOf('['))) as { text?: unknown }[])[0]?.text
+    if (typeof first === 'string' && first.trim()) return Array.from(first.trim()).slice(0, 10).join('')
+  } catch {
+  }
+  return 'Presmium'
+}
+
 export async function fakeModel(script: Step[]): Promise<FakeModel> {
   const received: Received[] = []
   let held: Promise<void> | undefined
@@ -56,7 +68,7 @@ export async function fakeModel(script: Step[]): Promise<FakeModel> {
       await held
       const turn = (r: Received) => r.path.endsWith('/v1/messages') && Array.isArray(r.body.tools) && r.body.tools.length > 0
       const n = received.filter(r => r.path.endsWith('/v1/messages')).length
-      const step = turn(record) ? script[received.filter(turn).indexOf(record)] ?? { text: '完毕。' } : { text: 'Presmium' }
+      const step = turn(record) ? script[received.filter(turn).indexOf(record)] ?? { text: '完毕。' } : { text: titleOf(parsed) }
       res.writeHead(200, { 'Content-Type': 'text/event-stream' }).end(stream(step, n))
     })
   })
