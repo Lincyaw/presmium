@@ -411,6 +411,22 @@ span.pmw-appbar__place {
   display: none !important;
 }
 
+/*
+ * Settings on a narrow screen: Harness's dialog keeps its menu column beside the page, which leaves the page a strip.
+ * The menu becomes a row of tabs under the title, and the page takes the full width below; the title row keeps the
+ * dialog's actions and close button. Matched by the dialog's shortcut id and its element structure, not by Harness's
+ * generated class names.
+ */
+@media (max-width: 767px) {
+  [data-shortcut-modal='settings'] { position: relative; flex-direction: column; }
+  [data-shortcut-modal='settings'] > nav { inline-size: auto; min-inline-size: 0; max-inline-size: none; gap: var(--pm-space-2); padding: var(--pm-space-5) var(--pm-space-3) var(--pm-space-2); border-block-end: var(--pm-size-hairline) solid var(--pm-color-line); }
+  [data-shortcut-modal='settings'] > nav > :last-child { flex-direction: row; flex-wrap: wrap; overflow: visible; }
+  [data-shortcut-modal='settings'] > nav > :last-child > button { flex: none; inline-size: auto; white-space: nowrap; padding-inline: var(--pm-space-2) var(--pm-space-3); }
+  [data-shortcut-modal='settings'] > nav + * { min-block-size: 0; }
+  [data-shortcut-modal='settings'] > nav + * > :first-child { position: absolute; inset-block-start: 0; inset-inline-end: 0; }
+  [data-shortcut-modal='settings'] > nav + * > :last-child { padding: var(--pm-space-4); }
+}
+
 /* Runtime diagnostics use shared controls; the shell owns their placement only. */
 .pmw-runtime-feedback { flex: none; padding: var(--pm-space-2) var(--pm-space-3); }
 .pmw-runtime-feedback details { max-block-size: 40dvh; overflow: auto; overflow-wrap: anywhere; }

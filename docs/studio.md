@@ -137,6 +137,7 @@
 3. `settings.presmium.assistant.review` 为 `auto`（默认）时，每个写入工具完成后发布；为 `required` 时，作者在审阅面板中接受、拒绝某些文件或回到候选检查点。发布先等待已连接作者窗口确认保存，再在短事务中检查所有受影响文件的来源版本；任一版本改变时，全部拒绝，刷新候选内容并通知 AI 重新读取、重试。拒绝操作只恢复候选文件。
 4. 一次接受记录一个本地历史版本，不推进项目 Git 分支，尾注 `Presmium-Origin: agent`、`Presmium-Session`、`Presmium-Turn`。撤消在本地历史中生成反向修改，之后经 `Agent.inject` 通知会话。
 5. 审阅记录与候选来源版本由工作区服务保存，重启后恢复。DeltaBox 审阅先保留候选目录，待原生会话恢复并同步后再判定是否为空。工具修改或作者来源刷新后，在下一模型步骤边界重建 DeltaBox 视图和候选服务；只读步骤复用未变化的视图。Agent 销毁时关闭视图与服务，会话销毁后清理没有待审阅内容的候选目录。
+6. DeltaBox 只在候选目录上启动。Harness 自己的文件调用可能先于 Presmium 绑定会话（恢复的对话在第一步前检查工作目录，它可能是上次进程的私有视图），这时 runtime 适配先向工作区服务取得该会话的候选根，再取得 DeltaBox 会话；原工作区中不出现 DeltaBox 的状态目录。候选从作者文件复制时跳过候选目录本身、沙箱状态（`.deltabox/`、`.deltabox-lite-state/`）与工作区中的其他仓库（git 列为 `目录/` 的条目），它们不进入审阅。
 
 工作台按审阅差异闪烁改过的块，不显示 dsh 的修改卡片。DeltaBox 的内置审阅行关闭，由 Presmium 保持唯一的审阅和发布入口。插件不提供后台命令、终端或文件搜索服务；需要搜索时经前台 Shell 执行。原生运行条件见 `architecture.md` 的执行与审阅边界。普通保存和项目版本提交的区别见 `authoring-actions.md` 的历史规则。
 
@@ -172,6 +173,7 @@
 - 复用 dsh 的对话、确认卡片、会话、设置、终端、文件、jobs、插件管理；占用品牌槽位、`settings.onboarding`、`settings.section` 的“模型”、`conversation.composer` 与 `turn-error`。dsh 自己的模型页（`ui-settings-models`）在补丁中关闭。
 - 输入框下方的统计（输出速度、缓存命中、上下文占用）只在“显示代码工作视图”打开时显示：`author-settings.ts` 在 `<html>` 上标出代码工作视图的状态，样式按它隐藏 `[data-composer-dock]`。
 - 设置只给作者语言、外观、字号、“显示代码工作视图”、快捷键、“模型”与“语音服务”。`author-settings.ts` 把作者默认值写进 profile 自己的补丁层（写进 `--patch` 会让表单拒绝作者的修改）。
+- 应用栏的设置菜单中“模型”“语音服务”“MCP 连接”各自直接打开设置的对应页。宽度 768 px 以下时，设置对话框的菜单改为标题下的标签（放不下时换行，不隐藏），页面占满对话框宽度；标题一行保留“打开配置文件”与关闭。样式按对话框的快捷键标识 `data-shortcut-modal="settings"` 与元素结构匹配，不用 Harness 生成的类名。
 - `ctx.theme.overrideTokens` 把 `--dsw-*` 令牌映射到设计令牌的明暗取值，产物经 `appearance` 跟随。工作台文字跟随 dsh 的语言；对话首页标语经 `ctx.locale.addLanguage` 替换。写进产物的文字按文稿 `lang`。
 - 客户端包用 esbuild 构建，外部依赖是 dsh 外壳模块表（React 18.3.1 由 dsh 提供），输出无文档的工厂格式 `__ModuleLoader__.load`；字体以 data URL 内联。
 
