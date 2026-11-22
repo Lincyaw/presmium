@@ -21,7 +21,7 @@ import { nativeTextClipboard } from './clipboard.ts'
 import { documentPageBodies, focusDocumentEnd } from './page-body.ts'
 import { documentBlockColors } from './colors.ts'
 import { DOCUMENT_EDITOR_LOCALE, MATH_EDITOR } from './math.tsx'
-import { DOCUMENT_LINKS, DocumentColorButton, DocumentLinkToolbar, DocumentSideMenu, DocumentTableCellButton, DocumentTableHandle, FormulaToolbarButton, formulaSlashItems, openDocumentLink } from './authoring.tsx'
+import { DOCUMENT_LINKS, DocumentColorButton, DocumentLinkToolbar, DocumentSideMenu, DocumentTableCellButton, DocumentTableHandle, FormulaToolbarButton, formulaSlashItems, openDocumentLink, slashItemsAt } from './authoring.tsx'
 import type { DocumentLinks } from './authoring.tsx'
 import { excludeCommentMarkHistory, nativeComments, nativeCommentSelection } from './comments.ts'
 import type { DocumentThreadStore } from './comments.ts'
@@ -218,7 +218,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         <LinkToolbarController linkToolbar={DocumentLinkToolbar} floatingUIOptions={linkToolbarOptions} />
         <SideMenuController sideMenu={DocumentSideMenu} />
         <TableHandlesController tableHandle={DocumentTableHandle} tableCellHandle={DocumentTableCellButton} />
-        <SuggestionMenuController triggerCharacter="/" getItems={async query => editor.getTextCursorPosition().block.type === 'presmiumPage' ? [] : filterSuggestionItems([...withGroupItems(withGroupItems(getDefaultReactSlashMenuItems(editor), formulaSlashItems(editor, props.locale, dictionary.slash_menu.table.group)), current.current.animationRequest?.available() ? [{
+        <SuggestionMenuController triggerCharacter="/" getItems={async query => editor.getTextCursorPosition().block.type === 'presmiumPage' ? [] : filterSuggestionItems(slashItemsAt(editor, [...withGroupItems(withGroupItems(getDefaultReactSlashMenuItems(editor), formulaSlashItems(editor, props.locale, dictionary.slash_menu.table.group)), current.current.animationRequest?.available() ? [{
           title: t.animateWithAI, subtext: t.animateWithAIHint, group: dictionary.slash_menu.image.group, icon: <PmIcon name="sparkle" />, aliases: slashAliases('animateWithAIAliases'),
           // The menu has already taken back the typed “/” and query; the AI is asked, the document stays as it was.
           onItemClick: () => current.current.animationRequest?.request(editor),
@@ -235,7 +235,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
             editor.transact(transaction => transaction.setSelection(TextSelection.create(transaction.doc, title.from, title.to)).scrollIntoView())
             editor.focus()
           },
-        }], query)} />
+        }]), query)} />
         {props.nodeViews?.editorChildren?.(editor)}
         {props.children}
         </NewCommentDraftProvider></BlockNoteViewEditor>
