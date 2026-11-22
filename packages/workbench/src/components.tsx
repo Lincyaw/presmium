@@ -134,10 +134,19 @@ export function PmSearchList({ label, searchLabel, searchPlaceholder, items, val
       if (query === undefined) setLocalQuery(event.target.value)
       onQueryChange?.(event.target.value)
     }} onKeyDown={event => {
-      if (event.key !== 'ArrowDown' || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return
+      if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return
+      if (event.key === 'Enter') {
+        // Enter in the field opens the selected result, or the first one when none is selected.
+        const enabled = matches.filter(item => !item.disabled)
+        const chosen = enabled.find(item => item.value === value) ?? enabled[0]
+        if (chosen && onActivate && !blocked) { event.preventDefault(); onActivate(chosen.value) }
+        return
+      }
+      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
       const selected = list.current?.querySelector<HTMLElement>('[role="radio"][data-state="checked"]:not(:disabled)')
-      const first = selected ?? list.current?.querySelector<HTMLElement>('[role="radio"]:not(:disabled)')
-      if (first) { event.preventDefault(); first.focus() }
+      const options = list.current?.querySelectorAll<HTMLElement>('[role="radio"]:not(:disabled)')
+      const target = selected ?? (event.key === 'ArrowDown' ? options?.[0] : options?.[options.length - 1])
+      if (target) { event.preventDefault(); target.focus() }
     }} />
     <div className="pm-ui-search-list__heading"><span id={`${id}-label`}>{label}</span><span className="pm-ui-search-list__count" role="status" aria-live="polite" aria-atomic="true">{loading && <span className="pm-ui-loading" aria-hidden="true"><PmIcon name="loading" /></span>}{loading ? loadingLabel : resultsLabel(matches.length)}</span></div>
     {error && <p id={errorId} className="pm-ui-field__error" role="alert">{error}</p>}
@@ -360,7 +369,7 @@ export function PmDrawer({ open, label, size, onClose, children }: { open: boole
         <Dialog.Overlay className="pm-ui-dialog-overlay" />
         <Dialog.Content className="pm-ui-drawer pm-ui" data-size={size} aria-describedby={undefined} onEscapeKeyDown={event => event.stopPropagation()}>
           <Dialog.Title className="pm-ui-sr-only">{label}</Dialog.Title>
-          {children}
+          <PmDialogLayerContext.Provider value>{children}</PmDialogLayerContext.Provider>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -396,18 +405,53 @@ export interface MenuItem {
 /** `toolbarItem`: the trigger joins the surrounding `PmToolbar`'s arrow-key navigation, e.g. as its overflow ("More") menu. */
 export function PmMenu({ label, description, items, icon = 'more', placement = 'below-end', triggerRef, toolbarItem, onOpenChange, onSelect }: { label: string, description?: string, items: MenuItem[], icon?: IconName, placement?: PopoverPlacement, triggerRef?: Ref<HTMLButtonElement>, toolbarItem?: boolean, onOpenChange?(open: boolean): void, onSelect(id: string): void }) {
   const descriptionId = useId()
+  const inDialog = useContext(PmDialogLayerContext)
   const trigger = <PmIconButton ref={triggerRef} icon={icon} label={label} small />
   return (
     <DropdownMenu.Root onOpenChange={onOpenChange}>
       <DropdownMenu.Trigger asChild>{toolbarItem ? <Toolbar.Button asChild>{trigger}</Toolbar.Button> : trigger}</DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content className="pm-ui-menu pm-ui-floating pm-ui" data-density="compact" data-description={description ? '' : undefined} aria-label={label} aria-describedby={description ? descriptionId : undefined} {...placementOf(placement)} sideOffset={6} collisionPadding={16} onEscapeKeyDown={event => event.stopPropagation()}>
+        <DropdownMenu.Content className="pm-ui-menu pm-ui-floating pm-ui" data-density="compact" data-layer={inDialog ? 'dialog' : undefined} data-description={description ? '' : undefined} aria-label={label} aria-describedby={description ? descriptionId : undefined} {...placementOf(placement)} sideOffset={6} collisionPadding={16} onEscapeKeyDown={event => event.stopPropagation()}>
           {description && <p className="pm-ui-menu__description" id={descriptionId}>{description}</p>}
-          {items.map(item => (
-            <DropdownMenu.Group key={item.id}>{item.separator && <DropdownMenu.Separator className="pm-ui-menu__separator" />}{item.checked === undefined ? <DropdownMenu.Item textValue={item.label} className={cls('pm-ui-menu__item', item.danger && 'pm-ui-menu__item--danger')} disabled={item.disabled} onSelect={() => onSelect(item.id)}>
-              {item.icon && <PmIcon name={item.icon} />}{item.label}{item.shortcut && <kbd className="pm-ui-shortcut">{item.shortcut}</kbd>}
-            </DropdownMenu.Item> : <DropdownMenu.CheckboxItem className="pm-ui-menu__item" checked={item.checked} disabled={item.disabled} textValue={item.label} onSelect={() => onSelect(item.id)}><DropdownMenu.ItemIndicator><PmIcon name="check" /></DropdownMenu.ItemIndicator>{item.label}</DropdownMenu.CheckboxItem>}</DropdownMenu.Group>
-          ))}
+          <MenuItems items={items} onSelect={onSelect} />
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  )
+}
+
+function MenuItems({ items, onSelect }: { items: MenuItem[], onSelect(id: string): void }) {
+  return <>{items.map(item => (
+    <DropdownMenu.Group key={item.id}>{item.separator && <DropdownMenu.Separator className="pm-ui-menu__separator" />}{item.checked === undefined ? <DropdownMenu.Item textValue={item.label} className={cls('pm-ui-menu__item', item.danger && 'pm-ui-menu__item--danger')} disabled={item.disabled} onSelect={() => onSelect(item.id)}>
+      {item.icon && <PmIcon name={item.icon} />}{item.label}{item.shortcut && <kbd className="pm-ui-shortcut">{item.shortcut}</kbd>}
+    </DropdownMenu.Item> : <DropdownMenu.CheckboxItem className="pm-ui-menu__item" checked={item.checked} disabled={item.disabled} textValue={item.label} onSelect={() => onSelect(item.id)}><DropdownMenu.ItemIndicator><PmIcon name="check" /></DropdownMenu.ItemIndicator>{item.label}</DropdownMenu.CheckboxItem>}</DropdownMenu.Group>
+  ))}</>
+}
+
+/**
+ * The same menu as `PmMenu`, opened at a point: where the pointer was right-clicked, or below the focused row for
+ * Shift+F10 and the context menu key. Focus returns through `returnFocus` once it has closed, and only then is the
+ * chosen item run, so that what the item opens (a rename field, a dialog) keeps the focus.
+ */
+export function PmContextMenu({ label, items, at, returnFocus, onClose, onSelect }: { label: string, items: MenuItem[], at?: { x: number, y: number }, returnFocus?(): void, onClose(): void, onSelect(id: string): void }) {
+  const chosen = useRef<string>()
+  const inDialog = useContext(PmDialogLayerContext)
+  return (
+    <DropdownMenu.Root open={Boolean(at)} modal onOpenChange={open => { if (!open) onClose() }}>
+      <DropdownMenu.Trigger asChild>
+        <span className="pm-ui-context-anchor" aria-hidden="true" tabIndex={-1} style={at ? { left: at.x, top: at.y } : undefined} />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content className="pm-ui-menu pm-ui-floating pm-ui" data-density="compact" data-layer={inDialog ? 'dialog' : undefined} aria-label={label} side="bottom" align="start" collisionPadding={16}
+          onEscapeKeyDown={event => event.stopPropagation()}
+          onCloseAutoFocus={event => {
+            event.preventDefault()
+            const id = chosen.current
+            chosen.current = undefined
+            returnFocus?.()
+            if (id !== undefined) onSelect(id)
+          }}>
+          <MenuItems items={items} onSelect={id => { chosen.current = id }} />
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
