@@ -218,9 +218,9 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     if (report.type === 'position' && options.presentation && entry.irRevision !== confirmedRevision) return
     if (report.type === 'updated') { entry.irRevision = report.revision; confirm(entry) }
     if (report.type === 'report') {
-      const key = JSON.stringify([report.level, report.plugin, report.message])
+      const key = JSON.stringify([report.level, report.plugin, report.message, report.section])
       if (report.resolved) entry.problems.delete(key)
-      else entry.problems.set(key, { checkId: report.plugin ?? 'presmium.runtime', severity: report.level, message: report.message })
+      else entry.problems.set(key, { checkId: report.plugin ?? 'presmium.runtime', severity: report.level, message: report.message, ...report.section ? { section: report.section } : {} })
     }
     if (entry.active && (report.type === 'updated' || report.type === 'report')) publishRuntimeFindings(entry)
     if (entry.active && selected(entry)) workbench.handlePreviewReport(entry.target.document, entry.target.renderer, report, entry.connection)

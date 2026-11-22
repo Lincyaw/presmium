@@ -492,7 +492,8 @@ function ProblemsNotice() {
   const repairFailure = useWorkbenchState(state => state.diagnosticsRepairFailure)
   const [open, setOpen] = useState(false)
   if (workbench.client.capabilities?.diagnostics === 'none') return null
-  const problems = (snapshot?.diagnostics ?? []).filter(diagnostic => diagnostic.severity === 'error' && !diagnostic.checkId.startsWith('presmium.workbench.'))
+  // Errors, and warnings about a page the author can go to (a slide too crowded to present readably).
+  const problems = (snapshot?.diagnostics ?? []).filter(diagnostic => (diagnostic.severity === 'error' || (diagnostic.severity === 'warning' && diagnostic.section)) && !diagnostic.checkId.startsWith('presmium.workbench.'))
   if (unavailable) return <PmNotice tone="warn"><span>{t.diagnosticsUnavailable}</span><PmButton small onClick={() => workbench.retryDiagnostics()}>{t.retry}</PmButton></PmNotice>
   if (problems.length === 0) return repairFailure ? <PmNotice tone="danger">{t.fixFailed(failureReason(t, repairFailure))}</PmNotice> : null
   const repair = canRepair && <PmButton small variant="primary" icon="sparkle" disabled={repairing} onClick={() => void workbench.requestRepairDiagnostics()}>{repairing ? t.fixing : t.fixWithAi}</PmButton>
@@ -507,7 +508,7 @@ function ProblemsNotice() {
         {repairFailure && <p className="pmw-problems__failure">{t.fixFailed(failureReason(t, repairFailure))}</p>}
       </div>
       <PmDialog open={open} label={t.problemsTitle} closeLabel={t.close} actions={repair || undefined} onClose={() => setOpen(false)}>
-        <ul className="pmw-problems__list">{problems.map(problem => <li key={problem.id}><p>{problem.message}</p>{problem.hint && <p className="pmw-problems__hint">{problem.hint}</p>}</li>)}</ul>
+        <ul className="pmw-problems__list">{problems.map(problem => <li key={problem.id}><p>{problem.message}</p>{problem.hint && <p className="pmw-problems__hint">{problem.hint}</p>}{problem.section && <PmButton small variant="text" onClick={() => { setOpen(false); workbench.goToSection(problem.section!) }}>{t.goToPage}</PmButton>}</li>)}</ul>
       </PmDialog>
     </PmNotice>
   )

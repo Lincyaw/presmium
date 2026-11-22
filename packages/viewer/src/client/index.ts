@@ -36,6 +36,6 @@ export type { ViewerPlugin, ViewerPluginContext } from './viewer-plugins.ts'
 export { createViewer, useViewer } from './viewer-state.ts'
 export type { Viewer, ViewerOptions } from './viewer-state.ts'
 export { OverlayViewOutlet, PageViewOutlet } from './views/outlets.ts'
-export { SlideFace, SlideFit, SlidesPrint } from './views/slide.ts'
+export { SlideFace, SlideFit, SlidesPrint, slideCrowding, slideCrowdingProblems } from './views/slide.ts'
 
 export { VClick, VAfter, VClicks } from "./slidev-compat/click-directives.ts"

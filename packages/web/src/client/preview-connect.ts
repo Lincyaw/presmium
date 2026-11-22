@@ -2,7 +2,7 @@ import { componentErrors, componentErrorRevision, presmiumReport, presmiumServic
 import type { NavigationPosition, PlaybackControl } from '@lincyaw/host'
 import { connectPreviewFrame, irBlocks, PREVIEW_REVISION, stepKeys, stepTrail } from '@lincyaw/kernel'
 import type { FollowAnchor, PreviewFrame, PreviewEvents } from '@lincyaw/kernel'
-import { findView, registryRevision } from '@lincyaw/viewer'
+import { findView, registryRevision, slideCrowding, slideCrowdingProblems } from '@lincyaw/viewer'
 import { createViewerNavigation } from './host.ts'
 import type { WebPreviewOptions, WebPreviewPage } from './preview-frame.ts'
 
@@ -106,12 +106,13 @@ export function connectWebPreviewFrame(page: WebPreviewPage, options: WebPreview
 }
 
 function watchProblems(frame: PreviewFrame): void {
-  let told = new Map<string, { level: 'error' | 'warning', plugin: string, message: string }>()
+  let told = new Map<string, { level: 'error' | 'warning', plugin: string, message: string, section?: string }>()
   const report = () => {
     const plugins = presmiumReport()?.plugins ?? [], errors = componentErrors()
     const problems = [
       ...plugins.filter(p => p.status === 'failed' || p.status === 'disabled').map(p => ({ level: p.status === 'failed' ? 'error' as const : 'warning' as const, plugin: p.id, message: p.reason ?? p.status })),
       ...errors.map(e => ({ level: 'error' as const, plugin: e.component, message: e.message })),
+      ...slideCrowdingProblems(),
     ]
     const current = new Map(problems.map(problem => [JSON.stringify(problem), problem]))
     for (const [key, problem] of told) if (!current.has(key)) frame.report({ ...problem, resolved: true })
@@ -120,5 +121,6 @@ function watchProblems(frame: PreviewFrame): void {
   }
   runtimeRevision.subscribe(report)
   componentErrorRevision.subscribe(report)
+  slideCrowding.subscribe(report)
   report()
 }

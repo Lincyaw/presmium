@@ -209,7 +209,7 @@ export type PreviewReport =
   | { type: 'edited', target: PreviewAnchor, before: string, after: string, request?: number, revision?: string, binding?: string }
   | { type: 'updated', revision?: string }
   | { type: 'activity', active: boolean, request: number, revision?: string, error?: string }
-  | { type: 'report', level: 'error' | 'warning', plugin?: string, message: string, resolved?: boolean }
+  | { type: 'report', level: 'error' | 'warning', plugin?: string, message: string, section?: string, resolved?: boolean }
   | { type: 'shortcut', command: PreviewShortcut }
 
 export type PreviewEnvelope<M> = M & { protocol: typeof PREVIEW_NAME, version: number, nonce: string }
@@ -379,7 +379,7 @@ export function toPreviewReport(data: unknown, nonce: string): PreviewReport | u
     case 'activity': return typeof m.active === 'boolean' && request(m.request) && optional(m.revision, text) && optional(m.error, text)
       ? { type: 'activity', active: m.active, request: m.request, ...m.revision === undefined ? {} : { revision: m.revision as string }, ...m.error === undefined ? {} : { error: m.error as string } }
       : undefined
-    case 'report': return (m.level === 'error' || m.level === 'warning') && text(m.message) && optional(m.plugin, text) && (m.resolved === undefined || typeof m.resolved === 'boolean') ? { type: 'report', level: m.level, message: m.message, ...m.plugin ? { plugin: m.plugin as string } : {}, ...m.resolved === undefined ? {} : { resolved: m.resolved as boolean } } : undefined
+    case 'report': return (m.level === 'error' || m.level === 'warning') && text(m.message) && optional(m.plugin, text) && optional(m.section, text) && (m.resolved === undefined || typeof m.resolved === 'boolean') ? { type: 'report', level: m.level, message: m.message, ...m.plugin ? { plugin: m.plugin as string } : {}, ...m.section ? { section: m.section as string } : {}, ...m.resolved === undefined ? {} : { resolved: m.resolved as boolean } } : undefined
     case 'shortcut': return typeof m.command === 'string' && PREVIEW_SHORTCUTS.includes(m.command) ? { type: 'shortcut', command: m.command as PreviewShortcut } : undefined
     default: return undefined
   }
