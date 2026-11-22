@@ -1,10 +1,10 @@
 import { useStartupReady } from './startup.ts'
 import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
-import { AgentActivityBar, DocumentBreadcrumb, DocumentView, HomePanel, PmDialog, PmDrawer, PmIcon, PmIconButton, PmMenu, SHORTCUTS, useTreeMessages, useWorkbenchState, WorkbenchApprovals, WorkbenchProvider, WorkbenchToast, WorkspaceSidebar } from '@lincyaw/workbench'
+import { AgentActivityBar, DocumentBreadcrumb, DocumentView, HomePanel, PmDialog, PmDrawer, PmIcon, PmIconButton, PmMenu, SHORTCUTS, SPEECH_SETTINGS_MESSAGES, useTreeMessages, useWorkbenchState, WorkbenchApprovals, WorkbenchProvider, WorkbenchToast, WorkspaceSidebar } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode, RefObject } from 'react'
-import { openMcpSettings } from './settings-opener.ts'
+import { openMcpSettings, openModelSettings, openSpeechSettings } from './settings-opener.ts'
 import { Logo } from './brand.tsx'
 import { DesktopUpdate } from './DesktopUpdate.tsx'
 import { mainViewAgentSession } from './document-context.ts'
@@ -288,9 +288,13 @@ interface AppBarProps {
  * global panel), then operations waiting for the author's approval, the AI assistant, more (plugins, automation), settings and help. On a narrow screen the places
  * are the panes it switches between.
  */
+/** The settings menu's entries that open a page of Settings directly (the whole dialog until it can). */
+const SETTINGS_SECTIONS: Record<string, () => boolean> = { 'presmium-models': openModelSettings, 'presmium-speech': openSpeechSettings, 'presmium-mcp': openMcpSettings }
+
 function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, narrow, openSettings, openHelp, openDrawer }: AppBarProps) {
   const tt = useTreeMessages()
   const t = useClientMessages(workbench)
+  const locale = useWorkbenchState(state => state.locale)
   const document_ = useWorkbenchState(state => state.document)
   const documentTitle = useWorkbenchState(state => state.documents?.documents.find(doc => doc.dir === state.document)?.title)
   const working = useWorkbenchState(state => Boolean(state.review?.running))
@@ -345,9 +349,10 @@ function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, nar
       </button>
       <span className="pmw-appbar__divider" aria-hidden="true" />
       <span className="pmw-appbar__more" data-activity="settings">
-        <PmMenu label={t.settings} icon="sliders" items={[{ id: 'presmium-settings', label: t.preferences }, { id: 'presmium-mcp', label: t.mcp }, ...more]} onSelect={id => {
+        <PmMenu label={t.settings} icon="sliders" items={[{ id: 'presmium-settings', label: t.preferences }, { id: 'presmium-models', label: t.modelSetup.title }, { id: 'presmium-speech', label: SPEECH_SETTINGS_MESSAGES[locale].title }, { id: 'presmium-mcp', label: t.mcp }, ...more]} onSelect={id => {
           if (id === 'presmium-settings') { openSettings(); return }
-          if (id === 'presmium-mcp') { if (!openMcpSettings()) openSettings(); return }
+          const section = SETTINGS_SECTIONS[id]
+          if (section) { if (!section()) openSettings(); return }
           actions.selectPanel(activePanel === id ? null : id)
           if (narrow) actions.showNarrowPane('documents')
         }} />

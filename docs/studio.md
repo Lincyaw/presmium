@@ -173,6 +173,7 @@
 - 复用 dsh 的对话、确认卡片、会话、设置、终端、文件、jobs、插件管理；占用品牌槽位、`settings.onboarding`、`settings.section` 的“模型”、`conversation.composer` 与 `turn-error`。dsh 自己的模型页（`ui-settings-models`）在补丁中关闭。
 - 输入框下方的统计（输出速度、缓存命中、上下文占用）只在“显示代码工作视图”打开时显示：`author-settings.ts` 在 `<html>` 上标出代码工作视图的状态，样式按它隐藏 `[data-composer-dock]`。
 - 设置只给作者语言、外观、字号、“显示代码工作视图”、快捷键、“模型”与“语音服务”。`author-settings.ts` 把作者默认值写进 profile 自己的补丁层（写进 `--patch` 会让表单拒绝作者的修改）。
+- 应用栏的设置菜单中“模型”“语音服务”“MCP 连接”各自直接打开设置的对应页。宽度 768 px 以下时，设置对话框的菜单改为标题下的标签（放不下时换行，不隐藏），页面占满对话框宽度；标题一行保留“打开配置文件”与关闭。样式按对话框的快捷键标识 `data-shortcut-modal="settings"` 与元素结构匹配，不用 Harness 生成的类名。
 - `ctx.theme.overrideTokens` 把 `--dsw-*` 令牌映射到设计令牌的明暗取值，产物经 `appearance` 跟随。工作台文字跟随 dsh 的语言；对话首页标语经 `ctx.locale.addLanguage` 替换。写进产物的文字按文稿 `lang`。
 - 客户端包用 esbuild 构建，外部依赖是 dsh 外壳模块表（React 18.3.1 由 dsh 提供），输出无文档的工厂格式 `__ModuleLoader__.load`；字体以 data URL 内联。
 
