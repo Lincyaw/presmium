@@ -84,6 +84,19 @@ function runGit(request: RunRequest): Promise<GitResult> {
   })
 }
 
+/**
+ * Repositories inside the work tree are left out of Presmium's own histories: git cannot add one without a commit
+ * (it stops the whole `git add`), and one with a commit would enter only as a reference to it. `ls-files --others`
+ * names each as its directory with a trailing slash, and nothing else that way.
+ */
+export const nestedRepositories = (untracked: string): string[] => untracked.split('\0').filter(path => path.endsWith('/'))
+const reported = new Set<string>()
+/** Pathspecs (git's literal-pathspec setting off) that add `paths` except the nested repositories. */
+export function addPathspecs(paths: string[], nested: string[]): string[] {
+  for (const path of nested) if (!reported.has(path)) { reported.add(path); console.warn(`presmium: ${path} is a git repository of its own; its files are not part of the workspace history`) }
+  return [...paths.map(path => `:(literal)${path}`), ...nested.map(path => `:(exclude,literal)${path}`)]
+}
+
 export class Git {
   readonly root: string
   readonly top: string
@@ -136,6 +149,13 @@ export class Git {
   async tryOutput(command: string[], env?: Record<string, string>): Promise<{ ok: boolean, output: string }> {
     const result = await this.run(command, env)
     return { ok: result.code === 0, output: result.code === 0 ? result.stdout.toString('utf8') : `${result.stderr}${result.stdout.toString('utf8')}` }
+  }
+
+  /** `git add -A` of `paths` (literal) that skips nested repositories. */
+  async addAll(paths: string[], env: Record<string, string> = {}): Promise<void> {
+    const literal = { ...env, GIT_LITERAL_PATHSPECS: '1' }
+    const nested = nestedRepositories(await this.output(['ls-files', '--others', '--exclude-standard', '-z', '--', ...paths], literal))
+    await this.output(['add', '-A', '--', ...addPathspecs(paths, nested)], { ...env, GIT_LITERAL_PATHSPECS: '0' })
   }
 
   exclusive<T>(work: () => Promise<T>): Promise<T> {
