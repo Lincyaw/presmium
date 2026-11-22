@@ -24,7 +24,7 @@ const supportsLanguage = (languages: string[], lang: string) => !languages.lengt
  * Choosing a voice: by default for the whole document, applied by one command, with the steps that have their own
  * voice kept. The scope, silence, a step's own setting, the rate and the style are the further settings.
  */
-export function DocumentVoiceDialog({ stepId, mode = 'document', onClose }: { stepId: string, mode?: 'document' | 'step', onClose(): void }) {
+export function DocumentVoiceDialog({ stepId, mode = 'document', onClose, onApplied }: { stepId: string, mode?: 'document' | 'step', onClose(): void, onApplied?(): void }) {
   const workbench = useWorkbench(), actor = useWorkbenchState(state => state.authoring), locale = useWorkbenchState(state => state.locale)
   const blocked = useWorkbenchState(state => Boolean(state.authoring?.loading || state.authoring?.composing) || isAgentChanging(state))
   const t = VOICE_MESSAGES[locale], p = PRODUCTION_MESSAGES[locale], c = VOICE_CLONE_MESSAGES[locale]
@@ -124,6 +124,7 @@ export function DocumentVoiceDialog({ stepId, mode = 'document', onClose }: { st
       if (!current() || generation !== owner.current.generation) return
       if (!saved) throw new Error('voice-context-changed')
       workbench.production.clearVoiceDraft(identity, stepId, draft)
+      onApplied?.()
       onClose()
     } catch (error) { if (current() && generation === owner.current.generation) setFailure(voiceFailure(error, locale)) }
     finally { if (current() && generation === owner.current.generation) setBusy(false) }

@@ -39,7 +39,7 @@ function useVoiceInfo(directory: string | undefined, engine: string | undefined,
 }
 
 /** The document's voice with its plain name, the one-step choice for the whole document, and generating all of it. */
-export function DocumentVoiceField({ stepId, disabled = false, onGenerate }: { stepId: string, disabled?: boolean, onGenerate?(): void }) {
+export function DocumentVoiceField({ stepId, disabled = false, onGenerate, onChanged }: { stepId: string, disabled?: boolean, onGenerate?(): void, onChanged?(): void }) {
   const workbench = useWorkbench()
   const source = useWorkbenchState(state => state.authoring)
   const locale = useWorkbenchState(state => state.locale)
@@ -68,6 +68,6 @@ export function DocumentVoiceField({ stepId, disabled = false, onGenerate }: { s
         {workbench.client.openSpeechSettings && <PmButton small variant="ghost" icon="sliders" onClick={() => { workbench.stopAuditions(); void workbench.pausePlayback(true).catch(() => {}); workbench.client.openSpeechSettings?.() }}>{p.serviceSettings}</PmButton>}
       </div>
     </PmField>
-    {open && <DocumentVoiceDialog key={`${source.identity}:${stepId}:${open}`} stepId={stepId} mode={open} onClose={() => setOpen(undefined)} />}
+    {open && <DocumentVoiceDialog key={`${source.identity}:${stepId}:${open}`} stepId={stepId} mode={open} onClose={() => setOpen(undefined)} onApplied={onChanged} />}
   </>
 }

@@ -75,6 +75,18 @@ export function ProductionPanel({ onClose, closing, active = true, actions }: { 
   const canPlay = Boolean(playbackConnected && plan?.canPreview && live?.status === 'ready' && !timingDraft)
   const backgroundBody = !wide && tab === 'timeline', backgroundVisuals = !wide && tab !== 'preview'
   useEffect(() => workbench.observeVoiceoverJobs(), [workbench, source?.identity])
+  // Generated voiceover changes what the plan reports and the picture plays: when a job ends, the picture is prepared
+  // again if it is behind the saved version, and the plan is read again.
+  const jobs = useWorkbenchState(state => state.voiceoverJobs), runningJobs = useRef(new Set<string>())
+  useEffect(() => {
+    let ended = false
+    for (const job of jobs ?? []) {
+      const running = ['queued', 'running', 'cancelling'].includes(job.state)
+      if (running) runningJobs.current.add(job.id)
+      else if (runningJobs.current.delete(job.id) && job.completed > 0) ended = true
+    }
+    if (ended) { setMediaRefresh(true); setPlanReload(value => value + 1) }
+  }, [jobs])
   useEffect(() => () => { owner.current.active = false; owner.current.generation++; controlRequest.current?.abort(); workbench.closeProduction(); workbench.cancelPreviewPreparation() }, [workbench])
   useEffect(() => {
     const controller = new AbortController()
@@ -245,7 +257,7 @@ export function ProductionPanel({ onClose, closing, active = true, actions }: { 
                 <DocumentStepNarration sectionId={sectionId} stepId={stepId} expanded advanced panelId="production-step-fields" onPause={() => select(sectionId, stepId)} />
               </div></PmTabPanel>
               <PmTabPanel value="voice" keepMounted><div className="pmw-production__fields">
-                <DocumentVoiceField key={`${source.identity}:${stepId}`} stepId={stepId} disabled={blocked || closing} onGenerate={() => { voicePlayback.stop(); workbench.stopAuditions(); setGenerateStep(stepId) }} />
+                <DocumentVoiceField key={`${source.identity}:${stepId}`} stepId={stepId} disabled={blocked || closing} onGenerate={() => { voicePlayback.stop(); workbench.stopAuditions(); setGenerateStep(stepId) }} onChanged={() => setMediaRefresh(true)} />
                 <ProductionRecording key={`recording:${source.identity}`} identity={source.identity} sectionId={sectionId} stepId={stepId} active={!outputsOpen && (wide || tab === 'properties') && inspectorTab === 'voice'} available={active && !outputsOpen} onReveal={() => { setInspectorTab('voice'); setTab('properties') }} disabled={blocked || closing}
                   onImportStarted={() => transcriptionSelection.current}
                   onImported={(assetId, selection) => {
