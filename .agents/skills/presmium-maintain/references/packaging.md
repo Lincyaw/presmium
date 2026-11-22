@@ -16,7 +16,9 @@ Copy `packages/addon-guide/package.json`; name it `@lincyaw/addon-<name>`.
 
 - **Metadata.** `license: "Apache-2.0"` with a copy of `LICENSE`, `description`, `repository` with
   `directory`, `homepage`, `bugs`, `keywords`, `publishConfig: { access: public }`, `engines.node` equal to
-  the root. `files` lists everything `exports` and `bin` point to, never `test/`.
+  the root. `files` lists everything `exports` and `bin` point to, never `test/`. A `README.md` is the
+  package's npm page; the `allowBuilds` block in `packages/presmium/README.md` and in the templates' `pnpm-workspace.yaml`
+  equals the root's.
 - **Version.** Public packages share one fixed version (`.changeset/config.json`, prerelease in
   `.changeset/pre.json`). `@lincyaw/dsh`, `@lincyaw/workbench` and `@lincyaw/studio` are outside it.
 - **Dependencies.** Monorepo dependencies use `workspace:`. `@lincyaw/kernel`, `host`, `viewer` and

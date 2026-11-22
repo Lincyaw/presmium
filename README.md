@@ -49,7 +49,7 @@ Run `presmium check` after a change to validate the document.
 
 ## Command reference
 
-Install Presmium, including Studio, the command line, renderers and official plugins, with `pnpm add -g @lincyaw/presmium` (run `pnpm setup` once before the first global installation). The global command always uses that installation; use `pnpm exec presmium` explicitly to run a project installation.
+Install Presmium, including Studio, the command line, renderers and official plugins, with `pnpm add -g @lincyaw/presmium` (run `pnpm setup` once before the first global installation). The global command always uses that installation; use `pnpm exec presmium` explicitly to run a project installation. To pin Presmium in a project, create it with `pnpm create presmium <dir>` and run `pnpm install` there: the project's `pnpm-workspace.yaml` already lists which dependencies may run install scripts, which pnpm 11 requires. To add it to a project of your own, copy that `allowBuilds` list first ([the package's README](packages/presmium/README.md#in-a-project)).
 
 | Command | Description |
 |---|---|

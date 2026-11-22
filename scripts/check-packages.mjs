@@ -43,6 +43,7 @@ for (const dir of workspaces) {
   const generated = pkg.presmium?.generated ?? []
   const made = target => generated.some(dir => target === dir || target.startsWith(`${dir}/`))
   if (pkg.license !== 'Apache-2.0') problems.push(`${at}: license is ${JSON.stringify(pkg.license)}, not "Apache-2.0"`)
+  if (!existsSync(join(root, dir, 'README.md'))) problems.push(`${at}: no README.md (the package's page on npm)`)
   if (!existsSync(join(root, dir, 'LICENSE')) || readFileSync(join(root, dir, 'LICENSE'), 'utf8') !== license) problems.push(`${at}: its LICENSE is not the root's`)
   if (pkg.engines?.node !== rootPackage.engines.node) problems.push(`${at}: engines.node is ${JSON.stringify(pkg.engines?.node)}, the root's is "${rootPackage.engines.node}"`)
   for (const field of ['description', 'homepage', 'bugs']) if (!pkg[field]) problems.push(`${at}: no ${field}`)
@@ -79,7 +80,7 @@ for (const name of rows.keys()) if (!names.has(name)) problems.push(`.changeset/
 // New projects install the same packages: their install scripts need the repository's decisions, or pnpm refuses to install.
 const builds = text => /^allowBuilds:\n(?: .*\n)+/m.exec(text)?.[0]
 const rootBuilds = builds(readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8'))
-for (const template of ['templates/workspace/pnpm-workspace.yaml', 'templates/plugin/pnpm-workspace.yaml']) {
+for (const template of ['templates/workspace/pnpm-workspace.yaml', 'templates/plugin/pnpm-workspace.yaml', 'packages/presmium/README.md']) {
   if (builds(readFileSync(join(root, template), 'utf8')) !== rootBuilds) problems.push(`${template}: allowBuilds differs from pnpm-workspace.yaml`)
 }
 

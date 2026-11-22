@@ -11,7 +11,7 @@ pnpm add -g @lincyaw/presmium
 presmium studio [dir] [--port <n>] [--host <addr>]
 ```
 
-Studio is included with Presmium. In a project with `pnpm add -D @lincyaw/presmium`, use `pnpm exec presmium studio`. The separate `presmium-studio` command remains available when this package is installed directly; it runs the `presmium` command on PATH (install it with `pnpm add -g @lincyaw/presmium`).
+Studio is included with Presmium. In a project that installs `@lincyaw/presmium` ([how](https://www.npmjs.com/package/@lincyaw/presmium#in-a-project)), use `pnpm exec presmium studio`. The separate `presmium-studio` command remains available when this package is installed directly; it runs the `presmium` command on PATH (install it with `pnpm add -g @lincyaw/presmium`).
 
 `dir` is a workspace root (`presmium.workspace.yaml`) or a deck's directory, as for `presmium serve`. The workbench listens on 127.0.0.1, port 4320 by default (a free port when that one is in use); `--host <addr>` makes it listen on one local IP address, and `--host 0.0.0.0` makes it listen on all local IPv4 network interfaces, with no login. Network access prints one address for each local network interface.
 

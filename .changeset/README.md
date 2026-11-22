@@ -4,7 +4,7 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 
 ## 哪些包发布
 
-下表列出工作区的每个包，`scripts/check-packages.mjs`（`pnpm test` 的一部分）按它检查：公开的包有 Apache-2.0 许可证（`license` 字段与包内的 `LICENSE`）、同一个版本、与根目录一致的 `engines.node`、完整的元数据（`description`、`repository`、`homepage`、`bugs`、`keywords`、`publishConfig`），`files` 只含发布所需并包含 `exports` 与 `bin` 指向的文件；插件（有 `./presmium` 入口的包）对 `@lincyaw/kernel`、`host`、`viewer`、`compiler` 的依赖是对等依赖，与应用共用一份。
+下表列出工作区的每个包，`scripts/check-packages.mjs`（`pnpm test` 的一部分）按它检查：公开的包有 Apache-2.0 许可证（`license` 字段与包内的 `LICENSE`）、作为 npm 页面的 `README.md`、同一个版本、与根目录一致的 `engines.node`、完整的元数据（`description`、`repository`、`homepage`、`bugs`、`keywords`、`publishConfig`），`files` 只含发布所需并包含 `exports` 与 `bin` 指向的文件；插件（有 `./presmium` 入口的包）对 `@lincyaw/kernel`、`host`、`viewer`、`compiler` 的依赖是对等依赖，与应用共用一份。
 
 | 包 | 发布到 | 说明 |
 |---|---|---|
