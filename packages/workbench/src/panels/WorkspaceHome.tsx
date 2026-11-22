@@ -25,6 +25,8 @@ export function WorkspaceHome({ actions }: { actions?: ReactNode }) {
   const attention = useWorkbenchState(state => state.workspaceAttention)
   const canAskAgent = useWorkbenchState(state => Boolean(state.canAskAgent))
   const needsModel = useWorkbenchState(state => state.agentReadiness === 'missing')
+  // A host with an AI says the model's readiness at once; its conversation is ready to take requests a little later.
+  const hasAgent = useWorkbenchState(state => state.agentReadiness !== undefined)
   const importMessages = IMPORT_MESSAGES[locale]
   const [importing, setImporting] = useState(false)
   const [searching, setSearching] = useState(false)
@@ -32,8 +34,10 @@ export function WorkspaceHome({ actions }: { actions?: ReactNode }) {
   const [writing, setWriting] = useState(false)
   const readOnly = workbench.client.capabilities?.readOnly === true
   const canImport = Boolean(answer?.git && !answer.single && workbench.client.importDocuments && !readOnly)
-  // Only the AI writes from source material: without a conversation there is no card, without a model it says so.
-  const canWrite = Boolean(canAskAgent && !answer?.single && workbench.client.addDocumentMaterials && workbench.tree.available && !readOnly)
+  // Only the AI writes from source material: without an AI there is no card, without a model it says so. The card
+  // keeps its place while the conversation starts, so the home does not shift.
+  const writePending = !canAskAgent && !needsModel
+  const canWrite = Boolean((canAskAgent || hasAgent) && !answer?.single && workbench.client.addDocumentMaterials && workbench.tree.available && !readOnly)
   const count = Object.keys(tree.nodes).length
   const issues = Object.values(tree.nodes).filter(node => node.issues?.length)
   const pending = answer?.migration?.documents.length ?? 0
@@ -67,7 +71,7 @@ export function WorkspaceHome({ actions }: { actions?: ReactNode }) {
         </PmCard></li>}
         {canWrite && <li><PmCard variant="interactive">
           <span className="pm-ui-card__icon"><PmIcon name="sparkle" /></span>
-          <button type="button" className="pm-ui-card__cover" disabled={busy} onClick={() => needsModel ? workbench.openAgentSetup() : setWriting(true)}>{tt.fromMaterials}</button>
+          <button type="button" className="pm-ui-card__cover" disabled={busy || writePending} aria-busy={writePending || undefined} onClick={() => needsModel ? workbench.openAgentSetup() : setWriting(true)}>{tt.fromMaterials}</button>
           <p className="pm-ui-card__hint">{needsModel ? tt.fromMaterialsNeedsModel : tt.fromMaterialsHint}</p>
         </PmCard></li>}
       </ul>}
