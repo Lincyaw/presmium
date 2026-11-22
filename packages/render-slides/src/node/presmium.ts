@@ -2,11 +2,12 @@ import { mkdir, readFile, rm } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { blockText, sectionNarration } from '@lincyaw/kernel'
-import type { ExportContext, Exporter, IRDocument, PresmiumNodePlugin } from '@lincyaw/kernel'
+import type { ExportContext, Exporter, IRDocument, IRSection, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { playwrightChromium } from '@lincyaw/kernel/node'
 import { printSlides, slidesRenderer } from '@lincyaw/web/slides'
 import type { PrintingChromium, PrintOptions } from '@lincyaw/web/slides'
 import PptxGenJS from 'pptxgenjs'
+import { drawSlides } from './pptx.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
@@ -35,7 +36,7 @@ function printChoices(options: Record<string, unknown>): Pick<PrintOptions, 'ste
 }
 
 /** Builds the slides and prints them. */
-async function printed(ctx: ExportContext, format: 'pdf' | 'png' | 'svg', output: string) {
+async function printed(ctx: ExportContext, format: 'pdf' | 'png' | 'svg' | 'layout', output: string) {
   ctx.progress('build')
   const dir = await ctx.build('slides')
   ctx.progress('print')
@@ -44,6 +45,12 @@ async function printed(ctx: ExportContext, format: 'pdf' | 'png' | 'svg', output
   const choices = { ...printChoices(ctx.options), ...format === 'svg' ? { steps: true } : {} }
   const result = await printSlides({ dir, chromium, format, output, signal: ctx.signal, ...choices })
   return { ...result, doc: JSON.parse(await readFile(join(dir, 'ir.json'), 'utf8')) as IRDocument }
+}
+
+/** A slide's speaker notes: the script of each of its steps, in order, or its narration blocks. */
+function speakerNotes(section: IRSection): string {
+  const steps = (section.stepIds ?? []).map(step => (section.stepNarrations?.[step] ?? []).map(line => line.text.trim()).filter(Boolean).join('\n')).filter(Boolean)
+  return steps.length ? steps.join('\n\n') : sectionNarration(section).map(blockText).join('\n\n')
 }
 
 function slidesExporter(id: string, label: Record<string, string>, run: Exporter['run']): Exporter {
@@ -69,26 +76,23 @@ const plugin: PresmiumNodePlugin = {
       const { figures } = await printed(ctx, 'svg', ctx.outDir)
       return { files: (figures ?? []).map(figure => figure.file) }
     }),
-    // A picture of each slide, its narration as the speaker notes.
+    // Each slide as PowerPoint draws it, to be edited there: its text, tables and pictures where the slide view has them,
+    // what has no such form (a formula, a figure, a component) as its picture, and its script as the speaker notes.
     slidesExporter('pptx', { 'zh-CN': '幻灯片 PowerPoint', 'en': 'Slides as PowerPoint' }, async (ctx) => {
       const pictures = join(ctx.outDir, PICTURES)
       await mkdir(pictures, { recursive: true })
       try {
-        const { shape, pages, doc } = await printed(ctx, 'png', pictures)
+        const { shape, pages, layouts, doc } = await printed(ctx, 'layout', pictures)
         ctx.progress('pptx')
         const pptx = new PptxGenJS()
-        const [w, h] = [shape.width / PIXELS_PER_INCH, shape.height / PIXELS_PER_INCH]
-        pptx.defineLayout({ name: 'PRESMIUM', width: w, height: h })
+        pptx.defineLayout({ name: 'PRESMIUM', width: shape.width / PIXELS_PER_INCH, height: shape.height / PIXELS_PER_INCH })
         pptx.layout = 'PRESMIUM'
         pptx.title = doc.meta.title
         const sections = new Map(doc.sections.map(section => [section.id, section]))
-        for (const page of pages) {
-          const slide = pptx.addSlide()
-          slide.addImage({ path: join(pictures, page.file!), x: 0, y: 0, w, h })
-          const section = sections.get(page.section)
-          const notes = section ? sectionNarration(section).map(blockText).join('\n\n') : ''
-          if (notes) slide.addNotes(notes)
-        }
+        drawSlides(pptx, shape, layouts ?? [], pictures, (page) => {
+          const section = sections.get(pages[page]?.section ?? '')
+          return section ? speakerNotes(section) : ''
+        })
         await pptx.writeFile({ fileName: join(ctx.outDir, 'slides.pptx') })
         return { files: ['slides.pptx'] }
       } finally {

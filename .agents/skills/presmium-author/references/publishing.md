@@ -79,7 +79,7 @@ pnpm exec presmium-export --format pdf --output lecture.pdf
 
 | Option | Does |
 |---|---|
-| `--format pdf` (default), `png`, `pptx`, `svg` | PDF; PNG images, one per slide, into the `--output` folder; PowerPoint, each slide a picture, the narration as speaker notes, no links; SVG, each figure (`<svg data-figure>`) at each step that changes it, into the `--output` folder (see the `presmium-figure` skill) |
+| `--format pdf` (default), `png`, `pptx`, `svg` | PDF; PNG images, one per slide, into the `--output` folder; PowerPoint, its text, lists and tables editable and its pictures in place, formulas, diagrams and components as pictures, the script as speaker notes; SVG, each figure (`<svg data-figure>`) at each step that changes it, into the `--output` folder (see the `presmium-figure` skill) |
 | `--output <file or folder>` | Where to write |
 | `--with-clicks` | One page (or image) per step instead of per slide |
 | `--range 1,3-5` | Only these slides |

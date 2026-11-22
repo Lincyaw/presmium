@@ -27,7 +27,7 @@ A section's `{hints}` gives its slide, under `slides`: `layout` (`default`, `cov
 
 ## Exports
 
-The exporters `pdf`, `png` (a picture of each slide, or of each step) and `pptx` (a picture of each slide, its narration as the speaker notes) run as the workspace service's jobs and from `presmium-export` (`@lincyaw/addon-publish`).
+The exporters `pdf`, `png` (a picture of each slide, or of each step) and `pptx` (each slide as it is laid out in the slide view, to be edited in PowerPoint: text boxes, tables and pictures where the slide has them, what has no such form, such as a formula, a diagram or a component, as its picture, and the script of the slide's steps as the speaker notes) run as the workspace service's jobs and from `presmium-export` (`@lincyaw/addon-publish`).
 
 ## Documentation
 

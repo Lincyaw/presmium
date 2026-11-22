@@ -102,7 +102,7 @@ export async function exportMain(argv: string[]): Promise<number> {
       } else if (format === 'png') {
         console.log(`exported ${shown(result.output)} (${result.pages} images); links are not checked in images`)
       } else if (format === 'pptx') {
-        console.log(`exported ${shown(result.output)} (${result.pages} slides, each a picture)`)
+        console.log(`exported ${shown(result.output)} (${result.pages} slides; text and tables editable, the script as speaker notes)`)
       } else {
         console.log(`exported ${shown(result.output)} (${result.pages} pages)`)
         for (const link of lost) console.log(`${shown(link.source.file)}:${link.source.line}  link lost  ${link.url} (slide ${link.slide})`)

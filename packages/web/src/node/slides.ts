@@ -11,6 +11,10 @@ import { checkDocumentCode } from './document-bundle.ts'
 import { devDocument } from './renderer.ts'
 import { buildSlidesSite } from './site-build.ts'
 import { figureFiles, readFigures } from './figures.ts'
+import { PICTURE_ATTRIBUTE, readSlideLayouts } from './slide-layout.ts'
+import type { SlideLayout } from './slide-layout.ts'
+
+export type { SlideItem, SlideLayout, SlideParagraph, SlideRun } from './slide-layout.ts'
 
 /**
  * The slides form: the viewer app's slides page (its presentation, one slide at a time on a canvas of a fixed size), built
@@ -41,7 +45,7 @@ interface PrintingPage {
   goto(url: string, options: { waitUntil: 'load', timeout: number }): Promise<unknown>
   waitForSelector(selector: string, options: { timeout: number }): Promise<unknown>
   pdf(options: { path: string, width: string, height: string, printBackground: boolean }): Promise<unknown>
-  $$(selector: string): Promise<{ screenshot(options: { path: string }): Promise<unknown> }[]>
+  $$(selector: string): Promise<{ screenshot(options: { path: string }): Promise<unknown>, getAttribute(name: string): Promise<string | null> }[]>
   evaluate<T>(run: () => T): Promise<T>
   evaluate<T, A>(run: (arg: A) => T | Promise<T>, arg: A): Promise<T>
 }
@@ -58,8 +62,11 @@ export interface PrintOptions extends SlidesPrintQuery {
   /** The slides as `slidesRenderer` built them, for the root path. */
   dir: string
   chromium: PrintingChromium
-  /** One PDF file, a picture of each page, or each figure's SVG at each of its steps, in a directory. */
-  format: 'pdf' | 'png' | 'svg'
+  /**
+   * One PDF file, a picture of each page, each figure's SVG at each of its steps, or what each page shows (`layout`,
+   * with a picture `<n>.png` of each region that has no text or table form), in a directory.
+   */
+  format: 'pdf' | 'png' | 'svg' | 'layout'
   /** The PDF file, or the directory of the pictures or figures. */
   output: string
   dark?: boolean
@@ -81,6 +88,8 @@ export interface Printed {
   pages: PrintedPage[]
   /** The figures' files, with `svg`: each figure's distinct pictures, `<name>-<n>.svg`. */
   figures?: { file: string, section: string, slide: number, step: number }[]
+  /** With `layout`: what each page shows, in the order of `pages`. */
+  layouts?: SlideLayout[]
 }
 
 const PRINTED_PAGE = '.pm-slides-print__page'
@@ -114,7 +123,7 @@ export async function printSlides(options: PrintOptions): Promise<Printed> {
     options.signal?.addEventListener('abort', stop, { once: true })
     try {
       options.signal?.throwIfAborted()
-      const page = await browser.newPage({ viewport: shape, deviceScaleFactor: options.format === 'png' ? PICTURE_SCALE : 1, reducedMotion: 'reduce', serviceWorkers: 'block' })
+      const page = await browser.newPage({ viewport: shape, deviceScaleFactor: options.format === 'png' || options.format === 'layout' ? PICTURE_SCALE : 1, reducedMotion: 'reduce', serviceWorkers: 'block' })
       const query = `${printQuery(options)}&${PREVIEW_APPEARANCE_PARAM}=${options.dark ? 'dark' : 'light'}`
       await page.goto(`${server.url}/${query}`, { waitUntil: 'load', timeout })
       await page.waitForSelector(`html[${PRINTED_ATTRIBUTE}]`, { timeout })
@@ -129,6 +138,14 @@ export async function printSlides(options: PrintOptions): Promise<Printed> {
         const files = figureFiles(await page.evaluate(readFigures, { page: PRINTED_PAGE, figure: FIGURE }))
         await Promise.all(files.map(figure => writeFile(join(options.output, figure.file), figure.svg)))
         return { shape, pages, figures: files.map(figure => ({ file: figure.file, ...pages[figure.page]! })) }
+      }
+      if (options.format === 'layout') {
+        const layouts = await page.evaluate(readSlideLayouts, { page: PRINTED_PAGE, attribute: PICTURE_ATTRIBUTE })
+        for (const element of await page.$$(`[${PICTURE_ATTRIBUTE}]`)) {
+          options.signal?.throwIfAborted()
+          await element.screenshot({ path: join(options.output, `${await element.getAttribute(PICTURE_ATTRIBUTE)}.png`) })
+        }
+        return { shape, pages, layouts }
       }
       const elements = await page.$$(PRINTED_PAGE)
       for (const [i, element] of elements.entries()) {
