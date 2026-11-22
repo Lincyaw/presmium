@@ -102,17 +102,29 @@ export function previewAppearance(): 'dark' | 'light' | undefined {
   return given === 'dark' || given === 'light' ? given : undefined
 }
 
+/** The origin of the page's parent, when the page can tell (`location.ancestorOrigins`, else the referrer). */
+function knownParentOrigin(): string | undefined {
+  try {
+    return location.ancestorOrigins?.[0] ?? (document.referrer ? new URL(document.referrer).origin : undefined)
+  } catch {
+    return undefined
+  }
+}
+
 /**
- * The allowed origins the page's parent can have: its own when the page can tell (`location.ancestorOrigins`, else the
- * referrer) and it is allowed, else all of them. Posting only to the parent's own origin spares the browser a warning for
- * each origin the parent does not have.
+ * Where the page posts to its parent: the parent's own origin when it is one of the allowed ones (Studio allows the
+ * names of its address that mean the same machine, `localhost` and `127.0.0.1`), none when the parent has another, and
+ * every allowed one only when the page cannot tell. Posting to an origin the parent does not have makes the browser warn.
  */
 export function parentOrigins(origins: readonly string[]): readonly string[] {
-  let known: string | undefined
-  try {
-    known = location.ancestorOrigins?.[0] ?? (document.referrer ? new URL(document.referrer).origin : undefined)
-  } catch {}
-  return known && origins.includes(known) ? [known] : origins
+  const known = knownParentOrigin()
+  return known === undefined ? origins : origins.includes(known) ? [known] : []
+}
+
+/** The parent's origin when the page can tell and it is allowed: for a reply that must go to one window. */
+export function parentOrigin(origins: readonly string[]): string | undefined {
+  const known = knownParentOrigin()
+  return known !== undefined && origins.includes(known) ? known : undefined
 }
 
 /**

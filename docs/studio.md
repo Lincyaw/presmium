@@ -71,6 +71,7 @@
 - `window.postMessage`，信封 `{ protocol: 'presmium-preview', version: 1, nonce, type, ... }`。工作台给 `GET preview` 的地址加 `presmium-preview=<nonce>`；页面中的预览代理只在带此参数、处于 iframe 中、允许的父来源（`--preview-origin`）非空时启动，所以静态构建与 `presmium dev` 没有它。
 - 代理先发 `ready`（形态、文稿、修订、能力），每次 `ready` 开启新一代连接；回复须匹配原连接与代次，只发一次，切换文稿后仍按原文稿核对。
 - 地址参数声明可选能力：`presmium-keys=playback`（视频制作中空格与方向键交给工作台）、`presmium-presentation=confirmed`（画面级版本门禁）、`presmium-events=shared`（共享事件订阅）。
+- 来源：双方只发往对方窗口的实际来源。工作台发往 iframe 地址的来源，只接受来自该来源的消息；页面（预览代理、事件订阅、文稿内预览与版式测量）发往父窗口的实际来源（`location.ancestorOrigins`，没有时用来源页面），它须在允许的来源中，允许的来源包括同一台机器的等价名称（`localhost` 与 `127.0.0.1`）；父窗口的来源不被允许时不发，看不出父窗口来源时才发往全部允许的来源。预览协议不使用 `'*'`。
 - 未知消息忽略；消息只是数据，代理不执行代码、不打开链接。
 
 ### 4.2 消息

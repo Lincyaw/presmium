@@ -1,5 +1,5 @@
 import { currentLocale, OPERATIONS, pluginsOf, presmiumService, registerPresmiumPlugin, startHost, createStore, observe, runtimeRevision } from '@lincyaw/host'
-import { CAPTURE_PARAM, irBlocks, PREVIEW_SLIDE_FIT_PARAM, previewAppearance, reportStaleModule, safeDecodeURIComponent } from '@lincyaw/kernel'
+import { CAPTURE_PARAM, irBlocks, parentOrigins, PREVIEW_SLIDE_FIT_PARAM, previewAppearance, reportStaleModule, safeDecodeURIComponent } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import { findView, loadDocumentParts, slideCrowdingProblems, syncViewerWithOperations } from '@lincyaw/viewer'
 import type { LiveUpdate } from '@lincyaw/viewer/domain'
@@ -116,7 +116,7 @@ async function bootDocument(): Promise<void> {
   // nothing else of the page runs.
   const slideFit = config.block ? undefined : new URLSearchParams(location.search).get(PREVIEW_SLIDE_FIT_PARAM)
   if (slideFit) {
-    const answer = () => { for (const origin of config.origins) window.parent.postMessage({ type: 'presmium-slide-fit', nonce: slideFit, problems: slideCrowdingProblems() }, origin) }
+    const answer = () => { for (const origin of parentOrigins(config.origins)) window.parent.postMessage({ type: 'presmium-slide-fit', nonce: slideFit, problems: slideCrowdingProblems() }, origin) }
     const { app } = createPageApp({ config, doc, components, embedded: false, ssr: false, dark: createStore(false), slideFit: answer })
     await app.mount('#app')
     return
