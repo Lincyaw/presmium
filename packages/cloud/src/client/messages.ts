@@ -24,6 +24,7 @@ const zh = {
   register: '注册',
 
   settings: '共享与连接',
+  settingsHint: '管理你的 Studio，共享文稿，连接其他 AI 助手。',
   launchTitle: '正在打开 Presmium Studio',
   launchHint: '第一次打开时要准备你的工作区，会多花一点时间。',
   stageContainer: '启动你的空间',
@@ -130,6 +131,7 @@ const en: Messages = {
   register: 'Register',
 
   settings: 'Sharing and Connections',
+  settingsHint: 'Manage your Studio, share documents, and connect other AI assistants.',
   launchTitle: 'Opening Presmium Studio',
   launchHint: 'The first time takes a little longer while your workspace is prepared.',
   stageContainer: 'Starting your space',

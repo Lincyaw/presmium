@@ -141,6 +141,7 @@ function Home({ t, locale, mcpUrl }: { t: Messages, locale: Locale, mcpUrl: stri
       <SectionHeading title={t.studioTitle} description={t.studioHint}>{state && <Status status={state} t={t} />}</SectionHeading>
       <ResourceState resource={studio} t={t}>
         <div className="pmc-actions">
+    <header className="pm-ui-page-heading"><h1 className="pm-ui-page-heading__title">{t.settings}</h1><p className="pm-ui-page-heading__description">{t.settingsHint}</p></header>
           {studio.data && <a className="pm-ui-button pm-ui-button--primary" href={studio.data.studio.url} target="_blank" rel="noopener"><PmIcon name="external" /><span>{t.openStudio}</span></a>}
           {(state === 'running' || state === 'starting') && <PmButton icon="stop" loading={mutation.pending} onClick={() => void mutation.run(async () => { await request('/api/studio/stop', { method: 'POST' }); studio.refresh() })}>{t.stopStudio}</PmButton>}
         </div>
