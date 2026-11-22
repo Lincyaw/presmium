@@ -124,6 +124,19 @@ export const PREVIEW_PRESENTATION_PARAM = 'presmium-presentation'
 /** `playback`: the workbench plays this page, so Space and the left and right arrows pressed in it go to the workbench. */
 export const PREVIEW_KEYS_PARAM = 'presmium-keys'
 export const PREVIEW_EVENTS_PARAM = 'presmium-events'
+/**
+ * A page asked only to measure how crowded its slides are, by the workbench while the author edits: the value is the
+ * nonce of its answer (`SlideFitAnswer`), posted to the page that embeds it.
+ */
+export const PREVIEW_SLIDE_FIT_PARAM = 'presmium-slide-fit'
+export interface SlideFitProblem { level: 'warning', plugin: string, section: string, message: string }
+export interface SlideFitAnswer { type: 'presmium-slide-fit', nonce: string, problems: SlideFitProblem[] }
+
+export function toSlideFitAnswer(data: unknown, nonce: string): SlideFitAnswer | undefined {
+  if (!isRecord(data) || data.type !== 'presmium-slide-fit' || data.nonce !== nonce || !Array.isArray(data.problems) || data.problems.length > 1000) return undefined
+  const problems = data.problems.filter((p): p is SlideFitProblem => isRecord(p) && p.level === 'warning' && typeof p.plugin === 'string' && typeof p.section === 'string' && typeof p.message === 'string' && p.message.length <= 2000)
+  return problems.length === data.problems.length ? { type: 'presmium-slide-fit', nonce, problems: problems.map(({ level, plugin, section, message }) => ({ level, plugin, section, message })) } : undefined
+}
 export type PreviewEventTarget =
   | { topic: 'viewer-site', document: string, app: string, lang: string, form: 'web' | 'slides' }
   | { topic: 'viewer-control', document: string, window: string }

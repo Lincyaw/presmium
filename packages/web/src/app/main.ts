@@ -1,7 +1,7 @@
 import { currentLocale, OPERATIONS, pluginsOf, presmiumService, registerPresmiumPlugin, startHost, createStore, observe, runtimeRevision } from '@lincyaw/host'
-import { CAPTURE_PARAM, irBlocks, previewAppearance, reportStaleModule, safeDecodeURIComponent } from '@lincyaw/kernel'
+import { CAPTURE_PARAM, irBlocks, PREVIEW_SLIDE_FIT_PARAM, previewAppearance, reportStaleModule, safeDecodeURIComponent } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
-import { findView, loadDocumentParts, syncViewerWithOperations } from '@lincyaw/viewer'
+import { findView, loadDocumentParts, slideCrowdingProblems, syncViewerWithOperations } from '@lincyaw/viewer'
 import type { LiveUpdate } from '@lincyaw/viewer/domain'
 import { packages } from 'virtual:presmium-app/registry'
 import { APP_CONFIG_ELEMENT, parsePositionQuery, parsePrintQuery, UPDATE_EVENT, WEB_MESSAGES, withPositionQuery } from '../domain/index.ts'
@@ -112,6 +112,15 @@ async function bootDocument(): Promise<void> {
   const plugins = [...own.flatMap(([, pkg]) => pkg.plugins), ...bundle.plugins ?? []]
   const restartable = own.every(([, pkg]) => pkg.restartable) && bundle.restartable !== false
 
+  // The workbench asks, while the author edits, only how crowded the slides are: they are measured, the answer posted, and
+  // nothing else of the page runs.
+  const slideFit = config.block ? undefined : new URLSearchParams(location.search).get(PREVIEW_SLIDE_FIT_PARAM)
+  if (slideFit) {
+    const answer = () => { for (const origin of config.origins) window.parent.postMessage({ type: 'presmium-slide-fit', nonce: slideFit, problems: slideCrowdingProblems() }, origin) }
+    const { app } = createPageApp({ config, doc, components, embedded: false, ssr: false, dark: createStore(false), slideFit: answer })
+    await app.mount('#app')
+    return
+  }
   const preview = config.block ? undefined : webPreview({ origins: config.origins, document: config.document, renderer: config.form ?? 'web' })
   document.documentElement.classList.toggle(IN_WORKBENCH, preview?.embedded ?? false)
   document.documentElement.classList.toggle('pm-block-document', config.block !== undefined)

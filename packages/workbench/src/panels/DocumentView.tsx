@@ -8,6 +8,7 @@ import { failureReason, timeAgo } from '../messages.ts'
 import { SHORTCUTS } from '../shortcuts.ts'
 import { DocumentOutline, DocumentWordCounter } from '../outline.ts'
 import { isAgentChanging } from '../workbench-state.ts'
+import { watchSlideFit } from '../slide-fit.ts'
 import { ExportPanel } from './ExportPanel.tsx'
 import { HistoryPanel } from './HistoryPanel.tsx'
 import type { HistoryRevisionAction } from './HistoryPanel.tsx'
@@ -167,6 +168,8 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
     setAside(current => isRail(current) && roomy ? current : null)
   }, [document])
   useEffect(() => { if (!active) { transition.current++; exiting.current = undefined; setChangingView(false) } }, [active])
+  // While the author edits, the crowded slides are found in the background, as presenting them would.
+  useEffect(() => active && workspace === 'document' && document !== undefined ? watchSlideFit(workbench, globalThis.document.body) : undefined, [workbench, active, workspace, document])
   useEffect(() => () => { transition.current++ }, [])
   useEffect(() => {
     const previous = previousView.current

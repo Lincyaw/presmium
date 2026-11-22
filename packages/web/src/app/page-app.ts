@@ -2,7 +2,7 @@ import { createSharedStates, installHost, HostProvider, createStore, useStore, p
 import type { HostAdapter, SharedStates, Store } from '@lincyaw/host'
 import { deckLocale, irBlocks, PREVIEW_KEYS_PARAM, PREVIEW_PRESENTATION_PARAM, reportPreview } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
-import { createViewer, ViewerProvider, BlockPreview, OverlayViewOutlet, PageViewOutlet, registerComponent, SlidesPrint } from '@lincyaw/viewer'
+import { createViewer, ViewerProvider, BlockPreview, OverlayViewOutlet, PageViewOutlet, registerComponent, SlideFitProbe, SlidesPrint } from '@lincyaw/viewer'
 import type { Viewer } from '@lincyaw/viewer'
 import { FINAL_STEP } from '@lincyaw/viewer/domain'
 import { createElement as h, useEffect } from 'react'
@@ -37,6 +37,8 @@ export interface PageAppInput {
   dark: Store<boolean>
   /** The slides printed one after the other (an export). */
   print?: SlidesPrintQuery
+  /** Only measure how crowded the slides are (`SlideFitProbe`), and tell this when done: the workbench asked, while editing. */
+  slideFit?: () => void
 }
 
 export interface PageApp {
@@ -53,7 +55,18 @@ function pageHostAdapter(lang: string, shared: SharedStates, dark: Store<boolean
   return { mode: 'document', lang, useCursor: () => ({ slide: 1, step: 0 }), useStep: () => FINAL_STEP, useViewRole: () => 'reader', useStaticRender: () => false, useSectionConfig: () => ({}), useSharedState(key, initial, scope) { const store = shared.sharedState(key, initial, scope); return [useStore(store), value => store.set(value)] }, sharedStateStore: shared.sharedState, getService: presmiumService, startReport: presmiumReport, useDarkMode: () => [useStore(dark), value => dark.set(value)] }
 }
 function pageRoot(element: ReactElement, hydrate: boolean) { return { element, mount(selector: string): Promise<void> { return new Promise(resolve => { function Mounted() { useEffect(() => { resolve() }, []); return element }; const root = document.querySelector(selector)!; if (hydrate) hydrateRoot(root, h(Mounted)); else createRoot(root).render(h(Mounted)) }) } } }
-function PreviewSheet({ viewer }: { viewer: Viewer }) { const doc = useStore(viewer.doc); return h('div', { className: 'pm-sheet-canvas' }, h('article', { className: 'pm-sheet' }, h(PageViewOutlet, { sections: doc.sections.map(section => section.id) })), h('div', { className: 'pm-document pm-overlay-views' }, h(OverlayViewOutlet))) }
+/** Whether the document has the slides form: its configuration names it, or names no renderer. */
+function hasSlides(doc: IRDocument): boolean {
+  const named = Object.keys(doc.config.renderers)
+  return named.length === 0 || named.includes('slides')
+}
+// The presentation measures the slides it shows itself.
+const PRESENTING = new Set(['present', 'presenter'])
+/** The workbench's preview: the document as a page, and how crowded its slides are, measured in the background. */
+function PreviewSheet({ viewer }: { viewer: Viewer }) { const doc = useStore(viewer.doc); const view = useStore(viewer.view); return h('div', { className: 'pm-sheet-canvas' }, h('article', { className: 'pm-sheet' }, h(PageViewOutlet, { sections: doc.sections.map(section => section.id) })), h('div', { className: 'pm-document pm-overlay-views' }, h(OverlayViewOutlet), hasSlides(doc) && !PRESENTING.has(view) ? h(SlideFitProbe) : null)) }
+
+/** A document with no slides is measured at once: nothing is crowded. */
+function Measured({ done }: { done: () => void }) { useEffect(() => done(), [done]); return null }
 
 function slideIcon() {
   return h('svg', { 'className': 'pm-ui-icon', 'viewBox': '0 0 24 24', 'aria-hidden': 'true', 'fill': 'none', 'stroke': 'currentColor', 'strokeWidth': 2, 'strokeLinecap': 'round', 'strokeLinejoin': 'round' }, [
@@ -157,6 +170,7 @@ export function createPageApp(input: PageAppInput): PageApp {
       return null
     }
     if (print) return h(SlidesPrint, { steps: print.steps, slides: print.slides })
+    if (input.slideFit) return h('div', { className: 'pm-slides-page pm-document' }, hasSlides(doc) ? h(SlideFitProbe, { onMeasured: input.slideFit }) : h(Measured, { done: input.slideFit }))
     if (slides) return h('div', { className: 'pm-slides-page pm-document' }, h(OverlayViewOutlet))
     return embedded ? h(PreviewSheet, { viewer }) : h(DocumentSite, { config, router: router! })
   }

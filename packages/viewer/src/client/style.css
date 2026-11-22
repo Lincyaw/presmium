@@ -913,6 +913,23 @@ html.pm-presenting {
   break-after: page;
 }
 
+/* A slide measured off screen for how crowded it is (`SlideFitProbe`): laid out at the canvas's size, never painted. */
+.pm-slide-probe {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: -1;
+  visibility: hidden;
+  pointer-events: none;
+  contain: strict;
+}
+
+@media print {
+  .pm-slide-probe {
+    display: none;
+  }
+}
+
 @media print {
   @page {
     margin: 0;
