@@ -1533,6 +1533,8 @@
 .pm-ui-block-editor .bn-preview-container:hover { border-radius: var(--pm-radius-small); background: var(--pm-color-hover); }
 
 .pm-ui-block-editor .bn-preview-with-source-popup[data-open='true'] .bn-source-block-popup {
+  /* The editor scrolls an opening popup into view; it stops short of the window's edge. */
+  scroll-margin-block: var(--pm-space-4);
   border: var(--pm-size-hairline) solid var(--pm-color-line);
   border-radius: var(--pm-radius-control);
   background: var(--pm-color-surface);

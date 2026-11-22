@@ -107,3 +107,16 @@ export function useInlineSourcePopupPlacement(source: () => HTMLElement | null, 
     }
   }, [open, source])
 }
+/**
+ * A block's source popup (BlockNote opens it under the block, in the page) is scrolled into view when it opens, so
+ * a formula inserted near the bottom of the window shows its input and OK button instead of opening below the fold.
+ */
+export function useSourceBlockPopupInView(source: () => HTMLElement | null, open: boolean): void {
+  useLayoutEffect(() => {
+    const popup = open ? source()?.closest('.bn-preview-with-source-popup')?.querySelector<HTMLElement>('.bn-source-block-popup') : undefined
+    if (!popup) return
+    // After the open styles apply and the popup has its height.
+    const frame = requestAnimationFrame(() => popup.scrollIntoView({ block: 'nearest', inline: 'nearest' }))
+    return () => cancelAnimationFrame(frame)
+  }, [open, source])
+}
