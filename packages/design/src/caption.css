@@ -18,8 +18,10 @@
 .pm-ui-caption[data-overlay] {
   max-height: min(var(--pm-caption-max-height), var(--pm-caption-overlay-max-height));
 }
+/* The lines keep the caption's own leading, not that of the document's paragraphs (`.pm-document p`) around it: the
+   slide keeps room for a line at that height. */
 .pm-ui-caption .pm-ui-caption__line,
-.pm-ui-caption .pm-ui-caption__hint { margin: 0; }
+.pm-ui-caption .pm-ui-caption__hint { margin: 0; line-height: inherit; }
 .pm-ui-caption .pm-ui-caption__line + .pm-ui-caption__line { margin-top: var(--pm-space-1); }
 .pm-ui-caption .pm-ui-caption__hint {
   color: var(--pm-color-muted);
