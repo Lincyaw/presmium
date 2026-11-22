@@ -147,12 +147,17 @@ export class DocumentTreeActions {
     }
   }
 
-  /** Creates a document under `parent` (the top level when null), opens it and selects its title in the tree. */
+  /**
+   * Creates a document under `parent` (the top level when null), opens it and selects its title in the tree, unless
+   * the author has put the focus somewhere else (the editor) while it was being created.
+   */
   async create(parent: string | null, title = parent ? this.#t.untitledChild : this.#t.untitled): Promise<string | undefined> {
     const siblings = parent ? this.#store.state.documentTree?.nodes[parent]?.children : this.#store.state.documentTree?.roots
+    const started = globalThis.document?.activeElement
     const result = await this.operate({ type: 'create', title, parent, after: siblings?.at(-1) ?? null })
     if (!result?.created) return undefined
-    this.#store.set({ renamingDocument: result.created })
+    const focused = globalThis.document?.activeElement
+    if (!focused || focused === started || focused === globalThis.document.body) this.#store.set({ renamingDocument: result.created })
     void this.loadDocumentsThenOpen(result.created)
     return result.created
   }

@@ -153,12 +153,12 @@ export function PmDocTree(props: DocTreeProps) {
     open: id => latest.current.props.onOpen(id),
     toggle: (id, open) => latest.current.props.onExpandedChange(id, open),
     rename: id => { const p = latest.current.props; if (p.onRename && !p.disabled) p.onRenamingChange(id) },
-    finishRename: (id, value) => {
+    finishRename: (id, value, returnFocus) => {
       const p = latest.current.props
       p.onRenamingChange(undefined)
       const title = p.nodes[id]?.title
       if (value !== undefined && value.trim() && value.trim() !== title) p.onRename?.(id, value.trim())
-      items.current.get(id)?.focus()
+      if (returnFocus) items.current.get(id)?.focus()
     },
     createChild: id => latest.current.props.onCreateChild?.(id),
     menu: id => latest.current.props.menu?.(id) ?? [],
@@ -277,7 +277,7 @@ interface RowHandlers {
   open(id: string): void
   toggle(id: string, open: boolean): void
   rename(id: string): void
-  finishRename(id: string, value: string | undefined): void
+  finishRename(id: string, value: string | undefined, returnFocus: boolean): void
   createChild(id: string): void
   menu(id: string): MenuItem[]
   menuSelect(id: string, action: string): void
@@ -334,7 +334,7 @@ const TreeRow = memo(function TreeRow({ row, node, open, selected, tabStop, menu
       </span>
       <span className="pm-ui-doc-tree__icon"><PmIcon name={node.warning ? 'warning' : 'document'} /></span>
       {renaming
-        ? <TreeRename title={node.title} label={labels.renameField} onDone={value => handlers.finishRename(row.id, value)} />
+        ? <TreeRename title={node.title} label={labels.renameField} onDone={(value, returnFocus) => handlers.finishRename(row.id, value, returnFocus)} />
         : <span className="pm-ui-doc-tree__title" title={title}>{title}</span>}
       {actions && <span className="pm-ui-doc-tree__actions" data-open={menuOpen || undefined}>
         {canCreate && <PmIconButton icon="plus" small tabIndex={-1} label={labels.newChild(title)} onClick={() => handlers.createChild(row.id)} />}
@@ -345,10 +345,11 @@ const TreeRow = memo(function TreeRow({ row, node, open, selected, tabStop, menu
   )
 })
 
-function TreeRename({ title, label, onDone }: { title: string, label: string, onDone(value: string | undefined): void }) {
+/** Enter and Escape give the focus back to the row; a blur keeps it where the author put it (the editor, another row). */
+function TreeRename({ title, label, onDone }: { title: string, label: string, onDone(value: string | undefined, returnFocus: boolean): void }) {
   const [value, setValue] = useState(title)
   const done = useRef(false)
-  const finish = (next: string | undefined) => { if (done.current) return; done.current = true; onDone(next) }
+  const finish = (next: string | undefined, returnFocus = true) => { if (done.current) return; done.current = true; onDone(next, returnFocus) }
   return <input
     className="pm-ui-doc-tree__rename pm-ui-input"
     aria-label={label}
@@ -356,7 +357,7 @@ function TreeRename({ title, label, onDone }: { title: string, label: string, on
     autoFocus
     onFocus={event => event.currentTarget.select()}
     onChange={event => setValue(event.target.value)}
-    onBlur={() => finish(value)}
+    onBlur={() => finish(value, false)}
     onKeyDown={event => {
       event.stopPropagation()
       if (event.nativeEvent.isComposing) return
