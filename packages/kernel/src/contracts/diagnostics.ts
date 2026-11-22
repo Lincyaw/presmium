@@ -27,6 +27,11 @@ export interface PreviewDiagnostics {
   instance: string
   revision: string
   findings: Finding[]
+  /**
+   * `page`: each finding describes its page (`section`) as laid out, as a crowded slide does. It lasts across compiles
+   * while that page's content is unchanged, until the producer reports again, so it does not drop out in between.
+   */
+  keep?: 'page'
 }
 
 /** A selected author's window can report a failure before any runtime has compiled. */

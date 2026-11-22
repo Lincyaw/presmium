@@ -188,7 +188,8 @@ function toPreviewDiagnostics(body: unknown): PreviewDiagnostics | string {
     if (item.source !== undefined && (!isRecord(item.source) || typeof item.source.file !== 'string' || (item.source.line !== undefined && (!Number.isInteger(item.source.line) || Number(item.source.line) < 1)))) return 'a diagnostic source needs a file and an optional positive line'
     findings.push({ checkId: item.checkId, severity: item.severity as Finding['severity'], message: item.message, ...item.hint ? { hint: item.hint as string } : {}, ...item.section ? { section: item.section as string } : {}, ...item.source ? { source: item.source as Finding['source'] } : {} })
   }
-  return { document: body.document, renderer: body.renderer, instance: body.instance, revision: body.revision, findings }
+  if (body.keep !== undefined && body.keep !== 'page') return 'a preview diagnostic report keeps its findings only by page'
+  return { document: body.document, renderer: body.renderer, instance: body.instance, revision: body.revision, findings, ...body.keep ? { keep: body.keep } : {} }
 }
 
 function toWindowPosition(value: unknown): WindowPosition | undefined {

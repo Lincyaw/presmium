@@ -1,5 +1,5 @@
 import { isAbsolute, relative } from 'node:path'
-import { diagnosticOf, pushStream } from '@lincyaw/kernel'
+import { diagnosticOf, fnv1a64, isRecord, pushStream } from '@lincyaw/kernel'
 import type { AuthoringDiagnostics, Diagnostic, DiagnosticOrigin, DiagnosticSnapshot, Finding, IRDocument, PreviewDiagnostics } from '@lincyaw/kernel'
 
 export interface DiagnosticSource {
@@ -12,6 +12,14 @@ export interface DiagnosticSource {
 interface Contribution {
   source: DiagnosticSource
   diagnostics: Diagnostic[]
+  keep?: 'page'
+}
+
+/** Each page's content as the document lays it out, by section id: where its source sits in the file left out. */
+function pageContents(doc: IRDocument): Map<string, string> {
+  const located = (key: string, value: unknown) => key === 'source' && isRecord(value) && typeof value.file === 'string' ? undefined : value
+  const shared = JSON.stringify([doc.meta, doc.config], located)
+  return new Map(doc.sections.map(section => [section.id, fnv1a64(`${shared}\n${JSON.stringify(section, located)}`)]))
 }
 
 export function workspaceFindings(findings: Finding[], root: string): Finding[] {
@@ -25,6 +33,7 @@ export function workspaceFindings(findings: Finding[], root: string): Finding[] 
 export class DiagnosticStore {
   readonly #contributions = new Map<string, Contribution>()
   readonly #irRevisions = new Map<string, string | undefined>()
+  readonly #pages = new Map<string, Map<string, string>>()
   readonly #watchers = new Set<(document: string) => void>()
   #version = 0
 
@@ -48,22 +57,33 @@ export class DiagnosticStore {
     }
   }
 
-  replace(source: DiagnosticSource, findings: Finding[], options: { irRevision?: string, root?: string } = {}): void {
+  replace(source: DiagnosticSource, findings: Finding[], options: { irRevision?: string, root?: string, keep?: 'page' } = {}): void {
     const key = JSON.stringify([source.document, source.origin, source.renderer, source.instance])
     const normalized = options.root ? workspaceFindings(findings, options.root) : findings
     const diagnostics = normalized.map(finding => diagnosticOf(source.document, source.origin, finding, source.renderer, options.irRevision))
     const previous = this.#contributions.get(key)
-    if (JSON.stringify(previous?.diagnostics ?? []) === JSON.stringify(diagnostics)) return
-    if (diagnostics.length) this.#contributions.set(key, { source, diagnostics })
+    if (JSON.stringify(previous?.diagnostics ?? []) === JSON.stringify(diagnostics) && previous?.keep === options.keep) return
+    if (diagnostics.length) this.#contributions.set(key, { source, diagnostics, ...options.keep ? { keep: options.keep } : {} })
     else this.#contributions.delete(key)
     this.#changed(source.document)
   }
 
   compiled(document: string, doc: IRDocument, root: string, irRevision?: string): void {
+    const pages = pageContents(doc)
     if (!this.#irRevisions.has(document) || this.#irRevisions.get(document) !== irRevision) {
-      this.#remove(document, source => source.origin === 'check' || source.origin === 'runtime')
+      // Findings kept by page stay, at the new revision, for the pages whose content this compile left as it was.
+      const before = this.#pages.get(document)
+      for (const [key, contribution] of this.#contributions) {
+        if (contribution.source.document !== document || contribution.source.origin !== 'runtime' || contribution.keep !== 'page') continue
+        const kept = contribution.diagnostics.filter(diagnostic => diagnostic.section !== undefined && before?.get(diagnostic.section) !== undefined && before.get(diagnostic.section) === pages.get(diagnostic.section))
+        if (kept.length) this.#contributions.set(key, { ...contribution, diagnostics: kept.map(diagnostic => ({ ...diagnostic, ...irRevision ? { revision: irRevision } : {} })) })
+        else this.#contributions.delete(key)
+        this.#changed(document)
+      }
+      this.#remove(document, source => source.origin === 'check' || (source.origin === 'runtime' && !this.#kept(source)))
     }
     this.#irRevisions.set(document, irRevision)
+    this.#pages.set(document, pages)
     this.replace({ document, origin: 'compile' }, doc.diagnostics, { root, irRevision })
   }
 
@@ -81,7 +101,7 @@ export class DiagnosticStore {
       return true
     }
     if (!this.#irRevisions.has(report.document) || this.#irRevisions.get(report.document) !== report.revision) return false
-    this.replace(source, report.findings, { irRevision: report.revision })
+    this.replace(source, report.findings, { irRevision: report.revision, keep: report.keep })
     return true
   }
 
@@ -92,6 +112,7 @@ export class DiagnosticStore {
 
   forget(document: string): void {
     this.#irRevisions.delete(document)
+    this.#pages.delete(document)
     this.#remove(document, () => true)
   }
 
@@ -120,6 +141,10 @@ export class DiagnosticStore {
         }
       },
     }
+  }
+
+  #kept(source: DiagnosticSource): boolean {
+    return this.#contributions.get(JSON.stringify([source.document, source.origin, source.renderer, source.instance]))?.keep === 'page'
   }
 
   #remove(document: string, matches: (source: DiagnosticSource) => boolean): void {

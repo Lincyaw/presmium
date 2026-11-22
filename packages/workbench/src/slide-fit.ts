@@ -79,7 +79,8 @@ export function watchSlideFit(workbench: Workbench, container: HTMLElement): () 
       container.append(element)
       const { problems } = await waitForPreviewRequest(answer, signal)
       measured = key
-      await workbench.reportPreviewDiagnostics({ document: directory, renderer: 'web', instance: INSTANCE, revision: snapshot.revision,
+      // Kept by page: a recompile leaves the warnings of the pages it did not change until this measures again.
+      await workbench.reportPreviewDiagnostics({ document: directory, renderer: 'web', instance: INSTANCE, revision: snapshot.revision, keep: 'page',
         findings: problems.map(problem => ({ checkId: problem.plugin, severity: problem.level, message: problem.message, section: problem.section })) })
     } catch {
       // Cancelled, or the version could not be compiled or measured: the next version is measured again.
