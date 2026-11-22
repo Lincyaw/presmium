@@ -1,4 +1,5 @@
-import { currentLocale, OPERATIONS, pluginsOf, presmiumService, registerPresmiumPlugin, startHost, createStore, observe, runtimeRevision } from '@lincyaw/host'
+import { currentLocale, joinWindows, OPERATIONS, pluginsOf, presmiumService, registerPresmiumPlugin, startHost, createStore, observe, runtimeRevision } from '@lincyaw/host'
+import type { Store } from '@lincyaw/host'
 import { CAPTURE_PARAM, irBlocks, parentOrigins, PREVIEW_SLIDE_FIT_PARAM, previewAppearance, reportStaleModule, safeDecodeURIComponent } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import { findView, loadDocumentParts, slideCrowdingProblems, syncViewerWithOperations } from '@lincyaw/viewer'
@@ -64,6 +65,19 @@ function used(names: readonly string[]) {
 function isDark(): boolean {
   const asked = previewAppearance()
   return asked ? asked === 'dark' : document.documentElement.classList.contains('dark')
+}
+
+/**
+ * The workbench's appearance across the windows of its presentation: its preview tells the windows of the same document
+ * when it changes, and the presenter view it opened (with the appearance in its address) takes it.
+ */
+function followAppearance(doc: IRDocument, dark: Store<boolean>, embedded: boolean): void {
+  const name = `presmium.viewer.appearance:${doc.meta.title}`
+  const value = () => (dark.getSnapshot() ? 'dark' : 'light')
+  if (embedded) {
+    const windows = joinWindows(name, () => {}, value)
+    observe(dark, () => windows?.send(value()))
+  } else if (previewAppearance()) joinWindows(name, given => { if (given === 'dark' || given === 'light') dark.set(given === 'dark') }, () => undefined)
 }
 
 function registerServiceWorker(url: string): void {
@@ -165,6 +179,7 @@ async function bootDocument(): Promise<void> {
   if (fragment) requestAnimationFrame(() => fragment.scrollIntoView())
   dark.set(isDark())
   preview?.connect({ viewer: viewer!, dark, setActive: lifecycle.setActive })
+  if (!config.block) followAppearance(doc, dark, preview?.embedded ?? false)
   router?.listen()
 
   // The dev server's changes: the sections that changed when the page has the revision they change, else the whole IR.
