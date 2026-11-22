@@ -1,5 +1,17 @@
 # @lincyaw/language-server
 
+## 1.0.0-rc.126
+
+### Patch Changes
+
+- Updated dependencies
+  - @lincyaw/kernel@1.0.0-rc.126
+  - @lincyaw/compiler@1.0.0-rc.126
+  - @lincyaw/viewer@1.0.0-rc.126
+  - @lincyaw/cli@1.0.0-rc.126
+  - @lincyaw/host@1.0.0-rc.126
+  - @lincyaw/web@1.0.0-rc.126
+
 ## 1.0.0-rc.125
 
 ### Patch Changes

@@ -1,5 +1,41 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.126
+
+### Minor Changes
+
+- Second round of fixes for first-time authors: PowerPoint export is editable with speaker notes; crowded slides scroll in 放映 and warn while editing; the presenter view shows each step's script; 放映 saves pending input first and disabled toolbar buttons keep focus; reopened chats work after a restart; Settings lists 模型 and 语音服务 and fits a phone; imported decks with notes start with video production on; export failures are explained from stable codes; typing in page titles stays smooth in long documents.
+
+### Patch Changes
+
+- Updated dependencies
+  - @lincyaw/kernel@1.0.0-rc.126
+  - @lincyaw/viewer@1.0.0-rc.126
+  - @lincyaw/render-slides@1.0.0-rc.126
+  - @lincyaw/addon-lecture@1.0.0-rc.126
+  - @lincyaw/studio@0.2.0-rc.125
+  - @lincyaw/addon-assistant@1.0.0-rc.126
+  - @lincyaw/addon-classroom@1.0.0-rc.126
+  - @lincyaw/addon-code@1.0.0-rc.126
+  - @lincyaw/addon-content@1.0.0-rc.126
+  - @lincyaw/addon-exec@1.0.0-rc.126
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.126
+  - @lincyaw/addon-exec-local@1.0.0-rc.126
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.126
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.126
+  - @lincyaw/addon-guide@1.0.0-rc.126
+  - @lincyaw/addon-motion@1.0.0-rc.126
+  - @lincyaw/addon-publish@1.0.0-rc.126
+  - @lincyaw/addon-session@1.0.0-rc.126
+  - @lincyaw/addon-speech@1.0.0-rc.126
+  - @lincyaw/addon-stage@1.0.0-rc.126
+  - @lincyaw/cli@1.0.0-rc.126
+  - create-presmium@1.0.0-rc.126
+  - @lincyaw/host@1.0.0-rc.126
+  - @lincyaw/mcp@1.0.0-rc.126
+  - @lincyaw/render-notebook@1.0.0-rc.126
+  - @lincyaw/web@1.0.0-rc.126
+
 ## 1.0.0-rc.125
 
 ### Minor Changes
