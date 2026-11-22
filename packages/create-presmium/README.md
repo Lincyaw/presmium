@@ -17,16 +17,19 @@ Without arguments it asks for the kind of project, the directory and the title (
 | `--type <kind>` | `lecture` (one document), `workspace` (documents edited in the browser with `presmium studio`), `site` (a themed workspace with a homepage and GitHub Pages workflow) or `plugin` |
 | `--theme <name>` | For `site`: `course` (default), `docs` or `showcase` |
 | `--title <text>` | The lecture's or the workspace's title (default: the directory's name) |
+| `--lang <lang>` | The language of the new content, `zh-CN` or `en` (default: `zh-CN` for a title with Chinese characters, else the system's language) |
 | `--name <name>` | The plugin's package name (default: the directory's name) |
 | `--no-git` | Do not run `git init` |
 | `-h`, `--help` | Show the help |
 
 - A lecture: `index.pmd`; `presmium studio <dir>` to edit it in the browser, `presmium dev`, `presmium check`, `presmium build`.
 - A workspace: `presmium.workspace.yaml` and a first document in `intro/`; `presmium studio <dir>` (printed as the next step), or `presmium serve`.
+
+The next step it prints runs the same installation: `presmium studio <dir>` from a global installation, `pnpm exec presmium studio <dir>` from a project's `node_modules`, and `pnpm install` then `pnpm exec presmium studio` in the new project after `pnpm create presmium`.
 - A site: `presmium.workspace.yaml`, an independent homepage in `site/home.json`, a teaching document in `intro/index.pmd`, and `.github/workflows/pages.yml`; `pnpm install`, `pnpm serve`, `pnpm build`.
 - A plugin: a directive, a React component shown in the web page and the slides, a server route, text in Chinese and English, an example document and integration tests; `pnpm install`, `pnpm test`, `pnpm dev`.
 
-Lectures, workspaces and sites list `presmium` at create-presmium's own version as a dev dependency, so `pnpm install` pins it; without it the global `presmium` builds them. Each project gets an `AGENTS.md` (`CLAUDE.md` links to it) and copies of the Presmium skills for coding agents in `.agents/skills`. The text of the questions and of the new files follows the system's language (Chinese or English).
+Lectures, workspaces and sites list `presmium` at create-presmium's own version as a dev dependency, and their `pnpm-workspace.yaml` lists which dependencies may run install scripts, so `pnpm install` installs that version without asking for approval; `pnpm exec presmium` runs it, the global `presmium` runs its own. Each project gets an `AGENTS.md` (`CLAUDE.md` links to it) and copies of the Presmium skills for coding agents in `.agents/skills`. The text of the questions follows the system's language (Chinese or English); the new files follow `--lang`.
 
 ## Themed site
 

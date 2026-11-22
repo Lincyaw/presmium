@@ -26,7 +26,7 @@ pnpm add -D @lincyaw/cli @lincyaw/web @lincyaw/render-slides @lincyaw/render-not
 | `presmium ir [deck]` | Print the IR as JSON (`--out`) |
 | `presmium build [deck]` | Build `dist/ir.json` and `dist/<renderer>/` (`--to`, `--out`, `--audience`); at a workspace root, the workspace site in `dist/web/` |
 | `presmium dev [deck]` | Dev servers that update on save (`--to`, `--out`, `--server-port`, `--allow`) |
-| `presmium new [dir]` | A new lecture, workspace or plugin project (`--type`, `--title`, `--name`, `--no-git`); from `create-presmium`, which the `presmium` package brings |
+| `presmium new [dir]` | A new lecture, workspace or plugin project (`--type`, `--title`, `--lang`, `--name`, `--no-git`); from `create-presmium`, which the `presmium` package brings |
 | `presmium serve [dir]` | The workspace service, on this machine: the documents and their sites, compiled on demand (`--port`, `--host`, `--operator-dir`, `--preview-origin`) |
 | `presmium studio [dir]` | The workbench (experimental), included with Presmium (`--port`, `--host`); uses the running command's bundled version |
 

@@ -80,10 +80,12 @@ const LOCALES: readonly Locale[] = ['zh-CN', 'en']
  * in (`pnpm exec presmium`), as `presmium` on PATH (a global installation), or not at all (`pnpm create presmium`).
  */
 function runningInstallation(): 'project' | 'path' | 'none' {
-  const self = realpathSync(fileURLToPath(import.meta.url))
-  const at = self.indexOf(`${sep}node_modules${sep}`)
-  if (at > 0) {
-    const inside = relative(self.slice(0, at), process.cwd())
+  // The command as started (a project's node_modules/.bin) and this file: pnpm's global virtual store keeps the files
+  // of a project's packages outside the project.
+  for (const path of [process.argv[1], realpathSync(fileURLToPath(import.meta.url))]) {
+    const at = path?.indexOf(`${sep}node_modules${sep}`) ?? -1
+    if (at <= 0) continue
+    const inside = relative(path!.slice(0, at), process.cwd())
     if (!inside.startsWith('..') && !isAbsolute(inside)) return 'project'
   }
   const names = process.platform === 'win32' ? (process.env.PATHEXT ?? '.EXE;.CMD').split(';').map(ext => `presmium${ext}`) : ['presmium']
