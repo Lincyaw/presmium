@@ -3,6 +3,7 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/Lincyaw/presmium/main/deploy/cloud/install.sh | bash
 #   curl -fsSL .../install.sh | bash -s -- --yes --ip
+#   curl -fsSL .../install.sh | bash -s -- --yes --domain example.com
 #   bash ~/presmium-cloud/install.sh status | upgrade | uninstall
 #
 # Everything lives in one directory (default ~/presmium-cloud): .env with the generated secrets, the deploy files of
@@ -30,9 +31,14 @@ Usage: install.sh [install] [options]
 
 Address (asked interactively when none is given):
   --domain DOMAIN     your own domain; uses app., auth., content. and studio.DOMAIN (DNS: *.DOMAIN -> this server)
-  --ip [ADDRESS]      this server's public IP, no domain: <name>.<ip-with-dashes>.sslip.io with real certificates
+  --ip [ADDRESS]      this server's IP, no domain: everything at https://ADDRESS/ (default: the detected public IP).
+                      A public IP gets a Let's Encrypt IP certificate; otherwise (or if that fails) Caddy's own
+                      certificate, which browsers warn about once
+  --http              with --ip: plain http://ADDRESS/ for an intranet (no microphone recording or clipboard)
+  --sslip [ADDRESS]   this server's public IP through sslip.io names: app.<ip-with-dashes>.sslip.io and so on
   --local             local trial on 127.0.0.1 only, reached through an SSH tunnel
-  --port PORT         the local trial's port (default 18787)
+  --port PORT         the local trial's port (default 18787), or with --ip the port of https:// (or http://);
+                      a port other than 443 always uses Caddy's own certificate
   --email ADDRESS     certificate notices from Let's Encrypt (optional)
 
 Email for registration and password recovery (optional; without it registration needs no verification):
@@ -59,7 +65,7 @@ have_tty() { [ -t 0 ] || { [ -r /dev/tty ] && { : </dev/tty; } 2>/dev/null; }; }
 
 ask() { # ask PROMPT -> answer on stdout; read from the terminal even under `curl | bash`
   local answer
-  have_tty || die "no terminal for questions; pass --yes with --domain, --ip or --local"
+  have_tty || die "no terminal for questions; pass --yes with --domain, --ip, --sslip or --local"
   printf '%s' "$1" >/dev/tty
   IFS= read -r answer </dev/tty || answer=
   printf '%s' "$answer"
@@ -148,12 +154,16 @@ entrance_running() {
 
 check_ports() {
   local port ports
-  if [ "$mode" = local ]; then ports=$loopback_port; else ports="80 443"; fi
+  case $mode in
+    local) ports=$loopback_port ;;
+    ip) ports=$site_port; [ "$scheme" = https ] && [ "$site_port" = 443 ] && ports="80 443" ;;
+    *) ports="80 443" ;;
+  esac
   [ "$docker_ok" = 1 ] && entrance_running && return 0
   for port in $ports; do
     if port_in_use "$port"; then
       [ "$dry_run" = 1 ] && { warn "port $port is already in use"; continue; }
-      die "port $port is already in use; free it (or for a local trial pick another with --port)."
+      die "port $port is already in use; free it (or with --local or --ip pick another with --port)."
     fi
   done
 }
@@ -181,19 +191,30 @@ valid_ipv4() {
   [ "$count" = 4 ]
 }
 
+private_ipv4() { # loopback, private, shared (CGNAT) and link-local addresses: no public certificate
+  case $1 in
+    0.*|10.*|127.*|192.168.*|169.254.*) return 0 ;;
+    172.*) local second=${1#172.}; second=${second%%.*}; [ "$second" -ge 16 ] && [ "$second" -le 31 ] ;;
+    100.*) local second=${1#100.}; second=${second%%.*}; [ "$second" -ge 64 ] && [ "$second" -le 127 ] ;;
+    *) return 1 ;;
+  esac
+}
+
 choose_mode() {
   [ -n "$mode" ] && return 0
-  have_tty || die "no terminal for questions; pass --domain DOMAIN, --ip or --local"
+  have_tty || die "no terminal for questions; pass --domain DOMAIN, --ip, --sslip or --local"
   say ""
   say "Where will people open Presmium Cloud?"
   say "  1) My own domain        e.g. example.com; you point *.example.com at this server"
-  say "  2) This server's IP     no domain needed; free HTTPS certificates through sslip.io"
+  say "  2) This server's IP     no domain needed; one address, https://<IP>/"
   say "  3) Only me, locally     a trial on 127.0.0.1, opened through an SSH tunnel"
-  case $(ask "Choose 1, 2 or 3: ") in
+  say "  4) sslip.io names       this server's public IP through app.<IP>.sslip.io and three more names"
+  case $(ask "Choose 1, 2, 3 or 4: ") in
     1) mode=domain; domain=$(ask "Your domain (the cloud uses app., auth., content. and studio. below it): ") ;;
     2) mode=ip ;;
     3) mode=local ;;
-    *) die "please choose 1, 2 or 3" ;;
+    4) mode=sslip ;;
+    *) die "please choose 1, 2, 3 or 4" ;;
   esac
 }
 
@@ -204,16 +225,30 @@ resolve_addresses() {
       case $domain in ''|*[!a-z0-9.-]*|.*|*..*) die "not a domain name: '$domain'" ;; *.*) ;; *) die "not a domain name: '$domain'" ;; esac
       base=$domain
       ;;
-    ip)
+    ip|sslip)
       if [ -z "$ip_address" ]; then
-        ip_address=$(public_ip) || die "could not detect this server's public IP; pass it: --ip 203.0.113.7"
+        ip_address=$(public_ip) || die "could not detect this server's public IP; pass it: --$mode 203.0.113.7"
       fi
       valid_ipv4 "$ip_address" || die "not an IPv4 address: '$ip_address'"
       base="$(printf '%s' "$ip_address" | tr . -).sslip.io"
       ;;
     local) base=localhost ;;
   esac
-  if [ "$mode" = local ]; then
+  if [ "$mode" = ip ]; then
+    # One origin: the console at /, Keycloak at /auth, JupyterHub at /studio and the shared sites at /p/.
+    base=$ip_address
+    [ -n "$site_port" ] || { [ "$scheme" = https ] && site_port=443 || site_port=80; }
+    site_url="$scheme://$ip_address"
+    case $scheme:$site_port in https:443|http:80) ;; *) site_url="$site_url:$site_port" ;; esac
+    app_url=$site_url
+    auth_url="$site_url/auth"
+    content_url=$site_url
+    hub_url="$site_url/studio"
+    if [ "$scheme" = http ]; then tls=off
+    elif private_ipv4 "$ip_address" || [ "$site_port" != 443 ]; then tls=internal
+    else tls=acme
+    fi
+  elif [ "$mode" = local ]; then
     app_url="http://app.localhost:$loopback_port"
     auth_url="http://auth.localhost:$loopback_port"
     content_url="http://content.localhost:$loopback_port"
@@ -250,11 +285,22 @@ check_dns() {
 }
 
 check_ip_reachable() {
-  [ "$mode" = ip ] || return 0
+  case $mode in ip|sslip) ;; *) return 0 ;; esac
   if command -v hostname >/dev/null && ! hostname -I 2>/dev/null | tr ' ' '\n' | grep -qx "$ip_address"; then
     say "Note: $ip_address is not on this machine's interfaces (NAT or a cloud firewall)."
-    say "      Forward or open TCP 80 and 443 (and UDP 443) on it to this server."
+    if [ "$mode" = ip ] && [ "$site_port" != 443 ]; then say "      Forward or open TCP $site_port on it to this server."
+    else say "      Forward or open TCP 80 and 443 (and UDP 443) on it to this server."
+    fi
   fi
+  [ "$mode" = ip ] || return 0
+  case $tls in
+    acme) say "Certificate: a Let's Encrypt IP certificate (six days, renewed automatically); Caddy's own if that fails." ;;
+    internal)
+      if private_ipv4 "$ip_address"; then say "Certificate: $ip_address is a private address, which no public CA certifies;"
+      else say "Certificate: a public CA validates only ports 80 and 443;"
+      fi
+      say "             Caddy's own certificate is used, and browsers warn once." ;;
+  esac
 }
 
 # --- Releases ---------------------------------------------------------------------------------------------------
@@ -316,7 +362,26 @@ configure_env() { # configure_env FILE: writes the address, images, mail and nam
   env_set "$file" CLOUD_INSTANCE_ID "$project"
   env_set "$file" CLOUD_IMAGE_TAG "$version"
   if [ "$build" = 1 ]; then env_set "$file" CLOUD_IMAGE_REGISTRY ""; else env_set "$file" CLOUD_IMAGE_REGISTRY "$published_registry"; fi
-  if [ "$mode" = local ]; then
+  if [ "$mode" = ip ]; then
+    # Every service on the one address; the four names are that address.
+    env_set "$file" CLOUD_CADDYFILE Caddyfile.path
+    env_set "$file" CLOUD_SITE_ADDRESS "$scheme://$ip_address"
+    env_set "$file" CLOUD_TLS "$tls"
+    env_set "$file" CLOUD_APP_HOST "$ip_address"
+    env_set "$file" CLOUD_AUTH_HOST "$ip_address"
+    env_set "$file" CLOUD_CONTENT_HOST "$ip_address"
+    env_set "$file" CLOUD_HUB_HOST "$ip_address"
+    # Docker publishes the port that is not used on a free random port (0).
+    if [ "$scheme" = https ]; then
+      env_set "$file" CLOUD_HTTPS_PORT "$site_port"
+      if [ "$site_port" = 443 ]; then env_set "$file" CLOUD_HTTP_PORT 80; else env_set "$file" CLOUD_HTTP_PORT 0; fi
+    else
+      env_set "$file" CLOUD_HTTP_PORT "$site_port"
+      env_set "$file" CLOUD_HTTPS_PORT 0
+      env_set "$file" CLOUD_ALLOW_INSECURE_HTTP true
+      env_set "$file" CLOUD_KEYCLOAK_SSL_REQUIRED none
+    fi
+  elif [ "$mode" = local ]; then
     env_set "$file" CLOUD_APP_HOST app.localhost
     env_set "$file" CLOUD_AUTH_HOST auth.localhost
     env_set "$file" CLOUD_CONTENT_HOST content.localhost
@@ -354,6 +419,11 @@ configure_env() { # configure_env FILE: writes the address, images, mail and nam
 
 load_installed() { # adopt the settings of an existing installation
   mode=$(env_get CLOUD_INSTALL_MODE)
+  # Installations before the one-address layout recorded sslip.io names as mode ip.
+  [ "$mode" = ip ] && [ "$(env_get CLOUD_CADDYFILE)" != Caddyfile.path ] && mode=sslip
+  tls=$(env_get CLOUD_TLS)
+  case $(env_get CLOUD_SITE_ADDRESS) in http://*) scheme=http ;; esac
+  if [ "$scheme" = http ]; then site_port=$(env_get CLOUD_HTTP_PORT); else site_port=$(env_get CLOUD_HTTPS_PORT); fi
   project=$(env_get CLOUD_COMPOSE_PROJECT)
   loopback_port=$(env_get CLOUD_LOOPBACK_PORT)
   app_url=$(env_get CLOUD_PUBLIC_URL)
@@ -413,9 +483,24 @@ check_entrance() {
       sleep 2
     done
     warn "the console does not answer on 127.0.0.1:$loopback_port yet"
+  elif [ "$mode" = ip ] && [ "$tls" != acme ]; then
+    for _ in $(seq 1 24); do
+      curl -fsSk -o /dev/null --max-time 10 "$app_url/ready" 2>/dev/null && { say "The console answers: $app_url"; return 0; }
+      sleep 5
+    done
+    warn "$app_url does not answer yet; see: docker compose logs entrance (or: bash $install_dir/install.sh status)"
   else
     for _ in $(seq 1 24); do
       curl -fsS -o /dev/null --max-time 10 "$app_url/ready" 2>/dev/null && { say "HTTPS works: $app_url"; return 0; }
+      # The IP certificate fell back to Caddy's own.
+      if [ "$mode" = ip ] && curl -fsSk -o /dev/null --max-time 10 "$app_url/ready" 2>/dev/null; then
+        sleep 20
+        curl -fsS -o /dev/null --max-time 10 "$app_url/ready" 2>/dev/null && { say "HTTPS works: $app_url"; return 0; }
+        fallback=1
+        say "The console answers at $app_url, but with Caddy's own certificate: Let's Encrypt did not issue one."
+        say "  Caddy tries again when it renews (see: docker compose logs entrance)."
+        return 0
+      fi
       sleep 5
     done
     warn "$app_url does not answer over HTTPS yet. Certificates need ports 80/443 reachable and DNS in place;"
@@ -430,13 +515,25 @@ print_summary() {
   say "Presmium Cloud $(env_get CLOUD_IMAGE_TAG) is running."
   say ""
   say "  Open:               $app_url   (register the first account here)"
-  say "  Studio:             $hub_url"
+  [ "$mode" = ip ] || say "  Studio:             $hub_url"
   say "  Accounts (admin):   $auth_url/admin/   user ${admin:-operator}, password CLOUD_KEYCLOAK_ADMIN_PASSWORD in $env_file"
   if [ "$(env_get CLOUD_KEYCLOAK_VERIFY_EMAIL)" = false ]; then
     say ""
     say "  Email is not configured: anyone who can open the address can register, without email verification,"
     say "  and there is no password recovery. To change that, set up email under Realm settings > Email in the"
     say "  account admin, then turn on Verify email (Realm settings > Login), or turn off User registration there."
+  fi
+  if [ "$mode" = ip ] && { [ "$tls" = internal ] || [ "${fallback:-0}" = 1 ]; }; then
+    say ""
+    say "  The certificate comes from this server's own CA, so browsers warn the first time: choose to continue"
+    say "  (Advanced > Proceed). To trust it on a computer instead, install its root certificate from:"
+    say "    docker exec $project-entrance-1 cat /data/caddy/pki/authorities/local/root.crt"
+  fi
+  if [ "$mode" = ip ] && [ "$scheme" = http ]; then
+    say ""
+    say "  Plain HTTP: passwords and sessions cross the network unencrypted, so use it only on a trusted network."
+    say "  Browsers allow some features only on secure (HTTPS) pages: recording narration from the microphone and"
+    say "  copying to the clipboard do not work here. Install with --ip without --http to have them."
   fi
   if [ "$mode" = local ]; then
     say ""
@@ -561,9 +658,16 @@ dry_run_install() {
   say "  1. download $repository $version into $install_dir/releases/$version ($([ "$build" = 1 ] && echo 'full source' || echo 'deploy files'))"
   say "  2. write $install_dir/.env (mode 0600):"
   print_env "$work/.env"
-  say "  3. serve these sites (Caddy, deploy/cloud/Caddyfile):"
+  say "  3. serve these sites (Caddy, deploy/cloud/$([ "$mode" = ip ] && echo Caddyfile.path || echo Caddyfile)):"
   if [ "$mode" = local ]; then
     say "       http://app.localhost http://auth.localhost http://content.localhost http://hub.localhost on 127.0.0.1:$loopback_port"
+  elif [ "$mode" = ip ]; then
+    say "       $app_url/ (console), $auth_url/, $hub_url/ and $app_url/p/ (shared)"
+    case $tls in
+      acme) say "       certificate: Let's Encrypt (profile shortlived), else Caddy's own CA" ;;
+      internal) say "       certificate: Caddy's own CA (browsers warn once)" ;;
+      off) say "       plain HTTP, no certificate" ;;
+    esac
   else
     say "       app.$base auth.$base content.$base studio.$base  (Let's Encrypt certificates, ports 80 and 443)"
   fi
@@ -727,7 +831,8 @@ main() {
   if [ -f "${BASH_SOURCE[0]:-}" ] && [ -f "$own/.env" ] && grep -q '^CLOUD_INSTALL_MODE=' "$own/.env" 2>/dev/null; then
     install_dir=$(cd -- "$own" && pwd)
   fi
-  mode='' domain='' ip_address='' loopback_port=18787 acme_email='' version='' build=0 source_tarball='' project=presmium-cloud
+  mode='' domain='' ip_address='' loopback_port=18787 site_port='' scheme=https tls='' port_given='' acme_email='' version=''
+  build=0 source_tarball='' project=presmium-cloud fallback=0
   smtp_host='' smtp_port=587 smtp_user='' smtp_password='' smtp_from=''
   assume_yes=0 dry_run=0 purge=0 docker_ok=0 release_dir='' base='' app_url='' auth_url='' content_url='' hub_url=''
   case ${1:-} in install|upgrade|status|uninstall) command=$1; shift ;; esac
@@ -735,10 +840,11 @@ main() {
     case $1 in
       --domain) mode=domain; domain=${2:?--domain needs a value}; shift ;;
       --domain=*) mode=domain; domain=${1#*=} ;;
-      --ip) mode=ip; if [ $# -gt 1 ] && valid_ipv4 "$2"; then ip_address=$2; shift; fi ;;
-      --ip=*) mode=ip; ip_address=${1#*=} ;;
+      --ip|--sslip) mode=${1#--}; if [ $# -gt 1 ] && valid_ipv4 "$2"; then ip_address=$2; shift; fi ;;
+      --ip=*|--sslip=*) mode=${1%%=*}; mode=${mode#--}; ip_address=${1#*=} ;;
+      --http) scheme=http ;;
       --local) mode=local ;;
-      --port) loopback_port=${2:?--port needs a value}; shift ;;
+      --port) port_given=${2:?--port needs a value}; shift ;;
       --email) acme_email=${2:?--email needs a value}; shift ;;
       --smtp-host) smtp_host=${2:?}; shift ;;
       --smtp-port) smtp_port=${2:?}; shift ;;
@@ -758,12 +864,20 @@ main() {
     esac
     shift
   done
-  case $loopback_port in ''|*[!0-9]*) die "--port must be a number" ;; esac
+  if [ -n "$port_given" ]; then
+    case $port_given in *[!0-9]*) die "--port must be a number" ;; esac
+    [ "$port_given" -ge 1 ] && [ "$port_given" -le 65535 ] || die "--port must be between 1 and 65535"
+    case $mode in local) loopback_port=$port_given ;; ip) site_port=$port_given ;; *) die "--port goes with --local or --ip" ;; esac
+  fi
+  if [ "$scheme" = http ]; then
+    [ -n "$mode" ] || mode=ip
+    [ "$mode" = ip ] || die "--http goes with --ip"
+  fi
   case $install_dir in /*) ;; *) install_dir=$PWD/$install_dir ;; esac
   case $source_tarball in ''|*://*|/*) ;; *) source_tarball=$PWD/$source_tarball ;; esac
   env_file=$install_dir/.env
   if [ "$command" = install ] && [ -z "$mode" ] && [ "$assume_yes" = 1 ] && ! [ -f "$env_file" ]; then
-    die "--yes needs an address: --domain DOMAIN, --ip or --local"
+    die "--yes needs an address: --domain DOMAIN, --ip, --sslip or --local"
   fi
   "cmd_$command"
 }
