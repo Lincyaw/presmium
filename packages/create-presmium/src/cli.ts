@@ -46,8 +46,14 @@ export async function main(argv: string[]): Promise<number> {
     // The project's content is written in the title's language: a Chinese title gets Chinese pages whatever the system says.
     const lang = /\p{Script=Han}/u.test(title) ? 'zh-CN' : systemLocale()
     createProject({ kind: project, dir, title, name, git: args.values.git, theme: theme as SiteTheme, t, content: MESSAGES[lang], lang })
-    const steps = [...folder === '.' ? [] : [`cd ${/[\s'"]/.test(folder) ? JSON.stringify(folder) : folder}`], ...project === 'plugin' ? ['pnpm install', 'pnpm test', 'pnpm dev'] : project === 'site' ? ['pnpm install', 'pnpm serve'] : [`presmium ${project === 'document' ? 'dev' : 'serve'}`]]
-    process.stdout.write(`${t.created(project, folder)}\n\n${t.next}\n${steps.map(step => `  ${step}\n`).join('')}\n${t.agents}\n`)
+    // A folder outside the current directory is named by its absolute path: a chain of ../ is hard to read.
+    const shown = /^\.\.(?:[\\/]|$)/.test(folder) ? dir : folder
+    const argument = /[\s'"]/.test(shown) ? JSON.stringify(shown) : shown
+    // A document or a workspace opens in Studio, the browser workbench that comes with presmium, without installing anything.
+    const steps = project === 'plugin' ? [...folder === '.' ? [] : [`cd ${argument}`], 'pnpm install', 'pnpm test', 'pnpm dev']
+      : project === 'site' ? [...folder === '.' ? [] : [`cd ${argument}`], 'pnpm install', 'pnpm serve']
+        : [folder === '.' ? 'presmium studio' : `presmium studio ${argument}`]
+    process.stdout.write(`${t.created(project, shown)}\n\n${t.next}\n${steps.map(step => `  ${step}\n`).join('')}\n${t.agents}\n`)
     return 0
   } catch (error) {
     if (!(error instanceof CreateError)) throw error

@@ -46,10 +46,10 @@ function watchParentPipe(onEnd: () => void): () => void {
 }
 
 export async function main(argv: string[], options: MainOptions = {}): Promise<number> {
-  let values: { port?: string, host?: string, 'public-url'?: string, 'preview-url'?: string, 'preview-port'?: string, help?: boolean }
+  let values: { port?: string, host?: string, 'public-url'?: string, 'preview-url'?: string, 'preview-port'?: string, verbose?: boolean, help?: boolean }
   let dir: string
   try {
-    const parsed = parseArgs({ args: argv, allowPositionals: true, options: { port: { type: 'string' }, host: { type: 'string' }, 'public-url': { type: 'string' }, 'preview-url': { type: 'string' }, 'preview-port': { type: 'string' }, help: { type: 'boolean', short: 'h' } } })
+    const parsed = parseArgs({ args: argv, allowPositionals: true, options: { port: { type: 'string' }, host: { type: 'string' }, 'public-url': { type: 'string' }, 'preview-url': { type: 'string' }, 'preview-port': { type: 'string' }, verbose: { type: 'boolean' }, help: { type: 'boolean', short: 'h' } } })
     values = parsed.values
     const [given = '.', ...extra] = parsed.positionals
     if (extra.length > 0) throw new Error(t.unexpectedArgument(extra[0]!))
@@ -76,18 +76,21 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
   const unwatchParent = watchParentPipe(() => parentStop())
   let studio
   try {
-    studio = await startStudio({ dir, port: portOf(values.port), onServiceOutput: text => process.stderr.write(text), ...values.host ? { listenAddress: values.host } : {}, ...values['public-url'] ? { publicUrl: urlOf('--public-url', values['public-url']) } : {}, ...values['preview-url'] ? { previewUrl: urlOf('--preview-url', values['preview-url']) } : {}, ...values['preview-port'] ? { previewPort: portOf(values['preview-port']) } : {}, ...options.presmium ? { presmium: options.presmium } : {} })
+    studio = await startStudio({ dir, port: portOf(values.port), ...values.verbose ? { onServiceOutput: (text: string) => void process.stderr.write(text) } : {}, ...values.host ? { listenAddress: values.host } : {}, ...values['public-url'] ? { publicUrl: urlOf('--public-url', values['public-url']) } : {}, ...values['preview-url'] ? { previewUrl: urlOf('--preview-url', values['preview-url']) } : {}, ...values['preview-port'] ? { previewPort: portOf(values['preview-port']) } : {}, ...options.presmium ? { presmium: options.presmium } : {} })
   } catch (error) {
     unwatchParent()
     process.stderr.write(`presmium studio: ${error instanceof Error ? error.message : String(error)}\n`)
     return 2
   }
+  // One address to open; the MCP address, its token and the log file only with --verbose (the log has them too).
   process.stdout.write(`studio  ${studio.url}\n`)
   for (const url of studio.networkUrls) process.stdout.write(`network  ${url}\n`)
-  process.stdout.write(`mcp  ${studio.mcp.url}\n`)
-  process.stderr.write(`${t.mcpToken(studio.mcp.tokenFile)}\n`)
-  if (studio.mcp.movedFrom) process.stderr.write(`${t.previewPortMoved(studio.mcp.movedFrom, studio.mcp.url)}\n`)
-  process.stderr.write(`${t.log(studio.log)}\n`)
+  if (values.verbose) {
+    process.stdout.write(`mcp  ${studio.mcp.url}\n`)
+    process.stderr.write(`${t.mcpToken(studio.mcp.tokenFile)}\n`)
+    if (studio.mcp.movedFrom) process.stderr.write(`${t.previewPortMoved(studio.mcp.movedFrom, studio.mcp.url)}\n`)
+    process.stderr.write(`${t.log(studio.log)}\n`)
+  } else process.stderr.write(`${t.open}\n`)
   if (values.host && values.host !== '127.0.0.1' && values.host !== '::1' && !values['public-url']) {
     process.stderr.write(`${studio.networkUrls.length
       ? t.openOnAllNetworks(new URL(studio.url).port, new URL(studio.workspaceServerUrl).port)

@@ -60,9 +60,17 @@ function packageVersion(dir: string): string | undefined {
   }
 }
 
+/**
+ * The variable the `presmium` command sets to its own installation for the whole process and the processes it starts:
+ * a compiler made without `bundled` (a plugin's own, as the lecture video's export makes) still finds the official
+ * plugins and renderers there, so a project that installs none of them works with zero extra steps.
+ */
+export const INSTALLATION_VARIABLE = 'PRESMIUM_INSTALLATION'
+
 function bundledDir(name: string, sources?: PluginSources): string | undefined {
-  if (!sources?.bundled) return undefined
-  return BUNDLED.has(name) || dependsOn(sources.bundled, name) ? findPackageDir(name, sources.bundled) : undefined
+  const bundled = sources?.bundled ?? (process.env[INSTALLATION_VARIABLE] || undefined)
+  if (!bundled) return undefined
+  return BUNDLED.has(name) || dependsOn(bundled, name) ? findPackageDir(name, bundled) : undefined
 }
 
 function dependsOn(dir: string, name: string): boolean {

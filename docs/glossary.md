@@ -165,6 +165,7 @@ zh-CN 以 Microsoft Office 的简体中文本地化为首选，没有对应时�
 | 共享 | Share | 与他人共享 | `分享` |
 | 导出 | Export… | 打开导出窗格或对话框；具体项写作“导出视频 / Export Video”“导出 PDF / Export PDF” | `生成网站`、Make（指导出时） |
 | 下载 | Download | 下载导出的文件 | |
+| 下载压缩包 | Download ZIP | 把导出的网站作为一个 .zip 文件下载 | `打包下载`、`下载 zip` |
 | 打印 | Print… | 打印 | |
 | 放映 | Present | 从当前页开始放映 | `开始演示`、`Play slides` |
 | 结束放映 | End Show | 退出放映 | `退出放映`、`Exit presentation` |

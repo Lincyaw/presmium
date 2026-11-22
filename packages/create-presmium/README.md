@@ -14,15 +14,15 @@ Without arguments it asks for the kind of project, the directory and the title (
 
 | Option | What |
 |---|---|
-| `--type <kind>` | `lecture` (one document), `workspace` (documents previewed with `presmium serve`), `site` (a themed workspace with a homepage and GitHub Pages workflow) or `plugin` |
+| `--type <kind>` | `lecture` (one document), `workspace` (documents edited in the browser with `presmium studio`), `site` (a themed workspace with a homepage and GitHub Pages workflow) or `plugin` |
 | `--theme <name>` | For `site`: `course` (default), `docs` or `showcase` |
 | `--title <text>` | The lecture's or the workspace's title (default: the directory's name) |
 | `--name <name>` | The plugin's package name (default: the directory's name) |
 | `--no-git` | Do not run `git init` |
 | `-h`, `--help` | Show the help |
 
-- A lecture: `index.pmd`; `presmium dev`, `presmium check`, `presmium build`.
-- A workspace: `presmium.workspace.yaml` and a first document in `intro/`; `presmium serve`.
+- A lecture: `index.pmd`; `presmium studio <dir>` to edit it in the browser, `presmium dev`, `presmium check`, `presmium build`.
+- A workspace: `presmium.workspace.yaml` and a first document in `intro/`; `presmium studio <dir>` (printed as the next step), or `presmium serve`.
 - A site: `presmium.workspace.yaml`, an independent homepage in `site/home.json`, a teaching document in `intro/index.pmd`, and `.github/workflows/pages.yml`; `pnpm install`, `pnpm serve`, `pnpm build`.
 - A plugin: a directive, a React component shown in the web page and the slides, a server route, text in Chinese and English, an example document and integration tests; `pnpm install`, `pnpm test`, `pnpm dev`.
 

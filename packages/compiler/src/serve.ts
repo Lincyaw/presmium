@@ -2,7 +2,7 @@ import { createReadStream, existsSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
-import { basename, join, resolve } from 'node:path'
+import { basename, extname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import contentDisposition from 'content-disposition'
 import cors from 'cors'
@@ -22,10 +22,18 @@ export interface ServeDirectoryOptions {
   origins?: string[]
 }
 
+function savedName(named: string, file: string): string {
+  const name = [...basename(named.replace(/\\/g, '/'))].filter(char => char >= ' ' && !'<>:"|?*'.includes(char)).join('').trim()
+  const extension = extname(file)
+  if (!name || name === '.' || name === '..') return basename(file)
+  return name.toLowerCase().endsWith(extension.toLowerCase()) ? name : `${name}${extension}`
+}
+
 /**
  * Serves the files of `root` below `base` on a loopback port, and `extra` at their paths. The files go through `send`
  * (Express's): their types, ranges (a video's player seeks so), validators and conditional requests as HTTP defines them;
- * `?download` asks for one as an attachment (`content-disposition`), and `origins` may read them (`cors`).
+ * `?download` asks for one as an attachment (`content-disposition`), `?download=<name>` under that name, and `origins`
+ * may read them (`cors`).
  */
 export async function serveDirectory(root: string, options: ServeDirectoryOptions = {}): Promise<StaticServer> {
   const dir = resolve(root)
@@ -44,7 +52,9 @@ export async function serveDirectory(root: string, options: ServeDirectoryOption
   }
   const shared = options.origins ? cors({ origin: (origin, done) => done(null, origin !== undefined && options.origins!.includes(origin)) }) : undefined
   const attached = (request: { url?: string }, file: string) => (response: ServerResponse) => {
-    if (new URL(request.url ?? '/', 'http://localhost').searchParams.has('download')) response.setHeader('Content-Disposition', contentDisposition(basename(file)))
+    const named = new URL(request.url ?? '/', 'http://localhost').searchParams.get('download')
+    // `?download=<name>` names the saved file (the document's title); its extension stays the served file's.
+    if (named !== null) response.setHeader('Content-Disposition', contentDisposition(savedName(named, file)))
   }
   const answer = (request: IncomingMessage, response: ServerResponse) => {
     const path = new URL(request.url ?? '/', 'http://localhost').pathname

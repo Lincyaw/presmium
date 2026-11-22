@@ -46,7 +46,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     kindQuestion: '新建哪种项目？',
     kinds: {
       document: '一份文稿，导出为网页、幻灯片与 Notebook',
-      workspace: '工作区：多份文稿与一个网站，用 presmium serve 预览',
+      workspace: '工作区：多份文稿与一个网站，用 presmium studio 在浏览器中编辑',
       site: '网站：可编辑首页、内容文稿与 GitHub Pages 发布流程',
       plugin: '插件：指令、网页与幻灯片共用的组件、服务端路由与集成测试',
     },
@@ -176,7 +176,7 @@ Options:
     kindQuestion: 'Which project?',
     kinds: {
       document: 'document: one document, as a web page, slides, and a Notebook',
-      workspace: 'workspace: documents and a website, previewed with presmium serve',
+      workspace: 'workspace: documents and a website, edited in the browser with presmium studio',
       site: 'site: an editable home page, documents, and a GitHub Pages workflow',
       plugin: 'plugin: a directive, a component of the web page and the slides, a server route, and tests',
     },

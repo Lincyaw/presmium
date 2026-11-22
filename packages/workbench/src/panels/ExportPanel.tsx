@@ -3,7 +3,8 @@ import type { CompileJob, OutputTarget } from '@lincyaw/kernel'
 import type { IconName } from '@lincyaw/design'
 import { PmBadge, PmButton, PmDialog, PmEmpty, PmIcon, PmIconButton, PmNotice, PmPanelHeader } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
-import { failureReason, timeAgo } from '../messages.ts'
+import { downloadUrl } from '../jobs.ts'
+import { failureReason, jobFailure, outputLabel, timeAgo } from '../messages.ts'
 
 // The media types a browser shows by itself; a file of another type is downloaded.
 const SHOWN = new Set(['text/html', 'application/pdf'])
@@ -34,10 +35,9 @@ export function ExportPanel({ documentOnly = false, embedded = false, onClose }:
   const preparing = useWorkbenchState(state => state.jobPreparing)
   const locale = useWorkbenchState(state => state.locale)
   const [playing, setPlaying] = useState<CompileJob>()
-  const labelOf = (target: Pick<OutputTarget, 'id' | 'label'>) => (target.label[locale] !== target.id ? target.label[locale] : undefined) ?? t.outputLabels[target.id] ?? target.id
-  const included = (id: string) => !documentOnly || id !== 'video' && id !== 'lecture'
-  const targets = (answer?.targets ?? []).filter(target => included(target.id))
-  const jobs = (answer?.jobs ?? []).filter(job => included(job.target))
+  const labelOf = (target: Pick<OutputTarget, 'id' | 'label'>) => outputLabel(t, locale, target)
+  const targets = answer?.targets ?? []
+  const jobs = answer?.jobs ?? []
   const label = (id: string) => labelOf(targets.find(target => target.id === id) ?? { id, label: {} })
   const busy = (id: string) => jobs.some(job => job.target === id && (job.state === 'queued' || job.state === 'running'))
   return (
@@ -86,6 +86,7 @@ function JobItem({ job, label, current, onPlay }: { job: CompileJob, label: stri
   const workbench = useWorkbench()
   const locale = useWorkbenchState(state => state.locale)
   const main = job.main && `${job.url}${job.main}`
+  const name = workbench.tree.title(workbench.tree.idOf(job.document) ?? '')
   const type = job.files.find(file => file.path === job.main)?.type
   const progress = job.progress
   return (
@@ -105,7 +106,7 @@ function JobItem({ job, label, current, onPlay }: { job: CompileJob, label: stri
             <span>{t.jobProgress(t.jobPhases[progress.phase] ?? t.outputLabels[progress.phase] ?? progress.phase, progress.done, progress.total)}</span>
           </div>
         )}
-        {job.error && <p className="pmw-job__error">{t.jobFailureReasons[job.error] ?? failureReason(t, job.error)}</p>}
+        {job.error && <p className="pmw-job__error">{jobFailure(t, job.error)}</p>}
         {job.log.length > 0 && (
           <details className="pmw-job__log">
             <summary>{t.outputLog}</summary>
@@ -116,7 +117,8 @@ function JobItem({ job, label, current, onPlay }: { job: CompileJob, label: stri
         <div className="pmw-job__actions">
           {job.state === 'done' && main && isVideo(type) && <PmButton small icon="play" onClick={onPlay}>{t.playOutput}</PmButton>}
           {job.state === 'done' && main && type && SHOWN.has(type) && <a className="pm-ui-button pm-ui-button--small" href={main} target="_blank" rel="noopener"><PmIcon name="external" size={14} />{t.openOutput}</a>}
-          {job.state === 'done' && main && type !== 'text/html' && <a className="pm-ui-button pm-ui-button--small" href={`${main}?download`}><PmIcon name="download" size={14} />{t.downloadOutput}</a>}
+          {job.state === 'done' && main && type !== 'text/html' && <a className="pm-ui-button pm-ui-button--small" href={downloadUrl(job, job.main!, name)}><PmIcon name="download" size={14} />{t.downloadOutput}</a>}
+          {job.state === 'done' && job.archive && <a className="pm-ui-button pm-ui-button--small" href={downloadUrl(job, job.archive, name)}><PmIcon name="download" size={14} />{t.downloadArchive}</a>}
           {job.canCancel !== false && (job.state === 'queued' || job.state === 'running') && <PmButton small onClick={() => void workbench.cancelJob(job.id)}>{t.cancelOutput}</PmButton>}
         </div>
       </div>

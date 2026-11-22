@@ -24,16 +24,16 @@ import type { DocumentDraftReference } from './document-drafts.ts'
 import type { DocumentReturnPoint } from './document-return-point.ts'
 import type { DocumentChangeAnswer, PresmiumDocument } from '@lincyaw/kernel'
 import type { DocumentInsertionPlace } from './document-editor/insertion-place.ts'
-import type { CanonicalSource, VoiceoverJob } from '@lincyaw/kernel'
+import type { CanonicalSource, CompileJob, VoiceoverJob } from '@lincyaw/kernel'
 import { compileDocumentPreview, readPreviewWhenReady, waitForPreviewRequest } from './document-preview.ts'
 import { readDocumentSnapshot } from './document-preview.ts'
 import { errorMessage, sameProductionBinding, slideShape, stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
 import type { Diagnostic, Focus, FocusReport, IrAnswer, IrEvent, OperationAnswer, PreviewAnchor, PreviewCommand, PreviewDiagnostics, PreviewRenderer, PreviewReport, ReviewChange } from '@lincyaw/kernel'
 import { DocumentDiagnostics } from './diagnostics.ts'
 import { DocumentHistory } from './history.ts'
-import { DocumentJobs } from './jobs.ts'
+import { DocumentJobs, downloadableFile, downloadUrl } from './jobs.ts'
 import { VoiceoverJobs } from './voiceover-jobs.ts'
-import { localeOf, MESSAGES } from './messages.ts'
+import { jobFailure, localeOf, MESSAGES, outputLabel } from './messages.ts'
 import type { AgentPlace, Locale } from './messages.ts'
 import { changedPlaces, findPlaceAtLine } from './places.ts'
 import { OperationLog } from './telemetry.ts'
@@ -1591,7 +1591,12 @@ export class Workbench {
         if (this.#state.hasDocumentTimingDrafts || this.#state.documentTimingDraftStorageFailure) throw new Error('job-timing-draft')
         if (this.#state.captionTimingDraftSteps?.length || this.#state.captionTimingDraftStorageFailure) throw new Error('job-caption-draft')
         this.#set({ jobPreparing: { target, canCancel: false } })
-        await this.#jobs.start(document, target, { version: source.version, fingerprint: source.fingerprint })
+        const job = await this.#jobs.start(document, target, { version: source.version, fingerprint: source.fingerprint })
+        if (job && current()) {
+          // Followed until it ends, wherever the author goes in the document: then its file comes down by itself.
+          const release = this.observeJobs()
+          this.#jobs.awaitEnd(job, (ended) => { release(); this.#exportEnded(ended) })
+        }
       } catch (error) {
         if (current()) this.#set({ jobsFailure: errorMessage(error) })
       } finally {
@@ -1602,6 +1607,29 @@ export class Workbench {
         }
       }
     })
+  }
+
+  /**
+   * An export the author started here has ended: a finished one starts its download (a site's ZIP file, the PDF, the
+   * video) and says so with Open and Download; a failed one says why.
+   */
+  #exportEnded(job: CompileJob): void {
+    const t = this.#messages
+    const target = this.#state.jobs?.targets.find(own => own.id === job.target) ?? { id: job.target, label: {} }
+    const label = outputLabel(t, this.#state.locale, target)
+    if (job.state === 'failed') { this.tree.toast(t.exportEnded(label, jobFailure(t, job.error)), 'danger'); return }
+    if (job.state !== 'done') return
+    const title = this.tree.title(this.tree.idOf(job.document) ?? '')
+    const file = downloadableFile(job)
+    const download = file === undefined ? undefined : downloadUrl(job, file, title)
+    if (download) startDownload(download)
+    // Open only what the browser shows by itself (a site, a PDF, a video); a PowerPoint file is only downloaded.
+    const type = job.files.find(own => own.path === job.main)?.type
+    const main = job.main && (type === 'text/html' || type === 'application/pdf' || type?.startsWith('video/')) ? `${job.url}${job.main}` : undefined
+    this.tree.toast(t.exportFinished(label, download !== undefined), 'neutral', [
+      ...main ? [{ label: t.openOutput, run: () => { globalThis.open(main, '_blank', 'noopener') } }] : [],
+      ...download ? [{ label: job.archive ? t.downloadArchive : t.downloadOutput, run: () => startDownload(download) }] : [],
+    ])
   }
 
   /** Cancels the pending export intent; a document save already sent retains its own acknowledgement. */
@@ -1765,4 +1793,15 @@ export class Workbench {
     disposeDocumentRecordings(this)
     this.#clientControls.clear(); this.#navigationGuards.clear(); this.#clientControlListeners.clear()
   }
+}
+
+/** Saves a file the browser is given as an attachment, without leaving the page. */
+function startDownload(url: string): void {
+  const link = globalThis.document.createElement('a')
+  link.href = url
+  link.rel = 'noopener'
+  link.hidden = true
+  globalThis.document.body.append(link)
+  link.click()
+  link.remove()
 }

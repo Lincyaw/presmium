@@ -8,7 +8,7 @@ import { createJiti } from 'jiti'
 import { APPROVAL_KINDS, deckLocale, errorMessage } from '@lincyaw/kernel'
 import { bracketIPv6, irRevision, lanAddresses, ServiceUpgradeError } from '@lincyaw/kernel/node'
 import type { ApprovalKind, Finding, Severity, SpeechVoice } from '@lincyaw/kernel'
-import { build, Compiler, dev, resolveEntry } from '@lincyaw/compiler'
+import { build, Compiler, dev, INSTALLATION_VARIABLE, resolveEntry } from '@lincyaw/compiler'
 import type { BuildReport, Compilation, RunStats } from '@lincyaw/compiler'
 import { isAnyAddress, isLoopback, serverConfigKey, servedDocument, startServer } from '@lincyaw/server'
 import type { ApprovalPolicy } from '@lincyaw/server'
@@ -69,6 +69,9 @@ interface Command {
 
 export async function main(argv: string[], options: MainOptions = {}): Promise<number> {
   const bundled = options.bundled ?? BUNDLED
+  // Every compiler of this process and of the processes it starts, a plugin's own included, finds the official
+  // plugins in this installation when the project does not install them.
+  process.env[INSTALLATION_VARIABLE] = bundled
   if (argv[0] === 'new') return runNewCommand(argv.slice(1), bundled)
   if (argv[0] === 'skills') return (await import('@lincyaw/skills')).main(argv.slice(1))
   if (argv[0] === 'studio') return runStudioCommand(argv.slice(1), bundled, options.bin ?? PRESMIUM_BIN)

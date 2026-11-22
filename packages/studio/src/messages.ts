@@ -9,6 +9,7 @@ export interface StudioMessages {
   unexpectedArgument(argument: string): string
   notDirectory(dir: string): string
   log(file: string): string
+  open: string
   openOnNetwork(address: string, port: string, previewPort: string): string
   openOnAllNetworks(port: string, previewPort: string): string
   ended(how: string, log: string): string
@@ -34,7 +35,8 @@ export const STUDIO_MESSAGES: Record<Locale, StudioMessages> = {
 
 启动 Presmium Studio（实验性）：在浏览器中编辑这个目录（工作区的根目录或一份文稿所在的目录；
 默认为 .）中的文稿，并为它提供工作区服务。只打印一个要在浏览器中打开的网址。AI 助手所用的模型在
-“设置 → 模型”中设置，也可以由环境变量给出：DEEPSEEK_API_KEY，或者兼容 Messages 接口的服务的
+“设置 → 模型”中设置，也可以由环境变量给出：DEEPSEEK_API_KEY（可加 DEEPSEEK_BASE_URL 与
+DEEPSEEK_SEARCH_BASE_URL），或者兼容 Messages 接口的服务的
 PRESMIUM_MODEL_URL、PRESMIUM_MODEL_KEY 与 PRESMIUM_MODEL_PROVIDER。对话、模型设置、密钥与日志
 presmium-studio-<散列>.log（每个安装一个）保存在 $XDG_STATE_HOME/presmium/studio 中。
 
@@ -47,6 +49,7 @@ presmium-studio-<散列>.log（每个安装一个）保存在 $XDG_STATE_HOME/pr
   --preview-url <网址>  同样情况下预览所在的地址，由代理转发到工作区服务；可以带路径，
                  此时它必须与 Studio 不同源，否则预览中文稿的代码能读到 Studio 的会话
   --preview-port <端口>  工作区服务与 HTTP MCP 的固定端口（默认 4321，被占用时换一个空闲端口）；0 为随机端口
+  --verbose      另外打印 HTTP MCP 的地址与访问令牌文件、日志文件，并转发工作区服务的输出
   -h, --help     显示本说明`,
     badPort: value => `--port 需要 0 到 65535 之间的端口号，而不是“${value}”。`,
     badUrl: (option, value) => `${option} 需要一个完整的网址，例如 https://studio.example.com/，而不是“${value}”。`,
@@ -54,6 +57,7 @@ presmium-studio-<散列>.log（每个安装一个）保存在 $XDG_STATE_HOME/pr
     unexpectedArgument: argument => `多余的参数“${argument}”。只能给出一个目录。`,
     notDirectory: dir => `${dir} 不是目录。请给出工作区的根目录或一份文稿所在的目录。`,
     log: file => `presmium studio: 日志在 ${file}`,
+    open: 'presmium studio: 在浏览器中打开上面的网址。按 Ctrl+C 停止。',
     openOnNetwork: (address, port, previewPort) => `presmium studio: 正在 ${address} 上监听，局域网中的设备可以访问，且没有登录：任何能用上面的网址访问端口 ${port}（以及预览的端口 ${previewPort}）的人都以你的身份使用这个工作区（编辑、运行代码、使用你的模型）。请只在可信的网络中使用；不加 --host 时只在本机监听。`,
     openOnAllNetworks: (port, previewPort) => `presmium studio: 正在全部局域网网络接口上监听，且没有登录：任何能用上面的网址访问端口 ${port}（以及预览的端口 ${previewPort}）的人都以你的身份使用这个工作区（编辑、运行代码、使用你的模型）。请只在可信的网络中使用；不加 --host 时只在本机监听。`,
     ended: (how, log) => `presmium studio: ${how}。日志在 ${log}`,
@@ -77,8 +81,8 @@ presmium-studio-<散列>.log（每个安装一个）保存在 $XDG_STATE_HOME/pr
 Presmium Studio (experimental): edit the documents of the directory (the workspace root, or a deck’s
 directory; default: .) in the browser, with the workspace service of that directory. It prints the one
 address to open in the browser. The AI Assistant’s model is chosen in Settings > Models, or given by the
-environment: DEEPSEEK_API_KEY, or PRESMIUM_MODEL_URL, PRESMIUM_MODEL_KEY, and PRESMIUM_MODEL_PROVIDER
-for a Messages-compatible service. Chats, model settings, API keys, and the log
+environment: DEEPSEEK_API_KEY (with DEEPSEEK_BASE_URL and DEEPSEEK_SEARCH_BASE_URL if needed), or
+PRESMIUM_MODEL_URL, PRESMIUM_MODEL_KEY, and PRESMIUM_MODEL_PROVIDER for a Messages-compatible service. Chats, model settings, API keys, and the log
 presmium-studio-<hash>.log (one per installation) are kept in $XDG_STATE_HOME/presmium/studio.
 
 Options:
@@ -92,6 +96,7 @@ Options:
                  may have a path, and should be another origin than Studio’s, or the documents’ code in
                  previews can read Studio’s session
   --preview-port <n>  fixed workspace-service and HTTP MCP port (default: 4321, or a free one when that is in use); 0 requests a random port
+  --verbose      also print the HTTP MCP address, its access token file and the log file, and pass on the workspace service’s output
   -h, --help     show this help`,
     badPort: value => `--port takes a port number from 0 to 65535, not “${value}”.`,
     badUrl: (option, value) => `${option} takes a full address, such as https://studio.example.com/, not “${value}”.`,
@@ -99,6 +104,7 @@ Options:
     unexpectedArgument: argument => `Unexpected argument “${argument}”. Give one directory.`,
     notDirectory: dir => `${dir} is not a directory. Give the workspace root, or the directory of a document.`,
     log: file => `presmium studio: log ${file}`,
+    open: 'presmium studio: open the address above in your browser. Press Ctrl+C to stop.',
     openOnNetwork: (address, port, previewPort) => `presmium studio: listening on ${address}, on the local network, with no login: anyone who reaches port ${port} (and the previews’ port ${previewPort}) with the address above works in this workspace as you (edits, runs code, uses your model). Use it on a network you trust; without --host it listens on this machine only.`,
     openOnAllNetworks: (port, previewPort) => `presmium studio: listening on all local network interfaces, with no login: anyone who reaches port ${port} (and the previews’ port ${previewPort}) with the addresses above works in this workspace as you (edits, runs code, uses your model). Use it on a network you trust; without --host it listens on this machine only.`,
     ended: (how, log) => `presmium studio: ${how}; the log is ${log}`,
