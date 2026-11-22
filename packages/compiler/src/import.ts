@@ -11,6 +11,8 @@ import { basename, dirname, extname, join, posix, relative, resolve, sep } from 
 import type { MdastNode } from '@lincyaw/kernel'
 import { DOCUMENT_ENTRY } from '@lincyaw/kernel'
 import { topLevelRanks } from './document-tree.ts'
+import { withImportNotices } from './import-notices.ts'
+import type { ImportNotice } from './import-notices.ts'
 import { headingSlug, markdownDocument, noteTitle, splitFrontmatter } from './markdown.ts'
 
 export interface ImportOptions {
@@ -34,7 +36,7 @@ export interface ImportReport {
   warnings?: number
 }
 
-interface Note { file: string, path: string, dir: string, title: string, aliases: string[], text: string, assets?: Map<string, Uint8Array>, warnings?: number, tree?: MdastNode }
+interface Note { file: string, path: string, dir: string, title: string, aliases: string[], text: string, assets?: Map<string, Uint8Array>, notices?: ImportNotice[], tree?: MdastNode }
 
 const MARKDOWN = new Set(['.md', '.markdown'])
 const SKIPPED = new Set(['node_modules'])
@@ -84,7 +86,7 @@ export function importMarkdown(input: string, options: ImportOptions): ImportRep
 /** One editable document per Markdown, Word or PowerPoint source, with shared link and attachment resolution. */
 export async function importDocuments(input: string, options: ImportOptions): Promise<ImportReport> {
   const found = discover(input, options, new Set([...MARKDOWN, '.docx', '.pptx']))
-  const sources: { file: string, text: string, assets?: Map<string, Uint8Array>, warnings?: number, tree?: MdastNode }[] = []
+  const sources: Source[] = []
   for (const file of found.files) {
     const extension = extname(file).toLowerCase()
     sources.push(extension === '.docx'
@@ -96,17 +98,19 @@ export async function importDocuments(input: string, options: ImportOptions): Pr
   return writeNotes(found, options, sources)
 }
 
-function writeNotes({ root, out, isExcluded }: ReturnType<typeof discover>, options: ImportOptions, sources: { file: string, text: string, assets?: Map<string, Uint8Array>, warnings?: number, tree?: MdastNode }[]): ImportReport {
+interface Source { file: string, text: string, assets?: Map<string, Uint8Array>, notices?: ImportNotice[], tree?: MdastNode }
+
+function writeNotes({ root, out, isExcluded }: ReturnType<typeof discover>, options: ImportOptions, sources: Source[]): ImportReport {
 
   const taken = new Set<string>()
-  const notes: Note[] = sources.map(({ file, text, assets, warnings, tree }) => {
+  const notes: Note[] = sources.map(({ file, text, assets, notices, tree }) => {
     const path = toPosix(relative(root, file))
     const parts = path.replace(/\.(?:md|markdown|docx|pptx)$/i, '').split('/').map(part)
     if (RESERVED.has(parts[0]!)) parts[0] = `${parts[0]}-notes`
     let dir = parts.join('/')
     for (let n = 2; taken.has(dir.toLowerCase()); n++) dir = `${parts.join('/')}-${n}`
     taken.add(dir.toLowerCase())
-    return { file, path, dir, text, assets, warnings, tree, title: noteTitle(text) ?? basename(file, extname(file)), aliases: splitFrontmatter(text).frontmatter.aliases }
+    return { file, path, dir, text, assets, notices, tree, title: noteTitle(text) ?? basename(file, extname(file)), aliases: splitFrontmatter(text).frontmatter.aliases }
   })
 
   const pathKey = (path: string) => posix.normalize(path).replace(/^\/+/, '').toLowerCase()
@@ -180,7 +184,7 @@ function writeNotes({ root, out, isExcluded }: ReturnType<typeof discover>, opti
       copied.set(join(docDir, copy), file)
       return `${encodeURI(copy)}${fragment.length ? `#${fragment.join('#')}` : ''}`
     }
-    const { document, unresolved } = markdownDocument(note.text, {
+    const { document: converted, unresolved } = markdownDocument(note.text, {
       id: note.dir.replace(/\//g, '--'),
       title: note.title,
       tree: note.tree,
@@ -198,14 +202,15 @@ function writeNotes({ root, out, isExcluded }: ReturnType<typeof discover>, opti
       },
     })
     // A PowerPoint deck stays a deck: it is shown and exported as slides, as well as on the site.
-    if (extname(note.file).toLowerCase() === '.pptx') document.metadata.renderers = { web: {}, slides: {}, ...document.metadata.renderers }
+    if (extname(note.file).toLowerCase() === '.pptx') converted.metadata.renderers = { web: {}, slides: {}, ...converted.metadata.renderers }
+    const document = withImportNotices(converted, note.notices ?? [])
     const folder = options.group ? posix.dirname(note.path).split('/').slice(0, options.group).at(-1) : undefined
     if (folder && folder !== '.') document.metadata.tags = [folder, ...(document.metadata.tags ?? []).filter(tag => tag !== folder)]
     mkdirSync(docDir, { recursive: true })
     writeFileSync(join(docDir, DOCUMENT_ENTRY), `${JSON.stringify(document, null, 2)}\n`)
     report.documents.push(note.dir)
     report.unresolved.push(...unresolved.map(link => ({ note: note.path, link })))
-    if (note.warnings) report.warnings = (report.warnings ?? 0) + note.warnings
+    if (note.notices?.length) report.warnings = (report.warnings ?? 0) + note.notices.length
     if (options.preserveOriginal) copied.set(join(docDir, 'originals', basename(note.file)), note.file)
   }
   for (const [copy, file] of copied) {

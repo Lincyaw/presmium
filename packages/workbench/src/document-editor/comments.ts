@@ -4,7 +4,7 @@ import type { BlockNoteEditor } from '@blocknote/core'
 import type { CommentData, ThreadData } from '@blocknote/core/comments'
 import { AddMarkStep, RemoveMarkStep } from '@tiptap/pm/transform'
 import { Plugin } from '@tiptap/pm/state'
-import { applyDocumentCommentAction, degradeDocumentCommentAnchor, hasRole, isDocumentPlaceAnchor, isDocumentTextAnchor, LOCAL_AUTHOR, randomUUID, validateDocumentCommentAnchor } from '@lincyaw/kernel'
+import { applyDocumentCommentAction, degradeDocumentCommentAnchor, hasRole, IMPORT_COMMENT_AUTHOR, isDocumentPlaceAnchor, isDocumentTextAnchor, LOCAL_AUTHOR, randomUUID, validateDocumentCommentAnchor } from '@lincyaw/kernel'
 import type { DocumentComment, DocumentCommentAction, DocumentPlaceAnchor, DocumentThread, DocumentThreadAnchor, Member, RichTextNode, PresmiumDocument } from '@lincyaw/kernel'
 import { createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
 import type { RichProjection } from './rich-text.ts'
@@ -370,9 +370,10 @@ export function enterSubmits(editor: CommentEditor, submit: () => unknown): () =
   return () => dom.removeEventListener('keydown', onKeyDown, true)
 }
 
-export function nativeComments(store: DocumentThreadStore, username: string) {
+/** `importer`: the name shown for the comments an import left on the pages it could not fully convert. */
+export function nativeComments(store: DocumentThreadStore, username: string, importer: string) {
   const resolve = (ids: string[]) => ids.map(id => ({ id, avatarUrl: '',
-    username: id === store.member?.id ? displayName(store.member) ?? username : id === 'local-author' || id === LOCAL_AUTHOR.id ? username : id }))
+    username: id === store.member?.id ? displayName(store.member) ?? username : id === 'local-author' || id === LOCAL_AUTHOR.id ? username : id === IMPORT_COMMENT_AUTHOR ? importer : id }))
   const users = createUserStore(async ids => resolve(ids)), identities = new Set<string>(store.member ? [store.member.id] : [])
   for (const thread of store.getThreads().values()) {
     if (thread.resolvedBy) identities.add(thread.resolvedBy)
