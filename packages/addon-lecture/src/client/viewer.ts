@@ -5,8 +5,10 @@ import { LECTURE_MESSAGES } from '../domain/index.ts'
 import LectureView from './LectureView.tsx'
 import PlayerPanel from './PlayerPanel.tsx'
 import PlayLectureButton from './PlayLectureButton.tsx'
+import PresenterControls from './PresenterControls.tsx'
 import RecorderPanel from './RecorderPanel.tsx'
 import { exporting, keyboardPlayer, setViewerContext, watchLectureList } from './state.ts'
+import { presenterPlay } from './remote.ts'
 
 const plugin: ViewerPlugin = (ctx) => {
   setViewerContext(ctx)
@@ -32,6 +34,13 @@ const plugin: ViewerPlugin = (ctx) => {
     else void player.play()
   } })
   ctx.registerLayer({ id: 'presmium.lecture.play', component: PlayLectureButton, views: ['present'], scope: 'bar' })
+  // The presenter view drives the audience's lecture from its own window; Space plays and pauses it there too.
+  ctx.registerLayer({ id: 'presmium.lecture.presenter', component: PresenterControls, views: ['presenter'], scope: 'bar' })
+  ctx.registerAction({ id: 'presmium.lecture.presenter-play', keys: [' '], views: ['presenter'], run: (_viewer, event) => {
+    const remote = presenterPlay.getSnapshot()
+    if (!remote) return false
+    if (!event?.repeat) remote.playPause()
+  } })
   // Captures and video exports contain the presentation, without author recording controls.
   const capturing = typeof location !== 'undefined' && new URLSearchParams(location.search).has(CAPTURE_PARAM)
   if (!capturing && !exporting) ctx.registerLayer({ id: 'presmium.lecture.recorder', component: RecorderPanel, views: ['present'], scope: 'view' })

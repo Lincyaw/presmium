@@ -1,4 +1,4 @@
-import { PmCaption, PmDrawer, PmIconButton, PmMenu, PmTabs, PRODUCTION_PLAYBACK, TIMED_CAPTIONS, useMessages, useServer, useService, useStore } from '@lincyaw/host'
+import { PmCaption, PmDrawer, PmIconButton, PmMenu, PmTabs, PRODUCTION_PLAYBACK, TIMED_CAPTIONS, useAudienceControl, useMessages, useServer, useService, useStore } from '@lincyaw/host'
 import type { MenuItem } from '@lincyaw/host'
 import { isPreviewEmbedded, notifyEmbedder, stepCaptionsVisible } from '@lincyaw/kernel'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
@@ -36,6 +36,8 @@ import {
   useViewer,
 } from './state.ts'
 import TranscriptList from './TranscriptList.tsx'
+import { lectureControl } from './remote.ts'
+import type { LectureControl } from './remote.ts'
 import './PlayerPanel.css'
 /** `&autoplay` starts the first lecture that becomes ready on this page, once. */
 let autoplayPending = autoplay
@@ -143,6 +145,16 @@ export default function PlayerPanel(_props: { view?: string }) {
       active = false
     }
   }, [server.available, available, doc, production])
+  // The presenter view plays and pauses the lecture and turns its captions on and off from its own window. Before a
+  // lecture is chosen, its play starts the presentation's lecture, as the Play button does.
+  const remote: LectureControl | undefined = controlled || exporting ? undefined
+    : !id ? (available ? { playing: false } : undefined)
+      : player && !failure && status !== 'missing' ? { playing: clockPlaying || preparing, captions } : undefined
+  useAudienceControl(lectureControl(doc), remote, command => {
+    if (command === 'play-pause' && !id) viewer.setView('lecture')
+    else if (command === 'play-pause' && player) void (player.playing || player.preparing.getSnapshot() ? player.pause() : player.play())
+    else if (command === 'captions') setCaptions(value => !value)
+  })
   const state = !player
     ? undefined
     : clockPlaying

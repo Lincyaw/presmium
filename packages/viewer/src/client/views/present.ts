@@ -1,5 +1,5 @@
 import { FocusScope } from '@radix-ui/react-focus-scope'
-import { PAGE_READINESS, PmApprovals, PmCaption, PmCaptionProvider, PmIcon, TIMED_CAPTIONS, useService, PLAYBACK_CONTROL, presmiumService } from '@lincyaw/host'
+import { PAGE_READINESS, PmApprovals, PmCaption, PmCaptionProvider, PmIcon, TIMED_CAPTIONS, useAudienceControl, useService, PLAYBACK_CONTROL, presmiumService } from '@lincyaw/host'
 import { CAPTIONS_PARAM, notifyEmbedder, stepCaptionsVisible } from '@lincyaw/kernel'
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '@lincyaw/host'
@@ -10,6 +10,7 @@ import type { Viewer } from '../viewer-state.ts'
 import { overviewOpen, useActions } from './actions.ts'
 import { button, layers, useCaptionScale, useCurrentSection, useModal, useOverlayBar } from './overlay.ts'
 import { SlideFace, SlideFit, useSlides } from './slide.ts'
+import { captionsControl, hasStepNarration } from './remote.ts'
 
 function moveInOverview(root: HTMLElement | null | undefined, key: string): boolean {
   const items = [...root?.querySelectorAll<HTMLElement>('.pm-overview__item') ?? []]
@@ -58,6 +59,9 @@ export function PresentView() {
     const pending = !presentationConfirmed(viewer)
     const captionVisible = stepCaptionsVisible(doc.production, section?.id ?? '', section?.stepIds?.[step])
     useEffect(() => { if (pending) { overviewOpen.set(false); presmiumService(PLAYBACK_CONTROL)?.pause() } }, [pending])
+    const hasNarration = hasStepNarration(doc)
+    // The presenter view shows the same captions control and drives this one.
+    useAudienceControl(captionsControl(doc), hasNarration && !timedCaptions && !pending ? { on: captions } : undefined, command => { if (command === 'captions') setCaptions(value => !value) })
     const position = useStore(viewer.position)
     const pageView = useStore(viewer.pageView)
     const syncFullscreen = () => { setFullscreen(Boolean(document.fullscreenElement)) }
@@ -102,7 +106,6 @@ export function PresentView() {
       const { sections } = doc
       const stepId = current.stepIds?.[step]
       const narration = stepId ? current.stepNarrations?.[stepId] ?? [] : []
-      const hasNarration = sections.some(section => Object.values(section.stepNarrations ?? {}).some(lines => lines.some(line => line.text.trim())))
       return h(PmCaptionProvider, { container: captionContainer }, h(FocusScope, { trapped: !viewer.options.embedded, loop: !viewer.options.embedded, asChild: true,
         onMountAutoFocus: (event: Event) => { if (viewer.options.embedded) event.preventDefault() },
         onUnmountAutoFocus: (event: Event) => { if (viewer.options.embedded) event.preventDefault() },

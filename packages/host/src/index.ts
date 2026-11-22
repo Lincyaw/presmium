@@ -76,6 +76,7 @@ export { PmToolbar } from './panels.ts'
 export { NAVIGATION, OPERATIONS, PAGE_READINESS, PLAYBACK_CONTROL, PRODUCTION_PLAYBACK, STATUS, STEP_CLOCK, SYNC_TRANSPORTS, TIMED_CAPTIONS, TOOLBAR } from './contracts.ts'
 export type { PageReadiness, TimedCaptions } from './contracts.ts'
 export { joinWindows } from './windows.ts'
+export { useAudienceControl, useAudienceRemote } from './window-control.ts'
 export { setSiteBase, siteBase } from './site.ts'
 export type { WindowChannel } from './windows.ts'
 export type {
