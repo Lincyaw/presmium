@@ -4,6 +4,8 @@ export interface User { id: string, name?: string, email?: string }
 export interface SessionAnswer { user: User | null, csrfToken?: string | null, mcpUrl?: string }
 export type StudioState = 'stopped' | 'starting' | 'running' | 'stopping'
 export interface Studio { state: StudioState, url: string }
+/** How far the Studio's start has come (the console's progress screen). */
+export type StudioStage = 'stopped' | 'stopping' | 'container' | 'workspace' | 'studio' | 'ready'
 /** One document of the workspace's document tree, listed depth first; `depth` 0 is a top-level document. */
 export interface WorkspaceDocument { document: string, id: string, title: string, depth: number, parent: string | null, url: string }
 export interface Share { id: string, slug: string, document: string, title: string, state: 'pending' | 'ready' | 'failed', errorCode: string | null, createdAt: string, siteUrl: string }

@@ -22,6 +22,8 @@ html { background: var(--pm-color-bg); }
 .pmc-list__item:last-child { padding-block-end: 0; border-block-end: 0; }
 .pmc-welcome { max-width: var(--pm-dialog-width); width: 100%; margin: var(--pm-space-12) auto; }
 .pmc-welcome .pm-ui-card { display: grid; gap: var(--pm-space-4); }
+.pmc-welcome .pm-ui-card__title { margin: 0; }
+.pmc-stages { display: grid; gap: var(--pm-space-2); margin: 0; padding: 0; list-style: none; }
 .pmc-shared-frame { width: 100%; height: 75dvh; border: var(--pm-size-hairline) solid var(--pm-color-line); border-radius: var(--pm-radius-card); background: var(--pm-color-surface); }
 @media (max-width: 768px) {
   .pmc-appbar { gap: var(--pm-space-2); }

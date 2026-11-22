@@ -55,8 +55,8 @@ export function registerMcp(app: Hono, deps: { tokens: AccessTokens, hub: Hub, p
       if (request.headers.has('origin') && request.headers.get('origin') !== publicUrl.origin) throw new CloudError(403, 'mcp-origin-invalid')
       const matched = /^Bearer (\S+)$/i.exec(request.headers.get('authorization') ?? '')
       if (!matched) throw new CloudError(401, 'auth-required')
-      const name = deps.hub.name(await deps.tokens.user(matched[1]!))
-      await deps.hub.running(name)
+      const user = await deps.tokens.user(matched[1]!), name = deps.hub.name(user)
+      await deps.hub.running(name, user)
       const headers: Record<string, string> = {}
       for (const header of PASSED) { const value = request.headers.get(header); if (value !== null) headers[header] = value }
       const upstream = await deps.hub.control(name, '/mcp', { method: request.method, headers, ...['GET', 'HEAD'].includes(request.method) ? {} : { body: request.body }, signal: request.signal })

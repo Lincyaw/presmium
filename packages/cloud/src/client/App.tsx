@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { brandMarkup } from '@lincyaw/design'
-import { PmButton, PmCard, PmDialog, PmEmpty, PmIcon, PmIconButton, PmInput, PmMenu, PmNotice, PmSkeleton, PmToolbar, PmToolbarButton } from '@lincyaw/workbench/components'
+import { PmAgentActivity, PmButton, PmCard, PmDialog, PmEmpty, PmIcon, PmIconButton, PmInput, PmMenu, PmNotice, PmSkeleton, PmToolbar, PmToolbarButton } from '@lincyaw/workbench/components'
 import { dateLabel, request, setCsrfToken } from './api.ts'
-import type { AccessToken, Locale, SessionAnswer, Share, SharedDocument, Studio, WorkspaceDocument } from './api.ts'
+import type { AccessToken, Locale, SessionAnswer, Share, SharedDocument, Studio, StudioStage, WorkspaceDocument } from './api.ts'
 import { CopyField, ErrorNotice, ResourceState, SectionHeading, Status } from './components.tsx'
-import { useMutation, useResource } from './hooks.ts'
+import { failureMessage, useMutation, useResource } from './hooks.ts'
 import { format, LANGUAGES, MESSAGES } from './messages.ts'
 import type { Messages } from './messages.ts'
 
@@ -17,10 +17,12 @@ function initialLocale(): Locale {
   if (saved === 'zh-CN' || saved === 'en') return saved
   return (navigator.language || '').startsWith('en') ? 'en' : 'zh-CN'
 }
-type Route = { page: 'home' } | { page: 'shared', slug: string }
+/** `/` opens the author's Studio (after sign-in, at once); `/settings` holds sharing and access tokens. */
+type Route = { page: 'home' } | { page: 'settings' } | { page: 'shared', slug: string }
 function routeOf(): Route {
   const parts = window.location.pathname.split('/').filter(Boolean)
   if (parts[0] === 's' && parts[1]) return { page: 'shared', slug: parts[1] }
+  if (parts[0] === 'settings') return { page: 'settings' }
   return { page: 'home' }
 }
 export default function App() {
@@ -46,7 +48,7 @@ export default function App() {
       <PmToolbar label={t.interfaceControls} className="pm-ui-toolbar pmc-header-actions">
         <PmMenu icon="language" label={t.language} toolbarItem items={LANGUAGES.map(language => ({ id: language.id, label: language.label, checked: locale === language.id }))} onSelect={id => setLocale(id as Locale)} />
         <PmToolbarButton asChild><PmIconButton small icon={dark ? 'sun' : 'moon'} label={dark ? t.light : t.dark} onClick={() => setDark(value => !value)} /></PmToolbarButton>
-        {user && <PmMenu icon="account" label={t.account} description={user.name || user.email} toolbarItem items={[{ id: 'account', label: t.manageAccount, icon: 'account' }, { id: 'logout', label: t.logout, icon: 'logout', separator: true, disabled: mutation.pending }]} onSelect={id => { if (id === 'logout') logout(); else window.location.assign('/api/auth/account') }} />}
+        {user && <PmMenu icon="account" label={t.account} description={user.name || user.email} toolbarItem items={[{ id: 'settings', label: t.settings, icon: 'share' }, { id: 'account', label: t.manageAccount, icon: 'account' }, { id: 'logout', label: t.logout, icon: 'logout', separator: true, disabled: mutation.pending }]} onSelect={id => { if (id === 'logout') logout(); else window.location.assign(id === 'settings' ? '/settings' : '/api/auth/account') }} />}
       </PmToolbar>
     </header>
     <main className="pmc-main">
@@ -54,9 +56,77 @@ export default function App() {
       {session.loading && !session.data && <PmSkeleton label={t.loading} />}
       {session.data && route.page === 'shared' && <SharedPage slug={route.slug} t={t} signedIn={Boolean(user)} loginUrl={authenticationUrl('login')} />}
       {session.data && route.page !== 'shared' && !user && <div className="pmc-welcome"><PmCard><h1 className="pm-ui-card__title">{t.welcomeTitle}</h1><p>{t.welcomeHint}</p><div className="pmc-actions"><PmButton variant="primary" onClick={() => window.location.assign(authenticationUrl('login'))}>{t.login}</PmButton><PmButton onClick={() => window.location.assign(authenticationUrl('register'))}>{t.register}</PmButton></div></PmCard></div>}
-      {user && route.page === 'home' && <Home t={t} locale={locale} mcpUrl={session.data?.mcpUrl ?? ''} />}
+      {user && route.page === 'home' && <Launch t={t} locale={locale} />}
+      {user && route.page === 'settings' && <Home t={t} locale={locale} mcpUrl={session.data?.mcpUrl ?? ''} />}
     </main>
   </div>
+}
+
+const STAGES: StudioStage[] = ['container', 'workspace', 'studio', 'ready']
+const HOPS = 'presmium.cloud.opened'
+
+/** The hops to Studio in the last minute: a Studio that sends the author back here again and again is not opened again. */
+function recentHops(): number[] {
+  try { return (JSON.parse(sessionStorage.getItem(HOPS) ?? '[]') as number[]).filter(time => Date.now() - time < 60_000) } catch { return [] }
+}
+
+/**
+ * After sign-in: starts the author's Studio, shows how far its start has come, and opens it in this tab when it is
+ * ready. The stages are the real ones (the Hub's spawn, the workspace copy of a first start, Studio's own start).
+ */
+function Launch({ t, locale }: { t: Messages, locale: Locale }) {
+  const [stage, setStage] = useState<StudioStage>('container')
+  const [failed, setFailed] = useState<unknown>()
+  const [stalled, setStalled] = useState<string>()
+  const [attempt, setAttempt] = useState(0)
+  const seen = useRef(new Set<StudioStage>())
+  useEffect(() => {
+    let alive = true
+    setFailed(undefined)
+    void (async () => {
+      let starts = 0
+      // A start that has not finished in five minutes will not: the author decides.
+      const until = Date.now() + 300_000
+      try {
+        while (alive) {
+          if (Date.now() > until) { setFailed(true); return }
+          const progress = await request<{ stage: StudioStage, url: string }>(`/api/studio/progress?locale=${locale}`)
+          if (!alive) return
+          if (progress.stage === 'ready') {
+            seen.current.add('ready'); setStage('ready')
+            const hops = recentHops()
+            if (hops.length >= 3) { setStalled(progress.url); return }
+            try { sessionStorage.setItem(HOPS, JSON.stringify([...hops, Date.now()])) } catch { /* Then no loop guard. */ }
+            window.location.replace(progress.url)
+            return
+          }
+          if (progress.stage === 'stopped') {
+            // A start that ends stopped again has failed; one more try, then the author decides.
+            if (starts++ >= 2) { setFailed(true); return }
+            await request('/api/studio/start', { method: 'POST' })
+          } else if (progress.stage !== 'stopping') {
+            seen.current.add(progress.stage); setStage(progress.stage)
+          }
+          await new Promise(done => setTimeout(done, 700))
+        }
+      } catch (error) {
+        if (alive) setFailed(error)
+      }
+    })()
+    return () => { alive = false }
+  }, [attempt, locale])
+  const labels: Record<StudioStage, string> = { stopped: t.stageContainer, stopping: t.stageContainer, container: t.stageContainer, workspace: t.stageWorkspace, studio: t.stageStudio, ready: t.stageOpen }
+  const current = STAGES.indexOf(stage)
+  // A stage passed by unseen (a warm workspace, a Studio still running) is not listed.
+  const shown = STAGES.filter((item, index) => index === current || index < current && (item === 'container' || seen.current.has(item)))
+  return <div className="pmc-welcome"><PmCard>
+    <h1 className="pm-ui-card__title">{t.launchTitle}</h1>
+    {failed === undefined && !stalled && <p className="pm-ui-section-card__description">{t.launchHint}</p>}
+    <ol className="pmc-stages">{shown.map(item => <li key={item}><PmAgentActivity label={labels[item]} state={failed !== undefined && item === stage ? 'failed' : item === stage && !stalled ? 'running' : 'done'} /></li>)}</ol>
+    {failed !== undefined && <><PmNotice tone="danger">{failed instanceof Error ? failureMessage(failed, t) : t.launchFailed}</PmNotice><div className="pmc-actions"><PmButton variant="primary" icon="refresh" onClick={() => { seen.current.clear(); setStage('container'); setAttempt(value => value + 1) }}>{t.retry}</PmButton></div></>}
+    {stalled && <><PmNotice>{t.launchStalled}</PmNotice><div className="pmc-actions"><a className="pm-ui-button pm-ui-button--primary" href={stalled} onClick={() => { try { sessionStorage.removeItem(HOPS) } catch { /* Nothing kept. */ } }}><span>{t.openStudio}</span></a></div></>}
+    <div className="pmc-actions"><a className="pm-ui-button pm-ui-button--ghost" href="/settings"><PmIcon name="share" /><span>{t.settings}</span></a></div>
+  </PmCard></div>
 }
 
 function Home({ t, locale, mcpUrl }: { t: Messages, locale: Locale, mcpUrl: string }) {

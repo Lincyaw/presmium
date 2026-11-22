@@ -291,6 +291,20 @@ interface AppBarProps {
 /** The settings menu's entries that open a page of Settings directly (the whole dialog until it can). */
 const SETTINGS_SECTIONS: Record<string, () => boolean> = { 'presmium-models': openModelSettings, 'presmium-speech': openSpeechSettings, 'presmium-mcp': openMcpSettings }
 
+/**
+ * Presmium Cloud's console (sharing, access tokens for other AI assistants), when this Studio runs in the cloud: the
+ * cloud's page that opens Studio leaves the console's address in this origin's storage. Other AI assistants connect
+ * there with the console's access tokens, so the menu offers the console in place of the MCP connection.
+ */
+function cloudConsole(): string | undefined {
+  try {
+    const url = new URL('settings', `${(localStorage.getItem('presmium.cloud.console') ?? '').replace(/\/*$/, '')}/`)
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : undefined
+  } catch {
+    return undefined
+  }
+}
+
 function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, narrow, openSettings, openHelp, openDrawer }: AppBarProps) {
   const tt = useTreeMessages()
   const t = useClientMessages(workbench)
@@ -299,6 +313,7 @@ function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, nar
   const documentTitle = useWorkbenchState(state => state.documents?.documents.find(doc => doc.dir === state.document)?.title)
   const working = useWorkbenchState(state => Boolean(state.review?.running))
   const panels = useSyncExternalStore(globalPanels.subscribe, globalPanels.getSnapshot)
+  const [consoleUrl] = useState(cloudConsole)
   const chatShown = narrow ? pane === 'conversation' || pane === 'sessions' : info.isConversationOpen
   const more = panels.map(({ options }) => ({ id: options.id!, label: typeof options.label === 'function' ? options.label() : options.label ?? options.id! }))
   const panelLabel = activePanel === null ? undefined : more.find(item => item.id === activePanel)?.label
@@ -349,8 +364,9 @@ function AppBar({ workbench, info, actions, activePanel, globalPanels, pane, nar
       </button>
       <span className="pmw-appbar__divider" aria-hidden="true" />
       <span className="pmw-appbar__more" data-activity="settings">
-        <PmMenu label={t.settings} icon="sliders" items={[{ id: 'presmium-settings', label: t.preferences }, { id: 'presmium-models', label: t.modelSetup.title }, { id: 'presmium-speech', label: SPEECH_SETTINGS_MESSAGES[locale].title }, { id: 'presmium-mcp', label: t.mcp }, ...more]} onSelect={id => {
+        <PmMenu label={t.settings} icon="sliders" items={[{ id: 'presmium-settings', label: t.preferences }, { id: 'presmium-models', label: t.modelSetup.title }, { id: 'presmium-speech', label: SPEECH_SETTINGS_MESSAGES[locale].title }, ...consoleUrl ? [] : [{ id: 'presmium-mcp', label: t.mcp }], ...more, ...consoleUrl ? [{ id: 'presmium-cloud-console', label: t.cloudConsole, icon: 'external' as const, separator: true }] : []]} onSelect={id => {
           if (id === 'presmium-settings') { openSettings(); return }
+          if (id === 'presmium-cloud-console') { window.open(consoleUrl, '_blank', 'noopener'); return }
           const section = SETTINGS_SECTIONS[id]
           if (section) { if (!section()) openSettings(); return }
           actions.selectPanel(activePanel === id ? null : id)

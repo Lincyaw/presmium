@@ -14,6 +14,7 @@ const run = promisify(execFile)
 const PRESMIUM = '/opt/presmium'
 const SPACE = '/work/space'
 const SCRATCH = join('/work', 'cache', 'cloud')
+const STUDIO_STATE = join(process.env.XDG_STATE_HOME ?? '/work/state', 'presmium', 'studio')
 const PORT = Number(process.argv[2] ?? 18997)
 
 const git = (args, options = {}) => run('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgSign=false', ...args], { cwd: SPACE, maxBuffer: 64 << 20, ...options })
@@ -26,6 +27,19 @@ function service() {
   if (!newest) return undefined
   const state = JSON.parse(readFileSync(newest, 'utf8'))
   return typeof state.url === 'string' && typeof state.mcp === 'string' && typeof state.token === 'string' ? state : undefined
+}
+
+/**
+ * How far this Studio's start has come, for the console's progress screen: the workspace being copied (a new author's
+ * first start), Studio starting, or ready once Studio's state file holds its address with the launch token.
+ */
+function stage() {
+  if (!existsSync(SPACE) || readdirSync(SPACE).length === 0) return 'workspace'
+  const files = existsSync(STUDIO_STATE) ? readdirSync(STUDIO_STATE).filter(name => name.endsWith('.json')) : []
+  for (const name of files) {
+    try { if (String(JSON.parse(readFileSync(join(STUDIO_STATE, name), 'utf8')).url ?? '').includes('?token=')) return 'ready' } catch { /* Being written. */ }
+  }
+  return 'studio'
 }
 
 /**
@@ -191,6 +205,7 @@ createServer(async (request, response) => {
   try {
     const url = new URL(request.url ?? '/', 'http://control')
     if (url.pathname === '/mcp') return relayMcp(request, response)
+    if (request.method === 'GET' && url.pathname === '/status') return json(response, 200, { stage: stage() })
     if (request.method === 'GET' && url.pathname === '/documents') return json(response, 200, { documents: await documents() })
     if (request.method === 'POST' && url.pathname === '/snapshots') return json(response, 201, await snapshot(url.searchParams.get('document') ?? '', url.searchParams.get('base') ?? ''))
     const file = /^\/snapshots\/([a-f0-9]{32})\/(source|site)$/.exec(url.pathname)

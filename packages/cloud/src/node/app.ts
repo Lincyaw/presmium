@@ -52,6 +52,12 @@ export async function createCloudApp(config: CloudConfig, database?: Database) {
     return c.json({ user, csrfToken: session.csrfToken, mcpUrl: new URL('/mcp', config.publicUrl).href })
   })
   app.get('/api/studio', async c => c.json({ studio: await studio(hub.name(await current(c.req.raw))) }))
+  // The progress screen after sign-in: it starts the Studio and follows its stage until it can open it.
+  app.get('/api/studio/progress', async c => {
+    const name = hub.name(await current(c.req.raw))
+    return c.json({ stage: await hub.stage(name), url: hub.openUrl(undefined, c.req.query('locale')) })
+  })
+  app.post('/api/studio/start', async c => { const user = await mutate(c.req.raw), name = hub.name(user); await hub.start(name, user); return c.json({ studio: await studio(name) }) })
   app.post('/api/studio/stop', async c => { const name = hub.name(await mutate(c.req.raw)); await hub.stop(name); return c.json({ studio: await studio(name) }) })
   app.get('/api/documents', async c => {
     const name = hub.name(await current(c.req.raw))

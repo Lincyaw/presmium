@@ -23,6 +23,16 @@ const zh = {
   login: '登录',
   register: '注册',
 
+  settings: '共享与连接',
+  launchTitle: '正在打开 Presmium Studio',
+  launchHint: '第一次打开时要准备你的工作区，会多花一点时间。',
+  stageContainer: '启动你的空间',
+  stageWorkspace: '准备工作区与示例文稿',
+  stageStudio: '启动 Presmium Studio',
+  stageOpen: '打开 Studio',
+  launchFailed: 'Studio 无法启动。请重试；如果一再出现，请联系本服务的运营者。',
+  launchStalled: 'Studio 没有自动打开。请点击“打开 Studio”。',
+
   studioTitle: 'Presmium Studio',
   studioHint: '你的工作区与本机的 Presmium Studio 相同：AI 助手、编辑、预览、放映、讲授制作与导出。AI 助手所用的模型在 Studio 的“设置 → 模型”中填写自己的 API Key。',
   studioIdleHint: '一段时间不使用后 Studio 会自动停止，文稿与设置都会保留，下次打开时重新启动。',
@@ -118,6 +128,16 @@ const en: Messages = {
   welcomeHint: 'Sign in to use the complete Presmium Studio: the AI assistant, editing, website and slide previews, presenting, lecture production, and export. Your documents stay in your own space.',
   login: 'Sign In',
   register: 'Register',
+
+  settings: 'Sharing and Connections',
+  launchTitle: 'Opening Presmium Studio',
+  launchHint: 'The first time takes a little longer while your workspace is prepared.',
+  stageContainer: 'Starting your space',
+  stageWorkspace: 'Preparing your workspace and example documents',
+  stageStudio: 'Starting Presmium Studio',
+  stageOpen: 'Opening Studio',
+  launchFailed: 'Studio couldn’t start. Try again; if it keeps happening, contact the operator of this service.',
+  launchStalled: 'Studio didn’t open by itself. Select Open Studio.',
 
   studioTitle: 'Presmium Studio',
   studioHint: 'Your workspace works as Presmium Studio does on your own computer: the AI assistant, editing, previews, presenting, lecture production, and export. Enter your own API key for the AI assistant’s model in Studio under Settings > Models.',

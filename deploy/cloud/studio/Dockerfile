@@ -1,3 +1,10 @@
+# Presmium's pages for the errors the single-user server can show (deploy/cloud/pages).
+FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS pages
+WORKDIR /src
+COPY packages/design ./packages/design
+COPY deploy/cloud/pages ./deploy/cloud/pages
+RUN node deploy/cloud/pages/build.mjs /pages
+
 # Debian trixie: the workspace service's history needs git 2.43 or later (cat-file -Z).
 FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f
 
@@ -25,11 +32,16 @@ RUN pnpm install --frozen-lockfile \
 RUN python3 -m venv /opt/hub \
  && /opt/hub/bin/pip install --no-cache-dir jupyterhub==5.5.4 jupyter-server-proxy==4.6.0 ipykernel==6.30.1 \
  && /opt/hub/bin/python -m ipykernel install --prefix=/opt/hub --name python3 \
- && mkdir -p /work && chown 1000:1000 /work
-COPY deploy/cloud/studio/jupyter_server_config.py /etc/jupyter/jupyter_server_config.py
-COPY deploy/cloud/studio/presmium_hub.py deploy/cloud/studio/control.mjs deploy/cloud/studio/share-build.mjs ./deploy/cloud/studio/
+ && mkdir -p /work /opt/presmium/warm && chown 1000:1000 /work /opt/presmium/warm
 ENV PATH=/opt/hub/bin:$PATH PYTHONPATH=/opt/presmium/deploy/cloud/studio HOME=/work/home XDG_STATE_HOME=/work/state XDG_CACHE_HOME=/work/cache XDG_CONFIG_HOME=/work/config PRESMIUM_VIEWER_SEED=/opt/presmium/viewer-seed
 USER 1000:1000
+# Work that every author's start would otherwise repeat, done once here: the example workspace copied and committed,
+# its history, and Studio's TypeScript transpiled (warm.mjs).
+COPY deploy/cloud/studio/warm.mjs ./deploy/cloud/studio/
+RUN node deploy/cloud/studio/warm.mjs
+COPY --from=pages /pages /opt/presmium/pages
+COPY deploy/cloud/studio/jupyter_server_config.py /etc/jupyter/jupyter_server_config.py
+COPY deploy/cloud/studio/presmium_hub.py deploy/cloud/studio/control.mjs deploy/cloud/studio/share-build.mjs ./deploy/cloud/studio/
 WORKDIR /work
 EXPOSE 8888
 CMD ["jupyterhub-singleuser"]

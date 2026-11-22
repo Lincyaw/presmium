@@ -12,6 +12,8 @@
 
 ## 2. 服务
 
+浏览器中的作者只看到 Presmium：控制台、登录页与 Studio。调度用 JupyterHub，但它与 Jupyter 的页面、名称与提示都不出现在作者的界面中（第 4 节）；地址栏中 Studio 的路径仍是 Hub 的 `/user/<名字>/studio/`。
+
 | 服务 | 职责 |
 |---|---|
 | Keycloak | OIDC 注册、登录、找回密码、邮箱验证；控制台与 JupyterHub 是同一 realm 的两个客户端 |
@@ -28,18 +30,22 @@
 
 服务器启动时，扩展 `presmium_hub.py`：
 
-1. 准备卷 `/work`：`space`（工作区，git 仓库；新用户得到示例工作区）、`state`（DeepSeek Harness 的会话、模型设置与 API Key）、`cache`、`home`、`config`。git 作者身份取 Keycloak 中的名字与邮箱。容器被停止时来不及清理状态文件，所以每次启动先删除卷上 Studio 与工作区服务留下的状态文件（`server.json`），以免新容器中碰巧同号的进程使工作区服务误以为已有服务在运行。
-2. 在回环端口启动 `presmium studio /work/space --public-url <Hub>/user/<名字>/studio/ --preview-url <Hub>/user/<名字>/preview/` 与控制服务。
+1. 准备卷 `/work`：`space`（工作区，git 仓库；新用户得到示例工作区）、`state`（DeepSeek Harness 的会话、模型设置与 API Key）、`cache`、`home`、`config`。git 作者身份取 Keycloak 中的名字与邮箱：作者登录过 JupyterHub 时取它保存的登录信息，否则取控制台启动服务器时传入的 `user_options`（`name`、`email`）。容器被停止时来不及清理状态文件，所以每次启动先删除卷上 Studio 与工作区服务留下的状态文件（`server.json`）与工作区服务的主机锁（`host.lock`），以免新容器中碰巧同号的进程使工作区服务误以为已有服务在运行，也以免停止后十秒内重新打开的 Studio 因锁尚未过期而无法启动。
+2. 启动控制服务，然后在后台准备工作区并在回环端口启动 `presmium studio /work/space --public-url <Hub>/user/<名字>/studio/ --preview-url <Hub>/user/<名字>/preview/`。服务器因此不等工作区与 Studio 就向 Hub 报告就绪，控制服务的 `GET /status` 回答启动进行到哪一步：`workspace`（正在复制示例工作区）、`studio`（Studio 与工作区服务正在启动）、`ready`（Studio 的状态文件已带启动令牌）。
 3. jupyter-server-proxy 在 `/user/<名字>/`（Hub 的基础路径之下，单一地址时为 `/studio/user/<名字>/`）下转发 `studio/`（去掉前缀）、`preview/`（保留路径）、`cloud/`（控制服务）。请求先过 JupyterHub 认证，只有本人或持有 `access:servers` 的控制台能到达。
-4. `/user/<名字>/presmium` 带启动令牌打开 Studio，可附 `document` 与 `id` 打开某份文稿。它返回同源发起跳转的页面，因为 DeepSeek Harness 的会话 cookie 是 `SameSite=Strict`。
+4. `/user/<名字>/presmium` 带启动令牌打开 Studio，可附 `document` 与 `id` 打开某份文稿，`locale`（`zh-CN`、`en`）是作者在控制台选择的语言。它返回同源发起跳转的页面，因为 DeepSeek Harness 的会话 cookie 是 `SameSite=Strict`；页面在本来源的存储中记下控制台的地址（`presmium.cloud.console`，Studio 的“设置”菜单据此显示“共享与连接”，在新标签页打开控制台的 `/settings`）与 Studio 启动画面的语言（尚未选择时）。
+
+所有作者相同的准备在构建镜像时做一次（`deploy/cloud/studio/warm.mjs`）：在 `/work/space` 复制并提交示例工作区，在其上启动一次 Studio，留下工作区、工作区服务对它的历史（以路径命名，与作者的相同）与 Studio 各进程载入的 TypeScript 的转译缓存（jiti，`/tmp/jiti`），都放在 `/opt/presmium/warm`。启动时把转译缓存复制到容器自己的 `/tmp`；新作者的工作区与历史用 `cp -a --reflink=auto` 从这里复制，复制完整后才改名为 `/work/space`。没有这份缓存时，每个新容器都要重新转译，约占 Studio 启动的大半时间。
 
 容器以普通用户运行，只读根文件系统，去掉全部 capabilities，no-new-privileges，限制内存、CPU 与进程数；`/tmp` 可执行（DeepSeek Harness 的原生模块从那里加载）。Studio 与预览同源，预览中文稿的代码可以以作者身份调用 Studio 接口（单一地址时也包括控制台的接口）；文稿的编译时代码本来就以作者身份运行，所以只复制信任的文稿，共享页对此有提示。
 
 ## 4. 打开、停止与回收
 
-- 控制台的“打开 Studio”链接到 `/hub/user-redirect/presmium`：经 Keycloak 登录（已登录时免输入），需要时启动容器并显示进度。
+- 登录后作者直接进入 Studio：控制台的 `/` 对已登录的作者是启动画面，它经 Hub API 启动服务器（`POST /api/studio/start`），按 `GET /api/studio/progress` 显示真实的阶段（启动空间、新作者的准备工作区、启动 Presmium Studio、打开 Studio；没有经过的阶段不列出），就绪后在同一标签页跳到 `/hub/user-redirect/presmium`，经 JupyterHub 的登录（Keycloak 已登录，只有跳转）进入 Studio。启动失败时最多再试两次，然后显示原因与重试。一分钟内被送回启动画面三次就不再自动跳转，改为显示“打开 Studio”，以免循环。共享、访问令牌与文稿列表在 `/settings`（“共享与连接”，账户菜单、启动画面与 Studio 的设置菜单都有入口）。
+- 作者不会看到 JupyterHub 与 Jupyter 的页面：`deploy/cloud/pages` 的模板（由 `build.mjs` 放入设计系统的样式与品牌标志，按控制台在本来源记下的语言或浏览器语言显示中文或英文）替换 JupyterHub 的 `template_paths` 与 single-user server 的 `extra_template_paths` 中作者可能到达的页面。启动中、停止中、未运行、主页、生成服务器与登出的页面把作者送回控制台（由它启动并显示进度，`token` 送到 `/settings`）；错误页按状态码用作者的话说明并给出“返回 Presmium”，不显示服务器的原始信息；JupyterHub 的登录页只在自动登录无法开始时出现，只有“登录”。管理页面 `/hub/admin` 仍是 JupyterHub 的，只给运营者。
+- 登出：控制台删除自己的会话后先把浏览器送到 JupyterHub 的 `/hub/logout`（清除它的 cookie，否则同一台电脑上下一位作者会进入上一位的 Studio），JupyterHub 再经 `logout_redirect_url` 送到控制台的 `/api/auth/signed-out`，由它结束 Keycloak 的会话。
 - 空闲 `CLOUD_STUDIO_IDLE_SECONDS`（默认 1800）后 idle culler（`jupyterhub-idle-culler`，每半个空闲时长检查一次）停止 Studio；空闲的命名环境（`env-*`）停止并从 Hub 中移除（`--remove-named-servers=True`），下次运行时重新创建。停止只删除容器，作者卷与环境卷都保留。控制台也可停止。Hub 从代理与各服务器得知活动的间隔取空闲时长的四分之一（30 到 300 秒），使正在使用的 Studio 不被停止；共享、创建副本与 MCP 调用经控制服务，也算活动。
-- 共享、创建副本与 MCP 调用时，控制台经 Hub API 启动用户的服务器并等待就绪。
+- 共享、创建副本与 MCP 调用时，控制台经 Hub API 启动用户的服务器，等到控制服务回答 `ready`（工作区已准备好，Studio 与工作区服务都在运行）再继续。
 - JupyterHub 重启或升级不停止运行中的 Studio（`cleanup_servers = False`）。
 
 ## 5. 共享与创建副本

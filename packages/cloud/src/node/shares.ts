@@ -128,7 +128,7 @@ export class Shares {
     const source = await this.storage.get(`shares/${row.id}/source.tar.gz`)
     if (!source) throw new CloudError(404, 'share-not-found')
     const name = this.hub.name(user)
-    await this.hub.running(name)
+    await this.hub.running(name, user)
     const answer = await (await this.hub.control(name, `/imports?${new URLSearchParams({ title: row.title })}`, { method: 'POST', body: source.body as unknown as BodyInit, headers: { 'content-type': 'application/gzip' }, timeoutMs: 5 * 60_000 })).json() as { document: string, id: string }
     if (typeof answer.document !== 'string' || typeof answer.id !== 'string') throw new CloudError(502, 'studio-control-failed')
     return answer
