@@ -1,5 +1,38 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.133
+
+### Patch Changes
+
+- Problems are explained in the author's language with the original text under Details; signing out of the cloud takes one step; copies of shared documents are named as copies; Settings has a heading; only a first start says it takes longer; the start screen retries a check that hangs instead of waiting on it; notebook export and code-environment messages no longer use Jupyter jargon.
+- Updated dependencies
+  - @lincyaw/addon-exec@1.0.0-rc.133
+  - @lincyaw/studio@0.2.0-rc.132
+  - @lincyaw/addon-assistant@1.0.0-rc.133
+  - @lincyaw/addon-classroom@1.0.0-rc.133
+  - @lincyaw/addon-code@1.0.0-rc.133
+  - @lincyaw/addon-content@1.0.0-rc.133
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.133
+  - @lincyaw/addon-exec-local@1.0.0-rc.133
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.133
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.133
+  - @lincyaw/addon-guide@1.0.0-rc.133
+  - @lincyaw/addon-lecture@1.0.0-rc.133
+  - @lincyaw/addon-motion@1.0.0-rc.133
+  - @lincyaw/addon-publish@1.0.0-rc.133
+  - @lincyaw/addon-session@1.0.0-rc.133
+  - @lincyaw/addon-speech@1.0.0-rc.133
+  - @lincyaw/addon-stage@1.0.0-rc.133
+  - @lincyaw/cli@1.0.0-rc.133
+  - create-presmium@1.0.0-rc.133
+  - @lincyaw/host@1.0.0-rc.133
+  - @lincyaw/kernel@1.0.0-rc.133
+  - @lincyaw/mcp@1.0.0-rc.133
+  - @lincyaw/render-notebook@1.0.0-rc.133
+  - @lincyaw/render-slides@1.0.0-rc.133
+  - @lincyaw/viewer@1.0.0-rc.133
+  - @lincyaw/web@1.0.0-rc.133
+
 ## 1.0.0-rc.132
 
 ### Patch Changes

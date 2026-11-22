@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { brandMarkup } from '@lincyaw/design'
 import { PmAgentActivity, PmButton, PmCard, PmDialog, PmEmpty, PmIcon, PmIconButton, PmInput, PmMenu, PmNotice, PmSkeleton, PmToolbar, PmToolbarButton } from '@lincyaw/workbench/components'
-import { dateLabel, request, setCsrfToken } from './api.ts'
+import { ApiError, dateLabel, request, setCsrfToken } from './api.ts'
 import type { AccessToken, Locale, SessionAnswer, Share, SharedDocument, Studio, StudioStage, WorkspaceDocument } from './api.ts'
 import { CopyField, ErrorNotice, ResourceState, SectionHeading, Status } from './components.tsx'
 import { failureMessage, useMutation, useResource } from './hooks.ts'
@@ -64,6 +64,11 @@ export default function App() {
 
 const STAGES: StudioStage[] = ['container', 'workspace', 'studio', 'ready']
 const HOPS = 'presmium.cloud.opened'
+/** A progress check or start request that takes longer than this is abandoned and asked again. */
+const PROGRESS_TIMEOUT = 15_000
+const START_TIMEOUT = 20_000
+/** A failure the next try may not meet: a timeout, a dropped connection, or the console or Hub briefly unavailable. */
+const transient = (error: unknown) => error instanceof DOMException && error.name === 'TimeoutError' || error instanceof TypeError || error instanceof ApiError && error.status >= 502
 
 /** The hops to Studio in the last minute: a Studio that sends the author back here again and again is not opened again. */
 function recentHops(): number[] {
@@ -92,7 +97,17 @@ function Launch({ t, locale }: { t: Messages, locale: Locale }) {
       try {
         while (alive) {
           if (Date.now() > until) { setFailed(true); return }
-          const progress = await request<{ stage: StudioStage, url: string, firstStart?: boolean }>(`/api/studio/progress?locale=${locale}${asked ? '' : '&first=1'}`)
+          // A check that hangs (a dropped connection, a stalled proxy) is abandoned and asked again, so the screen
+          // never waits on one request.
+          let progress: { stage: StudioStage, url: string, firstStart?: boolean }
+          try {
+            progress = await request(`/api/studio/progress?locale=${locale}${asked ? '' : '&first=1'}`, { signal: AbortSignal.timeout(PROGRESS_TIMEOUT) })
+          } catch (error) {
+            if (!alive) return
+            if (!transient(error)) throw error
+            await new Promise(done => setTimeout(done, 1500))
+            continue
+          }
           if (!alive) return
           asked = true
           if (progress.firstStart || progress.stage === 'workspace') setFirstStart(true)
@@ -107,7 +122,10 @@ function Launch({ t, locale }: { t: Messages, locale: Locale }) {
           if (progress.stage === 'stopped') {
             // A start that ends stopped again has failed; one more try, then the author decides.
             if (starts++ >= 2) { setFailed(true); return }
-            await request('/api/studio/start', { method: 'POST' })
+            await request('/api/studio/start', { method: 'POST', signal: AbortSignal.timeout(START_TIMEOUT) }).catch((error: unknown) => {
+              // The start goes on in the Hub; the next check sees it.
+              if (!transient(error)) throw error
+            })
           } else if (progress.stage !== 'stopping') {
             seen.current.add(progress.stage); setStage(progress.stage)
           }
