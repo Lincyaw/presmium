@@ -9,7 +9,7 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs'
 import { basename, dirname, extname, join, posix, relative, resolve, sep } from 'node:path'
 import type { MdastNode } from '@lincyaw/kernel'
-import { DOCUMENT_ENTRY } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, enableDocumentProduction } from '@lincyaw/kernel'
 import { topLevelRanks } from './document-tree.ts'
 import { withImportNotices } from './import-notices.ts'
 import type { ImportNotice } from './import-notices.ts'
@@ -201,9 +201,12 @@ function writeNotes({ root, out, isExcluded }: ReturnType<typeof discover>, opti
         image: attach,
       },
     })
+    const type = extname(note.file).toLowerCase()
     // A PowerPoint deck stays a deck: it is shown and exported as slides, as well as on the site.
-    if (extname(note.file).toLowerCase() === '.pptx') converted.metadata.renderers = { web: {}, slides: {}, ...converted.metadata.renderers }
-    const document = withImportNotices(converted, note.notices ?? [])
+    if (type === '.pptx') converted.metadata.renderers = { web: {}, slides: {}, ...converted.metadata.renderers }
+    // A Word document gets the forms of a new document: the site, slides (PDF and PowerPoint), the notebook and the lecture.
+    if (type === '.docx') converted.metadata.renderers = { web: {}, slides: {}, notebook: {}, ...converted.metadata.renderers }
+    const document = withImportNotices(type === '.docx' ? enableDocumentProduction(converted) : converted, note.notices ?? [])
     const folder = options.group ? posix.dirname(note.path).split('/').slice(0, options.group).at(-1) : undefined
     if (folder && folder !== '.') document.metadata.tags = [folder, ...(document.metadata.tags ?? []).filter(tag => tag !== folder)]
     mkdirSync(docDir, { recursive: true })
