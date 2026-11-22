@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { speechEngineId } from '@lincyaw/kernel'
-import type { PresmiumDocument, VoiceInfo, VoiceoverJob, VoiceoverSnapshot, VoiceScope } from '@lincyaw/kernel'
+import type { PresmiumDocument, VoiceoverJob, VoiceoverSnapshot, VoiceScope } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmField, PmNotice } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { documentVoiceStepIds, resolveDocumentStepVoice } from '../document-voices.ts'
 import type { DocumentVoiceScope } from '../document-voices.ts'
 import { VOICE_MESSAGES, voiceFailure } from '../voice-messages.ts'
+import { useVoiceNames } from '../voice-catalog.ts'
 import { voiceTitle } from '../voice-names.ts'
 import { prepareVoiceSnapshot, runtimeVoiceScope, voiceSnapshotCurrent } from '../voice-snapshot.ts'
 import type { VoiceSnapshot } from '../voice-snapshot.ts'
@@ -41,7 +42,6 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
   const jobsFailure = useWorkbenchState(state => state.voiceoverJobsFailure)
   const readOnly = useWorkbenchState(state => Boolean(state.authoring?.loading || state.authoring?.composing) || isAgentChanging(state))
   const [scope, setScope] = useState<DocumentVoiceScope>({ kind: 'document' })
-  const [voiceNames, setVoiceNames] = useState<VoiceInfo[]>([])
   const [checked, setChecked] = useState<CheckedVoice>(), [status, setStatus] = useState<VoiceoverSnapshot>(), [statusStamp, setStatusStamp] = useState('')
   const [loading, setLoading] = useState(true), [submitting, setSubmitting] = useState(false), [cancelling, setCancelling] = useState<string>()
   const [changed, setChanged] = useState(false), [error, setError] = useState<string>(), [attempt, setAttempt] = useState(0)
@@ -142,15 +142,8 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
       return { cached, missing, blocked, providers, voices, silent, reasons, text, hasUnbound: !unbound.length && (status.unboundByPage ?? []).some(value => pages.has(value.section) && value.utterances > 0) }
     } catch { return undefined }
   }, [checked, status, scope, source?.inherited])
-  const voiceKey = JSON.stringify(selection?.voices.map(voice => voice.engine ?? '') ?? [])
-  useEffect(() => {
-    const directory = checked?.snapshot.directory, engines = [...new Set(selection?.voices.map(voice => voice.engine) ?? [])]
-    if (directory === undefined || !engines.length) return
-    const controller = new AbortController()
-    void Promise.all(engines.map(engine => workbench.client.readVoiceCatalog(directory, engine, undefined, controller.signal).then(answer => answer.catalog.voices, () => [])))
-      .then(lists => { if (!controller.signal.aborted) setVoiceNames(lists.flat()) })
-    return () => controller.abort()
-  }, [workbench, checked?.snapshot.directory, voiceKey])
+  const engines = [...new Set(selection?.voices.map(voice => voice.engine) ?? [])]
+  const voiceNames = useVoiceNames(checked?.snapshot.directory, engines, effectiveOf(checked?.document, source?.inherited)?.metadata.lang ?? 'zh-CN')
   const hasScopeJob = useMemo(() => {
     if (!checked) return false
     try {

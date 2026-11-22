@@ -6,6 +6,7 @@ import { PmButton, PmDialog, PmField, PmInput, PmNotice, PmSearchList, PmSegment
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { documentVoiceStepIds, previewDocumentVoiceChange, resolveDocumentStepVoice } from '../document-voices.ts'
 import type { DocumentVoiceScope } from '../document-voices.ts'
+import { readVoiceCatalog } from '../voice-catalog.ts'
 import { readVoiceDraft, voiceDraftStorageStatus } from '../voice-drafts.ts'
 import type { VoiceDraft } from '../voice-drafts.ts'
 import { PRODUCTION_MESSAGES } from '../production-messages.ts'
@@ -55,20 +56,20 @@ export function DocumentVoiceDialog({ stepId, mode = 'document', onClose, onAppl
     const stop = audition.subscribe(() => { if (owner.current.active) setListening(audition.snapshot()) })
     return () => { owner.current.active = false; owner.current.generation++; request.current?.abort(); stop(); audition.dispose() }
   }, [])
+  const lang = effectiveOf(actor?.content, actor?.inherited)?.metadata.lang ?? 'zh-CN'
   useEffect(() => {
     const controller = new AbortController()
     setCatalogBusy(true); setCatalogFailure(undefined)
-    void workbench.client.readVoiceCatalog(directory, engineFilter, undefined, controller.signal).then(value => {
+    void readVoiceCatalog(workbench.client, directory, engineFilter, lang, serviceVersion).then(value => {
       if (!controller.signal.aborted) setCatalog(value)
     }, error => { if (!controller.signal.aborted) setCatalogFailure(voiceFailure(error, locale)) }).finally(() => { if (!controller.signal.aborted) setCatalogBusy(false) })
     return () => controller.abort()
-  }, [workbench, directory, engineFilter, reload, actor?.reset, locale, serviceVersion])
+  }, [workbench, directory, engineFilter, reload, lang, locale, serviceVersion])
   const document = actor?.content, validTarget = actor?.identity === identity && Boolean(document?.steps[stepId])
   const engineId = engineFilter ?? catalog?.engine
   const engines = catalog?.engines.filter(engine => engine.tts) ?? []
   const engine: SpeechEngineInfo | undefined = engines.find(engine => engine.id === (draft.source?.type === 'tts' ? draft.source.voice.engine ?? engineId : engineId))
   const voices = catalog?.catalog.status === 'available' ? catalog.catalog.voices : []
-  const lang = effectiveOf(document, actor?.inherited)?.metadata.lang ?? 'zh-CN'
   const spoken = voices.filter(voice => supportsLanguage(voice.lang, lang))
   // The document's own language and region first: 普通话 before 粤语 for a zh-CN document.
   const listed = (spoken.length ? spoken : voices).map((voice, index) => ({ voice, rank: voice.lang.some(tag => tag.toLowerCase() === lang.toLowerCase()) ? 0 : 1, index }))

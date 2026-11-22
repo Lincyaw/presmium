@@ -1,42 +1,13 @@
 import { useEffect, useState } from 'react'
-import type { VoiceInfo } from '@lincyaw/kernel'
 import { PmButton, PmField } from '../components.tsx'
 import { useInheritedFrom, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { resolveDocumentStepVoice } from '../document-voices.ts'
 import { PRODUCTION_MESSAGES } from '../production-messages.ts'
+import { useVoiceNames } from '../voice-catalog.ts'
 import { voiceTitle } from '../voice-names.ts'
 import { isAgentChanging } from '../workbench-state.ts'
 import { DocumentVoiceDialog } from './DocumentVoiceDialog.tsx'
 import { effectiveOf } from '../effective-settings.ts'
-
-const catalogs = new Map<string, Promise<VoiceInfo[] | undefined>>()
-// A read refused while the document is still settling after a change (the voice just chosen) is asked again shortly.
-const RETRY_MS = 1000, RETRIES = 3
-
-/** The catalogue entry of a saved voice, for its name; one read per document, engine and service change. */
-function useVoiceInfo(directory: string | undefined, engine: string | undefined, voice: string | undefined): VoiceInfo | undefined {
-  // A failed read is not kept: it is asked again, and the next saved version of the document asks again too.
-  const workbench = useWorkbench(), serviceVersion = useWorkbenchState(state => state.voiceServiceVersion), version = useWorkbenchState(state => state.authoring?.version)
-  const [info, setInfo] = useState<VoiceInfo>(), [retry, setRetry] = useState(0)
-  useEffect(() => { setRetry(0) }, [directory, engine, voice, serviceVersion, version])
-  useEffect(() => {
-    if (directory === undefined || !voice) { setInfo(undefined); return }
-    const key = JSON.stringify([directory, engine ?? '', serviceVersion ?? 0])
-    let list = catalogs.get(key)
-    if (!list) {
-      list = workbench.client.readVoiceCatalog(directory, engine).then(answer => answer.catalog.voices, () => { catalogs.delete(key); return undefined })
-      catalogs.set(key, list)
-    }
-    let live = true, timer: ReturnType<typeof setTimeout> | undefined
-    void list.then(voices => {
-      if (!live) return
-      setInfo(voices?.find(value => value.id === voice))
-      if (!voices && retry < RETRIES) timer = setTimeout(() => setRetry(value => value + 1), RETRY_MS)
-    })
-    return () => { live = false; clearTimeout(timer) }
-  }, [workbench, directory, engine, voice, serviceVersion, version, retry])
-  return info
-}
 
 /** The document's voice with its plain name, the one-step choice for the whole document, and generating all of it. */
 export function DocumentVoiceField({ stepId, disabled = false, onGenerate, onChanged }: { stepId: string, disabled?: boolean, onGenerate?(): void, onChanged?(): void }) {
@@ -48,11 +19,13 @@ export function DocumentVoiceField({ stepId, disabled = false, onGenerate, onCha
   const inheritedFrom = useInheritedFrom('production.defaults.voiceSource')
   useEffect(() => { setOpen(undefined) }, [source?.identity, stepId])
   const document = source?.content, step = document?.steps[stepId], p = PRODUCTION_MESSAGES[locale]
-  const voice = document && step ? resolveDocumentStepVoice(effectiveOf(document, source?.inherited), stepId) : undefined
-  const info = useVoiceInfo(source?.directory, voice?.value?.type === 'tts' ? voice.value.voice.engine : undefined, voice?.value?.type === 'tts' ? voice.value.voice.voice : undefined)
+  const effective = effectiveOf(document, source?.inherited)
+  const voice = effective && step ? resolveDocumentStepVoice(effective, stepId) : undefined
+  const tts = voice?.value?.type === 'tts' ? voice.value.voice : undefined
+  const names = useVoiceNames(tts ? source?.directory : undefined, tts ? [tts.engine] : [], effective?.metadata.lang ?? 'zh-CN')
   if (!document || !step || !source?.identity || !voice) return null
   const recording = voice.value?.type === 'recording' ? document.assets[voice.value.assetId] : undefined
-  const label = voice.value?.type === 'tts' ? voiceTitle(voice.value.voice.voice, info, locale)
+  const label = voice.value?.type === 'tts' ? voiceTitle(voice.value.voice.voice, names.find(info => info.id === tts?.voice), locale)
     : voice.value?.type === 'none' ? p.none
       : voice.value?.type === 'recording' ? recording?.title || p.recording : p.unset
   const choose = (mode: 'document' | 'step') => { workbench.pauseDocumentStep(step.sectionId, stepId); workbench.stopAuditions(); setOpen(mode) }

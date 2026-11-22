@@ -220,7 +220,7 @@ CLI 的 `mcp call` 与按名称查询 `mcp tools <工具>` 同时接受精简目
 
 ## 9. 音色与配音
 
-- `get_voice_authoring_capabilities` 与 `get_voice_catalog` 不等待编译。`status=configured` 只表示引擎声明可合成；目录区分 available、unsupported 与 unknown。
+- `get_voice_authoring_capabilities` 与 `get_voice_catalog` 不等待编译。`status=configured` 只表示引擎声明可合成；目录区分 available、unsupported 与 unknown。音色目录与文稿正文无关：不指定来源的读取跟随文稿的最新版本，读取期间的保存（例如刚选的音色）只让它重读，不返回冲突；指定 `source` 的读取在版本变化时仍返回 409 `document-version-changed`。Studio 中显示与提供音色的地方共用一份按文稿、引擎、语言与语音服务缓存的目录（`packages/workbench/src/voice-catalog.ts`），失败的读取不缓存。
 - 每文稿一个配音 owner；`VOICEOVER_EXECUTION` 是实际实现，`VOICEOVER` 只是安装标记。
 - 视频制作的播放按钮复用此 owner 按当前缺失单元开始任务；生成中可以暂停取消，已完成缓存保留。该播放意图绑定源码、工程修订和明确导航版本，不由被动任务观察触发；agent 的生成仍经 `spend`。
 

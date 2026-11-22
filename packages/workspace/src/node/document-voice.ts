@@ -66,6 +66,14 @@ export function createDocumentVoiceAuthoring({ editor, services, prepareExecutio
     signal.throwIfAborted(); current(document, member, opened.source)
     return { ...opened, ...loaded }
   }
+  // A read that names no version follows the document: a save while it loads (the voice just chosen) is read again,
+  // not refused; only a document that keeps changing is.
+  const loadLatest = async (document: string, member: Member, signal: AbortSignal) => {
+    for (let attempt = 1; ; attempt++) {
+      try { return await load(document, member, signal) }
+      catch (error) { if (attempt >= 3 || !(error instanceof RequestError && error.status === 409 && error.message === 'document-version-changed')) throw error }
+    }
+  }
   const execution = (document: string, member: Member) => async (expected: CanonicalSource | undefined, signal: AbortSignal) => {
     const loaded = await load(document, member, signal, expected)
     if (!loaded.voiceoverExecution) throw new RequestError(503, 'voiceover-unavailable')
@@ -160,24 +168,26 @@ export function createDocumentVoiceAuthoring({ editor, services, prepareExecutio
       return speech.cloneStatus(engine, query.voice, signal)
     }),
     capabilities: (document, member, signal) => work(signal, async signal => {
-      const loaded = await load(document, member, signal)
+      const loaded = await loadLatest(document, member, signal)
       const [engines, defaultEngine] = await Promise.all([loaded.speech?.engines() ?? [], loaded.speech?.defaultSynthesisEngine?.()])
-      signal.throwIfAborted(); current(document, member, loaded.source)
+      signal.throwIfAborted()
       const configured = engines.some(engine => engine.tts), unknown = !loaded.speech && loaded.findings?.some(finding => finding.severity === 'error')
       const implemented = Boolean(loaded.voiceoverExecution)
       return { document, source: loaded.source, verification: 'configuration-only', status: configured ? 'configured' : unknown ? 'unknown' : 'unavailable', ...!configured ? { reason: unknown ? 'services-unavailable' : 'not-configured' } as const : {}, voiceover: implemented, preview: implemented, engines, ...defaultEngine ? { defaultEngine } : {}, ...loaded.findings?.length ? { findings: loaded.findings } : {}, actions: { status: implemented, list: true, get: true, start: implemented && configured, cancel: true, quotePreview: implemented, preview: implemented && configured, readPreview: true, clone: hasRole(member, 'owner') && Boolean(loaded.speech?.cloneVoice) && engines.some(engine => engine.clone), cloneStatus: hasRole(member, 'owner') && Boolean(loaded.speech?.cloneStatus) && engines.some(engine => engine.clone) }, tasks: { idempotency: 'process', limits: ownerOf(document, member).limits } }
     }),
     catalog: (document, query, member, signal) => work(signal, async signal => {
       if (!validateDocumentVoiceCatalogQuery(query)) throw new RequestError(400, 'voice-catalog-query-invalid')
-      const loaded = await load(document, member, signal, query.source)
+      // The voices do not depend on the document's text: only a read pinned to a version is refused when it moves on.
+      const loaded = query.source ? await load(document, member, signal, query.source) : await loadLatest(document, member, signal)
+      const pinned = () => { signal.throwIfAborted(); if (query.source) current(document, member, loaded.source) }
       const engines = await loaded.speech?.engines() ?? []
-      signal.throwIfAborted(); current(document, member, loaded.source)
+      pinned()
       const preferred = query.engine ?? await loaded.speech?.defaultSynthesisEngine?.()
-      signal.throwIfAborted(); current(document, member, loaded.source)
+      pinned()
       const chosen = preferred ? engines.find(engine => engine.tts && engine.id === speechEngineId(preferred)) : undefined
       const unknown = !loaded.speech && loaded.findings?.some(finding => finding.severity === 'error')
       const catalog = chosen && loaded.speech ? await loaded.speech.voiceCatalog?.(chosen.id, query.lang ?? loaded.lang, signal) ?? { status: 'unavailable' as const, reason: 'unknown' as const, voices: [] } : { status: 'unavailable' as const, reason: unknown ? 'unknown' as const : 'not-configured' as const, voices: [] }
-      signal.throwIfAborted(); current(document, member, loaded.source)
+      pinned()
       return { document, source: loaded.source, engines, catalog, ...catalog.status === 'available' && chosen ? { engine: chosen.id } : {}, ...loaded.findings?.length ? { findings: loaded.findings } : {} }
     }),
     snapshot: (document, query, member, signal) => ownerOf(document, member).snapshot(query, execution(document, member), signal),
