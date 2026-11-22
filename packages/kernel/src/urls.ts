@@ -11,3 +11,8 @@ export const NON_FILE_URL = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i
 export function urlSlug(text: string): string {
   return text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '')
 }
+
+/** The folder name for a new document called `title`: its slug in any script, at most `max` characters, else `document`. */
+export function documentFolderName(title: string, max = 48): string {
+  return [...urlSlug(title)].slice(0, max).join('').replace(/-+$/, '') || 'document'
+}

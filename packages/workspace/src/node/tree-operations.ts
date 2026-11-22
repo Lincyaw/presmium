@@ -1,7 +1,7 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { randomBytes } from 'node:crypto'
 import { dirname, join, relative, resolve, sep } from 'node:path'
-import { copyEmbeddedBlock, DOCUMENT_ENTRY, withReferenceFallbacks, freshDocumentId, hasRole, isRecord, ranksBetween, validateDocument } from '@lincyaw/kernel'
+import { copyEmbeddedBlock, DOCUMENT_ENTRY, documentFolderName, withReferenceFallbacks, freshDocumentId, hasRole, isRecord, ranksBetween, validateDocument } from '@lincyaw/kernel'
 import type { BlockId, DocumentId, Member, PresmiumDocument, TreeOperation, TreeOperationResult } from '@lincyaw/kernel'
 import { isWithin } from '../domain/paths.ts'
 import { effectiveContent, isDocumentDir } from './config.ts'
@@ -96,8 +96,6 @@ class Journal {
   finish() { for (const done of this.#after) { try { done() } catch { /* A leftover in .presmium is harmless. */ } } }
 }
 
-const slugOf = (title: string) => title.normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48) || 'document'
-
 /**
  * The workspace's tree operations (docs/authoring-actions.md): each is atomic, the documents it changes are written
  * together and recorded as one revision, under the documents' locks. Folders are never moved by a move or rename;
@@ -163,7 +161,7 @@ export class TreeOperations {
 
   #freshDir(title: string): string {
     const taken = this.#dirs()
-    const base = `${NEW_DOCUMENTS_DIR}/${slugOf(title)}`
+    const base = `${NEW_DOCUMENTS_DIR}/${documentFolderName(title)}`
     for (let n = 1; ; n++) {
       const dir = n === 1 ? base : `${base}-${n}`
       if (!existsSync(join(this.#root, dir)) && isDocumentDir(this.#options.config, dir) && !taken.some(other => other !== '' && (isWithin(dir, other) || isWithin(other, dir)))) return dir

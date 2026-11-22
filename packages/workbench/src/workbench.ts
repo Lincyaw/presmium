@@ -2,7 +2,7 @@ import { DocumentProduction } from './document-production.ts'
 import { DocumentEditing } from './document-editing.ts'
 import { isAgentChanging } from './workbench-state.ts'
 import type { AgentAnswer, AgentDraft, AgentRequest, PlaybackKey, Pointer, PreviewSink, WebView, WorkbenchMode, WorkbenchState, WorkbenchStore } from './workbench-state.ts'
-import { enableDocumentProduction, randomUUID, DOCUMENT_ENTRY } from '@lincyaw/kernel'
+import { documentFolderName, enableDocumentProduction, randomUUID, DOCUMENT_ENTRY } from '@lincyaw/kernel'
 import type { ProjectOperation, ProjectPlan, AuthoringWindowSnapshot, AuthoringWindowAction, AuthoringWindowRequest, AuthoringWindowRequestResult } from '@lincyaw/kernel'
 import { CommentDraftBank } from './document-editor/comment-drafts.ts'
 import { ComponentPropertyDrafts } from './component-property-drafts.ts'
@@ -101,7 +101,7 @@ export function documentDirFor(title: string, taken: readonly string[]): string 
     parents.set(parent, (parents.get(parent) ?? 0) + 1)
   }
   const parent = [...parents].sort((a, b) => b[1] - a[1])[0]?.[0] ?? ''
-  const slug = title.normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'document'
+  const slug = documentFolderName(title, 40)
   const base = parent ? `${parent}/${slug}` : slug
   let dir = base
   for (let n = 2; taken.includes(dir); n++) dir = `${base}-${n}`

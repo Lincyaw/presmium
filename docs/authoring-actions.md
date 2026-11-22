@@ -412,7 +412,7 @@ agent 的循环：探测能力 → 读源 → 预检 → 提交或开始任务 �
 
 树操作（`packages/workspace/src/node/tree-operations.ts`）都是原子的：在涉及文稿的锁与历史锁之下改文件，记一条修订，涉及的每份文稿的历史中都有它（回答的 `revisions` 逐份列出），可以撤消；任何一步失败都还原全部文件，不留修订。文件夹只在回收站进出时移动，移动与改名不动文件夹。
 
-- `create { title, parent, after? }`：在 `docs/<由标题得出的名字>/` 用默认文稿模板新建一份文稿（重名时加 `-2` 等），一页一步，放在 `after` 之后（缺省或 `null` 为第一个）。放在上级之下时不写语言、插件、渲染端、插件配置、执行与检查，由上级继承。标题为空是 `tree.title-empty`。
+- `create { title, parent, after? }`：在 `docs/<由标题得出的名字>/` 用默认文稿模板新建一份文稿（名字保留标题中各种文字的字母与数字，例如中文，其余字符连成一个 `-`；没有字母与数字时为 `document`，重名时加 `-2` 等），一页一步，放在 `after` 之后（缺省或 `null` 为第一个）。放在上级之下时不写语言、插件、渲染端、插件配置、执行与检查，由上级继承。标题为空是 `tree.title-empty`。
 - `move { id, parent, after? }`：只改被移动文稿的 `placement`，`rank` 取新邻居之间；移到自己或自己的下级之下是 `tree.cycle`。
 - `rename { id, title }`：只改 `metadata.title`。
 - `duplicate { id }`：复制到新文件夹，新 ID，标题加“副本 / (copy)”，放在原文稿之后；下级文稿不复制，其中的引用不变。
