@@ -7,6 +7,7 @@ import { SECTION_CONTEXT } from '../section-context.ts'
 import { viewerMessages } from '../viewer-messages.ts'
 import { useViewer } from '../viewer-state.ts'
 import { h } from '../element.ts'
+import { BLOCK_CLASS } from '../slidev-compat/click-directives.ts'
 import { layers, visuals } from './overlay.ts'
 import './slide.css'
 const MESSAGES = { 'zh-CN': { steps: (at: number, of: number) => `第 ${at} 步，共 ${of} 步` }, en: { steps: (at: number, of: number) => `Step ${at} of ${of}` } }
@@ -127,7 +128,7 @@ export function slideCrowdingProblems(): { level: 'warning', plugin: string, sec
 // The shrink is measured after layout and before paint and written to the element itself, not through a render:
 // a render would come a frame late, and the new slide would show for that frame at full size. With `readable` (the
 // presentation) it stops at `SLIDE_MIN_SCALE`, and the body scrolls what does not fit; printed, the whole slide shrinks.
-function SlideBody({ zoom, readable, onFit, children }: { zoom?: number, readable: boolean, onFit?: (fit: number) => void, children?: ReactNode }) {
+function SlideBody({ zoom, readable, step, onFit, children }: { zoom?: number, readable: boolean, step: number, onFit?: (fit: number) => void, children?: ReactNode }) {
   const frame = useRef<HTMLDivElement>(null)
   const content = useRef<HTMLDivElement>(null)
   const fitted = useRef(onFit)
@@ -153,8 +154,24 @@ function SlideBody({ zoom, readable, onFit, children }: { zoom?: number, readabl
   }, [readable])
   // A new revision of the document can change the slide without changing its size.
   useLayoutEffect(() => measure.current?.())
+  // A step that reveals content below (or above) what a scrolling slide shows scrolls it into view, its top kept in view.
+  useEffect(() => {
+    const outer = frame.current, inner = content.current
+    if (!readable || !outer || !inner || !outer.classList.contains('pm-slide__body--scrolls')) return
+    const revealed = [...inner.querySelectorAll<HTMLElement>(`.${BLOCK_CLASS}[data-at="${step}"]:not(.pm-hidden)`)]
+    if (!revealed.length) return
+    const id = requestAnimationFrame(() => {
+      const box = outer.getBoundingClientRect(), rects = revealed.map(element => element.getBoundingClientRect())
+      const top = Math.min(...rects.map(rect => rect.top)), bottom = Math.max(...rects.map(rect => rect.bottom))
+      const delta = bottom > box.bottom ? Math.min(bottom - box.bottom, top - box.top) : top < box.top ? top - box.top : 0
+      // The slide is drawn scaled: the distance on screen, in the body's own pixels.
+      const scale = box.height / Math.max(1, outer.clientHeight)
+      if (Math.abs(delta) >= 1) outer.scrollBy({ top: delta / scale, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+    })
+    return () => cancelAnimationFrame(id)
+  }, [step, readable])
   return h('div', { ref: frame, className: 'pm-slide__body' }, h('div', { ref: content, className: 'pm-slide__content', style: zoom ? { zoom } : undefined }, children))
 }
 
-export function SlideFace({ section, step, view = 'present', onFit }: { section: IRSection, step: number, view?: string, onFit?: (fit: number) => void }) { const { viewer, chapters } = useSlides(); const doc = useStore(viewer.doc); const t = useMessages(MESSAGES); const { sections } = doc; const options = slideOptions(section, section.index === 1 && sections.length > 1); const chapter = options.layout === 'cover' || options.layout === 'full' ? undefined : chapters.get(section.id); const done = Math.min(step, section.steps); const readable = (view === 'present' || view === 'presenter') && !capturing; return h(SECTION_CONTEXT.Provider, { value: { section, step, view } }, h('div', { class: ['pm-slide', `pm-slide--${options.layout}`, options.className], 'data-section': section.id, 'data-slide': section.index, 'data-step': step }, [chapter ? h('p', { className: 'pm-slide__chapter' }, chapter) : null, h(SlideBody, { key: section.id, zoom: options.zoom, readable, onFit: onFit ?? (readable ? (fit: number) => measured(doc, section.id, fit) : undefined) }, [h(options.layout === 'cover' ? 'h1' : 'h2', { className: 'pm-slide__title' }, section.title), ...visuals(section, step)]), options.layout === 'full' ? null : h('footer', { className: 'pm-slide__footer' }, [options.layout === 'cover' ? null : h('span', { className: 'pm-slide__deck' }, doc.meta.title), section.steps > 0 ? h('span', { className: 'pm-slide__steps', role: 'img', 'aria-label': t.steps(done, section.steps), style: { '--pm-slide-steps': section.steps } }, Array.from({ length: section.steps }, (_, i) => h('span', { key: i, 'data-done': i < done ? '' : undefined }))) : null, h('span', { className: 'pm-slide__page' }, `${section.index} / ${sections.length}`)]), h('div', { className: 'pm-slide__layers' }, layers(view, 'slide', { section: section.id, step }))])) }
+export function SlideFace({ section, step, view = 'present', onFit }: { section: IRSection, step: number, view?: string, onFit?: (fit: number) => void }) { const { viewer, chapters } = useSlides(); const doc = useStore(viewer.doc); const t = useMessages(MESSAGES); const { sections } = doc; const options = slideOptions(section, section.index === 1 && sections.length > 1); const chapter = options.layout === 'cover' || options.layout === 'full' ? undefined : chapters.get(section.id); const done = Math.min(step, section.steps); const readable = (view === 'present' || view === 'presenter') && !capturing; return h(SECTION_CONTEXT.Provider, { value: { section, step, view } }, h('div', { class: ['pm-slide', `pm-slide--${options.layout}`, options.className], 'data-section': section.id, 'data-slide': section.index, 'data-step': step }, [chapter ? h('p', { className: 'pm-slide__chapter' }, chapter) : null, h(SlideBody, { key: section.id, zoom: options.zoom, readable, step, onFit: onFit ?? (readable ? (fit: number) => measured(doc, section.id, fit) : undefined) }, [h(options.layout === 'cover' ? 'h1' : 'h2', { className: 'pm-slide__title' }, section.title), ...visuals(section, step)]), options.layout === 'full' ? null : h('footer', { className: 'pm-slide__footer' }, [options.layout === 'cover' ? null : h('span', { className: 'pm-slide__deck' }, doc.meta.title), section.steps > 0 ? h('span', { className: 'pm-slide__steps', role: 'img', 'aria-label': t.steps(done, section.steps), style: { '--pm-slide-steps': section.steps } }, Array.from({ length: section.steps }, (_, i) => h('span', { key: i, 'data-done': i < done ? '' : undefined }))) : null, h('span', { className: 'pm-slide__page' }, `${section.index} / ${sections.length}`)]), h('div', { className: 'pm-slide__layers' }, layers(view, 'slide', { section: section.id, step }))])) }
 export function SlidesPrint({ steps = false, slides }: { steps?: boolean, slides?: readonly number[] }) { const { viewer, shape } = useSlides(); const doc = useStore(viewer.doc); useEffect(() => { let disposed = false; void (async () => { await document.fonts.ready; await Promise.all([...document.images].map(image => image.complete ? undefined : new Promise<void>(done => { image.addEventListener('load', () => done(), { once: true }); image.addEventListener('error', () => done(), { once: true }) }))); if (!disposed) document.documentElement.setAttribute('data-presmium-printed', '') })(); return () => { disposed = true; document.documentElement.removeAttribute('data-presmium-printed') } }, []); const chosen = slides && new Set(slides); const pages = doc.sections.filter(section => !chosen || chosen.has(section.index)).flatMap(section => steps ? Array.from({ length: section.steps + 1 }, (_, step) => ({ section, step })) : [{ section, step: section.steps }]); return h('div', { className: 'pm-slides-print', style: { '--pm-slide-width': `${shape.width}px`, '--pm-slide-height': `${shape.height}px` } }, pages.map(({ section, step }) => h('div', { key: `${section.id}@${step}`, className: 'pm-slides-print__page', style: { width: `${shape.width}px`, height: `${shape.height}px` } }, h(SlideFace, { section, step, view: 'print' })))) }
