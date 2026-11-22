@@ -1,8 +1,8 @@
 import { ICONS } from '@lincyaw/design'
 import type { IconName } from '@lincyaw/design'
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { createElement, forwardRef, useEffect, useRef, useState } from 'react'
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { createContext, createElement, forwardRef, useContext, useEffect, useRef, useState } from 'react'
+import type { ButtonHTMLAttributes, MouseEvent, ReactNode } from 'react'
 
 const cls = (...names: (string | false | undefined | null)[]) => names.filter(Boolean).join(' ')
 
@@ -20,9 +20,23 @@ export type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> 
 export type ControlDensity = 'compact' | 'regular' | 'touch'
 export type ControlProps = { density?: ControlDensity, loading?: boolean }
 
+/** Set by `PmToolbarButton` for the button it wraps. A toolbar item that cannot act stays focusable (WAI-ARIA APG): a
+ * natively disabled button takes no focus, so a click on it lets the toolbar move the focus to another item, and the
+ * next Space would press that one. */
+export const ToolbarItemContext = createContext(false)
+
+/** `disabled` or `aria-disabled` as a native `disabled` attribute, or, in a toolbar, as `aria-disabled` with the
+ * button kept focusable, its tooltip shown, and clicks (also from Enter and Space) ignored. */
+function useDisabled(disabled: boolean | undefined, loading: boolean | undefined, rest: ButtonProps) {
+  const inToolbar = useContext(ToolbarItemContext)
+  const off = Boolean(disabled || loading || rest['aria-disabled'] === true || rest['aria-disabled'] === 'true')
+  if (!inToolbar) return { disabled: off }
+  return { 'aria-disabled': off || undefined, onClick: off ? (event: MouseEvent<HTMLButtonElement>) => event.preventDefault() : rest.onClick }
+}
+
 export const PmButton = forwardRef<HTMLButtonElement, ButtonProps & ControlProps & { variant?: ButtonVariant, small?: boolean, icon?: IconName }>(function PmButton({ variant = 'default', small, density = 'compact', loading, icon, type = 'button', className, children, disabled, ...rest }, ref) {
   return (
-    <button {...rest} ref={ref} type={type} data-density={density} aria-busy={loading || undefined} disabled={disabled || loading || rest['aria-disabled'] === true || rest['aria-disabled'] === 'true'} className={cls('pm-ui-button', variant !== 'default' && `pm-ui-button--${variant}`, className)}>
+    <button {...rest} {...useDisabled(disabled, loading, rest)} ref={ref} type={type} data-density={density} aria-busy={loading || undefined} className={cls('pm-ui-button', variant !== 'default' && `pm-ui-button--${variant}`, className)}>
       <span className={cls('pm-ui-button__content', !icon && loading !== undefined && 'pm-ui-button__content--loading-text')}>{(icon || loading !== undefined) && <span aria-hidden="true" className={cls('pm-ui-button__icon', loading && 'pm-ui-loading')}>{loading ? <PmIcon name="loading" /> : icon && <PmIcon name={icon} />}</span>}{children}</span>
     </button>
   )
@@ -62,7 +76,7 @@ export function PmTooltip({ label, shortcut, description, children }: { label: s
 }
 
 export const PmIconButton = forwardRef<HTMLButtonElement, ButtonProps & ControlProps & { icon: IconName, label: string, hint?: string, shortcut?: string, small?: boolean, tooltip?: boolean }>(function PmIconButton({ icon, label, hint, shortcut, small, tooltip = true, density = 'compact', loading, className, disabled, ...rest }, ref) {
-  const button = <button {...rest} ref={ref} type="button" data-density={density} aria-label={label} aria-busy={loading || undefined} disabled={disabled || loading || rest['aria-disabled'] === true || rest['aria-disabled'] === 'true'} className={cls('pm-ui-icon-button', className)}>
+  const button = <button {...rest} {...useDisabled(disabled, loading, rest)} ref={ref} type="button" data-density={density} aria-label={label} aria-busy={loading || undefined} className={cls('pm-ui-icon-button', className)}>
       <span className={cls('pm-ui-button__content', loading && 'pm-ui-loading')}><PmIcon name={loading ? 'loading' : icon} /></span>
     </button>
   return tooltip ? <PmTooltip label={label} shortcut={shortcut} description={hint}>{button}</PmTooltip> : button

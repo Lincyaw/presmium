@@ -1,4 +1,5 @@
 import type { IconName } from '@lincyaw/design'
+import { keyBelongsToTarget, watchFocusSource } from '@lincyaw/kernel'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import * as Popover from '@radix-ui/react-popover'
@@ -8,7 +9,7 @@ import * as RadioGroup from '@radix-ui/react-radio-group'
 import { createContext, forwardRef, useContext, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { ComponentProps, CSSProperties, InputHTMLAttributes, ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
 import { Group as ResizableGroup, Panel as ResizablePanel, Separator as ResizableSeparator } from 'react-resizable-panels'
-import { PmButton, PmIcon, PmIconButton, PmTooltip } from './base-controls.tsx'
+import { PmButton, PmIcon, PmIconButton, PmTooltip, ToolbarItemContext } from './base-controls.tsx'
 import type { ControlDensity } from './base-controls.tsx'
 export { PmButton, PmIcon, PmIconButton, PmTooltip } from './base-controls.tsx'
 export type { ButtonVariant, ControlDensity } from './base-controls.tsx'
@@ -44,9 +45,19 @@ export function PmPanelHeader({ title, titleId, meta, leading, actions, variant 
 
 /** One tab stop, with arrow/Home/End navigation supplied by Radix. */
 export function PmToolbar({ label, children, className, scroll, variant = 'inline' }: { label: string, children: ReactNode, className?: string, scroll?: boolean, variant?: 'workspace' | 'inline' }) {
+  useEffect(() => watchFocusSource(), [])
   return <Toolbar.Root className={cls('pm-ui-toolbar', scroll && 'pm-ui-toolbar-scroll', className)} data-variant={variant} aria-label={label} loop>{children}</Toolbar.Root>
 }
-export const PmToolbarButton = Toolbar.Button
+/** Wraps a `PmButton` or `PmIconButton` (`asChild`); a disabled one stays in the arrow-key order as `aria-disabled`. */
+/** Arrow keys move along the toolbar only from an item the keyboard reached (`keyBelongsToTarget`); after a click
+ * they leave the focus on the clicked item, so a following Space cannot press a neighbour the author never saw focused. */
+export const PmToolbarButton = forwardRef<HTMLButtonElement, ComponentProps<typeof Toolbar.Button>>(function PmToolbarButton({ onKeyDown, ...props }, ref) {
+  return <ToolbarItemContext.Provider value><Toolbar.Button {...props} ref={ref} onKeyDown={event => {
+    onKeyDown?.(event)
+    if (TOOLBAR_KEYS.has(event.key) && !keyBelongsToTarget(event.nativeEvent)) event.preventDefault()
+  }} /></ToolbarItemContext.Provider>
+})
+const TOOLBAR_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'])
 
 export interface Choice { value: string, label: string, icon?: IconName, disabled?: boolean }
 export function PmTabs({ value, tabs, label, iconOnly, density = 'compact', variant = 'default', idPrefix, onValueChange, children }: { value: string, tabs: Choice[], label: string, iconOnly?: boolean, density?: ControlDensity, variant?: 'default' | 'dock', idPrefix?: string, onValueChange(value: string): void, children?: ReactNode }) {
@@ -409,7 +420,7 @@ export function PmMenu({ label, description, items, icon = 'more', placement = '
   const trigger = <PmIconButton ref={triggerRef} icon={icon} label={label} small />
   return (
     <DropdownMenu.Root onOpenChange={onOpenChange}>
-      <DropdownMenu.Trigger asChild>{toolbarItem ? <Toolbar.Button asChild>{trigger}</Toolbar.Button> : trigger}</DropdownMenu.Trigger>
+      <DropdownMenu.Trigger asChild>{toolbarItem ? <PmToolbarButton asChild>{trigger}</PmToolbarButton> : trigger}</DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content className="pm-ui-menu pm-ui-floating pm-ui" data-density="compact" data-layer={inDialog ? 'dialog' : undefined} data-description={description ? '' : undefined} aria-label={label} aria-describedby={description ? descriptionId : undefined} {...placementOf(placement)} sideOffset={6} collisionPadding={16} onEscapeKeyDown={event => event.stopPropagation()}>
           {description && <p className="pm-ui-menu__description" id={descriptionId}>{description}</p>}
