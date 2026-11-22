@@ -45,6 +45,7 @@ services:
     environment: *loopback
   hub:
     environment:
+      CLOUD_PUBLIC_URL: http://app.localhost:${CLOUD_LOOPBACK_PORT:-18787}
       CLOUD_HUB_URL: http://hub.localhost:${CLOUD_LOOPBACK_PORT:-18787}
       CLOUD_OIDC_ISSUER: http://auth.localhost:${CLOUD_LOOPBACK_PORT:-18787}/realms/presmium
   entrance:

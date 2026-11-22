@@ -185,6 +185,7 @@ services:
     image: ${CLOUD_IMAGE_REGISTRY:-}presmium-cloud-hub:${CLOUD_IMAGE_TAG:-0.1.0}
     restart: unless-stopped
     environment:
+      CLOUD_PUBLIC_URL: ${CLOUD_PUBLIC_URL:?Set CLOUD_PUBLIC_URL}
       CLOUD_HUB_URL: ${CLOUD_HUB_URL:?Set CLOUD_HUB_URL}
       CLOUD_HUB_CLIENT_ID: ${CLOUD_HUB_CLIENT_ID:-presmium-hub}
       CLOUD_HUB_CLIENT_SECRET: ${CLOUD_HUB_CLIENT_SECRET:?Set CLOUD_HUB_CLIENT_SECRET}

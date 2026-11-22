@@ -1,0 +1,7 @@
+{% extends "presmium.html" %}
+{#- JupyterHub signs in through Presmium's own sign-in (auto_login), so this page shows only when that could not start. -#}
+{% block main %}
+  <h1 class="pm-ui-card__title" data-en="Sign in to Presmium">登录 Presmium</h1>
+  <p data-en="Continue to sign in with your Presmium account.">请继续，用你的 Presmium 账户登录。</p>
+  <div class="pmp-actions"><a class="pm-ui-button pm-ui-button--primary" href="{{ authenticator_login_url | default(presmium_console) }}" data-en="Sign in">登录</a></div>
+{% endblock main %}

@@ -1,0 +1,9 @@
+{% extends "presmium.html" %}
+{#- What JupyterHub would show while a Studio starts, stops or is not running, and its own home and token pages: the
+    console starts the Studio with its own progress and opens it, so these pages only pass the author on to it. -#}
+{% block main %}
+  <h1 class="pm-ui-card__title" data-en="Opening Presmium Studio…">正在打开 Presmium Studio…</h1>
+  <p data-en="If this page stays, continue below.">如果页面没有变化，请点击“继续”。</p>
+  <div class="pmp-actions"><a id="pmp-continue" class="pm-ui-button pm-ui-button--primary" href="{{ presmium_console | default('') }}{% block path %}/{% endblock path %}" data-en="Continue">继续</a></div>
+{% endblock main %}
+{% block script %}<script>location.replace(document.getElementById('pmp-continue').href)</script>{% endblock script %}

@@ -1,0 +1,37 @@
+<!doctype html>
+{#- The layout of every page the cloud's JupyterHub and single-user servers can still show: Presmium's, in the author's
+    language (the console's choice on this origin, else the browser's), never JupyterHub's or Jupyter's. Text is written
+    in zh-CN with its English in data-en; build.mjs puts the design system's styles and the brand mark in. -#}
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title data-en="Presmium">Presmium</title>
+  <link rel="icon" href="{% raw %}presmium:icon{% endraw %}">
+  <style>{% raw %}/* presmium:styles */{% endraw %}</style>
+  {% block head %}{% endblock head %}
+</head>
+<body class="pm-ui">
+  <main class="pmp-shell">
+    <div class="pmp-brand"><span aria-hidden="true">{% raw %}<!-- presmium:mark -->{% endraw %}</span><strong>Presmium</strong></div>
+    <section class="pm-ui-card pmp-card">
+      {% block main %}{% endblock main %}
+    </section>
+  </main>
+  <script>
+    (() => {
+      // The console keeps the author's language and appearance on its origin; another origin falls back to the browser's.
+      const read = key => { try { return localStorage.getItem(`presmium.cloud.${key}`) } catch { return null } }
+      const saved = read('locale')
+      const english = saved ? saved === 'en' : (navigator.language || '').toLowerCase().startsWith('en')
+      const theme = read('theme')
+      document.documentElement.classList.toggle('dark', theme ? theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches)
+      if (!english) return
+      document.documentElement.lang = 'en'
+      for (const element of document.querySelectorAll('[data-en]')) element.textContent = element.dataset.en
+    })()
+  </script>
+  {% block script %}{% endblock script %}
+</body>
+</html>

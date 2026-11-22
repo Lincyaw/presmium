@@ -1,0 +1,19 @@
+/* Only the layout of the cloud's server pages; controls and their states come from @lincyaw/design. */
+html, body { min-height: 100%; margin: 0; background: var(--pm-color-bg); }
+.pmp-shell {
+  box-sizing: border-box;
+  display: grid;
+  gap: var(--pm-space-6);
+  width: min(100%, var(--pm-dialog-width));
+  margin-inline: auto;
+  padding: var(--pm-space-12) var(--pm-space-6);
+  overflow-wrap: anywhere;
+}
+.pmp-brand { display: flex; align-items: center; justify-content: center; gap: var(--pm-space-3); }
+.pmp-brand > span { display: flex; }
+.pmp-card { display: grid; gap: var(--pm-space-4); }
+.pmp-card > :is(h1, p) { margin: 0; }
+.pmp-actions { display: flex; flex-wrap: wrap; gap: var(--pm-space-2); }
+@media (max-width: 767px) {
+  .pmp-shell { padding: var(--pm-space-6) var(--pm-space-4); }
+}

@@ -1,0 +1,23 @@
+{% extends "presmium.html" %}
+{#- Errors of JupyterHub and of the single-user server. The author sees what happened in plain words and a way back;
+    the servers' own messages (which name their internals) stay in their logs. -#}
+{% block main %}
+  {% set code = status_code | default(500) | int %}
+  {% if code == 404 %}
+    <h1 class="pm-ui-card__title" data-en="This page doesn’t exist">找不到这个页面</h1>
+    <p data-en="The address may be mistyped, or what it pointed to was removed.">地址可能有误，或者它指向的内容已被删除。</p>
+  {% elif code == 403 %}
+    <h1 class="pm-ui-card__title" data-en="You can’t open this page">无法打开这个页面</h1>
+    <p data-en="It belongs to another account. Sign in with the account it belongs to, or go back to your own Studio.">它属于另一个账户。请用对应的账户登录，或回到你自己的 Studio。</p>
+  {% elif code == 400 or code == 401 %}
+    <h1 class="pm-ui-card__title" data-en="Your sign-in didn’t go through">登录没有完成</h1>
+    <p data-en="Sign-in links are valid for a short time only. Go back and open Presmium again.">登录链接只在短时间内有效。请返回后重新打开 Presmium。</p>
+  {% elif code == 424 or code == 502 or code == 503 %}
+    <h1 class="pm-ui-card__title" data-en="Your Studio isn’t running">你的 Studio 没有在运行</h1>
+    <p data-en="It stops after a while without use; your documents and settings are kept. Go back to start it again.">一段时间不使用后它会停止，文稿与设置都会保留。请返回以重新启动它。</p>
+  {% else %}
+    <h1 class="pm-ui-card__title" data-en="The request couldn’t be completed">无法完成请求</h1>
+    <p data-en="Presmium couldn’t complete this request. Go back and try again; if it keeps happening, contact the operator of this service.">Presmium 无法完成这个请求。请返回后重试；如果一再出现，请联系本服务的运营者。</p>
+  {% endif %}
+  <div class="pmp-actions"><a class="pm-ui-button pm-ui-button--primary" href="{{ presmium_console | default('/') }}" data-en="Back to Presmium">返回 Presmium</a></div>
+{% endblock main %}

@@ -14,6 +14,8 @@ public = env['CLOUD_HUB_URL'].rstrip('/')
 # The Hub's own origin, or a path below the console's origin when the cloud is served from one address (/studio/).
 base_url = urlsplit(public).path.rstrip('/') + '/'
 issuer = env['CLOUD_OIDC_ISSUER'].rstrip('/')
+# The console: where authors start, follow and open their Studio. JupyterHub's own pages only lead there.
+console = (env.get('CLOUD_PUBLIC_URL') or f'{urlsplit(public).scheme}://{urlsplit(public).netloc}').rstrip('/')
 internal = (env.get('CLOUD_OIDC_ISSUER_INTERNAL_URL') or issuer).rstrip('/')
 
 c.JupyterHub.base_url = base_url
@@ -22,6 +24,11 @@ c.JupyterHub.hub_connect_ip = 'hub'
 c.JupyterHub.db_url = 'sqlite:////srv/jupyterhub/data/jupyterhub.sqlite'
 c.JupyterHub.cookie_secret_file = '/srv/jupyterhub/data/cookie_secret'
 c.JupyterHub.redirect_to_server = True
+# Presmium's pages (deploy/cloud/pages) replace every JupyterHub page an author can reach: starting, stopping and
+# stopped servers, home, token, login and logout pass the author on to the console; errors say what happened in plain
+# words. The administration page stays JupyterHub's, for operators.
+c.JupyterHub.template_paths = ['/srv/jupyterhub/templates']
+c.JupyterHub.template_vars = {'presmium_console': console}
 c.JupyterHub.default_url = f'{base_url}hub/user-redirect/presmium'
 # Restarting or upgrading the Hub leaves running Studios alone; the Hub finds them again from its database.
 c.JupyterHub.cleanup_servers = False
@@ -56,6 +63,9 @@ c.GenericOAuthenticator.login_service = 'Presmium'
 c.GenericOAuthenticator.allow_all = True
 c.GenericOAuthenticator.enable_auth_state = True
 c.GenericOAuthenticator.auto_login = True
+# Signing out of the console signs out of JupyterHub first (its cookie would otherwise open the previous author's
+# Studio on a shared computer), then of Keycloak through the console.
+c.GenericOAuthenticator.logout_redirect_url = f'{console}/api/auth/signed-out'
 # The console starts a user's Studio for a copy or an MCP call before that user's first Studio visit; that user has
 # no stored login yet, so the Hub must not demand a fresh one before spawning. The console has authenticated them.
 c.GenericOAuthenticator.refresh_pre_spawn = False
@@ -78,6 +88,7 @@ c.DockerSpawner.environment = {
     'PRESMIUM_HUB_PROXY_URL': 'http://hub:8000' + base_url.rstrip('/'),
     'PRESMIUM_HUB_PROFILES': json.dumps(list(profiles)),
     'JUPYTERHUB_ACTIVITY_INTERVAL': str(activity_interval),
+    'PRESMIUM_CONSOLE_URL': console,
 }
 # The Studio may start and reach this owner's environments; runtime kernels cannot manage other servers.
 c.Spawner.server_token_scopes = lambda spawner: (
@@ -105,9 +116,12 @@ async def identity(spawner):
         spawner.volumes = {env.get('CLOUD_INSTANCE_ID', 'presmium-cloud') + '-runtime-{username}-{servername}': '/work'}
         spawner.environment = {'PRESMIUM_RUNTIME_ONLY': '1', 'JUPYTERHUB_ACTIVITY_INTERVAL': str(activity_interval)}
         return
-    # The author's name and email for the workspace's git commits.
+    # The author's name and email for the workspace's git commits: from their sign-in to JupyterHub, or, when the console
+    # starts the Studio before the author's first visit, as the console passes them.
     state = await spawner.user.get_auth_state() or {}
     user = state.get('oauth_user') or {}
+    if not user and isinstance(spawner.user_options, dict):
+        user = {key: spawner.user_options[key] for key in ('name', 'email') if isinstance(spawner.user_options.get(key), str)}
     spawner.environment['PRESMIUM_USER_NAME'] = str(user.get('name') or user.get('preferred_username') or spawner.user.name)[:200]
     if user.get('email'):
         spawner.environment['PRESMIUM_USER_EMAIL'] = str(user['email'])[:200]

@@ -32,14 +32,15 @@ export async function readCloudConfig(env = process.env): Promise<CloudConfig> {
   // Either every service has an origin of its own, or all share one: the Hub below a path and the shared sites at /p/.
   const origins = new Set([app, content, hub].map(url => url.origin)).size
   const basePath = `${hub.pathname.replace(/\/+$/, '')}/`
+  const hubPublicUrl = new URL(basePath, hub).href
   if (app.pathname !== '/' || content.pathname !== '/' || (origins === 3 ? basePath !== '/' : origins !== 1 || basePath === '/' || !/^(\/[a-z0-9-]+)+\/$/.test(basePath) || ['/api/', '/p/', '/s/', '/mcp/'].includes(basePath))) {
     throw new CloudError(500, origins === 3 || origins === 1 ? 'configuration-public-url-invalid' : 'configuration-content-origin-required')
   }
   return {
     databaseUrl: required(env, 'CLOUD_DATABASE_URL'), publicUrl, contentUrl,
     host: env.CLOUD_HOST ?? '127.0.0.1', port: port(env.CLOUD_PORT, 8787),
-    auth: { publicUrl, issuer: required(env, 'CLOUD_OIDC_ISSUER'), clientId: required(env, 'CLOUD_OIDC_CLIENT_ID'), audience: required(env, 'CLOUD_OIDC_AUDIENCE'), clientSecret: env.CLOUD_OIDC_CLIENT_SECRET, issuerInternalUrl: env.CLOUD_OIDC_ISSUER_INTERNAL_URL, allowInsecureLoopback: allowLoopback, allowInsecureHttp: allowHttp },
+    auth: { publicUrl, issuer: required(env, 'CLOUD_OIDC_ISSUER'), clientId: required(env, 'CLOUD_OIDC_CLIENT_ID'), audience: required(env, 'CLOUD_OIDC_AUDIENCE'), clientSecret: env.CLOUD_OIDC_CLIENT_SECRET, issuerInternalUrl: env.CLOUD_OIDC_ISSUER_INTERNAL_URL, allowInsecureLoopback: allowLoopback, allowInsecureHttp: allowHttp, signOutFirst: new URL('hub/logout', hubPublicUrl).href },
     storage: { endpoint: env.CLOUD_S3_ENDPOINT, region: env.CLOUD_S3_REGION ?? 'us-east-1', bucket: required(env, 'CLOUD_S3_BUCKET'), accessKeyId: required(env, 'CLOUD_S3_ACCESS_KEY_ID'), secretAccessKey: required(env, 'CLOUD_S3_SECRET_ACCESS_KEY') },
-    hub: { publicUrl: new URL(basePath, hub).href, basePath, apiUrl: (env.CLOUD_HUB_API_URL ?? `http://hub:8081${basePath}hub/api`).replace(/\/+$/, ''), proxyUrl: (env.CLOUD_HUB_PROXY_URL ?? 'http://hub:8000').replace(/\/+$/, ''), token: required(env, 'CLOUD_HUB_API_TOKEN') },
+    hub: { publicUrl: hubPublicUrl, basePath, apiUrl: (env.CLOUD_HUB_API_URL ?? `http://hub:8081${basePath}hub/api`).replace(/\/+$/, ''), proxyUrl: (env.CLOUD_HUB_PROXY_URL ?? 'http://hub:8000').replace(/\/+$/, ''), token: required(env, 'CLOUD_HUB_API_TOKEN') },
   }
 }

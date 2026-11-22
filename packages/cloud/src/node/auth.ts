@@ -27,6 +27,11 @@ export interface AuthConfig {
   /** Plain HTTP on any host: an operator's intranet deployment without TLS. */
   allowInsecureHttp?: boolean
   sessionTtlSeconds?: number
+  /**
+   * Where signing out sends the browser first, to end another sign-in of the same author (JupyterHub's); that service
+   * sends it on to /api/auth/signed-out, which ends the identity provider's session.
+   */
+  signOutFirst?: string
 }
 
 interface UserRow {
@@ -235,14 +240,19 @@ export async function createAuthService(db: Database, config: AuthConfig): Promi
         const token = getCookie(c, sessionCookie)
         return c.json({ user: user ?? null, csrfToken: user && token ? digest(`csrf:${token}`) : null })
       })
+      const endSession = () => metadata.end_session_endpoint ? oidc.buildEndSessionUrl(configuration, { client_id: config.clientId, post_logout_redirect_uri: publicUrl.origin }).href : undefined
       app.post('/api/auth/logout', async c => {
         await service.assertCsrf(c.req.raw)
         const token = getCookie(c, sessionCookie)
         if (token) await db.query('DELETE FROM sessions WHERE id_hash = $1', [digest(token)])
         deleteCookie(c, sessionCookie, cookieOptions)
         c.header('Cache-Control', 'no-store')
-        const logoutUrl = metadata.end_session_endpoint ? oidc.buildEndSessionUrl(configuration, { client_id: config.clientId, post_logout_redirect_uri: publicUrl.origin }).href : undefined
+        const logoutUrl = config.signOutFirst ?? endSession()
         return c.json({ loggedOut: true, ...logoutUrl ? { logoutUrl } : {} })
+      })
+      app.get('/api/auth/signed-out', c => {
+        c.header('Cache-Control', 'no-store')
+        return c.redirect(endSession() ?? publicUrl.origin)
       })
       app.get('/.well-known/oauth-protected-resource', c => c.json(service.metadata()))
       app.get('/.well-known/oauth-protected-resource/mcp', c => c.json(service.metadata()))
