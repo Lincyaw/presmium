@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import katex from 'katex'
+import { TextSelection } from '@tiptap/pm/state'
 import type { BlockNoteEditor } from '@blocknote/core'
 import { createReactBlockSpec, createReactInlineContentSpec, SourceBlockWithPreview, SourceInlineContentWithPreview, useSourceBlockPreviewPopup, useSourceInlineContentPreviewPopup } from '@blocknote/react'
 import type { Locale } from '../messages.ts'
@@ -12,15 +13,20 @@ export const DOCUMENT_EDITOR_LOCALE = createContext<Locale>('zh-CN')
 /** Where the host serves the visual formula editor; without it formulas are edited as LaTeX only. */
 export const MATH_EDITOR = createContext<string | undefined>(undefined)
 
-/** Edit Visually in a formula's open popup, and the dialog it opens; `write` puts the confirmed LaTeX into the formula. */
-function useVisualMath(editor: BlockNoteEditor<any, any, any>, source: string, write: (latex: string) => void) {
+/**
+ * Edit Visually in a formula's open popup, and the dialog it opens; `write` puts the confirmed LaTeX into the formula.
+ * After OK the caret goes past the formula (`leave`), so its popup does not open again; Cancel returns to the popup.
+ */
+function useVisualMath(editor: BlockNoteEditor<any, any, any>, source: string, write: (latex: string) => void, leave: () => void) {
   const base = useContext(MATH_EDITOR), locale = useContext(DOCUMENT_EDITOR_LOCALE)
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [editing, setEditing] = useState(false)
+  const confirmed = useRef(false)
   const controls = (open: boolean) => base && editor.isEditable ? <>
-    <MathVisualButton anchor={anchor} open={open} locale={locale} onClick={() => setEditing(true)} />
+    <MathVisualButton anchor={anchor} open={open} locale={locale} onClick={() => { confirmed.current = false; setEditing(true) }} />
     {editing && <MathEditorDialog base={base} initial={source} locale={locale} onClose={() => setEditing(false)}
-      onConfirm={latex => { setEditing(false); if (latex !== source) write(latex) }} onCloseAutoFocus={event => { event.preventDefault(); editor.focus() }} />}
+      onConfirm={latex => { confirmed.current = true; setEditing(false); if (latex !== source) write(latex) }}
+      onCloseAutoFocus={event => { event.preventDefault(); if (confirmed.current && !editor.prosemirrorView?.isDestroyed) leave(); else editor.focus() }} />}
   </> : null
   return { anchor: setAnchor, controls }
 }
@@ -57,7 +63,13 @@ export const mathBlock = createReactBlockSpec({
     const source = block.content.map(part => part.text).join('')
     const math = useMathPreview(source, true)
     const popup = useSourceBlockPreviewPopup({ editor, block })
-    const visual = useVisualMath(editor, source, latex => editor.updateBlock(block.id, { content: latex }))
+    const visual = useVisualMath(editor, source, latex => editor.updateBlock(block.id, { content: latex }), () => {
+      popup.close()
+      if (!editor.getBlock(block.id)) return
+      // The caret goes to the line after the formula; a formula that ends its page gets an empty line to type on.
+      const document = editor as BlockNoteEditor<any, any, any>, next = document.getNextBlock(block.id)
+      document.setTextCursorPosition(next && next.type !== 'presmiumPage' ? next.id : document.insertBlocks([{ type: 'paragraph' }], block.id, 'after')[0]!.id, 'start')
+    })
     const sourceRef = useCallback((element: HTMLElement | null) => { visual.anchor(element); contentRef(element) }, [contentRef])
     return <>
       <SourceBlockWithPreview block={block} editor={editor} contentRef={sourceRef} source={source} preview={math.preview} error={math.error}
@@ -81,7 +93,13 @@ export const mathInline = createReactInlineContentSpec({
       const position = getPos(), current = position === undefined ? undefined : transaction.doc.nodeAt(position)
       if (position === undefined || current?.type.name !== 'presmiumMathInline') return
       transaction.replaceWith(position + 1, position + current.nodeSize - 1, latex ? transaction.doc.type.schema.text(latex) : [])
-    }))
+    }), () => {
+      editor.transact(transaction => {
+        const position = getPos(), current = position === undefined ? undefined : transaction.doc.nodeAt(position)
+        if (position !== undefined && current?.type.name === 'presmiumMathInline') transaction.setSelection(TextSelection.create(transaction.doc, position + current.nodeSize))
+      })
+      editor.focus()
+    })
     const sourceElement = useRef<HTMLElement | null>(null)
     const sourceRef = useCallback((element: HTMLElement | null) => { sourceElement.current = element; visual.anchor(element); contentRef(element) }, [contentRef])
     useInlineSourcePopupPlacement(useCallback(() => sourceElement.current, []), isOpen)
