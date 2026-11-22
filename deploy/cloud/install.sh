@@ -282,7 +282,7 @@ fetch_release() { # fetch_release VERSION FULL(0|1) -> sets release_dir
   mkdir -p "$install_dir/releases"
   work=$(mktemp -d "$install_dir/releases/.download.XXXXXX")
   if [ -f "$url" ]; then cp -- "$url" "$work/source.tar.gz"
-  else curl -fL --retry 3 --progress-bar -o "$work/source.tar.gz" "$url" || { rm -rf -- "$work"; die "could not download $url"; }
+  else curl -fsSL --retry 3 -o "$work/source.tar.gz" "$url" || { rm -rf -- "$work"; die "could not download $url"; }
   fi
   mkdir "$work/tree"
   if [ "$full" = 1 ]; then
