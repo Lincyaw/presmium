@@ -15,6 +15,7 @@ export interface Messages {
   tooManyDirectories(count: number): string
   badKind(kind: string): string
   badTheme(theme: string): string
+  badLang(lang: string): string
   themeOnlyForSite: string
   badName(name: string): string
   notEmpty(dir: string): string
@@ -40,6 +41,7 @@ export const MESSAGES: Record<Locale, Messages> = {
                    或 plugin（插件：指令、两种形态共用的组件与服务端路由）
   --theme <主题>   site 的主题：course、docs 或 showcase（默认 course）
   --title <标题>   文稿、工作区或网站的标题（默认为目录名）
+  --lang <语言>    新项目内容的语言：zh-CN 或 en（默认：标题含汉字时为 zh-CN，否则按系统语言）
   --name <包名>    插件的包名（默认为目录名）
   --no-git         不运行 git init
   -h, --help       显示本说明`,
@@ -58,6 +60,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     noAnswer: '没有读到回答。请用 --type 与目录给出项目，用法见 presmium new --help。',
     badKind: kind => `没有“${kind}”这种项目。请选择 document、workspace、site 或 plugin。`,
     badTheme: theme => `没有“${theme}”这种主题。请选择 course、docs 或 showcase。`,
+    badLang: lang => `没有“${lang}”这种语言。请选择 zh-CN 或 en。`,
     themeOnlyForSite: '--theme 只用于网站。请同时指定 --type site。',
     badName: name => `“${name}”不能用作包名。请只用小写字母、数字与 - . _，可以带 @作用域/。`,
     notEmpty: dir => `${dir} 已存在且不是空目录。请换一个目录，或先清空它。`,
@@ -106,7 +109,7 @@ pnpm build     # 导出网站到 dist/web/
       : kind === 'document'
       ? `# ${title}
 
-一份 Presmium 文稿：保存在 \`index.pmd\` 中，Presmium 把它导出为网页、幻灯片与 Notebook。命令来自 \`pnpm add -g @lincyaw/presmium\`；在本目录运行 \`pnpm install\` 之后，用的是 \`package.json\` 锁定的版本。
+一份 Presmium 文稿：保存在 \`index.pmd\` 中，Presmium 把它导出为网页、幻灯片与 Notebook。命令来自 \`pnpm add -g @lincyaw/presmium\`；要用 \`package.json\` 锁定的版本，在本目录运行 \`pnpm install\`，再在命令前加 \`pnpm exec\`（如 \`pnpm exec presmium studio\`）。
 
 \`\`\`sh
 presmium dev       # 实时预览网页与幻灯片
@@ -124,7 +127,7 @@ presmium build     # 导出网页、幻灯片与 Notebook，产物在 dist/
 `
       : `# ${title}
 
-一个 Presmium 工作区：每个子目录中的 \`index.pmd\` 是一份文稿（第一份在 \`intro/\`），\`presmium.workspace.yaml\` 是工作区的配置。命令来自 \`pnpm add -g @lincyaw/presmium\`；在本目录运行 \`pnpm install\` 之后，用的是 \`package.json\` 锁定的版本。
+一个 Presmium 工作区：每个子目录中的 \`index.pmd\` 是一份文稿（第一份在 \`intro/\`），\`presmium.workspace.yaml\` 是工作区的配置。命令来自 \`pnpm add -g @lincyaw/presmium\`；要用 \`package.json\` 锁定的版本，在本目录运行 \`pnpm install\`，再在命令前加 \`pnpm exec\`（如 \`pnpm exec presmium studio\`）。
 
 \`\`\`sh
 presmium serve           # 文稿列表与各文稿的实时预览，只在本机
@@ -170,6 +173,8 @@ Options:
                    or plugin (a directive, a component of both forms, and a server route)
   --theme <name>   site theme: course, docs, or showcase (default: course)
   --title <text>   the document, workspace, or site title (default: the directory’s name)
+  --lang <lang>    the language of the new content: zh-CN or en (default: zh-CN for a title with Chinese
+                   characters, else the system’s language)
   --name <name>    the plugin’s package name (default: the directory’s name)
   --no-git         do not run git init
   -h, --help       show this help`,
@@ -188,6 +193,7 @@ Options:
     noAnswer: 'No answer was read. Give the project with --type and a directory (see presmium new --help).',
     badKind: kind => `There is no project “${kind}”. Choose document, workspace, site, or plugin.`,
     badTheme: theme => `There is no theme “${theme}”. Choose course, docs, or showcase.`,
+    badLang: lang => `There is no language “${lang}”. Choose zh-CN or en.`,
     themeOnlyForSite: '--theme is only for a site. Add --type site.',
     badName: name => `“${name}” is not a package name. Use lowercase letters, digits, and - . _, with an optional @scope/.`,
     notEmpty: dir => `${dir} exists and is not empty. Choose another directory, or empty it first.`,
@@ -237,8 +243,8 @@ To publish on GitHub Pages, commit the project and the \`pnpm-lock.yaml\` create
       ? `# ${title}
 
 A Presmium document: it is \`index.pmd\`, which Presmium exports to a web page, slides, and a
-Notebook. The commands come from \`pnpm add -g @lincyaw/presmium\`; after \`pnpm install\` here, they are the
-version \`package.json\` pins.
+Notebook. The commands come from \`pnpm add -g @lincyaw/presmium\`; for the version \`package.json\` pins,
+run \`pnpm install\` here and put \`pnpm exec\` before a command (\`pnpm exec presmium studio\`).
 
 \`\`\`sh
 presmium dev       # a live preview of the web page and the slides
@@ -258,7 +264,7 @@ presmium build     # exports the web page, the slides, and the Notebook into dis
 
 A Presmium workspace: the \`index.pmd\` of each subdirectory is a document (the first in \`intro/\`), and
 \`presmium.workspace.yaml\` is the workspace’s configuration. The commands come from \`pnpm add -g @lincyaw/presmium\`;
-after \`pnpm install\` here, they are the version \`package.json\` pins.
+for the version \`package.json\` pins, run \`pnpm install\` here and put \`pnpm exec\` before a command (\`pnpm exec presmium studio\`).
 
 \`\`\`sh
 presmium serve           # the documents and their live previews, on this machine

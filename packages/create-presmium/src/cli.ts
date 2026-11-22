@@ -1,11 +1,13 @@
 import { createInterface } from 'node:readline'
 import type { Interface } from 'node:readline'
-import { basename, relative, resolve } from 'node:path'
+import { existsSync, realpathSync } from 'node:fs'
+import { basename, delimiter, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { assertEmpty, createProject, CreateError, isValidPackageName, KINDS, packageNameFor, SITE_THEMES } from './create.ts'
 import type { ProjectKind, SiteTheme } from './create.ts'
 import { MESSAGES, systemLocale } from './messages.ts'
-import type { Messages } from './messages.ts'
+import type { Locale, Messages } from './messages.ts'
 
 const DEFAULT_DIRS: Record<ProjectKind, string> = {
   document: 'my-document',
@@ -44,15 +46,22 @@ export async function main(argv: string[]): Promise<number> {
     if (!isValidPackageName(name)) throw new CreateError(t.badName(name))
     questions.close()
     // The project's content is written in the title's language: a Chinese title gets Chinese pages whatever the system says.
-    const lang = /\p{Script=Han}/u.test(title) ? 'zh-CN' : systemLocale()
+    if (args.values.lang !== undefined && !LOCALES.includes(args.values.lang as Locale)) throw new CreateError(t.badLang(args.values.lang), true)
+    const lang = (args.values.lang as Locale | undefined) ?? (/\p{Script=Han}/u.test(title) ? 'zh-CN' : systemLocale())
     createProject({ kind: project, dir, title, name, git: args.values.git, theme: theme as SiteTheme, t, content: MESSAGES[lang], lang })
     // A folder outside the current directory is named by its absolute path: a chain of ../ is hard to read.
     const shown = /^\.\.(?:[\\/]|$)/.test(folder) ? dir : folder
     const argument = /[\s'"]/.test(shown) ? JSON.stringify(shown) : shown
-    // A document or a workspace opens in Studio, the browser workbench that comes with presmium, without installing anything.
-    const steps = project === 'plugin' ? [...folder === '.' ? [] : [`cd ${argument}`], 'pnpm install', 'pnpm test', 'pnpm dev']
-      : project === 'site' ? [...folder === '.' ? [] : [`cd ${argument}`], 'pnpm install', 'pnpm serve']
-        : [folder === '.' ? 'presmium studio' : `presmium studio ${argument}`]
+    const into = folder === '.' ? [] : [`cd ${argument}`]
+    const at = folder === '.' ? '' : ` ${argument}`
+    // A document or a workspace opens in Studio, which comes with presmium: with the installation that runs now when
+    // the person can name it again, else with the one the new project installs.
+    const installation = runningInstallation()
+    const steps = project === 'plugin' ? [...into, 'pnpm install', 'pnpm test', 'pnpm dev']
+      : project === 'site' ? [...into, 'pnpm install', 'pnpm serve']
+        : installation === 'project' ? [`pnpm exec presmium studio${at}`]
+          : installation === 'path' ? [`presmium studio${at}`]
+            : [...into, 'pnpm install', 'pnpm exec presmium studio']
     process.stdout.write(`${t.created(project, shown)}\n\n${t.next}\n${steps.map(step => `  ${step}\n`).join('')}\n${t.agents}\n`)
     return 0
   } catch (error) {
@@ -64,6 +73,24 @@ export async function main(argv: string[]): Promise<number> {
   }
 }
 
+const LOCALES: readonly Locale[] = ['zh-CN', 'en']
+
+/**
+ * How the person runs this installation of presmium again: from the node_modules of a project the current directory is
+ * in (`pnpm exec presmium`), as `presmium` on PATH (a global installation), or not at all (`pnpm create presmium`).
+ */
+function runningInstallation(): 'project' | 'path' | 'none' {
+  const self = realpathSync(fileURLToPath(import.meta.url))
+  const at = self.indexOf(`${sep}node_modules${sep}`)
+  if (at > 0) {
+    const inside = relative(self.slice(0, at), process.cwd())
+    if (!inside.startsWith('..') && !isAbsolute(inside)) return 'project'
+  }
+  const names = process.platform === 'win32' ? (process.env.PATHEXT ?? '.EXE;.CMD').split(';').map(ext => `presmium${ext}`) : ['presmium']
+  const found = (process.env.PATH ?? '').split(delimiter).some(dir => dir && names.some(name => existsSync(join(dir, name))))
+  return found ? 'path' : 'none'
+}
+
 function parse(argv: string[], t: Messages) {
   const parsed = parseArgs({
     args: argv,
@@ -72,6 +99,7 @@ function parse(argv: string[], t: Messages) {
     options: {
       type: { type: 'string', short: 't' },
       title: { type: 'string' },
+      lang: { type: 'string' },
       theme: { type: 'string' },
       name: { type: 'string' },
       git: { type: 'boolean', default: true },
