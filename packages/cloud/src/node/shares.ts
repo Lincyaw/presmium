@@ -74,7 +74,8 @@ export class Shares {
   /** Records the share at once; the snapshot is made in the owner's Studio in the background. */
   async create(user: CloudUser, document: unknown, title: unknown) {
     const dir = requireText(document, 'document-invalid', 200)
-    if (/[/\\\0]/.test(dir) || dir.startsWith('.')) throw new CloudError(400, 'document-invalid')
+    // The document's folder relative to the workspace; nested documents live in subfolders (`docs/<name>`).
+    if (dir.split('/').some(part => !part || part.startsWith('.') || /[\\\0]/.test(part))) throw new CloudError(400, 'document-invalid')
     const name = this.hub.name(user)
     const row = (await this.db.query<ShareRow>(`INSERT INTO shares (id, slug, user_id, document, title, state) VALUES ($1, $2, $3, $4, $5, 'pending') RETURNING *`,
       [randomUUID(), slugOf(), user.id, dir, requireText(title ?? dir, 'document-invalid', 200)])).rows[0]!

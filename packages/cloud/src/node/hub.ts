@@ -74,7 +74,7 @@ export class Hub {
     if (response.status >= 300 && response.status < 400) throw new CloudError(409, 'studio-not-running')
     if (!response.ok && path !== '/mcp') {
       const body = await response.json().catch(() => ({})) as { error?: unknown }
-      throw new CloudError(response.status === 404 ? 404 : response.status === 422 ? 422 : 502, typeof body.error === 'string' && /^[a-z-]{1,64}$/.test(body.error) ? body.error : 'studio-control-failed')
+      throw new CloudError([404, 409, 422].includes(response.status) ? response.status : 502, typeof body.error === 'string' && /^[a-z-]{1,64}$/.test(body.error) ? body.error : 'studio-control-failed')
     }
     return response
   }

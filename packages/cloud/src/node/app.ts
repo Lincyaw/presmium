@@ -56,7 +56,7 @@ export async function createCloudApp(config: CloudConfig, database?: Database) {
   app.get('/api/documents', async c => {
     const name = hub.name(await current(c.req.raw))
     if (await hub.state(name) !== 'running') return c.json({ documents: null })
-    const answer = await (await hub.control(name, '/documents')).json() as { documents: Array<{ document: string, id: string, title: string }> }
+    const answer = await (await hub.control(name, '/documents')).json() as { documents: Array<{ document: string, id: string, title: string, depth: number, parent: string | null }> }
     return c.json({ documents: answer.documents.map(document => ({ ...document, url: hub.openUrl(document) })) })
   })
 

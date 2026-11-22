@@ -119,6 +119,7 @@ macOS 桌面端将原生标题栏与全局应用栏合并为一行，隐藏重�
 | Timeline | `PmTimeline`（workbench） | 画面、配音、字幕三轨与稳定步骤身份；未知或估算时长不开放任意定位；只有真实样本才画波形；缩放只改视图；`excluded` 表示本页不在时间线中（讲授中没有这一页），状态与提示由调用方给出，不列片段；`notice` 是关于所选步骤的提示，显示在轨道下方（如这一步不在讲授中） |
 | Split panes | workbench `PmSplitGroup`、`PmSplitPanel`、`PmSplitHandle` | 通过 react-resizable-panels 公开接口实现双轴调整、键盘与双击恢复；隐藏与后台挂载由公共适配处理 |
 | SortableList | `PmSortableList`（workbench，dnd kit） | 按稳定 ID 提交一次移动；禁用排序不禁止选择 |
+| DocumentList | `pm-ui-document-list`（design 的类） | 文稿的平铺列表：图标、标题与路径、行尾操作；行的 `data-depth`（1 到 8）按文稿树缩进，用于深度优先列出的下级文稿 |
 | DocTree | `PmDocTree`（workbench），`pm-ui-doc-tree` | WAI-ARIA 树：单一 Tab 停留点，方向键、`Home`、`End`、按首字母跳转、`*` 展开同级、`Enter` 打开、`F2` 行内重命名、`Delete` 移到回收站；状态 Default、Hover、Selected（`aria-selected`）、DropTarget（`data-drop` 为 `before`／`inside`／`after`，前后是强调色细线，中部是强调色描边与浅底）；悬停或聚焦显示“新建子文稿”与“更多”；行按原始属性记忆，可见行超过 200 时只绘制视口中的行；树自己滚动 |
 | DocMention | `PmDocMention`，`pm-ui-doc-mention` | 行内引用：文稿图标与标题，强调色；悬停浅强调底；Missing 为弱化色与删除线，不可激活；`role="link"`，`Enter` 激活 |
 | DocPreviewCard | `PmDocPreviewCard`，`pm-ui-doc-preview` | 引用的预览卡（Radix Popover 锚定）：停留 500 ms 打开，离开 300 ms 内可移入，键盘聚焦同样打开，不抢焦点，可 Tab 进入；指针到达时开始读取，已读到时打开即显示；路径、标题、四行摘要、元信息、操作；选了操作后关闭；触屏轻点触发器立即打开（不激活触发器），再点或点外部关闭 |

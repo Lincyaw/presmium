@@ -4,7 +4,7 @@
 import { execFile } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { createReadStream, createWriteStream, existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
-import { lstat, mkdir, mkdtemp, readFile, readdir, rename, rm } from 'node:fs/promises'
+import { lstat, mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises'
 import { createServer, request as httpRequest } from 'node:http'
 import { join } from 'node:path'
 import { pipeline } from 'node:stream/promises'
@@ -18,39 +18,45 @@ const PORT = Number(process.argv[2] ?? 18997)
 
 const git = (args, options = {}) => run('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgSign=false', ...args], { cwd: SPACE, maxBuffer: 64 << 20, ...options })
 
-/** The workspace service's MCP endpoint and token, from the state file it writes (0600) under the cache home. */
-function mcp() {
+/** The workspace service of the Studio, from the state file it writes (0600) under the cache home. */
+function service() {
   const root = join(process.env.XDG_CACHE_HOME ?? '/work/cache', 'presmium', 'serve')
   const files = existsSync(root) ? readdirSync(root).map(dir => join(root, dir, 'server.json')).filter(file => existsSync(file)) : []
   const newest = files.sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs)[0]
   if (!newest) return undefined
   const state = JSON.parse(readFileSync(newest, 'utf8'))
-  return typeof state.mcp === 'string' && typeof state.token === 'string' ? { url: state.mcp, token: state.token } : undefined
+  return typeof state.url === 'string' && typeof state.mcp === 'string' && typeof state.token === 'string' ? state : undefined
 }
 
+/**
+ * The workspace's documents in the order of its document tree (depth first, siblings by rank), as the workspace
+ * service's `tree` route answers: every `index.pmd` in the workspace, nested documents included, the trash not.
+ */
 async function documents() {
-  const { stdout } = await git(['ls-files', '-z', '--', '*/index.pmd'])
-  const found = []
-  for (const file of stdout.split('\0').filter(Boolean)) {
-    const dir = file.slice(0, -'/index.pmd'.length)
-    if (dir.includes('/')) continue
-    let title = dir, id = ''
-    try {
-      const lecture = JSON.parse(await readFile(join(SPACE, file), 'utf8'))
-      title = lecture.metadata?.title || dir
-      id = typeof lecture.id === 'string' ? lecture.id : ''
-    } catch {}
-    found.push({ document: dir, id, title: String(title).slice(0, 200) })
+  const state = service()
+  if (!state?.launcherToken) throw Object.assign(new Error('studio-starting'), { status: 409 })
+  const response = await fetch(`${state.url}/__presmium/presmium.workspace/tree`, { headers: { authorization: `Bearer ${state.launcherToken}` }, signal: AbortSignal.timeout(20_000) })
+  if (!response.ok) throw Object.assign(new Error('studio-starting'), { status: 409 })
+  const tree = await response.json()
+  const found = [], seen = new Set()
+  const visit = (id, depth) => {
+    const node = tree.nodes?.[id]
+    if (!node || seen.has(id)) return
+    seen.add(id)
+    found.push({ document: node.path, id: node.id, title: String(node.title || node.path).slice(0, 200), depth, parent: node.parent ?? null })
+    for (const child of node.children ?? []) visit(child, depth + 1)
   }
+  for (const id of tree.roots ?? []) visit(id, 0)
   return found
 }
 
-const DOCUMENT = /^[^/\\\0.][^/\\\0]{0,199}$/
+/** A document folder relative to the workspace: plain path segments, none hidden. */
+const isDocument = path => typeof path === 'string' && path.length <= 200 && path.split('/').every(part => /^[^/\\\0.][^/\\\0]*$/.test(part))
 const snapshots = new Map()
 
 /** A shared document as it is committed now: its source archive, and its web site built for `base`. */
 async function snapshot(document, base) {
-  if (!DOCUMENT.test(document) || !existsSync(join(SPACE, document, 'index.pmd'))) throw Object.assign(new Error('document-not-found'), { status: 404 })
+  if (!isDocument(document) || !existsSync(join(SPACE, document, 'index.pmd'))) throw Object.assign(new Error('document-not-found'), { status: 404 })
   if (!/^\/[A-Za-z0-9/_-]+\/$/.test(base)) throw Object.assign(new Error('share-base-invalid'), { status: 400 })
   const id = randomBytes(16).toString('hex'), dir = join(SCRATCH, id)
   await mkdir(dir, { recursive: true, mode: 0o700 })
@@ -94,9 +100,15 @@ async function importCopy(request, title) {
     let name = slug(title), n = 1
     while (existsSync(join(SPACE, name))) name = `${slug(title)}-${++n}`
     await rename(source, join(SPACE, name))
+    const entry = join(SPACE, name, 'index.pmd'), document = JSON.parse(await readFile(entry, 'utf8'))
+    // A shared document may be nested; its parent is not in this workspace, so the copy starts at the top level.
+    if (document.placement && document.placement.parent !== null) {
+      document.placement = { ...document.placement, parent: null }
+      await writeFile(entry, `${JSON.stringify(document, null, 2)}\n`)
+    }
     await git(['add', '--', name])
     await git(['commit', '-q', '-m', `Fork: ${title.replace(/[\r\n]/g, ' ').slice(0, 200)}`, '--', name])
-    const id = JSON.parse(await readFile(join(SPACE, name, 'index.pmd'), 'utf8')).id
+    const id = document.id
     return { document: name, id: typeof id === 'string' ? id : '' }
   } finally {
     await rm(dir, { recursive: true, force: true })
@@ -107,11 +119,11 @@ const RELAYED = ['accept', 'content-type', 'mcp-session-id', 'mcp-protocol-versi
 
 /** External AI assistants reach the workspace service's MCP server through the console and this relay. */
 function relayMcp(request, response) {
-  const endpoint = mcp()
+  const endpoint = service()
   if (!endpoint) return json(response, 503, { error: 'studio-starting' })
   const headers = { authorization: `Bearer ${endpoint.token}` }
   for (const name of RELAYED) if (request.headers[name]) headers[name] = request.headers[name]
-  const upstream = httpRequest(endpoint.url, { method: request.method, headers }, answer => {
+  const upstream = httpRequest(endpoint.mcp, { method: request.method, headers }, answer => {
     const passed = {}
     for (const name of ['content-type', 'mcp-session-id', 'cache-control']) if (answer.headers[name]) passed[name] = answer.headers[name]
     response.writeHead(answer.statusCode ?? 502, passed)

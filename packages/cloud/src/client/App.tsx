@@ -82,7 +82,7 @@ function Home({ t, locale, mcpUrl }: { t: Messages, locale: Locale, mcpUrl: stri
     <PmCard>
       <SectionHeading title={t.documents} description={t.documentsHint}>{state === 'running' && <PmIconButton icon="refresh" label={t.refresh} onClick={documents.refresh} />}</SectionHeading>
       {state !== 'running' ? <PmEmpty icon="document">{t.documentsStopped}</PmEmpty> : <ResourceState resource={documents} t={t}>
-        {documents.data?.documents?.length === 0 ? <PmEmpty icon="document">{t.noDocuments}</PmEmpty> : <ul className="pm-ui-document-list">{(documents.data?.documents ?? []).map(document => <li className="pm-ui-document-list__row" key={document.document}>
+        {documents.data?.documents?.length === 0 ? <PmEmpty icon="document">{t.noDocuments}</PmEmpty> : <ul className="pm-ui-document-list">{(documents.data?.documents ?? []).map(document => <li className="pm-ui-document-list__row" data-depth={Math.min(document.depth, 8)} key={document.id || document.document}>
           <span className="pm-ui-document-list__icon"><PmIcon name="document" /></span>
           <a className="pm-ui-document-list__body" href={document.url} target="_blank" rel="noopener"><span className="pm-ui-document-list__title">{document.title}</span><span className="pm-ui-document-list__meta">{document.document}</span></a>
           <PmButton small icon="share" onClick={() => setSharing(document)}>{t.share}</PmButton>
