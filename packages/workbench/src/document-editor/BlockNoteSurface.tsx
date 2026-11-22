@@ -1,7 +1,6 @@
 import { forwardRef, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react'
 import { randomUUID } from '@lincyaw/kernel'
-import { filterSuggestionItems } from '@blocknote/core'
 import { TextSelection } from '@tiptap/pm/state'
 import { BlockNoteView, components } from '@blocknote/mantine'
 import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ComponentsContext, CreateLinkButton, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, LinkToolbarController, NestBlockButton, RenderInPortalElement, SideMenuController, SuggestionMenuController, TableCellMergeButton, TableHandlesController, TextAlignButton, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
@@ -22,7 +21,7 @@ import { nativeTextClipboard } from './clipboard.ts'
 import { documentPageBodies, focusDocumentEnd } from './page-body.ts'
 import { documentBlockColors } from './colors.ts'
 import { DOCUMENT_EDITOR_LOCALE, MATH_EDITOR } from './math.tsx'
-import { DOCUMENT_LINKS, DocumentColorButton, DocumentLinkToolbar, DocumentSideMenu, DocumentTableCellButton, DocumentTableHandle, FormulaToolbarButton, formulaSlashItems, openDocumentLink, slashItemsAt } from './authoring.tsx'
+import { DOCUMENT_LINKS, DocumentColorButton, DocumentLinkToolbar, DocumentSideMenu, DocumentTableCellButton, DocumentTableHandle, documentSlashMenu, FormulaToolbarButton, formulaSlashItems, openDocumentLink, slashItemsAt } from './authoring.tsx'
 import type { DocumentLinks } from './authoring.tsx'
 import { excludeCommentMarkHistory, nativeComments, nativeCommentSelection } from './comments.ts'
 import type { DocumentThreadStore } from './comments.ts'
@@ -149,6 +148,8 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
   const dictionary = blockNoteDictionary(props.locale)
   const t = DOCUMENT_EDITOR_MESSAGES[props.locale]
   const linkToolbarOptions = useMemo(linkToolbarFloating, [])
+  const slashBlocksOnly = useRef(false)
+  const slashMenu = useMemo(() => documentSlashMenu(() => slashBlocksOnly.current), [])
   const links = useMemo<DocumentLinks>(() => ({ openSection: sectionId => current.current.onSectionLink?.(sectionId) ?? false }), [])
   const fileMessages = IMAGE_IMPORT_MESSAGES[props.locale]
   const editor = useCreateBlockNote({ schema: documentEditorSchema, initialContent: props.initialContent,
@@ -219,7 +220,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         <LinkToolbarController linkToolbar={DocumentLinkToolbar} floatingUIOptions={linkToolbarOptions} />
         <SideMenuController sideMenu={DocumentSideMenu} />
         <TableHandlesController tableHandle={DocumentTableHandle} tableCellHandle={DocumentTableCellButton} />
-        <SuggestionMenuController triggerCharacter="/" getItems={async query => editor.getTextCursorPosition().block.type === 'presmiumPage' ? [] : filterSuggestionItems(slashItemsAt(editor, [...withGroupItems(withGroupItems(getDefaultReactSlashMenuItems(editor), formulaSlashItems(editor, props.locale, dictionary.slash_menu.table.group)), current.current.animationRequest?.available() ? [{
+        <SuggestionMenuController triggerCharacter="/" suggestionMenuComponent={slashMenu} getItems={async query => { slashBlocksOnly.current = false; if (editor.getTextCursorPosition().block.type === 'presmiumPage') return []; const offered = slashItemsAt(editor, [...withGroupItems(withGroupItems(getDefaultReactSlashMenuItems(editor), formulaSlashItems(editor, props.locale, dictionary.slash_menu.table.group)), current.current.animationRequest?.available() ? [{
           title: t.animateWithAI, subtext: t.animateWithAIHint, group: dictionary.slash_menu.image.group, icon: <PmIcon name="sparkle" />, aliases: slashAliases('animateWithAIAliases'),
           // The menu has already taken back the typed “/” and query; the AI is asked, the document stays as it was.
           onItemClick: () => current.current.animationRequest?.request(editor),
@@ -236,7 +237,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
             editor.transact(transaction => transaction.setSelection(TextSelection.create(transaction.doc, title.from, title.to)).scrollIntoView())
             editor.focus()
           },
-        }]), query)} />
+        }], query); slashBlocksOnly.current = offered.blocksOnly; return offered.items }} />
         {props.nodeViews?.editorChildren?.(editor)}
         {props.children}
         </NewCommentDraftProvider></BlockNoteViewEditor>

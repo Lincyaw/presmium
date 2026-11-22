@@ -1,10 +1,10 @@
 import { createContext, useContext, useMemo } from 'react'
-import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
-import { insertOrUpdateBlockForSlashMenu, isTableCell, mapTableCell } from '@blocknote/core'
+import type { CSSProperties, FC, KeyboardEvent, ReactNode } from 'react'
+import { filterSuggestionItems, insertOrUpdateBlockForSlashMenu, isTableCell, mapTableCell } from '@blocknote/core'
 import type { Block } from '@blocknote/core'
 import { SideMenuExtension, SourceBlockWithPreviewExtension, TableHandlesExtension } from '@blocknote/core/extensions'
 import { DeleteButton, AddButton, DeleteLinkButton, DragHandleMenu, EditLinkButton, LinkToolbar, RemoveBlockItem, SideMenu, SplitButton, TableCellButton, TableCellMenu, TableColumnHeaderItem, TableHandle, TableRowHeaderItem, useBlockNoteEditor, useComponentsContext, useDictionary, useEditorState, useExtension, useExtensionState, usePortalElement, useUIMode } from '@blocknote/react'
-import type { DefaultReactSuggestionItem, LinkToolbarProps, SideMenuProps, TableCellButtonProps, TableHandleMenuProps, TableHandleProps } from '@blocknote/react'
+import type { DefaultReactSuggestionItem, LinkToolbarProps, SideMenuProps, SuggestionMenuProps, TableCellButtonProps, TableHandleMenuProps, TableHandleProps } from '@blocknote/react'
 import { TextSelection } from '@tiptap/pm/state'
 import { DOCUMENT_COLOR_NAMES, documentColorToken, documentColorValue } from '@lincyaw/kernel'
 import type { DocumentColorKind } from '@lincyaw/kernel'
@@ -222,8 +222,33 @@ export function inlineSlashItem(item: DefaultReactSuggestionItem): DefaultReactS
  * A table cell holds text only, and BlockNote puts a block chosen there after the table, not in the cell: the slash
  * menu in a cell lists only the items that insert into the text.
  */
-export function slashItemsAt(editor: NativeDocumentEditor, items: DefaultReactSuggestionItem[]): DefaultReactSuggestionItem[] {
-  return editor.getTextCursorPosition().block.type === 'table' ? items.filter(item => INLINE_SLASH_ITEMS.has(item)) : items
+export function slashItemsAt(editor: NativeDocumentEditor, items: DefaultReactSuggestionItem[], query: string): { items: DefaultReactSuggestionItem[], blocksOnly: boolean } {
+  const matched = filterSuggestionItems(items, query)
+  if (editor.getTextCursorPosition().block.type !== 'table') return { items: matched, blocksOnly: false }
+  const inline = matched.filter(item => INLINE_SLASH_ITEMS.has(item))
+  return { items: inline, blocksOnly: !inline.length && matched.length > 0 }
+}
+
+/**
+ * BlockNote's slash menu, drawn with its own parts; when the query in a table cell names only blocks (a heading, a
+ * list), it says what a cell takes instead of "No items".
+ */
+export function documentSlashMenu(blocksOnly: () => boolean): FC<SuggestionMenuProps<DefaultReactSuggestionItem>> {
+  return function DocumentSlashMenu({ items, loadingState, selectedIndex, onItemClick }) {
+    const Components = useComponentsContext()!, dictionary = useDictionary()
+    const t = DOCUMENT_EDITOR_MESSAGES[useContext(DOCUMENT_EDITOR_LOCALE)]
+    const rows: ReactNode[] = []
+    let group: string | undefined
+    items.forEach((item, index) => {
+      if (item.group !== group) { group = item.group; rows.push(<Components.SuggestionMenu.Label className="bn-suggestion-menu-label" key={`group:${group}`}>{group}</Components.SuggestionMenu.Label>) }
+      rows.push(<Components.SuggestionMenu.Item className={`bn-suggestion-menu-item${item.size === 'small' ? ' bn-suggestion-menu-item-small' : ''}`} item={item} id={`bn-suggestion-menu-item-${index}`} isSelected={index === selectedIndex} key={item.title} onClick={() => onItemClick?.(item)} />)
+    })
+    return <Components.SuggestionMenu.Root id="bn-suggestion-menu" className="bn-suggestion-menu">
+      {rows}
+      {!rows.length && (loadingState === 'loading' || loadingState === 'loaded') && <Components.SuggestionMenu.EmptyItem className="bn-suggestion-menu-item">{blocksOnly() ? t.slashCellOnlyInline : dictionary.suggestion_menu.no_items_title}</Components.SuggestionMenu.EmptyItem>}
+      {(loadingState === 'loading-initial' || loadingState === 'loading') && <Components.SuggestionMenu.Loader className="bn-suggestion-menu-loader" />}
+    </Components.SuggestionMenu.Root>
+  }
 }
 
 export function formulaSlashItems(editor: NativeDocumentEditor, locale: keyof typeof DOCUMENT_EDITOR_MESSAGES, group: string): DefaultReactSuggestionItem[] {
