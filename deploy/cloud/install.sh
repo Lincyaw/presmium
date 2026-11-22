@@ -25,7 +25,7 @@ usage() {
 Presmium Cloud installer
 
 Usage: install.sh [install] [options]
-       install.sh upgrade [--version V] [--build] [--yes]
+       install.sh upgrade [--version V] [--build | --registry PREFIX] [--yes]
        install.sh status
        install.sh uninstall [--purge] [--yes]
 
@@ -49,6 +49,7 @@ Other options:
   --version VERSION   release to install, e.g. 1.0.0-rc.130 (default: the latest release)
   --build             build the images on this host instead of pulling them (about 7 GB, takes a while)
   --source TARBALL    a source tarball (file or URL) instead of the GitHub release archive
+  --registry PREFIX   pull the cloud's images from a mirror of ghcr.io/lincyaw/, e.g. --registry mirror.example.com/lincyaw/
   --name NAME         Compose project and instance name (default presmium-cloud)
   --yes               do not ask; required when no terminal is available
   --dry-run           show what would be done without changing anything
@@ -361,7 +362,7 @@ configure_env() { # configure_env FILE: writes the address, images, mail and nam
   env_set "$file" CLOUD_COMPOSE_PROJECT "$project"
   env_set "$file" CLOUD_INSTANCE_ID "$project"
   env_set "$file" CLOUD_IMAGE_TAG "$version"
-  if [ "$build" = 1 ]; then env_set "$file" CLOUD_IMAGE_REGISTRY ""; else env_set "$file" CLOUD_IMAGE_REGISTRY "$published_registry"; fi
+  if [ "$build" = 1 ]; then env_set "$file" CLOUD_IMAGE_REGISTRY ""; else env_set "$file" CLOUD_IMAGE_REGISTRY "${registry:-$published_registry}"; fi
   if [ "$mode" = ip ]; then
     # Every service on the one address; the four names are that address.
     env_set "$file" CLOUD_CADDYFILE Caddyfile.path
@@ -445,10 +446,43 @@ images() {
     dc build
     dc --profile build-studio build studio-image
   else
-    step "Pulling the images for ${CLOUD_IMAGE_TAG:-$(env_get CLOUD_IMAGE_TAG)}"
-    dc --profile build-studio pull --quiet ||
-      die "could not pull the images; they may not be published yet. Retry later, or install with --build."
+    step "Pulling the images for ${CLOUD_IMAGE_TAG:-$(env_get CLOUD_IMAGE_TAG)} from $(env_get CLOUD_IMAGE_REGISTRY)"
+    local output
+    if ! output=$(dc --profile build-studio pull --quiet 2>&1); then
+      printf '%s\n' "$output" | tail -n 15 >&2
+      diagnose_pull "$output"
+      die "could not pull the images."
+    fi
   fi
+}
+
+diagnose_pull() { # diagnose_pull DOCKER-OUTPUT: say why a pull failed, as far as the output and a probe tell
+  local output=$1 registry host
+  registry=$(env_get CLOUD_IMAGE_REGISTRY)
+  host=${registry%%/*}
+  say "" >&2
+  case $output in
+    *"no matching manifest"*)
+      say "This machine's architecture ($(uname -m)) has no published image; they are built for linux/amd64 and" >&2
+      say "linux/arm64. Install with --build to build the images here." >&2 ;;
+    *"manifest unknown"*|*"manifest for "*" not found"*|*": not found"*)
+      say "The registry answered but does not have these images: version ${CLOUD_IMAGE_TAG:-$(env_get CLOUD_IMAGE_TAG)} is not" >&2
+      say "published (yet) under $registry, or the mirror has not copied it. Check --version, or retry later." >&2 ;;
+    *toomanyrequests*)
+      say "The registry limits anonymous pulls from this address; wait and retry, or sign in with docker login." >&2 ;;
+    *unauthorized*|*denied*)
+      say "The registry refused access. ghcr.io says so also for an image it does not have (check --registry);" >&2
+      say "a private mirror may need: docker login $host" >&2 ;;
+    *)
+      if [ -n "$host" ] && ! curl -sS -o /dev/null --max-time 10 "https://$host/v2/" 2>/dev/null; then
+        say "This server cannot reach $host over HTTPS (DNS, a firewall or a proxy). Pull through a mirror of" >&2
+        say "$published_registry with --registry (e.g. --registry mirror.example.com/lincyaw/), or give Docker a proxy" >&2
+        say "(https://docs.docker.com/engine/daemon/proxy/). Docker uses its own proxy settings, not this shell's." >&2
+      else
+        say "The output above names the image that failed. Images other than presmium-cloud-* come from Docker Hub;" >&2
+        say "if Docker Hub is unreachable, set registry-mirrors in /etc/docker/daemon.json." >&2
+      fi ;;
+  esac
 }
 
 wait_healthy() {
@@ -630,6 +664,7 @@ cmd_install() {
   else
     [ "$(env_get CLOUD_IMAGE_TAG)" = "$version" ] || env_set "$env_file" CLOUD_IMAGE_TAG "$version"
     [ "$requested_build" = 1 ] && env_set "$env_file" CLOUD_IMAGE_REGISTRY ""
+    [ "$requested_build" != 1 ] && [ -n "$registry" ] && env_set "$env_file" CLOUD_IMAGE_REGISTRY "$registry"
   fi
   activate_release "$version"
   dc config --quiet
@@ -671,7 +706,7 @@ dry_run_install() {
   else
     say "       app.$base auth.$base content.$base studio.$base  (Let's Encrypt certificates, ports 80 and 443)"
   fi
-  if [ "$build" = 1 ]; then say "  4. build the images locally"; else say "  4. pull ${published_registry}presmium-cloud-{api,keycloak,hub,studio}:$version"; fi
+  if [ "$build" = 1 ]; then say "  4. build the images locally"; else say "  4. pull ${registry:-$published_registry}presmium-cloud-{api,keycloak,hub,studio}:$version"; fi
   say "  5. docker compose up -d, wait for the services and print the addresses"
   if [ "$docker_ok" = 1 ]; then
     env_file_real=$env_file
@@ -740,7 +775,7 @@ cmd_upgrade() {
   [ "$dry_run" = 1 ] && { say "Dry run: nothing was changed."; return 0; }
   confirm "Continue?" || die "stopped"
   fetch_release "$version" "$build"
-  if [ "$build" = 1 ]; then env_set "$env_file" CLOUD_IMAGE_REGISTRY ""; fi
+  if [ "$build" = 1 ]; then env_set "$env_file" CLOUD_IMAGE_REGISTRY ""; elif [ -n "$registry" ]; then env_set "$env_file" CLOUD_IMAGE_REGISTRY "$registry"; fi
   # Fetch the new images first, so a failed download leaves the running version alone.
   export CLOUD_IMAGE_TAG=$version
   images
@@ -832,7 +867,7 @@ main() {
     install_dir=$(cd -- "$own" && pwd)
   fi
   mode='' domain='' ip_address='' loopback_port=18787 site_port='' scheme=https tls='' port_given='' acme_email='' version=''
-  build=0 source_tarball='' project=presmium-cloud fallback=0
+  build=0 source_tarball='' registry='' project=presmium-cloud fallback=0
   smtp_host='' smtp_port=587 smtp_user='' smtp_password='' smtp_from=''
   assume_yes=0 dry_run=0 purge=0 docker_ok=0 release_dir='' base='' app_url='' auth_url='' content_url='' hub_url=''
   case ${1:-} in install|upgrade|status|uninstall) command=$1; shift ;; esac
@@ -855,6 +890,7 @@ main() {
       --version) version=${2:?--version needs a value}; version=${version#v}; shift ;;
       --build) build=1 ;;
       --source) source_tarball=${2:?--source needs a value}; shift ;;
+      --registry) registry=${2:?--registry needs a value}; shift ;;
       --name) project=${2:?--name needs a value}; shift ;;
       --yes|-y) assume_yes=1 ;;
       --dry-run) dry_run=1 ;;
@@ -872,6 +908,11 @@ main() {
   if [ "$scheme" = http ]; then
     [ -n "$mode" ] || mode=ip
     [ "$mode" = ip ] || die "--http goes with --ip"
+  fi
+  if [ -n "$registry" ]; then
+    registry=${registry#https://}
+    registry=${registry%/}/
+    case $registry in /|*[!A-Za-z0-9./:_-]*) die "--registry must be an image name prefix such as mirror.example.com/lincyaw/" ;; esac
   fi
   case $install_dir in /*) ;; *) install_dir=$PWD/$install_dir ;; esac
   case $source_tarball in ''|*://*|/*) ;; *) source_tarball=$PWD/$source_tarball ;; esac
