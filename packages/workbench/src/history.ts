@@ -4,6 +4,9 @@ import type { WorkbenchStore } from './workbench-state.ts'
 import { WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 
+const HISTORY_READ_RETRIES = 4
+const HISTORY_RETRY_DELAY_MS = 150
+
 /**
  * The open document's version history: its revisions with the next undo and redo, the files changed elsewhere and not
  * yet in the history, and the AI's change in progress (followed while the document is open). Each action reads the
@@ -48,7 +51,7 @@ export class DocumentHistory {
     const read = ++this.#reads, scope = this.#scope
     const current = () => this.#store.state.document === dir && read === this.#reads && scope === this.#scope
     try {
-      const [history, { files }] = await Promise.all([this.#client.readRevisions(dir, undefined, signal), this.#client.readChanges(dir, signal)])
+      const [history, { files }] = await this.#readSettled(dir, current, signal)
       if (current()) {
         const historyFailure = this.#store.state.historyFailure
         this.#store.set({ history, outside: files, ...this.#readFailure === historyFailure ? { historyFailure: undefined } : {} })
@@ -59,6 +62,22 @@ export class DocumentHistory {
         this.#readFailure = errorMessage(error)
         const history = this.#store.state.history
         this.#store.set({ ...history ? { history: { ...history, loading: false } } : {}, historyFailure: this.#readFailure })
+      }
+    }
+  }
+
+  /**
+   * The server refuses a listing when a save or a commit lands while it is read (409): autosave, a rename from the
+   * document tree and presenting all write while a read is in flight. The listing is read again once things settle;
+   * only a history that keeps changing is reported.
+   */
+  async #readSettled(dir: string, current: () => boolean, signal?: AbortSignal) {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await Promise.all([this.#client.readRevisions(dir, undefined, signal), this.#client.readChanges(dir, signal)])
+      } catch (error) {
+        if (!(error instanceof WorkspaceServerError && error.status === 409) || attempt >= HISTORY_READ_RETRIES || !current() || signal?.aborted) throw error
+        await new Promise(resolve => setTimeout(resolve, HISTORY_RETRY_DELAY_MS * (attempt + 1)))
       }
     }
   }
