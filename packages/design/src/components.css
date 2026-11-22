@@ -1543,6 +1543,8 @@
 
 .pm-ui-block-editor .bn-code-block-source-popup-input-empty::before { inset-inline: var(--pm-space-3); top: var(--pm-space-3); color: var(--pm-color-muted); opacity: 1; }
 .pm-ui-block-editor .bn-code-block-source-popup-ok-button-wrapper { padding: var(--pm-space-2); }
+/* A closed popup is only clipped; its `inert` needs React 19, so hiding keeps OK and the error out of the accessibility tree and tab order. */
+.pm-ui-block-editor .bn-preview-with-source-popup:not([data-open='true']) :is(.bn-code-block-source-popup-ok-button-wrapper, .bn-code-block-source-error) { visibility: hidden; }
 
 .pm-ui-block-editor .bn-code-block-source-popup-ok-button {
   min-height: var(--pm-size-tool);
