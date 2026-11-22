@@ -1,8 +1,9 @@
 import { PmButton, WorkbenchProvider } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
-import { useEffect } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
+import type { AssistantSetup } from './assistant-setup.tsx'
 import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import { BRAND_SLOTS, ONBOARDING } from './contract.ts'
+import { BRAND_SLOTS, MODEL_SETTINGS, ONBOARDING } from './contract.ts'
 import { BRAND_COPY, BRAND_LANGUAGES, useClientMessages } from './messages.ts'
 import { rememberOpenSection } from './settings-opener.ts'
 
@@ -25,8 +26,9 @@ function welcomed(): boolean {
   }
 }
 
-function Welcome({ workbench, complete, openSection }: { workbench: Workbench, complete?: () => void, openSection?: (id: string) => void }) {
+function Welcome({ workbench, readiness, complete, openSection }: { workbench: Workbench, readiness: AssistantSetup['readiness'], complete?: () => void, openSection?: (id: string) => void }) {
   const t = useClientMessages(workbench)
+  const ready = useSyncExternalStore(readiness.subscribe, readiness.getSnapshot) === 'ready'
   const read = welcomed()
   useEffect(() => rememberOpenSection(openSection), [openSection])
   useEffect(() => {
@@ -47,16 +49,20 @@ function Welcome({ workbench, complete, openSection }: { workbench: Workbench, c
           <Logo size={40} />
           <h2 id="pmw-welcome-title" className="pmw-welcome__title">{t.welcomeTitle}</h2>
           <p>{t.welcome}</p>
+          {!ready && <p>{t.welcomeModel}</p>}
           <div className="pmw-welcome__actions">
-            <PmButton
-              onClick={() => {
-                done()
-                openSection?.('models')
-              }}
-            >
-              {t.models}
-            </PmButton>
-            <PmButton variant="primary" onClick={done}>{t.start}</PmButton>
+            <PmButton variant={ready ? 'primary' : 'default'} onClick={done}>{t.start}</PmButton>
+            {!ready && (
+              <PmButton
+                variant="primary"
+                onClick={() => {
+                  done()
+                  openSection?.(MODEL_SETTINGS.section)
+                }}
+              >
+                {t.models}
+              </PmButton>
+            )}
           </div>
         </div>
       </Modal>
@@ -73,13 +79,13 @@ function PassOver({ complete, openSection }: { complete?: () => void, openSectio
 }
 
 /** Puts Presmium's mark, name, first-use notice and languages in DeepSeek Harness's slots, in every layout. */
-export function registerBrand(ctx: DshClientContext, workbench: Workbench): void {
+export function registerBrand(ctx: DshClientContext, workbench: Workbench, readiness: AssistantSetup['readiness']): void {
   const [mark, name, hero] = BRAND_SLOTS
   ctx.effect(() => ctx.slots.inject(mark, () => ctx.slots.register({ name: mark }, ({ size }: { size?: number }) => <Logo size={size ?? 24} />)), 'presmium: sidebar brand mark')
   ctx.effect(() => ctx.slots.inject(name, () => ctx.slots.register({ name }, () => <span className="pmw-brand-name">Presmium</span>)), 'presmium: sidebar brand name')
   ctx.effect(() => ctx.slots.inject(hero, () => ctx.slots.register({ name: hero }, ({ size, className }: { size?: number, className?: string }) => <Logo size={size ?? 34} className={className} />)), 'presmium: conversation brand mark')
   const [welcome, signIn] = ONBOARDING.steps
-  ctx.effect(() => ctx.slots.inject(ONBOARDING.slot, () => ctx.slots.register({ name: ONBOARDING.slot, id: welcome, priority: -1, order: -100 }, props => <Welcome workbench={workbench} {...props} />)), 'presmium: first-use notice')
+  ctx.effect(() => ctx.slots.inject(ONBOARDING.slot, () => ctx.slots.register({ name: ONBOARDING.slot, id: welcome, priority: -1, order: -100 }, props => <Welcome workbench={workbench} readiness={readiness} {...props} />)), 'presmium: first-use notice')
   ctx.effect(() => ctx.slots.inject(ONBOARDING.slot, () => ctx.slots.register({ name: ONBOARDING.slot, id: signIn, priority: -1, order: 0 }, PassOver)), 'presmium: no DeepSeek sign-in step')
   // Harness's own `English` and `中文` carry its developer copy in the AI panel ("Describe what you want to build…"),
   // and a language's dictionary cannot be registered twice; a choice of either becomes the same language with Presmium's

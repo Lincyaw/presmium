@@ -481,6 +481,8 @@ span.pmw-appbar__place {
 
 .pmw-turn-failure__actions {
   display: flex;
+  flex-wrap: wrap;
+  gap: var(--pm-space-2);
   margin-top: var(--pm-space-1);
 }
 
@@ -497,3 +499,25 @@ span.pmw-appbar__place {
   margin-top: var(--pm-space-1);
   overflow-wrap: anywhere;
 }
+
+/* The statistics under the composer (output speed, cache hits, context use) belong to the coding view. Matched by the
+ * dock's data attribute, not by Harness's generated class names. */
+html:not([data-pmw-coding-view]) [data-composer-dock] {
+  display: none !important;
+}
+
+/* Settings → Models for authors: one card per model service. */
+.pmw-model-setup { min-width: 0; }
+.pmw-model-setup__content { display: flex; flex-direction: column; gap: var(--pm-space-3); padding: var(--pm-space-3); min-width: 0; }
+.pmw-model-setup__content p { margin: 0; line-height: var(--pm-leading-ui); }
+.pmw-model-setup__list { display: flex; flex-direction: column; gap: var(--pm-space-2); margin: 0; padding: 0; list-style: none; }
+.pmw-model-setup__card { display: flex; flex-direction: column; gap: var(--pm-space-3); min-width: 0; }
+.pmw-model-setup__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--pm-space-2); min-width: 0; }
+.pmw-model-setup__name { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pm-space-2); min-width: 0; }
+.pmw-model-setup__name h3 { margin: 0; font-size: var(--pm-text-md); font-weight: var(--pm-weight-semibold); }
+.pmw-model-setup__body, .pmw-model-setup__fields { display: flex; flex-direction: column; gap: var(--pm-space-3); min-width: 0; }
+.pmw-model-setup__steps { display: flex; flex-direction: column; gap: var(--pm-space-1); margin: 0; padding-inline-start: var(--pm-space-5); line-height: var(--pm-leading-ui); }
+.pmw-model-setup__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--pm-space-2); }
+.pmw-model-setup__note { color: var(--pm-color-muted); font-size: var(--pm-text-sm); }
+.pmw-model-setup__advanced summary { cursor: pointer; color: var(--pm-color-muted); font-size: var(--pm-text-sm); }
+.pmw-model-setup__advanced[open] summary { margin-block-end: var(--pm-space-3); }
