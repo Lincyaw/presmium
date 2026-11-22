@@ -211,7 +211,8 @@ export const CLI_MESSAGES: Record<Locale, CliMessages> = {
           --host <地址>   改为监听本机在局域网中的这个地址，而不是 127.0.0.1，且没有
                           登录：任何能访问这个端口的人都以你的身份操作
 
-  -h, --help   显示本说明
+  -v, --version  显示 Presmium 的版本
+  -h, --help     显示本说明
 
 退出码：0 没有错误，1 有错误级别的问题，2 用法错误或内部错误。`,
     missingCommand: '缺少命令。请在 presmium 之后给出命令，例如 presmium build。',
@@ -468,7 +469,8 @@ Commands:
           --host <addr>   listen on this address of the machine on the local network instead of
                           127.0.0.1, with no login: whoever reaches the port works as you
 
-  -h, --help   show this help
+  -v, --version  show Presmium’s version
+  -h, --help     show this help
 
 Exit Codes: 0 no errors, 1 error findings, 2 usage or internal error.`,
     missingCommand: 'No command given. Put a command after presmium, for example presmium build.',

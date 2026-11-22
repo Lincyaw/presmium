@@ -72,6 +72,10 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
   // Every compiler of this process and of the processes it starts, a plugin's own included, finds the official
   // plugins in this installation when the project does not install them.
   process.env[INSTALLATION_VARIABLE] = bundled
+  if (argv.length === 1 && (argv[0] === '--version' || argv[0] === '-v')) {
+    process.stdout.write(`${(JSON.parse(await readFile(join(bundled, 'package.json'), 'utf8')) as { version: string }).version}\n`)
+    return 0
+  }
   if (argv[0] === 'new') return runNewCommand(argv.slice(1), bundled)
   if (argv[0] === 'skills') return (await import('@lincyaw/skills')).main(argv.slice(1))
   if (argv[0] === 'studio') return runStudioCommand(argv.slice(1), bundled, options.bin ?? PRESMIUM_BIN)
