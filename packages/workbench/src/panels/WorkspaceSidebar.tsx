@@ -82,14 +82,16 @@ export function WorkspaceSidebar({ onHome, onNavigate, closeLabel, onClose }: { 
 
   const openDocument = (id: string) => { void workbench.tree.openPlace({ document: id }); onNavigate?.() }
   const menu = (id: string): MenuItem[] => [
-    { id: 'rename', label: t.rename, icon: 'edit', disabled: busy },
+    { id: 'side', label: t.openOnSide, icon: 'rail', disabled: open === undefined || selected === id },
+    { id: 'rename', label: t.rename, icon: 'edit', disabled: busy, separator: true },
     { id: 'child', label: t.newChild, icon: 'document-add', disabled: busy },
     { id: 'duplicate', label: t.duplicate, icon: 'copy', disabled: busy },
     { id: 'move', label: t.moveTo, icon: 'move', disabled: busy || count < 2 },
     { id: 'trash', label: t.moveToTrash, icon: 'trash', danger: true, separator: true, disabled: busy },
   ]
   const onMenu = (id: string, action: string) => {
-    if (action === 'rename') workbench.tree.startRenaming(id)
+    if (action === 'side') { workbench.tree.peek({ document: id }); onNavigate?.() }
+    else if (action === 'rename') workbench.tree.startRenaming(id)
     else if (action === 'child') void createChild(id)
     else if (action === 'duplicate') void workbench.tree.duplicate(id)
     else if (action === 'move') setMoving(id)
