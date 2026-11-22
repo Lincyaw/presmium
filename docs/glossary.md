@@ -251,6 +251,7 @@ zh-CN 以 Microsoft Office 的简体中文本地化为首选，没有对应时�
 | （不显示） | （不显示） | 构建 | `编译`、`compile`、`compiled`、`recompile`、`build` |
 | （不显示） | （不显示） | 版本库 | `git`、`commit`、`提交记录` |
 | （不显示） | （不显示） | 运行时 | `内核`、`kernel`、`workbench`、`工作台` |
+| （不显示） | （不显示） | 运行代码笔记本的工具与托管服务：Notebook 导出说成“可在 Notebook 工具中逐段运行代码的笔记本文件 / a notebook file whose code you can run step by step in a notebook app”；作者连接自己的 Jupyter 服务器的设置（运行环境的地址与访问令牌）例外，写出 Jupyter | `JupyterHub`、`在 Jupyter 中运行`、`runs in Jupyter` |
 | （不显示） | （不显示） | 标识；插件、步骤与内容块以名称显示 | `ID`、`stepOrder`、`fingerprint` |
 
 “工作台”是仓库文档对 Presmium Studio 的称呼；界面中称应用为“Presmium”，需要区分时写“Presmium Studio”。

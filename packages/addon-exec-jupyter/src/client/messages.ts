@@ -2,7 +2,7 @@ import { currentLocale } from '@lincyaw/host'
 import type { Catalog } from '@lincyaw/host'
 
 const zhCN = {
-  unknown: (name: string) => `文稿没有声明 kind: jupyter 的环境 ${name}`,
+  unknown: (name: string) => `文稿没有声明名为 ${name} 的运行环境`,
   envOnly: (name: string) => `环境 ${name} 的凭据方式是 env，只在导出时可用`,
   cancelled: '已取消运行环境连接',
   proxyStatic: (name: string) => `环境 ${name} 经 Presmium 服务端的代理连接，静态页面中不可用`,
@@ -40,7 +40,7 @@ const zhCN = {
 export type JupyterMessages = typeof zhCN
 
 const en: JupyterMessages = {
-  unknown: name => `The document declares no kind: jupyter environment ${name}`,
+  unknown: name => `The document declares no execution environment named ${name}`,
   envOnly: name => `Environment ${name} authenticates with env, which works only when exporting`,
   cancelled: 'The execution environment connection was canceled',
   proxyStatic: name => `Environment ${name} connects through the Presmium server’s proxy, which a static page does not have`,
