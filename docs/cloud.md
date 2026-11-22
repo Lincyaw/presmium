@@ -38,7 +38,7 @@
 ## 4. 打开、停止与回收
 
 - 控制台的“打开 Studio”链接到 `/hub/user-redirect/presmium`：经 Keycloak 登录（已登录时免输入），需要时启动容器并显示进度。
-- 空闲 `CLOUD_STUDIO_IDLE_SECONDS`（默认 1800）后 idle culler 停止 Studio。停止只删除容器，卷保留。控制台也可停止。
+- 空闲 `CLOUD_STUDIO_IDLE_SECONDS`（默认 1800）后 idle culler（`jupyterhub-idle-culler`，每半个空闲时长检查一次）停止 Studio；空闲的命名环境（`env-*`）停止并从 Hub 中移除（`--remove-named-servers=True`），下次运行时重新创建。停止只删除容器，作者卷与环境卷都保留。控制台也可停止。
 - 共享、创建副本与 MCP 调用时，控制台经 Hub API 启动用户的服务器并等待就绪。
 - JupyterHub 重启或升级不停止运行中的 Studio（`cleanup_servers = False`）。
 

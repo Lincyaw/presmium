@@ -105,9 +105,10 @@ async def identity(spawner):
 
 c.Spawner.pre_spawn_hook = identity
 
-# Idle Studios stop; their volumes stay.
+# Idle Studios stop, and idle named environments (env-*) are stopped and removed; every volume stays. The culler's
+# options are traitlets aliases: each takes its value after `=`.
 c.JupyterHub.services = [
-    {'name': 'idle-culler', 'command': ['python3', '-m', 'jupyterhub_idle_culler', f"--timeout={env.get('CLOUD_STUDIO_IDLE_SECONDS', '1800')}", '--remove-named-servers']},
+    {'name': 'idle-culler', 'command': ['python3', '-m', 'jupyterhub_idle_culler', f"--timeout={int(env.get('CLOUD_STUDIO_IDLE_SECONDS', '1800'))}", '--remove-named-servers=True']},
     {'name': 'presmium-console', 'api_token': env['CLOUD_HUB_API_TOKEN']},
 ]
 c.JupyterHub.load_roles = [
