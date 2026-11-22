@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { speechEngineId } from '@lincyaw/kernel'
-import type { PresmiumDocument, VoiceoverJob, VoiceoverSnapshot, VoiceScope } from '@lincyaw/kernel'
+import type { PresmiumDocument, VoiceInfo, VoiceoverJob, VoiceoverSnapshot, VoiceScope } from '@lincyaw/kernel'
 import { PmButton, PmDialog, PmField, PmNotice } from '../components.tsx'
 import { useWorkbench, useWorkbenchState } from '../context.tsx'
 import { documentVoiceStepIds, resolveDocumentStepVoice } from '../document-voices.ts'
 import type { DocumentVoiceScope } from '../document-voices.ts'
 import { VOICE_MESSAGES, voiceFailure } from '../voice-messages.ts'
+import { voiceTitle } from '../voice-names.ts'
 import { prepareVoiceSnapshot, runtimeVoiceScope, voiceSnapshotCurrent } from '../voice-snapshot.ts'
 import type { VoiceSnapshot } from '../voice-snapshot.ts'
 import { isAgentChanging } from '../workbench-state.ts'
@@ -28,7 +29,10 @@ function coversScope(job: VoiceScope, selected: VoiceScope): boolean {
   return targets.every(target => generated.some(value => value.section === target.section && value.step === target.step && value.binding === target.binding))
 }
 
-/** Visible author jobs use acknowledged source versions; polling never starts generation. */
+/**
+ * Visible author jobs use acknowledged source versions; polling never starts generation. It opens on the whole
+ * document, the scope of the voice chosen for it; a narrower scope is a choice in the dialog.
+ */
 export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose(): void }) {
   const workbench = useWorkbench(), locale = useWorkbenchState(state => state.locale), t = VOICE_MESSAGES[locale]
   const source = useWorkbenchState(state => state.authoring)
@@ -36,7 +40,8 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
   const jobs = useWorkbenchState(state => state.voiceoverJobs) ?? NO_JOBS
   const jobsFailure = useWorkbenchState(state => state.voiceoverJobsFailure)
   const readOnly = useWorkbenchState(state => Boolean(state.authoring?.loading || state.authoring?.composing) || isAgentChanging(state))
-  const [scope, setScope] = useState<DocumentVoiceScope>({ kind: 'step', stepId })
+  const [scope, setScope] = useState<DocumentVoiceScope>({ kind: 'document' })
+  const [voiceNames, setVoiceNames] = useState<VoiceInfo[]>([])
   const [checked, setChecked] = useState<CheckedVoice>(), [status, setStatus] = useState<VoiceoverSnapshot>()
   const [loading, setLoading] = useState(true), [submitting, setSubmitting] = useState(false), [cancelling, setCancelling] = useState<string>()
   const [changed, setChanged] = useState(false), [error, setError] = useState<string>(), [attempt, setAttempt] = useState(0)
@@ -53,7 +58,7 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
   useEffect(() => {
     life.current = new AbortController(); closing.current = false
     directoryRef.current = workbench.getState().document
-    setScope({ kind: 'step', stepId })
+    setScope({ kind: 'document' })
     return () => { closing.current = true; generation.current++; life.current?.abort(); read.current?.abort(); mutation.current?.abort(); cancelOwned() }
   }, [workbench, stepId, source?.identity])
   useEffect(() => workbench.observeVoiceoverJobs(), [workbench, source?.identity])
@@ -89,7 +94,9 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
     mutation.current?.abort(); starting.current = false; setSubmitting(false); setChanged(true)
   }), [workbench])
 
-  const hasActive = jobs.some(active)
+  const hasActive = jobs.some(active), wasActive = useRef(false)
+  // The last clips are written as the job ends: one fresh check then shows what is still missing, if anything.
+  useEffect(() => { if (wasActive.current && !hasActive && !closing.current) setAttempt(value => value + 1); wasActive.current = hasActive }, [hasActive])
   useEffect(() => {
     const value = checkedRef.current, stamp = jobStamp(jobs)
     if (!value || !voiceSnapshotCurrent(workbench, value.snapshot) || stamp === statusJobs.current) return
@@ -134,6 +141,15 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
       return { cached, missing, blocked, providers, voices, silent, reasons, text, hasUnbound: !unbound.length && (status.unboundByPage ?? []).some(value => pages.has(value.section) && value.utterances > 0) }
     } catch { return undefined }
   }, [checked, status, scope, source?.inherited])
+  const voiceKey = JSON.stringify(selection?.voices.map(voice => voice.engine ?? '') ?? [])
+  useEffect(() => {
+    const directory = checked?.snapshot.directory, engines = [...new Set(selection?.voices.map(voice => voice.engine) ?? [])]
+    if (directory === undefined || !engines.length) return
+    const controller = new AbortController()
+    void Promise.all(engines.map(engine => workbench.client.readVoiceCatalog(directory, engine, undefined, controller.signal).then(answer => answer.catalog.voices, () => [])))
+      .then(lists => { if (!controller.signal.aborted) setVoiceNames(lists.flat()) })
+    return () => controller.abort()
+  }, [workbench, checked?.snapshot.directory, voiceKey])
   const hasScopeJob = useMemo(() => {
     if (!checked) return false
     try {
@@ -186,7 +202,7 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
   const warnings = [...new Set([...(capabilityFailure ? [capabilityFailure] : []), ...(selection?.reasons ?? []).map(reason => voiceFailure(new Error(reason), locale))])].filter(message => message !== failure)
   const cancelOnClose = submitting || [...owned.current.keys()].some(id => { const job = jobs.find(value => value.id === id); return !job || active(job) })
   const closeLabel = cancelOnClose ? t.cancelAndClose : t.close
-  return <PmDialog open label={t.generation} closeLabel={closeLabel} onClose={close} footer={<>
+  return <PmDialog open label={scope.kind === 'document' ? t.generationAll : t.generation} closeLabel={closeLabel} onClose={close} footer={<>
     <PmButton small onClick={close}>{closeLabel}</PmButton>
     <PmButton small loading={loading} disabled={submitting} onClick={() => setAttempt(value => value + 1)}>{changed ? t.recheck : t.refresh}</PmButton>
     <PmButton small variant="primary" loading={submitting} disabled={loading || changed || readOnly || hasActive || !selection?.missing || !selection.providers.length || !status?.capability.available} onClick={() => void start()}>{t.confirmGenerate}</PmButton>
@@ -203,12 +219,15 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
       {selection.hasUnbound && <PmNotice tone="warn">{t.unboundScript}</PmNotice>}
       {selection.silent > 0 && <PmNotice>{t.silentScope(selection.silent)}</PmNotice>}
       {warnings.map(message => <PmNotice tone="warn" key={message}>{message}</PmNotice>)}
-      {selection.voices.map(voice => <PmField key={JSON.stringify(voice)} label={t.currentVoice}><span>{voice.voice}{voice.engine ? ` · ${voice.engine}` : ''}{voice.rate !== undefined ? ` · ${t.rate}: ${voice.rate}` : ''}{voice.style ? ` · ${t.style}: ${voice.style}` : ''}</span></PmField>)}
+      {selection.voices.map(voice => <PmField key={JSON.stringify(voice)} label={t.currentVoice}><span>{voiceTitle(voice.voice, voiceNames.find(info => info.id === voice.voice), locale)}{voice.rate !== undefined ? ` · ${t.rate}: ${voice.rate}` : ''}{voice.style ? ` · ${t.style}: ${voice.style}` : ''}</span></PmField>)}
       {selection.missing > 0 && selection.providers.map(provider => <PmNotice key={provider.id}>{t.disclosure(provider.provider, provider.local)}</PmNotice>)}
-      {selection.text && <PmField label={t.generationScript}><p className="pmw-voice__sample">{selection.text}</p></PmField>}
+      {selection.text && scope.kind !== 'document' && <PmField label={t.generationScript}><p className="pmw-voice__sample">{selection.text}</p></PmField>}
     </>}
     {jobs.map(job => <div className="pmw-voice__status" key={job.id}>
-      <span>{t.scopes[job.scope.kind]} · {t.jobs[job.state]} · {t.progress(job.completed, job.total, job.failed)}{source?.version !== job.source.version || source?.fingerprint !== job.source.fingerprint ? ` · ${t.oldVersion}` : ''}</span>
+      <div className="pmw-job__progress">
+        {active(job) && <progress max={job.total || 1} value={job.completed} aria-label={t.jobs[job.state]} />}
+        <span role="status">{t.scopes[job.scope.kind]} · {t.jobs[job.state]} · {t.progress(job.completed, job.total, job.failed)}{source?.version !== job.source.version || source?.fingerprint !== job.source.fingerprint ? ` · ${t.oldVersion}` : ''}</span>
+      </div>
       {active(job) && <PmButton small loading={cancelling === job.id} disabled={job.state === 'cancelling'} onClick={() => void cancel(job)}>{t.cancelJob}</PmButton>}
       {job.error && <span>{voiceFailure(new Error(job.error), locale)}</span>}
     </div>)}

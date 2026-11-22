@@ -922,6 +922,7 @@
 .pmw-voice__filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--pm-space-3); }
 .pmw-voice__summary, .pmw-voice__status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--pm-space-2); min-width: 0; overflow-wrap: anywhere; }
 .pmw-voice__status { justify-content: space-between; }
+.pmw-voice__status .pmw-job__progress { flex: 1; min-width: 0; }
 .pmw-voice__steps { display: flex; flex-wrap: wrap; gap: var(--pm-space-1); }
 .pmw-voice__sample { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .pmw-document__main > .pmw-preview { flex: 1; height: auto; }

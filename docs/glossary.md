@@ -171,6 +171,9 @@ zh-CN 以 Microsoft Office 的简体中文本地化为首选，没有对应时�
 | 结束放映 | End Show | 退出放映 | `退出放映`、`Exit presentation` |
 | 播放 | Play | 播放讲授、配音或视频 | |
 | 生成配音 | Generate Voiceover | 由讲稿合成配音；“生成”只用于合成配音与 AI 生成素材 | `合成讲授轨`、`Synthesize` |
+| 生成全部配音 | Generate All Voiceover | 为整份文稿缺少的配音一次生成；范围可在窗口中改小 | `批量合成` |
+| 选择音色 / 更换音色 | Choose Voice / Change Voice | 为整份文稿选择音色；单独设置过声音的步骤保持不变。音色显示为名称、性别与语言（“晓晓 · 女声 · 普通话”），不显示服务的音色标识 | |
+| 本步单独设置… | Set for This Step… | 只为当前步骤选择音色或静音 | |
 | 新建批注 | New Comment | 在选区、内容块或预览块的一步上添加批注；预览工具栏的入口叫“本步批注” | `添加评论`、`Add comment` |
 | 发布 | Post | 发布批注或回复 | `提交批注` |
 | 解决 | Resolve | 将批注标为已解决 | `关闭批注` |

@@ -127,7 +127,7 @@ packages/addon-<ctx>/
 | `only cli and workspace use the server` | 只有它们引用 `@lincyaw/server` |
 | `only server and dsh use mcp` | 只有它们引用 `@lincyaw/mcp` |
 | `plugins use contracts, not the hosts` | `addon-*` 不引用 `server`、`mcp`、`workspace`、`web` |
-| `protocol clients stay in their adapter` | `@modelcontextprotocol/*` 只在 `mcp`；`@jupyterlab/services`、`@xterm/*` 只在 `addon-exec-jupyter`；`mediabunny` 只在 `addon-lecture`；动画库只在 `addon-motion/src/client/`；`simple-git` 只在 `src/node/` |
+| `protocol clients stay in their adapter` | `@modelcontextprotocol/*` 只在 `mcp`；`@jupyterlab/services`、`@xterm/*` 只在 `addon-exec-jupyter`；`mediabunny` 只在 `addon-lecture` 与 `addon-speech/src/node/engines/`；`msedge-tts` 只在 `addon-speech/src/node/engines/`；动画库只在 `addon-motion/src/client/`；`simple-git` 只在 `src/node/` |
 | `DeepSeek Harness only in dsh and studio` | `@deepseek-ai/*` 只在 `dsh`、`studio` 的源码与依赖中 |
 | `the workbench's panels know no host` | `workbench` 不引用 Vue、dsh、`@lincyaw/host` |
 | `the design system only uses framework-free icons` | `design` 只引用 `lucide` |
@@ -247,6 +247,7 @@ Node 入口与浏览器公开导出共用 `@lincyaw/kernel/node` 的 `packageExp
 工作台“语音服务”保存火山引擎语音 API Key 至运营者目录的 `speech/credentials.json`（`0600`），经文件锁、修订比较及原子替换写入。所有者路由只返回状态。`presmium speech key set|clear|status [<目录>]` 经同一个 `OperatorSpeechSettings` 读写这个文件（运营者目录按 `presmium voiceover` 编译文稿时的方式取得：目录所在的工作区，`PRESMIUM_OPERATOR_DIR` 可另指定），密钥只从标准输入读入、不回显，`status` 只说明是否配置及来源。共享 Node secret 解析器优先使用保存值，再回退启动环境；保存的 Key 不继承环境 App ID。配置变化刷新目录与适配器，不隐式合成或验证服务权限。
 
 - `SPEECH` 提供合成、转写、音色与配音缓存的清理（`pruneCache`）；引擎由运营者以 `PRESMIUM_SPEECH_<ID>_URL`、`_KEY`、`_PROVIDER` 定义。语音 `lang` 是 BCP 47。
+- 内置引擎 `edge` 无需设置：经 `msedge-tts` 从 Node 直接使用微软 Edge 朗读的免费音色（只合成，不转写），Edge 给出的 WebM 中的 Opus 由 mediabunny 原样移入 Ogg，再写入 AI 生成标识，不需要 FFmpeg。它排在运营者定义的引擎之后，所以没有别的合成引擎时它是默认；运营者定义 `PRESMIUM_SPEECH_EDGE_URL` 与 `_PROVIDER`（本机桥接服务）时由运营者的定义取代，`PRESMIUM_SPEECH_EDGE_MODEL=none` 关闭它。它的缓存身份不同于运营者定义的配置，同一请求已提交并锁定的配音照常使用，不必重新生成。
 - 读者问答在浏览器中经读者自己的服务，不经站点服务端。
 - agent 工具的元数据标明种类（读取、操作、计费），确认按种类。
 - 每次接受的修改记录在独立的本地历史库，不推进项目 Git 分支。历史条目由 Git 对象存储，尾注 `Presmium-Origin`，会话修改另有 `Presmium-Session`、`Presmium-Turn`。
@@ -476,6 +477,7 @@ DeltaBox 自带的 turn-stopping 审阅行关闭，保留 Presmium 的单一接�
 | Mediabunny、FFmpeg（作者安装） | 录音录屏与无 FFmpeg 时的合成；视频编码 |
 | `@noble/hashes` | 浏览器中的 SHA-256 |
 | `@volcengine/speechsaasprod*` | 火山引擎音色列表 |
+| `msedge-tts` | 内置语音服务：微软 Edge 朗读的音色与合成 |
 | drauu | 圈画 |
 | GSAP、Anime.js、Motion、Three.js、Remotion、D3 | 动画场景 |
 | Yjs、y-websocket | 课堂同步 |

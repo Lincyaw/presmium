@@ -49,6 +49,9 @@ export function SpeechSettingsPanel() {
       {failure && <PmNotice tone="danger">{failure} <PmButton small disabled={busy || loading} onClick={() => void load()}>{t.retry}</PmButton></PmNotice>}
       {status && <PmNotice tone="accent">{status}</PmNotice>}
       <PmCard><div className="pmw-speech-settings__fields">
+        <PmField label={t.free}><span>{t.freeProvider}</span><PmBadge tone="ok">{t.freeReady}</PmBadge></PmField>
+      </div></PmCard>
+      <PmCard><div className="pmw-speech-settings__fields">
         <PmField label={t.service}><span>{t.provider} · {t.model}</span><PmBadge tone={settings?.configured ? 'accent' : 'neutral'}>{settings?.configured ? t.configured : t.unconfigured}</PmBadge></PmField>
         {settings && <p>{t.source[settings.source]}</p>}
         <PmInput type="password" label={t.key} hint={t.keyHint} placeholder={settings?.configured ? t.keySaved : t.keyPlaceholder} value={key} disabled={disabled} autoComplete="new-password" spellCheck={false} maxLength={8192} onChange={event => { dirty.current = Boolean(event.target.value.trim() || appId.trim()); setKey(event.target.value); setStatus(undefined) }} />

@@ -1,8 +1,9 @@
 import type { Locale } from './messages.ts'
 
 const zh = {
-  title: '语音服务', provider: '火山引擎', service: '默认服务', model: '语音合成 2.0',
-  description: '配置此工作区的配音服务，保存后立即生效。',
+  title: '语音服务', provider: '火山引擎', service: '付费服务（可选）', model: '语音合成 2.0',
+  description: '无需设置即可配音：默认使用微软 Edge 朗读的免费音色，试听和生成配音时文字会发送给微软。需要更多音色时，可以在下面填写火山引擎的密钥，保存后立即生效。',
+  free: '免费服务', freeProvider: '微软 Edge 朗读', freeReady: '可直接使用',
   key: '语音密钥', keyPlaceholder: '输入 API Key 或 Access Token', keySaved: '已配置，留空保留',
   keyHint: '使用语音 API Key，或与 App ID 配套的 Access Token。',
   appId: 'App ID（可选）', appIdPlaceholder: '使用 API Key 时留空', appIdHint: '使用 Access Token 时填写对应 App ID；不需要 Secret Key。输入新的密钥且留空此项时，使用 API Key。',
@@ -21,8 +22,9 @@ const zh = {
 export const SPEECH_SETTINGS_MESSAGES: Record<Locale, typeof zh> = {
   'zh-CN': zh,
   en: {
-    title: 'Voice Service', provider: 'Volcengine', service: 'Default service', model: 'Speech synthesis 2.0',
-    description: 'Configure voiceover for this workspace. Saved settings apply immediately.',
+    title: 'Voice Service', provider: 'Volcengine', service: 'Paid service (optional)', model: 'Speech synthesis 2.0',
+    description: 'Voiceover works without setup: the free voices of Microsoft Edge Read Aloud are used, and samples and voiceover send the text to Microsoft. For more voices, enter a Volcengine key below. Saved settings apply immediately.',
+    free: 'Free service', freeProvider: 'Microsoft Edge Read Aloud', freeReady: 'Ready to use',
     key: 'Speech Key', keyPlaceholder: 'Enter an API key or access token', keySaved: 'Configured; leave blank to keep',
     keyHint: 'Use a speech API key, or an access token paired with an App ID.',
     appId: 'App ID (optional)', appIdPlaceholder: 'Leave blank for an API key', appIdHint: 'Enter the matching App ID for an access token; no secret key is needed. A new key with this field blank uses API key authentication.',

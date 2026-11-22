@@ -3,8 +3,11 @@ import type { SpeechEngineInfo } from '@lincyaw/kernel'
 
 export const VOLCENGINE = 'volcengine'
 export const FAKE = 'fake'
+/** Microsoft Edge's read-aloud voices: built in, free and without setup, so narration works out of the box. */
+export const EDGE = 'edge'
+export const EDGE_URL = 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud'
 
-export type EngineKind = 'volcengine' | 'openai' | 'fake'
+export type EngineKind = 'volcengine' | 'openai' | 'fake' | 'edge'
 
 export interface EngineDefinition {
   id: string
@@ -24,6 +27,8 @@ export interface EngineDefinition {
    * the voice list and the account's cloned voices come from the account; without, from the bundled catalogue.
    */
   console?: { accessKeyId: string, secretAccessKey: string, project: string }
+  /** Present without the operator defining it; audio committed for a request is used as is under it. */
+  builtin?: boolean
 }
 
 /** The model an operator writes for a use an engine does not have, e.g. an engine that only says text. */
@@ -96,6 +101,7 @@ export function operatorEngines(names: Iterable<string>, secret: (name: string) 
       }
       continue
     }
+    if (id === EDGE && !value('URL') && !value('PROVIDER')) continue
     const missing = (['URL', 'PROVIDER'] as const).filter(suffix => !value(suffix)).map(suffix => engineVariable(id, suffix))
     if (missing.length) {
       unavailable.push({ id, reason: `${missing.join(' and ')} ${missing.length > 1 ? 'are' : 'is'} not set; an engine needs its address and the name of its provider` })
@@ -124,17 +130,25 @@ export function operatorEngines(names: Iterable<string>, secret: (name: string) 
       transcribes: !none('TRANSCRIBE_MODEL'),
     })
   }
-  engines.sort((a, b) => Number(b.id === VOLCENGINE) - Number(a.id === VOLCENGINE) || a.id.localeCompare(b.id))
+  // The built-in engine, unless the operator defines engine "edge" themselves (the local bridge) or turns it off with
+  // PRESMIUM_SPEECH_EDGE_MODEL=none. It comes after the operator's engines, which are the operator's choice.
+  if (!engines.some(engine => engine.id === EDGE) && !unavailable.some(engine => engine.id === EDGE)) {
+    const model = secret(engineVariable(EDGE, 'MODEL'))?.trim()
+    if (model?.toLowerCase() !== NO_MODEL) engines.push({ id: EDGE, kind: 'edge', url: EDGE_URL, provider: EDGE_NAME['zh-CN'], model: 'edge-read-aloud', transcribeModel: NO_MODEL, synthesizes: true, transcribes: false, builtin: true })
+  }
+  engines.sort((a, b) => Number(b.id === VOLCENGINE) - Number(a.id === VOLCENGINE) || Number(a.builtin === true) - Number(b.builtin === true) || a.id.localeCompare(b.id))
   return { engines, unavailable, warnings }
 }
 
 const VOLCENGINE_NAME = { 'zh-CN': '火山引擎', 'en': 'Volcengine' }
+const EDGE_NAME = { 'zh-CN': '微软 Edge 朗读', 'en': 'Microsoft Edge Read Aloud' }
 
 function isChinese(lang: string | undefined): boolean {
   return /^zh\b/i.test((lang ?? '').trim())
 }
 
 export function providerName(engine: EngineDefinition, lang?: string): string {
+  if (engine.kind === 'edge') return EDGE_NAME[isChinese(lang ?? 'zh') ? 'zh-CN' : 'en']
   if (engine.kind !== 'volcengine') return engine.provider
   return VOLCENGINE_NAME[isChinese(lang ?? 'zh') ? 'zh-CN' : 'en']
 }
@@ -147,6 +161,7 @@ export function engineInfo(engine: EngineDefinition, lang?: string): SpeechEngin
     tts: engine.synthesizes,
     wordTimes: engine.kind !== 'openai',
     local: engine.kind === 'fake' || (engine.kind === 'openai' && isLoopback(engine.url)),
-    clone: engine.kind !== 'openai' && engine.synthesizes,
+    clone: engine.kind !== 'openai' && engine.kind !== 'edge' && engine.synthesizes,
+    ...engine.kind === 'edge' ? { parameters: { rate: { min: 0.5, max: 2, step: 0.1 } } } : {},
   }
 }

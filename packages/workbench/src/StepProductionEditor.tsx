@@ -7,23 +7,23 @@ import type { ProductionSource, StepDurationDraft, StepDurationKey, StepTimingKe
 
 const MESSAGES = {
   'zh-CN': {
-    timing: '播放时机', start: '配音开始', during: '同步动画', after: '动画后', minimum: '最短停留', trailing: '结束停顿', automatic: '自动', unit: '毫秒',
-    source: { step: '本步设置', section: '继承本页', document: '继承文稿默认', unset: '未设置，使用讲授默认' },
-    restore: '使用继承的时机', restoreHint: '只把本步的开始时机、最短停留与结束停顿改回继承值；为单个讲稿设置的时机保留。',
+    timing: '播放时机', start: '配音开始', during: '同步动画', after: '动画后', minimum: '最短停留', trailing: '结束停顿', automatic: '自动', unit: '秒',
+    source: { step: '本步设置', section: '与本页相同', document: '与整份文稿相同', unset: '自动' },
+    restore: '恢复默认时机', restoreHint: '只把本步的开始时机、最短停留与结束停顿改回默认；为单个讲稿设置的时机保留。',
     legacy: '继承讲稿设置', mixed: '本步讲稿的开始时机不同。',
-    unify: '统一本步时机', unifyHint: '只覆盖本步；改回继承后继续使用讲稿原有的时机。',
-    invalid: '未采用：请输入不小于 0 的毫秒数。',
+    unify: '统一本步时机', unifyHint: '只改本步；恢复默认后继续使用讲稿原有的时机。',
+    invalid: '未采用：请输入不小于 0 的秒数。',
     review: '草稿尚未采用。请核对当前来源设置，再修改或使用继承值。', pending: '输入尚未采用。', storageFailure: '无法在本机保留草稿，请保持页面打开。',
     count: (index: number, value: string) => `讲稿 ${index}：${value}`,
     advancedDraft: '有未完成的视频设置，请在视频制作中处理。',
   },
   en: {
-    timing: 'Playback timing', start: 'Voiceover starts', during: 'With animation', after: 'After animation', minimum: 'Minimum hold', trailing: 'Trailing pause', automatic: 'Auto', unit: 'ms',
-    source: { step: 'This step', section: 'Inherited from page', document: 'Inherited from document', unset: 'Not set; the lecture default applies' },
-    restore: 'Use Inherited Timing', restoreHint: 'Returns only this step’s start, minimum hold, and trailing pause to the inherited values. Timing set on individual scripts stays.',
+    timing: 'Playback timing', start: 'Voiceover starts', during: 'With animation', after: 'After animation', minimum: 'Minimum hold', trailing: 'Trailing pause', automatic: 'Auto', unit: 'seconds',
+    source: { step: 'This step', section: 'Same as page', document: 'Same as document', unset: 'Auto' },
+    restore: 'Restore Default Timing', restoreHint: 'Returns only this step’s start, minimum hold, and trailing pause to the defaults. Timing set on individual scripts stays.',
     legacy: 'Inherited from the script', mixed: 'Scripts in this step start at different times.',
-    unify: 'Unify Step Timing', unifyHint: 'Applies only to this step. Using inherited timing again returns to each script’s original timing.',
-    invalid: 'Not applied: enter a duration of 0 ms or more.',
+    unify: 'Unify Step Timing', unifyHint: 'Applies only to this step. Restoring the default timing returns to each script’s original timing.',
+    invalid: 'Not applied: enter 0 seconds or more.',
     review: 'This draft has not been applied. Check the current source setting, then edit it or use the inherited value.', pending: 'Input has not been applied.', storageFailure: 'Couldn’t keep the draft on this device. Keep this page open.',
     count: (index: number, value: string) => `Script ${index}: ${value}`,
     advancedDraft: 'Review the pending settings in Video Production.',
@@ -47,22 +47,25 @@ interface DurationFieldProps {
 }
 export interface StepDraftControl { composing(): boolean, clear(): void }
 
+/** Stored in milliseconds, shown and typed in seconds with one decimal. */
+const seconds = (ms: number | undefined) => ms === undefined ? '' : (ms / 1000).toFixed(1)
+
 /** Short author intent, never an estimated timestamp or a second playback clock. */
 function DurationField({ label, value, source, sourceLabel, locale, readOnly, draft, onDraft, onChange, onComposition, controlKey, registerControl }: DurationFieldProps) {
   const t = MESSAGES[locale], current = useRef({ onComposition, onChange, onDraft, value, registerControl })
   current.current = { onComposition, onChange, onDraft, value, registerControl }
-  const [text, setText] = useState(draft?.text ?? (value === undefined ? '' : String(value))), [error, setError] = useState(draft?.error ?? false)
+  const [text, setText] = useState(draft?.text ?? (seconds(value))), [error, setError] = useState(draft?.error ?? false)
   const focused = useRef(false), composing = useRef(false)
-  useEffect(() => { if (!focused.current) { setText(draft?.text ?? (value === undefined ? '' : String(value))); setError(draft?.error ?? false) } }, [value, source, draft?.text, draft?.error, draft?.review])
+  useEffect(() => { if (!focused.current) { setText(draft?.text ?? (seconds(value))); setError(draft?.error ?? false) } }, [value, source, draft?.text, draft?.error, draft?.review])
   useEffect(() => () => { if (composing.current) current.current.onComposition?.(false) }, [])
   useEffect(() => current.current.registerControl?.({ composing: () => composing.current,
-    clear: () => { setText(current.current.value === undefined ? '' : String(current.current.value)); setError(false) } }), [controlKey])
+    clear: () => { setText(seconds(current.current.value)); setError(false) } }), [controlKey])
   const commit = (input: string): boolean => {
     const normalized = input.normalize('NFKC').trim()
     if (!normalized) { setError(false); current.current.onDraft?.(undefined); current.current.onChange(null); return true }
     const number = Number(normalized)
-    if (!/^\d+(?:\.\d+)?$/.test(normalized) || !Number.isFinite(number)) { setError(true); current.current.onDraft?.({ text: input, error: true }); return false }
-    setError(false); current.current.onDraft?.(undefined); current.current.onChange(number); return true
+    if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized) || !Number.isFinite(number)) { setError(true); current.current.onDraft?.({ text: input, error: true }); return false }
+    setError(false); current.current.onDraft?.(undefined); current.current.onChange(Math.round(number * 1000)); return true
   }
   return <PmInput label={locale === 'zh-CN' ? `${label}（${t.unit}）` : `${label} (${t.unit})`} width="number" inputMode="decimal" maxLength={256} value={text} placeholder={t.automatic}
     hint={draft && !error && !draft.review ? `${sourceLabel ?? t.source[source]} · ${t.pending}` : sourceLabel ?? t.source[source]} error={draft?.review ? t.review : error ? t.invalid : undefined} readOnly={readOnly}
@@ -76,7 +79,7 @@ function DurationField({ label, value, source, sourceLabel, locale, readOnly, dr
     onBlur={() => {
       focused.current = false
       if (readOnly || composing.current || error || draft) return
-      setText(current.current.value === undefined ? '' : String(current.current.value))
+      setText(seconds(current.current.value))
     }}
     onCompositionStart={() => { composing.current = true; onComposition?.(true) }}
     onCompositionEnd={event => {

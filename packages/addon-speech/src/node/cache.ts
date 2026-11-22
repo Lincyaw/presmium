@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { closeSync, constants, existsSync, fstatSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import type { AigcLabel, DocumentFiles, SpeechWord, SynthesisRequest } from '@lincyaw/kernel'
 import { isRecord, speechEngineId } from '@lincyaw/kernel'
@@ -139,6 +139,10 @@ export class SynthesisCache {
       return undefined
     }
     return found
+  }
+
+  has(key: string): boolean {
+    return KEY.test(key) && existsSync(join(this.dir, `${key}.json`))
   }
 
   /** Offline reuse requires an explicit lock; a read never creates or repairs that lock. */
