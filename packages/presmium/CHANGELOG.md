@@ -1,5 +1,37 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.130
+
+### Patch Changes
+
+- The cloud deployment stores shares in the Versity S3 Gateway instead of MinIO, whose images are no longer published; upgrades copy existing shares over. The installer pulls only published images unless asked to build, and downloads quietly.
+- @lincyaw/addon-assistant@1.0.0-rc.130
+  - @lincyaw/addon-classroom@1.0.0-rc.130
+  - @lincyaw/addon-code@1.0.0-rc.130
+  - @lincyaw/addon-content@1.0.0-rc.130
+  - @lincyaw/addon-exec@1.0.0-rc.130
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.130
+  - @lincyaw/addon-exec-local@1.0.0-rc.130
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.130
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.130
+  - @lincyaw/addon-guide@1.0.0-rc.130
+  - @lincyaw/addon-lecture@1.0.0-rc.130
+  - @lincyaw/addon-motion@1.0.0-rc.130
+  - @lincyaw/addon-publish@1.0.0-rc.130
+  - @lincyaw/addon-session@1.0.0-rc.130
+  - @lincyaw/addon-speech@1.0.0-rc.130
+  - @lincyaw/addon-stage@1.0.0-rc.130
+  - @lincyaw/cli@1.0.0-rc.130
+  - create-presmium@1.0.0-rc.130
+  - @lincyaw/host@1.0.0-rc.130
+  - @lincyaw/kernel@1.0.0-rc.130
+  - @lincyaw/mcp@1.0.0-rc.130
+  - @lincyaw/render-notebook@1.0.0-rc.130
+  - @lincyaw/render-slides@1.0.0-rc.130
+  - @lincyaw/viewer@1.0.0-rc.130
+  - @lincyaw/web@1.0.0-rc.130
+  - @lincyaw/studio@0.2.0-rc.129
+
 ## 1.0.0-rc.129
 
 ### Minor Changes
