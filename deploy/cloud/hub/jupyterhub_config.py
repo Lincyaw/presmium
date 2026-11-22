@@ -24,6 +24,11 @@ c.JupyterHub.default_url = '/hub/user-redirect/presmium'
 c.JupyterHub.cleanup_servers = False
 c.JupyterHub.allow_named_servers = True
 c.JupyterHub.named_server_limit_per_user = int(env.get('CLOUD_ENVIRONMENT_LIMIT', '3'))
+idle_seconds = int(env.get('CLOUD_STUDIO_IDLE_SECONDS', '1800'))
+# The Hub learns of activity from the proxy and from each server at this interval (default 300 s); it must be well
+# below the idle timeout, or the culler stops a Studio that is in use.
+activity_interval = max(30, min(300, idle_seconds // 4))
+c.JupyterHub.last_activity_interval = activity_interval
 
 # Document profiles select only operator-defined images and limits. Named environments have their own volumes.
 profiles = json.loads(env.get('CLOUD_ENVIRONMENT_PROFILES') or json.dumps({
@@ -69,6 +74,7 @@ c.DockerSpawner.environment = {
     'PRESMIUM_HUB_ORIGIN': f'{urlsplit(public).scheme}://{urlsplit(public).netloc}',
     'PRESMIUM_HUB_PROXY_URL': 'http://hub:8000',
     'PRESMIUM_HUB_PROFILES': json.dumps(list(profiles)),
+    'JUPYTERHUB_ACTIVITY_INTERVAL': str(activity_interval),
 }
 # The Studio may start and reach this owner's environments; runtime kernels cannot manage other servers.
 c.Spawner.server_token_scopes = lambda spawner: (
@@ -94,7 +100,7 @@ async def identity(spawner):
         spawner.mem_limit = profile.get('memory', '1G')
         spawner.cpu_limit = float(profile.get('cpus', 1))
         spawner.volumes = {env.get('CLOUD_INSTANCE_ID', 'presmium-cloud') + '-runtime-{username}-{servername}': '/work'}
-        spawner.environment = {'PRESMIUM_RUNTIME_ONLY': '1'}
+        spawner.environment = {'PRESMIUM_RUNTIME_ONLY': '1', 'JUPYTERHUB_ACTIVITY_INTERVAL': str(activity_interval)}
         return
     # The author's name and email for the workspace's git commits.
     state = await spawner.user.get_auth_state() or {}
@@ -108,7 +114,7 @@ c.Spawner.pre_spawn_hook = identity
 # Idle Studios stop, and idle named environments (env-*) are stopped and removed; every volume stays. The culler's
 # options are traitlets aliases: each takes its value after `=`.
 c.JupyterHub.services = [
-    {'name': 'idle-culler', 'command': ['python3', '-m', 'jupyterhub_idle_culler', f"--timeout={int(env.get('CLOUD_STUDIO_IDLE_SECONDS', '1800'))}", '--remove-named-servers=True']},
+    {'name': 'idle-culler', 'command': ['python3', '-m', 'jupyterhub_idle_culler', f'--timeout={idle_seconds}', '--remove-named-servers=True']},
     {'name': 'presmium-console', 'api_token': env['CLOUD_HUB_API_TOKEN']},
 ]
 c.JupyterHub.load_roles = [

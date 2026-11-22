@@ -28,7 +28,7 @@
 
 服务器启动时，扩展 `presmium_hub.py`：
 
-1. 准备卷 `/work`：`space`（工作区，git 仓库；新用户得到示例工作区）、`state`（DeepSeek Harness 的会话、模型设置与 API Key）、`cache`、`home`、`config`。git 作者身份取 Keycloak 中的名字与邮箱。
+1. 准备卷 `/work`：`space`（工作区，git 仓库；新用户得到示例工作区）、`state`（DeepSeek Harness 的会话、模型设置与 API Key）、`cache`、`home`、`config`。git 作者身份取 Keycloak 中的名字与邮箱。容器被停止时来不及清理状态文件，所以每次启动先删除卷上 Studio 与工作区服务留下的状态文件（`server.json`），以免新容器中碰巧同号的进程使工作区服务误以为已有服务在运行。
 2. 在回环端口启动 `presmium studio /work/space --public-url <Hub>/user/<名字>/studio/ --preview-url <Hub>/user/<名字>/preview/` 与控制服务。
 3. jupyter-server-proxy 在 `/user/<名字>/` 下转发 `studio/`（去掉前缀）、`preview/`（保留路径）、`cloud/`（控制服务）。请求先过 JupyterHub 认证，只有本人或持有 `access:servers` 的控制台能到达。
 4. `/user/<名字>/presmium` 带启动令牌打开 Studio，可附 `document` 与 `id` 打开某份文稿。它返回同源发起跳转的页面，因为 DeepSeek Harness 的会话 cookie 是 `SameSite=Strict`。
@@ -38,7 +38,7 @@
 ## 4. 打开、停止与回收
 
 - 控制台的“打开 Studio”链接到 `/hub/user-redirect/presmium`：经 Keycloak 登录（已登录时免输入），需要时启动容器并显示进度。
-- 空闲 `CLOUD_STUDIO_IDLE_SECONDS`（默认 1800）后 idle culler（`jupyterhub-idle-culler`，每半个空闲时长检查一次）停止 Studio；空闲的命名环境（`env-*`）停止并从 Hub 中移除（`--remove-named-servers=True`），下次运行时重新创建。停止只删除容器，作者卷与环境卷都保留。控制台也可停止。
+- 空闲 `CLOUD_STUDIO_IDLE_SECONDS`（默认 1800）后 idle culler（`jupyterhub-idle-culler`，每半个空闲时长检查一次）停止 Studio；空闲的命名环境（`env-*`）停止并从 Hub 中移除（`--remove-named-servers=True`），下次运行时重新创建。停止只删除容器，作者卷与环境卷都保留。控制台也可停止。Hub 从代理与各服务器得知活动的间隔取空闲时长的四分之一（30 到 300 秒），使正在使用的 Studio 不被停止；共享、创建副本与 MCP 调用经控制服务，也算活动。
 - 共享、创建副本与 MCP 调用时，控制台经 Hub API 启动用户的服务器并等待就绪。
 - JupyterHub 重启或升级不停止运行中的 Studio（`cleanup_servers = False`）。
 

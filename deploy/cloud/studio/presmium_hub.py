@@ -39,7 +39,11 @@ def _prepare():
     # A new space starts with the complete gallery, as a first local `pnpm studio` does.
     if not os.path.isdir(SPACE) or not os.listdir(SPACE):
         subprocess.run(['node', f'{PRESMIUM}/examples/gallery/try.mjs', SPACE], check=True)
-    for state in glob.glob(f'{STATE}/*.json'):
+    # Nothing runs yet in this new container, but a Studio the idle culler stopped left its state files on the volume.
+    # A workspace service's file names a process ID that a process of this container may now have, and would stop the
+    # new workspace service from starting.
+    cache = os.environ.get('XDG_CACHE_HOME') or '/work/cache'
+    for state in glob.glob(f'{STATE}/*.json') + glob.glob(f'{cache}/presmium/serve/*/server.json'):
         os.remove(state)
 
 
