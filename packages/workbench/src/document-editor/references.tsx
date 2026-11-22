@@ -11,6 +11,7 @@ import { useTreeMessages, useWorkbench, useWorkbenchState } from '../context.tsx
 import type { DocumentTreeMessages } from '../tree-messages.ts'
 import type { Workbench } from '../workbench.ts'
 import type { NativeDocumentEditor } from './schema.tsx'
+import { inlineSlashItem } from './authoring.tsx'
 
 /** The text a synced block link is copied as; pasted into a document, it inserts the synced block. */
 const MENTION_DEBOUNCE = 100
@@ -273,8 +274,8 @@ export function referenceSlashItems(editor: NativeDocumentEditor, t: DocumentTre
   if (!workbench.client.readTree) return []
   const aliases = (value: string) => value.split('|')
   const items: DefaultReactSuggestionItem[] = [
-    { title: t.linkToDocument, subtext: t.linkToDocumentHint, group, aliases: aliases(t.linkAliases), icon: <PmIcon name="reference" />,
-      onItemClick: () => editor.getExtension(SuggestionMenuExtension)?.openSuggestionMenu('@') },
+    inlineSlashItem({ title: t.linkToDocument, subtext: t.linkToDocumentHint, group, aliases: aliases(t.linkAliases), icon: <PmIcon name="reference" />,
+      onItemClick: () => editor.getExtension(SuggestionMenuExtension)?.openSuggestionMenu('@') }),
   ]
   if (workbench.client.readEmbedSource) items.push({ title: t.syncedBlock, subtext: t.syncedBlockHint, group, aliases: aliases(t.syncedAliases), icon: <PmIcon name="synced" />, onItemClick: pickSynced })
   if (workbench.client.operateTree && workbench.client.capabilities?.readOnly !== true) items.push({ title: t.childDocument, subtext: t.childDocumentHint, group, aliases: aliases(t.childAliases), icon: <PmIcon name="document-add" />,

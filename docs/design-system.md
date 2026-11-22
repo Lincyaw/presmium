@@ -100,7 +100,7 @@ macOS 桌面端将原生标题栏与全局应用栏合并为一行，隐藏重�
 |---|---|---|
 | Button | `PmButton`（workbench、host），`pm-ui-button` | 变体 `primary`（一个区域只有一个，实心强调色）、`default`（其余操作，白底细边框）、`ghost`（工具栏里带图标的操作，不用于只有文字的按钮）、`text`（没有图标的低频操作，强调色文字，悬停出现浅强调底）、`danger`（只用于确认不可撤消的删除，实心危险色）；`aria-pressed` 是开关的开启态；悬停与按下只改底色；`density`、`loading` 带 `aria-busy` 与重复提交拦截 |
 | IconButton | `PmIconButton`（workbench、host） | 必有 `label`；`hint`、`shortcut` 经 Tooltip 显示；host 的 `variant="overlay"` 是盖在媒体上的大圆形控件（如浏览器拦下自动播放时的播放），尺寸 `--pm-size-overlay-control`、`--pm-size-overlay-icon` |
-| Tooltip | `PmTooltip`（Radix） | 反色底；指针悬停 500 ms 后显示，键盘聚焦立即显示；一个提示关闭后 300 ms 内移到相邻控件立即显示（全页共用计时）；名称加弱化的快捷键，图标按钮另有说明（`hint`）时说明在下一行，名称始终显示；不接收指针，不承载唯一信息 |
+| Tooltip | `PmTooltip`（Radix） | 反色底；指针悬停 500 ms 后显示，键盘聚焦（浏览器判为 `:focus-visible`）立即显示，程序移动的焦点（如关闭对话框、打开文稿后）不显示；一个提示关闭后 300 ms 内移到相邻控件立即显示（全页共用计时）；名称加弱化的快捷键，图标按钮另有说明（`hint`）时说明在下一行，名称始终显示；不接收指针，不承载唯一信息 |
 | Toolbar | `PmToolbar`、`PmToolbarButton`（workbench），`pm-ui-toolbar` | 整组一个 Tab 停留点，用键盘进入后方向键在组内移动；点击一项后方向键不在组内移动，焦点留在该项。项是 `PmButton`／`PmIconButton`（`asChild`），禁用项以 `aria-disabled` 留在方向键顺序中、可聚焦、显示 Tooltip（`hint` 写明原因），点击、Enter、Space 都不执行，点击禁用项不把焦点移到别的项 |
 | Field、Input、Textarea、Select | workbench `PmField`、`PmInput`、`PmTextarea`、`PmSelect`；host 用 `PmField` 加 `pm-ui-input` 等类 | 标签、说明、错误、单位同属一个 Field；`PmInput` 有前图标、后缀、`width="number"`／`"time"`；`PmTextarea` 有 `autoGrow` |
 | ChoiceSelect | `PmChoiceSelect`（workbench） | 带说明的单选下拉 |

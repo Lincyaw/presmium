@@ -1533,6 +1533,8 @@
 .pm-ui-block-editor .bn-preview-container:hover { border-radius: var(--pm-radius-small); background: var(--pm-color-hover); }
 
 .pm-ui-block-editor .bn-preview-with-source-popup[data-open='true'] .bn-source-block-popup {
+  /* The editor scrolls an opening popup into view; it stops short of the window's edge. */
+  scroll-margin-block: var(--pm-space-4);
   border: var(--pm-size-hairline) solid var(--pm-color-line);
   border-radius: var(--pm-radius-control);
   background: var(--pm-color-surface);
@@ -1545,8 +1547,9 @@
   max-width: calc(100vw - var(--pm-space-8));
 }
 
-/* The editor places an open inline popup inside the screen (flipped above the line or slid left) through these properties. */
+/* The editor places an open inline popup inside the screen (flipped above the line or slid left) through these properties; in a table cell, which clips what overflows it, the popup is fixed to the screen. */
 .pm-ui-block-editor .bn-inline-content-section .bn-preview-with-source-popup[data-open='true'] .bn-source-block-popup[style*='--pm-source-popup-x'] {
+  position: var(--pm-source-popup-position, absolute);
   top: var(--pm-source-popup-y);
   left: var(--pm-source-popup-x);
   margin-top: 0;

@@ -47,6 +47,8 @@ interface Slot {
   storage: string
   drafts: DocumentDrafts
   backup?: DocumentDraftCommit
+  /** The removal of `draft` that has not settled yet: another one would find the record already gone. */
+  clearing?: DocumentDraftCommit
   draft?: StoredDocumentDraft
   draftOrigins?: DocumentDraftReference[]
   draftRead?: number
@@ -639,7 +641,10 @@ export class DocumentSession {
     const identity = slot.state.identity
     if (!identity || !slot.state.content || !slot.state.version) return false
     let commit: DocumentDraftCommit | undefined
+    // A record this tab no longer holds was removed or replaced; the next backup starts a new one.
+    if (slot.draft && !slot.drafts.holds(slot.draft)) { slot.draft = undefined; slot.draftOrigins = undefined }
     if (!slot.state.dirty && !slot.state.composing && !slot.flight) {
+      if (slot.draft && slot.clearing?.record === slot.draft) return true
       if (!slot.draft) {
         slot.persistFailure = false; slot.state.backupPending = false
         slot.state.storageFailure = slot.legacyFailure === 'write'
@@ -653,11 +658,13 @@ export class DocumentSession {
     slot.persistFailure = !commit
     slot.state.backupPending = Boolean(commit && !commit.clearing)
     slot.backup = commit
+    if (commit?.clearing) slot.clearing = commit
     if (commit) {
       const previous = slot.draft?.id, input = slot.input
       if (!commit.clearing) slot.draft = commit.record
       const ticket = commit
       void ticket.done.then(result => {
+        if (slot.clearing === ticket) slot.clearing = undefined
         if (this.#disposed || this.#slots.get(slot.state.directory) !== slot || slot.state.identity !== identity || slot.backup !== ticket) return
         if (result === 'superseded') return
         slot.persistFailure = result === 'failed'

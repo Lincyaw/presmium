@@ -215,15 +215,26 @@ export function insertInlineFormula(editor: NativeDocumentEditor, source = ''): 
   editor.focus()
 }
 
+const INLINE_SLASH_ITEMS = new WeakSet<DefaultReactSuggestionItem>()
+/** Marks a slash item that inserts into the text where the caret is, so it is offered in a table cell too. */
+export function inlineSlashItem(item: DefaultReactSuggestionItem): DefaultReactSuggestionItem { INLINE_SLASH_ITEMS.add(item); return item }
+/**
+ * A table cell holds text only, and BlockNote puts a block chosen there after the table, not in the cell: the slash
+ * menu in a cell lists only the items that insert into the text.
+ */
+export function slashItemsAt(editor: NativeDocumentEditor, items: DefaultReactSuggestionItem[]): DefaultReactSuggestionItem[] {
+  return editor.getTextCursorPosition().block.type === 'table' ? items.filter(item => INLINE_SLASH_ITEMS.has(item)) : items
+}
+
 export function formulaSlashItems(editor: NativeDocumentEditor, locale: keyof typeof DOCUMENT_EDITOR_MESSAGES, group: string): DefaultReactSuggestionItem[] {
   const t = DOCUMENT_EDITOR_MESSAGES[locale]
   return [{
     title: t.formulaBlock, subtext: t.formulaBlockHint, group, icon: <PmIcon name="formula" />, aliases: slashAliases('formulaBlockAliases'),
     onItemClick: () => openBlockFormula(editor, insertOrUpdateBlockForSlashMenu(editor, { type: 'presmiumMath', content: '' }).id),
-  }, {
+  }, inlineSlashItem({
     title: t.formulaInline, subtext: t.formulaInlineHint, group, icon: <PmIcon name="formula" />, aliases: slashAliases('formulaInlineAliases'),
     onItemClick: () => insertInlineFormula(editor),
-  }]
+  })]
 }
 
 /** Turns the selected text into an inline formula, its text becoming the LaTeX source. */

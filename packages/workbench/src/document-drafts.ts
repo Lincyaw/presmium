@@ -68,6 +68,11 @@ export class DocumentDrafts {
     this.#identity = identity
     return this.#store ??= new DocumentDraftStore(identity, () => this.#touch())
   }
+  /** Whether `record` is still this tab's current revision of its backup: removing or archiving it releases it. */
+  holds(record: StoredDocumentDraft): boolean {
+    const owned = this.#owned.get(record.id)
+    return Boolean(owned && owned.identity === record.identity && record.owner === this.#owner && owned.revision === record.revision)
+  }
   matches(identity: string, key: string | null): boolean { return key === null || key.startsWith(prefix(identity)) || key.startsWith(markerPrefix(identity)) }
 
   async read(identity: string, documentId: string, signal?: AbortSignal): Promise<{ records: RecoverableDocumentDraft[], failed: boolean }> {
@@ -131,7 +136,7 @@ export class DocumentDrafts {
     const store = this.#storage(identity)
     if (!store || !draftShape(draft)) return
     const owned = previous && this.#owned.get(previous.id)
-    if (previous && (!owned || owned.identity !== identity || previous.owner !== this.#owner || previous.revision !== owned.revision)) return
+    if (previous && (previous.identity !== identity || !this.holds(previous))) return
     const changed = previous && store.conflicted(keyOf(identity, previous.id))
     const record: StoredDocumentDraft = { ...draft, format: 2, identity, id: !changed && previous ? previous.id : randomUUID(), owner: this.#owner, revision: changed ? 1 : (owned?.revision ?? 0) + 1, updatedAt: Date.now() }
     if (!Number.isSafeInteger(record.revision)) return

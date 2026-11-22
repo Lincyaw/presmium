@@ -81,7 +81,8 @@ export function commentFloating(line?: () => DOMRect | undefined): NonNullable<F
 
 /**
  * Keeps an inline source popup (BlockNote positions it under the left end of its formula) inside the screen:
- * it flips above the line near the bottom and slides left near the right edge.
+ * it flips above the line near the bottom and slides left near the right edge. In a table cell it is not cut by
+ * the table's edges.
  */
 export function useInlineSourcePopupPlacement(source: () => HTMLElement | null, open: boolean): void {
   useLayoutEffect(() => {
@@ -89,9 +90,12 @@ export function useInlineSourcePopupPlacement(source: () => HTMLElement | null, 
     const reference = source()?.closest<HTMLElement>('.bn-preview-with-source-popup'), popup = reference?.querySelector<HTMLElement>('.bn-source-block-popup')
     if (!open || !reference || !popup) return
     let current = true
+    // A table scrolls sideways and so clips what overflows it: a formula's popup in a cell is placed on the screen instead.
+    const strategy = reference.closest('.tableWrapper') ? 'fixed' : 'absolute'
+    if (strategy === 'fixed') popup.style.setProperty('--pm-source-popup-position', strategy)
     const place = () => {
       const padding = edge(popup)
-      computePosition(reference, popup, { strategy: 'absolute', placement: 'bottom-start', middleware: [offset(tokenPixels('--pm-space-1', popup)), flip({ padding, flipAlignment: false }), shift({ padding })] })
+      computePosition(reference, popup, { strategy, placement: 'bottom-start', middleware: [offset(tokenPixels('--pm-space-1', popup)), flip({ padding, flipAlignment: false }), shift({ padding })] })
         .then(({ x, y }) => {
           if (!current) return
           popup.style.setProperty('--pm-source-popup-x', `${x}px`)
@@ -104,6 +108,21 @@ export function useInlineSourcePopupPlacement(source: () => HTMLElement | null, 
       stop()
       popup.style.removeProperty('--pm-source-popup-x')
       popup.style.removeProperty('--pm-source-popup-y')
+      popup.style.removeProperty('--pm-source-popup-position')
     }
+  }, [open, source])
+}
+
+/**
+ * A block's source popup (BlockNote opens it under the block, in the page) is scrolled into view when it opens, so
+ * a formula inserted near the bottom of the window shows its input and OK button instead of opening below the fold.
+ */
+export function useSourceBlockPopupInView(source: () => HTMLElement | null, open: boolean): void {
+  useLayoutEffect(() => {
+    const popup = open ? source()?.closest('.bn-preview-with-source-popup')?.querySelector<HTMLElement>('.bn-source-block-popup') : undefined
+    if (!popup) return
+    // After the open styles apply and the popup has its height.
+    const frame = requestAnimationFrame(() => popup.scrollIntoView({ block: 'nearest', inline: 'nearest' }))
+    return () => cancelAnimationFrame(frame)
   }, [open, source])
 }

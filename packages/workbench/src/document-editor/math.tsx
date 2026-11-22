@@ -7,7 +7,7 @@ import { createReactBlockSpec, createReactInlineContentSpec, SourceBlockWithPrev
 import type { Locale } from '../messages.ts'
 import { DOCUMENT_EDITOR_MESSAGES } from './messages.ts'
 import { MathEditorDialog, MathVisualButton } from './math-editor.tsx'
-import { useInlineSourcePopupPlacement } from './popover.tsx'
+import { useInlineSourcePopupPlacement, useSourceBlockPopupInView } from './popover.tsx'
 
 export const DOCUMENT_EDITOR_LOCALE = createContext<Locale>('zh-CN')
 /** Where the host serves the visual formula editor; without it formulas are edited as LaTeX only. */
@@ -70,7 +70,9 @@ export const mathBlock = createReactBlockSpec({
       const document = editor as BlockNoteEditor<any, any, any>, next = document.getNextBlock(block.id)
       document.setTextCursorPosition(next && next.type !== 'presmiumPage' ? next.id : document.insertBlocks([{ type: 'paragraph' }], block.id, 'after')[0]!.id, 'start')
     })
-    const sourceRef = useCallback((element: HTMLElement | null) => { visual.anchor(element); contentRef(element) }, [contentRef])
+    const sourceElement = useRef<HTMLElement | null>(null)
+    const sourceRef = useCallback((element: HTMLElement | null) => { sourceElement.current = element; visual.anchor(element); contentRef(element) }, [contentRef])
+    useSourceBlockPopupInView(useCallback(() => sourceElement.current, []), popup.isOpen)
     return <>
       <SourceBlockWithPreview block={block} editor={editor} contentRef={sourceRef} source={source} preview={math.preview} error={math.error}
         emptySourcePlaceholder={math.empty} errorPreview={math.invalid} sourcePlaceholder={math.placeholder} />
