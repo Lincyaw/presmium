@@ -12,7 +12,10 @@
   disabled: true
 - id: agent-preset-registry
   disabled: false
+# Studio opens nothing in the operator's desktop applications: the host routes and their browser controls go together.
 - id: open-in-app
+  disabled: true
+- id: ui-open-in-app
   disabled: true
 - id: job-controller
   disabled: true
