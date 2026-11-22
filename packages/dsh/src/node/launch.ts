@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { delimiter, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -40,18 +41,45 @@ export function dshBin(from = PACKAGE_DIR): string {
   return join(dirname(manifest), typeof bin === 'string' ? bin : bin.dsh!)
 }
 
-export function launchEnv(dshHome: string, env: NodeJS.ProcessEnv = process.env): Record<string, string> {
+/**
+ * The conversations and the host records (the workspace registry, pins, the list's cache) of one workspace:
+ * `<home>/workspaces/<hash of the workspace's real path>/{sessions,storages}`. Harness lists and opens every session
+ * of its session root, so a root shared by the workspaces of one home would show and reopen one workspace's chats in
+ * another. The first time, this workspace's chats kept in the shared root before move into its own root, where
+ * Harness's first start of the new records takes them into the workspace.
+ */
+export function workspaceState(dshHome: string, workspace: string): { sessions: string, storages: string } {
+  const real = realpathSync(workspace)
+  const dir = join(dshHome, 'workspaces', createHash('sha256').update(real).digest('hex').slice(0, 32))
+  const sessions = join(dir, 'sessions')
+  const storages = join(dir, 'storages')
+  if (!existsSync(storages)) {
+    mkdirSync(sessions, { recursive: true, mode: 0o700 })
+    // Harness names a session root's project directory after the session's working directory.
+    const project = `-${real.replace(/[\\/:]/g, '-')}--`
+    const shared = join(dshHome, 'sessions', project)
+    if (existsSync(shared) && !existsSync(join(sessions, project))) {
+      try { renameSync(shared, join(sessions, project)) } catch { /* The earlier chats stay in the shared root. */ }
+    }
+    mkdirSync(storages, { recursive: true, mode: 0o700 })
+  }
+  return { sessions, storages }
+}
+
+export function launchEnv(dshHome: string, env: NodeJS.ProcessEnv = process.env, workspace?: string): Record<string, string> {
   // The native addon's shared CJS loader resolves its optional platform package from its own directory.
   // Strict pnpm installs keep that package beside the entry package instead; expose its declared dependencies.
   const nativeModules = dirname(dirname(createRequire(import.meta.url).resolve('node-addon-require-builtin/package.json')))
+  const state = workspace === undefined ? undefined : workspaceState(dshHome, workspace)
   return resourceEnvironment({ DSH_HOME: dshHome, DSH_AGENTS_HOME: join(dshHome, 'agents'), DSH_TELEMETRY_MODE: 'DISABLED', PRESMIUM_MAX_THREADS: env.PRESMIUM_MAX_THREADS,
     NODE_PATH: [nativeModules, env.NODE_PATH].filter(Boolean).join(delimiter),
+    ...state ? { PRESMIUM_DSH_SESSIONS: state.sessions, PRESMIUM_DSH_STORAGES: state.storages } : {},
   }, 'interactive')
 }
 
 /** The variables a launcher sets for the processes it starts; they are never inherited from its own environment. */
 export function isLauncherVariable(name: string): boolean {
-  return /^(?:DSH_|PRESMIUM_MODEL_|PRESMIUM_SERVICE_|PRESMIUM_MCP_)/.test(name) || ['PRESMIUM_WORKSPACE', 'PRESMIUM_COMMAND', 'NODE_ENV', 'PORT'].includes(name)
+  return /^(?:DSH_|PRESMIUM_DSH_|PRESMIUM_MODEL_|PRESMIUM_SERVICE_|PRESMIUM_MCP_)/.test(name) || ['PRESMIUM_WORKSPACE', 'PRESMIUM_COMMAND', 'NODE_ENV', 'PORT'].includes(name)
 }
 
 export function inheritedEnv(env: NodeJS.ProcessEnv, drop: (name: string) => boolean): Record<string, string> {

@@ -273,8 +273,8 @@ const zh = {
   jobStates: { queued: '排队中', running: '正在导出', done: '已完成', failed: '导出失败', cancelled: '已取消' },
   jobPhases: { prepare: '正在准备', export: '正在导出', build: '正在导出', frames: '正在录制画面', archive: '正在制作压缩包' } as Record<string, string>,
   jobProgress: (phase: string, done?: number, total?: number) => (total ? `${phase} ${done ?? 0} / ${total}` : `${phase}…`),
-  currentContent: '文稿保存版本相同',
-  outputVersionUnknown: '未记录保存版本',
+  currentContent: '与文稿一致',
+  outputVersionUnknown: '不确定是否与文稿一致',
   outputConfirmingSave: '正在确认文稿保存…',
   outputStarting: '正在开始导出已保存的版本…',
   jobFailureReasons: {
@@ -320,7 +320,7 @@ const zh = {
     'job-disk-full': '磁盘空间不足。请清理磁盘，然后重新导出。',
     'job-failed': '导出没有完成。展开“详细信息”查看原因，处理后重新导出。'
   } as Record<string, string>,
-  olderContent: '与当前编辑版本不同',
+  olderContent: '文稿之后又改过',
   openOutput: '打开',
   playOutput: '播放',
   downloadOutput: '下载',
@@ -675,8 +675,8 @@ const en: WorkbenchMessages = {
   jobStates: { queued: 'Queued', running: 'Exporting', done: 'Completed', failed: 'Export failed', cancelled: 'Canceled' },
   jobPhases: { prepare: 'Preparing', export: 'Exporting', build: 'Exporting', frames: 'Recording frames', archive: 'Creating the ZIP file' },
   jobProgress: (phase: string, done?: number, total?: number) => (total ? `${phase} ${done ?? 0} of ${total}` : `${phase}…`),
-  currentContent: 'Same saved document version',
-  outputVersionUnknown: 'Saved version not recorded',
+  currentContent: 'Matches the document',
+  outputVersionUnknown: 'May not match the document',
   outputConfirmingSave: 'Confirming the document save…',
   outputStarting: 'Starting to export the saved version…',
   jobFailureReasons: {
@@ -722,7 +722,7 @@ const en: WorkbenchMessages = {
     'job-disk-full': 'The disk is full. Free up space, then export again.',
     'job-failed': 'The export didn’t finish. Open Details to see why, fix it, then export again.'
   },
-  olderContent: 'Different from the current editing version',
+  olderContent: 'Document changed since',
   openOutput: 'Open',
   playOutput: 'Play',
   downloadOutput: 'Download',

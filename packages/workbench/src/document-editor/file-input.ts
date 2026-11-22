@@ -69,3 +69,29 @@ export const imageFileInput = createExtension(({ editor, options }: { editor: Na
     tiptapExtensions: [FileHandler.extend({ priority: 1000 }).configure({ onDrop: (_editor, files, position) => insert(files, position) })],
   }
 })
+
+/**
+ * The slash menu's image item opens the file chooser at once; the chosen pictures go in as dropped ones do. Closing
+ * the chooser without a file falls back to the image block with its panel (upload, or the address of a picture).
+ */
+export function pickingImages<T extends { key?: string, onItemClick(): void }>(editor: NativeDocumentEditor, items: T[]): T[] {
+  return items.map(item => item.key !== 'image' || !editor.uploadFile ? item : {
+    ...item,
+    onItemClick: () => {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = 'image/*'
+      input.multiple = true
+      let settled = false
+      const settle = (files: File[]) => {
+        if (settled) return
+        settled = true
+        if (files.length) editor.getExtension(imageFileInput)?.insert(files)
+        else item.onItemClick()
+      }
+      input.addEventListener('change', () => settle([...input.files ?? []]), { once: true })
+      input.addEventListener('cancel', () => settle([]), { once: true })
+      input.click()
+    },
+  })
+}

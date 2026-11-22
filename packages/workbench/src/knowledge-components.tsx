@@ -408,11 +408,19 @@ export function PmDocPreviewCard({ label, load, loadingLabel, failedLabel, actio
     entry.promise.then(value => { entry.value = value }, () => {})
     reading.current = entry
   }
+  // Where the pending timer takes the card; a pointer resting on the trigger rearms an opening that nothing scheduled
+  // (the card closed under it, or the trigger was drawn again beneath a still pointer, which sends no pointerenter).
+  const heading = useRef<boolean>()
   const schedule = (next: boolean) => {
     clearTimeout(timer.current)
     if (next) read()
-    timer.current = setTimeout(() => setOpen(next), next ? PREVIEW_OPEN_DELAY : PREVIEW_CLOSE_DELAY)
+    heading.current = next
+    timer.current = setTimeout(() => { heading.current = undefined; setOpen(next) }, next ? PREVIEW_OPEN_DELAY : PREVIEW_CLOSE_DELAY)
   }
+  const hold = () => { clearTimeout(timer.current); heading.current = undefined }
+  // Closed by the author (Escape, one of its buttons): the pointer still on the trigger does not bring it back.
+  const dismissed = useRef(false)
+  const dismiss = () => { hold(); dismissed.current = true; setOpen(false) }
   useEffect(() => () => clearTimeout(timer.current), [])
   useEffect(() => {
     if (!open) return
@@ -429,7 +437,11 @@ export function PmDocPreviewCard({ label, load, loadingLabel, failedLabel, actio
   const trigger = cloneElement(children as ReactElement<Record<string, unknown>>, {
     describedBy: open ? id : undefined,
     onPointerEnter: (event: ReactPointerEvent) => { if (event.pointerType !== 'touch') schedule(true) },
-    onPointerLeave: (event: ReactPointerEvent) => { if (event.pointerType !== 'touch') schedule(false) },
+    onPointerMove: (event: ReactPointerEvent) => {
+      if (event.pointerType === 'touch' || event.buttons !== 0 || dismissed.current) return
+      if (open ? heading.current === false : heading.current === undefined) { if (open) hold(); else schedule(true) }
+    },
+    onPointerLeave: (event: ReactPointerEvent) => { if (event.pointerType !== 'touch') { dismissed.current = false; schedule(false) } },
     onPointerDown: (event: ReactPointerEvent) => { pressed.current = { touch: event.pointerType === 'touch', trigger: event.currentTarget as Element } },
     // Capturing, so that the trigger's own click (going to the target) does not run.
     onClickCapture: (event: ReactMouseEvent) => {
@@ -437,13 +449,13 @@ export function PmDocPreviewCard({ label, load, loadingLabel, failedLabel, actio
       pressed.current.touch = false
       event.preventDefault()
       event.stopPropagation()
-      clearTimeout(timer.current)
+      hold()
       if (!open) read()
       setOpen(!open)
     },
     onFocus: () => { if (!pressed.current.touch) schedule(true) },
     onBlur: (event: FocusEvent) => { if (!(event.relatedTarget instanceof Node && document.getElementById(id)?.contains(event.relatedTarget))) schedule(false) },
-    onKeyDownCapture: (event: globalThis.KeyboardEvent) => { if (event.key === 'Escape' && open) { event.stopPropagation(); clearTimeout(timer.current); setOpen(false) } },
+    onKeyDownCapture: (event: globalThis.KeyboardEvent) => { if (event.key === 'Escape' && open) { event.stopPropagation(); dismiss() } },
   })
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
@@ -452,9 +464,9 @@ export function PmDocPreviewCard({ label, load, loadingLabel, failedLabel, actio
         <Popover.Content id={id} className="pm-ui-doc-preview pm-ui-floating pm-ui" aria-label={label} side="bottom" align="start" sideOffset={6} collisionPadding={16}
           onOpenAutoFocus={event => event.preventDefault()} onCloseAutoFocus={event => event.preventDefault()}
           onInteractOutside={event => { if (event.target instanceof Node && pressed.current.trigger?.contains(event.target)) event.preventDefault() }}
-          onPointerEnter={() => clearTimeout(timer.current)} onPointerLeave={() => schedule(false)}
+          onPointerEnter={hold} onPointerLeave={() => schedule(false)}
           onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) schedule(false) }}
-          onEscapeKeyDown={event => event.stopPropagation()}>
+          onEscapeKeyDown={event => { event.stopPropagation(); hold(); dismissed.current = true }}>
           {preview === 'loading' ? <p className="pm-ui-doc-preview__excerpt" role="status">{loadingLabel}</p>
             : preview === 'failed' ? <p className="pm-ui-doc-preview__excerpt" role="status">{failedLabel}</p>
               : <>
@@ -463,7 +475,7 @@ export function PmDocPreviewCard({ label, load, loadingLabel, failedLabel, actio
                 {preview.excerpt && <p className="pm-ui-doc-preview__excerpt">{preview.excerpt}</p>}
                 <p className="pm-ui-doc-preview__meta">{preview.meta}</p>
                 {/* An action leads elsewhere (the document, or the right pane): the card closes behind it. */}
-                {!preview.missing && actions && <div className="pm-ui-doc-preview__actions" onClick={() => { clearTimeout(timer.current); setOpen(false) }}>{actions}</div>}
+                {!preview.missing && actions && <div className="pm-ui-doc-preview__actions" onClick={dismiss}>{actions}</div>}
               </>}
         </Popover.Content>
       </Popover.Portal>

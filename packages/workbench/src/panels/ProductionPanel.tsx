@@ -251,7 +251,7 @@ export function ProductionPanel({ onClose, closing, active = true, actions }: { 
           </PmSplitPanel>
           {wide && <PmSplitHandle label={p.resizeProperties} />}
           <PmSplitPanel id="production-properties" defaultSize="26%" minSize={wide ? '20%' : 0} maxSize={wide ? '42%' : '100%'} className="pmw-production__properties" hidden={!wide && tab !== 'properties'}>
-            <PmPanelHeader title={p.properties} meta={p.stepNumber(section.stepOrder.indexOf(stepId))} />
+            <PmPanelHeader title={p.properties} meta={p.stepPlace(pageIndex + 1, section.stepOrder.indexOf(stepId) + 1, section.title)} />
             <PmTabs variant="dock" value={inspectorTab} label={p.properties} tabs={[{ value: 'script', label: p.narration }, { value: 'voice', label: p.voiceTab }, { value: 'captions', label: p.captionsTab }]} onValueChange={setInspectorTab}>
               <PmTabPanel value="script" keepMounted><div className="pmw-production__fields pm-ui-block-editor">
                 <DocumentStepNarration sectionId={sectionId} stepId={stepId} expanded advanced panelId="production-step-fields" onPause={() => select(sectionId, stepId)} />

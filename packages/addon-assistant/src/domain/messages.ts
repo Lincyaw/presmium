@@ -1,3 +1,4 @@
+import { zhSpaced } from '@lincyaw/kernel'
 import type { Locale } from '@lincyaw/kernel'
 
 const zh = {
@@ -5,7 +6,7 @@ const zh = {
   panel: {
     title: '向 AI 提问',
     close: '关闭',
-    provider: (provider: string, model: string) => `回答由 ${provider} 的模型 ${model} 生成`,
+    provider: (provider: string, model: string) => zhSpaced`回答由${provider}的模型 ${model} 生成`,
     service: '模型服务',
     question: '问题',
     placeholder: '想问什么？',

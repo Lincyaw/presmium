@@ -1,3 +1,4 @@
+import { zhSpaced } from '@lincyaw/kernel'
 import type { Locale } from '@lincyaw/kernel'
 
 interface Typical {
@@ -91,7 +92,7 @@ const zh = {
     question: '问题',
     placeholder: '写下你的问题',
     ask: '提问',
-    attachedTo: (where: string) => `问题将关联到 ${where}`,
+    attachedTo: (where: string) => zhSpaced`问题将关联到${where}`,
     joinFirst: '加入课堂后，可以在这里向主讲提问。',
     ended: '课堂已结束，不再接受提问。',
     here: '这里的提问',
@@ -100,7 +101,7 @@ const zh = {
     markAnswered: '标为已回答',
     markUnanswered: '标为未回答',
     ai: (provider: string) => `AI 回答（${provider}）`,
-    aiTitle: (provider: string) => `请 AI 回答这个问题（由 ${provider} 的模型生成，发给课堂之前由你确认）`,
+    aiTitle: (provider: string) => zhSpaced`请 AI 回答这个问题（由${provider}的模型生成，发给课堂之前由你确认）`,
     aiAnswering: 'AI 正在回答…',
     aiDraft: 'AI 的回答，发给课堂之前请确认：',
     aiFailed: (message: string) => `无法获得 AI 的回答：${message}`,

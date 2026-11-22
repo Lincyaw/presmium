@@ -2484,6 +2484,7 @@
 
 /* Preview card of a reference's target (PmDocPreviewCard). */
 .pm-ui-doc-preview {
+  position: relative;
   z-index: var(--pm-z-popover);
   display: grid;
   gap: var(--pm-space-2);
@@ -2499,6 +2500,16 @@
   font-size: var(--pm-text-sm);
   line-height: var(--pm-leading-ui);
 }
+
+/* A bridge over the gap to the trigger: the pointer crossing it stays on the card. */
+.pm-ui-doc-preview::before {
+  position: absolute;
+  inset-inline: 0;
+  height: var(--pm-space-3);
+  content: '';
+}
+.pm-ui-doc-preview[data-side='bottom']::before { bottom: 100%; }
+.pm-ui-doc-preview[data-side='top']::before { top: 100%; }
 
 .pm-ui-doc-preview p { margin: 0; }
 

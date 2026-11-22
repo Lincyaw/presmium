@@ -5,6 +5,15 @@
 - id: plugin-package-inventory-deepseek
   disabled: true
 
+# One workspace's conversations and host records (the launcher's workspaceState): Harness lists and reopens every
+# session of its root, so the workspaces of one home do not share it.
+- id: session-persistence-jsonl
+  config:
+    root: !!js process.env.PRESMIUM_DSH_SESSIONS || `${process.env.DSH_HOME}/sessions`
+- id: storage-json
+  config:
+    root: !!js process.env.PRESMIUM_DSH_STORAGES || `${process.env.DSH_HOME}/storages`
+
 - id: skill-filesystem
   config:
     agentsHome: !!js process.env.DSH_AGENTS_HOME || `${process.env.DSH_HOME}/agents`

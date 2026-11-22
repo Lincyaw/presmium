@@ -284,8 +284,28 @@ export const BRAND_LANGUAGES = [{ id: 'zh-CN', label: '简体中文（Presmium�
 export const BRAND_COPY: Record<'zh-CN' | 'en-US', Record<string, Record<string, string>>> = {
   'zh-CN': {
     conversation: { 'hero.headline': '有什么想改的，告诉我', 'hero.preview': 'AI 助手', 'placeholder.hero': '例如：给第二节补一个生活中的例子', 'placeholder.default': '继续告诉 AI 要改什么…', 'placeholder.workspace': '先打开一份文稿' },
+    // Harness's running status names its model's brand ("深度求索中"); the author is told what the AI is doing.
+    chat: { 'chat.deepDiving': 'AI 正在处理', 'chat.deepDivingFor': 'AI 正在处理，已用时 {duration}' },
+    // The chat history is Harness's session browser; for the author a session is a chat (docs/glossary.md).
+    workspace: {
+      'session.new': '新对话', 'actions.newSession': '新对话', 'section.sessions': '对话', 'sessions.expand': '展开其余 {n} 个对话',
+      'empty.none': '还没有对话', 'empty.noneArchived': '还没有归档的对话', 'empty.viewOthers': '查看其他对话', 'search.sessions.aria': '搜索对话',
+      'search.placeholder': '搜索对话名称', 'search.noMatches': '没有匹配的对话', 'rename.session.title': '重命名对话', 'field.sessionName': '对话名称',
+      'menu.archiveSession': '归档对话', 'menu.pinSession': '置顶对话', 'actions.archive': '归档对话', 'actions.pin': '置顶对话', 'filterBy.label': '筛选对话',
+      'toast.createFailed': '无法新建对话：{message}', 'sessions.count.one': '{n} 个对话', 'sessions.count.other': '{n} 个对话',
+      'actions.newSession.aria': '在“{name}”中新建对话', 'actions.session.aria': '对话“{name}”的操作',
+    },
   },
   'en-US': {
     conversation: { 'hero.headline': 'Tell me what to change', 'hero.preview': 'AI Assistant', 'placeholder.hero': 'For example: add an everyday example to section 2', 'placeholder.default': 'Tell the AI what to change next…', 'placeholder.workspace': 'Open a document first' },
+    chat: { 'chat.deepDiving': 'The AI is working', 'chat.deepDivingFor': 'The AI is working · {duration}' },
+    workspace: {
+      'session.new': 'New Chat', 'actions.newSession': 'New Chat', 'section.sessions': 'Chats', 'sessions.expand': 'Show {n} more chats',
+      'empty.none': 'No chats yet', 'empty.noneArchived': 'No archived chats yet', 'empty.viewOthers': 'View Other Chats', 'search.sessions.aria': 'Search Chats',
+      'search.placeholder': 'Search Chat Names', 'search.noMatches': 'No matching chats', 'rename.session.title': 'Rename Chat', 'field.sessionName': 'Chat name',
+      'menu.archiveSession': 'Archive Chat', 'menu.pinSession': 'Pin Chat', 'actions.archive': 'Archive', 'actions.pin': 'Pin', 'filterBy.label': 'Filter Chats',
+      'toast.createFailed': 'Couldn’t start a new chat: {message}', 'sessions.count.one': '{n} chat', 'sessions.count.other': '{n} chats',
+      'actions.newSession.aria': 'New Chat in {name}', 'actions.session.aria': 'Actions for the chat {name}',
+    },
   },
 }

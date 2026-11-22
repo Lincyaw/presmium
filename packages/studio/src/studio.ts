@@ -355,7 +355,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
       env: {
         ...inheritedEnv(env, name => isLauncherVariable(name) || (DEEPSEEK_VARIABLES as readonly string[]).includes(name)),
         ...modelEnv(env).env,
-        ...launchEnv(home, env),
+        ...launchEnv(home, env, root),
         PRESMIUM_COMMAND: presmium,
         PRESMIUM_SERVICE_URL: url,
         PRESMIUM_SERVICE_TOKEN: serviceToken,

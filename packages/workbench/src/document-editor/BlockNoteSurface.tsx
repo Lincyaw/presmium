@@ -15,7 +15,7 @@ import type { NativeDocumentSelection } from './selection.ts'
 import { DOCUMENT_EDITOR_MESSAGES, IMAGE_IMPORT_MESSAGES, slashAliases } from './messages.ts'
 import { blockNoteDictionary } from './blocknote-messages.ts'
 import { IMPORT_MESSAGES } from '../import-messages.ts'
-import { imageFileInput } from './file-input.ts'
+import { imageFileInput, pickingImages } from './file-input.ts'
 import type { ImageImportFailure } from './file-input.ts'
 import { nativeTextClipboard } from './clipboard.ts'
 import { documentPageBodies, focusDocumentEnd } from './page-body.ts'
@@ -220,7 +220,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         <LinkToolbarController linkToolbar={DocumentLinkToolbar} floatingUIOptions={linkToolbarOptions} />
         <SideMenuController sideMenu={DocumentSideMenu} />
         <TableHandlesController tableHandle={DocumentTableHandle} tableCellHandle={DocumentTableCellButton} />
-        <SuggestionMenuController triggerCharacter="/" suggestionMenuComponent={slashMenu} getItems={async query => { slashBlocksOnly.current = false; if (editor.getTextCursorPosition().block.type === 'presmiumPage') return []; const offered = slashItemsAt(editor, [...withGroupItems(withGroupItems(getDefaultReactSlashMenuItems(editor), formulaSlashItems(editor, props.locale, dictionary.slash_menu.table.group)), current.current.animationRequest?.available() ? [{
+        <SuggestionMenuController triggerCharacter="/" suggestionMenuComponent={slashMenu} getItems={async query => { slashBlocksOnly.current = false; if (editor.getTextCursorPosition().block.type === 'presmiumPage') return []; const offered = slashItemsAt(editor, [...withGroupItems(withGroupItems(pickingImages(editor, getDefaultReactSlashMenuItems(editor)), formulaSlashItems(editor, props.locale, dictionary.slash_menu.table.group)), current.current.animationRequest?.available() ? [{
           title: t.animateWithAI, subtext: t.animateWithAIHint, group: dictionary.slash_menu.image.group, icon: <PmIcon name="sparkle" />, aliases: slashAliases('animateWithAIAliases'),
           // The menu has already taken back the typed “/” and query; the AI is asked, the document stays as it was.
           onItemClick: () => current.current.animationRequest?.request(editor),
