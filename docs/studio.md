@@ -195,9 +195,9 @@
 
 设置页能复制通用 MCP 客户端配置，或复制给 AI 的配置提示词。复制前读取当前设置；配置导出是仅所有者可执行的显式操作，HTTP 导出只含 MCP 访问令牌，不使用启动凭据。HTTP 提示词只提供服务状态文件路径与读取 `token` 字段的方法，不包含凭据值。远程浏览器中说明这些本机路径属于运行 Presmium 的电脑，不能直接当作远程 AI 电脑的启动路径。
 
-Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:4321/mcp`，使用 Streamable HTTP。直接使用 HTTP 的客户端配置启动时打印的地址与 `Authorization: Bearer <令牌>`；从打印的文件路径读取凭据，服务状态 JSON 取 `token` 字段，纯文本令牌文件直接读取。同一启动目录重启或升级后，自建服务的地址和令牌保持不变。借用已有服务时保留该服务的地址和令牌。启动器不在日志中打印令牌本身。
+Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:4321/mcp`，使用 Streamable HTTP。直接使用 HTTP 的客户端配置 `presmium studio --verbose` 启动时打印的地址（也在设置页与日志中）与 `Authorization: Bearer <令牌>`；从打印的文件路径读取凭据，服务状态 JSON 取 `token` 字段，纯文本令牌文件直接读取。同一启动目录重启或升级后，自建服务的地址和令牌保持不变。借用已有服务时保留该服务的地址和令牌。启动器不在日志中打印令牌本身。
 
-`presmium studio --host 0.0.0.0` 允许其他机器连接，启动输出的 `mcp` 地址使用本机局域网地址；客户端也可将默认地址中的 `127.0.0.1` 换成服务器的固定 IP 或域名。没有指定 `--preview-port` 而 4321 被占用时（例如另一个 Studio 正在运行），Studio 换用一个空闲端口照常启动，并提示这次的 MCP 地址与默认地址不同；明确指定的端口被占用时启动失败。需要多个工作区都有固定地址时，每个工作区显式指定不同的固定端口；`--preview-port 0` 明确选择临时端口。带反向代理时，MCP 使用 `--preview-url` 下的 `mcp` 路径。
+`presmium studio --host 0.0.0.0` 允许其他机器连接，`--verbose` 输出的 `mcp` 地址使用本机局域网地址；客户端也可将默认地址中的 `127.0.0.1` 换成服务器的固定 IP 或域名。没有指定 `--preview-port` 而 4321 被占用时（例如另一个 Studio 正在运行），Studio 换用一个空闲端口照常启动，`--verbose` 时提示这次的 MCP 地址与默认地址不同；明确指定的端口被占用时启动失败。需要多个工作区都有固定地址时，每个工作区显式指定不同的固定端口；`--preview-port 0` 明确选择临时端口。带反向代理时，MCP 使用 `--preview-url` 下的 `mcp` 路径。
 
 直接使用 HTTP 的客户端在 Studio 重启后重新建立连接，保留已保存的地址与令牌。外部 AI 工具默认使用原生 stdio，一次配置 `presmium mcp <工作区或文稿的绝对路径>`；显式路径使目标不依赖客户端的工作目录。项目生成的 `.mcp.json` 在该项目目录启动客户端时可省略路径。已经连接原生工具的 agent 直接调用它们，命令行 `mcp tools/call` 留给没有 MCP 客户端的脚本与流水线。
 
@@ -223,7 +223,7 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 
 工作区服务打开空目录时自动建立本地版本历史的空基准，首页直接提供“新建文稿”，无需先配置工作区。首页的文稿按文稿树的顺序列出（[IR 第 7 节](ir.md#7-工作区与命令)）。工作区中有旧格式的文稿（`lecture.json`、格式版本 1）或工作区文件仍列出 `documents:` 时，文稿列表的回答带 `migration`，首页显示“这个工作区使用旧的文稿格式”与“升级 / Upgrade”；升级调用 `POST workspace/migrate`，与 `presmium migrate` 相同，每份文稿记一次修订，完成后刷新列表。此准备允许 Finder 的 `.DS_Store`，已有目录的文件、版本库、分支与索引保持原样。
 
-`presmium studio [目录] [--port] [--host] [--public-url] [--preview-url] [--preview-port]`。`DSH_HOME` 是 `$XDG_STATE_HOME/presmium/studio`；每个安装有自己的 profile `presmium-studio-<散列>`，其 `node_modules` 链接到这个安装的 bundle，因为 dsh 只从 profile 解析插件。新 profile 继承最近用过的设置。
+`presmium studio [目录] [--port] [--host] [--public-url] [--preview-url] [--preview-port] [--verbose]`。`DSH_HOME` 是 `$XDG_STATE_HOME/presmium/studio`；每个安装有自己的 profile `presmium-studio-<散列>`，其 `node_modules` 链接到这个安装的 bundle，因为 dsh 只从 profile 解析插件。新 profile 继承最近用过的设置。
 
 ### 11.2 启动与监管
 
@@ -231,7 +231,7 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 2. 生成服务令牌，读取或创建持久的外部 MCP 令牌，启动 `presmium serve <目录> --port 4321 --preview-origin <dsh 的源>`；`--preview-port` 可覆盖此端口。启动前检查端口是否可用：默认端口被占用时改用空闲端口，指定的端口被占用时失败。
 3. 启动 dsh：`--profile presmium-studio-<散列> --port <端口> --no-open`，加 6.6 节的补丁，环境中带服务地址与令牌。`--host 0.0.0.0` 时 dsh 在一次性的回环地址上监听，Studio 在全部 IPv4 网络接口上代转 HTTP 与 WebSocket 请求。
 4. 等标准输出的 `dsh web: <网址>`：启动令牌只从这里取得，它只表示后端地址就绪，不表示浏览器界面可用；3 分钟等不到时报错并给出日志位置。
-5. 打印 `studio  <网址>`、`mcp  <固定网址>` 与 MCP 令牌文件的位置。
+5. 标准输出只打印 `studio  <网址>`（`--host` 时另有每个局域网地址的 `network  <网址>`），标准错误一行说明在浏览器中打开它、按 Ctrl+C 停止。`--verbose` 另外打印 `mcp  <固定网址>`、MCP 令牌文件与日志文件的位置，并转发工作区服务的输出。
 
 多文档工作区首页提供“导入文稿 / Import Documents”。工作区所有者可选择 Markdown、Word 文件或文件夹，每个文件生成一份文稿，目录与本地图片的规则见 [IR 第 7 节](ir.md#7-工作区与命令)。单次最多上传 1000 个文件、合计 32 MiB，转换后的文件同样受此限制。每批写入独立的 `imported-<随机值>/`，本批文稿按导入顺序放在文稿树顶层的末尾（各自的 `placement`），工作区配置不变；重新导入创建独立副本，不覆盖已有文稿。整个批次校验后通过文稿锁与本地编辑历史一次发布，失败回滚文件；完成后刷新文稿列表并显示需检查的链接、图片和 Word 转换提示数量。单文稿工作区与只读连接不提供此入口。
 
@@ -239,7 +239,7 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 
 启动入口在分派 Studio 后才加载其他命令的编译与导出依赖。已有 profile 的根配置、已安装依赖和额外 bundle 保留；仅内容改变时写清单，正确的依赖链接不重建。
 
-输出写进 `$DSH_HOME/presmium-studio-<散列>.log`，标准错误转发工作区服务的阶段与耗时。Unix 子服务通过父进程看门狗与进程组退出；Windows 的进程树清理不采用 Unix 进程组保证，需要按该平台验收。
+输出写进 `$DSH_HOME/presmium-studio-<散列>.log`；`--verbose` 时标准错误另外转发工作区服务的阶段与耗时。Unix 子服务通过父进程看门狗与进程组退出；Windows 的进程树清理不采用 Unix 进程组保证，需要按该平台验收。
 
 `@lincyaw/dsh` 直接依赖 Harness 使用的 `node-addon-require-builtin`。
 启动器通过该包公开的 `package.json` 导出定位其依赖目录，加入 Harness 子进程的 `NODE_PATH`，并保留调用者已有的搜索路径。
@@ -247,7 +247,7 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 
 ### 11.3 模型、局域网与代理
 
-- 只用 dsh 的模型设置。`DEEPSEEK_API_KEY` 与 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` 映射为 `DEEPSEEK_*`；界面中保存的密钥优先。
+- 只用 dsh 的模型设置。启动 Studio 的环境中的 `DEEPSEEK_API_KEY`、`DEEPSEEK_BASE_URL`、`DEEPSEEK_SEARCH_BASE_URL` 原样传给 dsh；`PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` 三者齐全时映射为 `DEEPSEEK_*` 并优先；界面中保存的密钥优先于环境。
 - `--host` 接受本机的一个具体 IP，也接受 `0.0.0.0`。通配地址启动时打印每个局域网接口的访问地址，并警告没有登录。
 - 局域网 HTTP 支持文稿编辑、自动保存、正文与批注及组件参数的本地草稿恢复、AI 草稿读取和已有音频的导入。内容指纹统一为 SHA-256；有 Web Crypto 时使用原生实现，否则使用浏览器内的等价实现。麦克风录音仍取决于浏览器提供的 `getUserMedia`。
 - `--public-url` 交给 dsh，`--preview-url` 交给工作区服务（可带路径前缀）。预览应与工作台不同源，代理不得注入 cookie 或改写 `Origin`。云端按此为每个用户运行一个 Studio，见 [云端](cloud.md)。
@@ -366,7 +366,11 @@ dsh 发版频繁、没有 CHANGELOG，所以升级 dsh 是单独的一次改动�
 
 ## 22. 导出
 
-导出面板列出渲染端与插件可用的格式。导出使用明确的已保存版本，导出器重新编译后版本不同就拒绝；有待审阅修改或编译失败时说明尚未包含的内容。带配音的视频要求片段齐全有效。放映与视频消费同一讲授计划。
+导出面板列出渲染端与插件可用的格式；文档编辑工具栏的“导出”与视频制作的“导出”是同一个列表（包括讲授与讲授视频）。导出使用明确的已保存版本，导出器重新编译后版本不同就拒绝；有待审阅修改或编译失败时说明尚未包含的内容。带配音的视频要求片段齐全有效。放映与视频消费同一讲授计划。
+
+- **下载**：作者在本页开始的导出，完成后浏览器自动下载它的文件（网站为压缩包，其余为 PDF、PowerPoint、视频等主文件），并弹出提示“已导出…，已开始下载”，带“打开”（只对浏览器能直接显示的网站、PDF 与视频）与“下载”；离开导出面板也照样跟踪到导出结束，换到另一份文稿时不再跟踪。下载的文件以文稿标题命名（`?download=<标题>`，扩展名不变）。AI 开始的导出只出现在导出记录中，不自动下载。
+- **网站压缩包**：网站类导出（主文件为 `index.html`）另按文稿自己的 `base`（默认根路径）再构建一次并打成 `<形态>.zip`（任务的 `archive`），可以解压后放到任意静态托管；导出记录中网站有“打开”与“下载压缩包”。
+- **失败**：任务的 `error` 保留服务端原文（AI 与 MCP 读取它，并写入“详细信息”的最后一行）；作者看到的是按原因映射的目录文本：缺少 Presmium 自带的组件（重新安装 Presmium）、缺少浏览器组件、MP4 缺少 FFmpeg、还没有配音、磁盘已满，其余为“展开详细信息查看原因”。失败也以提示告知。
 
 ## 23. 视觉、窄屏与可访问性
 

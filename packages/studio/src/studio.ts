@@ -10,7 +10,7 @@ import { bracketIPv6, dshBin, inheritedEnv, isLauncherVariable, launchArgs, laun
 import type { LaunchedProcess } from '@lincyaw/dsh/launch'
 import { compareServiceVersion, findWorkspaceServiceState, readServiceState, serveStateDir, SERVICE_VERSION, ServiceUpgradeError, upgradeWorkspaceService } from '@lincyaw/kernel/node'
 import { STUDIO_MESSAGES, systemLocale } from './messages.ts'
-import { modelEnv } from './model-env.ts'
+import { DEEPSEEK_VARIABLES, modelEnv } from './model-env.ts'
 import { startProxy } from './proxy.ts'
 import type { Proxy } from './proxy.ts'
 
@@ -353,7 +353,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
     ], {
       cwd: root,
       env: {
-        ...inheritedEnv(env, name => isLauncherVariable(name) || ['DEEPSEEK_API_KEY', 'DEEPSEEK_BASE_URL', 'DEEPSEEK_SEARCH_BASE_URL'].includes(name)),
+        ...inheritedEnv(env, name => isLauncherVariable(name) || (DEEPSEEK_VARIABLES as readonly string[]).includes(name)),
         ...modelEnv(env).env,
         ...launchEnv(home, env),
         PRESMIUM_COMMAND: presmium,
