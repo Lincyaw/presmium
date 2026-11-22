@@ -20,9 +20,9 @@
 | 控制台（`presmium-cloud serve`） | 共享、创建副本、访问令牌、MCP 转发、共享网站、Studio 状态与入口；作为 JupyterHub service 访问 Hub API |
 | PostgreSQL | 账号、登录会话、访问令牌与共享记录；不存文稿 |
 | 对象存储（Versity S3 Gateway，`versity/versitygw`，卷 `object-data`） | 共享文稿的源文件归档与网站；每个桶是卷中的一个目录，每个对象是其中的普通文件。也可换用外部的 S3 兼容服务（`CLOUD_S3_*`） |
-| Caddy | TLS 与按主机名转发控制台、身份、共享内容、JupyterHub 四个来源 |
+| Caddy | TLS 与转发控制台、身份、共享内容、JupyterHub 四个入口：各用一个主机名（`Caddyfile`），或同在一个地址下按路径区分（`Caddyfile.path`，见 8.8 节） |
 
-浏览器访问控制台（`app.*`）与 JupyterHub（`studio.*`），外部 AI 助手访问控制台的 `/mcp`，读者访问共享内容（`content.*`）。JupyterHub 的用户名是 OIDC 的 `sub`，控制台按它找到同一用户的服务器。
+浏览器访问控制台（`app.*`，单一地址时为 `/`）与 JupyterHub（`studio.*`，单一地址时为 `/studio/`），外部 AI 助手访问控制台的 `/mcp`，读者访问共享内容（`content.*`，单一地址时为 `/p/`）。JupyterHub 的用户名是 OIDC 的 `sub`，控制台按它找到同一用户的服务器。
 
 ## 3. Studio 容器
 
@@ -30,10 +30,10 @@
 
 1. 准备卷 `/work`：`space`（工作区，git 仓库；新用户得到示例工作区）、`state`（DeepSeek Harness 的会话、模型设置与 API Key）、`cache`、`home`、`config`。git 作者身份取 Keycloak 中的名字与邮箱。容器被停止时来不及清理状态文件，所以每次启动先删除卷上 Studio 与工作区服务留下的状态文件（`server.json`），以免新容器中碰巧同号的进程使工作区服务误以为已有服务在运行。
 2. 在回环端口启动 `presmium studio /work/space --public-url <Hub>/user/<名字>/studio/ --preview-url <Hub>/user/<名字>/preview/` 与控制服务。
-3. jupyter-server-proxy 在 `/user/<名字>/` 下转发 `studio/`（去掉前缀）、`preview/`（保留路径）、`cloud/`（控制服务）。请求先过 JupyterHub 认证，只有本人或持有 `access:servers` 的控制台能到达。
+3. jupyter-server-proxy 在 `/user/<名字>/`（Hub 的基础路径之下，单一地址时为 `/studio/user/<名字>/`）下转发 `studio/`（去掉前缀）、`preview/`（保留路径）、`cloud/`（控制服务）。请求先过 JupyterHub 认证，只有本人或持有 `access:servers` 的控制台能到达。
 4. `/user/<名字>/presmium` 带启动令牌打开 Studio，可附 `document` 与 `id` 打开某份文稿。它返回同源发起跳转的页面，因为 DeepSeek Harness 的会话 cookie 是 `SameSite=Strict`。
 
-容器以普通用户运行，只读根文件系统，去掉全部 capabilities，no-new-privileges，限制内存、CPU 与进程数；`/tmp` 可执行（DeepSeek Harness 的原生模块从那里加载）。Studio 与预览同源，预览中文稿的代码可以以作者身份调用 Studio 接口；文稿的编译时代码本来就以作者身份运行，所以只复制信任的文稿，共享页对此有提示。
+容器以普通用户运行，只读根文件系统，去掉全部 capabilities，no-new-privileges，限制内存、CPU 与进程数；`/tmp` 可执行（DeepSeek Harness 的原生模块从那里加载）。Studio 与预览同源，预览中文稿的代码可以以作者身份调用 Studio 接口（单一地址时也包括控制台的接口）；文稿的编译时代码本来就以作者身份运行，所以只复制信任的文稿，共享页对此有提示。
 
 ## 4. 打开、停止与回收
 
@@ -79,18 +79,19 @@ curl -fsSL https://raw.githubusercontent.com/Lincyaw/presmium/main/deploy/cloud/
 | 方式 | 参数 | 地址 | 需要 |
 |---|---|---|---|
 | 自己的域名 | `--domain example.com` | `app.`、`auth.`、`content.`、`studio.example.com` | 一条 DNS 记录 `*.example.com` 指向服务器；安装程序检查四个名字是否解析到本机的公网 IP，未就绪时给出要加的记录 |
-| 公网 IP | `--ip [地址]` | `app.203-0-113-7.sslip.io` 等 | 不需要 DNS：自动检测公网 IP，sslip.io 把这些名字解析回它，Caddy 照常申请证书；IP 不在本机网卡上时提示转发 80、443 |
+| 服务器 IP | `--ip [地址] [--port 端口] [--http]` | `https://203.0.113.7/` 一个地址 | 不需要 DNS，单一地址布局（8.8 节）。不给地址时自动检测公网 IP。公网 IP 用 443 端口时 Caddy 向 Let's Encrypt 申请 IP 证书（`shortlived` 配置，六天有效，自动续期），申请不到时改用 Caddy 自己的 CA；私有地址（含回环、CGNAT 与链路本地）或其他端口直接用 Caddy 自己的 CA，浏览器第一次打开时警告，安装结束时说明并给出根证书的位置。`--http` 用明文 `http://地址/`，只适合内网 |
+| sslip.io 名字 | `--sslip [地址]` | `app.203-0-113-7.sslip.io` 等四个名字 | 不需要 DNS：sslip.io 把这些名字解析回公网 IP，Caddy 照常申请证书 |
 | 本机试用 | `--local [--port 18787]` | `http://app.localhost:18787` 等 | 回环覆盖（`compose.loopback.yaml`），只发布 `127.0.0.1`；安装程序打印 `ssh -N -L` 的隧道命令 |
 
-前两种方式需要 80 与 443 端口空闲且可从公网到达。`--email` 是证书到期通知的邮箱，可省略。四个地址在同一个注册域下；共享内容入口照样去掉 Cookie 与认证头，需要把共享内容放到另一个注册域时按 8.2 节手动设置。
+自己的域名、sslip.io 与 443 端口上的公网 IP 需要 80 与 443 端口空闲且可从公网到达；IP 不在本机网卡上时安装程序提示转发这些端口。`--ip` 加 `--port` 时只发布这一个端口（另一个端口由 Docker 随机分配，不使用）。`--email` 是证书到期通知的邮箱，可省略。四个地址在同一个注册域下；共享内容入口照样去掉 Cookie 与认证头，需要把共享内容放到另一个注册域时按 8.2 节手动设置。
 
 邮件可选：`--smtp-host`、`--smtp-from`，需要时加 `--smtp-port`、`--smtp-user`、`--smtp-password`。给出时注册验证邮箱、可找回密码；不给时写入 `CLOUD_KEYCLOAK_VERIFY_EMAIL=false` 与 `CLOUD_KEYCLOAK_PASSWORD_RESET=false`，注册不验证邮箱、没有找回密码，安装结束时说明这一点以及之后在身份域的 `/admin/` 中配置邮件或关闭注册的位置。
 
-其余参数：`--version`（默认最新的 GitHub Release，例如 `1.0.0-rc.130`）、`--dir`（默认 `~/presmium-cloud`）、`--name`（Compose 项目与实例名，默认 `presmium-cloud`）、`--yes`（不提问，须同时给出地址方式；`curl … | bash -s -- --yes --ip`）、`--dry-run`（只下载到临时目录，打印将写入的配置（隐去密钥）、站点与步骤，并让 Compose 检查配置，不改动任何东西）、`--build`、`--source`（用给定的源码压缩包（文件或网址）代替该版本的 GitHub 归档；不加 `--build` 时只取其中的部署文件，镜像仍是 `--version` 的发布版本）。下载不显示进度条。
+其余参数：`--version`（默认最新的 GitHub Release，例如 `1.0.0-rc.130`）、`--dir`（默认 `~/presmium-cloud`）、`--name`（Compose 项目与实例名，默认 `presmium-cloud`）、`--yes`（不提问，须同时给出地址方式；`curl … | bash -s -- --yes --ip`）、`--dry-run`（只下载到临时目录，打印将写入的配置（隐去密钥）、站点与步骤，并让 Compose 检查配置，不改动任何东西）、`--build`、`--source`（用给定的源码压缩包（文件或网址）代替该版本的 GitHub 归档；不加 `--build` 时只取其中的部署文件，镜像仍是 `--version` 的发布版本）、`--registry`（从 `ghcr.io/lincyaw/` 的镜像站拉取四个 `presmium-cloud-*` 镜像，值是镜像名前缀，例如 `--registry mirror.example.com/lincyaw/`，写入 `CLOUD_IMAGE_REGISTRY`；`upgrade` 也接受）。下载不显示进度条。
 
 安装目录的内容：`.env`（0600，由 `keycloak/init-env.sh` 生成全部随机密钥，地址、镜像与邮件设置之后写入；已有时保留，不覆盖）、`releases/<版本>/`（该版本的部署文件，`--build` 时为完整源码）、`current`（指向运行中的版本）、`install.sh` 与 `backups/`。重复运行是幂等的：沿用已有的 `.env` 与版本，只补齐缺少的步骤并启动。
 
-镜像：默认拉取 `ghcr.io/lincyaw/presmium-cloud-{api,keycloak,hub,studio}:<版本>`（`CLOUD_IMAGE_REGISTRY=ghcr.io/lincyaw/`、`CLOUD_IMAGE_TAG=<版本>`），由 `.github/workflows/cloud-images.yml` 在发布 `v` 开头的 Release 时（也可手动运行）从该标签的源码构建，含 linux/amd64 与 linux/arm64，同时更新 `latest`。`--build` 在本机构建（`CLOUD_IMAGE_REGISTRY` 为空），Studio 镜像约 5 GB。之后安装程序 `docker compose up -d`，等待 `migrate` 与 `storage-init` 以 0 退出、`api`、`hub`、`keycloak` 健康，检查控制台可访问，然后打印控制台、Studio 与身份管理（`<身份域>/admin/`，账号 `CLOUD_KEYCLOAK_ADMIN`，密码是 `.env` 中的 `CLOUD_KEYCLOAK_ADMIN_PASSWORD`）的地址。第一个作者在控制台注册。
+镜像：默认拉取 `ghcr.io/lincyaw/presmium-cloud-{api,keycloak,hub,studio}:<版本>`（`CLOUD_IMAGE_REGISTRY=ghcr.io/lincyaw/`、`CLOUD_IMAGE_TAG=<版本>`），由 `.github/workflows/cloud-images.yml` 在发布 `v` 开头的 Release 时（也可手动运行）从该标签的源码构建，含 linux/amd64 与 linux/arm64，同时更新 `latest`。`--build` 在本机构建（`CLOUD_IMAGE_REGISTRY` 为空），Studio 镜像约 5 GB。拉取失败时安装程序显示 Docker 的原始错误并给出判断：清单不存在（该版本未发布或镜像站未同步）、没有本机架构的镜像（发布的是 linux/amd64 与 linux/arm64，可改用 `--build`）、限流、拒绝访问，或本机连不上镜像仓库（改用 `--registry` 或为 Docker 配置代理；Docker 用自己的代理设置）。第三方镜像来自 Docker Hub，不受 `--registry` 影响，连不上时在 `/etc/docker/daemon.json` 设 `registry-mirrors`。之后安装程序 `docker compose up -d`，等待 `migrate` 与 `storage-init` 以 0 退出、`api`、`hub`、`keycloak` 健康，检查控制台可访问，然后打印控制台、Studio 与身份管理（`<身份域>/admin/`，账号 `CLOUD_KEYCLOAK_ADMIN`，密码是 `.env` 中的 `CLOUD_KEYCLOAK_ADMIN_PASSWORD`）的地址。第一个作者在控制台注册。
 
 ```sh
 bash ~/presmium-cloud/install.sh status               # 服务、运行中的 Studio 与用户卷数
@@ -116,7 +117,7 @@ bash keycloak/init-env.sh   # 生成 0600 的 .env 与全部随机密钥，不�
 | 共享内容 | `https://content.example.net` | `CLOUD_CONTENT_HOST`、`CLOUD_CONTENT_URL` |
 | Studio | `https://studio.example.net` | `CLOUD_HUB_HOST`、`CLOUD_HUB_URL` |
 
-四个地址互不同源，Caddy 自动申请证书（`CLOUD_ACME_EMAIL` 可空）。共享内容入口只转发 `/p/*`，并去掉 Cookie、Authorization 与 Set-Cookie。数据库、对象存储、Hub API 与 Studio 容器不发布宿主端口；Studio 容器只在 `<项目>-studios` 网络上。镜像名为 `${CLOUD_IMAGE_REGISTRY}presmium-cloud-<名字>:${CLOUD_IMAGE_TAG}`。`compose.yaml` 只拉取镜像，拉取失败即报错；在本机从完整源码构建时加 `-f compose.build.yaml`（设 `CLOUD_IMAGE_REGISTRY` 为空），如下。拉取已发布的镜像时设 `CLOUD_IMAGE_REGISTRY=ghcr.io/lincyaw/`，不加该文件，并以 `docker compose --env-file .env -f compose.yaml --profile build-studio pull` 代替两条 `build`。第三方镜像（PostgreSQL、Caddy、Versity S3 Gateway、mailpit 与构建所用的基础镜像）都固定摘要，可匿名拉取。
+四个地址互不同源，Caddy 自动申请证书（`CLOUD_ACME_EMAIL` 可空）。只用一个地址时按 8.8 节设置。共享内容入口只转发 `/p/*`，并去掉 Cookie、Authorization 与 Set-Cookie。数据库、对象存储、Hub API 与 Studio 容器不发布宿主端口；Studio 容器只在 `<项目>-studios` 网络上。镜像名为 `${CLOUD_IMAGE_REGISTRY}presmium-cloud-<名字>:${CLOUD_IMAGE_TAG}`。`compose.yaml` 只拉取镜像，拉取失败即报错；在本机从完整源码构建时加 `-f compose.build.yaml`（设 `CLOUD_IMAGE_REGISTRY` 为空），如下。拉取已发布的镜像时设 `CLOUD_IMAGE_REGISTRY=ghcr.io/lincyaw/`，不加该文件，并以 `docker compose --env-file .env -f compose.yaml --profile build-studio pull` 代替两条 `build`。第三方镜像（PostgreSQL、Caddy、Versity S3 Gateway、mailpit 与构建所用的基础镜像）都固定摘要，可匿名拉取。
 
 ```sh
 docker compose --env-file .env -f compose.yaml -f compose.build.yaml config --quiet
@@ -145,7 +146,7 @@ docker compose --env-file .env -f compose.yaml logs --tail=100 api hub keycloak 
 docker ps --filter "name=${CLOUD_INSTANCE_ID:-presmium-cloud}-studio-" --format '{{.Names}} {{.Status}}'
 ```
 
-JupyterHub 管理界面在 Studio 地址的 `/hub/admin`，管理员在 `jupyterhub_config.py` 的 `c.Authenticator.admin_users` 中设置（值为 Keycloak 账号 ID）。Studio 的完整日志在用户卷的 `state/presmium/studio/`。日志中不应出现访问令牌或 API Key。
+JupyterHub 管理界面在 Studio 地址的 `/hub/admin`（单一地址时为 `/studio/hub/admin`），管理员在 `jupyterhub_config.py` 的 `c.Authenticator.admin_users` 中设置（值为 Keycloak 账号 ID）。Studio 的完整日志在用户卷的 `state/presmium/studio/`。日志中不应出现访问令牌或 API Key。
 
 ### 8.6 备份与恢复
 
@@ -180,3 +181,23 @@ docker compose --env-file .env -f compose.yaml up -d
 运行中的 Studio 继续用旧镜像，下次启动时换新。不修改已执行的迁移文件。停止但保留数据用 `docker compose … down`，不加删除卷的参数，不清理整个 Docker 主机。
 
 1.0.0-rc.129 及更早的版本用 MinIO 存放共享（卷 `<项目>_objects`），MinIO 已不再发布镜像。安装程序在服务启动后，若旧卷还在且本机仍有当时的 MinIO 镜像，就临时以它读出旧卷，用 `rclone/rclone` 把桶中的对象复制到新的对象存储，并在 `.env` 记下 `CLOUD_LEGACY_OBJECTS_COPIED=1`；旧卷保留，确认共享能打开后由运营者 `docker volume rm` 删除。本机没有 MinIO 镜像时无法复制：安装程序给出警告，这些共享对读者显示为不存在，作者重新共享即可。旧版的 `install.sh upgrade` 不做这一步，所以从这些版本升级时用新版安装程序（`curl -fsSL …/install.sh | bash -s -- upgrade`），或升级后再运行一次 `bash ~/presmium-cloud/install.sh`；`status` 在旧卷尚未复制时提示。
+
+### 8.8 单一地址
+
+没有域名时，整个云端可以在一个地址下（`install.sh --ip` 的做法）：
+
+| 路径 | 服务 | 配置 |
+|---|---|---|
+| `https://<地址>/` | 控制台 | `CLOUD_PUBLIC_URL=https://<地址>` |
+| `https://<地址>/auth/` | Keycloak | `CLOUD_AUTH_URL=https://<地址>/auth`、`CLOUD_OIDC_ISSUER=https://<地址>/auth/realms/presmium` |
+| `https://<地址>/studio/` | JupyterHub（基础路径 `/studio/`），含 `/studio/user/<名字>/studio/` 与 `preview/` | `CLOUD_HUB_URL=https://<地址>/studio` |
+| `https://<地址>/p/` | 共享内容 | `CLOUD_CONTENT_URL=https://<地址>` |
+
+另设 `CLOUD_CADDYFILE=Caddyfile.path`、`CLOUD_SITE_ADDRESS=https://<地址>`（或 `http://<地址>`）、`CLOUD_TLS`（`acme`：Let's Encrypt 的 IP 证书，申请不到时 Caddy 自己的 CA；`internal`：只用 Caddy 自己的 CA；`off`：明文 HTTP），四个 `CLOUD_*_HOST` 都是该地址。控制台要求三个地址要么互不同源，要么同源（此时 Hub 在一个路径下）。Keycloak 仍在根路径运行，Caddy 去掉 `/auth` 前缀，`KC_HOSTNAME` 带路径，所以 Keycloak 镜像不变；JupyterHub 的 `base_url`、默认地址、健康检查与 Studio 容器访问 Hub 代理的地址都取自 `CLOUD_HUB_URL` 的路径。IP 地址没有 SNI，Caddy 以 `default_sni` 选择证书。明文 HTTP 另设 `CLOUD_ALLOW_INSECURE_HTTP=true` 与 `CLOUD_KEYCLOAK_SSL_REQUIRED=none`（realm 导入前）；浏览器把明文页面视为不安全的上下文，麦克风录音、剪贴板等功能不可用，密码与会话以明文传输。
+
+四个主机名原本用于隔离来源。单一地址下的隔离：
+
+- 共享内容是作者的 HTML 与脚本。控制台以 `Content-Security-Policy: sandbox allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads`（没有 `allow-same-origin`）返回 `/p/` 下的每个响应，页面以不透明来源运行：读不到本来源的 cookie 与存储，向控制台、Studio 与 Keycloak 的请求是跨来源请求，不带凭据，也读不到响应。它自己的文件因此也是跨来源资源，所以 `/p/` 的响应带 `Access-Control-Allow-Origin: *`（共享本来公开）。沙箱中没有 service worker 与本地存储，共享网站因此没有离线访问，也不记住读者的外观选择。Caddy 照旧去掉 `/p/` 请求的 Cookie 与 Authorization 以及响应的 Set-Cookie；控制台的共享页嵌入它时不给 `allow-same-origin`。
+- cookie：控制台的会话 cookie（`__Host-pm-session`，`SameSite=Lax`）只在控制台使用，Caddy 在转发给 Keycloak 与 JupyterHub 前把它从请求中去掉；Keycloak 的 cookie 在 `/auth/realms/presmium/` 路径下，JupyterHub 的在 `/studio/` 之下（`/studio/hub/`、`/studio/user/<名字>/`）；DeepSeek Harness 的会话 cookie 按主机与端口命名，以各用户的 Studio 密钥签名。
+- 控制台的修改接口照旧要求 `Origin` 等于控制台的来源并带 CSRF 令牌；与 Studio 同源后，`/presmium` 的同源跳转页仍然保留。Studio 与预览之间的 `postMessage` 只接受预览地址的来源，与原来相同。控制台访问 Hub 用服务令牌，不经浏览器。
+- 与四个主机名相比，作者自己 Studio 预览中的文稿代码与控制台同源，可以以作者身份调用控制台接口（创建访问令牌、共享）；这与它本来就能以作者身份调用 Studio 是同一个信任边界，仍然只复制信任的文稿。

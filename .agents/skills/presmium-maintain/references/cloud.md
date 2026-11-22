@@ -17,11 +17,15 @@ The private `packages/cloud` app gives each user one complete Presmium Studio on
 - First-preview latency: keep compilation, viewer build, bundling and loading apart.
   `PRESMIUM_VIEWER_SEED` is copied only on a matching fingerprint. Compress static assets, not streaming
   routes.
-- Deployment goes through `deploy/cloud/install.sh` (one command; domain, sslip.io or loopback) and the images
+- Deployment goes through `deploy/cloud/install.sh` (one command; domain, one IP address, sslip.io or loopback) and the images
   that `.github/workflows/cloud-images.yml` publishes to GHCR per release. A new setting in `compose.yaml` or
   `.env.example` needs its installer counterpart; check modes with `--dry-run`, shellcheck the script.
 - Deploy only the authorized Compose project; preserve unrelated containers and volumes; never print `.env`,
   tokens or keys.
+- Two layouts of the same Compose project: a host name per service (`Caddyfile`), or one address with the Hub at
+  `/studio/`, Keycloak at `/auth/` and shares at `/p/` (`Caddyfile.path`, `--ip`). On one origin the shares stay
+  isolated only through the console's `Content-Security-Policy: sandbox` without `allow-same-origin`; keep it, and
+  build Hub and console URLs from `CLOUD_HUB_URL`'s path rather than assuming `/hub/` or `/user/` at the root.
 
 Verify with a real loopback deployment (`bash deploy/cloud/install.sh --local --build --name <own name> --dir <scratch>`,
 with a source tarball through `--source` for uncommitted work) and Chromium: register, open Studio and a document through the Hub,

@@ -110,7 +110,13 @@ Presmium can be deployed for a group of users: each registered user receives a c
 curl -fsSL https://raw.githubusercontent.com/Lincyaw/presmium/main/deploy/cloud/install.sh | bash
 ```
 
-It asks for one thing, the address: your own domain (one wildcard DNS record), the server's public IP (HTTPS through sslip.io, no DNS), or a local trial on `127.0.0.1` reached through an SSH tunnel. It generates every secret, pulls the published images, starts the services and prints the addresses; `--help` lists the non-interactive options, and `bash ~/presmium-cloud/install.sh status | upgrade | uninstall` manages the installation. Manual deployment, resource limits, administration, backups and upgrades are described in the [cloud deployment guide](docs/cloud.md).
+It asks for one thing, the address:
+
+- your own domain (one wildcard DNS record; `--domain example.com`): the console, sign-in, Studio and shared documents each get a name of their own;
+- the server's IP, no domain (`--ip [ADDRESS]`): everything at one address, `https://ADDRESS/`. A public IP gets a Let's Encrypt IP certificate; a private IP, a port other than 443 (`--port`) or a failed request uses a certificate from the server's own CA, which browsers warn about once. `--http` serves plain `http://ADDRESS/` for an intranet, where browsers disallow microphone recording and the clipboard;
+- the server's public IP through sslip.io names (`--sslip`), or a local trial on `127.0.0.1` reached through an SSH tunnel (`--local`).
+
+It generates every secret, pulls the published images (`--registry PREFIX` pulls them from a mirror of `ghcr.io/lincyaw/`; a failed pull is explained), starts the services and prints the address; `--help` lists the non-interactive options, and `bash ~/presmium-cloud/install.sh status | upgrade | uninstall` manages the installation. Manual deployment, resource limits, administration, backups and upgrades are described in the [cloud deployment guide](docs/cloud.md).
 
 ## License
 
