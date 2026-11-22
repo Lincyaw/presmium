@@ -57,7 +57,7 @@ jobs:
     name: ${{ matrix.image }} (${{ matrix.arch }})
     needs: version
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 120
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
