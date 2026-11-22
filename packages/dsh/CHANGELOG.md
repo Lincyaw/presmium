@@ -1,5 +1,15 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.123
+
+### Patch Changes
+
+- Take up the workbench release that keeps typing in very long documents smooth.
+- @lincyaw/cli@1.0.0-rc.124
+  - @lincyaw/kernel@1.0.0-rc.124
+  - @lincyaw/mcp@1.0.0-rc.124
+  - @lincyaw/skills@1.0.0-rc.124
+
 ## 0.2.0-rc.122
 
 ### Patch Changes
