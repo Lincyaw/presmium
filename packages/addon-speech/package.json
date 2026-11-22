@@ -36,7 +36,9 @@
   "dependencies": {
     "@volcengine/speechsaasprod": "1.0.5",
     "@volcengine/speechsaasprod20250521": "1.0.5",
-    "jiti": "^2.7.0"
+    "jiti": "^2.7.0",
+    "mediabunny": "1.61.3",
+    "msedge-tts": "2.1.1"
   },
   "peerDependencies": {
     "@lincyaw/compiler": "workspace:^",

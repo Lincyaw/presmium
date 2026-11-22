@@ -21,7 +21,9 @@ It is a Presmium plugin: its components work on the web page and in the slides. 
 
 ## Configuration
 
-In Studio, open **Settings → Voice Service**, enter the API key from the Volcengine speech console and save. Volcengine speech synthesis 2.0 is the default. The same page is linked from Video Production → Voiceover. Saved credentials apply to the next operation without restarting Studio; choose a voice and explicitly preview or generate it afterwards. **Check Configuration** checks saved local settings, not provider authentication or billing permissions.
+Voiceover works without setup: the built-in engine `edge` reads with Microsoft Edge's free voices straight from Node (`msedge-tts`; the text goes to Microsoft). It only synthesizes. An operator definition of `edge` (`PRESMIUM_SPEECH_EDGE_URL`, `PRESMIUM_SPEECH_EDGE_PROVIDER`, e.g. a local bridge) replaces it, and `PRESMIUM_SPEECH_EDGE_MODEL=none` turns it off; locked audio already committed for a request stays in use under it.
+
+For Volcengine, open **Settings → Voice Service** in Studio, enter the API key from the Volcengine speech console and save; Volcengine speech synthesis 2.0 then comes first. The same page is linked from Video Production → Voiceover. Saved credentials apply to the next operation without restarting Studio; choose a voice and explicitly preview or generate it afterwards. **Check Configuration** checks saved local settings, not provider authentication or billing permissions.
 
 The key is stored with mode 0600 in `<operatorDir>/speech/credentials.json`, outside the workspace and document. The owner-only route uses the existing workspace authorization. Reads return configuration status without the key; clearing the saved key restores the environment fallback. Concurrent changes use a revision check under a filesystem lock. Explicit compiler secret resolvers keep precedence.
 

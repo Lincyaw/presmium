@@ -59,6 +59,8 @@ export interface VoiceInfo {
   label: string
   lang: string[]
   cloned?: boolean
+  /** As the provider describes the voice; absent when it does not say. */
+  gender?: 'female' | 'male'
 }
 
 /** A provider list may be empty. An unsupported catalogue must not be presented as an empty list. */

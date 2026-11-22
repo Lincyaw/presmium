@@ -152,7 +152,7 @@ export function speechCore(options: CoreOptions): SpeechCore {
     async cacheProfile(id, use, lang) {
       const { engines: list, unavailable } = engines()
       const engine = id ? list.find(own => own.id === speechEngineId(id)) : list.find(own => engineDoes(own, use))
-      if (engine) return engineDoes(engine, use) ? { status: 'configured', profile: profileOf(engine, use), model: use === 'synthesize' ? engine.model : engine.transcribeModel, provider: providerName(engine, lang) } : { status: 'unavailable' }
+      if (engine) return engineDoes(engine, use) ? { status: 'configured', profile: profileOf(engine, use), model: use === 'synthesize' ? engine.model : engine.transcribeModel, provider: providerName(engine, lang), ...engine.builtin ? { builtin: true } : {} } : { status: 'unavailable' }
       return { status: (id ? unavailable.some(own => own.id === speechEngineId(id)) : unavailable.length > 0) ? 'unavailable' : 'absent' }
     },
 

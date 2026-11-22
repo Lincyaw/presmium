@@ -37,7 +37,9 @@ export class CachedSpeech implements SpeechBackend {
     if (!engine) return undefined
     const requestKey = cacheKey({ ...request, engine: speechEngineId(engine) }, applyLexicon(request.text, request.lexicon))
     const profile = await this.cacheProfile(engine, 'synthesize')
-    return profile.status === 'configured' ? profileCacheKey(requestKey, profile.profile) : profile.status === 'absent' ? this.cache.resolveRequest(requestKey) : undefined
+    if (profile.status !== 'configured') return profile.status === 'absent' ? this.cache.resolveRequest(requestKey) : undefined
+    const key = profileCacheKey(requestKey, profile.profile)
+    return profile.builtin && !this.cache.has(key) ? this.cache.resolveRequest(requestKey) ?? key : key
   }
 
   /** Every consumer, including direct clip playback and alignment, uses this identity/SHA gate. */
@@ -45,7 +47,7 @@ export class CachedSpeech implements SpeechBackend {
     const hit = await this.cache.find(key)
     if (!hit) return undefined
     const current = await this.cacheProfile(hit.record.engine, 'synthesize', hit.record.lang)
-    if (current.status === 'configured') return hit.record.profile === current.profile && hit.record.model === current.model && hit.record.provider === current.provider ? hit : undefined
+    if (current.status === 'configured') return hit.record.profile === current.profile && hit.record.model === current.model && hit.record.provider === current.provider || current.builtin && this.cache.locked(hit.record) ? hit : undefined
     return current.status === 'absent' && this.cache.locked(hit.record) ? hit : undefined
   }
 

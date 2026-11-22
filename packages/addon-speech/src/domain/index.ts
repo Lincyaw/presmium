@@ -2,7 +2,7 @@ export { CLONE_PATH, CONSENT_PATH, DEFAULT_CONSENT_DIR, deckSpeechConfig, PROTOC
 export type { ConfigProblem, DeckSpeechConfig } from './config.ts'
 export { consentPath, consentProblem, safeName } from './consent.ts'
 export type { ConsentRecord } from './consent.ts'
-export { whyEngineCannot, engineDoes, engineIds, engineInfo, engineVariable, FAKE, howToDefine, NO_MODEL, operatorEngines, providerName, VOLCENGINE, VOLCENGINE_URL } from './engines.ts'
+export { whyEngineCannot, engineDoes, engineIds, engineInfo, EDGE, engineVariable, FAKE, howToDefine, NO_MODEL, operatorEngines, providerName, VOLCENGINE, VOLCENGINE_URL } from './engines.ts'
 export type { EngineDefinition, EngineKind, EngineUse, UnavailableEngine } from './engines.ts'
 export { applyLexicon, applyLexiconWithSpans } from './lexicon.ts'
 export type { LexiconText } from './lexicon.ts'

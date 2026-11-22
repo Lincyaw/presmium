@@ -29,7 +29,8 @@ export interface CloneInput {
   consent: { speaker: string, scope: string, statement: Uint8Array, statementMime: string }
 }
 
-export type CacheProfile = { status: 'configured', profile: string, model: string, provider: string } | { status: 'absent' | 'unavailable' }
+/** `builtin`: the engine is there without the operator defining it, so audio committed for a request under another configuration is used as is. */
+export type CacheProfile = { status: 'configured', profile: string, model: string, provider: string, builtin?: boolean } | { status: 'absent' | 'unavailable' }
 
 export interface SpeechBackend {
   listEngines(lang?: string): Promise<EnginesResponseBody>
