@@ -42,7 +42,7 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
   const readOnly = useWorkbenchState(state => Boolean(state.authoring?.loading || state.authoring?.composing) || isAgentChanging(state))
   const [scope, setScope] = useState<DocumentVoiceScope>({ kind: 'document' })
   const [voiceNames, setVoiceNames] = useState<VoiceInfo[]>([])
-  const [checked, setChecked] = useState<CheckedVoice>(), [status, setStatus] = useState<VoiceoverSnapshot>()
+  const [checked, setChecked] = useState<CheckedVoice>(), [status, setStatus] = useState<VoiceoverSnapshot>(), [statusStamp, setStatusStamp] = useState('')
   const [loading, setLoading] = useState(true), [submitting, setSubmitting] = useState(false), [cancelling, setCancelling] = useState<string>()
   const [changed, setChanged] = useState(false), [error, setError] = useState<string>(), [attempt, setAttempt] = useState(0)
   const life = useRef<AbortController>(), read = useRef<AbortController>(), mutation = useRef<AbortController>(), generation = useRef(0), starting = useRef(false)
@@ -80,7 +80,7 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
         if (!voiceSnapshotCurrent(workbench, snapshot) || answer.revision !== snapshot.revision || !sameSource(answer.source, snapshot.source)) throw new Error('voice-context-changed')
         const value = { snapshot, document }
         checkedRef.current = value; statusJobs.current = jobStamp(answer.jobs)
-        setChecked(value); setStatus(answer); setChanged(false)
+        setChecked(value); setStatus(answer); setStatusStamp(statusJobs.current); setChanged(false)
       } catch (failure) {
         if (generation.current === version && !signal.aborted && !closing.current) setError(voiceFailure(failure, locale))
       } finally { if (generation.current === version && !signal.aborted && !closing.current) setLoading(false) }
@@ -95,6 +95,9 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
   }), [workbench])
 
   const hasActive = jobs.some(active)
+  // While a job runs its progress is the count; after it, the counts wait for the cache read that follows, not to show
+  // those of before.
+  const statusBehind = hasActive || Boolean(status) && jobStamp(jobs) !== statusStamp
   useEffect(() => {
     const value = checkedRef.current, stamp = jobStamp(jobs)
     if (!value || !voiceSnapshotCurrent(workbench, value.snapshot) || stamp === statusJobs.current) return
@@ -105,7 +108,7 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
         signal.throwIfAborted()
         if (closing.current || checkedRef.current !== value) return
         if (voiceSnapshotCurrent(workbench, value.snapshot) && answer.revision === value.snapshot.revision && sameSource(answer.source, value.snapshot.source)) {
-          statusJobs.current = stamp; setStatus(answer)
+          statusJobs.current = stamp; setStatus(answer); setStatusStamp(stamp)
         }
         else setChanged(true)
       } catch (failure) { if (!signal.aborted && !closing.current) setError(voiceFailure(failure, locale)) }
@@ -203,7 +206,7 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
   return <PmDialog open label={scope.kind === 'document' ? t.generationAll : t.generation} closeLabel={closeLabel} onClose={close} footer={<>
     <PmButton small onClick={close}>{closeLabel}</PmButton>
     <PmButton small loading={loading} disabled={submitting} onClick={() => setAttempt(value => value + 1)}>{changed ? t.recheck : t.refresh}</PmButton>
-    <PmButton small variant="primary" loading={submitting} disabled={loading || changed || readOnly || hasActive || !selection?.missing || !selection.providers.length || !status?.capability.available} onClick={() => void start()}>{t.confirmGenerate}</PmButton>
+    <PmButton small variant="primary" loading={submitting} disabled={loading || changed || readOnly || hasActive || statusBehind || !selection?.missing || !selection.providers.length || !status?.capability.available} onClick={() => void start()}>{t.confirmGenerate}</PmButton>
   </>}>
     <div className="pmw-operation">
     {(source?.content || checked?.document) && <VoiceScopeField document={checked?.document ?? source!.content!} stepId={stepId} value={scope} disabled={loading || submitting || readOnly} onChange={chooseScope} />}
@@ -211,8 +214,8 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
     {changed && <PmNotice tone="warn">{t.changed}</PmNotice>}
     {failure && <PmNotice tone="danger">{failure}</PmNotice>}
     {status && selection && <>
-      {(selection.missing > 0 || selection.blocked > 0) && <PmNotice>{t.generationSummary(selection.missing, selection.blocked)}</PmNotice>}
-      {!changed && !hasScopeJob && !selection.missing && !selection.blocked && selection.cached > 0 && <PmNotice tone="ok">{t.cacheReady}</PmNotice>}
+      {!statusBehind && (selection.missing > 0 || selection.blocked > 0) && <PmNotice>{t.generationSummary(selection.missing, selection.blocked)}</PmNotice>}
+      {!changed && !statusBehind && !hasScopeJob && !selection.missing && !selection.blocked && selection.cached > 0 && <PmNotice tone="ok">{t.cacheReady}</PmNotice>}
       {!selection.missing && !selection.cached && !selection.blocked && <PmNotice>{t.noScript}</PmNotice>}
       {selection.hasUnbound && <PmNotice tone="warn">{t.unboundScript}</PmNotice>}
       {selection.silent > 0 && <PmNotice>{t.silentScope(selection.silent)}</PmNotice>}

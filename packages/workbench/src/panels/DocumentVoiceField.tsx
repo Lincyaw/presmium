@@ -9,25 +9,32 @@ import { isAgentChanging } from '../workbench-state.ts'
 import { DocumentVoiceDialog } from './DocumentVoiceDialog.tsx'
 import { effectiveOf } from '../effective-settings.ts'
 
-const catalogs = new Map<string, Promise<VoiceInfo[]>>()
+const catalogs = new Map<string, Promise<VoiceInfo[] | undefined>>()
+// A read refused while the document is still settling after a change (the voice just chosen) is asked again shortly.
+const RETRY_MS = 1000, RETRIES = 3
 
 /** The catalogue entry of a saved voice, for its name; one read per document, engine and service change. */
 function useVoiceInfo(directory: string | undefined, engine: string | undefined, voice: string | undefined): VoiceInfo | undefined {
-  // A failed read is not kept: the next saved version of the document asks again.
+  // A failed read is not kept: it is asked again, and the next saved version of the document asks again too.
   const workbench = useWorkbench(), serviceVersion = useWorkbenchState(state => state.voiceServiceVersion), version = useWorkbenchState(state => state.authoring?.version)
-  const [info, setInfo] = useState<VoiceInfo>()
+  const [info, setInfo] = useState<VoiceInfo>(), [retry, setRetry] = useState(0)
+  useEffect(() => { setRetry(0) }, [directory, engine, voice, serviceVersion, version])
   useEffect(() => {
     if (directory === undefined || !voice) { setInfo(undefined); return }
     const key = JSON.stringify([directory, engine ?? '', serviceVersion ?? 0])
     let list = catalogs.get(key)
     if (!list) {
-      list = workbench.client.readVoiceCatalog(directory, engine).then(answer => answer.catalog.voices, () => { catalogs.delete(key); return [] })
+      list = workbench.client.readVoiceCatalog(directory, engine).then(answer => answer.catalog.voices, () => { catalogs.delete(key); return undefined })
       catalogs.set(key, list)
     }
-    let live = true
-    void list.then(voices => { if (live) setInfo(voices.find(value => value.id === voice)) })
-    return () => { live = false }
-  }, [workbench, directory, engine, voice, serviceVersion, version])
+    let live = true, timer: ReturnType<typeof setTimeout> | undefined
+    void list.then(voices => {
+      if (!live) return
+      setInfo(voices?.find(value => value.id === voice))
+      if (!voices && retry < RETRIES) timer = setTimeout(() => setRetry(value => value + 1), RETRY_MS)
+    })
+    return () => { live = false; clearTimeout(timer) }
+  }, [workbench, directory, engine, voice, serviceVersion, version, retry])
   return info
 }
 
