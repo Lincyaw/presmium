@@ -6,8 +6,11 @@ export interface OfflineRuntimes {
 }
 
 async function ask<T>(type: string, timeoutMs: number): Promise<T | undefined> {
-  if (typeof navigator === 'undefined' || !navigator.serviceWorker) return undefined
-  const worker = navigator.serviceWorker.controller ?? (await navigator.serviceWorker.getRegistration())?.active
+  let workers: ServiceWorkerContainer | undefined
+  // A sandboxed page (a share served on the cloud's own origin) has no service workers: even the getter throws.
+  try { workers = typeof navigator === 'undefined' ? undefined : navigator.serviceWorker } catch { return undefined }
+  if (!workers) return undefined
+  const worker = workers.controller ?? (await workers.getRegistration())?.active
   if (!worker) return undefined
   return new Promise((resolve) => {
     const channel = new MessageChannel()

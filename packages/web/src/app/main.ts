@@ -82,9 +82,10 @@ function followAppearance(doc: IRDocument, dark: Store<boolean>, embedded: boole
 
 function registerServiceWorker(url: string): void {
   if (!('serviceWorker' in navigator)) return
-  const register = () => navigator.serviceWorker.register(url).catch((error: unknown) => {
-    console.warn('[presmium] offline support unavailable', error)
-  })
+  const register = async () => {
+    // A sandboxed page (a share served on the cloud's own origin) has no service workers: even the getter throws.
+    try { await navigator.serviceWorker.register(url) } catch (error: unknown) { console.warn('[presmium] offline support unavailable', error) }
+  }
   if (document.readyState === 'complete') void register()
   else window.addEventListener('load', register, { once: true })
 }
