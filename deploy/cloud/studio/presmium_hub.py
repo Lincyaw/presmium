@@ -56,7 +56,8 @@ def _load_jupyter_server_extension(app):
     if 'PRESMIUM_ENV_LAB_URL' not in studio_env:
         studio_env['PRESMIUM_ENV_LAB_URL'] = f'http://127.0.0.1:{app.port}{prefix}'
         studio_env['PRESMIUM_ENV_LAB_TOKEN'] = os.environ['JUPYTERHUB_API_TOKEN']
-    subprocess.Popen(['node', f'{PRESMIUM}/packages/studio/bin/presmium-studio.mjs', SPACE,
+    # `presmium studio` hands Studio its own command; presmium-studio alone would look for `presmium` on PATH.
+    subprocess.Popen(['node', f'{PRESMIUM}/packages/presmium/bin/presmium.mjs', 'studio', SPACE,
                       '--port', str(STUDIO_PORT), '--public-url', f'{origin}{prefix}studio/',
                       '--preview-url', f'{origin}{prefix}preview/', '--preview-port', str(PREVIEW_PORT)], env=studio_env)
     subprocess.Popen(['node', f'{PRESMIUM}/deploy/cloud/studio/control.mjs', str(CONTROL_PORT)])
