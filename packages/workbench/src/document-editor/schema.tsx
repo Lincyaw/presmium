@@ -24,6 +24,8 @@ export interface DocumentNodeViews {
   slashItems?(editor: NativeDocumentEditor): DefaultReactSuggestionItem[]
   editorChildren?(editor: NativeDocumentEditor): ReactNode
   pasteText?(text: string, editor: NativeDocumentEditor): boolean
+  /** Where the host serves the visual formula editor (MathLive's module and its `fonts/`); formulas are LaTeX only without it. */
+  mathEditor?: string
 }
 export const DOCUMENT_NODE_VIEWS = createContext<DocumentNodeViews>({})
 

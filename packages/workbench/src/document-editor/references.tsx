@@ -218,6 +218,8 @@ function insertReference(editor: NativeDocumentEditor, document: string, title: 
  */
 export function DocumentMentionMenus({ editor }: { editor: NativeDocumentEditor }) {
   const workbench = useWorkbench()
+  const untitled = useRef('')
+  untitled.current = useTreeMessages().untitled
   const query = useRef('')
   // Typing debounces the search and cancels the one in flight; a cancelled call answers the previous results.
   const search = useRef<{ controller?: AbortController, items: MentionItem[] }>({ items: [] })
@@ -234,9 +236,13 @@ export function DocumentMentionMenus({ editor }: { editor: NativeDocumentEditor 
       if (controller.signal.aborted) return search.current.items
       try { hits = await workbench.client.searchDocuments(trimmed, 8, controller.signal) } catch { return search.current.items }
     } else {
-      const recent = workbench.getState().recentDocuments ?? []
-      hits = recent.filter(entry => entry.id !== own && workbench.tree.title(entry.id) !== undefined).slice(0, 6)
-        .map(entry => ({ id: entry.id, title: workbench.tree.title(entry.id)!, ancestors: workbench.tree.ancestors(entry.id).map(item => item.title), match: 'title' as const }))
+      // Before a query (or without search): the recently opened documents, then the rest of the tree in its order.
+      const tree = workbench.getState().documentTree, ids = (workbench.getState().recentDocuments ?? []).map(entry => entry.id)
+      const visit = (id: string) => { ids.push(id); tree?.nodes[id]?.children.forEach(visit) }
+      tree?.roots.forEach(visit)
+      const wanted = trimmed.toLocaleLowerCase()
+      hits = [...new Set(ids)].filter(id => id !== own && workbench.tree.title(id)?.toLocaleLowerCase().includes(wanted)).slice(0, 8)
+        .map(id => ({ id, title: workbench.tree.title(id) || untitled.current, ancestors: workbench.tree.ancestors(id).map(item => item.title || untitled.current), match: 'title' as const }))
     }
     const seen = new Set<string>()
     const items: MentionItem[] = hits.filter(hit => !seen.has(hit.id) && seen.add(hit.id)).map(hit => ({ kind: 'document', hit: { id: hit.id, title: hit.title, path: hit.ancestors } }))
@@ -276,8 +282,8 @@ export function referenceSlashItems(editor: NativeDocumentEditor, t: DocumentTre
       const own = workbench.getState().authoring?.content?.id
       if (!own) return
       const siblings = workbench.getState().documentTree?.nodes[own]?.children
-      void workbench.tree.operate({ type: 'create', title: t.untitled, parent: own, after: siblings?.at(-1) ?? null }).then(result => {
-        if (result?.created) insertReference(editor, result.created, t.untitled)
+      void workbench.tree.operate({ type: 'create', title: t.untitledChild, parent: own, after: siblings?.at(-1) ?? null }).then(result => {
+        if (result?.created) insertReference(editor, result.created, t.untitledChild)
       })
     } })
   return items

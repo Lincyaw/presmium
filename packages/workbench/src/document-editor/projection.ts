@@ -1,4 +1,4 @@
-import { documentPageDefaults, DOCUMENT_PAGE_DEFAULT_TIMING, randomUUID } from '@lincyaw/kernel'
+import { documentPageDefaults, DOCUMENT_PAGE_DEFAULT_TIMING, followFirstPageTitle, randomUUID } from '@lincyaw/kernel'
 import type { DocumentBlock, DocumentPageIds, NarrationNode, RichTextNode, Section, PresmiumDocument, TextBlock } from '@lincyaw/kernel'
 import { productInlineToNative } from './inline.ts'
 import { captureRichBaseline, createRichProjection, nativeRichTextToProduct, productRichTextToNative } from './rich-text.ts'
@@ -377,6 +377,7 @@ export function nativeDocumentToProduct(blocks: readonly DocumentEditorBlock[], 
     if (next.production.cueTimings) delete next.production.cueTimings[node.id]
     return false
   })
+  followFirstPageTitle(latest, next)
   context.document = share(context.document, structuredClone(next)) as PresmiumDocument
   context.blockSections = sectionOf
   for (const block of Object.values(context.document.blocks)) if (block.type === 'text') rememberRich(block.content, context)

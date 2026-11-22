@@ -1,4 +1,8 @@
+import { readdirSync, readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { dirname, join } from 'node:path'
 import { startupAssets, startupIndex } from './startup.ts'
+import { MATH_EDITOR_ROUTE } from '../math-editor.ts'
 import { LOCAL_AUTHOR } from '@lincyaw/kernel'
 import type { DshContext, DshOtelScalar } from './dsh-types.ts'
 import type { OperationClient, OperationRecord, PresmiumTelemetry } from './telemetry.ts'
@@ -47,8 +51,18 @@ export function readOperations(body: unknown): { client: OperationClient, record
   return { client: { id, ...browser ? { browser } : {}, ...locale ? { locale } : {} }, records: read }
 }
 
+/** MathLive's browser module and the fonts it loads, as the files Studio serves under `MATH_EDITOR_ROUTE`. */
+function mathEditorFiles(): { path: string, file: string, type: string }[] {
+  const root = dirname(createRequire(import.meta.url).resolve('mathlive/fonts.css'))
+  return [{ path: 'mathlive.min.mjs', file: join(root, 'mathlive.min.mjs'), type: 'text/javascript; charset=utf-8' },
+    ...readdirSync(join(root, 'fonts')).filter(name => name.endsWith('.woff2')).map(name => ({ path: `fonts/${name}`, file: join(root, 'fonts', name), type: 'font/woff2' }))]
+}
+
 export function apply(ctx: DshContext & { webServer: WebServer, presmiumTelemetry: PresmiumTelemetry }): void {
   ctx.effect(() => ctx.webServer.tapIndex(brandIndex))
+  for (const { path, file, type } of mathEditorFiles()) ctx.connection.fetch.register({ path: `/${MATH_EDITOR_ROUTE}${path}`, methods: ['GET'], requestBody: 'buffered', async fetch() {
+    return new Response(readFileSync(file), { headers: { 'content-type': type, 'cache-control': 'public, max-age=86400' } })
+  } })
   ctx.connection.fetch.register({ path: '/api/presmium/startup.js', methods: ['GET'], requestBody: 'buffered', async fetch() {
     return new Response(startupAssets().script, { headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=31536000, immutable' } })
   } })

@@ -42,7 +42,21 @@ export function renameDocumentPage(source: PresmiumDocument, section: string, ti
   if (!title.trim()) throw new Error('page-title-required')
   const document = structuredClone(source)
   document.sections[section]!.title = title.trim()
+  followFirstPageTitle(source, document)
   return document
+}
+
+/**
+ * While a document's title is its first page's title (a new document starts that way), renaming that page renames the
+ * document: the author names an untitled document by typing its first heading. Once the two differ, for instance after
+ * the document is renamed in the document tree, the document keeps its own title. Sets `after.metadata.title` in place.
+ */
+export function followFirstPageTitle(before: PresmiumDocument, after: PresmiumDocument): void {
+  const first = before.sectionOrder[0]
+  if (!first || after.sectionOrder[0] !== first || after.metadata.title !== before.metadata.title) return
+  const was = before.sections[first]?.title.trim(), now = after.sections[first]?.title.trim()
+  if (was === undefined || now === undefined || was === now || before.metadata.title.trim() !== was) return
+  after.metadata.title = now
 }
 
 export function moveDocumentPage(source: PresmiumDocument, section: string, before: string | null): PresmiumDocument {

@@ -427,6 +427,8 @@
   /* A highlight (sheen, glint, spark) that stays light and a shadow that stays dark in both appearance modes. */
   --pm-color-sheen: #ffffff;
   --pm-color-shadow: #000000;
+  /* The edge shade of a box that scrolls sideways, telling there is more beyond it. */
+  --pm-color-scroll-shadow: color-mix(in srgb, var(--pm-color-shadow) 18%, transparent);
   --pm-color-pointer-fill: #ffffff;
   --pm-color-pointer-stroke: #111111;
   --pm-contrast-bg: #ffffff;
@@ -441,6 +443,7 @@
   --pm-shadow-pointer: 0 1px 2px rgb(0 0 0 / 35%);
 }
 :root.dark {
+  --pm-color-scroll-shadow: color-mix(in srgb, var(--pm-color-sheen) 16%, transparent);
   --pm-contrast-bg: #000000;
   --pm-contrast-fg: #ffffff;
   --pm-contrast-link: #ffe14d;

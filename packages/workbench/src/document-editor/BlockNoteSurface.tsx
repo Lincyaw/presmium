@@ -2,6 +2,7 @@ import { forwardRef, useContext, useEffect, useLayoutEffect, useMemo, useRef, us
 import type { ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react'
 import { randomUUID } from '@lincyaw/kernel'
 import { filterSuggestionItems } from '@blocknote/core'
+import { TextSelection } from '@tiptap/pm/state'
 import { BlockNoteView, components } from '@blocknote/mantine'
 import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ComponentsContext, CreateLinkButton, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, LinkToolbarController, NestBlockButton, RenderInPortalElement, SideMenuController, SuggestionMenuController, TableCellMergeButton, TableHandlesController, TextAlignButton, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
 import type { ComponentProps, FormattingToolbarProps } from '@blocknote/react'
@@ -10,7 +11,7 @@ import type { Locale } from '../messages.ts'
 import { PmIcon, PmIconButton, PmNotice, PmTooltip } from '../components.tsx'
 import { DOCUMENT_NODE_VIEWS, documentEditorSchema } from './schema.tsx'
 import type { DocumentEditorBlock, DocumentEditorInput, DocumentNodeViews, NativeDocumentEditor } from './schema.tsx'
-import { documentSelection, nativeTextPoint } from './selection.ts'
+import { documentSelection, nativeBlockText, nativeTextPoint } from './selection.ts'
 import type { NativeDocumentSelection } from './selection.ts'
 import { DOCUMENT_EDITOR_MESSAGES, IMAGE_IMPORT_MESSAGES, slashAliases } from './messages.ts'
 import { blockNoteDictionary } from './blocknote-messages.ts'
@@ -19,7 +20,7 @@ import type { ImageImportFailure } from './file-input.ts'
 import { nativeTextClipboard } from './clipboard.ts'
 import { documentPageBodies, focusDocumentEnd } from './page-body.ts'
 import { documentBlockColors } from './colors.ts'
-import { DOCUMENT_EDITOR_LOCALE } from './math.tsx'
+import { DOCUMENT_EDITOR_LOCALE, MATH_EDITOR } from './math.tsx'
 import { DOCUMENT_LINKS, DocumentColorButton, DocumentLinkToolbar, DocumentSideMenu, DocumentTableCellButton, DocumentTableHandle, FormulaToolbarButton, formulaSlashItems, openDocumentLink } from './authoring.tsx'
 import type { DocumentLinks } from './authoring.tsx'
 import { excludeCommentMarkHistory, nativeComments, nativeCommentSelection } from './comments.ts'
@@ -57,12 +58,14 @@ const DocumentReactionBadge = forwardRef<HTMLInputElement, ComponentProps['Gener
 })
 
 const MantineToolbarButton = components.Generic.Toolbar.Button as ForwardRefExoticComponent<ComponentProps['Generic']['Toolbar']['Button'] & RefAttributes<HTMLButtonElement>>
-const DocumentToolbarButton = forwardRef<HTMLButtonElement, ComponentProps['Generic']['Toolbar']['Button']>(function DocumentToolbarButton(props, ref) {
-  const label = props.label ?? props.mainTooltip
-  return label === undefined ? <MantineToolbarButton {...props} ref={ref} /> : <MantineToolbarButton {...props} ref={ref} label={label} />
+// The formatting toolbar's icon buttons name themselves and their shortcut in the workbench's own tooltip.
+const DocumentToolbarButton = forwardRef<HTMLButtonElement, ComponentProps['Generic']['Toolbar']['Button']>(function DocumentToolbarButton({ mainTooltip, secondaryTooltip, ...props }, ref) {
+  const label = props.label ?? mainTooltip
+  const button = label === undefined ? <MantineToolbarButton {...props} ref={ref} /> : <MantineToolbarButton {...props} ref={ref} label={label} />
+  return mainTooltip ? <PmTooltip label={mainTooltip} shortcut={secondaryTooltip}>{button}</PmTooltip> : button
 })
 
-const DOCUMENT_EDITOR_COMPONENTS = { ...components, Generic: { ...components.Generic, Menu: { ...components.Generic.Menu, Root: DocumentMenuRoot }, Badge: { ...components.Generic.Badge, Root: DocumentReactionBadge }, Toolbar: { ...components.Generic.Toolbar, Button: DocumentToolbarButton } }, Comments: { ...components.Comments, Comment: DocumentComment, Editor: DocumentCommentEditor } }
+const DOCUMENT_EDITOR_COMPONENTS = { ...components, FormattingToolbar: { ...components.FormattingToolbar, Button: DocumentToolbarButton }, LinkToolbar: { ...components.LinkToolbar, Button: DocumentToolbarButton }, Generic: { ...components.Generic, Menu: { ...components.Generic.Menu, Root: DocumentMenuRoot }, Badge: { ...components.Generic.Badge, Root: DocumentReactionBadge }, Toolbar: { ...components.Generic.Toolbar, Button: DocumentToolbarButton } }, Comments: { ...components.Comments, Comment: DocumentComment, Editor: DocumentCommentEditor } }
 
 export interface BlockNoteSurfaceProps {
   identity: string
@@ -190,7 +193,7 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
       stopCommentHistory?.(); current.current.onReady?.(undefined)
     }
   }, [editor])
-  return <DOCUMENT_EDITOR_LOCALE.Provider value={props.locale}><DOCUMENT_LINKS.Provider value={links}><DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}><COMMENT_EDITOR_CONTEXT.Provider value={props.comments ? { store: props.comments, locale: props.locale, sidebar: Boolean(props.commentsPortal), readOnly: Boolean(props.readOnly), getPositionToken: () => current.current.getPositionToken?.(), onDraftRestore: () => current.current.onCommentDraftRestore?.(), openComments: () => current.current.onOpenComments?.() } : undefined}>
+  return <DOCUMENT_EDITOR_LOCALE.Provider value={props.locale}><MATH_EDITOR.Provider value={props.nodeViews?.mathEditor}><DOCUMENT_LINKS.Provider value={links}><DOCUMENT_NODE_VIEWS.Provider value={props.nodeViews ?? {}}><COMMENT_EDITOR_CONTEXT.Provider value={props.comments ? { store: props.comments, locale: props.locale, sidebar: Boolean(props.commentsPortal), readOnly: Boolean(props.readOnly), getPositionToken: () => current.current.getPositionToken?.(), onDraftRestore: () => current.current.onCommentDraftRestore?.(), openComments: () => current.current.onOpenComments?.() } : undefined}>
     <div className="pm-document-editor pm-ui-block-editor pm-ui" data-document-editor={props.identity}
       onDragEnter={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
       onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.stopPropagation() }}
@@ -221,7 +224,15 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
           onItemClick: () => current.current.animationRequest?.request(editor),
         }] : []), ...current.current.nodeViews?.slashItems?.(editor) ?? [], {
           title: t.page, aliases: slashAliases('pageAliases'), group: t.document,
-          onItemClick: () => { const current = editor.getTextCursorPosition().block; editor.insertBlocks([{ type: 'presmiumPage', props: { sectionId: randomUUID() }, content: t.untitledPage }], current, 'after') },
+          // As with the page bar's +, the new page's default title is selected: the author's next words name it.
+          onItemClick: () => {
+            const current = editor.getTextCursorPosition().block
+            const [page] = editor.insertBlocks([{ type: 'presmiumPage', props: { sectionId: randomUUID() }, content: t.untitledPage }], current, 'after')
+            const title = page && nativeBlockText(editor, page.id)
+            if (!title) return
+            editor.transact(transaction => transaction.setSelection(TextSelection.create(transaction.doc, title.from, title.to)).scrollIntoView())
+            editor.focus()
+          },
         }], query)} />
         {props.nodeViews?.editorChildren?.(editor)}
         {props.children}
@@ -234,5 +245,5 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
         focusDocumentEnd(editor)
       }} />
     </div>
-  </COMMENT_EDITOR_CONTEXT.Provider></DOCUMENT_NODE_VIEWS.Provider></DOCUMENT_LINKS.Provider></DOCUMENT_EDITOR_LOCALE.Provider>
+  </COMMENT_EDITOR_CONTEXT.Provider></DOCUMENT_NODE_VIEWS.Provider></DOCUMENT_LINKS.Provider></MATH_EDITOR.Provider></DOCUMENT_EDITOR_LOCALE.Provider>
 }

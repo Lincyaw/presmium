@@ -77,6 +77,8 @@ export interface WorkspaceClient {
   changeSpeechSettings?(change: SpeechSettingsChange, signal?: AbortSignal): Promise<SpeechSettingsAnswer>
   openSpeechSettings?(): boolean
   capabilities?: Readonly<WorkspaceCapabilities>
+  /** The address the host serves the visual formula editor from (MathLive's `mathlive.min.mjs` and `fonts/`); formulas are LaTeX only without it. */
+  mathEditor?: string
   subscribePreviewEvents?: PreviewEventSubscription
   openAuthoringClient?: AuthoringClientSubscription
   openAuthoringWindow?: AuthoringWindowSubscription

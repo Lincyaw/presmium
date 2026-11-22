@@ -78,6 +78,7 @@ export const COLORS = [
   'pointer-stroke',
   'sheen',
   'shadow',
+  'scroll-shadow',
 ] as const
 
 export type ColorName = typeof COLORS[number]

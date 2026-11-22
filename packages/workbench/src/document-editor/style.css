@@ -22,3 +22,26 @@
 .pm-document-editor__synced-image { display: block; max-width: 100%; height: auto; }
 .pm-document-editor__synced-link { color: var(--pm-color-accent); }
 .pm-document-editor__synced-picker { display: grid; gap: var(--pm-space-4); }
+
+/* Edit Formula: MathLive's field held to the editor's tokens, its LaTeX below; Edit Visually leads the popup's button row. */
+.pm-document-editor__math-editor { display: grid; gap: var(--pm-space-4); min-width: 0; }
+.pm-document-editor__math-field {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--pm-control-height);
+  padding: var(--pm-space-2) var(--pm-space-3);
+  border: var(--pm-size-hairline) solid var(--pm-color-line);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  font-size: var(--pm-text-title);
+  --caret-color: var(--pm-color-accent);
+  --primary: var(--pm-color-accent);
+  --selection-background-color: var(--pm-color-accent-soft);
+  --contains-highlight-background-color: var(--pm-color-hover);
+}
+.pm-document-editor__math-field:focus-within { border-color: var(--pm-color-accent); box-shadow: var(--pm-shadow-control-focus); }
+.pm-document-editor__math-field::part(menu-toggle) { display: none; }
+.pm-document-editor__math-visual { order: -1; margin-inline-end: auto; }

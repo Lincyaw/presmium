@@ -463,6 +463,10 @@
   pointer-events: none;
 }
 
+/* A tooltip that also says what the control does: the sentence takes its own line below the name and shortcut. */
+.pm-ui-tooltip:has(> .pm-ui-tooltip__description) { flex-wrap: wrap; row-gap: 0; }
+.pm-ui-tooltip__description { flex-basis: 100%; color: var(--pm-color-on-inverse-muted); }
+
 /* The shortcut is part of the tooltip's own content: a quieter label, without the key-cap frame used on light ground. */
 .pm-ui-tooltip > .pm-ui-shortcut {
   padding: 0;
@@ -1514,6 +1518,18 @@
 .pm-ui-block-editor .bn-preview-container { color: var(--pm-color-ink); }
 .pm-ui-block-editor .bn-block-content .bn-preview-with-source-popup { padding: var(--pm-space-3); }
 .pm-ui-block-editor .bn-block-content .pm-document-editor__math--display { width: 100%; overflow-x: auto; text-align: center; }
+
+/* A table or formula wider than the page scrolls sideways; a shade at the edge that has more shows it can. */
+.pm-ui-block-editor :is(.tableWrapper, .bn-block-content .pm-document-editor__math--display) {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  background:
+    linear-gradient(to right, var(--pm-color-surface) 40%, transparent) left / var(--pm-space-6) 100% no-repeat local,
+    linear-gradient(to left, var(--pm-color-surface) 40%, transparent) right / var(--pm-space-6) 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, var(--pm-color-scroll-shadow), transparent) left / var(--pm-space-3) 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, var(--pm-color-scroll-shadow), transparent) right / var(--pm-space-3) 100% no-repeat scroll,
+    var(--pm-color-surface);
+}
 .pm-ui-block-editor .bn-preview-container:hover { border-radius: var(--pm-radius-small); background: var(--pm-color-hover); }
 
 .pm-ui-block-editor .bn-preview-with-source-popup[data-open='true'] .bn-source-block-popup {
@@ -1536,6 +1552,11 @@
   margin-top: 0;
 }
 
+/* In a narrow popup the buttons go below the source rather than squeezing it. */
+.pm-ui-block-editor .bn-code-block-source-popup-body { flex-wrap: wrap; }
+.pm-ui-block-editor .bn-code-block-source-popup-body > pre { min-width: min(100%, calc(var(--pm-popover-min-width) / 2)); }
+.pm-ui-block-editor .bn-code-block-source-popup-ok-button-wrapper { margin-inline-start: auto; }
+
 .pm-ui-block-editor .bn-code-block-source-popup-body > pre {
   padding: var(--pm-space-3);
   font-family: var(--pm-font-mono);
@@ -1543,7 +1564,9 @@
 }
 
 .pm-ui-block-editor .bn-code-block-source-popup-input-empty::before { inset-inline: var(--pm-space-3); top: var(--pm-space-3); color: var(--pm-color-muted); opacity: 1; }
-.pm-ui-block-editor .bn-code-block-source-popup-ok-button-wrapper { padding: var(--pm-space-2); }
+.pm-ui-block-editor .bn-code-block-source-popup-ok-button-wrapper { display: flex; gap: var(--pm-space-2); padding: var(--pm-space-2); }
+/* A closed popup is only clipped; its `inert` needs React 19, so hiding keeps OK and the error out of the accessibility tree and tab order. */
+.pm-ui-block-editor .bn-preview-with-source-popup:not([data-open='true']) :is(.bn-code-block-source-popup-ok-button-wrapper, .bn-code-block-source-error) { visibility: hidden; }
 
 .pm-ui-block-editor .bn-code-block-source-popup-ok-button {
   min-height: var(--pm-size-tool);

@@ -34,7 +34,8 @@ let tooltipClosedAt = 0
 
 /** A pointer shows the tooltip after 500 ms, keyboard focus at once; within 300 ms of one closing, the next opens at
  * once, so moving along a toolbar does not wait again. The timing is shared by every tooltip on the page. */
-export function PmTooltip({ label, shortcut, children }: { label: string, shortcut?: string, children: ReactNode }) {
+/** A control's name, its shortcut, and optionally a sentence on what it does (`description`) below them. */
+export function PmTooltip({ label, shortcut, description, children }: { label: string, shortcut?: string, description?: string, children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const shown = useRef(false)
   const pointer = useRef(false)
@@ -54,7 +55,7 @@ export function PmTooltip({ label, shortcut, children }: { label: string, shortc
   return (
     <Tooltip.Provider delayDuration={0} skipDelayDuration={0}>
       <Tooltip.Root open={open} onOpenChange={change}><Tooltip.Trigger asChild onPointerEnter={() => { pointer.current = true }} onPointerLeave={() => { pointer.current = false }}>{children}</Tooltip.Trigger><Tooltip.Portal><div className="pm-ui-tooltip-layer"><Tooltip.Content className="pm-ui-tooltip pm-ui" side="bottom" sideOffset={6} collisionPadding={8}>
-        {label}{shortcut && <kbd className="pm-ui-shortcut">{shortcut}</kbd>}
+        {label}{shortcut && <kbd className="pm-ui-shortcut">{shortcut}</kbd>}{description && description !== label && <span className="pm-ui-tooltip__description">{description}</span>}
       </Tooltip.Content></div></Tooltip.Portal></Tooltip.Root>
     </Tooltip.Provider>
   )
@@ -64,5 +65,5 @@ export const PmIconButton = forwardRef<HTMLButtonElement, ButtonProps & ControlP
   const button = <button {...rest} ref={ref} type="button" data-density={density} aria-label={label} aria-busy={loading || undefined} disabled={disabled || loading || rest['aria-disabled'] === true || rest['aria-disabled'] === 'true'} className={cls('pm-ui-icon-button', className)}>
       <span className={cls('pm-ui-button__content', loading && 'pm-ui-loading')}><PmIcon name={loading ? 'loading' : icon} /></span>
     </button>
-  return tooltip ? <PmTooltip label={hint ?? label} shortcut={shortcut}>{button}</PmTooltip> : button
+  return tooltip ? <PmTooltip label={label} shortcut={shortcut} description={hint}>{button}</PmTooltip> : button
 })
