@@ -2885,6 +2885,23 @@
   outline-offset: calc(var(--pm-space-px) * -1);
 }
 
+/* A place with its Open on the Side action at the end: the place takes the room, the action keeps its size. */
+.pm-ui-backlink__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pm-space-1);
+  min-width: 0;
+}
+
+.pm-ui-backlink__row > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.pm-ui-backlink__peek {
+  flex: none;
+}
+
 .pm-ui-backlink__excerpt {
   display: -webkit-box;
   overflow: hidden;
