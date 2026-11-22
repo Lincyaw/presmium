@@ -24,6 +24,8 @@ export interface AuthConfig {
   /** Explicit private-network route for an otherwise unchanged public issuer. */
   issuerInternalUrl?: string
   allowInsecureLoopback?: boolean
+  /** Plain HTTP on any host: an operator's intranet deployment without TLS. */
+  allowInsecureHttp?: boolean
   sessionTtlSeconds?: number
 }
 
@@ -69,9 +71,10 @@ function cookies(request: Request): Record<string, string> {
   }))
 }
 
-function endpoint(value: string, allowLoopback: boolean): URL {
+function endpoint(value: string, insecure: { allowInsecureLoopback?: boolean, allowInsecureHttp?: boolean }): URL {
   const url = new URL(value)
-  if (url.username || url.password || url.hash || url.search || (url.protocol !== 'https:' && !(allowLoopback && url.protocol === 'http:' && loopback(url)))) throw new CloudError(500, 'auth-configuration-invalid')
+  const plain = url.protocol === 'http:' && (insecure.allowInsecureHttp === true || (insecure.allowInsecureLoopback === true && loopback(url)))
+  if (url.username || url.password || url.hash || url.search || (url.protocol !== 'https:' && !plain)) throw new CloudError(500, 'auth-configuration-invalid')
   return url
 }
 
@@ -83,14 +86,14 @@ export function authenticationReturnPath(value: unknown): string {
 
 /** OIDC owns credentials; this service owns only opaque, revocable application sessions. */
 export async function createAuthService(db: Database, config: AuthConfig): Promise<AuthService> {
-  const publicUrl = endpoint(config.publicUrl, config.allowInsecureLoopback === true)
-  const issuer = endpoint(config.issuer, config.allowInsecureLoopback === true)
+  const publicUrl = endpoint(config.publicUrl, config)
+  const issuer = endpoint(config.issuer, config)
   if (!config.clientId || !config.audience) throw new CloudError(500, 'auth-configuration-invalid')
   const internal = config.issuerInternalUrl ? new URL(config.issuerInternalUrl) : undefined
   if (internal && (internal.username || internal.password || internal.search || internal.hash || !['http:', 'https:'].includes(internal.protocol))) throw new CloudError(500, 'auth-configuration-invalid')
   const identityFetch = async (input: string | URL | Request, init?: RequestInit | oidc.CustomFetchOptions): Promise<Response> => {
     const requested = new URL(input instanceof Request ? input.url : input.toString())
-    endpoint(requested.origin, config.allowInsecureLoopback === true)
+    endpoint(requested.origin, config)
     let target = requested
     if (internal && requested.origin === issuer.origin && (requested.pathname === issuer.pathname || requested.pathname.startsWith(`${issuer.pathname.replace(/\/$/, '')}/`))) {
       target = new URL(internal)
@@ -107,7 +110,7 @@ export async function createAuthService(db: Database, config: AuthConfig): Promi
   })
   const metadata = configuration.serverMetadata()
   if (metadata.issuer !== config.issuer || !metadata.jwks_uri) throw new CloudError(500, 'auth-configuration-invalid')
-  endpoint(metadata.jwks_uri, config.allowInsecureLoopback === true)
+  endpoint(metadata.jwks_uri, config)
   const jwks = createRemoteJWKSet(new URL(metadata.jwks_uri), { [joseFetch]: identityFetch, timeoutDuration: 15_000 })
   const secure = publicUrl.protocol === 'https:'
   const sessionCookie = secure ? '__Host-pm-session' : 'pm-session'

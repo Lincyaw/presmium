@@ -18,6 +18,7 @@ x-cloud-environment: &cloud-environment
   CLOUD_OIDC_CLIENT_SECRET: ${CLOUD_OIDC_CLIENT_SECRET:?Set CLOUD_OIDC_CLIENT_SECRET}
   CLOUD_OIDC_AUDIENCE: ${CLOUD_OIDC_AUDIENCE:-presmium-api}
   CLOUD_ALLOW_INSECURE_LOOPBACK: "false"
+  CLOUD_ALLOW_INSECURE_HTTP: ${CLOUD_ALLOW_INSECURE_HTTP:-false}
   CLOUD_S3_ENDPOINT: ${CLOUD_S3_ENDPOINT:-http://object-store:9000}
   CLOUD_S3_REGION: ${CLOUD_S3_REGION:-us-east-1}
   CLOUD_S3_BUCKET: ${CLOUD_S3_BUCKET:-presmium}
@@ -94,7 +95,7 @@ services:
       CLOUD_HUB_CLIENT_SECRET: ${CLOUD_HUB_CLIENT_SECRET:?Set CLOUD_HUB_CLIENT_SECRET}
       CLOUD_KEYCLOAK_VERIFY_EMAIL: ${CLOUD_KEYCLOAK_VERIFY_EMAIL:-true}
       CLOUD_KEYCLOAK_PASSWORD_RESET: ${CLOUD_KEYCLOAK_PASSWORD_RESET:-true}
-      CLOUD_KEYCLOAK_SSL_REQUIRED: external
+      CLOUD_KEYCLOAK_SSL_REQUIRED: ${CLOUD_KEYCLOAK_SSL_REQUIRED:-external}
       CLOUD_SMTP_HOST: ${CLOUD_SMTP_HOST:-}
       CLOUD_SMTP_PORT: ${CLOUD_SMTP_PORT:-587}
       # The realm import rejects an empty sender; without SMTP the placeholder is never used.
@@ -207,7 +208,7 @@ services:
     networks: [services, studios]
     logging: *logs
     healthcheck:
-      test: [CMD, python3, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/hub/health')"]
+      test: [CMD, python3, -c, "import os, urllib.parse, urllib.request; urllib.request.urlopen('http://127.0.0.1:8081' + urllib.parse.urlsplit(os.environ['CLOUD_HUB_URL']).path.rstrip('/') + '/hub/health')"]
       start_period: 30s
       interval: 10s
       timeout: 5s
@@ -223,12 +224,16 @@ services:
       CLOUD_HUB_HOST: ${CLOUD_HUB_HOST:?Set CLOUD_HUB_HOST}
       # Caddy's global option: "email <address>" for certificate notices, or nothing.
       CLOUD_ACME_EMAIL_OPTION: ${CLOUD_ACME_EMAIL:+email ${CLOUD_ACME_EMAIL}}
+      # Caddyfile.path only: the one address (https://<ip> or http://<ip>) and its certificates (acme, internal, off).
+      CLOUD_SITE_ADDRESS: ${CLOUD_SITE_ADDRESS:-}
+      CLOUD_TLS: ${CLOUD_TLS:-internal}
     ports:
       - "${CLOUD_BIND_ADDRESS:-0.0.0.0}:${CLOUD_HTTP_PORT:-80}:80"
       - "${CLOUD_BIND_ADDRESS:-0.0.0.0}:${CLOUD_HTTPS_PORT:-443}:443"
       - "${CLOUD_BIND_ADDRESS:-0.0.0.0}:${CLOUD_HTTPS_PORT:-443}:443/udp"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Caddyfile: a host name per service; Caddyfile.path: one address, the services below paths.
+      - ./${CLOUD_CADDYFILE:-Caddyfile}:/etc/caddy/Caddyfile:ro
       - entrance-data:/data
       - entrance-config:/config
     depends_on:

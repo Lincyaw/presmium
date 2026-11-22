@@ -134,8 +134,20 @@ export class Shares {
     return answer
   }
 
-  /** The shared site on the content origin: plain files, no cookies, no scripts from the console. */
-  routes(app: Hono, contentHost: string): void {
+  /**
+   * The shared site on the content origin: plain files, no cookies, no scripts from the console. When the content
+   * shares the console's origin, every response is a sandbox without allow-same-origin: the author's pages run as an
+   * opaque origin that can read no cookie or storage of this origin and whose requests to the console and Studio are
+   * cross-origin and credential-less. Their own files are then cross-origin too, so they are served with CORS.
+   */
+  routes(app: Hono, contentHost: string, sandboxed: boolean): void {
+    if (sandboxed) {
+      app.use('/p/*', async (c, next) => {
+        await next()
+        c.res.headers.set('Content-Security-Policy', 'sandbox allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads')
+        c.res.headers.set('Access-Control-Allow-Origin', '*')
+      })
+    }
     app.get('/p/:slug/*', async c => {
       if (c.req.header('host')?.toLowerCase() !== contentHost) return c.text('Not found', 404)
       const slug = c.req.param('slug')

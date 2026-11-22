@@ -1,7 +1,7 @@
 """JupyterHub for Presmium Cloud: one complete Presmium Studio per user (deploy/cloud/studio).
 
 JupyterHub owns sign-in to Studio (through the same Keycloak realm as the console), starting and stopping each
-user's container, routing /user/<name>/ to it and stopping idle ones. The console is a Hub service: with its token
+user's container, routing <base>user/<name>/ to it and stopping idle ones. The console is a Hub service: with its token
 it starts a user's server and reaches the cloud's control service in it (shares, copies, MCP).
 """
 import json
@@ -11,15 +11,18 @@ from urllib.parse import urlsplit
 
 env = os.environ
 public = env['CLOUD_HUB_URL'].rstrip('/')
+# The Hub's own origin, or a path below the console's origin when the cloud is served from one address (/studio/).
+base_url = urlsplit(public).path.rstrip('/') + '/'
 issuer = env['CLOUD_OIDC_ISSUER'].rstrip('/')
 internal = (env.get('CLOUD_OIDC_ISSUER_INTERNAL_URL') or issuer).rstrip('/')
 
+c.JupyterHub.base_url = base_url
 c.JupyterHub.hub_ip = '0.0.0.0'
 c.JupyterHub.hub_connect_ip = 'hub'
 c.JupyterHub.db_url = 'sqlite:////srv/jupyterhub/data/jupyterhub.sqlite'
 c.JupyterHub.cookie_secret_file = '/srv/jupyterhub/data/cookie_secret'
 c.JupyterHub.redirect_to_server = True
-c.JupyterHub.default_url = '/hub/user-redirect/presmium'
+c.JupyterHub.default_url = f'{base_url}hub/user-redirect/presmium'
 # Restarting or upgrading the Hub leaves running Studios alone; the Hub finds them again from its database.
 c.JupyterHub.cleanup_servers = False
 c.JupyterHub.allow_named_servers = True
@@ -72,7 +75,7 @@ c.DockerSpawner.http_timeout = 240
 c.DockerSpawner.start_timeout = 240
 c.DockerSpawner.environment = {
     'PRESMIUM_HUB_ORIGIN': f'{urlsplit(public).scheme}://{urlsplit(public).netloc}',
-    'PRESMIUM_HUB_PROXY_URL': 'http://hub:8000',
+    'PRESMIUM_HUB_PROXY_URL': 'http://hub:8000' + base_url.rstrip('/'),
     'PRESMIUM_HUB_PROFILES': json.dumps(list(profiles)),
     'JUPYTERHUB_ACTIVITY_INTERVAL': str(activity_interval),
 }

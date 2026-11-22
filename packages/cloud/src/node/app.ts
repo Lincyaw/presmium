@@ -73,7 +73,7 @@ export async function createCloudApp(config: CloudConfig, database?: Database) {
     return c.json({ ...copy, open: hub.openUrl(copy) }, 201)
   })
 
-  shares.routes(app, contentHost)
+  shares.routes(app, contentHost, contentHost === publicHost)
   registerMcp(app, { tokens, hub, publicUrl: config.publicUrl })
   app.get('/api/*', c => c.json({ error: 'route-not-found' }, 404))
   const web = fileURLToPath(new URL('../../dist/web/', import.meta.url))

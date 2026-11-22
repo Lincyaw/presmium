@@ -1,0 +1,74 @@
+# One address for the whole cloud (CLOUD_CADDYFILE=Caddyfile.path): the console at /, Keycloak at /auth/, JupyterHub
+# at /studio/ and the shared sites at /p/, all on the origin CLOUD_SITE_ADDRESS (https://<ip> or http://<ip>).
+# Shared sites are author HTML and scripts: the console serves them as sandboxed documents without allow-same-origin,
+# so they run as an opaque origin; this entrance also removes cookies and credentials from their requests.
+{
+	{$CLOUD_ACME_EMAIL_OPTION}
+	admin off
+	# Caddy's own CA is for browsers to accept once; there is no system trust store to install it into.
+	skip_install_trust
+	# Browsers send no SNI for an IP address; choose its certificate anyway.
+	default_sni {$CLOUD_APP_HOST}
+}
+
+# Certificates: Let's Encrypt's six-day IP certificates (profile shortlived) with Caddy's own CA as the fallback when
+# they cannot be obtained, only Caddy's own CA, or none for plain HTTP.
+(tls-acme) {
+	tls {
+		issuer acme {
+			profile shortlived
+		}
+		issuer internal
+	}
+}
+(tls-internal) {
+	tls internal
+}
+(tls-off) {
+}
+
+# The console's session cookie stays with the console.
+(console-cookie-off) {
+	header_up Cookie "(^|; *)(__Host-)?pm-session=[^;]*" ""
+	header_up Cookie "^; *" ""
+}
+
+{$CLOUD_SITE_ADDRESS} {
+	import tls-{$CLOUD_TLS}
+	header X-Content-Type-Options nosniff
+
+	redir /auth /auth/ 308
+	handle_path /auth/* {
+		header Referrer-Policy no-referrer
+		encode zstd gzip
+		reverse_proxy keycloak:8080 {
+			import console-cookie-off
+		}
+	}
+
+	# JupyterHub (base URL /studio/): sign-in to Studio and every user's Studio below /studio/user/<name>/.
+	redir /studio /studio/ 308
+	handle /studio/* {
+		@studioAssets path_regexp ^/studio/user/[^/]+/(preview/__app/(v|d)/|studio/(plugins/$|assets/))
+		encode @studioAssets zstd gzip
+		reverse_proxy hub:8000 {
+			flush_interval -1
+			import console-cookie-off
+		}
+	}
+
+	handle /p/* {
+		header Referrer-Policy no-referrer
+		reverse_proxy api:8787 {
+			header_up -Cookie
+			header_up -Authorization
+			header_down -Set-Cookie
+		}
+	}
+
+	handle {
+		header Referrer-Policy same-origin
+		encode zstd gzip
+		reverse_proxy api:8787
+	}
+}

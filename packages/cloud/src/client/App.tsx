@@ -170,7 +170,7 @@ function SharedPage({ slug, t, signedIn, loginUrl }: { slug: string, t: Messages
       </PmCard>
       {share.state === 'pending' && <PmNotice>{t.sharedPending}</PmNotice>}
       {share.state === 'failed' && <PmNotice tone="danger">{t.sharedFailed}</PmNotice>}
-      {share.state === 'ready' && <iframe ref={frame} className="pmc-shared-frame" title={t.previewLabel} src={share.siteUrl} sandbox="allow-scripts allow-same-origin allow-popups" />}
+      {share.state === 'ready' && <iframe ref={frame} className="pmc-shared-frame" title={t.previewLabel} src={share.siteUrl} sandbox={new URL(share.siteUrl).origin === window.location.origin ? 'allow-scripts allow-popups' : 'allow-scripts allow-same-origin allow-popups'} />}
     </>}</ResourceState>
   </div>
 }

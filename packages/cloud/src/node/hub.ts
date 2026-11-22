@@ -8,7 +8,7 @@ interface HubUser { name: string, servers?: Record<string, { ready?: boolean, pe
 
 /**
  * The console as a JupyterHub service: its token may create users, start and stop their servers, and reach the
- * cloud's control service inside them (`/user/<name>/cloud/`). Sign-in to Studio itself is JupyterHub's.
+ * cloud's control service inside them (`<base>user/<name>/cloud/`). Sign-in to Studio itself is JupyterHub's.
  */
 export class Hub {
   readonly config: CloudConfig['hub']
@@ -67,7 +67,7 @@ export class Hub {
   /** The cloud's control service in the user's running Studio, through the Hub's proxy. */
   async control(name: string, path: string, init: RequestInit & { timeoutMs?: number } = {}): Promise<Response> {
     const { timeoutMs = 30_000, ...rest } = init
-    const response = await fetch(`${this.config.proxyUrl}/user/${encodeURIComponent(name)}/cloud${path}`, {
+    const response = await fetch(`${this.config.proxyUrl}${this.config.basePath}user/${encodeURIComponent(name)}/cloud${path}`, {
       ...rest, headers: { ...rest.headers as Record<string, string>, authorization: `token ${this.config.token}` },
       redirect: 'manual', signal: rest.signal ?? AbortSignal.timeout(timeoutMs), ...rest.body ? { duplex: 'half' } : {},
     } as RequestInit)
@@ -81,7 +81,7 @@ export class Hub {
 
   /** Where the browser opens the user's Studio (JupyterHub signs in, starts it and redirects), optionally on a document. */
   openUrl(target?: { document: string, id: string }): string {
-    const url = new URL('/hub/user-redirect/presmium', this.config.publicUrl)
+    const url = new URL('hub/user-redirect/presmium', this.config.publicUrl)
     if (target) { url.searchParams.set('document', target.document); url.searchParams.set('id', target.id) }
     return url.href
   }
