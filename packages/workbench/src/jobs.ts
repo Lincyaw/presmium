@@ -12,9 +12,13 @@ function newer(known: CompileJob | undefined, job: CompileJob): CompileJob {
  * The open document's builds and exports: what it can be made into, and its jobs as the workspace server runs them,
  * whoever started them (the author here, or the AI), followed as they change.
  */
+const ended = (job: CompileJob) => job.state === 'done' || job.state === 'failed' || job.state === 'cancelled'
+
 export class DocumentJobs {
   readonly #client: WorkspaceClient
   readonly #store: WorkbenchStore
+  // The jobs someone here waits for (`awaitEnd`), each told once when it is seen ended.
+  readonly #awaited = new Map<string, (job: CompileJob) => void>()
   #unsubscribe?: () => void
   #scope = 0
   #readTicket = 0
@@ -59,6 +63,7 @@ export class DocumentJobs {
       const observed = [...known.values()].filter(job => !read.has(job.id) && (!startedWith.has(job.id) || job.sequence > startedWith.get(job.id)!))
       const jobs = [...observed, ...answer.jobs.map(job => newer(known.get(job.id), job))]
       this.#store.set({ jobs: { ...answer, jobs }, jobsFailure: undefined })
+      for (const job of jobs) this.#tellEnded(job)
       if (this.#baselineChanged && owns()) {
         this.#baselineChanged = false
         void this.#read(dir, current)
@@ -74,18 +79,35 @@ export class DocumentJobs {
     if (!known) return
     const jobs = known.jobs.some(own => own.id === job.id) ? known.jobs.map(own => (own.id === job.id ? newer(own, job) : own)) : [job, ...known.jobs]
     this.#store.set({ jobs: { ...known, jobs } })
+    this.#tellEnded(job)
   }
 
-  async start(dir: string, target: string, source: JobSource): Promise<void> {
+  #tellEnded(job: CompileJob): void {
+    const told = this.#awaited.get(job.id)
+    if (!told || !ended(job)) return
+    this.#awaited.delete(job.id)
+    told(job)
+  }
+
+  /** Tells `ended` the job once it has ended (at once when it has); forgotten when the document's jobs stop. */
+  awaitEnd(job: CompileJob, then: (job: CompileJob) => void): void {
+    if (ended(job)) return then(job)
+    this.#awaited.set(job.id, then)
+  }
+
+  /** The job started (or the one already made from this source), unless it failed to start or the document changed. */
+  async start(dir: string, target: string, source: JobSource): Promise<CompileJob | undefined> {
     const scope = this.#scope
     const current = () => scope === this.#scope && this.#store.state.document === dir
     try {
       const job = await this.#client.startJob(dir, target, source)
-      if (!current()) return
+      if (!current()) return undefined
       this.#merge(job)
       this.#store.set({ jobsFailure: undefined })
+      return this.#store.state.jobs?.jobs.find(own => own.id === job.id) ?? job
     } catch (error) {
       if (current()) this.#store.set({ jobsFailure: errorMessage(error) })
+      return undefined
     }
   }
 
@@ -103,9 +125,22 @@ export class DocumentJobs {
   }
 
   stop(): void {
+    this.#awaited.clear()
     this.#scope++
     this.#baselineChanged = false
     this.#unsubscribe?.()
     this.#unsubscribe = undefined
   }
+}
+
+/** The address that downloads a file of a job, saved under the document's title when it has one. */
+export function downloadUrl(job: CompileJob, path: string, title?: string): string {
+  return `${job.url}${path}?download${title ? `=${encodeURIComponent(title)}` : ''}`
+}
+
+/** The file to take away from a finished job: a site's archive, else its main file unless that is a page to open. */
+export function downloadableFile(job: CompileJob): string | undefined {
+  if (job.archive) return job.archive
+  const type = job.files.find(file => file.path === job.main)?.type
+  return job.main && type !== 'text/html' ? job.main : undefined
 }

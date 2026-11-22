@@ -258,7 +258,7 @@ const zh = {
   outputsList: '导出记录',
   noOutputs: '还没有导出过文件。',
   jobStates: { queued: '排队中', running: '正在导出', done: '已完成', failed: '导出失败', cancelled: '已取消' },
-  jobPhases: { prepare: '正在准备', export: '正在导出', build: '正在导出', frames: '正在录制画面' } as Record<string, string>,
+  jobPhases: { prepare: '正在准备', export: '正在导出', build: '正在导出', frames: '正在录制画面', archive: '正在制作压缩包' } as Record<string, string>,
   jobProgress: (phase: string, done?: number, total?: number) => (total ? `${phase} ${done ?? 0} / ${total}` : `${phase}…`),
   currentContent: '文稿保存版本相同',
   outputVersionUnknown: '未记录保存版本',
@@ -297,12 +297,21 @@ const zh = {
     'save-locked': '文稿正在进行其他修改，请完成后重试。',
     'job-source-changed': '已保存文稿发生变化，请重新导出。',
     'job-source-not-compiled': '无法准备当前保存的版本，请查看诊断后重试。',
-    'job-inputs-changed': '导出期间文稿使用的文件发生变化，请重新导出。'
+    'job-inputs-changed': '导出期间文稿使用的文件发生变化，请重新导出。',
+    'job-plugin-missing': '这台电脑上的 Presmium 缺少导出所需的组件。请重新安装 Presmium，然后重新导出。',
+    'job-browser-missing': '导出所需的浏览器组件没有安装。请运行 pnpm exec playwright install chromium，然后重新导出。',
+    'job-ffmpeg-missing': '导出 MP4 视频需要 FFmpeg。请安装 FFmpeg，然后重新导出。',
+    'job-no-voiceover': '文稿还没有配音。请在视频制作中录音，或选择音色并生成配音，然后重新导出。',
+    'job-disk-full': '磁盘空间不足。请清理磁盘，然后重新导出。',
+    'job-failed': '导出没有完成。展开“详细信息”查看原因，处理后重新导出。'
   } as Record<string, string>,
   olderContent: '与当前编辑版本不同',
   openOutput: '打开',
   playOutput: '播放',
   downloadOutput: '下载',
+  downloadArchive: '下载压缩包',
+  exportFinished: (label: string, downloading: boolean) => `已导出${spaced(label)}${downloading ? '，已开始下载。' : '。'}`,
+  exportEnded: (label: string, reason: string) => `导出${spaced(label)}${/[A-Za-z0-9]$/.test(label) ? ' ' : ''}失败：${reason}`,
   cancelOutput: '取消',
   outputLog: '详细信息',
   outputFiles: (n: number) => `${n} 个文件`,
@@ -636,7 +645,7 @@ const en: WorkbenchMessages = {
   outputsList: 'Export History',
   noOutputs: 'Nothing exported yet.',
   jobStates: { queued: 'Queued', running: 'Exporting', done: 'Completed', failed: 'Export failed', cancelled: 'Canceled' },
-  jobPhases: { prepare: 'Preparing', export: 'Exporting', build: 'Exporting', frames: 'Recording frames' },
+  jobPhases: { prepare: 'Preparing', export: 'Exporting', build: 'Exporting', frames: 'Recording frames', archive: 'Creating the ZIP file' },
   jobProgress: (phase: string, done?: number, total?: number) => (total ? `${phase} ${done ?? 0} of ${total}` : `${phase}…`),
   currentContent: 'Same saved document version',
   outputVersionUnknown: 'Saved version not recorded',
@@ -675,12 +684,21 @@ const en: WorkbenchMessages = {
     'save-locked': 'Another change is in progress. Finish it and retry.',
     'job-source-changed': 'The saved document changed. Start the export again.',
     'job-source-not-compiled': 'Couldn’t prepare the saved version. Check the diagnostics and try again.',
-    'job-inputs-changed': 'Files used by the document changed during the export. Start the export again.'
+    'job-inputs-changed': 'Files used by the document changed during the export. Start the export again.',
+    'job-plugin-missing': 'Presmium on this computer is missing a part the export needs. Reinstall Presmium, then export again.',
+    'job-browser-missing': 'The browser the export uses is not installed. Run pnpm exec playwright install chromium, then export again.',
+    'job-ffmpeg-missing': 'An MP4 video needs FFmpeg. Install FFmpeg, then export again.',
+    'job-no-voiceover': 'The document has no voiceover yet. Record in Video Production, or choose a voice and generate the voiceover, then export again.',
+    'job-disk-full': 'The disk is full. Free up space, then export again.',
+    'job-failed': 'The export didn’t finish. Open Details to see why, fix it, then export again.'
   },
   olderContent: 'Different from the current editing version',
   openOutput: 'Open',
   playOutput: 'Play',
   downloadOutput: 'Download',
+  downloadArchive: 'Download ZIP',
+  exportFinished: (label: string, downloading: boolean) => `Exported ${label}.${downloading ? ' The download has started.' : ''}`,
+  exportEnded: (label: string, reason: string) => `Export of ${label} failed: ${reason}`,
   cancelOutput: 'Cancel',
   outputLog: 'Details',
   outputFiles: (n: number) => `${n} ${n === 1 ? 'file' : 'files'}`,
@@ -788,6 +806,28 @@ export function failureReason(t: WorkbenchMessages, reason: string | undefined):
   if (reason && NETWORK_FAILURE.test(reason)) return t.failureReasons.network!
   if (reason && !reported.has(reason)) { reported.add(reason); console.warn(`presmium: failure reason without a catalog entry: ${reason}`) }
   return t.failureGeneric
+}
+
+// The causes of a failed export the author can act on, from the reason the workspace service gives (its own words).
+const JOB_FAILURES: readonly (readonly [RegExp, string])[] = [
+  [/cannot load plugin|is not installed at the workspace root|renderer \S+ is not installed|package not found from/, 'job-plugin-missing'],
+  [/playwright-chromium|Executable doesn't exist|browserType\.launch/, 'job-browser-missing'],
+  [/needs FFmpeg/, 'job-ffmpeg-missing'],
+  [/has no voiceover yet|还没有可用的配音/, 'job-no-voiceover'],
+  [/ENOSPC|no space left on device/i, 'job-disk-full'],
+]
+
+/** Why an export failed, in the catalog's words: a known cause with what to do, else where to look (Details). */
+export function jobFailure(t: WorkbenchMessages, reason: string | undefined): string {
+  if (reason && reason in t.jobFailureReasons) return t.jobFailureReasons[reason]!
+  if (reason && reason in t.failureReasons) return t.failureReasons[reason]!
+  const known = reason === undefined ? undefined : JOB_FAILURES.find(([pattern]) => pattern.test(reason))?.[1]
+  return t.jobFailureReasons[known ?? 'job-failed']!
+}
+
+/** What the author calls an output: the plugin's label in the interface's language, else the catalog's, else its id. */
+export function outputLabel(t: WorkbenchMessages, locale: Locale, target: { id: string, label: Record<string, string> }): string {
+  return (target.label[locale] !== target.id ? target.label[locale] : undefined) ?? t.outputLabels[target.id] ?? target.id
 }
 
 /** Text the workbench writes into a document (new page titles, copy names) follows the document's `lang`, not the interface's. */

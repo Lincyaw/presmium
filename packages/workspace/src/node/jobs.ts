@@ -6,6 +6,7 @@ import type { Compilation } from '@lincyaw/compiler'
 import { errorMessage, fnv1a64 } from '@lincyaw/kernel'
 import { lookup } from 'mime-types'
 import type { CompileJob, JobFile, JobSource, Logger, OutputJobs, OutputTarget } from '@lincyaw/kernel'
+import { writeArchive } from './archive.ts'
 import { RequestError } from './errors.ts'
 import { versionOf } from './source-editor.ts'
 
@@ -18,6 +19,10 @@ import { versionOf } from './source-editor.ts'
 
 export const OUTPUTS_PATH = '/__outputs/'
 const JOB_FILE = 'job.json'
+// Where a site job builds the copy it archives, inside the job's directory, removed when the archive is written.
+const ARCHIVE_BUILD = '.archive'
+// Grows when what a job leaves changes, so that an older job of the same source is made again rather than reused.
+const OUTPUT_FORMAT = 2
 // The last lines of a job's log the job keeps.
 const LOG_LINES = 400
 // The jobs a document keeps of each target, with their files.
@@ -205,6 +210,7 @@ export function createJobs(options: JobsOptions): Jobs {
       }
       job.files = listFiles(dir, join(dir, job.target))
       job.main = mainFile(job.target, job.files)
+      if (job.main?.endsWith('/index.html')) await archiveSite(entry, compilation, log, progress)
       return
     }
     const output = await exportDocument(compilation, job.target, { outDir: dir, signal: controller.signal, progress, log })
@@ -215,6 +221,27 @@ export function createJobs(options: JobsOptions): Jobs {
     job.files = [...first, ...listFiles(dir, dir).filter(file => !named.includes(file.path))]
     job.main = first[0]?.path
     if (output.captions) job.captions = Object.fromEntries(Object.entries(output.captions).map(([lang, file]) => [lang, file.split(sep).join('/')]))
+  }
+
+  /**
+   * The site of a render job as a ZIP archive beside it, to take elsewhere: built again at the site's own base (the
+   * document's, else the root), since the copy the job serves is built for its address below `/__outputs/`.
+   */
+  const archiveSite = async (entry: Running, compilation: Compilation, log: (line: string) => void, progress: (phase: string) => void) => {
+    const { job, dir, controller } = entry
+    progress('archive')
+    const work = join(dir, ARCHIVE_BUILD)
+    try {
+      const report = await build(compilation, { outDir: work, to: [job.target], log })
+      if (controller.signal.aborted) throw new Cancelled()
+      const site = report.outputs.find(output => output.renderer === job.target)
+      if (!site) throw new Error(report.findings.filter(finding => finding.severity === 'error').map(finding => finding.message).join('\n') || `the ${job.target} renderer made nothing`)
+      const file = `${job.target}.zip`
+      await writeArchive(site.outDir, join(dir, file), controller.signal)
+      job.archive = file
+    } finally {
+      rmSync(work, { recursive: true, force: true })
+    }
   }
 
   /** Runs the job once the ones before it have ended. */
@@ -237,7 +264,11 @@ export function createJobs(options: JobsOptions): Jobs {
         job.state = 'done'
       } catch (error) {
         job.state = controller.signal.aborted ? 'cancelled' : 'failed'
-        if (job.state === 'failed') job.error = errorMessage(error)
+        if (job.state === 'failed') {
+          job.error = errorMessage(error)
+          // The author's Details show why, under the reason the workbench gives in plain words.
+          job.log.push(job.error)
+        }
         options.log.warn(`the ${job.target} of ${job.document || '.'} ${job.state === 'cancelled' ? 'was cancelled' : `failed: ${job.error}`}`)
       }
       job.finishedAt = now()
@@ -271,8 +302,9 @@ export function createJobs(options: JobsOptions): Jobs {
     confirmed()
     const inputs = await inputVersions([...compilation.inputs.files, ...translations.translations.flatMap(translation => translation.files)].filter(file => !compilation.sourceFiles.includes(file)))
     confirmed()
-    // A site is built for the path its files are served at: one made below another base is not reused.
-    const inputFingerprint = fnv1a64(JSON.stringify([outputs, ...[...inputs].sort(([a], [b]) => a.localeCompare(b))]))
+    // A site is built for the path its files are served at: one made below another base is not reused; nor one made
+    // before a site job also kept its ZIP archive (OUTPUT_FORMAT).
+    const inputFingerprint = fnv1a64(JSON.stringify([outputs, OUTPUT_FORMAT, ...[...inputs].sort(([a], [b]) => a.localeCompare(b))]))
     // The same target of the same revision, made or being made: not again.
     const same = [...jobs.values()].reverse().find(job => job.document === document && job.target === target && job.revision === revision && sameSource(job.source, source) && job.inputFingerprint === inputFingerprint && ['queued', 'running', 'done'].includes(job.state))
     return { compilation, source, revision, known, inputs, inputFingerprint, same }

@@ -2950,7 +2950,9 @@
 /* The toast's own controls on its inverse surface. */
 .pm-ui-toast .pm-ui-toast__action,
 .pm-ui-toast .pm-ui-toast__close {
+  flex-shrink: 0;
   color: var(--pm-color-on-inverse);
+  white-space: nowrap;
 }
 
 .pm-ui-toast .pm-ui-toast__action:hover,

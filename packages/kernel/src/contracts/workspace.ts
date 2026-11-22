@@ -413,6 +413,8 @@ export interface CompileJob {
   files: JobFile[]
   /** The file to open first: a site's page, the video, the PDF. */
   main?: string
+  /** A site's files as one ZIP archive (`<url><archive>`), built for the site's own base rather than the job's address. */
+  archive?: string
   /** The WebVTT captions of the main file (a video), by language. */
   captions?: Record<string, string>
   error?: string

@@ -564,7 +564,9 @@ export function PmBacklinkItem({ title, count, places, syncedLabel, peekLabel, o
   )
 }
 
-export interface ToastMessage { id: string, text: string, tone?: 'neutral' | 'danger', action?: { label: string, run(): void } }
+export interface ToastAction { label: string, run(): void }
+/** `action` is one command (Undo) or a few (Open, Download), in their order. */
+export interface ToastMessage { id: string, text: string, tone?: 'neutral' | 'danger', action?: ToastAction | readonly ToastAction[] }
 
 /**
  * One message at a time at the bottom center, in the inverse colors: it closes by itself after 4 seconds (not while the
@@ -587,7 +589,7 @@ export function PmToast({ toast, closeLabel, onClose }: { toast?: ToastMessage, 
         onFocus={() => setPaused(true)} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setPaused(false) }}>
         <PmIcon name={toast.tone === 'danger' ? 'warning' : 'check'} />
         <span className="pm-ui-toast__text" aria-hidden="true">{toast.text}</span>
-        {toast.action && <PmButton small variant="text" className="pm-ui-toast__action" onClick={() => { toast.action!.run(); onClose(toast.id) }}>{toast.action.label}</PmButton>}
+        {(toast.action === undefined ? [] : 'run' in toast.action ? [toast.action] : toast.action).map(action => <PmButton key={action.label} small variant="text" className="pm-ui-toast__action" onClick={() => { action.run(); onClose(toast.id) }}>{action.label}</PmButton>)}
         <PmIconButton icon="close" small className="pm-ui-toast__close" label={closeLabel} onClick={() => onClose(toast.id)} />
       </div>}
     </div>
