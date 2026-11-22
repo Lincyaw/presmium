@@ -3,7 +3,7 @@ import { open } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { build, Compiler, missingOutput, playwrightChromium, serveDirectory } from '@lincyaw/compiler'
-import { ABSOLUTE_URL, aigcLabel, aigcString, deckLocale, errorMessage, JobFailure, jobFailureCode } from '@lincyaw/kernel'
+import { ABSOLUTE_URL, aigcLabel, aigcString, deckLocale, errorMessage, JobFailure, jobFailureCode, VIDEO_EXPORT_PARAM } from '@lincyaw/kernel'
 import type { CanonicalSource, IRDocument } from '@lincyaw/kernel'
 import { ffmpegInstallCommand, findFfmpeg } from '@lincyaw/kernel/node'
 import type { Ffmpeg } from '@lincyaw/kernel/node'
@@ -315,7 +315,7 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
           const [player, encoder] = [await context.newPage(), await context.newPage()]
           const failures: string[] = []
           for (const page of [player, encoder]) page.on('pageerror', error => failures.push(String(error.message)))
-          await player.goto(`${server.url}${web.base}?view=lecture&track=${encodeURIComponent(id)}&export${burn ? `&captions=${encodeURIComponent(burn)}` : ''}`)
+          await player.goto(`${server.url}${web.base}?view=lecture&track=${encodeURIComponent(id)}&${VIDEO_EXPORT_PARAM}${burn ? `&captions=${encodeURIComponent(burn)}` : ''}`)
           await player.waitForFunction('Boolean(window.presmiumLecture)', undefined, { timeout: 120_000 })
           // Match Playwright's screenshot caret hiding, once rather than preparing each screenshot again.
           await player.evaluate(() => {
