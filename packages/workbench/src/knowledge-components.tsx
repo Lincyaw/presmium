@@ -1,6 +1,6 @@
 import * as Popover from '@radix-ui/react-popover'
 import { cloneElement, forwardRef, memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { DragEvent, KeyboardEvent, ReactElement, ReactNode } from 'react'
+import type { DragEvent, KeyboardEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent, ReactElement, ReactNode } from 'react'
 import { PmButton, PmIcon, PmIconButton } from './base-controls.tsx'
 import type { MenuItem } from './components.tsx'
 import { PmMenu } from './components.tsx'
@@ -361,8 +361,9 @@ export interface DocPreview { path: string[], title: string, excerpt: string, me
 
 /**
  * A preview of a reference's target on hover: it opens after the pointer rests 500 ms (or the trigger is focused for as
- * long), stays while the pointer crosses to it within 300 ms, and its buttons take the keyboard with Tab. `load` runs
- * when it opens; `children` is the trigger.
+ * long), stays while the pointer crosses to it within 300 ms, and its buttons take the keyboard with Tab. A touch has
+ * no hover: a tap on the trigger opens the card at once instead of activating the trigger, a second tap or one outside
+ * closes it. `load` runs when it opens; `children` is the trigger.
  */
 export function PmDocPreviewCard({ label, load, loadingLabel, failedLabel, actions, children }: { label: string, load(): Promise<DocPreview>, loadingLabel: string, failedLabel: string, actions?: ReactNode, children: ReactElement }) {
   const [open, setOpen] = useState(false)
@@ -373,13 +374,17 @@ export function PmDocPreviewCard({ label, load, loadingLabel, failedLabel, actio
   loader.current = load
   // The preview is read when the pointer arrives, so that it is usually there when the card opens 500 ms later.
   const reading = useRef<{ promise: Promise<DocPreview>, value?: DocPreview }>()
+  // The pointer that pressed the trigger last: a touch taps it open, a mouse or pen keeps hovering and clicking.
+  const pressed = useRef<{ touch: boolean, trigger?: Element }>({ touch: false })
+  const read = () => {
+    if (open || reading.current) return
+    const entry: { promise: Promise<DocPreview>, value?: DocPreview } = { promise: loader.current() }
+    entry.promise.then(value => { entry.value = value }, () => {})
+    reading.current = entry
+  }
   const schedule = (next: boolean) => {
     clearTimeout(timer.current)
-    if (next && !open && !reading.current) {
-      const entry: { promise: Promise<DocPreview>, value?: DocPreview } = { promise: loader.current() }
-      entry.promise.then(value => { entry.value = value }, () => {})
-      reading.current = entry
-    }
+    if (next) read()
     timer.current = setTimeout(() => setOpen(next), next ? PREVIEW_OPEN_DELAY : PREVIEW_CLOSE_DELAY)
   }
   useEffect(() => () => clearTimeout(timer.current), [])
@@ -397,9 +402,20 @@ export function PmDocPreviewCard({ label, load, loadingLabel, failedLabel, actio
   }, [open])
   const trigger = cloneElement(children as ReactElement<Record<string, unknown>>, {
     describedBy: open ? id : undefined,
-    onPointerEnter: () => schedule(true),
-    onPointerLeave: () => schedule(false),
-    onFocus: () => schedule(true),
+    onPointerEnter: (event: ReactPointerEvent) => { if (event.pointerType !== 'touch') schedule(true) },
+    onPointerLeave: (event: ReactPointerEvent) => { if (event.pointerType !== 'touch') schedule(false) },
+    onPointerDown: (event: ReactPointerEvent) => { pressed.current = { touch: event.pointerType === 'touch', trigger: event.currentTarget as Element } },
+    // Capturing, so that the trigger's own click (going to the target) does not run.
+    onClickCapture: (event: ReactMouseEvent) => {
+      if (!pressed.current.touch) return
+      pressed.current.touch = false
+      event.preventDefault()
+      event.stopPropagation()
+      clearTimeout(timer.current)
+      if (!open) read()
+      setOpen(!open)
+    },
+    onFocus: () => { if (!pressed.current.touch) schedule(true) },
     onBlur: (event: FocusEvent) => { if (!(event.relatedTarget instanceof Node && document.getElementById(id)?.contains(event.relatedTarget))) schedule(false) },
     onKeyDownCapture: (event: globalThis.KeyboardEvent) => { if (event.key === 'Escape' && open) { event.stopPropagation(); clearTimeout(timer.current); setOpen(false) } },
   })
@@ -409,6 +425,7 @@ export function PmDocPreviewCard({ label, load, loadingLabel, failedLabel, actio
       <Popover.Portal>
         <Popover.Content id={id} className="pm-ui-doc-preview pm-ui-floating pm-ui" aria-label={label} side="bottom" align="start" sideOffset={6} collisionPadding={16}
           onOpenAutoFocus={event => event.preventDefault()} onCloseAutoFocus={event => event.preventDefault()}
+          onInteractOutside={event => { if (event.target instanceof Node && pressed.current.trigger?.contains(event.target)) event.preventDefault() }}
           onPointerEnter={() => clearTimeout(timer.current)} onPointerLeave={() => schedule(false)}
           onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) schedule(false) }}
           onEscapeKeyDown={event => event.stopPropagation()}>
@@ -516,28 +533,32 @@ export interface BacklinkPlace { id: string, excerpt: string, meta?: string, syn
 /**
  * A document that cites this one: its title, then each place with the sentence around it (two lines at most) and what
  * tells equal sentences apart (`meta`). One place makes the whole card the button; several are a list under the title.
+ * With `onPeek`, each place has a second, smaller action at its end (Open on the Side), always shown.
  */
-export function PmBacklinkItem({ title, count, places, syncedLabel, onActivate }: { title: string, count?: string, places: readonly BacklinkPlace[], syncedLabel?: string, onActivate(id: string): void }) {
+export function PmBacklinkItem({ title, count, places, syncedLabel, peekLabel, onActivate, onPeek }: { title: string, count?: string, places: readonly BacklinkPlace[], syncedLabel?: string, peekLabel?: string, onActivate(id: string): void, onPeek?(id: string): void }) {
   const icon = (place: BacklinkPlace) => <PmIcon name={place.synced ? 'synced' : 'document'} />
   const label = (place: BacklinkPlace) => place.synced && syncedLabel ? <span className="pm-ui-sr-only">{syncedLabel}</span> : null
+  const peek = (place: BacklinkPlace) => onPeek && peekLabel ? <PmIconButton small icon="rail" className="pm-ui-backlink__peek" label={peekLabel} onClick={() => onPeek(place.id)} /> : null
   if (places.length === 1) {
     const place = places[0]!
-    return (
+    const card = (
       <button type="button" className="pm-ui-backlink" title={title} onClick={() => onActivate(place.id)}>
         <span className="pm-ui-backlink__title">{icon(place)}<span className="pm-ui-backlink__name">{title}</span>{label(place)}</span>
         {place.excerpt && <span className="pm-ui-backlink__excerpt">{place.excerpt}</span>}
         {place.meta && <span className="pm-ui-backlink__meta">{place.meta}</span>}
       </button>
     )
+    const action = peek(place)
+    return action ? <div className="pm-ui-backlink__row">{card}{action}</div> : card
   }
   return (
     <div className="pm-ui-backlink" data-group="">
       <span className="pm-ui-backlink__title" title={title}><PmIcon name="document" /><span className="pm-ui-backlink__name">{title}</span>{count && <span className="pm-ui-backlink__count">{count}</span>}</span>
       <ul className="pm-ui-backlink__places">{places.map(place => (
-        <li key={place.id}><button type="button" className="pm-ui-backlink__place" onClick={() => onActivate(place.id)}>
+        <li key={place.id} className="pm-ui-backlink__row"><button type="button" className="pm-ui-backlink__place" onClick={() => onActivate(place.id)}>
           {place.excerpt && <span className="pm-ui-backlink__excerpt">{place.excerpt}</span>}
           <span className="pm-ui-backlink__meta">{icon(place)}{place.meta}{label(place)}</span>
-        </button></li>
+        </button>{peek(place)}</li>
       ))}</ul>
     </div>
   )

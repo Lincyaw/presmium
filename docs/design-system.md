@@ -121,11 +121,11 @@ macOS 桌面端将原生标题栏与全局应用栏合并为一行，隐藏重�
 | SortableList | `PmSortableList`（workbench，dnd kit） | 按稳定 ID 提交一次移动；禁用排序不禁止选择 |
 | DocTree | `PmDocTree`（workbench），`pm-ui-doc-tree` | WAI-ARIA 树：单一 Tab 停留点，方向键、`Home`、`End`、按首字母跳转、`*` 展开同级、`Enter` 打开、`F2` 行内重命名、`Delete` 移到回收站；状态 Default、Hover、Selected（`aria-selected`）、DropTarget（`data-drop` 为 `before`／`inside`／`after`，前后是强调色细线，中部是强调色描边与浅底）；悬停或聚焦显示“新建子文稿”与“更多”；行按原始属性记忆，可见行超过 200 时只绘制视口中的行；树自己滚动 |
 | DocMention | `PmDocMention`，`pm-ui-doc-mention` | 行内引用：文稿图标与标题，强调色；悬停浅强调底；Missing 为弱化色与删除线，不可激活；`role="link"`，`Enter` 激活 |
-| DocPreviewCard | `PmDocPreviewCard`，`pm-ui-doc-preview` | 引用的预览卡（Radix Popover 锚定）：停留 500 ms 打开，离开 300 ms 内可移入，键盘聚焦同样打开，不抢焦点，可 Tab 进入；指针到达时开始读取，已读到时打开即显示；路径、标题、四行摘要、元信息、操作；选了操作后关闭 |
+| DocPreviewCard | `PmDocPreviewCard`，`pm-ui-doc-preview` | 引用的预览卡（Radix Popover 锚定）：停留 500 ms 打开，离开 300 ms 内可移入，键盘聚焦同样打开，不抢焦点，可 Tab 进入；指针到达时开始读取，已读到时打开即显示；路径、标题、四行摘要、元信息、操作；选了操作后关闭；触屏轻点触发器立即打开（不激活触发器），再点或点外部关闭 |
 | MentionPicker | `PmMentionPicker`，`pm-ui-mention-picker` | `@`／`[[` 的文稿列表（listbox）：标题行、选项（标题与路径）、末项“新建子文稿并链接”、底部按键说明；键盘由编辑器处理，`listId`、`optionId` 与编辑器的 `aria-activedescendant` 对应 |
 | SyncedBlockFrame | `PmSyncedBlockFrame`，`pm-ui-synced-block` | 同步块外框：标题栏写来源，悬停或聚焦时强调色描边与浅强调标题栏并显示操作；SourceMissing／Trashed 为虚线框与提醒色标题栏，操作常显；内容区保留 `--pm-synced-block-min-height` |
 | DocPeek | `PmDocPeek`，`pm-ui-doc-peek` | 右栏中只读显示的另一份文稿：标题栏为上级路径（每级是按钮）、标题与操作、关闭，铬色底与细线分隔；下方可放一条提醒；内容区自己滚动，`[data-peek-target]` 为浅强调底的目标位置；打开时取得焦点 |
-| BacklinkItem | `PmBacklinkItem`，`pm-ui-backlink` | 引用了本文的一份文稿：只有一处时整卡是按钮（标题、两行上下文）；多处时标题后写处数，每处一行按钮（两行上下文与区分它们的说明，如“引用 · 第 2 处”）；占满所在列，长标题换行 |
+| BacklinkItem | `PmBacklinkItem`，`pm-ui-backlink` | 引用了本文的一份文稿：只有一处时整卡是按钮（标题、两行上下文）；多处时标题后写处数，每处一行按钮（两行上下文与区分它们的说明，如“引用 · 第 2 处”）；可选的次要操作（“在右侧打开”）是每处末尾常显的小图标按钮，带提示；占满所在列，长标题换行 |
 | Toast | `PmToast`，`pm-ui-toast` | 底部居中、反色（`--pm-color-inverse`／`on-inverse`），一次一条；4 秒后自动关闭，指针或焦点停留时暂停，错误不自动关闭；可带一个文字操作（如“撤消”）与关闭；结果用 polite、错误用 assertive 的实时区域 |
 | Drawer | `PmDrawer`（workbench，Radix Dialog），`pm-ui-drawer` | 从起始边滑出的模态面板；`size="sidebar"` 用 `--pm-sidebar-drawer-width` 与侧栏底色（窄屏的工作区侧栏） |
 | NavItem、SearchTrigger | `pm-ui-nav-item`、`pm-ui-search-trigger` | 侧栏的位置项（图标与名称，`aria-current="page"` 为选中，末尾可带计数）；画成搜索框、带快捷键的搜索入口按钮 |

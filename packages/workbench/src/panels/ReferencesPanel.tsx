@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { DocumentCitation, DocumentLinks, OutgoingLink } from '@lincyaw/kernel/contracts'
-import { PmBacklinkItem, PmButton, PmIcon, PmNotice, PmSkeleton } from '../components.tsx'
+import { PmBacklinkItem, PmButton, PmIcon, PmIconButton, PmNotice, PmSkeleton } from '../components.tsx'
 import { useTreeMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 
 type Links = { state: 'loading' } | { state: 'failed' } | { state: 'unavailable' } | { state: 'ready', links: DocumentLinks }
@@ -35,6 +35,8 @@ function groupCitations(citations: readonly DocumentCitation[]): { document: str
   return [...groups.values()]
 }
 
+const placeOf = (citation: DocumentCitation) => ({ document: citation.document, ...citation.section ? { section: citation.section } : {}, block: citation.block })
+
 /** Several references to one target are one row with their count. */
 function sameTargets(links: readonly OutgoingLink[]): { link: OutgoingLink, count: number }[] {
   const rows = new Map<string, { link: OutgoingLink, count: number }>()
@@ -51,12 +53,13 @@ function OutgoingItem({ link, count }: { link: OutgoingLink, count: number }) {
   const t = useTreeMessages()
   const workbench = useWorkbench()
   const gone = link.missing || link.trashed
-  return <li>
+  return <li className="pmw-references__row">
     <button type="button" className="pm-ui-nav-item pmw-references__link" title={link.title} disabled={link.missing} aria-disabled={gone || undefined} onClick={() => void workbench.tree.openPlace(link.target)}>
       <PmIcon name={link.kind === 'embed' ? 'synced' : 'document'} />
       <span className="pmw-references__title">{link.title}</span>
       {gone ? <span className="pm-ui-nav-item__count">{link.missing ? t.missingTarget : t.trashedTarget}</span> : count > 1 && <span className="pm-ui-nav-item__count">{t.placeCount(count)}</span>}
     </button>
+    {!link.missing && <PmIconButton small icon="rail" label={t.openOnSide} onClick={() => workbench.tree.peek(link.target)} />}
   </li>
 }
 
@@ -84,7 +87,7 @@ function ReferencesView({ read }: { read: ReturnType<typeof useDocumentLinks> })
             <PmBacklinkItem title={group.title} count={group.citations.length > 1 ? t.placeCount(group.citations.length) : undefined} syncedLabel={t.syncedLabel}
               places={group.citations.map((citation, index) => ({ id: String(index), excerpt: citation.excerpt, synced: citation.kind === 'embed',
                 meta: group.citations.length > 1 ? `${citation.kind === 'embed' ? t.syncedLabel : t.referenceLabel} · ${t.placeIndex(index + 1)}` : undefined }))}
-              onActivate={id => { const citation = group.citations[Number(id)]!; void workbench.tree.openPlace({ document: citation.document, ...citation.section ? { section: citation.section } : {}, block: citation.block }) }} />
+              peekLabel={t.openOnSide} onActivate={id => void workbench.tree.openPlace(placeOf(group.citations[Number(id)]!))} onPeek={id => workbench.tree.peek(placeOf(group.citations[Number(id)]!))} />
           </li>
         ))}</ul> : <p className="pmw-muted">{t.noCitations}</p>}
       </section>

@@ -195,6 +195,18 @@
   gap: var(--pm-space-px);
 }
 
+.pmw-references__row {
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-1);
+  min-width: 0;
+}
+
+.pmw-references__link {
+  flex: 1;
+  min-width: 0;
+}
+
 .pmw-references__link:not([aria-disabled]) {
   color: var(--pm-color-accent);
 }
