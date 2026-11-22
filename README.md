@@ -11,7 +11,32 @@ The [paper explainers](examples/papers/README.md) live in `examples/papers/`, wi
 
 ## Quick start
 
-Publish a site to GitHub Pages in three steps. Presmium requires Node.js 22.19 or later and pnpm (`corepack enable pnpm`).
+Presmium requires Node.js 22.19 or later and pnpm (`corepack enable pnpm`).
+
+### Write on your own computer
+
+```sh
+pnpm setup                          # once, before the first global installation
+pnpm add -g @lincyaw/presmium
+presmium new my-lectures --type workspace
+presmium studio my-lectures
+```
+
+Open the address it prints. In Studio you can start a blank document, import PowerPoint, Word or Markdown files, or have the AI assistant write a document from your source material (it asks for a model API key the first time: DeepSeek, Qwen, Kimi, GLM or any OpenAI-compatible service). Export the result as a website (ZIP), PDF, editable PowerPoint or a narrated video; voiceover uses free Microsoft Edge voices with no setup.
+
+### Run it for other people
+
+On a Linux server with Docker:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Lincyaw/presmium/main/deploy/cloud/install.sh | bash
+```
+
+Each person registers an account and gets their own Studio in the browser. See [Self-hosting](#self-hosting).
+
+### Publish a site on GitHub Pages
+
+Publish a site to GitHub Pages in three steps.
 
 1. **Create a site.**
 
@@ -53,7 +78,7 @@ Install Presmium, including Studio, the command line, renderers and official plu
 
 | Command | Description |
 |---|---|
-| `presmium new <dir> --type <kind>` | Create a project: `lecture` (one document), `workspace` (several documents), `site` (a website with a home page and a GitHub Pages workflow) or `plugin` |
+| `presmium new <dir> --type <kind>` | Create a project: `document` (one document), `workspace` (several documents), `site` (a website with a home page and a GitHub Pages workflow) or `plugin` |
 | `presmium studio` | Open the browser workbench to edit documents, preview slides and produce videos |
 | `presmium dev` | Preview one document's web page and slides, updating on save |
 | `presmium serve` | Preview a workspace: its document list and every document's site |
