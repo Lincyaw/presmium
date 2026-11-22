@@ -89,6 +89,7 @@ const DOCUMENT_RESET = {
   review: undefined, history: undefined, outside: undefined, historyFailure: undefined, isHistoryBusy: false, askFailure: undefined,
   jobs: undefined, jobsFailure: undefined, jobPreparing: undefined,
   voiceoverJobs: undefined, voiceoverJobsFailure: undefined, voiceoverCacheRefresh: undefined,
+  documentPeek: undefined,
 } satisfies Partial<WorkbenchState>
 
 /** A free directory for a new document called `title`, beside most of the existing ones. */

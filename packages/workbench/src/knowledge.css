@@ -318,3 +318,37 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* The right pane with a document on the side is wider: the page beside it keeps the rest. */
+.pmw-document[data-aside="peek"] .pmw-document__aside {
+  flex-basis: min(var(--pm-peek-width), 50%);
+}
+
+.pmw-document:not([data-roomy])[data-aside="peek"] .pmw-document__aside {
+  width: min(100%, var(--pm-peek-width));
+}
+
+.pmw-peek__page {
+  margin: var(--pm-space-6) 0 var(--pm-space-2);
+  font-size: var(--pm-text-lg);
+}
+
+.pmw-peek__page:first-child {
+  margin-top: 0;
+}
+
+.pmw-peek__block {
+  min-width: 0;
+}
+
+.pmw-peek__block > :first-child { margin-top: 0; }
+.pmw-peek__block > :last-child { margin-bottom: 0; }
+.pmw-peek__block + .pmw-peek__block { margin-top: var(--pm-space-3); }
+
+.pmw-peek__synced {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pm-space-1);
+  color: var(--pm-color-muted);
+}

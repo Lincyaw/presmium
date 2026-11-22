@@ -419,7 +419,8 @@ export function PmDocPreviewCard({ label, load, loadingLabel, failedLabel, actio
                 <p className="pm-ui-doc-preview__title">{preview.title}</p>
                 {preview.excerpt && <p className="pm-ui-doc-preview__excerpt">{preview.excerpt}</p>}
                 <p className="pm-ui-doc-preview__meta">{preview.meta}</p>
-                {!preview.missing && actions && <div className="pm-ui-doc-preview__actions">{actions}</div>}
+                {/* An action leads elsewhere (the document, or the right pane): the card closes behind it. */}
+                {!preview.missing && actions && <div className="pm-ui-doc-preview__actions" onClick={() => { clearTimeout(timer.current); setOpen(false) }}>{actions}</div>}
               </>}
         </Popover.Content>
       </Popover.Portal>
@@ -482,6 +483,32 @@ export function PmSyncedBlockFrame({ source, state = 'default', stateLabel, acti
     </figure>
   )
 }
+
+/**
+ * Another document shown read-only beside the open one (the right pane's "Open on the Side"): its ancestors as a
+ * breadcrumb (each opens there in turn), its title, the actions (Open) and Close, a notice when it is in the trash or
+ * gone, and its content, which scrolls on its own. The frame takes focus when it opens.
+ */
+export const PmDocPeek = forwardRef<HTMLElement, { label: string, path: readonly { id: string, title: string }[], title: string, actions?: ReactNode, closeLabel: string, onClose(): void, onPath?(id: string): void, notice?: ReactNode, busy?: boolean, children?: ReactNode, bodyRef?: (node: HTMLDivElement | null) => void }>(function PmDocPeek({ label, path, title, actions, closeLabel, onClose, onPath, notice, busy, children, bodyRef }, ref) {
+  return (
+    <section ref={ref} className="pm-ui-doc-peek" aria-label={label} aria-busy={busy || undefined} tabIndex={-1}>
+      <header className="pm-ui-doc-peek__header">
+        <div className="pm-ui-doc-peek__heading">
+          {path.length > 0 && <ol className="pm-ui-doc-peek__path">
+            {path.map(item => <li key={item.id}>{onPath ? <button type="button" className="pm-ui-doc-peek__crumb" title={item.title} onClick={() => onPath(item.id)}>{item.title}</button> : <span title={item.title}>{item.title}</span>}</li>)}
+          </ol>}
+          <h2 className="pm-ui-doc-peek__title"><PmIcon name="document" /><span>{title}</span></h2>
+        </div>
+        <div className="pm-ui-doc-peek__actions">
+          {actions}
+          <PmIconButton small icon="close" label={closeLabel} onClick={onClose} />
+        </div>
+      </header>
+      {notice}
+      <div ref={bodyRef} className="pm-ui-doc-peek__body">{children}</div>
+    </section>
+  )
+})
 
 /** One place that cites the document: the citing document's title and the sentence around the citation. */
 export interface BacklinkPlace { id: string, excerpt: string, meta?: string, synced?: boolean }

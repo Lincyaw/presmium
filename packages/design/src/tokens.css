@@ -229,6 +229,8 @@
   --pm-pane-header-height: 2.25rem;
   --pm-navigation-width: 15rem;
   --pm-aside-width: 20rem;
+  /* The right pane while it shows another document beside the open one (Open on the Side). */
+  --pm-peek-width: 34rem;
   --pm-sheet-width: 52rem;
   --pm-scene-max-width: 44rem;
   --pm-block-preview-height: 22.5rem;

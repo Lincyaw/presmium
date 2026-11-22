@@ -2657,6 +2657,136 @@
   padding: var(--pm-space-3) var(--pm-space-4);
 }
 
+/* Another document beside the open one (PmDocPeek): a header with its breadcrumb, title and actions, then its content. */
+.pm-ui-doc-peek {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+}
+
+.pm-ui-doc-peek:focus-visible {
+  outline: var(--pm-space-px) solid var(--pm-color-accent);
+  outline-offset: calc(var(--pm-space-px) * -1);
+}
+
+.pm-ui-doc-peek__header {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  gap: var(--pm-space-2);
+  padding: var(--pm-space-2) var(--pm-space-2) var(--pm-space-2) var(--pm-space-4);
+  border-bottom: var(--pm-size-hairline) solid var(--pm-color-line);
+  background: var(--pm-color-chrome);
+}
+
+.pm-ui-doc-peek__heading {
+  display: grid;
+  flex: 1;
+  gap: var(--pm-space-1);
+  min-width: 0;
+}
+
+.pm-ui-doc-peek__path {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-xs);
+  list-style: none;
+}
+
+.pm-ui-doc-peek__path > li {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pm-ui-doc-peek__path > li + li::before {
+  content: "›";
+  padding-inline: var(--pm-space-1);
+}
+
+.pm-ui-doc-peek__path > li > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pm-ui-doc-peek__crumb {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pm-ui-doc-peek__crumb:hover {
+  color: var(--pm-color-accent);
+  text-decoration: underline;
+}
+
+.pm-ui-doc-peek__crumb:focus-visible {
+  outline: var(--pm-space-px) solid var(--pm-color-accent);
+  outline-offset: var(--pm-space-px);
+}
+
+.pm-ui-doc-peek__title {
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-2);
+  min-width: 0;
+  margin: 0;
+  font-size: var(--pm-text-lg);
+  font-weight: var(--pm-weight-semibold);
+  line-height: var(--pm-leading-ui);
+  overflow-wrap: anywhere;
+}
+
+.pm-ui-doc-peek__title > .pm-ui-icon {
+  flex: none;
+  color: var(--pm-color-muted);
+}
+
+.pm-ui-doc-peek__actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--pm-space-1);
+}
+
+.pm-ui-doc-peek > .pm-ui-notice {
+  margin: var(--pm-space-2) var(--pm-space-4) 0;
+}
+
+.pm-ui-doc-peek__body {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--pm-space-4);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  font-size: var(--pm-text-sm);
+  line-height: var(--pm-leading-ui);
+}
+
+/* The page or block the reference leads to stands out until another is chosen. */
+.pm-ui-doc-peek__body [data-peek-target] {
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-accent-soft);
+  box-shadow: 0 0 0 var(--pm-space-1) var(--pm-color-accent-soft);
+}
+
 /* A document that cites this one (PmBacklinkItem): it fills its column, wraps long titles and clamps excerpts. */
 .pm-ui-backlink {
   display: grid;

@@ -77,6 +77,8 @@ export interface WorkbenchState {
   recentDocuments?: import('./document-tree.ts').RecentDocument[]
   /** Changes when cached reference previews and synced block sources are forgotten. */
   documentLinksGeneration?: number
+  /** The document (and its page or block) shown read-only in the right pane beside the open one. */
+  documentPeek?: import('./document-tree.ts').DocumentPlace
   /** The one message at the bottom that says what an operation did. */
   toast?: import('./knowledge-components.tsx').ToastMessage
   /** The workspace's routes answer 404: `@lincyaw/dsh` is turned off on the plugins page. */

@@ -151,6 +151,7 @@ zh-CN 以 Microsoft Office 的简体中文本地化为首选，没有对应时�
 | 重命名 | Rename… | 重命名文稿或页面 | `改名`、`修改名称` |
 | 移到回收站 | Move to Trash | 把文稿连同其子文稿移到回收站，可撤消 | 删除（指移到回收站时） |
 | 移动到… | Move To… | 在文稿树中为文稿选新的上级 | |
+| 在右侧打开 | Open on the Side | 在右栏只读显示引用的目标文稿，不离开当前文稿；右栏的这一区域叫“右侧的文稿 / Document on the Side” | `侧边预览`、`Peek` |
 | 编辑原文 | Edit Original | 从同步块打开来源文稿并定位到来源内容块 | `跳转源` |
 | 转为副本 | Convert to Copy | 把同步块换成来源内容的副本，此后各自编辑 | `解除同步`、`Unsync` |
 | 复制同步块链接 | Copy Synced Block Link | 复制可粘贴为同步块的链接 | |
