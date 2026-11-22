@@ -14,8 +14,11 @@ export type SiteLandingSection =
 /** Website content is independent of documents and may reference their published collection. */
 export interface SiteLandingPage { schemaVersion: 1, title: string, description?: string, hero?: SiteHero, sections: SiteLandingSection[] }
 
-/** A document of the site for a template: its pages at `href`, and its presentation at `slides` when it has one. */
-export interface SiteContentDocument { id: string, title: string, href: string, slides?: string, description?: string, lang?: string, tags?: string[], pages?: number }
+/**
+ * A document of the site for a template: its pages at `href`, and its presentation at `slides` when it has one;
+ * `parent` is the `id` of the document it is placed under in the workspace's document tree.
+ */
+export interface SiteContentDocument { id: string, title: string, href: string, slides?: string, description?: string, lang?: string, tags?: string[], pages?: number, parent?: string }
 export interface SiteContent { schemaVersion: 1, title: string, base: string, lang: string, documents: SiteContentDocument[], theme?: { name: string, stylesheets: string[] } }
 export const SITE_CONTENT_ELEMENT = 'presmium-site-data'
 

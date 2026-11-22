@@ -1145,6 +1145,56 @@ html.pm-presenting {
   overflow-wrap: anywhere;
 }
 
+/* The documents under a card's document in the tree: lines in the card, each level indented, above the card's own link. */
+.pm-site-home__children {
+  display: grid;
+  gap: var(--pm-space-1);
+  margin: 0;
+  padding: var(--pm-space-2) 0 0;
+  border-top: var(--pm-size-hairline) solid var(--pm-color-line);
+  list-style: none;
+}
+
+.pm-site-home__children .pm-site-home__children {
+  padding: var(--pm-space-1) 0 0 var(--pm-space-4);
+  border-top: 0;
+}
+
+.pm-site-home__child {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--pm-space-3);
+  padding: var(--pm-space-1) var(--pm-space-2);
+  margin-inline: calc(-1 * var(--pm-space-2));
+  border-radius: var(--pm-radius-small);
+  color: var(--pm-color-ink);
+  text-decoration: none;
+}
+
+.pm-site-home__child:hover {
+  background: var(--pm-color-hover);
+  color: var(--pm-color-accent);
+}
+
+.pm-site-home__child:focus-visible {
+  outline: var(--pm-size-stroke) solid var(--pm-color-accent);
+  outline-offset: calc(-1 * var(--pm-size-stroke));
+}
+
+.pm-site-home__child-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pm-site-home__child-meta {
+  flex: none;
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-sm);
+}
+
 /* A course is read in order: its documents are one numbered column, the measure of a page. */
 .pm-site[data-pm-site-theme='course'] :is(.pm-site-home__documents, .pm-site-landing__documents) {
   grid-template-columns: minmax(0, 1fr);

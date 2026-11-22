@@ -137,7 +137,7 @@ site:
 
 本地媒体在 JSON 文件中相对该文件定位，内联配置中相对工作区根目录定位。工作区的 `public/` 按原路径发布到网站根（如 `/files/slides.pptx`）。
 
-JSON 首页与没有 `landing` 时的文稿列表页排版相同，与常见博客、文档网站的首页一致：首屏居中，依次是眉题、标题、简介与操作，有 `image` 时图片在文字下方；各节的标题与说明居中；`features` 与 `documents` 的卡片等宽，一行放得下几张就放几张，整行居中，`course` 主题的文稿是一列带编号的目录；`text` 在阅读宽度的一栏内左对齐；`cta` 是居中的一张卡片。`primary` 操作是深色胶囊按钮，`secondary` 是浅色胶囊按钮。文稿列表页只有一份文稿时不显示搜索与标签筛选。768 px 以下卡片排成一列。首页各字段写多长、怎样写，见技能 `presmium-author` 的发布参考中“Write the homepage”一节。
+文稿树中位于其他文稿之下的文稿不单独成卡，列在上级文稿卡片的下部，每行一份，更深的下级逐级缩进，与文稿页左侧的目录一致；筛选掉上级时，下级单独成卡。`course` 主题只给顶层文稿编号。JSON 首页与没有 `landing` 时的文稿列表页排版相同，与常见博客、文档网站的首页一致：首屏居中，依次是眉题、标题、简介与操作，有 `image` 时图片在文字下方；各节的标题与说明居中；`features` 与 `documents` 的卡片等宽，一行放得下几张就放几张，整行居中，`course` 主题的文稿是一列带编号的目录；`text` 在阅读宽度的一栏内左对齐；`cta` 是居中的一张卡片。`primary` 操作是深色胶囊按钮，`secondary` 是浅色胶囊按钮。文稿列表页只有一份文稿时不显示搜索与标签筛选。768 px 以下卡片排成一列。首页各字段写多长、怎样写，见技能 `presmium-author` 的发布参考中“Write the homepage”一节。
 
 ### 3.2 HTML 模板首页
 
@@ -151,11 +151,11 @@ site:
 
 ```js
 const site = JSON.parse(document.getElementById('presmium-site-data').textContent)
-// site: { schemaVersion, title, base, lang, documents: [{ id, title, href, slides?, description?, lang?, tags?, pages? }], theme?: { name, stylesheets } }
+// site: { schemaVersion, title, base, lang, documents: [{ id, title, href, slides?, description?, lang?, tags?, pages?, parent? }], theme?: { name, stylesheets } }
 for (const doc of site.documents) list.append(Object.assign(document.createElement('a'), { href: doc.href, textContent: doc.title }))
 ```
 
-用 `href` 可保留部署基础路径；文稿有放映时 `slides` 是它的地址。数据不含运行快照、诊断与配置。模板 import 的 PNG 与 JPEG 按 4.2 节编码为 WebP。`pnpm serve` 中刷新首页会重建模板，没有热更新。
+`parent` 是文稿树中上级文稿的 `id`，模板可以据此把下级列在上级之下。用 `href` 可保留部署基础路径；文稿有放映时 `slides` 是它的地址。数据不含运行快照、诊断与配置。模板 import 的 PNG 与 JPEG 按 4.2 节编码为 WebP。`pnpm serve` 中刷新首页会重建模板，没有热更新。
 
 ### 3.3 文稿作为首页
 

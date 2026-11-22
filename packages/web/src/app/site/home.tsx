@@ -1,8 +1,8 @@
 import { PmBadge, PmDrawer, PmEmpty, PmIcon, useMessages } from '@lincyaw/host'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { WEB_MESSAGES } from '../../domain/index.ts'
-import type { AppConfig, HomeDocument, SiteAction, SiteLandingPage, SiteLandingSection } from '../../domain/index.ts'
+import { documentTreeNodes, WEB_MESSAGES } from '../../domain/index.ts'
+import type { AppConfig, DirectoryNode, HomeDocument, SiteAction, SiteLandingPage, SiteLandingSection } from '../../domain/index.ts'
 import { NavLinks, SiteFooter, SiteHeader, siteRoot, siteThemeAttributes } from './layout.tsx'
 
 function HomeHeader({ config }: { config: AppConfig }) {
@@ -26,12 +26,26 @@ function LandingActions({ actions }: { actions?: SiteAction[] }) {
   return <div className="pm-site-landing__actions">{actions.map((action, index) => <a key={`${action.link}-${index}`} className={`pm-ui-button${action.variant === 'secondary' ? '' : ' pm-ui-button--primary'}`} href={action.link}><span className="pm-ui-button__content">{action.text}</span></a>)}</div>
 }
 
-function LandingDocument({ document }: { document: HomeDocument }) {
+/**
+ * The documents placed under a card's document in the workspace's document tree, as the sidebar nests them: one line
+ * each, the deeper ones indented under theirs.
+ */
+function ChildDocuments({ nodes, title }: { nodes: DirectoryNode<HomeDocument>[], title?: string }) {
   const t = useMessages(WEB_MESSAGES)
+  if (!nodes.length) return null
+  return <ul className="pm-site-home__children" aria-label={title === undefined ? undefined : t.childDocuments(title)}>{nodes.map(node => <li key={node.dir} data-document={node.dir}>
+    <a className="pm-site-home__child" href={node.doc!.href} lang={node.doc!.lang}><span className="pm-site-home__child-title">{node.doc!.title}</span>{node.doc!.pages ? <span className="pm-site-home__child-meta">{t.pages(node.doc!.pages)}</span> : null}</a>
+    <ChildDocuments nodes={node.children} />
+  </li>)}</ul>
+}
+
+function LandingDocument({ node }: { node: DirectoryNode<HomeDocument> }) {
+  const t = useMessages(WEB_MESSAGES), document = node.doc!
   return <li className="pm-site-landing__document pm-ui-card pm-ui-card--interactive" data-document={document.dir}>
     <h3 className="pm-ui-card__title"><a className="pm-site-home__link" href={document.href} lang={document.lang}>{document.title}</a></h3>
     {document.description && <p className="pm-site-home__description">{document.description}</p>}
     <div className="pm-ui-badges">{document.pages ? <PmBadge>{t.pages(document.pages)}</PmBadge> : null}{document.lang && <PmBadge>{document.lang}</PmBadge>}{document.tags?.map(tag => <PmBadge key={tag}>{tag}</PmBadge>)}</div>
+    <ChildDocuments nodes={node.children} title={document.title} />
   </li>
 }
 
@@ -47,7 +61,7 @@ function LandingSection({ section, documents }: { section: SiteLandingSection, d
     </li>)}</ul>; break
     case 'documents': {
       const shown = documents.filter(document => (!section.directories?.length || section.directories.includes(document.dir)) && (!section.tags?.length || section.tags.some(tag => document.tags?.includes(tag))))
-      content = shown.length ? <ul className="pm-site-landing__documents">{shown.map(document => <LandingDocument key={document.dir} document={document} />)}</ul> : <PmEmpty icon="document">{t.noDocuments}</PmEmpty>
+      content = shown.length ? <ul className="pm-site-landing__documents">{documentTreeNodes(shown).map(node => <LandingDocument key={node.dir} node={node} />)}</ul> : <PmEmpty icon="document">{t.noDocuments}</PmEmpty>
       break
     }
     case 'media': content = <figure className="pm-site-landing__media">{section.kind === 'image'
@@ -90,20 +104,22 @@ function AutomaticWorkspaceHome({ config }: { config: AppConfig }) {
   const [tag, setTag] = useState<string>()
   const input = useRef<HTMLInputElement>(null)
   const documents = config.documents ?? []
-  const documentOrder = new Map(documents.map((document, index) => [document.dir, index + 1]))
+  // A course numbers the documents at the top of the tree; those under them are listed in their cards.
+  const documentOrder = new Map(documentTreeNodes(documents).map((node, index) => [node.dir, index + 1]))
   const theme = config.site.shell.theme?.id ?? 'docs', course = theme === 'course', showcase = theme === 'showcase'
   const DocumentList = course ? 'ol' : 'ul'
   const tags = [...new Set(documents.flatMap(doc => doc.tags ?? []))].sort()
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
   const shown = documents.filter(doc => (!tag || doc.tags?.includes(tag)) && words.every(word => `${doc.title} ${doc.dir} ${doc.description ?? ''} ${(doc.tags ?? []).join(' ')}`.toLowerCase().includes(word)))
   useEffect(() => { const key = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && input.current) { event.preventDefault(); input.current.focus() } }; window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key) }, [])
-  const card = (doc: HomeDocument) => <li key={doc.dir} className="pm-site-home__document pm-ui-card pm-ui-card--interactive" data-document={doc.dir}>
-    {course && <div className="pm-site-home__order" aria-hidden="true"><PmBadge tone="accent" pill>{String(documentOrder.get(doc.dir)).padStart(2, '0')}</PmBadge></div>}
+  const card = ({ doc: found, children }: DirectoryNode<HomeDocument>) => { const doc = found!; return <li key={doc.dir} className="pm-site-home__document pm-ui-card pm-ui-card--interactive" data-document={doc.dir}>
+    {course && <div className="pm-site-home__order" aria-hidden="true">{documentOrder.has(doc.dir) && <PmBadge tone="accent" pill>{String(documentOrder.get(doc.dir)).padStart(2, '0')}</PmBadge>}</div>}
     <div className="pm-site-home__card-content"><h3 className="pm-ui-card__title"><a className="pm-site-home__link" href={doc.href} lang={doc.lang}>{doc.title}</a></h3>
       {doc.description && <p className="pm-site-home__description">{doc.description}</p>}
       <div className="pm-ui-badges">{theme === 'docs' && <PmBadge className="pm-site-home__dir">{doc.dir}/</PmBadge>}{doc.pages ? <PmBadge>{t.pages(doc.pages)}</PmBadge> : null}{doc.lang && <PmBadge>{doc.lang}</PmBadge>}{doc.tags?.map(name => <PmBadge key={name} className="pm-site-home__badge">{name}</PmBadge>)}{theme === 'docs' && doc.problems && <PmBadge tone={doc.problems.errors ? 'danger' : doc.problems.warnings ? 'warn' : 'ok'}>{doc.problems.errors ? t.errors(doc.problems.errors) : doc.problems.warnings ? t.warnings(doc.problems.warnings) : t.checked}</PmBadge>}</div>
+      <ChildDocuments nodes={children} title={doc.title} />
     </div>
-  </li>
+  </li> }
   return <div className="pm-site pm-site--home" {...siteThemeAttributes(config)}><a className="pm-site__skip" href="#pm-site-main">{t.skipToContent}</a><HomeHeader config={config} /><main id="pm-site-main" className="pm-site-home pm-ui" data-shape="pill" tabIndex={-1}>
     <header className="pm-site-home__hero">
       {theme !== 'docs' && <p className="pm-site-eyebrow">{t.documentCount(documents.length)}</p>}
@@ -111,7 +127,7 @@ function AutomaticWorkspaceHome({ config }: { config: AppConfig }) {
       {config.site.shell.head?.description && <p className="pm-site-home__intro">{config.site.shell.head.description}</p>}
       {(course && documents[0] || showcase) && <div className="pm-site-home__actions">{course && documents[0] && <a className="pm-ui-button pm-ui-button--primary" href={documents[0].href}><span className="pm-ui-button__content">{t.startReading}<PmIcon name="chevron-right" /></span></a>}{showcase && <a className="pm-ui-button pm-ui-button--primary" href="#pm-site-home-documents"><span className="pm-ui-button__content">{t.browseDocuments}<PmIcon name="chevron-down" /></span></a>}</div>}
     </header>
-    <section className="pm-site-home__section" aria-labelledby="pm-site-home-documents"><header className="pm-site-home__section-heading"><h2 id="pm-site-home-documents" className="pm-site-home__section-title">{course ? t.courseContents : t.documentsHeading}</h2></header>{documents.length > 1 && <div className="pm-site-home__filters"><label className="pm-ui-search pm-site-home__search-box"><PmIcon name="search" /><input ref={input} className="pm-site-home__search" type="search" value={query} placeholder={t.searchDocuments} aria-label={t.searchDocuments} onChange={event => setQuery(event.target.value)} /><kbd className="pm-ui-kbd">{t.searchShortcut}</kbd></label>{tags.length > 0 && <div className="pm-site-home__tags pm-ui-segmented" role="group" aria-label={t.tags}><button type="button" className="pm-site-home__tag pm-ui-segmented__option" aria-pressed={tag === undefined} onClick={() => setTag(undefined)}>{t.allTags}</button>{tags.map(name => <button key={name} type="button" className="pm-site-home__tag pm-ui-segmented__option" aria-pressed={tag === name} onClick={() => setTag(tag === name ? undefined : name)}>{name}</button>)}</div>}</div>}{shown.length ? <DocumentList className="pm-site-home__documents">{shown.map(card)}</DocumentList> : <PmEmpty icon="document">{t.noDocuments}</PmEmpty>}</section>
+    <section className="pm-site-home__section" aria-labelledby="pm-site-home-documents"><header className="pm-site-home__section-heading"><h2 id="pm-site-home-documents" className="pm-site-home__section-title">{course ? t.courseContents : t.documentsHeading}</h2></header>{documents.length > 1 && <div className="pm-site-home__filters"><label className="pm-ui-search pm-site-home__search-box"><PmIcon name="search" /><input ref={input} className="pm-site-home__search" type="search" value={query} placeholder={t.searchDocuments} aria-label={t.searchDocuments} onChange={event => setQuery(event.target.value)} /><kbd className="pm-ui-kbd">{t.searchShortcut}</kbd></label>{tags.length > 0 && <div className="pm-site-home__tags pm-ui-segmented" role="group" aria-label={t.tags}><button type="button" className="pm-site-home__tag pm-ui-segmented__option" aria-pressed={tag === undefined} onClick={() => setTag(undefined)}>{t.allTags}</button>{tags.map(name => <button key={name} type="button" className="pm-site-home__tag pm-ui-segmented__option" aria-pressed={tag === name} onClick={() => setTag(tag === name ? undefined : name)}>{name}</button>)}</div>}</div>}{shown.length ? <DocumentList className="pm-site-home__documents">{documentTreeNodes(shown).map(card)}</DocumentList> : <PmEmpty icon="document">{t.noDocuments}</PmEmpty>}</section>
     <SiteFooter config={config} />
   </main></div>
 }

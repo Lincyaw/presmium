@@ -85,7 +85,7 @@ export function siteContent(site: SiteSpec, base: string, lang: string, document
     title: siteTitle(site, lang),
     base,
     lang,
-    documents: documents.map(({ dir, title, href, slides, description, lang, tags, pages }) => ({ id: dir, title, href, slides, description, lang, tags, pages })),
+    documents: documents.map(({ dir, title, href, slides, description, lang, tags, pages, parent }) => ({ id: dir, title, href, slides, description, lang, tags, pages, parent })),
     ...name ? { theme: { name, stylesheets: stylesheets ?? [] } } : {},
   }
 }

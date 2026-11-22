@@ -112,14 +112,14 @@ export function homeDocuments(site: SiteSpec, base: string, compiled: ReadonlyMa
     const translated = lang ? translationOf(entry, lang) : undefined
     if (translated) {
       const root = `${documentBase(base, entry.dir)}${lang}/`
-      return { dir: entry.dir, title: translated.doc.meta.title, lang, ...entry.tags?.length ? { tags: entry.tags } : {}, href: root, ...cardOf(translated.doc, root, translated.pages) }
+      return { dir: entry.dir, title: translated.doc.meta.title, lang, ...entry.tags?.length ? { tags: entry.tags } : {}, href: root, ...cardOf(translated.doc, root, translated.pages), ...entry.parent !== undefined ? { parent: entry.parent } : {} }
     }
     const { dir, title, description, lang: own, tags, doc } = entry
     const snapshot = compiled.get(dir) ?? doc
     const root = documentBase(base, dir)
     const card = snapshot ? cardOf(snapshot, root) : description?.trim() ? { description: description.trim() } : {}
     const slides = (snapshot ? snapshot.config.renderers.slides !== undefined : entry.slides) ? { slides: `${root}${SLIDES_DIR}/` } : {}
-    return { dir, title, ...own ? { lang: own } : {}, ...tags?.length ? { tags } : {}, href: root, ...slides, ...card }
+    return { dir, title, ...own ? { lang: own } : {}, ...tags?.length ? { tags } : {}, href: root, ...slides, ...card, ...entry.parent !== undefined ? { parent: entry.parent } : {} }
   })
 }
 

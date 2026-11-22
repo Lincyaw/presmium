@@ -11,4 +11,6 @@ export interface HomeDocument {
   pages?: number
   problems?: { errors: number, warnings: number }
   sections?: { id: string, title: string, href: string }[]
+  /** The folder of the document it is placed under in the workspace's document tree. */
+  parent?: string
 }
