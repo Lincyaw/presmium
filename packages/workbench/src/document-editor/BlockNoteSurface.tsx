@@ -2,6 +2,7 @@ import { forwardRef, useContext, useEffect, useLayoutEffect, useMemo, useRef, us
 import type { ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react'
 import { randomUUID } from '@lincyaw/kernel'
 import { filterSuggestionItems } from '@blocknote/core'
+import { TextSelection } from '@tiptap/pm/state'
 import { BlockNoteView, components } from '@blocknote/mantine'
 import { AddCommentButton, BasicTextStyleButton, BlockNoteViewEditor, BlockTypeSelect, ComponentsContext, CreateLinkButton, FormattingToolbar, FormattingToolbarController, getDefaultReactSlashMenuItems, LinkToolbarController, NestBlockButton, RenderInPortalElement, SideMenuController, SuggestionMenuController, TableCellMergeButton, TableHandlesController, TextAlignButton, UnnestBlockButton, useBlockNoteEditor, useCreateBlockNote, useEditorState } from '@blocknote/react'
 import type { ComponentProps, FormattingToolbarProps } from '@blocknote/react'
@@ -10,7 +11,7 @@ import type { Locale } from '../messages.ts'
 import { PmIcon, PmIconButton, PmNotice, PmTooltip } from '../components.tsx'
 import { DOCUMENT_NODE_VIEWS, documentEditorSchema } from './schema.tsx'
 import type { DocumentEditorBlock, DocumentEditorInput, DocumentNodeViews, NativeDocumentEditor } from './schema.tsx'
-import { documentSelection, nativeTextPoint } from './selection.ts'
+import { documentSelection, nativeBlockText, nativeTextPoint } from './selection.ts'
 import type { NativeDocumentSelection } from './selection.ts'
 import { DOCUMENT_EDITOR_MESSAGES, IMAGE_IMPORT_MESSAGES, slashAliases } from './messages.ts'
 import { blockNoteDictionary } from './blocknote-messages.ts'
@@ -221,7 +222,15 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
           onItemClick: () => current.current.animationRequest?.request(editor),
         }] : []), ...current.current.nodeViews?.slashItems?.(editor) ?? [], {
           title: t.page, aliases: slashAliases('pageAliases'), group: t.document,
-          onItemClick: () => { const current = editor.getTextCursorPosition().block; editor.insertBlocks([{ type: 'presmiumPage', props: { sectionId: randomUUID() }, content: t.untitledPage }], current, 'after') },
+          // As with the page bar's +, the new page's default title is selected: the author's next words name it.
+          onItemClick: () => {
+            const current = editor.getTextCursorPosition().block
+            const [page] = editor.insertBlocks([{ type: 'presmiumPage', props: { sectionId: randomUUID() }, content: t.untitledPage }], current, 'after')
+            const title = page && nativeBlockText(editor, page.id)
+            if (!title) return
+            editor.transact(transaction => transaction.setSelection(TextSelection.create(transaction.doc, title.from, title.to)).scrollIntoView())
+            editor.focus()
+          },
         }], query)} />
         {props.nodeViews?.editorChildren?.(editor)}
         {props.children}

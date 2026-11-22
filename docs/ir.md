@@ -68,7 +68,7 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 
 ### 2.3 页面
 
-`Section` 保存标题、层级、`children`、`stepOrder`、`layout`（`stack`、`columns`、`canvas`、`scrolly`，可带渲染端提示）、可选的受众与插件配置。每页至少一个步骤。
+`Section` 保存标题、层级、`children`、`stepOrder`、`layout`（`stack`、`columns`、`canvas`、`scrolly`，可带渲染端提示）、可选的受众与插件配置。每页至少一个步骤。第一页的标题与文稿标题（`metadata.title`）相同时，改第一页的标题（在正文中输入，或重命名页面）也改文稿标题：新文稿的第一页标题就是文稿标题，作者输入第一个大标题即为文稿命名。两者不同后（例如在文稿树中重命名了文稿）各自独立，`followFirstPageTitle` 给出这条规则。
 
 ### 2.4 内容块
 
