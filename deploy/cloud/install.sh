@@ -660,14 +660,36 @@ images() {
     local output
     if ! output=$(dc --profile build-studio pull --quiet 2>&1); then
       printf '%s\n' "$output" | tail -n 15 >&2
-      diagnose_pull "$output"
-      die "could not pull the images."
+      # A rejected saved login that the operator removes on the spot: pull once more.
+      if ! diagnose_pull "$output" || ! output=$(dc --profile build-studio pull --quiet 2>&1); then
+        die "could not pull the images."
+      fi
     fi
   fi
 }
 
-diagnose_pull() { # diagnose_pull DOCKER-OUTPUT: say why a pull failed, as far as the output and a probe tell
-  local output=$1 registry host
+ghcr_saved_login() { # Docker has credentials saved for ghcr.io (in config.json, or in its credential store)
+  local config=${DOCKER_CONFIG:-$HOME/.docker}/config.json store
+  [ -f "$config" ] || return 1
+  grep -q '"\(https://\)\?ghcr\.io"' "$config" && return 0
+  store=$(sed -n 's/.*"credsStore" *: *"\([^"]*\)".*/\1/p' "$config" | head -n1)
+  [ -n "$store" ] && command -v "docker-credential-$store" >/dev/null &&
+    "docker-credential-$store" list 2>/dev/null | grep -q 'ghcr\.io'
+}
+
+ghcr_anonymous() { # ghcr_anonymous REPOSITORY TAG: ok (served without signing in), missing, refused or unreachable
+  local token code
+  token=$(curl -sS --max-time 10 "https://ghcr.io/token?scope=repository:$1:pull" 2>/dev/null) || { printf unreachable; return 0; }
+  token=$(printf '%s' "$token" | sed -n 's/.*"token" *: *"\([^"]*\)".*/\1/p')
+  [ -n "$token" ] || { printf refused; return 0; }
+  code=$(curl -sS -o /dev/null -I -w '%{http_code}' --max-time 10 -H "Authorization: Bearer $token" \
+    -H 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json' \
+    "https://ghcr.io/v2/$1/manifests/$2" 2>/dev/null) || { printf unreachable; return 0; }
+  case $code in 200) printf ok ;; 404) printf missing ;; *) printf refused ;; esac
+}
+
+diagnose_pull() { # diagnose_pull DOCKER-OUTPUT: say why a pull failed, as far as the output and a probe tell; 0: pull again
+  local output=$1 registry host tag anonymous
   registry=$(env_get CLOUD_IMAGE_REGISTRY)
   host=${registry%%/*}
   say "" >&2
@@ -681,8 +703,32 @@ diagnose_pull() { # diagnose_pull DOCKER-OUTPUT: say why a pull failed, as far a
     *toomanyrequests*)
       say "The registry limits anonymous pulls from this address; wait and retry, or sign in with docker login." >&2 ;;
     *unauthorized*|*denied*)
-      say "The registry refused access. ghcr.io says so also for an image it does not have (check --registry);" >&2
-      say "a private mirror may need: docker login $host" >&2 ;;
+      tag=${CLOUD_IMAGE_TAG:-$(env_get CLOUD_IMAGE_TAG)}
+      if [ "$registry" = "$published_registry" ]; then
+        anonymous=$(ghcr_anonymous lincyaw/presmium-cloud-api "$tag")
+        if [ "$anonymous" = ok ] && ghcr_saved_login; then
+          say "The images are public (ghcr.io serves them to this machine without signing in), but Docker has saved" >&2
+          say "ghcr.io credentials that ghcr.io rejects (expired or revoked), and sends them instead of pulling anonymously." >&2
+          say "Remove them with: docker logout ghcr.io   and run the installer again." >&2
+          if [ "$assume_yes" != 1 ] && have_tty && confirm "Run docker logout ghcr.io now and pull again?"; then
+            docker logout ghcr.io >&2 && return 0
+          fi
+        elif [ "$anonymous" = ok ]; then
+          say "The images are public (ghcr.io serves them to this machine without signing in), yet Docker was refused:" >&2
+          say "Docker reaches ghcr.io another way (its own proxy, https://docs.docker.com/engine/daemon/proxy/), or" >&2
+          say "a credential helper supplies a rejected login (docker logout ghcr.io). Or pull through --registry." >&2
+        elif [ "$anonymous" = missing ]; then
+          say "ghcr.io does not have version $tag of the images: it is not published (yet). Check --version." >&2
+        elif [ "$anonymous" = unreachable ]; then
+          say "This machine cannot reach ghcr.io (DNS, a firewall or a proxy). Pull through a mirror of $published_registry" >&2
+          say "with --registry (e.g. --registry mirror.example.com/lincyaw/), or give Docker a proxy." >&2
+        else
+          say "ghcr.io refuses these images also without signing in; version $tag may not be published. Check --version." >&2
+        fi
+      else
+        say "The registry refused access. A mirror says so also for an image it does not have (check --registry);" >&2
+        say "a private mirror may need: docker login $host" >&2
+      fi ;;
     *)
       if [ -n "$host" ] && ! curl -sS -o /dev/null --max-time 10 "https://$host/v2/" 2>/dev/null; then
         say "This server cannot reach $host over HTTPS (DNS, a firewall or a proxy). Pull through a mirror of" >&2
@@ -693,6 +739,7 @@ diagnose_pull() { # diagnose_pull DOCKER-OUTPUT: say why a pull failed, as far a
         say "if Docker Hub is unreachable, set registry-mirrors in /etc/docker/daemon.json." >&2
       fi ;;
   esac
+  return 1
 }
 
 wait_healthy() {
