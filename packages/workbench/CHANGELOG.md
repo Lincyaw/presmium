@@ -1,5 +1,11 @@
 # @lincyaw/workbench
 
+## 0.2.0-rc.125
+
+### Patch Changes
+
+- Keep typing in very long documents smooth: a document's local backup is no longer parsed and validated again after every keystroke.
+
 ## 0.2.0-rc.124
 
 ### Patch Changes
