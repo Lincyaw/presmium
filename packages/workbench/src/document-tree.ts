@@ -26,6 +26,7 @@ export class DocumentTreeActions {
   readonly #open: (dir: string, focus?: 'body') => Promise<void>
   readonly #reveal: (section: string, block?: string) => void
   #reading?: AbortController
+  #attention?: AbortController
   #treeText?: string
   readonly #previews = new Map<string, Promise<DocumentPreview>>()
   readonly #embeds = new Map<string, Promise<EmbedSource>>()
@@ -47,7 +48,10 @@ export class DocumentTreeActions {
   async load(): Promise<void> {
     if (!this.#client.readTree) return
     // Other clients' changes (and the AI's) arrive as tree events; the first read starts listening.
-    this.#unsubscribe ??= this.#client.subscribeTree?.(() => void this.load(), () => {})
+    if (!this.#unsubscribe) {
+      this.#unsubscribe = this.#client.subscribeTree?.(kind => void (kind === 'attention' ? this.loadAttention() : this.load()), () => {})
+      void this.loadAttention()
+    }
     this.#reading?.abort()
     const reading = this.#reading = new AbortController()
     if (!this.#store.state.documentTree) this.#store.set({ isDocumentTreeLoading: true })
@@ -60,6 +64,17 @@ export class DocumentTreeActions {
       if (reading.signal.aborted) return
       this.#store.set({ documentTreeFailure: error instanceof WorkspaceServerError && error.status === 404 ? 'tree-unavailable' : errorMessage(error), isDocumentTreeLoading: false })
     }
+  }
+
+  /** Reads what needs attention across the workspace again (on start and when the workspace says it changed). */
+  async loadAttention(): Promise<void> {
+    if (!this.#client.readAttention) return
+    this.#attention?.abort()
+    const reading = this.#attention = new AbortController()
+    try {
+      const attention = await this.#client.readAttention(reading.signal)
+      if (!reading.signal.aborted && JSON.stringify(attention) !== JSON.stringify(this.#store.state.workspaceAttention)) this.#store.set({ workspaceAttention: attention })
+    } catch { /* The notices stay as they were; the next change reads them again. */ }
   }
 
   /** The folder of the document, as the workbench opens it. */
@@ -200,9 +215,14 @@ export class DocumentTreeActions {
     this.toast(this.#t.trashed(title), 'neutral', { label: this.#t.undo, run: () => void this.restore(id) })
   }
 
+  /** Restores a document (with the children trashed along with it) and says where it went. */
   async restore(id: string): Promise<void> {
+    const title = this.#store.state.documentTree?.trash.find(entry => entry.id === id)?.title ?? ''
     const result = await this.operate({ type: 'restore', id })
-    if (result) this.#store.set({ documents: await this.#client.readDocuments().catch(() => this.#store.state.documents) })
+    if (!result) return
+    const top = result.toTopLevel?.find(item => item.document === id)
+    this.toast(top ? this.#t.restoredToTop(title, top.parent) : this.#t.restored(title))
+    this.#store.set({ documents: await this.#client.readDocuments().catch(() => this.#store.state.documents) })
   }
 
   async purge(id: string): Promise<boolean> {
@@ -223,7 +243,7 @@ export class DocumentTreeActions {
     if (this.#store.state.toast?.id === id) this.#store.set({ toast: undefined })
   }
 
-  dispose(): void { this.#reading?.abort(); this.#unsubscribe?.() }
+  dispose(): void { this.#reading?.abort(); this.#attention?.abort(); this.#unsubscribe?.() }
 }
 
 function readRecent(): RecentDocument[] {

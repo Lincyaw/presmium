@@ -53,6 +53,7 @@ import { localWriter } from './writer.ts'
 import { DocumentIndex } from './document-index.ts'
 import { TreeOperations } from './tree-operations.ts'
 import { documentImportRoute } from './document-import.ts'
+import { documentMaterialsRoute } from './document-materials.ts'
 import { workspaceMigrateRoute } from './workspace-migrate.ts'
 import { hostUpgradeRoute } from './host-upgrade.ts'
 import { createHostActivity } from './host-activity.ts'
@@ -527,6 +528,7 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
       authoringClientRoutes: { ...authoringClients.routes, ...authoringWindows.routes, ...agentActivity.routes },
       projectRoutes: projectAuthoring.routes,
       documentImport: documentImportRoute({ config, writer, locks, revisions: history?.revisions, changed: documentsChanged }),
+      documentMaterials: documentMaterialsRoute({ config, writer, locks, revisions: history?.revisions }),
       workspaceMigrate: workspaceMigrateRoute({ config, locks, revisions: history?.revisions, changed: documentsChanged }),
       locks,
       ...history ? { revisions: history.revisions, operations: history.operations, reviews: history.agentSessionReviews } : {},

@@ -12,7 +12,7 @@ export const ROUTES: Record<string, string> = Object.fromEntries([
     'document/transcription/adoption/plan', 'document/transcription/adoption/apply',
     'ir', 'ir/events', 'preview', 'build', 'check', 'jobs', 'jobs/cancel', 'jobs/events', 'voice-catalog', 'voice-capabilities',
     'review', 'review/workspace', 'review/open', 'review/step', 'review/accept', 'review/reject', 'review/restore',
-    'tree', 'tree/operation', 'document/links', 'documents/search', 'document/preview', 'embed/source'].map(path => [path, `${WORKSPACE_ROUTES}${path}`]),
+    'tree', 'tree/operation', 'document/links', 'documents/search', 'document/preview', 'embed/source', 'tree/attention', 'document/materials'].map(path => [path, `${WORKSPACE_ROUTES}${path}`]),
   ['focus', `${SERVER_ROUTES}focus`],
   ['control', `${SERVER_ROUTES}control`],
   ['diagnostics', `${SERVER_ROUTES}diagnostics`],

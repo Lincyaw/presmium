@@ -181,6 +181,8 @@
   --pm-menu-min-width: 12rem;
   --pm-size-notice-message: 12rem; /* below this, a notice puts its action on its own line */
   --pm-search-list-max-height: 18rem;
+  /* The files chosen as source material, before the list scrolls. */
+  --pm-materials-list-max-height: 8rem;
   /* The document tree: a row and the indent of each level. */
   --pm-tree-row-height: 1.875rem;
   --pm-tree-indent: 1rem;

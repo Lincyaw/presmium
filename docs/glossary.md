@@ -154,6 +154,7 @@ zh-CN 以 Microsoft Office 的简体中文本地化为首选，没有对应时�
 | 编辑原文 | Edit Original | 从同步块打开来源文稿并定位到来源内容块 | `跳转源` |
 | 转为副本 | Convert to Copy | 把同步块换成来源内容的副本，此后各自编辑 | `解除同步`、`Unsync` |
 | 复制同步块链接 | Copy Synced Block Link | 复制可粘贴为同步块的链接 | |
+| 从来源材料写作 | Write from Source Material | 主页的开始卡片：新建文稿，保存作者选择的来源材料，交由 AI 写出文稿；不写“生成” | `从材料生成`、`Generate from material` |
 | 升级 | Upgrade | 把旧格式的文稿转换为当前格式（与 `presmium migrate` 相同） | 迁移（界面中）、Migrate（界面中） |
 | 上移 / 下移 | Move Up / Move Down | 调整页面顺序 | `往上挪`、`往下挪` |
 | 搜索 | Search | 在列表中搜索 | `检索`、`查询` |

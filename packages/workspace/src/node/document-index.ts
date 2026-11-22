@@ -6,7 +6,7 @@ import { setImmediate as yieldToEvents } from 'node:timers/promises'
 import { provideDocumentEntries } from '@lincyaw/compiler'
 import type { ScannedDocument } from '@lincyaw/compiler'
 import { blockFirstText, blockSubtree, DOCUMENT_ENTRY, documentCitationSites, documentSearchText, documentTree, isRecord, targetExcerpt } from '@lincyaw/kernel'
-import type { BlockId, DocumentCitation, DocumentId, DocumentLinks, DocumentPlacement, DocumentPreview, DocumentSearchHit, DocumentTree, EmbedSource, OutgoingLink, PlacementTree, PresmiumDocument, ReferenceTarget, SectionId, TrashEntry, TreeIssue, TreeNode } from '@lincyaw/kernel'
+import type { AttentionCount, BlockId, DocumentCitation, DocumentId, DocumentLinks, DocumentPlacement, DocumentPreview, DocumentSearchHit, DocumentTree, EmbedSource, OutgoingLink, PlacementTree, PresmiumDocument, ReferenceTarget, SectionId, TrashEntry, TreeIssue, TreeNode, WorkspaceAttention } from '@lincyaw/kernel'
 import { primeDocumentHead } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
 
@@ -128,6 +128,9 @@ export class DocumentIndex {
   readonly #watchers = new Map<string, FSWatcher>()
   readonly #listeners = new Set<() => void>()
   readonly #titleListeners = new Set<(changed: DocumentId[]) => void>()
+  readonly #attentionListeners = new Set<() => void>()
+  /** The attention summary of one generation of the index, with its text to tell a change. */
+  #attention?: { generation: number, value: WorkspaceAttention, text: string }
   #derived?: Derived
   #dirty = new Set<string>()
   readonly #folders = new Set<string>()
@@ -166,6 +169,7 @@ export class DocumentIndex {
     this.#watchers.clear()
     this.#listeners.clear()
     this.#titleListeners.clear()
+    this.#attentionListeners.clear()
   }
 
   /** Resolves once everything known to have changed has been read. */
@@ -355,6 +359,11 @@ export class DocumentIndex {
     const titleChanged = changes.flatMap(change => change.after && change.before?.titleKey !== change.after.titleKey ? [change.after.id] : [])
     if (before && treeChanged) for (const listener of [...this.#listeners]) listener()
     if (before && titleChanged.length) for (const listener of [...this.#titleListeners]) listener(titleChanged)
+    if (before && this.#attentionListeners.size) {
+      const was = this.#attention?.text
+      this.attention()
+      if (this.#attention!.text !== was) for (const listener of [...this.#attentionListeners]) listener()
+    }
   }
 
   /** One document changed without changing the tree: only its own entries are replaced. */
@@ -473,7 +482,10 @@ export class DocumentIndex {
     for (const node of tree.order) {
       nodes[node.id] = { id: node.id, title: node.title, path: dirOf(node.path), parent: node.parent, rank: node.placement.rank, depth: node.depth, children: [...tree.children.get(node.id) ?? []], ...issues.has(node.id) ? { issues: issues.get(node.id) } : {} }
     }
-    const trash: TrashEntry[] = [...this.#trash.values()].filter(entry => !entry.record.with).map(entry => ({ id: entry.id, title: entry.title, deletedAt: entry.record.deletedAt, from: entry.record.from, parent: entry.record.parent, children: entry.record.children }))
+    const trash: TrashEntry[] = [...this.#trash.values()].filter(entry => !entry.record.with).map((entry) => {
+      const parent = entry.record.parent
+      return { id: entry.id, title: entry.title, deletedAt: entry.record.deletedAt, from: entry.record.from, parent, children: entry.record.children, ...parent !== null && !documents.has(parent) && this.#trash.has(parent) ? { parentTrashed: true } : {} }
+    })
     trash.sort((a, b) => a.deletedAt < b.deletedAt ? 1 : a.deletedAt > b.deletedAt ? -1 : 0)
     return derived.clientTree = { roots: [...tree.children.get(null) ?? []], nodes, trash }
   }
@@ -564,6 +576,36 @@ export class DocumentIndex {
     const assets = located.trashed ? {} : Object.fromEntries(used.map(asset => [asset, `document/asset?${new URLSearchParams({ document: located.dir, asset })}`]))
     const states = root.type === 'component' ? document.definitions[root.definitionId]?.states.map(state => state.id) : undefined
     return { document: id, title: document.metadata.title, block, blocks, ...Object.keys(assets).length ? { assets } : {}, ...states ? { states } : {}, ...located.trashed ? { trashed: true } : {} }
+  }
+
+  /**
+   * References and synced blocks whose target is gone or in the trash, counted across the workspace. One pass over the
+   * references the index keeps, at most once per change of the index.
+   */
+  attention(): WorkspaceAttention {
+    const { documents, order } = this.#now()
+    if (this.#attention?.generation === this.#generation) return this.#attention.value
+    const counts = { reference: undefined as AttentionCount | undefined, embed: undefined as AttentionCount | undefined }
+    for (const id of order) {
+      const entry = documents.get(id)
+      if (!entry) continue
+      const counted = new Set<'reference' | 'embed'>()
+      for (const site of entry.sites) {
+        if (this.titleOf(site.target, true) !== undefined) continue
+        const count = counts[site.kind] ??= { places: 0, documents: 0, first: { document: id, ...site.section !== undefined ? { section: site.section } : {}, block: site.block } }
+        count.places++
+        if (!counted.has(site.kind)) { counted.add(site.kind); count.documents++ }
+      }
+    }
+    const value: WorkspaceAttention = { ...counts.reference ? { references: counts.reference } : {}, ...counts.embed ? { embeds: counts.embed } : {} }
+    this.#attention = { generation: this.#generation, value, text: JSON.stringify(value) }
+    return value
+  }
+
+  /** Called whenever what `attention` answers has changed. */
+  onAttention(listener: () => void): () => void {
+    this.#attentionListeners.add(listener)
+    return () => { this.#attentionListeners.delete(listener) }
   }
 
   /** The documents whose references may show an outdated fallback after the titles of `changed` changed: those citing them, and themselves. */

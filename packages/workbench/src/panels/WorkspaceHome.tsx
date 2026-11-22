@@ -5,6 +5,7 @@ import { useMessages, useTreeMessages, useWorkbench, useWorkbenchState } from '.
 import { IMPORT_MESSAGES } from '../import-messages.ts'
 import { timeAgo } from '../messages.ts'
 import { DocumentImportDialog } from './DocumentImportDialog.tsx'
+import { MaterialsDialog } from './MaterialsDialog.tsx'
 import { SearchDialog } from './WorkspaceSidebar.tsx'
 
 /**
@@ -21,16 +22,23 @@ export function WorkspaceHome({ actions }: { actions?: ReactNode }) {
   const locale = useWorkbenchState(state => state.locale)
   const busy = useWorkbenchState(state => Boolean(state.isDocumentTreeBusy))
   const failure = useWorkbenchState(state => state.documentsFailure)
+  const attention = useWorkbenchState(state => state.workspaceAttention)
+  const canAskAgent = useWorkbenchState(state => Boolean(state.canAskAgent))
+  const needsModel = useWorkbenchState(state => state.agentReadiness === 'missing')
   const importMessages = IMPORT_MESSAGES[locale]
   const [importing, setImporting] = useState(false)
   const [searching, setSearching] = useState(false)
   const [upgrading, setUpgrading] = useState(false)
+  const [writing, setWriting] = useState(false)
   const readOnly = workbench.client.capabilities?.readOnly === true
   const canImport = Boolean(answer?.git && !answer.single && workbench.client.importDocuments && !readOnly)
+  // Only the AI writes from source material: without a conversation there is no card, without a model it says so.
+  const canWrite = Boolean(canAskAgent && !answer?.single && workbench.client.addDocumentMaterials && workbench.tree.available && !readOnly)
   const count = Object.keys(tree.nodes).length
   const issues = Object.values(tree.nodes).filter(node => node.issues?.length)
   const pending = answer?.migration?.documents.length ?? 0
   const shown = recent.filter(entry => tree.nodes[entry.id]).slice(0, 8)
+  const { references: brokenReferences, embeds: brokenSynced } = attention ?? {}
   const create = () => void workbench.tree.create(null)
   const upgrade = async () => {
     setUpgrading(true)
@@ -57,12 +65,19 @@ export function WorkspaceHome({ actions }: { actions?: ReactNode }) {
           <button type="button" className="pm-ui-card__cover" onClick={() => setImporting(true)}>{importMessages.title}</button>
           <p className="pm-ui-card__hint">{tt.importHint}</p>
         </PmCard></li>}
+        {canWrite && <li><PmCard variant="interactive">
+          <span className="pm-ui-card__icon"><PmIcon name="sparkle" /></span>
+          <button type="button" className="pm-ui-card__cover" disabled={busy} onClick={() => needsModel ? workbench.openAgentSetup() : setWriting(true)}>{tt.fromMaterials}</button>
+          <p className="pm-ui-card__hint">{needsModel ? tt.fromMaterialsNeedsModel : tt.fromMaterialsHint}</p>
+        </PmCard></li>}
       </ul>}
-      {(pending > 0 || issues.length > 0) && <>
-        <h2 className="pmw-home__heading">{tt.needsAttention}</h2>
+      {(pending > 0 || issues.length > 0 || brokenReferences || brokenSynced) && <>
+        <div className="pmw-home__heading-row"><h2 className="pmw-home__heading">{tt.needsAttention}</h2></div>
         <div className="pmw-workspace-home__attention">
           {pending > 0 && workbench.client.migrateWorkspace && <PmNotice tone="warn" action={<PmButton small loading={upgrading} onClick={() => void upgrade()}>{tt.upgrade}</PmButton>}>{tt.upgradePending(pending)}</PmNotice>}
           {issues.length > 0 && <PmNotice tone="warn" action={<PmButton small onClick={() => void workbench.tree.openPlace({ document: issues[0]!.id })}>{tt.show}</PmButton>}>{tt.treeIssues(issues.length)}</PmNotice>}
+          {brokenReferences && <PmNotice tone="warn" action={<PmButton small onClick={() => void workbench.tree.openPlace(brokenReferences.first)}>{tt.show}</PmButton>}>{tt.brokenReferences(brokenReferences.places, brokenReferences.documents)}</PmNotice>}
+          {brokenSynced && <PmNotice tone="warn" action={<PmButton small onClick={() => void workbench.tree.openPlace(brokenSynced.first)}>{tt.show}</PmButton>}>{tt.brokenSynced(brokenSynced.places, brokenSynced.documents)}</PmNotice>}
         </div>
       </>}
       <div className="pmw-home__heading-row">
@@ -87,6 +102,7 @@ export function WorkspaceHome({ actions }: { actions?: ReactNode }) {
       {importing && <DocumentImportDialog onClose={() => setImporting(false)} onImported={result => {
         setImporting(false); workbench.tree.toast(importMessages.done(result.documents.length, result.unresolved, result.warnings)); void workbench.tree.load()
       }} />}
+      {writing && <MaterialsDialog onClose={() => setWriting(false)} />}
       {searching && <SearchDialog onClose={() => setSearching(false)} onOpen={(id, section, block) => { setSearching(false); void workbench.tree.openPlace({ document: id, ...section ? { section } : {}, ...block ? { block } : {} }) }} />}
     </section>
   )

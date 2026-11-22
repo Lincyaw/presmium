@@ -17,7 +17,7 @@ import type { DocumentTranscriptionRequest, TranscriptionCapabilities, Transcrip
 import { randomUUID } from '@lincyaw/kernel'
 import type { ReferenceTarget } from '@lincyaw/kernel'
 // The contract's DocumentTree is the workspace's answer; the kernel's root also names its own tree builder DocumentTree.
-import type { DocumentLinks, DocumentPreview, DocumentSearchHit, DocumentTree, EmbedSource, TreeOperation, TreeOperationResult } from '@lincyaw/kernel/contracts'
+import type { DocumentLinks, DocumentPreview, DocumentSearchHit, DocumentTree, EmbedSource, TreeOperation, TreeOperationResult, WorkspaceAttention } from '@lincyaw/kernel/contracts'
 
 /** A change of the host's pending approvals that this author may answer. */
 export type ApprovalEvent =
@@ -83,6 +83,8 @@ export interface WorkspaceClient {
   subscribeRequests?(listener: (event: WorkspaceRequestEvent) => void): () => void
   readDocuments(document?: string): Promise<DocumentsAnswer>
   importDocuments?(files: readonly File[], signal?: AbortSignal): Promise<import('@lincyaw/kernel').DocumentImportAnswer>
+  /** Keeps the files as the document's source material, in its folder, recorded as one revision. */
+  addDocumentMaterials?(document: string, files: readonly File[], signal?: AbortSignal): Promise<import('@lincyaw/kernel').DocumentMaterialsAnswer>
   /** Converts the workspace's documents to the current format, one revision per document. */
   migrateWorkspace?(): Promise<import('@lincyaw/kernel').WorkspaceMigrationAnswer>
   /** The workspace's document tree and trash (absent for a host without one). */
@@ -92,8 +94,10 @@ export interface WorkspaceClient {
   searchDocuments?(query: string, limit?: number, signal?: AbortSignal): Promise<DocumentSearchHit[]>
   readDocumentPreview?(target: ReferenceTarget, signal?: AbortSignal): Promise<DocumentPreview>
   readEmbedSource?(source: { document: string, block: string }, signal?: AbortSignal): Promise<EmbedSource>
-  /** Each change of the workspace's document tree (created, moved, renamed, trashed, restored). */
-  subscribeTree?(changed: () => void, failed?: () => void): () => void
+  /** References and synced blocks across the workspace whose target is gone or in the trash. */
+  readAttention?(signal?: AbortSignal): Promise<WorkspaceAttention>
+  /** Each change of the workspace's document tree (created, moved, renamed, trashed, restored), and of what `readAttention` answers. */
+  subscribeTree?(changed: (kind: 'tree' | 'attention') => void, failed?: () => void): () => void
   planProjectChange(request: ProjectPlanRequest): Promise<ProjectPlan>
   operateDocument(operation: ProjectOperation, planned?: ProjectPlan): Promise<OperationAnswer>
   readSource(document: string, path: string): Promise<SourceAnswer>
@@ -391,6 +395,11 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
       for (const file of files) body.append('files', file, file.name)
       return call(url('documents/import'), { method: 'POST', body, signal })
     },
+    addDocumentMaterials: (document, files, signal) => {
+      const body = new FormData()
+      for (const file of files) body.append('files', file, file.name)
+      return call(url('document/materials', document), { method: 'POST', body, signal })
+    },
     migrateWorkspace: () => call(url('workspace/migrate'), { method: 'POST' }),
     readTree: signal => call(url('tree'), { signal }),
     operateTree: (operation, signal) => post(url('tree/operation'), operation, signal),
@@ -403,7 +412,8 @@ export function workspaceClient(base = 'api/presmium/', subscription?: Workspace
       const routes = new URL(base, globalThis.document.baseURI)
       return answer.assets ? { ...answer, assets: Object.fromEntries(Object.entries(answer.assets).map(([id, address]) => [id, new URL(address, routes).href])) } : answer
     },
-    subscribeTree: (changed, failed) => subscribe(url('tree/events', ''), 'tree', () => changed(), failed),
+    readAttention: signal => call(url('tree/attention'), { signal }),
+    subscribeTree: (changed, failed) => subscribe<{ type?: string }>(url('tree/events', ''), 'tree', data => changed(data?.type === 'attention' ? 'attention' : 'tree'), failed),
     readSource: (document, path) => call(url('source', document, { path })),
     saveSource: (document, path, content, base, message) => post(url('source', document), { path, content, base, ...message ? { message } : {} }),
     saveSourceTransaction: (document, changes, message) => post(url('source/transaction', document), { changes, ...message ? { message } : {} }),

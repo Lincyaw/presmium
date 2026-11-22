@@ -160,6 +160,25 @@
   gap: var(--pm-space-2);
 }
 
+/* The files chosen as source material: a short list that scrolls when long, each name on one line. */
+.pmw-materials__files {
+  display: grid;
+  gap: var(--pm-space-1);
+  max-height: var(--pm-materials-list-max-height);
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-sm);
+  list-style: none;
+}
+
+.pmw-materials__files li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* The open document, as an editor shows it: the command bar, the panes, the page on its canvas, the status bar. */
 
 .pmw-document {

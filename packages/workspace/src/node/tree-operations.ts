@@ -189,7 +189,7 @@ export class TreeOperations {
    * Runs the operation's changes under the documents' locks and the history's lock, then records them as one revision;
    * on any failure every change is undone and nothing is recorded.
    */
-  async #run(kind: TreeOperation['type'], locked: string[], member: Member, origin: 'editor' | 'agent', work: (journal: Journal) => Promise<{ summary: string, body?: string, documents: DocumentId[], created?: DocumentId, converted?: TreeOperationResult['converted'] }>, automatic = false): Promise<TreeOperationResult> {
+  async #run(kind: TreeOperation['type'], locked: string[], member: Member, origin: 'editor' | 'agent', work: (journal: Journal) => Promise<{ summary: string, body?: string, documents: DocumentId[], created?: DocumentId, converted?: TreeOperationResult['converted'], toTopLevel?: TreeOperationResult['toTopLevel'] }>, automatic = false): Promise<TreeOperationResult> {
     const { locks, revisions, index } = this.#options
     await index.ready()
     const before = this.#dirs()
@@ -219,6 +219,7 @@ export class TreeOperations {
       ...done.created ? { created: done.created } : {},
       revisions: done.revision ? done.documents.map(document => ({ document, revision: done.revision! })) : [],
       ...done.converted?.length ? { converted: done.converted } : {},
+      ...done.toTopLevel?.length ? { toTopLevel: done.toTopLevel } : {},
     }
   }
 
@@ -308,6 +309,7 @@ export class TreeOperations {
           const live = index.scan().documents
           const taken = this.#dirs()
           const restored = new Set(ids)
+          const toTopLevel: NonNullable<TreeOperationResult['toTopLevel']> = []
           for (const id of ids) {
             const item = trashed.get(id)!
             const free = (dir: string) => isDocumentDir(this.#options.config, dir) && !existsSync(join(this.#root, dir)) && !taken.some(other => other !== '' && (isWithin(dir, other) || isWithin(other, dir)))
@@ -321,9 +323,10 @@ export class TreeOperations {
               const document = this.#read(dir)
               document.placement = { parent: null, rank: this.#rankAfter(null, (index.scan().tree?.children.get(null) ?? []).at(-1)) }
               await this.#write(journal, dir, document)
+              toTopLevel.push({ document: id, parent: trashed.has(parent) ? 'trashed' : 'missing' })
             }
           }
-          return { summary: `Restore document ${entry.title}`, documents: ids }
+          return { summary: `Restore document ${entry.title}`, documents: ids, toTopLevel }
         })
       }
       case 'purge': {

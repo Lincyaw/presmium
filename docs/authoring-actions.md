@@ -401,9 +401,14 @@ agent 的循环：探测能力 → 读源 → 预检 → 提交或开始任务 �
 | `GET documents/search?q=&limit=` | `DocumentSearchHit[]`（默认 20，最多 100） | `search_documents` |
 | `GET document/preview?id=&section=&block=` | `DocumentPreview` | `get_document_preview` |
 | `GET embed/source?document=&block=` | `EmbedSource` | 无 |
-| `GET tree/events` | SSE，事件 `tree`，数据 `{ type: 'tree' }` | 无 |
+| `GET tree/attention` | `WorkspaceAttention`：目标（文稿、页面或内容块）已不存在或在回收站中的引用与同步块，各自的处数、所在文稿数与树序中的第一处 | 无 |
+| `GET tree/events` | SSE，事件 `tree`，数据 `{ type: 'tree' }`；`tree/attention` 的回答变化时数据为 `{ type: 'attention' }` | 无 |
 
 读取需要 reader，树操作需要 editor；文稿按 ID 指定。`tree/events` 在树或回收站变化后推送：树操作之后立即，其他改动（保存、撤消、工作区外编辑）在文件事件后约 40 毫秒；Studio 经共享 socket 的 `tree` 主题订阅它。`embed/source` 的 `assets` 是相对工作区路由的 `document/asset` 地址。MCP 的树操作是 `operate` 类，与其他改工作区的动作一样审批，记为 agent 的修订；绑定到单份文稿的令牌不能使用。
+
+`tree/attention` 只遍历索引中已有的引用与同步块，不读文件，索引每变化一次至多算一遍；有打开的 `tree/events` 时，变化后即算出并在结果不同时推送 `attention`。
+
+`POST document/materials?document=<文件夹>`（editor，multipart 的 `files`，最多 20 个、合计 32 MiB）把来源材料原样存进文稿文件夹的 `materials/`，重名时加“ (2)”等，在文稿锁下记一条修订，回答 `DocumentMaterialsAnswer`（相对文稿文件夹的路径）；文稿内容不引用它们，Studio 的“从来源材料写作”用它。
 
 树操作（`packages/workspace/src/node/tree-operations.ts`）都是原子的：在涉及文稿的锁与历史锁之下改文件，记一条修订，涉及的每份文稿的历史中都有它（回答的 `revisions` 逐份列出），可以撤消；任何一步失败都还原全部文件，不留修订。文件夹只在回收站进出时移动，移动与改名不动文件夹。
 
@@ -412,7 +417,7 @@ agent 的循环：探测能力 → 读源 → 预检 → 提交或开始任务 �
 - `rename { id, title }`：只改 `metadata.title`。
 - `duplicate { id }`：复制到新文件夹，新 ID，标题加“副本 / (copy)”，放在原文稿之后；下级文稿不复制，其中的引用不变。
 - `trash { id }`：文稿与它的全部下级各自移到 `.trash/<id>/`，旁边的 `trashed.json` 记 `deletedAt`、原文件夹 `from`、原 `parent` 与 `rank`、随它进回收站的下级 `children`（下级的记录有 `with`）。回收站中的文稿不在树中；引用它的地方显示最后的标题，同步块照常显示并警告。
-- `restore { id }`：把文稿与随它进回收站的下级移回原文件夹（被占用时新建 `docs/<名字>`）；原上级不在时放到顶层末尾。
+- `restore { id }`：把文稿与随它进回收站的下级移回原文件夹（被占用时新建 `docs/<名字>`）；原上级不在时放到顶层末尾，回答的 `toTopLevel` 逐份写明，`parent` 为 `trashed`（上级在回收站中）或 `missing`（上级已不存在）。回收站条目的 `parentTrashed` 表示它的上级文稿也在回收站中。
 - `purge { id }`：先把其他文稿中显示它（及随它进回收站的下级）的同步块转为副本（`converted` 列出），再彻底删除它们；引用它的地方变成缺失。
 - `embed-to-copy { document, block }`：把同步块换成源内容的副本（[IR](ir.md) 2.4 节），需要的素材文件复制进本文稿文件夹，同名而内容不同时放在 `synced/<源文稿 ID 前 8 位>/` 下。
 

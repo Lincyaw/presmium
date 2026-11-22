@@ -20,7 +20,16 @@ export interface TreeNode {
   issues?: TreeIssue[]
 }
 
-export interface TrashEntry { id: DocumentId, title: string, deletedAt: string, from: string, parent: DocumentId | null, children: DocumentId[] }
+export interface TrashEntry {
+  id: DocumentId
+  title: string
+  deletedAt: string
+  from: string
+  parent: DocumentId | null
+  children: DocumentId[]
+  /** Its parent is in the trash too (trashed later, on its own): restoring this one alone puts it at the top level. */
+  parentTrashed?: boolean
+}
 
 /** `roots` and every `children` list are already in display order (rank, then id). */
 export interface DocumentTree { roots: DocumentId[], nodes: Record<DocumentId, TreeNode>, trash: TrashEntry[] }
@@ -81,6 +90,18 @@ export interface EmbedSource {
   trashed?: boolean
 }
 
+/** Where a problem is: the block of a document (and its page, when it is on one). */
+export interface AttentionPlace { document: DocumentId, section?: SectionId, block: BlockId }
+
+/** How many places have the problem, in how many documents, and the first of them in tree order. */
+export interface AttentionCount { places: number, documents: number, first: AttentionPlace }
+
+/**
+ * What needs the author's attention across the workspace, besides the tree's own issues: references whose target
+ * (document, page or block) no longer exists or is in the trash, and synced blocks whose source does or is.
+ */
+export interface WorkspaceAttention { references?: AttentionCount, embeds?: AttentionCount }
+
 export type TreeOperation =
   | { type: 'create', title: string, parent: DocumentId | null, after?: DocumentId | null }
   | { type: 'move', id: DocumentId, parent: DocumentId | null, after?: DocumentId | null }
@@ -100,6 +121,8 @@ export interface TreeOperationResult {
   revisions: { document: DocumentId, revision: string }[]
   /** Set by purge: synced blocks that were converted to copies first. */
   converted?: { document: DocumentId, block: BlockId }[]
+  /** Set by restore: documents put at the top level because their parent is in the trash or no longer exists. */
+  toTopLevel?: { document: DocumentId, parent: 'trashed' | 'missing' }[]
 }
 
 /**
@@ -112,7 +135,9 @@ export interface TreeOperationResult {
  *   GET  documents/search    ?q=<text>&limit=20  → DocumentSearchHit[]
  *   GET  document/preview    ?id=&section=&block= → DocumentPreview
  *   GET  embed/source        ?document=&block=   → EmbedSource
+ *   GET  tree/attention                          → WorkspaceAttention
  *
- * Tree changes are also pushed on the existing workspace change event stream as { type: 'tree' } so open clients refetch.
+ * Tree changes are also pushed on the tree event stream as { type: 'tree' } so open clients refetch; a change of what
+ * `tree/attention` answers is pushed as { type: 'attention' }.
  * Error codes: tree.not-found, tree.cycle (moving under its own descendant), tree.trash-not-found, tree.title-empty.
  */

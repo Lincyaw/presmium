@@ -8,6 +8,13 @@ export const PROJECT_MAX_PLANS = 64
 export const PROJECT_PLAN_TTL_MS = 300_000
 export const DOCUMENT_IMPORT_MAX_FILES = 1000
 export const DOCUMENT_IMPORT_MAX_BYTES = 32 << 20
+/** Source material added to one document at once (`document/materials`): at most this many files and bytes. */
+export const DOCUMENT_MATERIALS_MAX_FILES = 20
+export const DOCUMENT_MATERIALS_MAX_BYTES = 32 << 20
+/** The folder in a document's folder where its source material is kept. */
+export const DOCUMENT_MATERIALS_DIR = 'materials'
+/** The files added, relative to the document's folder, in the order given. */
+export interface DocumentMaterialsAnswer { files: string[], revision?: Revision }
 export interface DocumentImportAnswer {
   directory: string
   documents: { dir: string, title: string }[]

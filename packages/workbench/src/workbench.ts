@@ -44,6 +44,7 @@ import type { ProductionBinding, ProductionPlan, ProductionPlaybackCommand, Prod
 import { workspaceClient, WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 import { DocumentTreeActions } from './document-tree.ts'
+import { DOCUMENT_TREE_MESSAGES } from './tree-messages.ts'
 import type { AuthoringClientAction, AuthoringClientActionType, AuthoringClientActionResult, AuthoringClientSnapshot } from '@lincyaw/kernel'
 import { PRODUCTION_PLAYBACK_RATES } from '@lincyaw/kernel'
 
@@ -137,6 +138,7 @@ export class Workbench {
   readonly #voiceover: VoiceoverJobs
   readonly #askers = new Set<(request: AgentRequest) => Promise<AgentAnswer | void>>()
   readonly #drafters = new Set<(draft: AgentDraft) => void | Promise<void>>()
+  #openAgentSetup?: () => void
   readonly #previewSinks = new Set<PreviewSink>()
   readonly #playbackKeys = new Set<(command: PlaybackKey) => void>()
   #unsubscribeIr?: () => void
@@ -353,7 +355,24 @@ export class Workbench {
   /** The host's way to hand a request to the conversation's agent. */
   onAgentRequest = (asker: (request: AgentRequest) => Promise<AgentAnswer | void>): (() => void) => {
     this.#askers.add(asker)
-    return () => this.#askers.delete(asker)
+    this.#set({ canAskAgent: true })
+    return () => {
+      this.#askers.delete(asker)
+      this.#set({ canAskAgent: this.#askers.size > 0 })
+    }
+  }
+
+  /** The host's word on whether the agent has a model to run with, and its way to open the model setup. */
+  setAgentReadiness(readiness: 'ready' | 'missing' | 'unknown', openSetup?: () => void): void {
+    this.#openAgentSetup = openSetup
+    if (this.#state.agentReadiness !== readiness) this.#set({ agentReadiness: readiness })
+  }
+
+  /** Opens the host's model setup; false when the host offers none. */
+  openAgentSetup(): boolean {
+    if (!this.#openAgentSetup) return false
+    this.#openAgentSetup()
+    return true
   }
 
   /** The host's way to put a request in the conversation's composer for the author to finish; nothing is sent. */
@@ -472,6 +491,33 @@ export class Workbench {
     const answer = await this.client.importDocuments(files, signal)
     await this.loadDocuments()
     return answer
+  }
+
+  /**
+   * A new document written by the AI from the author's source material: creates it at the end of the top level, keeps
+   * the files in its folder, opens it and hands the conversation's agent the request. A document whose files could not
+   * be added goes to the trash again. Answers the new document's ID and whether the request was sent.
+   */
+  async writeFromMaterials(files: readonly File[], note: string, signal?: AbortSignal): Promise<{ document: string, asked: boolean }> {
+    if (!this.client.addDocumentMaterials || !this.tree.available) throw new Error('document-materials-unavailable')
+    const roots = this.#state.documentTree?.roots
+    const created = await this.client.operateTree!({ type: 'create', title: DOCUMENT_TREE_MESSAGES[this.#state.locale].untitled, parent: null, after: roots?.at(-1) ?? null }, signal)
+    const id = created.created
+    if (!id) throw new Error('document-materials-unavailable')
+    await Promise.all([this.tree.load(), this.loadDocuments()])
+    const dir = this.tree.dirOf(id)
+    let added: string[]
+    try {
+      if (dir === undefined) throw new Error('document-materials-document')
+      added = (await this.client.addDocumentMaterials(dir, files, signal)).files
+    } catch (error) {
+      await this.tree.operate({ type: 'trash', id }).catch(() => undefined)
+      throw error
+    }
+    this.#record('document.materials', { 'presmium.document': id, 'presmium.files': added.join('\n') })
+    await this.tree.openPlace({ document: id })
+    const asked = await this.askAgent(this.#messages.materialsRequest(added, note), [])
+    return { document: id, asked }
   }
 
   /** Upgrades the workspace's documents to the current format, then refreshes the document list. */

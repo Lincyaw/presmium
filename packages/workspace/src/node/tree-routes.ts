@@ -29,8 +29,9 @@ export function treeOperationOf(body: unknown): TreeOperation | undefined {
 
 /**
  * The document tree's routes (`docs/authoring-actions.md`): the tree with its trash, tree operations, a document's
- * references in both directions, search, a reference's preview card, a synced block's source, and `tree/events`, which
- * sends `{ type: 'tree' }` (event `tree`) whenever the tree or the trash changes.
+ * references in both directions, search, a reference's preview card, a synced block's source, what needs attention
+ * across the workspace, and `tree/events`, which sends `{ type: 'tree' }` (event `tree`) whenever the tree or the trash
+ * changes and `{ type: 'attention' }` whenever what `tree/attention` answers changes.
  */
 export function treeRoutes(index: DocumentIndex, operations: TreeOperations | undefined): Record<string, Route> {
   const params = (request: Request) => new URL(request.url).searchParams
@@ -76,11 +77,16 @@ export function treeRoutes(index: DocumentIndex, operations: TreeOperations | un
     }),
     'document/preview': get(request => index.preview(required(request, 'id'), { ...optional(request, 'section') !== undefined ? { section: optional(request, 'section') } : {}, ...optional(request, 'block') !== undefined ? { block: optional(request, 'block') } : {} })),
     'embed/source': get(request => index.embedSource(required(request, 'document'), required(request, 'block'))),
+    'tree/attention': get(() => index.attention()),
     'tree/events': {
       role: 'reader',
       handle: async (request) => {
         if (request.method !== 'GET') return jsonResponse({ error: 'GET' }, 405)
-        const stream = pushStream<{ event: string, data: { type: 'tree' } }>(push => index.subscribe(() => push({ event: 'tree', data: { type: 'tree' } })), { signal: request.signal })
+        const stream = pushStream<{ event: string, data: { type: 'tree' | 'attention' } }>((push) => {
+          const offTree = index.subscribe(() => push({ event: 'tree', data: { type: 'tree' } }))
+          const offAttention = index.onAttention(() => push({ event: 'tree', data: { type: 'attention' } }))
+          return () => { offTree(); offAttention() }
+        }, { signal: request.signal })
         return sseResponse(stream, request.signal)
       },
     },

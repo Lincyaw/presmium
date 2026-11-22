@@ -75,6 +75,8 @@ export interface WorkbenchState {
   renamingDocument?: string
   /** Documents opened recently in this browser, the latest first. */
   recentDocuments?: import('./document-tree.ts').RecentDocument[]
+  /** What needs attention across the workspace: references and synced blocks whose target is gone or in the trash. */
+  workspaceAttention?: import('@lincyaw/kernel/contracts').WorkspaceAttention
   /** Changes when cached reference previews and synced block sources are forgotten. */
   documentLinksGeneration?: number
   /** The one message at the bottom that says what an operation did. */
@@ -138,6 +140,10 @@ export interface WorkbenchState {
   isHistoryBusy: boolean
   isAsking: boolean
   askFailure?: string
+  /** A conversation's agent takes requests (`onAgentRequest`). */
+  canAskAgent?: boolean
+  /** Whether the agent has a model to run with, as the host says (`setAgentReadiness`); unknown until it does. */
+  agentReadiness?: 'ready' | 'missing' | 'unknown'
   /** What the document can be made into, and its builds and exports (the author's and the AI's). */
   jobs?: JobsAnswer
   jobsFailure?: string

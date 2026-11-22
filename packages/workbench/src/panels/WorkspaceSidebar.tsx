@@ -244,9 +244,9 @@ function TrashDialog({ entries, onClose }: { entries: TrashEntry[], onClose(): v
             <PmIcon name="document" />
             <span className="pmw-trash__text">
               <span className="pmw-trash__title">{entry.title}</span>
-              <span className="pmw-trash__meta">{[t.deletedAt(timeAgo(entry.deletedAt, locale)), entry.children.length ? t.childCount(entry.children.length) : ''].filter(Boolean).join(' · ')}</span>
+              <span className="pmw-trash__meta">{[t.deletedAt(timeAgo(entry.deletedAt, locale)), entry.children.length ? t.childCount(entry.children.length) : '', entry.parentTrashed ? t.parentTrashed : ''].filter(Boolean).join(' · ')}</span>
             </span>
-            <PmButton small icon="restore" disabled={busy || readOnly} onClick={async () => { await workbench.tree.restore(entry.id); workbench.tree.toast(t.restored(entry.title)) }}>{t.restore}</PmButton>
+            <PmButton small icon="restore" disabled={busy || readOnly} onClick={() => void workbench.tree.restore(entry.id)}>{t.restore}</PmButton>
             <PmButton small variant="text" disabled={busy || readOnly} onClick={() => setPurging(entry)}>{t.deletePermanently}</PmButton>
           </li>
         ))}</ul>}

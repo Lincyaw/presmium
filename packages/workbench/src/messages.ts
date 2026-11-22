@@ -365,6 +365,11 @@ const zh = {
       place.quote ? `\n原文：“${place.quote}”` : '',
     ].join('')).filter(Boolean),
   ].join('\n\n'),
+  materialsRequest: (files: string[], note: string) => [
+    '根据这份文稿文件夹中的来源材料写这份文稿：先读完材料，再定标题，写出页面与正文。',
+    `来源材料：\n${files.map(file => `- ${file}`).join('\n')}`,
+    note.trim() ? `作者的要求：${note.trim()}` : '',
+  ].filter(Boolean).join('\n\n'),
   animationRequest: (page: number, title: string, place: AgentInsertion) => {
     const at = `第 ${page} 页${title ? `“${title}”` : ''}`
     return place.end ? `在${at}的末尾加一个动画：` : place.after === undefined ? `在${at}的开头加一个动画：`
@@ -738,6 +743,11 @@ const en: WorkbenchMessages = {
       place.quote ? `\nText: “${place.quote}”` : '',
     ].join('')).filter(Boolean),
   ].join('\n\n'),
+  materialsRequest: (files: string[], note: string) => [
+    'Write this document from the source material in its folder: read all of it first, then choose a title and write the pages and their text.',
+    `Source material:\n${files.map(file => `- ${file}`).join('\n')}`,
+    note.trim() ? `What the author wants: ${note.trim()}` : '',
+  ].filter(Boolean).join('\n\n'),
   animationRequest: (page: number, title: string, place: AgentInsertion) => {
     const at = `page ${page}${title ? `, “${title}”` : ''}`
     return place.end ? `Add an animation at the end of ${at}: ` : place.after === undefined ? `Add an animation at the start of ${at}: `

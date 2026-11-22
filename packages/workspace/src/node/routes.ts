@@ -66,6 +66,7 @@ export interface WorkspaceRoutesOptions {
   authoringClientRoutes?: Record<string, Route>
   projectRoutes?: Record<string, Route>
   documentImport?: Route
+  documentMaterials?: Route
   workspaceMigrate?: Route
   mcpSettings?: Route
   speechSettings?: Route
@@ -144,6 +145,7 @@ export function workspaceRoutes(options: WorkspaceRoutesOptions): ServerContribu
     ...options.authoringClientRoutes,
     ...options.projectRoutes,
     ...options.documentImport ? { 'documents/import': options.documentImport } : {},
+    ...options.documentMaterials ? { 'document/materials': options.documentMaterials } : {},
     ...options.workspaceMigrate ? { 'workspace/migrate': options.workspaceMigrate } : {},
     'files': {
       role: 'editor',

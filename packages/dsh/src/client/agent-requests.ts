@@ -14,6 +14,13 @@ import { CLIENT_MESSAGES } from './messages.ts'
  * send. Without a model the composer's takeover shows over the draft, which waits beneath it.
  */
 export function registerAgentRequests(ctx: DshClientContext, workbench: Workbench, setup: AssistantSetup): void {
+  // The workbench offers what only the AI can do (writing a document from source material) by the model's readiness.
+  ctx.effect(() => {
+    const tell = () => workbench.setAgentReadiness(setup.readiness.getSnapshot(), setup.openModels)
+    tell()
+    const off = setup.readiness.subscribe(tell)
+    return () => { off(); workbench.setAgentReadiness('unknown') }
+  }, 'presmium: tell the workbench whether the AI has a model')
   ctx.inject(['sessions', 'layout'], inner => inner.effect(() => {
     let active: DshSessionBinding | undefined
     let offRequests: (() => void) | undefined
