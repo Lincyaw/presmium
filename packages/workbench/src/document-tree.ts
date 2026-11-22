@@ -148,7 +148,7 @@ export class DocumentTreeActions {
   }
 
   /** Creates a document under `parent` (the top level when null), opens it and selects its title in the tree. */
-  async create(parent: string | null, title = this.#t.untitled): Promise<string | undefined> {
+  async create(parent: string | null, title = parent ? this.#t.untitledChild : this.#t.untitled): Promise<string | undefined> {
     const siblings = parent ? this.#store.state.documentTree?.nodes[parent]?.children : this.#store.state.documentTree?.roots
     const result = await this.operate({ type: 'create', title, parent, after: siblings?.at(-1) ?? null })
     if (!result?.created) return undefined
