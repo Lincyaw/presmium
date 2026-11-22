@@ -53,6 +53,9 @@ export const SHELL_MODULES = [
  * view is off: the default permission mode and the display of the AI's work (work details and when they collapse, send
  * behaviour while busy, performance and usage).
  */
+/** On `<html>` while the coding view is on: the statistics under the composer are shown only then (frame.css). */
+export const CODING_VIEW_ATTRIBUTE = 'data-pmw-coding-view'
+
 export const TECHNICAL_SETTINGS = { slot: 'settings.general.item', ids: ['permission', 'transcript-view', 'composer-enter', 'performance-usage'] } as const
 
 /**

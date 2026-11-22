@@ -1,4 +1,4 @@
-import { AUTHOR_DEFAULTS, TECHNICAL_SETTINGS } from './contract.ts'
+import { AUTHOR_DEFAULTS, CODING_VIEW_ATTRIBUTE, TECHNICAL_SETTINGS } from './contract.ts'
 
 const Hidden = () => null
 
@@ -11,6 +11,8 @@ const Hidden = () => null
  *
  * While the coding view (`ui-settings.enabled`) is off, each technical row is shadowed by an empty cell under its own id,
  * the slots' public way to replace a shipped cell. Turning the coding view on removes the shadows and the rows come back.
+ * The page's root carries the coding view's state, so the stylesheet keeps the composer's statistics (output speed,
+ * cache hits, context use) out of an author's view; the context meter has no slot of its own to shadow.
  */
 export function registerAuthorSettings(ctx: DshClientContext): void {
   ctx.inject(['configForms'], inner => {
@@ -39,6 +41,7 @@ export function registerAuthorSettings(ctx: DshClientContext): void {
       const enabled = inner.configForms.developerTools.enabled
       let shadows: (() => void)[] = []
       const update = () => {
+        document.documentElement.toggleAttribute(CODING_VIEW_ATTRIBUTE, enabled.getSnapshot())
         if (enabled.getSnapshot()) {
           for (const shadow of shadows) shadow()
           shadows = []
@@ -50,6 +53,7 @@ export function registerAuthorSettings(ctx: DshClientContext): void {
       const off = enabled.subscribe(update)
       return () => {
         off()
+        document.documentElement.removeAttribute(CODING_VIEW_ATTRIBUTE)
         for (const shadow of shadows) shadow()
       }
     }), 'presmium: technical settings behind the coding view')

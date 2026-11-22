@@ -97,6 +97,7 @@ zh-CN 以 Microsoft Office 的简体中文本地化为首选，没有对应时�
 | 对话 | Chat | 与 AI 助手的一次对话；“新建对话 / New Chat”“对话记录 / Chat History” | `Conversation`；会话、Session 只指浏览器的本次会话（“仅本次会话 / This session only”） |
 | 模型 | Model | AI 助手所用的语言模型 | `大模型`、`LLM` |
 | 密钥 | API Key | 模型服务的访问凭据；字段标签写作“密钥 / API key” | `凭据串` |
+| 服务商 | Service | 提供模型的公司或网关，以它自己的名称显示（DeepSeek、通义千问 / Qwen、Kimi、智谱 GLM / Zhipu GLM）；路由标识不显示 | `provider`、`deepseek-official`、`环境认证` |
 | 访问令牌 | access token | 进入工作区服务、MCP 服务与 Jupyter 服务的凭据（“访问令牌在 … 中”“Jupyter 访问令牌”）；字段标签写作“访问令牌 / Access token” | `令牌`、`token`、`访问凭据` |
 | 读者问答 | Reader Q&A | 读者在网页中向 AI 提问的插件界面 | `助教机器人` |
 | 课堂 | Classroom | 讲者与在场读者同步的课堂会话与作答 | `房间`、`Room` |
@@ -187,6 +188,8 @@ zh-CN 以 Microsoft Office 的简体中文本地化为首选，没有对应时�
 | 取消 | Cancel | 不做更改并关闭，或停止进行中的导出 | `算了` |
 | 应用 | Apply | 应用设置或参数 | `套用` |
 | 重试 | Retry | 重新执行失败的操作 | `再试一次`、Try again（按钮中） |
+| 重新发送 | Send Again | 在对话中再发一次没有完成的请求 | `重发`、`Resend` |
+| 测试连接 | Test Connection | 用填写的密钥向模型服务发一条很短的请求，确认能用 | `检测`、`Ping` |
 | 重新加载 | Reload | 重新加载页面或预览 | `重新载入`、`刷新页面` |
 | 刷新 | Refresh | 重新获取列表或预览内容，不重新加载页面 | |
 | 显示 / 隐藏 | Show / Hide | 显示或隐藏窗格 | `收起`、展开（指窗格时） |

@@ -169,7 +169,8 @@
 
 ### 7.2 复用与替换
 
-- 复用 dsh 的对话、确认卡片、会话、设置与模型设置、终端、文件、jobs、插件管理；占用品牌槽位、`settings.onboarding`、`conversation.composer` 与 `turn-error`。
+- 复用 dsh 的对话、确认卡片、会话、设置、终端、文件、jobs、插件管理；占用品牌槽位、`settings.onboarding`、`settings.section` 的“模型”、`conversation.composer` 与 `turn-error`。dsh 自己的模型页（`ui-settings-models`）在补丁中关闭。
+- 输入框下方的统计（输出速度、缓存命中、上下文占用）只在“显示代码工作视图”打开时显示：`author-settings.ts` 在 `<html>` 上标出代码工作视图的状态，样式按它隐藏 `[data-composer-dock]`。
 - 设置只给作者语言、外观、字号、“显示代码工作视图”、快捷键、“模型”与“语音服务”。`author-settings.ts` 把作者默认值写进 profile 自己的补丁层（写进 `--patch` 会让表单拒绝作者的修改）。
 - `ctx.theme.overrideTokens` 把 `--dsw-*` 令牌映射到设计令牌的明暗取值，产物经 `appearance` 跟随。工作台文字跟随 dsh 的语言；对话首页标语经 `ctx.locale.addLanguage` 替换。写进产物的文字按文稿 `lang`。
 - 客户端包用 esbuild 构建，外部依赖是 dsh 外壳模块表（React 18.3.1 由 dsh 提供），输出无文档的工厂格式 `__ModuleLoader__.load`；字体以 data URL 内联。
@@ -215,7 +216,9 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 
 ## 10. 没有模型与没有 dsh 时
 
-只装核心时，CLI、静态产物、`dev`、`serve`、VS Code 扩展与 MCP 都可用；装了 studio 而没有模型时，对话以外的全部可用。`assistant-setup.tsx` 读 `session/modelCatalog` 判断有无可路由的模型；没有时接管 `conversation.composer`，说明“AI 助手需要先设置模型”，唯一操作“设置模型”，已写的草稿保留。失败的一轮由 `turn-error` 按稳定代码以作者的话说明，原文收在折叠的“技术详情”中。
+只装核心时，CLI、静态产物、`dev`、`serve`、VS Code 扩展与 MCP 都可用；装了 studio 而没有模型时，对话以外的全部可用。`assistant-setup.tsx` 读 `session/modelCatalog` 判断有无可路由的模型；没有时接管 `conversation.composer`，说明“AI 助手需要先设置模型”，唯一操作“设置模型”，已写的草稿保留。失败的一轮由 `turn-error` 按稳定代码以作者的话说明，原文收在折叠的“详细信息”中。
+
+失败的一轮有“重新发送”（对话太长时除外，那时应新建对话），有可用模型时显示：在当前对话中再发一次作者原来的话。宿主（`presmium-assistant`）记下每个对话最近一次失败的请求（作者的原话、轮次、工作目录，存在 `$DSH_HOME/presmium/failed-requests.json`），一轮在作者的话进入之前就失败时沿用上一次的原话；不知道原话时请 AI 重新处理上面的请求。重新启动 Studio 后，若最近一次失败的请求属于本工作区、之后没有任何请求完成，工作台打开那个对话而不是空白对话，作者可直接重新发送；之后任一请求完成即不再打开它。
 
 ## 11. `presmium studio`
 
@@ -247,7 +250,10 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 
 ### 11.3 模型、局域网与代理
 
-- 只用 dsh 的模型设置。启动 Studio 的环境中的 `DEEPSEEK_API_KEY`、`DEEPSEEK_BASE_URL`、`DEEPSEEK_SEARCH_BASE_URL` 原样传给 dsh；`PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` 三者齐全时映射为 `DEEPSEEK_*` 并优先；界面中保存的密钥优先于环境。
+- “设置 → 模型”是 Presmium 自己的页面（`model-setup.tsx`，宿主一侧是 `presmium-assistant`），面向不懂技术的作者：列出 DeepSeek、通义千问（阿里云百炼）、Kimi（月之暗面）、智谱 GLM 与“其他兼容 OpenAI 的服务”。每一家有获取密钥的链接、一句计费说明（按用量计费，由服务商收取，价格见服务商的价格页并给出链接，不写具体价格）、密钥输入框、“测试连接”与“保存”；服务地址、模型名称与可用的环境变量收在“高级”中。“其他”在卡片上直接要求服务地址与模型名称。首次使用的欢迎对话框在没有可用模型时以“设置模型”为主按钮，直接打开这一页。
+- 每一家对应 dsh 的一条路由（`src/model-providers.ts`）：DeepSeek 是 `llm-deepseek` 的 `deepseek-official`；Kimi、通义千问与智谱 GLM 是 pi-ai 目录中的 `moonshotai-cn`、`qwen-token-plan-cn`、`zai-coding-cn`（模型目录与请求兼容性来自目录），后两者改指向按量计费的地址（`dashscope.aliyuncs.com/compatible-mode/v1`、`open.bigmodel.cn/api/paas/v4`）；“其他”是手写的 `presmium-custom`（OpenAI Chat Completions 协议，不用 developer 角色，输出上限用 `max_tokens`）。保存经 dsh 的设置与凭据服务写入：密钥只进凭据存储（`DEEPSEEK_API_KEY`、`DASHSCOPE_API_KEY`、`MOONSHOT_API_KEY`、`ZHIPUAI_API_KEY`、`PRESMIUM_CUSTOM_API_KEY`），配置只记引用；留空的密钥与地址保留原值。保存同时把这一家的模型设为新对话的默认模型，并给当前对话选上它。
+- “测试连接”由宿主向服务发送一条很短的请求（输出上限 16 个 token），用输入框中的密钥，留空时用已保存或启动环境中的密钥；按回答的状态映射为作者的话：成功、密钥未被接受（401、403）、余额或额度不足（402 或回答中说明额度）、服务繁忙（429、5xx）、地址或模型名称不对（404）、拒绝了请求（其他 4xx）、访问不到（网络失败或 15 秒超时）。服务商的原文不显示。
+- 启动 Studio 的环境中的 `DEEPSEEK_API_KEY`、`DEEPSEEK_BASE_URL`、`DEEPSEEK_SEARCH_BASE_URL` 原样传给 dsh；`PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` 三者齐全时映射为 `DEEPSEEK_*` 并优先；界面中保存的密钥优先于环境，页面说明正在使用启动时提供的密钥。其余配置（重试、超时、请求头等）在 profile 的配置文件中。
 - `--host` 接受本机的一个具体 IP，也接受 `0.0.0.0`。通配地址启动时打印每个局域网接口的访问地址，并警告没有登录。
 - 局域网 HTTP 支持文稿编辑、自动保存、正文与批注及组件参数的本地草稿恢复、AI 草稿读取和已有音频的导入。内容指纹统一为 SHA-256；有 Web Crypto 时使用原生实现，否则使用浏览器内的等价实现。麦克风录音仍取决于浏览器提供的 `getUserMedia`。
 - `--public-url` 交给 dsh，`--preview-url` 交给工作区服务（可带路径前缀）。预览应与工作台不同源，代理不得注入 cookie 或改写 `Origin`。云端按此为每个用户运行一个 Studio，见 [云端](cloud.md)。

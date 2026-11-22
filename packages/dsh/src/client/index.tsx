@@ -18,6 +18,7 @@ import { createObservable } from './observable.ts'
 import { isSamePath } from './paths.ts'
 import { registerAgentRequests } from './agent-requests.ts'
 import { registerAssistantSetup } from './assistant-setup.tsx'
+import { registerModelSetup } from './model-setup.tsx'
 import { rootLayoutFor } from './RootLayout.tsx'
 import { beginRootReload, restoreRootReturnPoint, saveRootReturnPoint } from './root-reload.ts'
 import { registerSourceLinks } from './source-links.tsx'
@@ -69,7 +70,9 @@ export function apply(ctx: DshClientContext): void {
   }, 'presmium: workbench')
   syncDocumentContext(ctx, workbench)
   registerWorkbenchKeys(ctx, workbench)
-  registerAgentRequests(ctx, workbench, registerAssistantSetup(ctx, workbench))
+  const assistant = registerAssistantSetup(ctx, workbench)
+  registerAgentRequests(ctx, workbench, assistant)
+  registerModelSetup(ctx, workbench, assistant.refresh)
   ctx.effect(() => ctx.locale.subscribe(() => workbench.setLocale(workbenchLocale(ctx.locale.getLocale().active))), 'presmium: language')
   ctx.effect(() => ctx.theme.overrideTokens(CLIENT_ID, DSH_THEME_TOKENS), 'presmium: 书卷 tokens')
   ctx.effect(() => {
@@ -150,7 +153,7 @@ export function apply(ctx: DshClientContext): void {
       }
     }, 'presmium: the root layout and ctx.layout')
   }
-  registerBrand(ctx, workbench)
+  registerBrand(ctx, workbench, assistant.readiness)
   registerAuthorSettings(ctx)
   registerSettingsLauncher(ctx, workbench)
   registerSpeechSettings(ctx, workbench)

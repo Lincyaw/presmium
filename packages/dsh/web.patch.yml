@@ -54,6 +54,11 @@
 # (src/client/author-settings.ts).
 - id: ui-settings-plugins
   disabled: true
+# Harness's Models page (provider routes, protocols, model catalogs, environment variables). Presmium's own page takes
+# its place (src/client/model-setup.tsx): the services an author can use by name, with the address and model folded
+# under Advanced; everything else stays in the profile's configuration file.
+- id: ui-settings-models
+  disabled: true
 - id: ui-agent-preset
   disabled: true
 # The changed-files and delivery cards under the AI's replies, with the guidance to link every file the reply names: the

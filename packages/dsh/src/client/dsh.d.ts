@@ -139,7 +139,12 @@ interface DshSessionInput {
 }
 
 interface DshClientContext {
-  remote: { session: { modelCatalog(): Promise<{ ok: boolean, value?: { routableProviders?: readonly string[] } }> } }
+  remote: { session: {
+    modelCatalog(): Promise<{ ok: boolean, value?: { routableProviders?: readonly string[] } }>
+    /** Selects the model of one session and saves it as the default for new ones. */
+    selectModel(request: { sessionId: string, provider: string, model: string }): Promise<unknown>
+    list(request: Record<string, never>): Promise<{ ok: boolean, value?: { items: readonly { sessionId: string, blank: boolean, cwd?: string }[] } }>
+  } }
   effect(effect: () => unknown, label?: string): void
   on(event: string, listener: (...args: any[]) => void): () => void
   inject(names: string[], apply: (ctx: DshClientContext) => void): void
@@ -153,7 +158,7 @@ interface DshClientContext {
   layout: { selectPanel(id: string | null): void }
   sessions: { list: DshObservable<{ byId: Record<string, { id: string, cwd?: string, retainedBy: { mainView?: number } }> }>, binding(id: string): DshSessionBinding | undefined }
   conversation: { input: { for(scope: unknown): DshSessionInput } }
-  uiWorkspace: { openWorkspace(id: string, beforeOpen?: (sessionId: string) => void): Promise<void>, startSession(id?: string): void }
+  uiWorkspace: { openWorkspace(id: string, beforeOpen?: (sessionId: string) => void): Promise<void>, startSession(id?: string): void, openSession(target: string): void }
   workspaces: { list: DshObservable<{ items: readonly { workspaceId: string, path: string }[] }> }
   configForms: {
     developerTools: { enabled: DshObservable<boolean> }

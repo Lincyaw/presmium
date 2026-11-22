@@ -1,7 +1,11 @@
 import { PmButton, PmIcon, WorkbenchProvider } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
+import { useState, useSyncExternalStore } from 'react'
 import { ASSISTANT_SLOTS, MODEL_SETTINGS } from './contract.ts'
-import { useClientMessages } from './messages.ts'
+import { mainViewAgentSession } from './document-context.ts'
+import { MODEL_SETUP_PATHS } from '../model-providers.ts'
+import type { FailedRequest } from '../model-providers.ts'
+import { CLIENT_MESSAGES, useClientMessages } from './messages.ts'
 import type { ClientMessages } from './messages.ts'
 import { createObservable } from './observable.ts'
 import { openModelSettings } from './settings-opener.ts'
@@ -17,7 +21,8 @@ interface ModelCatalogAnswer {
 
 /** The end of a failed turn, as the `turn-error` chat node carries it. */
 interface TurnErrorNode {
-  location?: { turn?: { end?: { data?: { reason?: { kind?: string, error?: { message?: string, code?: string } } } } } }
+  data?: { turn?: number }
+  location?: { turn?: { turn?: number, end?: { data?: { reason?: { kind?: string, error?: { message?: string, code?: string } } } } } }
 }
 
 /** Author-facing kinds of a failed turn, by the failure's stable code. */
@@ -37,6 +42,17 @@ const FAILURES: Record<string, FailureKind> = {
 
 /** The kinds whose recovery is in Settings → Models. */
 const SETUP_KINDS = new Set<FailureKind>(['needsModel', 'keyRejected', 'quota'])
+
+/** A request that failed for these reasons fails the same way when sent again in the same chat. */
+const NO_RESEND = new Set<FailureKind>(['tooLong'])
+
+// Relative to the page: Studio may be served below a path (`--public-url`).
+const FAILED = MODEL_SETUP_PATHS.failed.replace(/^\//, '')
+
+async function failedRequest(session?: string): Promise<FailedRequest | null> {
+  const response = await fetch(session ? `${FAILED}?session=${encodeURIComponent(session)}` : FAILED)
+  return response.ok ? await response.json() as FailedRequest | null : null
+}
 
 function failureOf(node: TurnErrorNode | undefined): { kind: FailureKind, message?: string, code?: string } {
   const reason = node?.location?.turn?.end?.data?.reason
@@ -123,8 +139,54 @@ export function registerAssistantSetup(ctx: DshClientContext, workbench: Workben
     }
   }), 'presmium: the composer explains a missing model')
 
+  // Send Again repeats the failed request's own words in the chat on screen: the host keeps the last failed request of
+  // each chat, and a request it does not know (one from before this version) is asked for again by reference.
+  let resend: ((turn: number | undefined) => Promise<void>) | undefined
+  ctx.inject(['sessions'], inner => inner.effect(() => {
+    resend = async (turn) => {
+      const row = mainViewAgentSession(inner.sessions.list.getSnapshot().byId)
+      const binding = row && inner.sessions.binding(row.id)
+      if (!row || !binding) throw new Error('no-conversation')
+      const failed = await failedRequest(row.id).catch(() => null)
+      const text = failed?.text && (turn === undefined || failed.turn === turn) ? failed.text : CLIENT_MESSAGES[workbench.state.locale].resendFallback
+      const submission = binding.session.beginSubmission({ mode: 'queue', text, attachments: [] })
+      try {
+        const result = await binding.session.prompt([{ type: 'text', text }], 'queue', undefined, submission.requestId)
+        if (!result.ok) throw new Error(result.error.message)
+      } catch (error) {
+        submission.abandon()
+        throw error
+      }
+    }
+    return () => { resend = undefined }
+  }, 'presmium: send a failed request again'))
+
+  // A restarted Studio opens a blank chat; when the author's last request failed and nothing has finished since, the
+  // chat that holds it is opened instead, so it can be sent again.
+  ctx.inject(['sessions', 'uiWorkspace', 'remote', 'remote.session'], inner => inner.effect(() => {
+    let settled = false
+    let failed: Promise<FailedRequest | null> | undefined
+    const check = () => {
+      const main = mainViewAgentSession(inner.sessions.list.getSnapshot().byId)
+      if (settled || !main) return
+      settled = true
+      failed ??= failedRequest().catch(() => null)
+      void failed.then(async (request) => {
+        if (!request || request.session === main.id) return
+        const listed = await inner.remote.session.list({}).catch(() => undefined)
+        if (!listed?.ok || !listed.value?.items.some(item => item.sessionId === request.session)) return
+        if (mainViewAgentSession(inner.sessions.list.getSnapshot().byId)?.id !== main.id) return
+        inner.uiWorkspace.openSession(request.session)
+      })
+    }
+    failed = failedRequest().catch(() => null)
+    const off = inner.sessions.list.subscribe(check)
+    check()
+    return off
+  }, 'presmium: reopen the chat whose request failed'))
+
   ctx.effect(() => ctx.slots.inject(chatNode.name, () => ctx.slots.register({ name: chatNode.name, key: chatNode.key, priority: -1 }, ({ node }: { node?: TurnErrorNode }) => (
-    <TurnFailure workbench={workbench} node={node} openModels={openModels} />
+    <TurnFailure workbench={workbench} node={node} readiness={readiness} openModels={openModels} resend={turn => resend ? resend(turn) : Promise.reject(new Error('no-conversation'))} />
   ))), 'presmium: failed turns in the author\'s terms')
 
   return { readiness, refresh: () => refresh(), openModels }
@@ -156,10 +218,18 @@ function NeedsModel({ workbench, openModels }: { workbench: Workbench, openModel
   )
 }
 
-function TurnFailure({ workbench, node, openModels }: { workbench: Workbench, node?: TurnErrorNode, openModels(): void }) {
+function TurnFailure({ workbench, node, readiness, openModels, resend }: { workbench: Workbench, node?: TurnErrorNode, readiness: AssistantSetup['readiness'], openModels(): void, resend(turn: number | undefined): Promise<void> }) {
   const t = useClientMessages(workbench)
   const failure = failureOf(node)
   const copy = failureCopy(t, failure.kind)
+  const ready = useSyncExternalStore(readiness.subscribe, readiness.getSnapshot) === 'ready'
+  const [sending, setSending] = useState<'sending' | 'sent' | 'failed'>()
+  const turn = node?.data?.turn ?? node?.location?.turn?.turn
+  const canResend = ready && !NO_RESEND.has(failure.kind) && sending !== 'sent'
+  const sendAgain = () => {
+    setSending('sending')
+    resend(turn).then(() => setSending('sent'), () => setSending('failed'))
+  }
   return (
     <WorkbenchProvider workbench={workbench}>
       <div className="pmw-turn-failure pm-ui" role="status" data-pmw-turn-failure={failure.kind}>
@@ -167,11 +237,13 @@ function TurnFailure({ workbench, node, openModels }: { workbench: Workbench, no
         <div className="pmw-turn-failure__copy">
           <p className="pmw-turn-failure__title">{copy.title}</p>
           <p>{copy.body}</p>
-          {SETUP_KINDS.has(failure.kind) && (
+          {(canResend || SETUP_KINDS.has(failure.kind)) && (
             <div className="pmw-turn-failure__actions">
-              <PmButton small onClick={openModels}>{failure.kind === 'needsModel' ? t.models : t.checkModels}</PmButton>
+              {canResend && <PmButton small variant="primary" icon="refresh" loading={sending === 'sending'} onClick={sendAgain}>{t.resend}</PmButton>}
+              {SETUP_KINDS.has(failure.kind) && <PmButton small onClick={openModels}>{failure.kind === 'needsModel' ? t.models : t.checkModels}</PmButton>}
             </div>
           )}
+          {sending === 'failed' && <p role="alert">{t.resendFailed}</p>}
           {(failure.message || failure.code) && (
             <details className="pmw-turn-failure__details">
               <summary>{t.failureDetails}</summary>

@@ -1,4 +1,5 @@
 [
+  {"file": "packages/dsh/src/client/messages.ts", "key": "CLIENT_MESSAGES.modelSetup.names.deepseek", "rule": "same text", "reason": "Brand name of the model service, written the same in both languages (glossary section 1)."},
   {"file": "packages/cli/src/messages.ts", "key": "CLI_MESSAGES.olderFormat", "rule": "JSON", "reason": "CLI error names the old file lecture.json that presmium migrate renames; the word is the file extension, not an author-facing format name."},
   {"file": "packages/cli/src/messages.ts", "key": "CLI_MESSAGES.migrateHelp", "rule": "JSON", "reason": "CLI help of presmium migrate must name the old file lecture.json that it renames; the word is the file extension, not an author-facing format name."},
   {"file": "packages/mcp/src/messages.ts", "key": "MCP_CLI_MESSAGES.workspaceLauncherMissing", "rule": "MCP", "reason": "CLI startup failure must distinguish the exact presmium mcp command, its standalone presmium-mcp executable and their connection modes so the user can run the supported entry point."},
