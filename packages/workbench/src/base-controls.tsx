@@ -46,6 +46,12 @@ const TOOLTIP_DELAY = 500
 const TOOLTIP_SKIP = 300
 let tooltipClosedAt = 0
 
+/** Focus moved by the program, such as to the first control of a newly opened view after a dialog closes, is not the
+ * author's: only focus the browser marks as keyboard focus opens the tooltip, so it does not stay up with no pointer. */
+function focusShowsTooltip(element: Element): boolean {
+  try { return element.matches(':focus-visible') } catch { return true }
+}
+
 /** A pointer shows the tooltip after 500 ms, keyboard focus at once; within 300 ms of one closing, the next opens at
  * once, so moving along a toolbar does not wait again. The timing is shared by every tooltip on the page. */
 /** A control's name, its shortcut, and optionally a sentence on what it does (`description`) below them. */
@@ -68,7 +74,7 @@ export function PmTooltip({ label, shortcut, description, children }: { label: s
   }
   return (
     <Tooltip.Provider delayDuration={0} skipDelayDuration={0}>
-      <Tooltip.Root open={open} onOpenChange={change}><Tooltip.Trigger asChild onPointerEnter={() => { pointer.current = true }} onPointerLeave={() => { pointer.current = false }}>{children}</Tooltip.Trigger><Tooltip.Portal><div className="pm-ui-tooltip-layer"><Tooltip.Content className="pm-ui-tooltip pm-ui" side="bottom" sideOffset={6} collisionPadding={8}>
+      <Tooltip.Root open={open} onOpenChange={change}><Tooltip.Trigger asChild onPointerEnter={() => { pointer.current = true }} onPointerLeave={() => { pointer.current = false }} onFocus={event => { if (!focusShowsTooltip(event.currentTarget)) event.preventDefault() }}>{children}</Tooltip.Trigger><Tooltip.Portal><div className="pm-ui-tooltip-layer"><Tooltip.Content className="pm-ui-tooltip pm-ui" side="bottom" sideOffset={6} collisionPadding={8}>
         {label}{shortcut && <kbd className="pm-ui-shortcut">{shortcut}</kbd>}{description && description !== label && <span className="pm-ui-tooltip__description">{description}</span>}
       </Tooltip.Content></div></Tooltip.Portal></Tooltip.Root>
     </Tooltip.Provider>
