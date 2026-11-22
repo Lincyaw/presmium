@@ -15,6 +15,11 @@ import { NARRATION_NODE } from './markdown.ts'
 
 const IMAGE_TYPES: Record<string, string> = { png: 'png', jpg: 'jpg', jpeg: 'jpg', gif: 'gif', webp: 'webp', svg: 'svg', bmp: 'bmp', avif: 'avif' }
 const TITLE_LENGTH = 80
+// The widest line a slide may hold alone and still be taken for its title, a CJK character (or full-width mark) 1 and
+// any other character a half.
+const SOLE_TITLE_WIDTH = 20
+const WIDE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\u2014\u3000-\u303f\uff00-\uffef]/u
+const width = (text: string) => [...text].reduce((sum, char) => sum + (WIDE.test(char) ? 1 : 0.5), 0)
 const SKIPPED_PLACEHOLDERS = new Set(['dt', 'ftr', 'sldNum', 'hdr', 'sldImg'])
 const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu
 const LETTER = /\p{L}/gu
@@ -253,12 +258,15 @@ export async function powerpointMarkdown(buffer: Uint8Array, name: string): Prom
       return items.sort((a, b) => a.y - b.y || a.x - b.x || a.order - b.order)
     }
     const items = await collect(child(slide.root, 'cSld', 'spTree'))
-    // A slide without a title placeholder is titled by its first line of text when that reads as one: short, not a
-    // list item, and near the top of the slide or the slide's only text.
+    // A slide without a title placeholder is titled by its first line of text when that reads as one: not a list item,
+    // not a sentence, and either a short line near the top with more of the slide below it, or a very short line that is
+    // the slide's only content (a section divider). Other text, a lone sentence in a free text box say, stays the body.
     const texts = items.filter(item => item.paragraphs)
     const lead = texts[0], first = lead?.paragraphs![0]
-    if (title === undefined && lead && first && !first.list && plainText(first.content).trim().length <= TITLE_LENGTH
-      && (lead.y < slideHeight * 0.3 || (texts.length === 1 && lead.paragraphs!.length === 1))) {
+    const line = first ? plainText(first.content).trim() : ''
+    const sole = items.length === 1 && lead?.paragraphs!.length === 1
+    if (title === undefined && lead && first && !first.list && !/[。！？；：.!?;:]$/.test(line)
+      && (sole ? width(line) <= SOLE_TITLE_WIDTH : line.length <= TITLE_LENGTH && lead.y < slideHeight * 0.3)) {
       title = plainText(first.content).trim()
       lead.nodes = blocksOf(lead.paragraphs!.slice(1))
     }
