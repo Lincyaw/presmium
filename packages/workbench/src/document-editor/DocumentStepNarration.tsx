@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import type { Narration, NarrationNode, PresmiumDocument } from '@lincyaw/kernel'
 import { randomUUID } from '@lincyaw/kernel'
 import { PmIconButton } from '../components.tsx'
-import { useWorkbench, useWorkbenchState } from '../context.tsx'
+import { useInheritedFrom, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { isAgentChanging } from '../workbench-state.ts'
 import { latestAgentActivity } from '../agent-activity.ts'
 import { NarrationEditor } from './NarrationEditor.tsx'
@@ -66,6 +66,7 @@ export function DocumentStepNarration({ blockId, sectionId, stepId, expanded, ad
   const timingStorageFailure = useWorkbenchState(state => state.documentTimingDraftStorageFailure)
   const activities = useWorkbenchState(state => state.agentActivities)
   const activity = latestAgentActivity(activities?.filter(value => value.document === source?.directory && value.targets.some(target => target.step === stepId)))
+  const inheritedStart = useInheritedFrom('production.defaults.narrationStart'), inheritedHold = useInheritedFrom('production.defaults.minimumHoldMs'), inheritedPause = useInheritedFrom('production.defaults.trailingPauseMs')
   if (workbench.client.capabilities?.narration === false) return null
   const document = source?.content, section = document?.sections[sectionId], step = document?.steps[stepId]
   if (!source?.identity || !document || !section || !step) return null
@@ -90,7 +91,8 @@ export function DocumentStepNarration({ blockId, sectionId, stepId, expanded, ad
       <NarrationField key={`narration:${source.identity}:${source.reset}:${stepId}`}
         identity={source.identity!} reset={source.reset} blockId={blockId} stepId={stepId}
         content={ids.map(id => ({ id, content: document.narrations[id]!.content }))} readOnly={readOnly} advanced={advanced} onPause={onPause} />
-      <StepProductionEditor key={`timing:${source.identity}:${source.reset}:${stepId}`} document={effectiveOf(document, source.inherited)} stepId={stepId} locale={locale} readOnly={readOnly} advanced={advanced}
+      <StepProductionEditor key={`timing:${source.identity}:${source.reset}:${stepId}`} document={effectiveOf(document, source.inherited)} stepId={stepId}
+        inheritedFrom={{ ...document.production.defaults.narrationStart === undefined && inheritedStart ? { narrationStart: inheritedStart } : {}, ...document.production.defaults.minimumHoldMs === undefined && inheritedHold ? { minimumHoldMs: inheritedHold } : {}, ...document.production.defaults.trailingPauseMs === undefined && inheritedPause ? { trailingPauseMs: inheritedPause } : {} }} locale={locale} readOnly={readOnly} advanced={advanced}
         onPause={onPause} onInteraction={() => workbench.editing.interact()}
         onChange={patch => workbench.production.setStepTiming(stepId, patch, source.identity)}
         drafts={{ minimumHoldMs: workbench.production.timingDraft(stepId, 'minimumHoldMs', source.identity, source.reset), trailingPauseMs: workbench.production.timingDraft(stepId, 'trailingPauseMs', source.identity, source.reset) }}

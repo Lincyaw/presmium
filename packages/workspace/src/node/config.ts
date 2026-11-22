@@ -1,9 +1,9 @@
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { effectiveDocumentIn, providedDocuments, inheritedSettingsIn, WORKSPACE_CONFIG, workspaceDefaults, workspaceDocuments, workspaceSettings } from '@lincyaw/compiler'
+import { effectiveDocumentIn, providedDocuments, inheritedSettingsIn, settingOriginsIn, WORKSPACE_CONFIG, workspaceDefaults, workspaceDocuments, workspaceSettings } from '@lincyaw/compiler'
 import type { OperatorSettings, WorkspaceDocuments } from '@lincyaw/compiler'
 import { APPROVAL_KINDS, DOCUMENT_ENTRY, errorMessage, isRecord } from '@lincyaw/kernel'
-import type { ApprovalKind, DocumentDefaults, DocumentSummary, EffectiveDocument, PresmiumDocument } from '@lincyaw/kernel'
+import type { ApprovalKind, DocumentDefaults, DocumentSummary, EffectiveDocument, PresmiumDocument, SettingOrigins } from '@lincyaw/kernel'
 import type { ApprovalPolicy } from '@lincyaw/server'
 import { parse as parseYaml } from 'yaml'
 
@@ -219,4 +219,9 @@ export function effectiveContent(config: WorkspaceConfig, dir: string, content: 
 /** What the document in `dir` inherits from its ancestors and the workspace defaults, without its own settings. */
 export function inheritedContent(config: WorkspaceConfig, dir: string, content: PresmiumDocument): DocumentDefaults {
   return inheritedSettingsIn(config.root, join(config.root, dir ? `${dir}/${DOCUMENT_ENTRY}` : DOCUMENT_ENTRY), content)
+}
+
+/** Which ancestor (or the workspace defaults, null) each setting the document in `dir` inherits comes from. */
+export function inheritedOrigins(config: WorkspaceConfig, dir: string, content: PresmiumDocument): SettingOrigins {
+  return settingOriginsIn(config.root, join(config.root, dir ? `${dir}/${DOCUMENT_ENTRY}` : DOCUMENT_ENTRY), content)
 }

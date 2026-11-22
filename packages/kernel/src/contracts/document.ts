@@ -54,6 +54,13 @@ export interface DocumentDefaults {
   production?: { defaults?: ProductionDefaults, captions?: CaptionStyle }
 }
 
+/**
+ * Where each inherited setting comes from: the ID of the nearest ancestor that sets it, or null for the workspace
+ * defaults. Keys: `lang`, `plugins`, `presmium.<plugin>`, `renderers.<renderer>`, `execute`, `checks`,
+ * `production.defaults.<field>` and `production.captions`; a setting nothing above the document sets has no key.
+ */
+export type SettingOrigins = Record<string, DocumentId | null>
+
 /** The settings a document decides with: its own, filled in from its ancestors and the workspace defaults. */
 export interface EffectiveSettings extends DocumentDefaults {
   lang: string

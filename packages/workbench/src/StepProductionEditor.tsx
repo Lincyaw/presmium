@@ -3,7 +3,7 @@ import type { PresmiumDocument } from '@lincyaw/kernel'
 import { PmButton, PmField, PmInput, PmSegmented } from './components.tsx'
 import type { Locale } from './messages.ts'
 import { stepNarrationStarts, stepTimingValue } from './step-production.ts'
-import type { ProductionSource, StepDurationDraft, StepDurationKey, StepTimingPatch } from './step-production.ts'
+import type { ProductionSource, StepDurationDraft, StepDurationKey, StepTimingKey, StepTimingPatch } from './step-production.ts'
 
 const MESSAGES = {
   'zh-CN': {
@@ -34,6 +34,8 @@ interface DurationFieldProps {
   label: string
   value?: number
   source: ProductionSource
+  /** What `source` says, when it is more than the source's name (the ancestor a document default comes from). */
+  sourceLabel?: string
   locale: Locale
   readOnly?: boolean
   draft?: StepDurationDraft
@@ -46,7 +48,7 @@ interface DurationFieldProps {
 export interface StepDraftControl { composing(): boolean, clear(): void }
 
 /** Short author intent, never an estimated timestamp or a second playback clock. */
-function DurationField({ label, value, source, locale, readOnly, draft, onDraft, onChange, onComposition, controlKey, registerControl }: DurationFieldProps) {
+function DurationField({ label, value, source, sourceLabel, locale, readOnly, draft, onDraft, onChange, onComposition, controlKey, registerControl }: DurationFieldProps) {
   const t = MESSAGES[locale], current = useRef({ onComposition, onChange, onDraft, value, registerControl })
   current.current = { onComposition, onChange, onDraft, value, registerControl }
   const [text, setText] = useState(draft?.text ?? (value === undefined ? '' : String(value))), [error, setError] = useState(draft?.error ?? false)
@@ -63,7 +65,7 @@ function DurationField({ label, value, source, locale, readOnly, draft, onDraft,
     setError(false); current.current.onDraft?.(undefined); current.current.onChange(number); return true
   }
   return <PmInput label={locale === 'zh-CN' ? `${label}（${t.unit}）` : `${label} (${t.unit})`} width="number" inputMode="decimal" maxLength={256} value={text} placeholder={t.automatic}
-    hint={draft && !error && !draft.review ? `${t.source[source]} · ${t.pending}` : t.source[source]} error={draft?.review ? t.review : error ? t.invalid : undefined} readOnly={readOnly}
+    hint={draft && !error && !draft.review ? `${sourceLabel ?? t.source[source]} · ${t.pending}` : sourceLabel ?? t.source[source]} error={draft?.review ? t.review : error ? t.invalid : undefined} readOnly={readOnly}
     onFocus={() => { focused.current = true }}
     onChange={event => {
       setText(event.target.value)
@@ -87,6 +89,8 @@ function DurationField({ label, value, source, locale, readOnly, draft, onDraft,
 export interface StepProductionEditorProps {
   document: PresmiumDocument
   stepId: string
+  /** For a document default the document inherits: where it comes from (“Inherited from …”). */
+  inheritedFrom?: Partial<Record<StepTimingKey, string>>
   locale: Locale
   readOnly?: boolean
   advanced?: boolean
@@ -102,12 +106,13 @@ export interface StepProductionEditorProps {
 }
 
 /** A reusable view of the canonical step production, including inherited and migrated settings. */
-export function StepProductionEditor({ document, stepId, locale, readOnly, advanced = true, onPause, onInteraction, onChange, drafts, onDraft, draftStorageFailure, onComposition, draftControlKey, registerDraftControl }: StepProductionEditorProps) {
+export function StepProductionEditor({ document, stepId, inheritedFrom, locale, readOnly, advanced = true, onPause, onInteraction, onChange, drafts, onDraft, draftStorageFailure, onComposition, draftControlKey, registerDraftControl }: StepProductionEditorProps) {
   const t = MESSAGES[locale], [unifying, setUnifying] = useState(false)
   const start = stepTimingValue(document, stepId, 'narrationStart'), minimum = stepTimingValue(document, stepId, 'minimumHoldMs'), trailing = stepTimingValue(document, stepId, 'trailingPauseMs')
   const narrations = stepNarrationStarts(document, stepId), hasOverrides = narrations.some(value => value.overridden)
   const mixed = new Set(narrations.map(value => value.value ?? 'with-animation')).size > 1
   const hasStepTiming = [start, minimum, trailing].some(value => value.source === 'step')
+  const sourceOf = (key: StepTimingKey, source: ProductionSource) => source === 'document' && inheritedFrom?.[key] || t.source[source]
   const apply = (patch: StepTimingPatch) => { if (!readOnly) { onPause(); onChange(patch) } }
   const options = [{ value: 'with-animation', label: t.during, icon: 'timing-during' as const }, { value: 'after-animation', label: t.after, icon: 'timing-after' as const }]
   return <section className="pm-ui-step-production" contentEditable={false} data-step-production={stepId} aria-label={t.timing}
@@ -117,19 +122,19 @@ export function StepProductionEditor({ document, stepId, locale, readOnly, advan
     </div>}
     {!advanced ? <PmField group label={t.start} density="compact" hint={mixed ? t.mixed : undefined}>
       <div className="pm-ui-step-production__actions"><PmSegmented label={t.start} value={mixed ? '' : narrations[0]?.value ?? start.value ?? 'with-animation'} options={options} disabled={readOnly} onChange={value => apply({ narrationStart: value as 'with-animation' | 'after-animation' })} /></div>
-    </PmField> : <><PmField group label={t.start} density="compact" hint={hasOverrides ? (mixed ? t.mixed : t.legacy) : t.source[start.source]}>
+    </PmField> : <><PmField group label={t.start} density="compact" hint={hasOverrides ? (mixed ? t.mixed : t.legacy) : sourceOf('narrationStart', start.source)}>
       {!hasOverrides && <div className="pm-ui-step-production__actions"><PmSegmented label={t.start} value={start.value ?? ''} options={options} disabled={readOnly} onChange={value => apply({ narrationStart: value as 'with-animation' | 'after-animation' })} /></div>}
       {hasOverrides && <>
-        <div className="pm-ui-step-production__narration-settings">{narrations.map((entry, index) => <span key={entry.id} className="pm-ui-field__hint">{t.count(index + 1, entry.value === 'after-animation' ? t.after : t.during)}{entry.overridden ? ` · ${t.legacy}` : ` · ${t.source[start.source]}`}</span>)}</div>
+        <div className="pm-ui-step-production__narration-settings">{narrations.map((entry, index) => <span key={entry.id} className="pm-ui-field__hint">{t.count(index + 1, entry.value === 'after-animation' ? t.after : t.during)}{entry.overridden ? ` · ${t.legacy}` : ` · ${sourceOf('narrationStart', start.source)}`}</span>)}</div>
         <div className="pm-ui-step-production__actions"><PmButton small disabled={readOnly} onClick={() => setUnifying(value => !value)} aria-expanded={unifying}>{t.unify}</PmButton></div>
         {unifying && <><span className="pm-ui-field__hint">{t.unifyHint}</span><div className="pm-ui-step-production__actions"><PmSegmented label={t.unify} value="" options={options} disabled={readOnly} onChange={value => { apply({ narrationStart: value as 'with-animation' | 'after-animation' }); setUnifying(false) }} /></div></>}
       </>}
     </PmField>
     <div className="pm-ui-step-production__durations">
-      <DurationField label={t.minimum} value={minimum.value} source={minimum.source} locale={locale} readOnly={readOnly} draft={drafts?.minimumHoldMs} onDraft={draft => onDraft?.('minimumHoldMs', draft)}
+      <DurationField label={t.minimum} value={minimum.value} source={minimum.source} sourceLabel={sourceOf('minimumHoldMs', minimum.source)} locale={locale} readOnly={readOnly} draft={drafts?.minimumHoldMs} onDraft={draft => onDraft?.('minimumHoldMs', draft)}
         controlKey={draftControlKey} registerControl={registerDraftControl && (control => registerDraftControl('minimumHoldMs', control))}
         onChange={value => apply({ minimumHoldMs: value })} onComposition={composing => onComposition?.('minimumHoldMs', composing)} />
-      <DurationField label={t.trailing} value={trailing.value} source={trailing.source} locale={locale} readOnly={readOnly} draft={drafts?.trailingPauseMs} onDraft={draft => onDraft?.('trailingPauseMs', draft)}
+      <DurationField label={t.trailing} value={trailing.value} source={trailing.source} sourceLabel={sourceOf('trailingPauseMs', trailing.source)} locale={locale} readOnly={readOnly} draft={drafts?.trailingPauseMs} onDraft={draft => onDraft?.('trailingPauseMs', draft)}
         controlKey={draftControlKey} registerControl={registerDraftControl && (control => registerDraftControl('trailingPauseMs', control))}
         onChange={value => apply({ trailingPauseMs: value })} onComposition={composing => onComposition?.('trailingPauseMs', composing)} />
     </div></>}

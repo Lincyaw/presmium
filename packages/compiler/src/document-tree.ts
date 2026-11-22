@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { dirname, join, relative, resolve, sep } from 'node:path'
-import { DOCUMENT_ENTRY, documentTree, effectiveSettings, isRecord, ranksAfter, withEffectiveSettings } from '@lincyaw/kernel'
-import type { DocumentDefaults, DocumentPlacement, PlacementTree, DocumentTreeNode, EffectiveDocument, PresmiumDocument } from '@lincyaw/kernel'
+import { DOCUMENT_ENTRY, documentTree, effectiveSettings, isRecord, ranksAfter, settingOrigins, withEffectiveSettings } from '@lincyaw/kernel'
+import type { DocumentDefaults, DocumentPlacement, PlacementTree, DocumentTreeNode, EffectiveDocument, PresmiumDocument, SettingOrigins } from '@lincyaw/kernel'
 import { findWorkspaceRoot } from './workspace.ts'
 import { WORKSPACE_CONFIG, workspaceSettings } from './workspace-settings.ts'
 
@@ -164,6 +164,12 @@ export function inheritedSettingsIn(root: string, entry: string, document: Presm
   const { lang: _lang, ...merged } = effectiveSettings(ancestors, defaults)
   const lang = [defaults.lang, ...ancestors.map(ancestor => ancestor.metadata.lang)].filter((value): value is string => typeof value === 'string').at(-1)
   return { ...merged, ...lang !== undefined ? { lang } : {} }
+}
+
+/** Which ancestor (or the workspace defaults, null) each setting the document inherits comes from. */
+export function settingOriginsIn(root: string, entry: string, document: PresmiumDocument): SettingOrigins {
+  const { ancestors, defaults } = inheritance(root, entry, document)
+  return settingOrigins(ancestors, defaults)
 }
 
 /** `effectiveDocumentIn` for a document whose workspace is found upward from its file, as the compiler finds it. */

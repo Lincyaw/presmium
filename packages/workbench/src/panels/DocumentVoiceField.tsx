@@ -14,7 +14,7 @@ export function DocumentVoiceField({ stepId, disabled = false, onGenerate }: { s
   const locale = useWorkbenchState(state => state.locale)
   const blocked = useWorkbenchState(state => Boolean(state.authoring?.loading || state.authoring?.composing) || isAgentChanging(state))
   const [open, setOpen] = useState(false)
-  const inheritedFrom = useInheritedFrom()
+  const inheritedFrom = useInheritedFrom('production.defaults.voiceSource')
   useEffect(() => { setOpen(false) }, [source?.identity, stepId])
   const document = source?.content, step = document?.steps[stepId], p = PRODUCTION_MESSAGES[locale]
   if (!document || !step || !source?.identity) return null
@@ -24,7 +24,7 @@ export function DocumentVoiceField({ stepId, disabled = false, onGenerate }: { s
     : voice.value?.type === 'none' ? p.none
       : voice.value?.type === 'recording' ? recording?.title || p.recording : p.unset
   return <>
-    <PmField group label={p.voice} hint={voice.inheritedFrom === 'document' && !document.production.defaults.voiceSource && source.inherited?.production?.defaults?.voiceSource ? inheritedFrom : p.inherited[voice.inheritedFrom]}>
+    <PmField group label={p.voice} hint={voice.inheritedFrom === 'document' && !document.production.defaults.voiceSource && source.inherited?.production?.defaults?.voiceSource && inheritedFrom || p.inherited[voice.inheritedFrom]}>
       <span>{label}</span>
       <div className="pmw-voice__actions">
         <PmButton small icon="audio" disabled={disabled || blocked} onClick={() => { workbench.pauseDocumentStep(step.sectionId, stepId); workbench.stopAuditions(); setOpen(true) }}>{p.choose}</PmButton>

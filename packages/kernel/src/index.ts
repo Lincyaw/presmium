@@ -21,7 +21,7 @@ export { createAnchorResolverRegistry, isRenderable, parseAnchor } from './ancho
 export type { ParsedAnchor } from './anchors.ts'
 export { diagnosticOf } from './diagnostics.ts'
 export { DOCUMENT_JSON_SCHEMA, DOCUMENT_UPGRADE_CODE, validateDocument } from './document.ts'
-export { documentSettings, effectiveSettings, withEffectiveSettings, withInheritedSettings } from './document-settings.ts'
+export { documentSettings, effectiveSettings, settingOrigins, withEffectiveSettings, withInheritedSettings } from './document-settings.ts'
 export type { EffectiveDocument } from './document-settings.ts'
 export { documentTree, ranksAfter, ranksBetween } from './document-tree.ts'
 export type { PlacementTree, DocumentTreeNode, DocumentTreeProblem } from './document-tree.ts'

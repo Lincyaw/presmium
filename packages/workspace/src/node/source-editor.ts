@@ -3,9 +3,9 @@ import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, readdir
 import { join } from 'node:path'
 import { WORKSPACE_CONFIG } from '@lincyaw/compiler'
 import { DOCUMENT_ENTRY, SOURCE_MAX_BYTES, SOURCE_MAX_FILES } from '@lincyaw/kernel'
-import type { ConflictAnswer, DocumentFileChange, FilesAnswer, Member, Revision, SavedAnswer, SourceAnswer, SourceFile, SourceTransactionAnswer, SourceTransactionChange, DocumentDefaults, EffectiveDocument, PresmiumDocument } from '@lincyaw/kernel'
+import type { ConflictAnswer, DocumentFileChange, FilesAnswer, Member, Revision, SavedAnswer, SourceAnswer, SourceFile, SourceTransactionAnswer, SourceTransactionChange, DocumentDefaults, EffectiveDocument, PresmiumDocument, SettingOrigins } from '@lincyaw/kernel'
 import { isWithin } from '../domain/paths.ts'
-import { effectiveContent, inheritedContent, listDocumentEntries, readDocumentSummary } from './config.ts'
+import { effectiveContent, inheritedContent, inheritedOrigins, listDocumentEntries, readDocumentSummary } from './config.ts'
 import type { DocumentEntry, WorkspaceConfig } from './config.ts'
 import { RequestError } from './errors.ts'
 import { checkDocumentText } from './document-check.ts'
@@ -81,6 +81,11 @@ export class SourceEditor {
   /** What the document in `document` inherits from its ancestors and the workspace defaults. */
   inherited(document: string, content: PresmiumDocument): DocumentDefaults {
     return inheritedContent(this.#config, document, content)
+  }
+
+  /** Which ancestor (or the workspace defaults, null) each setting the document in `document` inherits comes from. */
+  inheritedFrom(document: string, content: PresmiumDocument): SettingOrigins {
+    return inheritedOrigins(this.#config, document, content)
   }
 
   scope(document: string): Scope {

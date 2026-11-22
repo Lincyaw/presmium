@@ -34,13 +34,26 @@ export function useTreeMessages(): DocumentTreeMessages {
   return DOCUMENT_TREE_MESSAGES[useWorkbenchState(state => state.locale)]
 }
 
-/** Where the open document's inherited settings come from: its parent in the document tree, else the workspace defaults. */
-export function useInheritedFrom(): string {
+/**
+ * Where the open document's inherited setting `key` (a `SettingOrigins` key, such as `production.captions`) comes
+ * from: the ancestor that sets it, else the workspace defaults; undefined when nothing above the document sets it. A
+ * host that does not say where settings come from names the parent.
+ */
+export function useInheritedFrom(key: string): string | undefined {
   const t = useTreeMessages()
-  const parent = useWorkbenchState(state => {
-    const id = state.authoring?.content?.id
+  const origin = useWorkbenchState(state => {
     const nodes = state.documentTree?.nodes
-    return id && nodes ? nodes[nodes[id]?.parent ?? '']?.title : undefined
+    const titleOf = (id: string) => nodes?.[id]?.title ?? state.documents?.documents.find(doc => doc.id === id)?.title
+    const from = state.authoring?.inheritedFrom
+    if (from) {
+      if (!Object.hasOwn(from, key)) return undefined
+      const id = from[key] as string | null
+      if (id === null) return null
+      const title = titleOf(id)
+      if (title !== undefined) return title
+    }
+    const id = state.authoring?.content?.id
+    return id && nodes ? nodes[nodes[id]?.parent ?? '']?.title ?? null : null
   })
-  return parent ? t.inheritedFrom(parent) : t.inheritedWorkspace
+  return origin === undefined ? undefined : origin === null ? t.inheritedWorkspace : t.inheritedFrom(origin)
 }
