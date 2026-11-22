@@ -9,7 +9,7 @@ export type StudioState = 'stopped' | 'starting' | 'running' | 'stopping'
  */
 export type StudioStage = 'stopped' | 'stopping' | 'container' | 'workspace' | 'studio' | 'ready'
 
-interface HubUser { name: string, servers?: Record<string, { ready?: boolean, pending?: string | null, stopped?: boolean }> }
+interface HubUser { name: string, last_activity?: string | null, servers?: Record<string, { ready?: boolean, pending?: string | null, stopped?: boolean }> }
 
 /**
  * The console as a JupyterHub service: its token may create users, start and stop their servers, and reach the
@@ -41,7 +41,15 @@ export class Hub {
     return server.ready ? 'running' : 'starting'
   }
 
-  /** Starts the user's Studio; `author` names their git commits when they have not signed in to the Hub yet. */
+  /** Whether the user's Studio has never run: the Hub has no such user yet, or has never seen it active. */
+  async firstStart(name: string): Promise<boolean> {
+    const response = await this.#api(`/users/${encodeURIComponent(name)}`)
+    if (response.status === 404) return true
+    if (!response.ok) throw new CloudError(502, 'hub-unavailable')
+    return !(await response.json() as HubUser).last_activity
+  }
+
+  /** Starts the user's Studio;`author` names their git commits when they have not signed in to the Hub yet. */
   async start(name: string, author?: CloudUser): Promise<StudioState> {
     const created = await this.#api(`/users/${encodeURIComponent(name)}`, { method: 'POST' })
     if (!created.ok && created.status !== 409) throw new CloudError(502, 'hub-unavailable')

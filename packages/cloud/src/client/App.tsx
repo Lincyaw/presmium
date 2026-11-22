@@ -79,19 +79,23 @@ function Launch({ t, locale }: { t: Messages, locale: Locale }) {
   const [failed, setFailed] = useState<unknown>()
   const [stalled, setStalled] = useState<string>()
   const [attempt, setAttempt] = useState(0)
+  // Only a first start (a new author, or a workspace being prepared again) is told it takes longer.
+  const [firstStart, setFirstStart] = useState(false)
   const seen = useRef(new Set<StudioStage>())
   useEffect(() => {
     let alive = true
     setFailed(undefined)
     void (async () => {
-      let starts = 0
+      let starts = 0, asked = false
       // A start that has not finished in five minutes will not: the author decides.
       const until = Date.now() + 300_000
       try {
         while (alive) {
           if (Date.now() > until) { setFailed(true); return }
-          const progress = await request<{ stage: StudioStage, url: string }>(`/api/studio/progress?locale=${locale}`)
+          const progress = await request<{ stage: StudioStage, url: string, firstStart?: boolean }>(`/api/studio/progress?locale=${locale}${asked ? '' : '&first=1'}`)
           if (!alive) return
+          asked = true
+          if (progress.firstStart || progress.stage === 'workspace') setFirstStart(true)
           if (progress.stage === 'ready') {
             seen.current.add('ready'); setStage('ready')
             const hops = recentHops()
@@ -121,7 +125,7 @@ function Launch({ t, locale }: { t: Messages, locale: Locale }) {
   const shown = STAGES.filter((item, index) => index === current || index < current && (item === 'container' || seen.current.has(item)))
   return <div className="pmc-welcome"><PmCard>
     <h1 className="pm-ui-card__title">{t.launchTitle}</h1>
-    {failed === undefined && !stalled && <p className="pm-ui-section-card__description">{t.launchHint}</p>}
+    {firstStart && failed === undefined && !stalled && <p className="pm-ui-section-card__description">{t.launchHint}</p>}
     <ol className="pmc-stages">{shown.map(item => <li key={item}><PmAgentActivity label={labels[item]} state={failed !== undefined && item === stage ? 'failed' : item === stage && !stalled ? 'running' : 'done'} /></li>)}</ol>
     {failed !== undefined && <><PmNotice tone="danger">{failed instanceof Error ? failureMessage(failed, t) : t.launchFailed}</PmNotice><div className="pmc-actions"><PmButton variant="primary" icon="refresh" onClick={() => { seen.current.clear(); setStage('container'); setAttempt(value => value + 1) }}>{t.retry}</PmButton></div></>}
     {stalled && <><PmNotice>{t.launchStalled}</PmNotice><div className="pmc-actions"><a className="pm-ui-button pm-ui-button--primary" href={stalled} onClick={() => { try { sessionStorage.removeItem(HOPS) } catch { /* Nothing kept. */ } }}><span>{t.openStudio}</span></a></div></>}
@@ -137,11 +141,11 @@ function Home({ t, locale, mcpUrl }: { t: Messages, locale: Locale, mcpUrl: stri
   const mutation = useMutation()
   const [sharing, setSharing] = useState<WorkspaceDocument>()
   return <div className="pmc-content">
+    <header className="pm-ui-page-heading"><h1 className="pm-ui-page-heading__title">{t.settings}</h1><p className="pm-ui-page-heading__description">{t.settingsHint}</p></header>
     <PmCard>
       <SectionHeading title={t.studioTitle} description={t.studioHint}>{state && <Status status={state} t={t} />}</SectionHeading>
       <ResourceState resource={studio} t={t}>
         <div className="pmc-actions">
-    <header className="pm-ui-page-heading"><h1 className="pm-ui-page-heading__title">{t.settings}</h1><p className="pm-ui-page-heading__description">{t.settingsHint}</p></header>
           {studio.data && <a className="pm-ui-button pm-ui-button--primary" href={studio.data.studio.url} target="_blank" rel="noopener"><PmIcon name="external" /><span>{t.openStudio}</span></a>}
           {(state === 'running' || state === 'starting') && <PmButton icon="stop" loading={mutation.pending} onClick={() => void mutation.run(async () => { await request('/api/studio/stop', { method: 'POST' }); studio.refresh() })}>{t.stopStudio}</PmButton>}
         </div>
