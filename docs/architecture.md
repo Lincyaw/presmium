@@ -249,7 +249,7 @@ Node 入口与浏览器公开导出共用 `@lincyaw/kernel/node` 的 `packageExp
 工作台“语音服务”保存火山引擎语音 API Key 至运营者目录的 `speech/credentials.json`（`0600`），经文件锁、修订比较及原子替换写入。所有者路由只返回状态。`presmium speech key set|clear|status [<目录>]` 经同一个 `OperatorSpeechSettings` 读写这个文件（运营者目录按 `presmium voiceover` 编译文稿时的方式取得：目录所在的工作区，`PRESMIUM_OPERATOR_DIR` 可另指定），密钥只从标准输入读入、不回显，`status` 只说明是否配置及来源。共享 Node secret 解析器优先使用保存值，再回退启动环境；保存的 Key 不继承环境 App ID。配置变化刷新目录与适配器，不隐式合成或验证服务权限。
 
 - `SPEECH` 提供合成、转写、音色与配音缓存的清理（`pruneCache`）；引擎由运营者以 `PRESMIUM_SPEECH_<ID>_URL`、`_KEY`、`_PROVIDER` 定义。语音 `lang` 是 BCP 47。
-- 内置引擎 `edge` 无需设置：经 `msedge-tts` 从 Node 直接使用微软 Edge 朗读的免费音色（只合成，不转写），Edge 给出的 WebM 中的 Opus 由 mediabunny 原样移入 Ogg，再写入 AI 生成标识，不需要 FFmpeg。它排在运营者定义的引擎之后，所以没有别的合成引擎时它是默认；运营者定义 `PRESMIUM_SPEECH_EDGE_URL` 与 `_PROVIDER`（本机桥接服务）时由运营者的定义取代，`PRESMIUM_SPEECH_EDGE_MODEL=none` 关闭它。它的缓存身份不同于运营者定义的配置，同一请求已提交并锁定的配音照常使用，不必重新生成。
+- 内置引擎 `edge` 无需设置：经 `msedge-tts` 从 Node 直接使用微软 Edge 朗读的免费音色（只合成，不转写），Edge 给出的 WebM 中的 Opus 由 mediabunny 原样移入 Ogg，再写入 AI 生成标识，不需要 FFmpeg。它排在运营者定义的引擎之后，所以没有别的合成引擎时它是默认；运营者定义 `PRESMIUM_SPEECH_EDGE_URL` 与 `_PROVIDER`（本机桥接服务）时由运营者的定义取代，`PRESMIUM_SPEECH_EDGE_MODEL=none` 关闭它。Edge 的音色（如 `zh-CN-YunxiNeural`）不论来自内置引擎还是经 OpenAI 兼容的桥接服务，都按同一规则命名（“云希”，另有性别与语言），不用桥接服务自带的英文标签。它的缓存身份不同于运营者定义的配置，同一请求已提交并锁定的配音照常使用，不必重新生成。
 - 读者问答在浏览器中经读者自己的服务，不经站点服务端。
 - agent 工具的元数据标明种类（读取、操作、计费），确认按种类。
 - 每次接受的修改记录在独立的本地历史库，不推进项目 Git 分支。历史条目由 Git 对象存储，尾注 `Presmium-Origin`，会话修改另有 `Presmium-Session`、`Presmium-Turn`。

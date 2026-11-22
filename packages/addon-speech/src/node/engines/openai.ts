@@ -3,6 +3,7 @@ import { isRecord } from '@lincyaw/kernel'
 import type { EngineDefinition } from '../../domain/index.ts'
 import { oneSegment, wordsIntoSegments } from '../../domain/index.ts'
 import { SpeechError, upstreamError } from '../errors.ts'
+import { edgeVoice } from './edge-voices.ts'
 import type { EngineAdapter, EngineCloneStatus, EngineSynthesisRequest, EngineSynthesisResult, EngineTranscriptionRequest } from './types.ts'
 import { speaks } from './types.ts'
 
@@ -30,6 +31,10 @@ function voiceOf(value: unknown): VoiceInfo | undefined {
   if (!isRecord(value)) return undefined
   const id = [value.id, value.voice_id, value.name].find((v): v is string => typeof v === 'string' && v.length > 0)
   if (!id) return undefined
+  // A bridge to Edge's voices names them as the "edge" engine does, whatever its own labels ("Yunxi (zh-CN, Male)").
+  const label = typeof value.label === 'string' ? value.label : undefined
+  const edge = edgeVoice(id, typeof value.gender === 'string' ? value.gender : /\b(Female|Male)\)$/.exec(label ?? '')?.[1])
+  if (edge) return edge
   const langs = [value.lang, value.language, value.languages].flat().filter((v): v is string => typeof v === 'string')
   return { id, label: typeof value.label === 'string' ? value.label : typeof value.name === 'string' ? value.name : id, lang: langs, ...value.cloned === true ? { cloned: true } : {} }
 }
