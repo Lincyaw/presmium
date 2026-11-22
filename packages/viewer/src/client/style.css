@@ -686,6 +686,26 @@ html.pm-presenting {
   line-height: 1.6;
 }
 
+/* While captions are on, a slide keeps room at its bottom for a one-line caption, so that the caption covers none of its
+   content: the larger of the caption burned into a video (`--pm-caption-burn-*`, on a frame of the slide's height) and
+   the presentation's caption on the slide as drawn (`--pm-caption-slide-*`, at the canvas's scale `--pm-slide-scale`),
+   in the slide's own pixels. The body then fits above it. */
+.pm-slide[data-captioned] {
+  --pm-slide-caption-burned: calc(var(--pm-slide-height) * (0.028 + 0.056 * var(--pm-caption-scale) * (var(--pm-caption-burn-leading) + 0.7)));
+  --pm-slide-caption-font: clamp(calc(var(--pm-text-xs) * var(--pm-caption-scale)), calc(min(var(--pm-slide-height) * 0.056, var(--pm-slide-width) * 0.0315) * var(--pm-slide-scale, 1) * var(--pm-caption-scale)), calc(var(--pm-text-lg) * var(--pm-caption-scale)));
+  --pm-slide-caption-shown: calc(var(--pm-slide-height) * 0.028 + (var(--pm-slide-caption-font) * var(--pm-leading-ui) + 2 * var(--pm-space-2) + 2 * var(--pm-size-hairline)) / var(--pm-slide-scale, 1));
+  padding-bottom: max(2.6em, var(--pm-slide-caption-burned), var(--pm-slide-caption-shown));
+}
+
+.pm-slide--cover[data-captioned] {
+  padding-bottom: max(5.3em, var(--pm-slide-caption-burned), var(--pm-slide-caption-shown));
+}
+
+/* A full slide is a picture: the caption lies over it, as in a video. */
+.pm-slide--full[data-captioned] {
+  padding-bottom: 0;
+}
+
 .pm-slide :is(ul, ol) {
   margin: 0.67em 0;
   padding-inline-start: 1.3em;

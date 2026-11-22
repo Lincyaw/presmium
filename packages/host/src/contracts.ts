@@ -138,10 +138,15 @@ export interface ProductionPlayback {
 }
 export const PRODUCTION_PLAYBACK = defineService<ProductionPlayback>('presmium.productionPlayback')
 
-/** A loaded timed-caption player owns presentation captions until its lease is released. */
+/**
+ * A loaded timed-caption player owns presentation captions until its lease is released. `shown` tells whether it shows
+ * them (turned on, in a production preview, burned into an export): the slides keep room for them while it does.
+ */
 export interface TimedCaptions {
   readonly active: Store<boolean>
+  readonly shown: Store<boolean>
   claim(): Unsubscribe
+  show(on: boolean): void
 }
 export const TIMED_CAPTIONS = defineService<TimedCaptions>('presmium.timedCaptions')
 

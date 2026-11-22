@@ -9,7 +9,7 @@ import { useViewer, presentationConfirmed } from '../viewer-state.ts'
 import type { Viewer } from '../viewer-state.ts'
 import { overviewOpen, useActions } from './actions.ts'
 import { button, layers, useCaptionScale, useCurrentSection, useModal, useOverlayBar } from './overlay.ts'
-import { SlideFace, SlideFit, useSlides } from './slide.ts'
+import { SlideFace, SlideFit, slideCaptioned, useSlides } from './slide.ts'
 import { captionsControl, hasStepNarration } from './remote.ts'
 
 function moveInOverview(root: HTMLElement | null | undefined, key: string): boolean {
@@ -40,7 +40,9 @@ export function PresentView() {
     const ownsFullscreen = useRef(false)
     const [fullscreen, setFullscreen] = useState(false)
     const [captions, setCaptions] = useState(() => typeof location === 'undefined' || new URLSearchParams(location.search).get(CAPTIONS_PARAM) !== 'off')
-    const timedCaptions = useStore(useService(TIMED_CAPTIONS)?.active, false)
+    const timedCaptionService = useService(TIMED_CAPTIONS)
+    const timedCaptions = useStore(timedCaptionService?.active, false)
+    const timedCaptionsShown = useStore(timedCaptionService?.shown, false)
     // The page that embeds the presentation learns when the current slide is drawn: no component still loading,
     // checked after the slide's components have mounted and taken their holds.
     const loading = useStore(useService(PAGE_READINESS)?.pending, 0)
@@ -120,7 +122,7 @@ export function PresentView() {
         'data-pending-confirmation': pending || undefined,
       }, [
         h('div', { class: 'pm-present__slide', inert: pending ? '' : undefined, 'aria-hidden': pending || undefined }, [
-          h(SlideFit, { shape: shape, overlay: h('div', { ref: setCaptionContainer, className: 'pm-present__captions', hidden: !captions || !captionVisible || undefined }) }, h(SlideFace, { key: current.id, section: current, step: step })),
+          h(SlideFit, { shape: shape, overlay: h('div', { ref: setCaptionContainer, className: 'pm-present__captions', hidden: !captions || !captionVisible || undefined }) }, h(SlideFace, { key: current.id, section: current, step: step, captioned: !pending && (timedCaptions ? timedCaptionsShown : captions) && slideCaptioned(doc, current) })),
           overview
             ? h('div', { 'class': 'pm-overview', 'role': 'dialog', 'aria-label': t.present.overview }, h('ol', { class: 'pm-overview__grid' }, sections.map(s => h('li', { key: s.id }, h('button', {
                 'type': 'button',
