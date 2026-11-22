@@ -13,6 +13,9 @@ set -o pipefail
 
 readonly repository=Lincyaw/presmium
 readonly published_registry=ghcr.io/lincyaw/
+# The first version whose images serve the console, sign-in, Studio and shares at one address (--ip).
+readonly single_address_since=1.0.0-rc.131
+version_given=
 readonly minimum_compose=2.24.4
 readonly backup_helper=busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
 # Releases up to 1.0.0-rc.129 kept the shares in MinIO (volume <project>_objects). MinIO no longer publishes images, so
@@ -456,6 +459,15 @@ check_ip_certificate() {
 }
 
 # --- Releases ---------------------------------------------------------------------------------------------------
+
+version_older() { # version_older A B: true when version A comes before B (a release comes after its prereleases)
+  local a=${1%%-*} b=${2%%-*}
+  if [ "$a" != "$b" ]; then [ "$(printf '%s\n%s\n' "$a" "$b" | sort -V | head -n1)" = "$a" ]; return; fi
+  [ "$1" = "$2" ] && return 1
+  [ "$1" = "$a" ] && return 1   # A is the release itself
+  [ "$2" = "$b" ] && return 0   # B is the release, A one of its prereleases
+  [ "$(printf '%s\n%s\n' "${1#*-}" "${2#*-}" | sort -V | head -n1)" = "${1#*-}" ]
+}
 
 latest_version() {
   local tag headers status
@@ -951,6 +963,13 @@ cmd_install() {
         check_ip_certificate
       fi
     fi
+    # The single-address layout (--ip) needs images that understand it; an older installation moves to the latest.
+    if [ "$mode" = ip ] && [ -z "$version_given" ] && version_older "$version" "$single_address_since"; then
+      local newer
+      newer=$(latest_version)
+      say "The installed version $version can't serve everything at one address; using $newer (the update keeps your data)."
+      version=$newer
+    fi
     if [ "$switching" = 1 ]; then
       say ""
       say "Presmium Cloud in $install_dir is set up with $old_address."
@@ -975,6 +994,9 @@ cmd_install() {
     check_reachable
     check_ip_certificate
     [ -n "$version" ] || version=$(latest_version)
+    if [ "$mode" = ip ] && version_older "$version" "$single_address_since"; then
+      die "version $version can't serve everything at one address (--ip); use $single_address_since or later, or --sslip / --domain"
+    fi
   fi
   [ "$configured" = 1 ] || case $project in ''|*[!a-z0-9_-]*|[!a-z0-9]*) die "--name must be lower-case letters, digits, - and _" ;; esac
   check_ports
@@ -1283,7 +1305,7 @@ main() {
       --smtp-password) smtp_password=${2:?}; shift ;;
       --smtp-from) smtp_from=${2:?}; shift ;;
       --dir) install_dir=${2:?--dir needs a value}; shift ;;
-      --version) version=${2:?--version needs a value}; version=${version#v}; shift ;;
+      --version) version=${2:?--version needs a value}; version=${version#v}; version_given=1; shift ;;
       --build) build=1 ;;
       --source) source_tarball=${2:?--source needs a value}; shift ;;
       --registry) registry=${2:?--registry needs a value}; shift ;;
