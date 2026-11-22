@@ -1,7 +1,8 @@
 import { FocusScope } from '@radix-ui/react-focus-scope'
 import { PmApprovals } from '@lincyaw/host'
-import { blockText, sectionNarration } from '@lincyaw/kernel'
+import { blockText, sectionNarration, stepScript } from '@lincyaw/kernel'
 import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useStore } from '@lincyaw/host'
 import { h } from '../element.ts'
 import { nextPosition } from '../../domain/index.ts'
@@ -34,10 +35,20 @@ export function PresenterView() {
     const following = nextPosition(doc, position)
     const t = viewerMessages()
     const target = following ? viewer.section(following.section) : undefined
-    const upcoming = !following ? t.presenter.end : following.section !== section?.id ? t.presenter.nextSection(target!.title) : sectionNarration(target!).filter(block => block.at === following.step).map(blockText).join('\n') || t.presenter.nextStep(following.step)
+    const upcoming = !following ? t.presenter.end : following.section !== section?.id ? t.presenter.nextSection(target!.title) : stepScript(target!).find(entry => entry.step === following.step)?.text || sectionNarration(target!).filter(block => block.at === following.step).map(blockText).join('\n') || t.presenter.nextStep(following.step)
       const current = section
       if (!current) return null
-      const notes = sectionNarration(current)
+      // The script written for each step, as the slides' speaker notes are; narration blocks of the older format otherwise.
+      const script = stepScript(current)
+      const note = (key: string, at: number, content: ReactNode) => h('div', {
+        'key': key,
+        'class': ['pm-presenter__note', { 'pm-current': at === step }],
+        'data-step': at,
+        'aria-current': at === step ? 'step' : undefined,
+      }, content)
+      const notes = script.length
+        ? script.map(entry => note(`step-${entry.step}`, entry.step, entry.text.split('\n').map((line, i) => h('p', { key: i }, line))))
+        : sectionNarration(current).map(block => note(block.id, block.at, [h(BlockView, { block, section: current, step: step, expanded: true })]))
       return h(FocusScope, { trapped: !viewer.options.embedded, loop: !viewer.options.embedded, asChild: true,
         onMountAutoFocus: (event: Event) => { if (viewer.options.embedded) event.preventDefault() },
         onUnmountAutoFocus: (event: Event) => { if (viewer.options.embedded) event.preventDefault() },
@@ -56,14 +67,7 @@ export function PresenterView() {
           h('div', { class: 'pm-presenter__slide' }, h(SlideFit, { shape: shape }, h(SlideFace, { key: current.id, section: current, step: step, view: 'presenter' }))),
           h('div', { class: 'pm-presenter__side' }, [
             h('p', { class: 'pm-presenter__label' }, t.presenter.notes),
-            h('div', { class: 'pm-presenter__notes' }, notes.length
-              ? notes.map(block => h('div', {
-                  'key': block.id,
-                  'class': ['pm-presenter__note', { 'pm-current': block.at === step }],
-                  'data-step': block.at,
-                  'aria-current': block.at === step ? 'step' : undefined,
-                }, [h(BlockView, { block, section: current, step: step, expanded: true })]))
-              : [h('p', { class: 'pm-presenter__empty' }, t.presenter.noNotes)]),
+            h('div', { class: 'pm-presenter__notes' }, notes.length ? notes : [h('p', { class: 'pm-presenter__empty' }, t.presenter.noNotes)]),
             h('p', { class: 'pm-presenter__label' }, t.presenter.upcoming),
             following
               ? h('div', { class: 'pm-presenter__upcoming', inert: '' }, h(SlideFit, { shape: shape }, h(SlideFace, { key: `${following!.section}@${following!.step}`, section: viewer.section(following!.section)!, step: following!.step, view: 'presenter-next' })))

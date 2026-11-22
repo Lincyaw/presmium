@@ -1,7 +1,7 @@
 import { mkdir, readFile, rm } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
-import { blockText, sectionNarration } from '@lincyaw/kernel'
+import { blockText, sectionNarration, stepScript } from '@lincyaw/kernel'
 import type { ExportContext, Exporter, IRDocument, IRSection, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { playwrightChromium } from '@lincyaw/kernel/node'
 import { printSlides, slidesRenderer } from '@lincyaw/web/slides'
@@ -49,8 +49,8 @@ async function printed(ctx: ExportContext, format: 'pdf' | 'png' | 'svg' | 'layo
 
 /** A slide's speaker notes: the script of each of its steps, in order, or its narration blocks. */
 function speakerNotes(section: IRSection): string {
-  const steps = (section.stepIds ?? []).map(step => (section.stepNarrations?.[step] ?? []).map(line => line.text.trim()).filter(Boolean).join('\n')).filter(Boolean)
-  return steps.length ? steps.join('\n\n') : sectionNarration(section).map(blockText).join('\n\n')
+  const script = stepScript(section)
+  return script.length ? script.map(entry => entry.text).join('\n\n') : sectionNarration(section).map(blockText).join('\n\n')
 }
 
 function slidesExporter(id: string, label: Record<string, string>, run: Exporter['run']): Exporter {

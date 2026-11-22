@@ -62,6 +62,14 @@ export function sectionNarration(section: IRSection): IRBlock[] {
   return [...irBlocks(section.blocks)].filter(block => block.role === 'narration')
 }
 
+/** The script (讲稿) written for each step of a section, in step order; steps with no script are left out. */
+export function stepScript(section: IRSection): { step: number, text: string }[] {
+  return (section.stepIds ?? []).flatMap((id, step) => {
+    const text = (section.stepNarrations?.[id] ?? []).map(line => line.text.trim()).filter(Boolean).join('\n')
+    return text ? [{ step, text }] : []
+  })
+}
+
 const BREAKS = new Set(['paragraph', 'heading', 'listItem', 'tableRow', 'tableCell', 'code', 'math', 'blockquote', 'break'])
 
 function htmlText(html: string): string {

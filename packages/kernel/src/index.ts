@@ -64,7 +64,7 @@ export type { PageEditCapability, PageEditReason, PageRemoval } from './page-sou
 export { propText, withProp } from './props.ts'
 export { publishedUrl } from './published.ts'
 export type { PublishedUrlOptions } from './published.ts'
-export { blockState, blockText, blockVisible, blockStepState, chapters, isChapterTitle, mdastText, narrationAt, sectionNarration, tokenize } from './reading.ts'
+export { blockState, blockText, blockVisible, blockStepState, chapters, isChapterTitle, mdastText, narrationAt, sectionNarration, stepScript, tokenize } from './reading.ts'
 export type { Chapter } from './reading.ts'
 export { slideChapters, slideShape } from './slides.ts'
 export { compactSteps, viewFor } from './views.ts'

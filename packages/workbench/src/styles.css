@@ -456,6 +456,20 @@
   background: var(--pm-color-canvas);
 }
 
+/* The hidden page that measures how crowded the slides are while the author edits (`slide-fit.ts`). */
+.pmw-slide-fit-frame {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: -1;
+  inline-size: 100vw;
+  block-size: 100vh;
+  border: 0;
+  visibility: hidden;
+  pointer-events: none;
+  contain: strict;
+}
+
 /* A slide is as large as fits with the canvas around it, at the deck's proportions (`--pmw-slide-aspect`). */
 .pmw-preview__frames[data-renderer='slides'] {
   align-items: center;
