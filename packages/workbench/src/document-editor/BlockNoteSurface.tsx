@@ -226,8 +226,10 @@ export function BlockNoteSurface(props: BlockNoteSurfaceProps) {
           title: t.page, aliases: slashAliases('pageAliases'), group: t.document,
           // As with the page bar's +, the new page's default title is selected: the author's next words name it.
           onItemClick: () => {
-            const current = editor.getTextCursorPosition().block
-            const [page] = editor.insertBlocks([{ type: 'presmiumPage', props: { sectionId: randomUUID() }, content: t.untitledPage }], current, 'after')
+            const { block: current, prevBlock } = editor.getTextCursorPosition()
+            // The line the “/” was typed on, left empty, moves to the new page as its first line, unless it is all the old page has.
+            const moveLine = current.type === 'paragraph' && Array.isArray(current.content) && !current.content.length && !current.children.length && prevBlock && prevBlock.type !== 'presmiumPage'
+            const [page] = editor.insertBlocks([{ type: 'presmiumPage', props: { sectionId: randomUUID() }, content: t.untitledPage }], current, moveLine ? 'before' : 'after')
             const title = page && nativeBlockText(editor, page.id)
             if (!title) return
             editor.transact(transaction => transaction.setSelection(TextSelection.create(transaction.doc, title.from, title.to)).scrollIntoView())
