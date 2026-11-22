@@ -31,6 +31,12 @@ const CHECK_DIR = '.presmium/web/check'
 /** The findings of a document's code that does not bundle, the same in `presmium check`, a build and the preview. */
 export const CODE_CHECK = 'presmium.preview.code'
 const KEEP = 3
+/**
+ * The TypeScript options a document's code is compiled with when its own tsconfig.json cannot be read (it extends a
+ * file that is not there, e.g. a workspace copied out of a repository): Presmium's, rather than every part failing.
+ */
+const OWN_TYPESCRIPT = { compilerOptions: { target: 'ES2022', module: 'ESNext', moduleResolution: 'Bundler', jsx: 'react-jsx', allowImportingTsExtensions: true, resolveJsonModule: true, useDefineForClassFields: true } }
+const warnedConfigs = new Set<string>()
 // Failed imports are rechecked with the bundler resolver before reusing their diagnostics.
 const FORMAT = 8
 
@@ -248,6 +254,19 @@ function typescriptKey(files: Iterable<string>): string {
   return createHash('sha256').update(JSON.stringify(configs)).digest('hex')
 }
 
+/** Why the TypeScript configuration of one of `files` cannot be read, if it cannot. */
+function unreadableTypescript(files: Iterable<string>): string | undefined {
+  const cache = new Map()
+  for (const file of files) {
+    try {
+      getTsconfig(file, 'tsconfig.json', cache)
+    } catch (error) {
+      return errorMessage(error)
+    }
+  }
+  return undefined
+}
+
 /** The entry of the document's bundle and the key of what it is made of, or none when the document has no code of its own. */
 async function documentCode(input: DocumentBundleInput): Promise<DocumentCode | undefined> {
   const modules = emptyClientModules()
@@ -404,11 +423,22 @@ export async function buildDocumentBundle(input: DocumentBundleInput): Promise<D
   // A try of the whole that fails is followed by its parts bundled by themselves: its failure is not yet the build's.
   const logger = createLogger('warn')
   const customLogger = { ...logger, error: (message: string, options?: Parameters<typeof logger.error>[1]) => stripVTControlCharacters(message).includes('Build failed') ? undefined : logger.error(message, options) }
+  const unreadable = unreadableTypescript([join(input.deckDir, 'index.pmd'), ...code.parts])
+  let tsconfig: string | undefined
+  if (unreadable !== undefined) {
+    tsconfig = join(work, 'tsconfig.json')
+    writeFileSync(tsconfig, JSON.stringify(OWN_TYPESCRIPT))
+    if (!warnedConfigs.has(unreadable)) {
+      warnedConfigs.add(unreadable)
+      logger.warn(`Presmium: the document's tsconfig.json cannot be read (${unreadable}); its code is compiled with Presmium's own TypeScript options.`)
+    }
+  }
   const config = (entry: string, probe?: Set<string>): InlineConfig => {
     const imageReferences = new Map<string, Set<string>>()
     return {
     configFile: false,
     root: input.deckDir,
+    ...tsconfig ? { tsconfig } : {},
     base: './',
     ...probe ? { logLevel: 'silent' } : { logLevel: 'warn', customLogger },
     mode: 'production',
