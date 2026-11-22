@@ -94,9 +94,7 @@ export function VoiceoverDialog({ stepId, onClose }: { stepId: string, onClose()
     mutation.current?.abort(); starting.current = false; setSubmitting(false); setChanged(true)
   }), [workbench])
 
-  const hasActive = jobs.some(active), wasActive = useRef(false)
-  // The last clips are written as the job ends: one fresh check then shows what is still missing, if anything.
-  useEffect(() => { if (wasActive.current && !hasActive && !closing.current) setAttempt(value => value + 1); wasActive.current = hasActive }, [hasActive])
+  const hasActive = jobs.some(active)
   useEffect(() => {
     const value = checkedRef.current, stamp = jobStamp(jobs)
     if (!value || !voiceSnapshotCurrent(workbench, value.snapshot) || stamp === statusJobs.current) return

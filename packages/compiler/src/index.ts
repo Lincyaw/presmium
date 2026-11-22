@@ -19,7 +19,7 @@ export { findPackageDir, INSTALLATION_VARIABLE, loadPlugins, pluginId } from './
 export type { LoadedPlugin, PluginProblem, PluginSources } from './plugins.ts'
 export { exportDocument } from './export.ts'
 export type { ExportOptions } from './export.ts'
-export { documentExporters, nodeVitePlugins } from './renderers.ts'
+export { documentExporters, missingOutput, nodeVitePlugins } from './renderers.ts'
 export type { DocumentExporter } from './renderers.ts'
 export { playwrightChromium, serveDirectory } from './serve.ts'
 export type { ServeDirectoryOptions } from './serve.ts'

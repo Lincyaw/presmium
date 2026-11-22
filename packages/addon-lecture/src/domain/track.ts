@@ -3,6 +3,9 @@ import type { ProductionBinding, TrackEvent } from '@lincyaw/kernel'
 
 export const LECTURE_ID = 'presmium.lecture'
 
+/** The check of script that has no voiceover matching its text and voice: a lecture video cannot be made yet. */
+export const LECTURE_VOICEOVER_CHECK = 'presmium.lecture.voiceover'
+
 export const LECTURE_RENDERER = 'lecture'
 
 export const PLAYER_RENDERER = 'web'

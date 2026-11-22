@@ -217,12 +217,22 @@ function nativeChildren(native: readonly DocumentEditorBlock[], context: Documen
   return children
 }
 
-/** A plain text transaction keeps the teaching graph and untouched rich nodes by identity. */
+/**
+ * A plain text transaction keeps the teaching graph and untouched rich nodes by identity. Typing in a page title
+ * renames that section alone: the rest of the page structure is not rebuilt.
+ */
 function projectTextEdits(blocks: readonly DocumentEditorBlock[], context: DocumentProjection, latest: PresmiumDocument): PresmiumDocument | undefined {
   const changed: { native: DocumentEditorBlock, serialized: string, owner: TextBlock }[] = []
+  const titles: { sectionId: string, title: string, nativeId: string, serialized: string }[] = []
   const visit = (blocks: readonly DocumentEditorBlock[]): boolean => blocks.every(block => {
     const serialized = JSON.stringify(block)
     if (context.baseline.get(block.id) === serialized) return true
+    if (block.type === 'presmiumPage') {
+      const sectionId = context.pages.get(block.id)
+      if (!sectionId || sectionId !== block.props.sectionId || !latest.sections[sectionId]) return false
+      titles.push({ sectionId, title: nativePlain(block), nativeId: block.id, serialized })
+      return true
+    }
     const owner = latest.blocks[context.owners.get(block.id) ?? '']
     if (block.children.length || (block.type !== 'paragraph' && block.type !== 'heading') || owner?.type !== 'text'
       || !owner.content.some(node => node.id === block.id && (node.type === 'paragraph' || node.type === 'heading'))) return false
@@ -231,6 +241,14 @@ function projectTextEdits(blocks: readonly DocumentEditorBlock[], context: Docum
   })
   if (!visit(blocks)) return undefined
   const next = { ...latest, ...changed.length ? { blocks: { ...latest.blocks } } : {} }
+  if (titles.length) {
+    next.sections = { ...latest.sections }; next.metadata = { ...latest.metadata }
+    for (const { sectionId, title, nativeId, serialized } of titles) {
+      next.sections[sectionId] = { ...next.sections[sectionId]!, title }
+      context.baseline.set(nativeId, serialized)
+    }
+    followFirstPageTitle(latest, next)
+  }
   for (const { native, serialized, owner } of changed) {
     const content = nativeRichTextToProduct([native], context)[0]!
     const current = next.blocks[owner.id] as TextBlock

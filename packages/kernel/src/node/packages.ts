@@ -3,6 +3,7 @@ import { createRequire, findPackageJSON } from 'node:module'
 import { dirname, isAbsolute, join, relative, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { exports as resolveExports } from 'resolve.exports'
+import { JobFailure } from '../job-failures.ts'
 
 /** Resolve a public package export with Node or browser conditions, retaining package-relative target validation. */
 export function packageExport(pkg: { name?: unknown, exports?: unknown }, dir: string, subpath: string, options: { browser?: boolean } = {}): string | undefined {
@@ -80,7 +81,8 @@ export function findPackageBin(name: string, command: string, from: string): str
 
 /**
  * Playwright's Chromium (`playwright-chromium`), as the deck installs it, else as `fallbackFrom` (a module's URL or a
- * `package.json`) finds it.
+ * `package.json`) finds it. When it is missing, or its browser cannot start (`launch`), the failure is a `JobFailure`
+ * `job-browser-missing` with Playwright's words as the details.
  */
 export async function playwrightChromium<T = unknown>(deckDir: string, fallbackFrom?: string): Promise<T> {
   for (const from of [join(deckDir, 'package.json'), ...fallbackFrom ? [fallbackFrom] : []]) {
@@ -92,8 +94,26 @@ export async function playwrightChromium<T = unknown>(deckDir: string, fallbackF
     }
     const loaded = await import(pathToFileURL(entry).href) as { chromium?: T, default?: { chromium?: T } }
     const chromium = loaded.chromium ?? loaded.default?.chromium
-    if (chromium) return chromium
-    throw new Error('playwright-chromium does not export its Chromium browser')
+    if (chromium) return launchFailures(chromium)
+    throw new JobFailure('job-browser-missing', 'playwright-chromium does not export its Chromium browser')
   }
-  throw new Error('this needs playwright-chromium: install it in the deck (and its browser with pnpm exec playwright install chromium)')
+  throw new JobFailure('job-browser-missing', 'this needs playwright-chromium: install it in the deck (and its browser with pnpm exec playwright install chromium)')
+}
+
+/** The browser type, whose `launch` failing (no browser downloaded, or one that cannot run here) is `job-browser-missing`. */
+function launchFailures<T>(chromium: T): T {
+  const type = chromium as { launch?: (...args: unknown[]) => Promise<unknown> }
+  if (typeof type.launch !== 'function') return chromium
+  const launch = async (...args: unknown[]) => {
+    try { return await type.launch!(...args) }
+    catch (error) { throw new JobFailure('job-browser-missing', error instanceof Error ? error.message : String(error), { cause: error }) }
+  }
+  // Every other member is the browser type's own, called on it.
+  return new Proxy(chromium as object, {
+    get(target, key) {
+      if (key === 'launch') return launch
+      const value: unknown = Reflect.get(target, key, target)
+      return typeof value === 'function' ? value.bind(target) : value
+    },
+  }) as T
 }
