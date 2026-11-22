@@ -1,5 +1,9 @@
 # @lincyaw/addon-exec-wasi
 
+## 1.0.0-rc.128
+
+No changes in this release.
+
 ## 1.0.0-rc.127
 
 No changes in this release.

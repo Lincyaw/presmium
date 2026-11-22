@@ -1,5 +1,12 @@
 # @lincyaw/compiler
 
+## 1.0.0-rc.128
+
+### Patch Changes
+
+- Updated dependencies
+  - @lincyaw/kernel@1.0.0-rc.128
+
 ## 1.0.0-rc.127
 
 ### Minor Changes

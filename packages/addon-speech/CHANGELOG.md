@@ -1,5 +1,11 @@
 # @lincyaw/addon-speech
 
+## 1.0.0-rc.128
+
+### Minor Changes
+
+- Last round of fixes for first-time authors: the package has a README with install paths that work under pnpm 11, `presmium --version`, and `presmium new` prints the command that runs your installation (`--lang` sets the starter document's language); document folders keep the title's script; 放映 fits crowded pages and shows a scroll cue when it can't; captions keep their own room at the slide bottom; the problem count sits in the status bar and stays steady while typing; each workspace has its own AI chats; reference cards open reliably and the tree menu has 在右侧打开; /图片 opens the file picker; step properties name their page and step; clearer wording; focus stays in the editor after creating a document; Edge voices have friendly names on every engine.
+
 ## 1.0.0-rc.127
 
 ### Minor Changes
