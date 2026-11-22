@@ -17,6 +17,7 @@ import { registerNavigationShell } from './navigation-shell.tsx'
 import { createObservable } from './observable.ts'
 import { isSamePath } from './paths.ts'
 import { registerAgentRequests } from './agent-requests.ts'
+import { registerAgentTurn } from './agent-turn.ts'
 import { registerAssistantSetup } from './assistant-setup.tsx'
 import { registerModelSetup } from './model-setup.tsx'
 import { rootLayoutFor } from './RootLayout.tsx'
@@ -61,6 +62,7 @@ export function apply(ctx: DshClientContext): void {
   ctx.effect(() => connectAuthoringClient(workbench), 'presmium: authoring client control')
   ctx.effect(() => connectAuthoringWindow(workbench), 'presmium: authoring window control')
   ctx.effect(() => connectAgentActivity(workbench), 'presmium: agent activity')
+  registerAgentTurn(ctx, workbench)
   ctx.effect(() => runtimeDiagnostics(workbench).start(), 'presmium: runtime diagnostics')
   let showEditor = (layout: DshClientContext['layout']) => layout.selectPanel(FALLBACK_PANEL)
   registerSourceLinks(ctx, workbench, layout => showEditor(layout))

@@ -4,7 +4,7 @@ import { CallToolResultSchema } from '@modelcontextprotocol/core'
 import { DOCUMENT_AUDIO_MAX_BYTES, DOCUMENT_IMAGE_MAX_BYTES, MEDIA_UPLOAD_PATH, APPROVAL_KINDS, deckLocale, errorMessage, isRecord } from '@lincyaw/kernel'
 import type { ApprovalKind, MediaUpload, MediaUploadKind } from '@lincyaw/kernel'
 import { MCP_MESSAGES } from './messages.ts'
-import { TOOL_APPROVAL_META, TOOL_KIND_META, TOOL_WORKSPACE_META } from './tool-meta.ts'
+import { TOOL_APPROVAL_META, TOOL_KIND_META, TOOL_UNOBSERVED_META, TOOL_WORKSPACE_META } from './tool-meta.ts'
 import { CLONE_PREPARATION_METHOD } from './clone-protocol.ts'
 
 export interface ListedTool {
@@ -39,7 +39,8 @@ export interface PresmiumMcpClient {
   uploadMedia(document: string, kind: MediaUploadKind, file: File, signal?: AbortSignal): Promise<MediaUpload>
   tools(): Promise<ListedTool[]>
   subscribeTools(changed: () => void): Promise<() => Promise<void>>
-  call(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<CalledTool>
+  /** `unobserved`: the caller reads for itself, not for the AI, so the call is not shown as AI activity. */
+  call(name: string, args: Record<string, unknown>, signal?: AbortSignal, options?: { unobserved?: boolean }): Promise<CalledTool>
   read(uri: string): Promise<unknown>
   subscribe(uri: string, changed: () => void): Promise<() => Promise<void>>
   close(): Promise<void>
@@ -236,8 +237,8 @@ export async function connectPresmiumMcp(url: string, token: string, name = 'pre
       if (!client.getServerCapabilities()?.tools?.listChanged) throw new Error('this MCP server does not offer tool-list subscriptions')
       return subscribe(toolsKey, 'tools', { toolsListChanged: true }, onChanged)
     },
-    async call(tool, args, signal) {
-      const result = await client.callTool({ name: tool, arguments: args }, { signal, timeout: CALL_TIMEOUT_MS })
+    async call(tool, args, signal, options) {
+      const result = await client.callTool({ name: tool, arguments: args, ...options?.unobserved ? { _meta: { [TOOL_UNOBSERVED_META]: true } } : {} }, { signal, timeout: CALL_TIMEOUT_MS })
       return called(result)
     },
     async read(uri) {

@@ -109,9 +109,17 @@ export interface FailedRequest {
   text?: string
 }
 
+/** How a chat's last AI turn ended, for the activity chip: completed, failed, or stopped before it finished. */
+export interface TurnOutcome {
+  session: string
+  turn: number
+  outcome: 'done' | 'failed' | 'cancelled'
+}
+
 export const MODEL_SETUP_PATHS = {
   providers: '/api/presmium/assistant/models',
   save: '/api/presmium/assistant/models/save',
   test: '/api/presmium/assistant/models/test',
   failed: '/api/presmium/assistant/failed',
+  turn: '/api/presmium/assistant/turn',
 } as const

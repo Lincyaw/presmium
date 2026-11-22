@@ -4,7 +4,7 @@ import { errorMessage } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
 import type { DshContext } from './dsh-types.ts'
 import { MODEL_PROVIDERS, MODEL_SETUP_PATHS, modelProvider } from '../model-providers.ts'
-import type { FailedRequest, ModelProvider, ModelProviderState, ModelSetupFailure, ModelSetupRequest, ModelTestAnswer } from '../model-providers.ts'
+import type { FailedRequest, TurnOutcome, ModelProvider, ModelProviderState, ModelSetupFailure, ModelSetupRequest, ModelTestAnswer } from '../model-providers.ts'
 
 export const name = 'presmium-assistant'
 export const inject = ['presmium', 'connection', 'settings', 'credentials']
@@ -248,6 +248,7 @@ export function apply(ctx: AssistantContext): void {
   }
   const asked = new Map<string, string>()
   const cwds = new Map<string, string>()
+  const outcomes = new Map<string, TurnOutcome>()
 
   ctx.on('agent/created', ({ agent }: { agent: { session: { id: string, header?: { cwd?: string } } } }) => {
     const cwd = agent.session.header?.cwd
@@ -265,6 +266,7 @@ export function apply(ctx: AssistantContext): void {
     if (event.type !== 'turn/end' || typeof event.data?.turn !== 'number') return
     const kind = event.data.reason?.kind
     const turn = event.data.turn as number
+    outcomes.set(session.id, { session: session.id, turn, outcome: kind === 'error' ? 'failed' : kind === 'completed' || kind === 'max-tokens' ? 'done' : 'cancelled' })
     const others = store.failed.filter(record => record.session !== session.id)
     if (kind === 'error') {
       const cwd = session.header?.cwd ?? cwds.get(session.id)
@@ -281,6 +283,14 @@ export function apply(ctx: AssistantContext): void {
   ctx.on('session/disposed', (session: { id: string }) => {
     asked.delete(session.id)
     cwds.delete(session.id)
+    outcomes.delete(session.id)
+  })
+
+  ctx.connection.fetch.register({
+    path: MODEL_SETUP_PATHS.turn, methods: ['GET'], requestBody: 'buffered',
+    async fetch(request) {
+      return json(outcomes.get(new URL(request.url).searchParams.get('session') ?? '') ?? null)
+    },
   })
 
   ctx.connection.fetch.register({

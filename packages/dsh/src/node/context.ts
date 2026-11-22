@@ -26,7 +26,7 @@ const FILES_SHOWN = 60
 
 async function callJsonTool(binding: DocumentBinding, tool: string): Promise<any> {
   const client = ['get_position', 'get_focus', 'get_runtime'].includes(tool) ? binding.authorClient : binding.client
-  const result = await client.call(tool, {}).catch(() => undefined)
+  const result = await client.call(tool, {}, undefined, { unobserved: true }).catch(() => undefined)
   if (!result || result.isError) return undefined
   try {
     return JSON.parse(result.text)

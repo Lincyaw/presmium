@@ -53,8 +53,16 @@ export interface AgentAnswer {
   request: string
 }
 
+/**
+ * The AI Assistant's request as its host sees it: idle before any request and after a finished one has been shown,
+ * running from the request to the end of its turn, then how the turn ended.
+ */
+export type AgentTurnState = 'idle' | 'running' | 'done' | 'failed' | 'cancelled'
+
 export interface WorkbenchState {
   agentActivities?: import('@lincyaw/kernel').AgentActivity[]
+  /** Set by a host that runs the AI Assistant's turns; without it, the activity chip shows the tool calls alone. */
+  agentTurn?: AgentTurnState
   agentFollowing?: boolean
   locale: Locale
   authoring?: DocumentSessionState

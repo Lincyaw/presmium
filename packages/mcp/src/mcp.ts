@@ -11,7 +11,7 @@ import { codeRef, deckInfo, diagnosticsOf, findBlock, findSection, locate, outpu
 import type { McpCaller, McpHost, McpProcess } from './host.ts'
 import { MCP_ERROR_TEXT, MCP_MESSAGES } from './messages.ts'
 import type { McpMessages } from './messages.ts'
-import { TOOL_APPROVAL_META, TOOL_KIND_META, TOOL_WORKSPACE_META } from './tool-meta.ts'
+import { TOOL_APPROVAL_META, TOOL_KIND_META, TOOL_UNOBSERVED_META, TOOL_WORKSPACE_META } from './tool-meta.ts'
 import { AUTHORING_TOOLS } from './authoring.ts'
 import { EDITING_TOOLS } from './editing.ts'
 import { AUTHORING_ACTION_TOOLS } from './authoring-actions.ts'
@@ -687,15 +687,18 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
   })
   registerSkillResources(server)
 
-  const execute = async (tool: ToolSpec | AgentTool, args: Args, signal: AbortSignal): Promise<CallToolResult> => {
+  // The host's own reads (the context it gives a turn) are not the AI working, so they are not shown as its activity.
+  const observed = (request: { _meta?: Record<string, unknown> }) => request._meta?.[TOOL_UNOBSERVED_META] !== true
+  const execute = async (tool: ToolSpec | AgentTool, args: Args, signal: AbortSignal, shown = true): Promise<CallToolResult> => {
+    const activity = shown ? host.agentActivity : undefined
     const spec = builtIn.find(known => known === tool)
     const contextual = ['get_context', 'edit_narration', 'editor_action'].includes(tool.name)
     const own = call(args, signal, spec ? directAuthoring(spec, args) : false, contextual)
     const lang = spec && SKILL_TOOLS.includes(spec) ? undefined : async () => { const dir = await own.document(); return (await host.documents()).find(doc => doc.dir === dir)?.lang }
     return toolResult(() => operation(async () => {
-      const document = host.agentActivity ? await own.document().catch(() => undefined) : undefined
-      const source = host.agentActivity && document !== undefined && activityNeedsDocument(args) ? await host.authoring?.read(document, caller.member).catch(() => undefined) : undefined
-      const finish = host.agentActivity?.begin({ operation: activityOperation(tool.name, tool.kind === 'read'), document, targets: activityTargets(args, source?.content) }, caller.member)
+      const document = activity ? await own.document().catch(() => undefined) : undefined
+      const source = activity && document !== undefined && activityNeedsDocument(args) ? await host.authoring?.read(document, caller.member).catch(() => undefined) : undefined
+      const finish = activity?.begin({ operation: activityOperation(tool.name, tool.kind === 'read'), document, targets: activityTargets(args, source?.content) }, caller.member)
       try {
         const result = await (spec ? spec.run(own) : pluginTool(own, tool as AgentTool))
         finish?.(signal.aborted ? 'cancelled' : 'done')
@@ -717,7 +720,7 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
       try {
         const target = await resolveCatalogCall(catalog, tool.name, args)
         if (target.discovery) return toolResult(async () => queryToolCatalog(catalog, target.arguments), true)
-        return execute(all.find(tool => tool.name === target.tool.name)!, target.arguments, context.mcpReq.signal)
+        return execute(all.find(tool => tool.name === target.tool.name)!, target.arguments, context.mcpReq.signal, observed(context.mcpReq))
       } catch (error) { return toolResult(async () => { throw error }, true) }
     })
   }
@@ -773,7 +776,7 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
       inputSchema: fromJsonSchema<Args>(compactSchema(tool.inputSchema ?? schemaOf(tool.properties, tool.required)) as JsonSchemaType),
       annotations: { readOnlyHint: tool.kind === 'read' },
       _meta: { ...meta(tool.kind, directAuthoring(tool)), ...workspaceOf(tool) ? { [TOOL_WORKSPACE_META]: workspaceOf(tool) } : {} },
-    }, (args, ctx) => execute(tool, args, ctx.mcpReq.signal))
+    }, (args, ctx) => execute(tool, args, ctx.mcpReq.signal, observed(ctx.mcpReq)))
   }
   for (const tool of plugins) {
     if (!full) continue
@@ -782,7 +785,7 @@ async function createMcpServer(host: McpHost, caller: McpCaller): Promise<McpSer
       inputSchema: fromJsonSchema<Args>(compactSchema(pluginSchema(tool)) as JsonSchemaType),
       annotations: { readOnlyHint: tool.kind === 'read' },
       _meta: meta(tool.kind),
-    }, (args, ctx) => execute(tool, args, ctx.mcpReq.signal))
+    }, (args, ctx) => execute(tool, args, ctx.mcpReq.signal, observed(ctx.mcpReq)))
   }
 
   type Read = (call: Call) => Promise<unknown>

@@ -409,6 +409,7 @@ export class Workbench {
 
   setAgentActivities(activities: import('@lincyaw/kernel').AgentActivity[]): void { this.#set({ agentActivities: activities }) }
   setAgentFollowing(following: boolean): void { this.#set({ agentFollowing: following }) }
+  setAgentTurn(turn: import('./workbench-state.ts').AgentTurnState): void { if (this.#state.agentTurn !== turn) this.#set({ agentTurn: turn }) }
 
   /** Presence never owns drafts or playback. Human input aborts this read-only navigation. */
   async followAgentActivity(activity: import('@lincyaw/kernel').AgentActivity, signal: AbortSignal): Promise<void> {

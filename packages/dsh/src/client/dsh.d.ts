@@ -156,7 +156,7 @@ interface DshClientContext {
   sidebarRightTabs: DshSidebarRightTabs
   sidebarRight: { active(): { id: string, kind: string, contentId: string } | undefined, close(id: string): void, isExpanded(): boolean, toggleExpanded(): void }
   layout: { selectPanel(id: string | null): void }
-  sessions: { list: DshObservable<{ byId: Record<string, { id: string, cwd?: string, retainedBy: { mainView?: number } }> }>, binding(id: string): DshSessionBinding | undefined }
+  sessions: { list: DshObservable<{ byId: Record<string, { id: string, cwd?: string, running?: boolean, retainedBy: { mainView?: number } }> }>, binding(id: string): DshSessionBinding | undefined }
   conversation: { input: { for(scope: unknown): DshSessionInput } }
   uiWorkspace: { openWorkspace(id: string, beforeOpen?: (sessionId: string) => void): Promise<void>, startSession(id?: string): void, openSession(target: string): void }
   workspaces: { list: DshObservable<{ items: readonly { workspaceId: string, path: string }[] }> }
