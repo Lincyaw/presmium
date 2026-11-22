@@ -125,6 +125,15 @@ async function documentIds(root, except) {
   return ids
 }
 
+/**
+ * The title of a copy as Studio names one (`contentText` of @lincyaw/workbench): in the document's language, Chinese
+ * when it sets none (the workspace default), English for any language other than Chinese.
+ */
+const copyTitle = (title, lang) => {
+  const tag = typeof lang === 'string' ? lang.trim().toLowerCase() : 'zh-cn'
+  return tag === 'zh' || tag.startsWith('zh-') ? `${title}（副本）` : `${title} (copy)`
+}
+
 /** `document` with its id, and every reference or synced block that points at itself, changed to `next`. */
 function renameSelf(document, old, next) {
   const visit = value => {
@@ -155,7 +164,10 @@ async function importCopy(request, title) {
     await rename(source, join(SPACE, name))
     const entry = join(SPACE, name, 'index.pmd')
     let document = JSON.parse(await readFile(entry, 'utf8'))
-    let changed = false
+    // Named as a copy, in the document's language as the tree's own copies are, so lists don't show the title twice.
+    const original = typeof document.metadata?.title === 'string' && document.metadata.title.trim() ? document.metadata.title : title
+    document.metadata = { ...document.metadata, title: copyTitle(original, document.metadata?.lang) }
+    let changed = true
     // A shared document may be nested; its parent is not in this workspace, so the copy starts at the top level.
     if (document.placement && document.placement.parent !== null) {
       document.placement = { ...document.placement, parent: null }
