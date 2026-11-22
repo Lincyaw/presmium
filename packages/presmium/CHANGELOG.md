@@ -1,5 +1,41 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.125
+
+### Minor Changes
+
+- Make Presmium usable for a first-time author: exports work in a new workspace and download when done (website as a ZIP); import PowerPoint files; a new document takes its name from its title; new pages take the caret; visual formula editing; wide tables and formulas scroll on narrow screens; search opens with Enter and the document tree has a context menu; set up an AI model in plain words with a connection test, resend failed requests; free built-in Edge voices with a one-step voice choice and timings in seconds; `presmium studio` prints one address.
+
+### Patch Changes
+
+- Updated dependencies
+  - @lincyaw/cli@1.0.0-rc.125
+  - @lincyaw/kernel@1.0.0-rc.125
+  - @lincyaw/addon-speech@1.0.0-rc.125
+  - @lincyaw/studio@0.2.0-rc.124
+  - @lincyaw/addon-classroom@1.0.0-rc.125
+  - @lincyaw/addon-code@1.0.0-rc.125
+  - @lincyaw/addon-content@1.0.0-rc.125
+  - @lincyaw/addon-exec@1.0.0-rc.125
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.125
+  - @lincyaw/addon-exec-local@1.0.0-rc.125
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.125
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.125
+  - @lincyaw/addon-lecture@1.0.0-rc.125
+  - @lincyaw/addon-motion@1.0.0-rc.125
+  - @lincyaw/addon-publish@1.0.0-rc.125
+  - @lincyaw/addon-session@1.0.0-rc.125
+  - @lincyaw/addon-stage@1.0.0-rc.125
+  - create-presmium@1.0.0-rc.125
+  - @lincyaw/render-notebook@1.0.0-rc.125
+  - @lincyaw/web@1.0.0-rc.125
+  - @lincyaw/mcp@1.0.0-rc.125
+  - @lincyaw/addon-assistant@1.0.0-rc.125
+  - @lincyaw/addon-guide@1.0.0-rc.125
+  - @lincyaw/host@1.0.0-rc.125
+  - @lincyaw/render-slides@1.0.0-rc.125
+  - @lincyaw/viewer@1.0.0-rc.125
+
 ## 1.0.0-rc.124
 
 ### Patch Changes
