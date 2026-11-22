@@ -463,6 +463,10 @@
   pointer-events: none;
 }
 
+/* A tooltip that also says what the control does: the sentence takes its own line below the name and shortcut. */
+.pm-ui-tooltip:has(> .pm-ui-tooltip__description) { flex-wrap: wrap; row-gap: 0; }
+.pm-ui-tooltip__description { flex-basis: 100%; color: var(--pm-color-on-inverse-muted); }
+
 /* The shortcut is part of the tooltip's own content: a quieter label, without the key-cap frame used on light ground. */
 .pm-ui-tooltip > .pm-ui-shortcut {
   padding: 0;
@@ -1513,6 +1517,18 @@
 .pm-ui-block-editor .bn-preview-container { color: var(--pm-color-ink); }
 .pm-ui-block-editor .bn-block-content .bn-preview-with-source-popup { padding: var(--pm-space-3); }
 .pm-ui-block-editor .bn-block-content .pm-document-editor__math--display { width: 100%; overflow-x: auto; text-align: center; }
+
+/* A table or formula wider than the page scrolls sideways; a shade at the edge that has more shows it can. */
+.pm-ui-block-editor :is(.tableWrapper, .bn-block-content .pm-document-editor__math--display) {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  background:
+    linear-gradient(to right, var(--pm-color-surface) 40%, transparent) left / var(--pm-space-6) 100% no-repeat local,
+    linear-gradient(to left, var(--pm-color-surface) 40%, transparent) right / var(--pm-space-6) 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, var(--pm-color-scroll-shadow), transparent) left / var(--pm-space-3) 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, var(--pm-color-scroll-shadow), transparent) right / var(--pm-space-3) 100% no-repeat scroll,
+    var(--pm-color-surface);
+}
 .pm-ui-block-editor .bn-preview-container:hover { border-radius: var(--pm-radius-small); background: var(--pm-color-hover); }
 
 .pm-ui-block-editor .bn-preview-with-source-popup[data-open='true'] .bn-source-block-popup {

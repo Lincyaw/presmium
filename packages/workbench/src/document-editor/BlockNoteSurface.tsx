@@ -58,12 +58,14 @@ const DocumentReactionBadge = forwardRef<HTMLInputElement, ComponentProps['Gener
 })
 
 const MantineToolbarButton = components.Generic.Toolbar.Button as ForwardRefExoticComponent<ComponentProps['Generic']['Toolbar']['Button'] & RefAttributes<HTMLButtonElement>>
-const DocumentToolbarButton = forwardRef<HTMLButtonElement, ComponentProps['Generic']['Toolbar']['Button']>(function DocumentToolbarButton(props, ref) {
-  const label = props.label ?? props.mainTooltip
-  return label === undefined ? <MantineToolbarButton {...props} ref={ref} /> : <MantineToolbarButton {...props} ref={ref} label={label} />
+// The formatting toolbar's icon buttons name themselves and their shortcut in the workbench's own tooltip.
+const DocumentToolbarButton = forwardRef<HTMLButtonElement, ComponentProps['Generic']['Toolbar']['Button']>(function DocumentToolbarButton({ mainTooltip, secondaryTooltip, ...props }, ref) {
+  const label = props.label ?? mainTooltip
+  const button = label === undefined ? <MantineToolbarButton {...props} ref={ref} /> : <MantineToolbarButton {...props} ref={ref} label={label} />
+  return mainTooltip ? <PmTooltip label={mainTooltip} shortcut={secondaryTooltip}>{button}</PmTooltip> : button
 })
 
-const DOCUMENT_EDITOR_COMPONENTS = { ...components, Generic: { ...components.Generic, Menu: { ...components.Generic.Menu, Root: DocumentMenuRoot }, Badge: { ...components.Generic.Badge, Root: DocumentReactionBadge }, Toolbar: { ...components.Generic.Toolbar, Button: DocumentToolbarButton } }, Comments: { ...components.Comments, Comment: DocumentComment, Editor: DocumentCommentEditor } }
+const DOCUMENT_EDITOR_COMPONENTS = { ...components, FormattingToolbar: { ...components.FormattingToolbar, Button: DocumentToolbarButton }, LinkToolbar: { ...components.LinkToolbar, Button: DocumentToolbarButton }, Generic: { ...components.Generic, Menu: { ...components.Generic.Menu, Root: DocumentMenuRoot }, Badge: { ...components.Generic.Badge, Root: DocumentReactionBadge }, Toolbar: { ...components.Generic.Toolbar, Button: DocumentToolbarButton } }, Comments: { ...components.Comments, Comment: DocumentComment, Editor: DocumentCommentEditor } }
 
 export interface BlockNoteSurfaceProps {
   identity: string
