@@ -3,6 +3,9 @@
 # stays out of the history and out of an agent's review; what belongs to a document stays in.
 node_modules
 dist/
+# The state of an AI session's DeltaBox, should one be kept here.
+/.deltabox/
+/.deltabox-lite-state/
 # Deck working directories: only these files of .presmium/ belong to a document (recordings, drawings,
 # assets, synthesized speech and the locks); the rest there is generated.
 **/.presmium/*

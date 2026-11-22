@@ -2,7 +2,8 @@ import { execFile, execFileSync, fork } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { existsSync, readdirSync, realpathSync } from 'node:fs'
-import { join } from 'node:path'
+import { appendFile, mkdir, readFile } from 'node:fs/promises'
+import { dirname, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { gitConfigArgs, gitEnvironment } from '@lincyaw/kernel'
 
@@ -95,6 +96,26 @@ const reported = new Set<string>()
 export function addPathspecs(paths: string[], nested: string[]): string[] {
   for (const path of nested) if (!reported.has(path)) { reported.add(path); console.warn(`presmium: ${path} is a git repository of its own; its files are not part of the workspace history`) }
   return [...paths.map(path => `:(literal)${path}`), ...nested.map(path => `:(exclude,literal)${path}`)]
+}
+
+/**
+ * DeltaBox keeps a session's state in `.deltabox/` and `.deltabox-lite-state/` of the project root it is given; an
+ * earlier Presmium gave it the author's workspace, so these may be left there. A live session may still use them,
+ * so they are not removed: the project's local `info/exclude` (never a file the author commits) leaves them out.
+ * Answers the lines it added.
+ */
+export async function excludeDeltaboxState(root: string): Promise<string[]> {
+  const present = ['.deltabox', '.deltabox-lite-state'].filter(name => existsSync(join(root, name)))
+  if (!present.length || !Git.isRepository(root)) return []
+  const git = new Git(root)
+  const prefix = (await git.output(['rev-parse', '--show-prefix'])).trim()
+  const file = resolve(root, (await git.output(['rev-parse', '--git-path', 'info/exclude'])).trim())
+  const existing = await readFile(file, 'utf8').catch((error: NodeJS.ErrnoException) => { if (error.code === 'ENOENT') return ''; throw error })
+  const lines = present.map(name => `/${prefix}${name}/`).filter(line => !existing.split(/\r?\n/).includes(line))
+  if (!lines.length) return lines
+  await mkdir(dirname(file), { recursive: true })
+  await appendFile(file, `${existing && !existing.endsWith('\n') ? '\n' : ''}${lines.join('\n')}\n`)
+  return lines
 }
 
 export class Git {
