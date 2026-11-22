@@ -57,7 +57,7 @@ IRDocument ──► web · slides（同一查看器）· notebook · lecture �
 | `production.defaults` | 按字段取最近的值 |
 | `production.captions` | 最近的值 |
 
-标题、说明、标签与译文登记不继承。纯函数 `effectiveSettings(chain, defaults)` 给出生效的设置，`withEffectiveSettings(document, ancestors, defaults)` 给出填好继承值的文稿（`EffectiveDocument`），只用于判断，从不保存。凡按语言、插件、渲染端与插件配置、执行、检查或讲授默认值做决定的地方，都读生效的文稿：编译器、`presmium build`、`dev`、`check`、`voiceover`、`script`、工作区服务（文稿列表、作者动作、媒体与配音）、MCP 与语言服务。`@lincyaw/compiler` 的 `effectiveDocument(入口, 文稿)` 与 `effectiveDocumentIn(工作区, 入口, 文稿)` 向上找到工作区、按 `placement.parent` 与工作区扫描解析祖先链；不在任何工作区中的文稿没有祖先。`GET document` 的回答另带 `settings`（生效的设置）与 `inherited`（从祖先与 `defaults:` 继承的部分）；工作台用 `withInheritedSettings` 把它填进正在编辑的文稿，内容语言、图表插件、配音与讲授默认值都按生效的值判断。手工字幕的指纹按保存的文稿计算，不受继承影响。
+标题、说明、标签与译文登记不继承。纯函数 `effectiveSettings(chain, defaults)` 给出生效的设置，`withEffectiveSettings(document, ancestors, defaults)` 给出填好继承值的文稿（`EffectiveDocument`），只用于判断，从不保存。凡按语言、插件、渲染端与插件配置、执行、检查或讲授默认值做决定的地方，都读生效的文稿：编译器、`presmium build`、`dev`、`check`、`voiceover`、`script`、工作区服务（文稿列表、作者动作、媒体与配音）、MCP 与语言服务。`@lincyaw/compiler` 的 `effectiveDocument(入口, 文稿)` 与 `effectiveDocumentIn(工作区, 入口, 文稿)` 向上找到工作区、按 `placement.parent` 与工作区扫描解析祖先链；不在任何工作区中的文稿没有祖先。`GET document` 的回答另带 `settings`（生效的设置）、`inherited`（从祖先与 `defaults:` 继承的部分）与 `inheritedFrom`（`settingOrigins` 给出的每项继承设置来自哪一级：设定它的最近一级祖先的 `id`，工作区 `defaults:` 为 `null`；键为 `lang`、`plugins`、`presmium.<插件>`、`renderers.<渲染端>`、`execute`、`checks`、`production.defaults.<字段>`、`production.captions`，深合并的项取设定了其中任一叶子的最近一级）；工作台用 `withInheritedSettings` 把它填进正在编辑的文稿，内容语言、图表插件、配音与讲授默认值都按生效的值判断。手工字幕的指纹按保存的文稿计算，不受继承影响。
 
 ### 2.2 身份与引用
 

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { SuggestionMenu as SuggestionMenuExtension } from '@blocknote/core/extensions'
 import { SuggestionMenuController } from '@blocknote/react'
 import type { DefaultReactSuggestionItem, SuggestionMenuProps } from '@blocknote/react'
-import type { DocumentBlock, InlineNode, PresmiumDocument, ReferenceTarget, RichTextNode } from '@lincyaw/kernel'
+import type { DocumentBlock, EmbedBlock, InlineNode, PresmiumDocument, ReferenceTarget, RichTextNode } from '@lincyaw/kernel'
 import type { DocumentSearchHit, EmbedSource } from '@lincyaw/kernel/contracts'
 import { PmButton, PmDialog, PmDocMention, PmDocPreviewCard, PmIcon, PmMentionPicker, PmNotice, PmSearchList, PmSkeleton, PmSyncedBlockFrame } from '../components.tsx'
 import type { DocPreview, MentionOption } from '../components.tsx'
@@ -56,13 +56,26 @@ export const DocumentReference = memo(function DocumentReference({ document, sec
   const open = () => void workbench.tree.openPlace(target, { focus: 'body' })
   return (
     <PmDocPreviewCard label={t.previewLabel} loadingLabel={t.previewLoading} failedLabel={t.previewFailed} load={() => previewOf(t, workbench, target, fallback)}
-      actions={<PmButton small variant="primary" onClick={open}>{t.open}</PmButton>}>
+      actions={<><PmButton small variant="primary" onClick={open}>{t.open}</PmButton><PmButton small icon="rail" onClick={() => workbench.tree.peek(target)}>{t.openOnSide}</PmButton></>}>
       <PmDocMention title={title} missing={missing} missingLabel={fallback || t.missingDocument} onActivate={open} />
     </PmDocPreviewCard>
   )
 })
 
-function inlineView(nodes: readonly InlineNode[], key = ''): ReactNode[] {
+/**
+ * What read-only blocks are drawn from: the blocks by ID, their pictures' addresses, and what a reference does. With
+ * `onReference`, references are mentions that call it (the document on the side); otherwise plain mentions.
+ */
+export interface ReadOnlyBlocks {
+  blocks?: Record<string, DocumentBlock>
+  asset(id: string): string | undefined
+  componentLabel(title: string): string
+  title?(target: ReferenceTarget): string | undefined
+  onReference?(target: ReferenceTarget): void
+  embed?(block: EmbedBlock): ReactNode
+}
+
+function inlineView(nodes: readonly InlineNode[], view: ReadOnlyBlocks, key = ''): ReactNode[] {
   return nodes.map((node, index) => {
     const id = `${key}${index}`
     if (node.type === 'text') {
@@ -78,40 +91,46 @@ function inlineView(nodes: readonly InlineNode[], key = ''): ReactNode[] {
     }
     if (node.type === 'break') return <br key={id} />
     if (node.type === 'math') return <code key={id}>{node.value}</code>
-    if (node.type === 'link') return <span key={id} className="pm-document-editor__synced-link">{inlineView(node.children, `${id}-`)}</span>
-    if (node.type === 'reference') return <span key={id} className="pm-ui-doc-mention"><PmIcon name="document" />{node.label ?? node.fallback}</span>
+    if (node.type === 'link') return <span key={id} className="pm-document-editor__synced-link">{inlineView(node.children, view, `${id}-`)}</span>
+    if (node.type === 'reference') {
+      const title = node.label ?? view.title?.(node.target) ?? node.fallback
+      const follow = view.onReference
+      if (follow) return <PmDocMention key={id} title={title} onActivate={() => follow(node.target)} />
+      return <span key={id} className="pm-ui-doc-mention"><PmIcon name="document" />{title}</span>
+    }
     return <span key={id}>{node.fallback}</span>
   })
 }
 
-function richView(nodes: readonly RichTextNode[]): ReactNode[] {
+function richView(nodes: readonly RichTextNode[], view: ReadOnlyBlocks): ReactNode[] {
   return nodes.map(node => {
-    if (node.type === 'paragraph') return <p key={node.id}>{inlineView(node.children)}</p>
-    if (node.type === 'heading') { const Heading = `h${Math.min(6, node.level + 1)}` as 'h2'; return <Heading key={node.id}>{inlineView(node.children)}</Heading> }
-    if (node.type === 'list') { const List = node.ordered ? 'ol' : 'ul'; return <List key={node.id}>{node.children.map(item => <li key={item.id}>{richView(item.children)}</li>)}</List> }
-    if (node.type === 'blockquote') return <blockquote key={node.id}>{richView(node.children)}</blockquote>
+    if (node.type === 'paragraph') return <p key={node.id}>{inlineView(node.children, view)}</p>
+    if (node.type === 'heading') { const Heading = `h${Math.min(6, node.level + 1)}` as 'h2'; return <Heading key={node.id}>{inlineView(node.children, view)}</Heading> }
+    if (node.type === 'list') { const List = node.ordered ? 'ol' : 'ul'; return <List key={node.id}>{node.children.map(item => <li key={item.id}>{richView(item.children, view)}</li>)}</List> }
+    if (node.type === 'blockquote') return <blockquote key={node.id}>{richView(node.children, view)}</blockquote>
     if (node.type === 'code') return <pre key={node.id}><code>{node.value}</code></pre>
     if (node.type === 'math') return <pre key={node.id}><code>{node.value}</code></pre>
-    if (node.type === 'table') return <table key={node.id}><tbody>{node.children.map(row => <tr key={row.id}>{row.children.map(cell => <td key={cell.id}>{inlineView(cell.children)}</td>)}</tr>)}</tbody></table>
-    return <div key={node.id}>{richView(node.fallback)}</div>
+    if (node.type === 'table') return <table key={node.id}><tbody>{node.children.map(row => <tr key={row.id}>{row.children.map(cell => <td key={cell.id}>{inlineView(cell.children, view)}</td>)}</tr>)}</tbody></table>
+    return <div key={node.id}>{richView(node.fallback, view)}</div>
   })
 }
 
-/** The source block and its content subtree, read-only, as they are in the source document now. */
-function SourceBlocks({ source, id, t }: { source: EmbedSource, id: string, t: DocumentTreeMessages }): ReactNode {
-  const block: DocumentBlock | undefined = source.blocks?.[id]
+/** A block and its content subtree, read-only, as `view` has them: a synced block's source, or the document on the side. */
+export function ReadOnlyBlock({ view, id }: { view: ReadOnlyBlocks, id: string }): ReactNode {
+  const block: DocumentBlock | undefined = view.blocks?.[id]
   if (!block) return null
-  if (block.type === 'text') return <>{richView(block.content)}</>
+  if (block.type === 'text') return <>{richView(block.content, view)}</>
   if (block.type === 'image') {
-    const url = block.assetId ? source.assets?.[block.assetId] : undefined
-    return url ? <img className="pm-document-editor__synced-image" src={url} alt={block.alt} /> : <p>{block.alt}</p>
+    const url = block.assetId ? view.asset(block.assetId) : undefined
+    return url ? <img className="pm-document-editor__synced-image" src={url} alt={block.alt} loading="lazy" /> : <p>{block.alt}</p>
   }
   if (block.type === 'code') return <pre><code>{block.value ?? block.title ?? ''}</code></pre>
-  if (block.type === 'container') return <>{block.children.map(child => <SourceBlocks key={child} source={source} id={child} t={t} />)}</>
+  if (block.type === 'container') return <>{block.children.map(child => <ReadOnlyBlock key={child} view={view} id={child} />)}</>
   if (block.type === 'component') return <>
-    <PmNotice>{t.syncedComponent(typeof block.parameters.title === 'string' ? block.parameters.title : source.title)}</PmNotice>
-    {block.children?.map(child => <SourceBlocks key={child} source={source} id={child} t={t} />)}
+    <PmNotice>{view.componentLabel(typeof block.parameters.title === 'string' ? block.parameters.title : '')}</PmNotice>
+    {block.children?.map(child => <ReadOnlyBlock key={child} view={view} id={child} />)}
   </>
+  if (block.type === 'embed') return view.embed?.(block) ?? null
   return null
 }
 
@@ -133,6 +152,7 @@ export const SyncedBlock = memo(function SyncedBlock({ id, document, block }: { 
     return () => { active = false }
   }, [workbench, source.document, source.block, generation])
   const ready = typeof answer === 'object' ? answer : undefined
+  const view = useMemo<ReadOnlyBlocks | undefined>(() => ready && { blocks: ready.blocks, asset: asset => ready.assets?.[asset], componentLabel: title => t.syncedComponent(title || ready.title) }, [ready, t])
   const missing = Boolean(ready?.missing || ready && !ready.blocks?.[source.block])
   const state = missing ? 'missing' : ready?.trashed ? 'trashed' : 'default'
   const documentTitle = ready?.title ?? workbench.tree.title(source.document) ?? ''
@@ -162,7 +182,7 @@ export const SyncedBlock = memo(function SyncedBlock({ id, document, block }: { 
       {answer === 'loading' ? <PmSkeleton shape="list" label={t.syncedLoading} />
         : answer === 'failed' ? <p className="pmw-muted">{t.syncedFailed}</p>
           : missing ? <p className="pmw-muted">{t.sourceMissing}</p>
-            : <div className="pm-document-editor__synced-content"><SourceBlocks source={answer} id={source.block} t={t} /></div>}
+            : <div className="pm-document-editor__synced-content">{view && <ReadOnlyBlock view={view} id={source.block} />}</div>}
     </PmSyncedBlockFrame>
   )
 })

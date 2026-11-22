@@ -18,8 +18,9 @@ import { PageRenameDialog } from './PageRenameDialog.tsx'
 import { PageDeleteDialog } from './PageDeleteDialog.tsx'
 import { SourceDocumentPanel } from './SourceDocumentPanel.tsx'
 import { DocumentNarrationPanel } from './DocumentNarrationPanel.tsx'
+import { DocumentPeekPanel } from './DocumentPeekPanel.tsx'
 
-export type DocumentAside = 'outline' | 'references' | 'comments' | 'history' | 'export' | 'narration'
+export type DocumentAside = 'outline' | 'references' | 'comments' | 'history' | 'export' | 'narration' | 'peek'
 /** The right pane's tabs: the page outline, the references and the comments. */
 const RAIL_TABS: readonly DocumentAside[] = ['outline', 'references', 'comments']
 const isRail = (aside: DocumentAside | null): aside is 'outline' | 'references' | 'comments' => aside !== null && RAIL_TABS.includes(aside)
@@ -64,6 +65,14 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
     previousRoomy.current = roomy
   }, [roomy, container.measured])
   const navigation = isRail(aside)
+  // "Open on the Side" puts another document in the right pane; closing it brings back what the pane showed before.
+  const peek = useWorkbenchState(state => state.documentPeek)
+  const beforePeek = useRef<DocumentAside | null>(null)
+  useEffect(() => {
+    if (peek) setAside(current => { if (current !== 'peek') beforePeek.current = current; return 'peek' })
+    else setAside(current => current === 'peek' ? beforePeek.current : current)
+  }, [peek])
+  useEffect(() => { if (aside !== 'peek') workbench.tree.closePeek() }, [aside])
   const compilePresentation = async (ready?: () => void, forReading = false, signal?: AbortSignal, deadline?: number): Promise<void> => {
     if (preparing.current || workbench.getState().isPreparingPresentation) return
     preparing.current = true
@@ -232,7 +241,7 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
       <div className="pmw-document__body" role="region" aria-label={producing ? PRODUCTION_MESSAGES[workbench.getState().locale].title : presenting ? t.presentationPreview : reading ? t.readDocument : t.documentEditor}>
         <div className="pmw-document__main"><div className="pmw-document__source" hidden={presenting || producing || reading}><SourceDocumentPanel commentsPortal={commentsPortal} onCommentDraftRestore={() => setAside(current => current === 'comments' ? null : current)} onOpenComments={() => setAside('comments')} after={narrow ? <ReferencesSummary /> : undefined} /></div>{producing && <ProductionPanel actions={actions} active={active} closing={changingView} onClose={() => void exitPresent()} />}{presenting && <PreviewPanel presentation active={active} onPresentationAction={action => { if (action === 'refresh') void compilePresentation(); else void exitPresent() }} />}{reading && <PreviewPanel active={active} />}</div>
         {!presenting && !producing && !reading && aside && (
-          <aside className="pmw-document__aside pm-ui-block-editor" aria-label={{ outline: tt.outline, references: tt.references, narration: t.documentNarration, comments: t.comments, export: t.exportPane, history: t.versionHistory }[aside]}>
+          <aside className="pmw-document__aside pm-ui-block-editor" aria-label={{ outline: tt.outline, references: tt.references, narration: t.documentNarration, comments: t.comments, export: t.exportPane, history: t.versionHistory, peek: tt.peekLabel }[aside]}>
             {isRail(aside) ? <section className="pmw-pane pmw-rail">
               <div className="pmw-rail__header">
                 <PmTabs variant="dock" value={aside} label={tt.rail} tabs={[{ value: 'outline', label: tt.outline }, { value: 'references', label: tt.references }, { value: 'comments', label: t.comments }]} onValueChange={value => setAside(value as DocumentAside)} />
@@ -243,7 +252,7 @@ export function DocumentView({ active = true, framed = false, onBack, actions, h
                 {aside === 'references' && <ReferencesPanel />}
                 {aside === 'comments' && <div ref={setCommentsPortal} />}
               </div>
-            </section> : aside === 'narration' ? <DocumentNarrationPanel onClose={() => setAside(null)} /> : aside === 'export' ? <ExportPanel documentOnly onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} revisionAction={historyRevisionAction} />}
+            </section> : aside === 'peek' ? peek && <DocumentPeekPanel target={peek} /> : aside === 'narration' ? <DocumentNarrationPanel onClose={() => setAside(null)} /> : aside === 'export' ? <ExportPanel documentOnly onClose={() => setAside(null)} /> : <HistoryPanel onClose={() => setAside(null)} revisionAction={historyRevisionAction} />}
           </aside>
         )}
       </div>

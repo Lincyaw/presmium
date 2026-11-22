@@ -1,4 +1,4 @@
-import type { DocumentDefaults, DocumentMetadata, EffectiveSettings, JsonObject, PresmiumDocument, Production } from './contracts/document.ts'
+import type { DocumentDefaults, DocumentId, DocumentMetadata, EffectiveSettings, JsonObject, PresmiumDocument, Production, SettingOrigins } from './contracts/document.ts'
 import { DEFAULT_LANG } from './contracts/locale.ts'
 
 /** A document whose inherited settings are filled in; `metadata.lang` is always set. */
@@ -40,6 +40,24 @@ export function effectiveSettings(chain: readonly PresmiumDocument[], defaults: 
     result = { ...result }
   }
   return { ...result, lang: result.lang ?? DEFAULT_LANG }
+}
+
+/**
+ * Which layer each setting a document inherits comes from (`SettingOrigins`): `ancestors` is root first, the parent
+ * last; the nearest layer that sets a setting (any of its leaves, for the merged ones) is its origin.
+ */
+export function settingOrigins(ancestors: readonly PresmiumDocument[], defaults: DocumentDefaults = {}): SettingOrigins {
+  const origins: SettingOrigins = {}
+  const layers: [DocumentDefaults, DocumentId | null][] = [[defaults, null], ...ancestors.map(ancestor => [ownSettings(ancestor), ancestor.id] as [DocumentDefaults, DocumentId])]
+  for (const [layer, origin] of layers) {
+    if (layer.lang !== undefined) origins.lang = origin
+    if (layer.plugins !== undefined) origins.plugins = origin
+    for (const key of ['presmium', 'renderers'] as const) for (const id of Object.keys(plain(layer[key]) ? layer[key]! : {})) origins[`${key}.${id}`] = origin
+    for (const key of ['execute', 'checks'] as const) if (layer[key] !== undefined) origins[key] = origin
+    for (const [field, value] of Object.entries(layer.production?.defaults ?? {})) if (value !== undefined) origins[`production.defaults.${field}`] = origin
+    if (layer.production?.captions !== undefined) origins['production.captions'] = origin
+  }
+  return origins
 }
 
 /** The document with its inherited settings filled in; `ancestors` is root first, the parent last. Not for saving. */

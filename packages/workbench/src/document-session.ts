@@ -1,5 +1,5 @@
 import { hasRole, isRecord, randomUUID, validateDocument } from '@lincyaw/kernel'
-import type { CanonicalSource, ClientBodyDraftReference, DocumentAnswer, DocumentChangeAnswer, DocumentImageImportAnswer, DocumentIssue, Member, PresmiumDocument, DocumentDefaults } from '@lincyaw/kernel'
+import type { CanonicalSource, ClientBodyDraftReference, DocumentAnswer, DocumentChangeAnswer, DocumentImageImportAnswer, DocumentIssue, Member, PresmiumDocument, DocumentDefaults, SettingOrigins } from '@lincyaw/kernel'
 import { WorkspaceServerError } from './workspace-client.ts'
 import type { WorkspaceClient } from './workspace-client.ts'
 import { waitForDraft } from './document-draft-store.ts'
@@ -14,6 +14,8 @@ export interface DocumentSessionState {
   content?: PresmiumDocument
   /** What the document inherits from its ancestors and the workspace defaults; `effectiveOf` fills it into `content`. */
   inherited?: DocumentDefaults
+  /** Which ancestor (or the workspace defaults, null) each inherited setting comes from. */
+  inheritedFrom?: SettingOrigins
   version?: string
   fingerprint?: string
   projectRevision?: number
@@ -162,7 +164,7 @@ export class DocumentSession {
         const baseHash = await digest(answer.content)
         if (this.#disposed || this.#active !== directory || opening !== this.#opening) return
         const drafts = new DocumentDrafts(() => { if (slot && !this.#disposed) void this.#readDrafts(slot) })
-        slot = { observedSource: this.#source(answer), input: 0, read: 0, compositions: new Set(), drafts, baseHash, baseContent: structuredClone(answer.content), storage: `presmium.document.v1:${JSON.stringify([info.root, answer.content.id])}`, state: { directory, member: info.member, identity: JSON.stringify([info.root, answer.content.id]), content: answer.content, ...answer.inherited ? { inherited: answer.inherited } : {}, version: answer.version, fingerprint: answer.fingerprint, loading: true, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: answer.issues } }
+        slot = { observedSource: this.#source(answer), input: 0, read: 0, compositions: new Set(), drafts, baseHash, baseContent: structuredClone(answer.content), storage: `presmium.document.v1:${JSON.stringify([info.root, answer.content.id])}`, state: { directory, member: info.member, identity: JSON.stringify([info.root, answer.content.id]), content: answer.content, ...answer.inherited ? { inherited: answer.inherited } : {}, ...answer.inheritedFrom ? { inheritedFrom: answer.inheritedFrom } : {}, version: answer.version, fingerprint: answer.fingerprint, loading: true, dirty: false, saving: false, restored: false, composing: false, storageFailure: false, reset: 0, issues: answer.issues } }
         this.#slots.set(directory, slot)
         await this.#restore(slot, answer)
       } else {
@@ -291,7 +293,7 @@ export class DocumentSession {
   async #adopt(slot: Slot, answer: DocumentAnswer, current = () => true): Promise<void> {
     if (!current()) return
     if (answer.content.id !== slot.state.content?.id) { slot.state = { ...slot.state, error: 'document-identity-changed' }; return }
-    if (answer.inherited) slot.state = { ...slot.state, inherited: answer.inherited }
+    if (answer.inherited) slot.state = { ...slot.state, inherited: answer.inherited, ...answer.inheritedFrom ? { inheritedFrom: answer.inheritedFrom } : {} }
     slot.observedSource = this.#source(answer)
     if (answer.version === slot.state.version) {
       if (answer.fingerprint !== slot.state.fingerprint) slot.state = { ...slot.state, fingerprint: answer.fingerprint, issues: answer.issues }

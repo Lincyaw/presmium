@@ -111,6 +111,18 @@ export class DocumentTreeActions {
     return true
   }
 
+  /** Shows the document of `place` read-only in the right pane, beside the open one, at its page or block. */
+  peek(place: DocumentPlace): void {
+    const { document, section, block } = place
+    const current = this.#store.state.documentPeek
+    if (current && current.document === document && current.section === section && current.block === block) return
+    this.#store.set({ documentPeek: { document, ...section ? { section } : {}, ...block ? { block } : {} } })
+  }
+
+  closePeek(): void {
+    if (this.#store.state.documentPeek) this.#store.set({ documentPeek: undefined })
+  }
+
   /** Remembers that the author opened the document. */
   visited(id: string | undefined): void {
     if (!id) return
