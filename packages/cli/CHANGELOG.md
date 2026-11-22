@@ -1,5 +1,15 @@
 # @lincyaw/cli
 
+## 1.0.0-rc.129
+
+### Patch Changes
+
+- @lincyaw/workspace@1.0.0-rc.129
+  - @lincyaw/compiler@1.0.0-rc.129
+  - @lincyaw/kernel@1.0.0-rc.129
+  - @lincyaw/server@1.0.0-rc.129
+  - @lincyaw/skills@1.0.0-rc.129
+
 ## 1.0.0-rc.128
 
 ### Minor Changes
