@@ -1,5 +1,5 @@
 import { FocusScope } from '@radix-ui/react-focus-scope'
-import { PmApprovals } from '@lincyaw/host'
+import { PmApprovals, useAudienceRemote } from '@lincyaw/host'
 import { blockText, sectionNarration, stepScript } from '@lincyaw/kernel'
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
@@ -12,6 +12,8 @@ import { useViewer } from '../viewer-state.ts'
 import { useActions } from './actions.ts'
 import { button, layers, useCurrentSection, useModal, useOverlayBar } from './overlay.ts'
 import { SlideFace, SlideFit, useSlides } from './slide.ts'
+import { captionsControl } from './remote.ts'
+import type { CaptionsControl } from './remote.ts'
 
 function clock(ms: number): string {
   const s = Math.floor(ms / 1000)
@@ -34,6 +36,7 @@ export function PresenterView() {
     const position = useStore(viewer.position)
     const following = nextPosition(doc, position)
     const t = viewerMessages()
+    const [captions, toggleCaptions] = useAudienceRemote<CaptionsControl>(captionsControl(doc))
     const target = following ? viewer.section(following.section) : undefined
     const upcoming = !following ? t.presenter.end : following.section !== section?.id ? t.presenter.nextSection(target!.title) : stepScript(target!).find(entry => entry.step === following.step)?.text || sectionNarration(target!).filter(block => block.at === following.step).map(blockText).join('\n') || t.presenter.nextStep(following.step)
       const current = section
@@ -61,6 +64,7 @@ export function PresenterView() {
           button(t.present.prev, () => viewer.prev(), 'chevron-left', 'ArrowLeft'),
           button(t.present.next, () => viewer.next(), 'chevron-right', 'ArrowRight'),
           ...layers('presenter', 'bar'),
+          captions ? button(t.present.captions, () => toggleCaptions('captions'), 'captions', undefined, { 'aria-pressed': captions.on }) : null,
           h(PmApprovals),
         ]),
         h('div', { class: 'pm-presenter__main' }, [

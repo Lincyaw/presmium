@@ -45,7 +45,7 @@ index.pmd + 引用的代码与媒体
 - **站点**：查看器在 `_app/<键>/`；每份文稿有 `ir.json`、`search.json`（MiniSearch）、`_code/<键>/document.js`。每页先 SSR，浏览器再 hydrate。
 - **加载优先级**：页面先以高优先级预载查看器入口、它的直接依赖与 IR；文稿代码和场景模块以低优先级并行预载，后续讲授资源按当前位置的缓冲情况预取。
 - **当前画面**：独立幻灯片页面在初次挂载前应用地址中的页面与步骤，避免先准备第一页。代码包按模块记录发布图片及其静态依赖；页面框架加载完成后，只预载地址所选页的图片，随后由场景复用同一请求。网页的 SSR 水合仍先使用服务端状态，再应用地址中的位置。
-- **站点服务**（`site-server.ts`）：`<base>__app/` 下有 `view`、`ir`（`ETag`）、`events`（SSE）、`search`、`source`。`view` 页面代表文稿自己的页面：它相对自身引用的其他地址（例如场景从 `public/` 取的图片）按请求的来源页面解析到该文稿的路径下，与网站上一致。`dev` 中把 `/__presmium/` 代理到服务端。
+- **站点服务**（`site-server.ts`）：`<base>__app/` 下有 `ir`（`ETag`）、`events`（SSE）、`search`、`source`。工作台预览的文稿页面在文稿自己的路径下（`<文稿路径>?presmium-view=workbench&document=<目录>`），它相对自身引用的地址（例如场景从 `public/` 取的图片、到其他页面的链接）因此与网站上一致，不依赖请求的来源页面；`__app/view?document=<目录>` 重定向到这个地址。`dev` 中把 `/__presmium/` 代理到服务端。
 - **预览**：`preview` 等查看器与当前代码包就绪才答复，不以旧版本冒充当前版本；`prefetch=1` 只开始准备。每个面板最多两个 iframe。只有声明 `presmium.preview.restartable: true` 的包组成的预览可暂停复用。
 
 **调度**：一个宿主进程一次一份顶层编译，`priority: 'interactive'` 优先；`compile({ signal })` 可取消，取消的结果不入缓存；保存事件合并 10 ms，新修改取消旧编译。

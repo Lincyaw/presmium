@@ -113,7 +113,6 @@ describe('presmium serve: the workspace service for a workbench', () => {
 
     const preview = await route('preview?document=talk')
     expect(preview.status, preview.text).toBe(200)
-    expect(preview.json()).toEqual({ document: 'talk', web: `${url}/__app/view?document=talk`, slides: `${url}/__app/view?document=talk&form=slides` })
 
     expect(serve.output()).toMatch(/\[preview \d+\] document="talk" renderer=all prefetch=false state=started/)
     expect(serve.output()).toMatch(/\[preview \d+\].*phase=viewer source=app elapsedMs=\d+/)

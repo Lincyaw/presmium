@@ -33,13 +33,16 @@ import type { ViewerBuildRequest } from './viewer-build.ts'
 /**
  * The web form in development: the viewer app, prebuilt once for the site's plugins, shows every page of every document
  * as the built site would, rendered in the browser. Below `<base>__app/` are the app's own routes: a document's IR
- * (`ir`), its changes (`events`, server-sent; the sections that changed), its search index (`search`), the workbench's
- * page of a document (`view`), the app's files (`v/<key>/`) and the documents' bundles (`d/<dir>/<key>/`). Below each
- * document's site path are its pages, its published files (`media/`), its plugins' run-time files and its `public/`.
+ * (`ir`), its changes (`events`, server-sent; the sections that changed), its search index (`search`), the app's files
+ * (`v/<key>/`) and the documents' bundles (`d/<dir>/<key>/`). Below each document's site path are its pages (and the
+ * workbench's page of it, `?presmium-view=workbench`), its published files (`media/`), its plugins' run-time files and
+ * its `public/`.
  */
 
 const BUILD_SCRIPT = fileURLToPath(new URL('./viewer-build.ts', import.meta.url))
 const PREFIX = '__app/'
+// The query parameter that asks a document's address for the workbench's page of it.
+const VIEW_PARAM = 'presmium-view'
 const SERVER_PROXY = '/__presmium/'
 // The fingerprints of sources are taken again at most this often.
 const FINGERPRINT_MS = 3000
@@ -630,8 +633,11 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
   /** The app's own routes, below `<base>__app/`. */
   const appRoute = async (req: IncomingMessage, res: ServerResponse, url: URL, rest: string) => {
     if (rest === 'view') {
+      // The workbench's page of a document is at the document's own address (`viewAddress`).
       const dir = url.searchParams.get('document') ?? ''
-      return documents().includes(dir) ? documentPageResponse(res, dir, '', undefined, formOf(url), url.searchParams.get('presmium-block') ?? undefined) : plainPage(res, 'missing')
+      if (!documents().includes(dir)) return plainPage(res, 'missing')
+      res.writeHead(302, { 'Location': viewAddress(dir, url.searchParams), 'Cache-Control': 'no-store' })
+      return void res.end()
     }
     if (rest === 'ir') return irRoute(req, res, url)
     if (rest === 'search') return searchRoute(res, url)
@@ -642,20 +648,19 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     const below = (n: number) => `/${parts.slice(n).join('/')}`
     if (kind === 'v' && parts.length >= 2) return serveFile(req, res, join(options.cacheDir, parts[0]!), below(1), true)
     if (kind === 'd' && parts.length >= 3) return serveFile(req, res, join(options.workDir, 'bundles', parts[0]!, parts[1]!), below(2), true)
-    // The `view` page stands for the document's own page, so what it names relative to itself (a scene's picture from
-    // `public/`) is below the document's path, as on the site.
-    const viewed = viewedDocument(req)
-    if (viewed !== undefined) return documentRoute(req, res, url, viewed, safeDecodeURIComponent(rest))
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('not found')
   }
 
-  /** The document whose `view` page asks, from the request's referrer on this server. */
-  const viewedDocument = (req: IncomingMessage): string | undefined => {
-    let from: URL
-    try { from = new URL(req.headers.referer ?? '') } catch { return undefined }
-    if (from.host !== req.headers.host || from.pathname !== `${base}${PREFIX}view`) return undefined
-    const dir = from.searchParams.get('document')
-    return dir !== null && documents().includes(dir) ? dir : undefined
+  /**
+   * The workbench's page of a document: at the document's own path, as its page on the site, so that what the page names
+   * relative to itself (a scene's picture from `public/`, a link to another page) is what it is on the site. It names the
+   * document too, as the workbench's preview binds its events to it.
+   */
+  const viewAddress = (dir: string, params?: URLSearchParams) => {
+    const query = new URLSearchParams(params)
+    query.set(VIEW_PARAM, 'workbench')
+    query.set('document', dir)
+    return `${documentBase(base, dir)}?${query}`
   }
 
   /** A path below a document's site path: a page (its own, or a translation's), a published or run-time file, or its `public/`. */
@@ -663,6 +668,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     const doc = await documentOf(dir)
     const own = options.context(dir, doc)
     const [first, ...others] = rest.split('/')
+    if (rest === '' && url.searchParams.get(VIEW_PARAM) === 'workbench') return documentPageResponse(res, dir, '', undefined, formOf(url), url.searchParams.get('presmium-block') ?? undefined)
     if (doc.config.renderers.slides !== undefined) {
       const lang = first && others.length > 0 && translationOf(dir, first) ? first : ''
       const path = lang ? others.join('/') : rest
@@ -819,7 +825,7 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
       log(`[viewer] document=${JSON.stringify(dir || '.')} cache=${cached ? 'hit' : 'miss'} wait=${wait} state=${available ? 'ready' : preparing || !wait ? 'building' : 'failed'} elapsedMs=${Date.now() - started}`)
       if (wait && preparing) throw new PreviewPreparing()
       if (wait && !available) throw new Error(stateOf(dir).bundleFailure ?? appFailure ?? 'the viewer app or the current document code could not be built; the server\'s log says why')
-      return available ? `${base}${PREFIX}view?document=${encodeURIComponent(dir)}` : undefined
+      return available ? viewAddress(dir) : undefined
     },
     async warm(dir) {
       if (closed || !documents().includes(dir)) return

@@ -1,5 +1,5 @@
 import { componentErrors, componentErrorRevision, presmiumService, PLAYBACK_CONTROL, STEP_CLOCK } from '@lincyaw/host'
-import { deckLocale, irBlocks, PREVIEW_REVISION, toBlockPreviewCommand } from '@lincyaw/kernel'
+import { deckLocale, irBlocks, parentOrigin, PREVIEW_REVISION, toBlockPreviewCommand } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import type { Viewer } from '@lincyaw/viewer'
 import { WEB_MESSAGES } from '../domain/index.ts'
@@ -8,8 +8,7 @@ import { blockPlaybackGate } from './block-playback.ts'
 
 /** A read-only widget reports snapshot status, geometry and discrete navigation to its authorised parent. */
 export function blockPreviewReporter(config: AppConfig, doc: IRDocument, viewer: Viewer): { ready(): Promise<void>, failed(): void } {
-  let origin: string | undefined
-  try { const referrer = new URL(document.referrer).origin; if (config.origins.includes(referrer)) origin = referrer } catch {}
+  const origin = parentOrigin(config.origins)
   const root = document.getElementById('app')!
   let localPosition = false
   let navigation: string | undefined
