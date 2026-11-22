@@ -307,10 +307,24 @@ check_ip_reachable() {
 # --- Releases ---------------------------------------------------------------------------------------------------
 
 latest_version() {
-  local tag
-  tag=$(curl -fsSL --max-time 20 "https://api.github.com/repos/$repository/releases?per_page=30" 2>/dev/null |
-    sed -n 's/^ *"tag_name": *"\(v[0-9][^"]*\)".*/\1/p' | head -n1) || true
-  [ -n "$tag" ] || die "could not find the latest release on GitHub; pass --version (e.g. --version 1.0.0-rc.130)."
+  local tag headers status
+  # The releases feed on github.com lists prereleases too (/releases/latest skips them) and, unlike api.github.com,
+  # has no limit of 60 requests an hour per address, which a campus or company network shares.
+  tag=$(curl -fsSL --max-time 20 "https://github.com/$repository/releases.atom" 2>/dev/null |
+    sed -n 's#.*/releases/tag/\(v[0-9][^"]*\)".*#\1#p' | head -n1) || true
+  if [ -z "$tag" ]; then
+    headers=$(mktemp)
+    tag=$(curl -sSL --max-time 20 -D "$headers" "https://api.github.com/repos/$repository/releases?per_page=30" 2>/dev/null |
+      sed -n 's/^ *"tag_name": *"\(v[0-9][^"]*\)".*/\1/p' | head -n1) || true
+    status=$(awk 'toupper($1) ~ /^HTTP/ { code = $2 } END { print code }' "$headers")
+    if [ -z "$tag" ] && { [ "$status" = 403 ] || [ "$status" = 429 ]; } && grep -qi '^x-ratelimit-remaining: *0' "$headers"; then
+      rm -f -- "$headers"
+      die "GitHub's API refused this address: its limit of 60 requests an hour is used up (often by others behind the same
+       public address). Pass the release with --version (e.g. --version 1.0.0-rc.131), or retry in an hour."
+    fi
+    rm -f -- "$headers"
+  fi
+  [ -n "$tag" ] || die "could not reach github.com to find the latest release; pass --version (e.g. --version 1.0.0-rc.131)."
   printf '%s' "${tag#v}"
 }
 

@@ -87,7 +87,7 @@ curl -fsSL https://raw.githubusercontent.com/Lincyaw/presmium/main/deploy/cloud/
 
 邮件可选：`--smtp-host`、`--smtp-from`，需要时加 `--smtp-port`、`--smtp-user`、`--smtp-password`。给出时注册验证邮箱、可找回密码；不给时写入 `CLOUD_KEYCLOAK_VERIFY_EMAIL=false` 与 `CLOUD_KEYCLOAK_PASSWORD_RESET=false`，注册不验证邮箱、没有找回密码，安装结束时说明这一点以及之后在身份域的 `/admin/` 中配置邮件或关闭注册的位置。
 
-其余参数：`--version`（默认最新的 GitHub Release，例如 `1.0.0-rc.130`）、`--dir`（默认 `~/presmium-cloud`）、`--name`（Compose 项目与实例名，默认 `presmium-cloud`）、`--yes`（不提问，须同时给出地址方式；`curl … | bash -s -- --yes --ip`）、`--dry-run`（只下载到临时目录，打印将写入的配置（隐去密钥）、站点与步骤，并让 Compose 检查配置，不改动任何东西）、`--build`、`--source`（用给定的源码压缩包（文件或网址）代替该版本的 GitHub 归档；不加 `--build` 时只取其中的部署文件，镜像仍是 `--version` 的发布版本）、`--registry`（从 `ghcr.io/lincyaw/` 的镜像站拉取四个 `presmium-cloud-*` 镜像，值是镜像名前缀，例如 `--registry mirror.example.com/lincyaw/`，写入 `CLOUD_IMAGE_REGISTRY`；`upgrade` 也接受）。下载不显示进度条。
+其余参数：`--version`（默认最新的 GitHub Release（含预发布），从 github.com 的发布订阅 `releases.atom` 读取，取不到时再问 GitHub API；API 每个公网地址每小时限 60 次，用尽时安装器如实说明，校园或公司网络中可直接给出版本，例如 `1.0.0-rc.131`）、`--dir`（默认 `~/presmium-cloud`）、`--name`（Compose 项目与实例名，默认 `presmium-cloud`）、`--yes`（不提问，须同时给出地址方式；`curl … | bash -s -- --yes --ip`）、`--dry-run`（只下载到临时目录，打印将写入的配置（隐去密钥）、站点与步骤，并让 Compose 检查配置，不改动任何东西）、`--build`、`--source`（用给定的源码压缩包（文件或网址）代替该版本的 GitHub 归档；不加 `--build` 时只取其中的部署文件，镜像仍是 `--version` 的发布版本）、`--registry`（从 `ghcr.io/lincyaw/` 的镜像站拉取四个 `presmium-cloud-*` 镜像，值是镜像名前缀，例如 `--registry mirror.example.com/lincyaw/`，写入 `CLOUD_IMAGE_REGISTRY`；`upgrade` 也接受）。下载不显示进度条。
 
 安装目录的内容：`.env`（0600，由 `keycloak/init-env.sh` 生成全部随机密钥，地址、镜像与邮件设置之后写入；已有时保留，不覆盖）、`releases/<版本>/`（该版本的部署文件，`--build` 时为完整源码）、`current`（指向运行中的版本）、`install.sh` 与 `backups/`。重复运行是幂等的：沿用已有的 `.env` 与版本，只补齐缺少的步骤并启动。
 
