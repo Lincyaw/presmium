@@ -642,7 +642,20 @@ export async function startSiteServer(options: SiteServerOptions): Promise<SiteS
     const below = (n: number) => `/${parts.slice(n).join('/')}`
     if (kind === 'v' && parts.length >= 2) return serveFile(req, res, join(options.cacheDir, parts[0]!), below(1), true)
     if (kind === 'd' && parts.length >= 3) return serveFile(req, res, join(options.workDir, 'bundles', parts[0]!, parts[1]!), below(2), true)
+    // The `view` page stands for the document's own page, so what it names relative to itself (a scene's picture from
+    // `public/`) is below the document's path, as on the site.
+    const viewed = viewedDocument(req)
+    if (viewed !== undefined) return documentRoute(req, res, url, viewed, safeDecodeURIComponent(rest))
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('not found')
+  }
+
+  /** The document whose `view` page asks, from the request's referrer on this server. */
+  const viewedDocument = (req: IncomingMessage): string | undefined => {
+    let from: URL
+    try { from = new URL(req.headers.referer ?? '') } catch { return undefined }
+    if (from.host !== req.headers.host || from.pathname !== `${base}${PREFIX}view`) return undefined
+    const dir = from.searchParams.get('document')
+    return dir !== null && documents().includes(dir) ? dir : undefined
   }
 
   /** A path below a document's site path: a page (its own, or a translation's), a published or run-time file, or its `public/`. */

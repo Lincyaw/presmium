@@ -1495,6 +1495,11 @@ html.pm-in-workbench .pm-present__slide {
   padding: var(--pm-space-4);
 }
 
+/* A narrow workbench has no second screen for the presenter view to go to. */
+@media (max-width: 767px) {
+  html.pm-in-workbench .pm-present__presenter { display: none; }
+}
+
 /* The slides in the workbench: its stage has their shape and frame, so the slide fills it. */
 html.pm-in-workbench .pm-slides-page .pm-present__slide {
   padding: 0;
