@@ -26,7 +26,7 @@ const messages = {
     chapters: ['深夜提问', '换一种讲法', '课堂讲解', '课后'],
     galleryTag: '示例', galleryTitle: '示例库',
     galleryLead: '功能合集逐页演示单项功能；教程按步骤介绍工作台中的操作；课程、影片与动画参考展示完整作品。每份示例均可在网页中阅读，或在工作台中打开编辑。',
-    galleryAll: '查看全部示例', all: '全部', count: (n: number) => `${n} 份`, pages: (n: number) => `${n} 页`, open: '打开', empty: '该类别暂无示例。', filters: '按类别筛选',
+    galleryAll: '查看全部示例', all: '全部', count: (n: number) => `${n} 份`, pages: (n: number) => `${n} 页`, open: '打开', empty: '该类别暂无示例。', filters: '按类别筛选', children: (title: string) => `${title}之下的文稿`,
     categories: {
       collections: ['功能合集', '每页演示一项功能，涵盖内容排版、步骤与动画、代码运行、课堂互动、阅读与发布。'],
       tutorials: ['教程', '按编号步骤介绍工作台中的编辑、讲稿、配音与导出。'],
@@ -69,7 +69,7 @@ const messages = {
     chapters: ['A question at night', 'Another way to explain', 'Presenting', 'Afterwards'],
     galleryTag: 'Examples', galleryTitle: 'Example library',
     galleryLead: 'Feature collections demonstrate one feature per page; tutorials walk through the workbench step by step; courses, films and animation references show complete work. Every example can be read on the web or opened for editing in the workbench.',
-    galleryAll: 'Browse all examples', all: 'All', count: (n: number) => `${n} ${n === 1 ? 'document' : 'documents'}`, pages: (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`, open: 'Open', empty: 'No examples in this category yet.', filters: 'Filter by category',
+    galleryAll: 'Browse all examples', all: 'All', count: (n: number) => `${n} ${n === 1 ? 'document' : 'documents'}`, pages: (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`, open: 'Open', empty: 'No examples in this category yet.', filters: 'Filter by category', children: (title: string) => `Documents under ${title}`,
     categories: {
       collections: ['Feature collections', 'One feature per page: content and layout, steps and animation, code, classroom, reading and publishing.'],
       tutorials: ['Tutorials', 'Numbered steps through editing, scripts, voiceover and export in the workbench.'],
@@ -197,11 +197,21 @@ function home() {
       <section class="start wrap" id="start"><p class="eyebrow">PRESMIUM</p><h2>${t.cta}</h2><p>${t.ctaLead}</p><div class="command"><code>${command}</code><button class="pm-ui-icon-button pm-ui-icon-button--ghost" id="copy" aria-label="${t.copy}">${icon('copy')}</button></div><span id="copy-status" role="status"></span><p class="install">${t.install} <code>pnpm add -g @lincyaw/presmium</code></p></section>
 `
 }
+// The documents of a category as the workspace's document tree nests them (`parent`): a document whose parent is in
+// the same category is listed in its parent's card, not as a card of its own.
+type TreeNode = { doc: SiteDocument, children: TreeNode[] }
+function treeOf(docs: SiteDocument[]): TreeNode[] {
+  const nodes = new Map(docs.map(doc => [doc.id, { doc, children: [] as TreeNode[] }]))
+  const roots: TreeNode[] = []
+  for (const doc of docs) (doc.parent !== undefined && nodes.get(doc.parent) || { children: roots }).children.push(nodes.get(doc.id)!)
+  return roots
+}
 // The example library: every published document filed under its category, one category at a time or all of them.
 function gallery(category?: Category) {
   const t = messages[locale]
-  const card = (doc: SiteDocument) => { const id = categoryOf(doc)!, topics = (doc.tags ?? []).filter(tag => !CATEGORIES.some(([, name]) => name === tag)); return `<a class="example-card" href="${doc.href}"><div class="example-thumb"><span>${t.categories[id][0]} / ${String(inCategory(id).indexOf(doc) + 1).padStart(2, '0')}</span>${icon(CATEGORIES.find(([key]) => key === id)![2])}</div><div class="example-body"><h3>${doc.title}</h3>${doc.description ? `<p>${doc.description}</p>` : ''}<div class="example-meta">${doc.pages ? `<span>${t.pages(doc.pages)}</span>` : ''}${topics.slice(0, 3).map(topic => `<span>${topic}</span>`).join('')}<b>${t.open}${icon('chevron-right')}</b></div></div></a>` }
-  const group = (id: Category, heading: boolean) => { const docs = inCategory(id); return docs.length ? `<section class="example-group" aria-label="${t.categories[id][0]}">${heading ? `<div class="example-group-heading"><h2>${t.categories[id][0]}</h2><p>${t.categories[id][1]}</p></div>` : ''}<div class="example-grid">${docs.map(card).join('')}</div></section>` : '' }
+  const children = (nodes: TreeNode[], title?: string): string => nodes.length ? `<ul class="example-children"${title ? ` aria-label="${t.children(title)}"` : ''}>${nodes.map(({ doc, children: below }) => `<li><a href="${doc.href}"><span>${doc.title}</span>${doc.pages ? `<span class="example-child-meta">${t.pages(doc.pages)}</span>` : ''}</a>${children(below)}</li>`).join('')}</ul>` : ''
+  const card = ({ doc, children: below }: TreeNode, index: number) => { const id = categoryOf(doc)!, topics = (doc.tags ?? []).filter(tag => !CATEGORIES.some(([, name]) => name === tag)); return `<article class="example-card"><a class="example-link" href="${doc.href}"><div class="example-thumb"><span>${t.categories[id][0]} / ${String(index + 1).padStart(2, '0')}</span>${icon(CATEGORIES.find(([key]) => key === id)![2])}</div><div class="example-body"><h3>${doc.title}</h3>${doc.description ? `<p>${doc.description}</p>` : ''}<div class="example-meta">${doc.pages ? `<span>${t.pages(doc.pages)}</span>` : ''}${topics.slice(0, 3).map(topic => `<span>${topic}</span>`).join('')}<b>${t.open}${icon('chevron-right')}</b></div></div></a>${children(below, doc.title)}</article>` }
+  const group = (id: Category, heading: boolean) => { const docs = inCategory(id); return docs.length ? `<section class="example-group" aria-label="${t.categories[id][0]}">${heading ? `<div class="example-group-heading"><h2>${t.categories[id][0]}</h2><p>${t.categories[id][1]}</p></div>` : ''}<div class="example-grid">${treeOf(docs).map(card).join('')}</div></section>` : '' }
   const filters = [['', t.all, documents.filter(categoryOf).length] as const, ...CATEGORIES.map(([id]) => [id, t.categories[id][0], inCategory(id).length] as const).filter(([, , n]) => n)]
   return `<section class="gallery wrap"><div class="section-heading"><p class="eyebrow">${t.galleryTag}</p><h1>${t.galleryTitle}</h1><p class="section-lead">${t.galleryLead}</p></div>
     <div class="pm-ui-segmented gallery-filters" role="group" aria-label="${t.filters}">${filters.map(([id, label, n]) => `<a class="pm-ui-segmented__option" href="#/examples${id ? `/${id}` : ''}" aria-pressed="${(category ?? '') === id}">${label}<span>${n}</span></a>`).join('')}</div>
