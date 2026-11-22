@@ -94,6 +94,37 @@ async function plain(dir) {
 
 const slug = title => title.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'copy'
 
+/** The ids of the documents in the workspace (every `index.pmd`), leaving out `except`, git, dependencies and the trash. */
+async function documentIds(root, except) {
+  const ids = new Set()
+  const walk = async (dir, depth) => {
+    if (dir === except || depth > 8) return
+    const entries = await readdir(dir, { withFileTypes: true }).catch(() => [])
+    for (const item of entries) {
+      if (item.isDirectory() && !['.git', 'node_modules', '.trash', '.presmium', '.deltabox'].includes(item.name)) await walk(join(dir, item.name), depth + 1)
+      else if (item.isFile() && item.name === 'index.pmd') {
+        try { const id = JSON.parse(await readFile(join(dir, item.name), 'utf8')).id; if (typeof id === 'string') ids.add(id) } catch { /* not a document */ }
+      }
+    }
+  }
+  await walk(root, 0)
+  return ids
+}
+
+/** `document` with its id, and every reference or synced block that points at itself, changed to `next`. */
+function renameSelf(document, old, next) {
+  const visit = value => {
+    if (Array.isArray(value)) return value.map(visit)
+    if (value && typeof value === 'object') {
+      const out = Object.fromEntries(Object.entries(value).map(([key, item]) => [key, visit(item)]))
+      if (out.document === old && ('block' in out || 'section' in out || Object.keys(out).length === 1)) out.document = next
+      return out
+    }
+    return value
+  }
+  return { ...visit(document), id: next }
+}
+
 async function importCopy(request, title) {
   await mkdir(SCRATCH, { recursive: true, mode: 0o700 })
   const dir = await mkdtemp(join(SCRATCH, 'import-'))
@@ -108,12 +139,25 @@ async function importCopy(request, title) {
     let name = slug(title), n = 1
     while (existsSync(join(SPACE, name))) name = `${slug(title)}-${++n}`
     await rename(source, join(SPACE, name))
-    const entry = join(SPACE, name, 'index.pmd'), document = JSON.parse(await readFile(entry, 'utf8'))
+    const entry = join(SPACE, name, 'index.pmd')
+    let document = JSON.parse(await readFile(entry, 'utf8'))
+    let changed = false
     // A shared document may be nested; its parent is not in this workspace, so the copy starts at the top level.
     if (document.placement && document.placement.parent !== null) {
       document.placement = { ...document.placement, parent: null }
-      await writeFile(entry, `${JSON.stringify(document, null, 2)}\n`)
+      changed = true
     }
+    // A copy of a document this workspace already holds (e.g. the author's own share) takes a new id, and its
+    // references to itself follow.
+    const taken = await documentIds(SPACE, join(SPACE, name))
+    if (typeof document.id === 'string' && taken.has(document.id)) {
+      const old = document.id
+      let n = 2
+      while (taken.has(`${old}-${n}`)) n++
+      document = renameSelf(document, old, `${old}-${n}`)
+      changed = true
+    }
+    if (changed) await writeFile(entry, `${JSON.stringify(document, null, 2)}\n`)
     await git(['add', '--', name])
     await git(['commit', '-q', '-m', `Fork: ${title.replace(/[\r\n]/g, ' ').slice(0, 200)}`, '--', name])
     const id = document.id
