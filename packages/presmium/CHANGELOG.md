@@ -1,5 +1,38 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.131
+
+### Patch Changes
+
+- The cloud can run on the server's bare IP at one address (`install.sh --ip`): Caddy routes the console, sign-in, Studio and shared pages by path, shared pages run sandboxed, and the certificate comes from Let's Encrypt for a public IP or Caddy's own CA otherwise. `--registry` pulls from a mirror and failed pulls say why. The viewer starts in sandboxed pages.
+- Updated dependencies
+  - @lincyaw/web@1.0.0-rc.131
+  - @lincyaw/addon-publish@1.0.0-rc.131
+  - @lincyaw/render-notebook@1.0.0-rc.131
+  - @lincyaw/render-slides@1.0.0-rc.131
+  - @lincyaw/addon-assistant@1.0.0-rc.131
+  - @lincyaw/addon-classroom@1.0.0-rc.131
+  - @lincyaw/addon-code@1.0.0-rc.131
+  - @lincyaw/addon-content@1.0.0-rc.131
+  - @lincyaw/addon-exec@1.0.0-rc.131
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.131
+  - @lincyaw/addon-exec-local@1.0.0-rc.131
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.131
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.131
+  - @lincyaw/addon-guide@1.0.0-rc.131
+  - @lincyaw/addon-lecture@1.0.0-rc.131
+  - @lincyaw/addon-motion@1.0.0-rc.131
+  - @lincyaw/addon-session@1.0.0-rc.131
+  - @lincyaw/addon-speech@1.0.0-rc.131
+  - @lincyaw/addon-stage@1.0.0-rc.131
+  - @lincyaw/cli@1.0.0-rc.131
+  - create-presmium@1.0.0-rc.131
+  - @lincyaw/host@1.0.0-rc.131
+  - @lincyaw/kernel@1.0.0-rc.131
+  - @lincyaw/mcp@1.0.0-rc.131
+  - @lincyaw/viewer@1.0.0-rc.131
+  - @lincyaw/studio@0.2.0-rc.130
+
 ## 1.0.0-rc.130
 
 ### Patch Changes
