@@ -19,7 +19,8 @@ RUN pnpm install --frozen-lockfile \
  && pnpm --filter @lincyaw/render-slides exec playwright install --with-deps chromium \
  && node packages/dsh/build/client.mjs \
  && pnpm --filter @lincyaw/skills run skills \
- && node packages/web/build/prebuild-viewer.mjs /opt/presmium/viewer-seed packages/addon-*
+ && node packages/web/build/prebuild-viewer.mjs /opt/presmium/viewer-seed packages/addon-* \
+ && ln -s /opt/presmium/packages/presmium/bin/presmium.mjs /usr/local/bin/presmium
 # JupyterHub's single-user server around Studio (deploy/cloud/hub): Hub authenticates every request.
 RUN python3 -m venv /opt/hub \
  && /opt/hub/bin/pip install --no-cache-dir jupyterhub==5.5.4 jupyter-server-proxy==4.6.0 ipykernel==6.30.1 \

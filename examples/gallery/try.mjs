@@ -1,7 +1,7 @@
 // Prepares an editable copy of the example for the workbench (`pnpm studio`): the lectures, their animations and the
 // synthesis cache of their narration, in a git repository of its own whose history is the workbench's versions.
 import { execFileSync } from 'node:child_process'
-import { cpSync, existsSync, readdirSync, symlinkSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -20,6 +20,17 @@ const copied = (source) => {
 // real directories, as the workspace's source writer deliberately rejects symlinks.
 cpSync(here, target, { recursive: true, dereference: true, filter: copied })
 symlinkSync(join(here, 'node_modules'), join(target, 'node_modules'), 'junction')
+// The example's tsconfig extends the repository's base by a relative path that leads nowhere from the copy (in the
+// cloud it would be /tsconfig.base.json, and the bundler refuses every scene); the copy carries the options itself.
+const tsconfig = join(target, 'tsconfig.json')
+if (existsSync(tsconfig)) {
+  const own = JSON.parse(readFileSync(tsconfig, 'utf8'))
+  if (typeof own.extends === 'string' && own.extends.startsWith('.')) {
+    const base = JSON.parse(readFileSync(resolve(here, own.extends), 'utf8'))
+    const { extends: _, ...rest } = own
+    writeFileSync(tsconfig, `${JSON.stringify({ ...base, ...rest, compilerOptions: { ...base.compilerOptions, ...rest.compilerOptions } }, null, 2)}\n`)
+  }
+}
 writeFileSync(join(target, '.gitignore'), 'node_modules\ndist/\n**/.presmium/*\n!**/.presmium/speech/\n!**/.presmium/speech.lock.json\n')
 const git = args => execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Presmium example', '-c', 'user.email=example@presmium.invalid', '-c', 'commit.gpgSign=false', ...args], { cwd: target, stdio: 'pipe' })
 git(['init', '-q', '-b', 'main'])

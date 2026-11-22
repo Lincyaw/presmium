@@ -124,7 +124,10 @@ function bundlerFailures(error: unknown, module: string): CodeFailure[] {
     const framed = /\[ ([^\s\]]+):(\d+):\d+ \]/.exec(text)
     const file = one?.id ?? one?.loc?.file ?? (framed ? resolve(framed[1]!) : undefined)
     const line = one?.loc?.line ?? (framed ? Number(framed[2]) : undefined)
-    const reason = text.split('\n').map(part => part.replace(/^(?:Error:\s*|\[[^\]\s]+\]\s*)+/, '').trim()).find(part => part && !part.startsWith('Build failed')) ?? text
+    const first = text.split('\n').map(part => part.replace(/^(?:Error:\s*|\[[^\]\s]+\]\s*)+/, '').trim()).find(part => part && !part.startsWith('Build failed')) ?? text
+    // A plugin's failure ("plugin `builtin:vite-transform` threw an error") says why only under "Caused by:".
+    const cause = /Caused by:\s*\n\s*([^\n]+)/.exec(text)?.[1]?.trim()
+    const reason = cause && !first.includes(cause) ? `${first}: ${cause}` : first
     const missing = one?.code === 'UNRESOLVED_IMPORT' && typeof one.exporter === 'string' ? one.exporter : undefined
     return { module, ...file && existsSync(file) ? { file } : {}, ...line ? { line } : {}, reason, ...missing ? { missing } : {} }
   })
