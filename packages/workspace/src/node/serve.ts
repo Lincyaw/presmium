@@ -26,7 +26,7 @@ import { documentSummaries, listDocuments, readWorkspaceConfig } from './config.
 import { DocumentOperations, documentsDiff } from './document-operations.ts'
 import type { DocumentsChange } from './document-operations.ts'
 import { RequestError } from './errors.ts'
-import { Git } from './git.ts'
+import { excludeDeltaboxState, Git } from './git.ts'
 import { captureLocalBaseline, clearStaleHistoryLock, openLocalHistory } from './local-history.ts'
 import { createJobs, OUTPUTS_PATH } from './jobs.ts'
 import { DocumentLocks } from './locks.ts'
@@ -168,6 +168,8 @@ async function startWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const unhandled = (reason: unknown) => log.error(`an operation failed unexpectedly: ${errorMessage(reason)}`)
   process.on('unhandledRejection', unhandled)
   if (clearStaleHistoryLock(root, env)) log.warn('removed the local history\'s index lock that an earlier service, ended in the middle of a git command, left behind')
+  const excluded = await excludeDeltaboxState(root).catch((error: unknown) => { log.warn(`could not leave DeltaBox's state directories out of the project: ${errorMessage(error)}`); return [] })
+  if (excluded.length) log.warn(`left ${excluded.join(', ')} out of the project in its git info/exclude: DeltaBox state an earlier service put in the workspace`)
   const historyGit = await openLocalHistory(root, env)
   await historyGit.exclusive(() => captureLocalBaseline(historyGit, ['.']))
   const operatorDirectory = resolveOperatorDir(root, options.operatorDir ?? env.PRESMIUM_OPERATOR_DIR)

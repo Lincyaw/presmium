@@ -74,7 +74,7 @@ export async function captureLocalBaseline(git: Git, paths: string[], initial = 
   if (excluded.code !== 0 && excluded.code !== 1) throw new Error(excluded.stderr)
   const ignored = new Set(excluded.stdout.toString('utf8').split('\0'))
   const selected = paths.filter(path => !ignored.has(path) && (tracked.has(path) || lstatSync(join(git.root, path), { throwIfNoEntry: false })))
-  if (selected.length) await git.output(['add', '-A', '--', ...selected], { GIT_LITERAL_PATHSPECS: '1' })
+  if (selected.length) await git.addAll(selected)
   const tree = (await git.output(['write-tree'])).trim()
   const parent = await git.tryOutput(['rev-parse', '--verify', '--quiet', 'HEAD'])
   if (!initial && parent.ok && tree === (await git.output(['rev-parse', 'HEAD^{tree}'])).trim()) return

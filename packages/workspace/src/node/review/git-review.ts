@@ -6,6 +6,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path'
 import { gitConfigArgs, gitEnvironment } from '@lincyaw/kernel'
 import type { ChangeReview, DocumentFileChange, DocumentFiles, ReviewChange, ReviewChangeKind, ReviewStep } from '@lincyaw/kernel'
 import { isInside } from '@lincyaw/kernel/node'
+import { addPathspecs, nestedRepositories } from '../git.ts'
 import { snapshotGitDir } from './git-guard.ts'
 import type { SavedGitDir } from './git-guard.ts'
 import { isHolderAlive, readRecord, removeRecord, THIS_PROCESS, writeRecord } from './record.ts'
@@ -40,7 +41,7 @@ function git(cwd: string, args: string[], env: Record<string, string> = {}): Pro
       cwd,
       encoding: 'buffer',
       maxBuffer: 256 << 20,
-      env: { ...gitEnvironment(process.env), ...env, GIT_OPTIONAL_LOCKS: '0', GIT_LITERAL_PATHSPECS: '1' },
+      env: { ...gitEnvironment(process.env), GIT_LITERAL_PATHSPECS: '1', ...env, GIT_OPTIONAL_LOCKS: '0' },
     }, (error, stdout, stderr) => {
       if (error) reject(new Error(`git ${args[0]}: ${stderr.toString('utf8').trim() || error.message}`))
       else resolve(stdout)
@@ -111,8 +112,8 @@ class ReviewTrees {
     this.#files = options.files
   }
 
-  #git(args: string[], index?: string): Promise<Buffer> {
-    return git(this.top, args, { ...this.#env, ...index ? { GIT_INDEX_FILE: index } : {} })
+  #git(args: string[], index?: string, env: Record<string, string> = {}): Promise<Buffer> {
+    return git(this.top, args, { ...this.#env, ...index ? { GIT_INDEX_FILE: index } : {}, ...env })
   }
 
   async #text(args: string[], index?: string): Promise<string> {
@@ -129,7 +130,8 @@ class ReviewTrees {
   async tree(): Promise<string> {
     const index = this.#index()
     try {
-      await this.#git(['add', '-A', '--', this.#pathspec], index)
+      const nested = nestedRepositories(await this.#text(['ls-files', '--others', '--exclude-standard', '-z', '--', this.#pathspec], index))
+      await this.#git(['add', '-A', '--', ...addPathspecs([this.#pathspec], nested)], index, { GIT_LITERAL_PATHSPECS: '0' })
       return (await this.#text(['write-tree'], index)).trim()
     } finally {
       rmSync(index, { force: true })

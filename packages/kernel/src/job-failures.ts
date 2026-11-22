@@ -1,6 +1,6 @@
 import type { JobFailureCode } from './contracts/workspace.ts'
 
-const CODES = new Set<string>(['job-plugin-missing', 'job-browser-missing', 'job-ffmpeg-missing', 'job-no-voiceover', 'job-disk-full'] satisfies JobFailureCode[])
+const CODES = new Set<string>(['job-plugin-missing', 'job-browser-missing', 'job-ffmpeg-missing', 'job-no-voiceover', 'job-voice-unset', 'job-speech-missing', 'job-disk-full'] satisfies JobFailureCode[])
 
 /** An export's failure with a known cause (`code`); the message is the details, in the exporter's words. */
 export class JobFailure extends Error {

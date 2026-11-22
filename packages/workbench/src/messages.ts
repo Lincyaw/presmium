@@ -303,6 +303,8 @@ const zh = {
     'job-browser-missing': '导出所需的浏览器组件没有安装。请运行 pnpm exec playwright install chromium，然后重新导出。',
     'job-ffmpeg-missing': '导出 MP4 视频需要 FFmpeg。请安装 FFmpeg，然后重新导出。',
     'job-no-voiceover': '文稿还没有配音。请在视频制作中录音，或选择音色并生成配音，然后重新导出。',
+    'job-voice-unset': '讲稿还没有选择音色。请在视频制作中选择音色并生成配音，或选择静音，然后重新导出。',
+    'job-speech-missing': '此文稿尚未启用视频制作。请打开视频制作，点“启用视频制作”，然后重新导出。',
     'job-disk-full': '磁盘空间不足。请清理磁盘，然后重新导出。',
     'job-failed': '导出没有完成。展开“详细信息”查看原因，处理后重新导出。'
   } as Record<string, string>,
@@ -691,6 +693,8 @@ const en: WorkbenchMessages = {
     'job-browser-missing': 'The browser the export uses is not installed. Run pnpm exec playwright install chromium, then export again.',
     'job-ffmpeg-missing': 'An MP4 video needs FFmpeg. Install FFmpeg, then export again.',
     'job-no-voiceover': 'The document has no voiceover yet. Record in Video Production, or choose a voice and generate the voiceover, then export again.',
+    'job-voice-unset': 'The script has no voice selected. In Video Production, choose a voice and generate the voiceover, or choose Silent, then export again.',
+    'job-speech-missing': 'Video production is not turned on for this document. Open Video Production, choose Turn On Video Production, then export again.',
     'job-disk-full': 'The disk is full. Free up space, then export again.',
     'job-failed': 'The export didn’t finish. Open Details to see why, fix it, then export again.'
   },

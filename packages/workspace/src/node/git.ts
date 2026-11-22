@@ -2,7 +2,8 @@ import { execFile, execFileSync, fork } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { existsSync, readdirSync, realpathSync } from 'node:fs'
-import { join } from 'node:path'
+import { appendFile, mkdir, readFile } from 'node:fs/promises'
+import { dirname, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { gitConfigArgs, gitEnvironment } from '@lincyaw/kernel'
 
@@ -84,6 +85,39 @@ function runGit(request: RunRequest): Promise<GitResult> {
   })
 }
 
+/**
+ * Repositories inside the work tree are left out of Presmium's own histories: git cannot add one without a commit
+ * (it stops the whole `git add`), and one with a commit would enter only as a reference to it. `ls-files --others`
+ * names each as its directory with a trailing slash, and nothing else that way.
+ */
+export const nestedRepositories = (untracked: string): string[] => untracked.split('\0').filter(path => path.endsWith('/'))
+const reported = new Set<string>()
+/** Pathspecs (git's literal-pathspec setting off) that add `paths` except the nested repositories. */
+export function addPathspecs(paths: string[], nested: string[]): string[] {
+  for (const path of nested) if (!reported.has(path)) { reported.add(path); console.warn(`presmium: ${path} is a git repository of its own; its files are not part of the workspace history`) }
+  return [...paths.map(path => `:(literal)${path}`), ...nested.map(path => `:(exclude,literal)${path}`)]
+}
+
+/**
+ * DeltaBox keeps a session's state in `.deltabox/` and `.deltabox-lite-state/` of the project root it is given; an
+ * earlier Presmium gave it the author's workspace, so these may be left there. A live session may still use them,
+ * so they are not removed: the project's local `info/exclude` (never a file the author commits) leaves them out.
+ * Answers the lines it added.
+ */
+export async function excludeDeltaboxState(root: string): Promise<string[]> {
+  const present = ['.deltabox', '.deltabox-lite-state'].filter(name => existsSync(join(root, name)))
+  if (!present.length || !Git.isRepository(root)) return []
+  const git = new Git(root)
+  const prefix = (await git.output(['rev-parse', '--show-prefix'])).trim()
+  const file = resolve(root, (await git.output(['rev-parse', '--git-path', 'info/exclude'])).trim())
+  const existing = await readFile(file, 'utf8').catch((error: NodeJS.ErrnoException) => { if (error.code === 'ENOENT') return ''; throw error })
+  const lines = present.map(name => `/${prefix}${name}/`).filter(line => !existing.split(/\r?\n/).includes(line))
+  if (!lines.length) return lines
+  await mkdir(dirname(file), { recursive: true })
+  await appendFile(file, `${existing && !existing.endsWith('\n') ? '\n' : ''}${lines.join('\n')}\n`)
+  return lines
+}
+
 export class Git {
   readonly root: string
   readonly top: string
@@ -136,6 +170,13 @@ export class Git {
   async tryOutput(command: string[], env?: Record<string, string>): Promise<{ ok: boolean, output: string }> {
     const result = await this.run(command, env)
     return { ok: result.code === 0, output: result.code === 0 ? result.stdout.toString('utf8') : `${result.stderr}${result.stdout.toString('utf8')}` }
+  }
+
+  /** `git add -A` of `paths` (literal) that skips nested repositories. */
+  async addAll(paths: string[], env: Record<string, string> = {}): Promise<void> {
+    const literal = { ...env, GIT_LITERAL_PATHSPECS: '1' }
+    const nested = nestedRepositories(await this.output(['ls-files', '--others', '--exclude-standard', '-z', '--', ...paths], literal))
+    await this.output(['add', '-A', '--', ...addPathspecs(paths, nested)], { ...env, GIT_LITERAL_PATHSPECS: '0' })
   }
 
   exclusive<T>(work: () => Promise<T>): Promise<T> {

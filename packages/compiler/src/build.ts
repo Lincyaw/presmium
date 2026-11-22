@@ -1,6 +1,6 @@
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import { errorMessage } from '@lincyaw/kernel'
+import { errorMessage, jobFailureCode } from '@lincyaw/kernel'
 import type { Finding, IRDocument, RenderOutput } from '@lincyaw/kernel'
 import { unshown } from './audience.ts'
 import { audienceCompilation } from './compiler.ts'
@@ -62,7 +62,8 @@ export async function build(whole: Compilation, options: BuildOptions): Promise<
       const result: RendererOutput = { renderer: renderer.id, outDir: output.outDir, workDir: ctx.workDir, base: ctx.base, skipped: [...output.skipped, ...unsupported.filter(s => !listed.has(`${s.section}#${s.block}`))] }
       return { result, reported }
     } catch (error) {
-      reported.push(renderFinding(compilation, 'error', `renderer ${renderer.id} failed: ${errorMessage(error)}`))
+      const failure = jobFailureCode(error)
+      reported.push({ ...renderFinding(compilation, 'error', `renderer ${renderer.id} failed: ${errorMessage(error)}`), ...failure ? { failure } : {} })
       return { reported }
     }
   }

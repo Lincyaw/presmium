@@ -181,7 +181,7 @@ Node 入口与浏览器公开导出共用 `@lincyaw/kernel/node` 的 `packageExp
 
 插件按文稿 `plugins` 从文稿目录向上找 `node_modules`；项目没有安装的官方插件与渲染端（`@lincyaw/presmium` 的依赖）从运行它的 Presmium 安装中取，项目另装了一份时也用安装中的版本。安装由 `CompilerOptions.bundled` 给出；`presmium` 命令启动时把它写进 `PRESMIUM_INSTALLATION`，本进程与它启动的进程中没有给出 `bundled` 的编译器（例如讲授视频导出器自己的编译）也用它，所以 `presmium new` 新建、没有 `pnpm install` 的工作区可以直接做全部导出。依赖或范围不满足时报告 `presmium.plugins` 诊断，构建继续。
 
-导出任务失败时，可以归因的失败带稳定的代码（`CompileJob.code`）：导出器与编译器抛出 `@lincyaw/kernel` 的 `JobFailure`（缺少插件或渲染端为 `job-plugin-missing`，`playwrightChromium` 找不到 Playwright 或浏览器启动失败为 `job-browser-missing`，MP4 缺少 FFmpeg 为 `job-ffmpeg-missing`，讲授没有配音为 `job-no-voiceover`，讲稿缺配音的诊断是 `presmium.lecture.voiceover`），`ENOSPC` 为 `job-disk-full`；工作区服务用 `jobFailureCode` 取出代码写入任务，`error` 保留原文。工作区根目录取 `CompilerOptions.workspaceRoot`，否则向上找 `presmium.workspace.yaml`（不越过 git 根）；产物中的路径相对化，不随检出位置变化。
+导出任务失败时，可以归因的失败带稳定的代码（`CompileJob.code`）：导出器与编译器抛出 `@lincyaw/kernel` 的 `JobFailure`（缺少插件或渲染端为 `job-plugin-missing`，`playwrightChromium` 找不到 Playwright 或浏览器启动失败为 `job-browser-missing`，MP4 缺少 FFmpeg 为 `job-ffmpeg-missing`，讲授没有配音为 `job-no-voiceover`，讲稿缺配音的诊断是 `presmium.lecture.voiceover`；讲稿没有选择音色为 `job-voice-unset`，文稿没有加载语音服务插件 `@lincyaw/addon-speech`、读不到已生成的配音为 `job-speech-missing`），`ENOSPC` 为 `job-disk-full`。渲染端抛出的 `JobFailure` 由 `build` 记在它的错误诊断的 `failure` 上，渲染端报告的错误诊断也可以直接带 `failure`；没有产物时 `missingOutput` 取第一条带 `failure` 的错误诊断作为代码；工作区服务用 `jobFailureCode` 取出代码写入任务，`error` 保留原文。工作区根目录取 `CompilerOptions.workspaceRoot`，否则向上找 `presmium.workspace.yaml`（不越过 git 根）；产物中的路径相对化，不随检出位置变化。
 
 文件组件的运行节点携带 `definition.kind`。插件编译步骤据此处理自己的定义种类，通用 lowering 只保留实现与参数。动画插件在普通步骤之前解析场景路径、选择场景组件并清理场景步骤参数。
 

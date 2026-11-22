@@ -1,7 +1,7 @@
 import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { workspaceSettings } from '@lincyaw/compiler'
-import { deckLocale, errorMessage, SPEECH } from '@lincyaw/kernel'
+import { deckLocale, errorMessage, JobFailure, SPEECH } from '@lincyaw/kernel'
 import type { IRDocument, RenderContext, Renderer, SpeechService } from '@lincyaw/kernel'
 import { applyCaptionVisibility, captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, dropChangedSections, eventsVtt, formatTrack, LECTURE_ID, LECTURE_VOICEOVER_CHECK, LECTURE_RENDERER, LECTURE_MESSAGES, missingVoiceover, plannedUtterances, SCRIPT_TRACK, trackDuration, trimToDeck, utteranceLine } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
@@ -90,7 +90,7 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
   const source = { file: doc.meta.entry, line: 1 }, t = LECTURE_MESSAGES[deckLocale(doc.meta.lang)].production
   const speech = ctx.service?.(SPEECH)
   if (!speech && plannedUtterances(deckPlan(doc).plan).some(unit => unit.sourceKind !== 'none' && unit.sourceKind !== 'recording')) {
-    ctx.report({ checkId: LECTURE_ID, severity: 'error', message: t.missingSpeech, source })
+    ctx.report({ checkId: LECTURE_ID, severity: 'error', message: t.missingSpeech, source, failure: 'job-speech-missing' })
     return false
   }
   const synthesized = await synthesizeLecture(doc, ctx.deckDir, speech, undefined, { cacheOnly: true })
@@ -149,7 +149,7 @@ export const lectureRenderer: Renderer = {
     const plan = deckPlan(doc)
     plan.findings.forEach(ctx.report)
     if (plan.findings.some(finding => finding.severity === 'error')) throw new Error(plan.findings.find(finding => finding.severity === 'error')!.message)
-    if (!plan.voice && !plan.silent && !plan.recorded && plannedUtterances(plan.plan).length) throw new Error(productionMessages(doc).unset)
+    if (!plan.voice && !plan.silent && !plan.recorded && plannedUtterances(plan.plan).length) throw new JobFailure('job-voice-unset', productionMessages(doc).unset)
     const synthesize = Boolean(plan.voice || plan.silent || plan.recorded)
     const policy = mediaPolicy(workspaceSettings(ctx.workspaceRoot).settings[LECTURE_ID] ?? {})
     const published = publishedTrack(doc, ctx.deckDir)

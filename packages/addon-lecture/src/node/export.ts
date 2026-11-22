@@ -3,7 +3,7 @@ import { open } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { build, Compiler, missingOutput, playwrightChromium, serveDirectory } from '@lincyaw/compiler'
-import { ABSOLUTE_URL, aigcLabel, aigcString, deckLocale, errorMessage, JobFailure } from '@lincyaw/kernel'
+import { ABSOLUTE_URL, aigcLabel, aigcString, deckLocale, errorMessage, JobFailure, jobFailureCode } from '@lincyaw/kernel'
 import type { CanonicalSource, IRDocument } from '@lincyaw/kernel'
 import { ffmpegInstallCommand, findFfmpeg } from '@lincyaw/kernel/node'
 import type { Ffmpeg } from '@lincyaw/kernel/node'
@@ -274,8 +274,9 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
     if (errors.length > 0 || !web || !lectures) {
       // The first reason first: a one-line summary says what to fix; a plugin or renderer that cannot be loaded is its own cause.
       const message = errors.length ? `${errors[0]!.message}${errors.length > 1 ? ` (and ${errors.length - 1} more)` : ''}\n${errors.map(f => `  ${f.message}`).join('\n')}` : 'the web form or the lectures were not built'
-      const missing = errors.some(f => f.checkId === 'presmium.plugins') || (!web || !lectures) && (await missingOutput(compilation, web ? 'lecture' : 'web', report.findings)) instanceof JobFailure
-      throw missing ? new JobFailure('job-plugin-missing', message) : errors.some(f => f.checkId === LECTURE_VOICEOVER_CHECK) ? new JobFailure('job-no-voiceover', message) : new Error(message)
+      const unbuilt = !web || !lectures ? jobFailureCode(await missingOutput(compilation, web ? 'lecture' : 'web', report.findings)) : undefined
+      const failure = errors.some(f => f.checkId === 'presmium.plugins') ? 'job-plugin-missing' : unbuilt ?? errors.find(f => f.failure)?.failure ?? (errors.some(f => f.checkId === LECTURE_VOICEOVER_CHECK) ? 'job-no-voiceover' : undefined)
+      throw failure ? new JobFailure(failure, message) : new Error(message)
     }
     const index = JSON.parse(readFileSync(join(lectures.outDir, 'index.json'), 'utf8')) as { id: string, captions?: string[] }[]
     const ids = index.map(entry => entry.id)
