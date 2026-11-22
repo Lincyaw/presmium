@@ -1,5 +1,17 @@
 # @lincyaw/viewer
 
+## 1.0.0-rc.127
+
+### Minor Changes
+
+- Third round of fixes for first-time authors: imported PowerPoint and Word documents export as PDF and PowerPoint; import notices stay as comments on the page; a simpler export list; no viewer footer in PowerPoint; the presenter view plays, pauses and toggles captions in the audience window and follows the theme; crowded pages keep their heading in the presenter view and video; captions sit in the bottom safe area; voiceover refreshes video production; friendly voice names everywhere; the AI status tells the truth and the connection test shows progress; the local-draft warning no longer sticks; formulas and links in table cells; tooltips close after programmatic focus; workspaces with nested repositories start.
+
+### Patch Changes
+
+- Updated dependencies
+  - @lincyaw/kernel@1.0.0-rc.127
+  - @lincyaw/host@1.0.0-rc.127
+
 ## 1.0.0-rc.126
 
 ### Minor Changes

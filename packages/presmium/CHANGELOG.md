@@ -1,5 +1,41 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.127
+
+### Minor Changes
+
+- Third round of fixes for first-time authors: imported PowerPoint and Word documents export as PDF and PowerPoint; import notices stay as comments on the page; a simpler export list; no viewer footer in PowerPoint; the presenter view plays, pauses and toggles captions in the audience window and follows the theme; crowded pages keep their heading in the presenter view and video; captions sit in the bottom safe area; voiceover refreshes video production; friendly voice names everywhere; the AI status tells the truth and the connection test shows progress; the local-draft warning no longer sticks; formulas and links in table cells; tooltips close after programmatic focus; workspaces with nested repositories start.
+
+### Patch Changes
+
+- Updated dependencies
+  - @lincyaw/kernel@1.0.0-rc.127
+  - @lincyaw/host@1.0.0-rc.127
+  - @lincyaw/viewer@1.0.0-rc.127
+  - @lincyaw/web@1.0.0-rc.127
+  - @lincyaw/render-slides@1.0.0-rc.127
+  - @lincyaw/addon-lecture@1.0.0-rc.127
+  - @lincyaw/addon-speech@1.0.0-rc.127
+  - @lincyaw/studio@0.2.0-rc.126
+  - @lincyaw/addon-assistant@1.0.0-rc.127
+  - @lincyaw/addon-classroom@1.0.0-rc.127
+  - @lincyaw/addon-code@1.0.0-rc.127
+  - @lincyaw/addon-content@1.0.0-rc.127
+  - @lincyaw/addon-exec@1.0.0-rc.127
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.127
+  - @lincyaw/addon-exec-local@1.0.0-rc.127
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.127
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.127
+  - @lincyaw/addon-guide@1.0.0-rc.127
+  - @lincyaw/addon-motion@1.0.0-rc.127
+  - @lincyaw/addon-publish@1.0.0-rc.127
+  - @lincyaw/addon-session@1.0.0-rc.127
+  - @lincyaw/addon-stage@1.0.0-rc.127
+  - @lincyaw/cli@1.0.0-rc.127
+  - create-presmium@1.0.0-rc.127
+  - @lincyaw/mcp@1.0.0-rc.127
+  - @lincyaw/render-notebook@1.0.0-rc.127
+
 ## 1.0.0-rc.126
 
 ### Minor Changes

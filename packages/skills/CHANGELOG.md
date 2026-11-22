@@ -1,5 +1,12 @@
 # @lincyaw/skills
 
+## 1.0.0-rc.127
+
+### Patch Changes
+
+- Updated dependencies
+  - @lincyaw/kernel@1.0.0-rc.127
+
 ## 1.0.0-rc.126
 
 ### Patch Changes
