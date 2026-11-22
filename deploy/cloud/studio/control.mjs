@@ -54,14 +54,22 @@ async function documents() {
 const isDocument = path => typeof path === 'string' && path.length <= 200 && path.split('/').every(part => /^[^/\\\0.][^/\\\0]*$/.test(part))
 const snapshots = new Map()
 
-/** A shared document as it is committed now: its source archive, and its web site built for `base`. */
+/**
+ * A shared document as it is saved now: its source archive, and its web site built for `base`. Studio saves to the
+ * workspace's files and keeps its history apart from the workspace's own git commits, so the archive takes the files
+ * of the document's folder that git would not ignore, committed or not.
+ */
 async function snapshot(document, base) {
   if (!isDocument(document) || !existsSync(join(SPACE, document, 'index.pmd'))) throw Object.assign(new Error('document-not-found'), { status: 404 })
   if (!/^\/[A-Za-z0-9/_-]+\/$/.test(base)) throw Object.assign(new Error('share-base-invalid'), { status: 400 })
   const id = randomBytes(16).toString('hex'), dir = join(SCRATCH, id)
   await mkdir(dir, { recursive: true, mode: 0o700 })
   try {
-    await git(['archive', '--format=tar.gz', '--prefix=document/', '-o', join(dir, 'source.tar.gz'), `HEAD:${document}`])
+    const folder = join(SPACE, document)
+    const { stdout } = await git(['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', '.'], { cwd: folder })
+    const files = [...new Set(stdout.split('\0').filter(Boolean))].filter(file => existsSync(join(folder, file)))
+    await writeFile(join(dir, 'files'), files.join('\0'))
+    await run('tar', ['-czf', join(dir, 'source.tar.gz'), '--transform', 's,^,document/,', '--no-recursion', '-C', folder, '--null', '--verbatim-files-from', '-T', join(dir, 'files')])
     await run(process.execPath, [join(PRESMIUM, 'deploy', 'cloud', 'studio', 'share-build.mjs'), join(SPACE, document), join(dir, 'site'), base], { cwd: SPACE, maxBuffer: 64 << 20, timeout: 15 * 60_000 })
     // The build writes each form under <out>/<form>/: the shared site is the web form.
     await run('tar', ['-czf', join(dir, 'site.tar.gz'), '-C', join(dir, 'site', 'web'), '.'])
