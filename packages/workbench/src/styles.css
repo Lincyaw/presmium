@@ -262,6 +262,26 @@
   font-size: var(--pm-text-sm);
 }
 
+.pmw-problems__details summary {
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-xs);
+  cursor: pointer;
+}
+
+.pmw-problems__details pre {
+  max-height: calc(var(--pm-size-row) * 6);
+  margin: var(--pm-space-1) 0 0;
+  padding: var(--pm-space-2);
+  overflow: auto;
+  border-radius: var(--pm-radius-small);
+  background: var(--pm-color-code);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-mono);
+  font-size: var(--pm-text-xs);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .pmw-document__body {
   display: flex;
   flex: 1;

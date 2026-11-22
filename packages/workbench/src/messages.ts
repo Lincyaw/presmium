@@ -1,5 +1,5 @@
 import { localeOf } from '@lincyaw/kernel'
-import type { CompileJob } from '@lincyaw/kernel'
+import type { CompileJob, Diagnostic } from '@lincyaw/kernel'
 import { SHORTCUTS } from './shortcuts.ts'
 
 export type Locale = 'zh-CN' | 'en'
@@ -369,6 +369,34 @@ const zh = {
   fixFailed: (reason: string) => `无法发送给 AI。${reason}`,
   details: '详细信息',
   goToPage: '转到此页',
+  // What each kind of problem means to the author; the check's own words stay under Details (problemText).
+  problemTexts: {
+    code: '文稿中的代码有错误，用到它的内容无法显示。',
+    'code-missing': '文稿中的代码用到了找不到的内容，用到它的部分无法显示。',
+    preview: '预览没有更新到最新的版本。',
+    runtime: '预览中有内容无法显示。',
+    compile: '文稿中有错误，无法显示最新的版本。',
+    content: '文稿中有内容格式不正确，无法正确显示。',
+    plugin: '文稿用到的一个插件无法加载，它提供的内容不会显示。',
+    'plugin-other': '文稿用到的一个插件有问题，它提供的内容可能无法正确显示。',
+    'synced-plugin': '同步块中有内容没有可用的插件，无法显示。',
+    'synced-missing': '同步块的来源已不存在。',
+    'synced-loop': '同步块显示了它自己，无法显示。',
+    'synced-deep': '同步块嵌套太深，无法显示。',
+    reference: '有引用指向不存在的内容。',
+    link: '有链接或图片找不到。',
+    'code-source': '文稿引用的代码找不到或已改变。',
+    run: '运行代码的设置有问题，有些代码可能无法运行。',
+    secret: '设置中似乎写了密码或密钥，文稿发布后任何人都能看到。',
+    lecture: '讲授的配音或字幕有问题。',
+    translation: '文稿的一个译本有问题。',
+    workspace: '工作区的设置有问题。',
+    forbidden: '文稿中有设置不允许出现的文字。',
+    export: '有一次导出没有完成。',
+    audience: '对部分读者隐藏的内容中有问题。',
+    notebook: '有内容无法在 Notebook 中完整呈现。',
+    other: '文稿中有内容无法正确显示。',
+  } as Record<string, string>,
   diagnosticsUnavailable: '暂时无法检查内容是否正确显示，正在重新连接。',
   retry: '重试',
   preview: '文稿',
@@ -772,6 +800,33 @@ const en: WorkbenchMessages = {
   fixFailed: (reason: string) => `Couldn’t send to the AI. ${reason}`,
   details: 'Details',
   goToPage: 'Go to Page',
+  problemTexts: {
+    code: 'The document’s code has an error, so the content that uses it can’t be shown.',
+    'code-missing': 'The document’s code uses something that can’t be found, so the content that uses it can’t be shown.',
+    preview: 'The preview didn’t update to the latest version.',
+    runtime: 'Some content can’t be shown in the preview.',
+    compile: 'The document has an error, so its latest version can’t be shown.',
+    content: 'Some content in the document isn’t valid and can’t be shown correctly.',
+    plugin: 'A plugin the document uses can’t be loaded, so the content it provides isn’t shown.',
+    'plugin-other': 'A plugin the document uses has a problem. The content it provides may not show correctly.',
+    'synced-plugin': 'A synced block has content no plugin of this document can show.',
+    'synced-missing': 'The source of a synced block no longer exists.',
+    'synced-loop': 'A synced block shows itself, so it can’t be shown.',
+    'synced-deep': 'Synced blocks are nested too deeply to be shown.',
+    reference: 'A reference points to content that doesn’t exist.',
+    link: 'A link or picture can’t be found.',
+    'code-source': 'Code the document quotes can’t be found or has changed.',
+    run: 'The settings for running code have a problem, so some code may not run.',
+    secret: 'The settings seem to contain a password or key. Anyone can see it once the document is published.',
+    lecture: 'The lecture’s voiceover or captions have a problem.',
+    translation: 'A translation of the document has a problem.',
+    workspace: 'The workspace’s settings have a problem.',
+    forbidden: 'The document contains text its settings don’t allow.',
+    export: 'An export didn’t finish.',
+    audience: 'Content hidden from some readers has problems.',
+    notebook: 'Some content can’t be shown in full in the Notebook.',
+    other: 'Some content in the document can’t be shown correctly.',
+  } as Record<string, string>,
   diagnosticsUnavailable: 'Can’t check the document right now. Reconnecting…',
   retry: 'Retry',
   preview: 'Document',
@@ -839,6 +894,40 @@ export function failureReason(t: WorkbenchMessages, reason: string | undefined):
   if (reason && NETWORK_FAILURE.test(reason)) return t.failureReasons.network!
   if (reason && !reported.has(reason)) { reported.add(reason); console.warn(`presmium: failure reason without a catalog entry: ${reason}`) }
   return t.failureGeneric
+}
+
+// The kind of problem each check reports, the most specific id first: an id names its check or one below it (`presmium.preview` covers `presmium.preview.handshake`).
+const PROBLEM_KINDS: ReadonlyArray<readonly [string, string]> = [
+  ['presmium.preview.code', 'code'], ['presmium.preview', 'preview'], ['presmium.runtime', 'runtime'], ['presmium.compile', 'compile'],
+  ['presmium.ir', 'content'], ['presmium.document', 'content'], ['presmium.plugins', 'plugin'],
+  ['embed.plugin-missing', 'synced-plugin'], ['embed.missing', 'synced-missing'], ['embed.cycle', 'synced-loop'], ['embed.depth', 'synced-deep'],
+  ['reference.missing', 'reference'], ['presmium.references', 'reference'], ['presmium.links', 'link'],
+  ['presmium.code', 'code-source'], ['presmium.lock', 'code-source'], ['presmium.execute', 'run'], ['presmium.exec', 'run'], ['presmium.execLocal', 'run'],
+  ['presmium.execJupyter', 'run'], ['presmium.secrets', 'secret'], ['presmium.lecture', 'lecture'], ['presmium.translations', 'translation'],
+  ['presmium.workspace', 'workspace'], ['presmium.forbid', 'forbidden'], ['presmium.render', 'export'], ['presmium.audience', 'audience'], ['presmium.notebook', 'notebook'],
+]
+// Checks that write their findings for the author in the document's language: shown as written when that is the interface's.
+const WRITTEN_FOR_AUTHORS = new Set(['presmium.slides.crowded', 'presmium.document.image', 'embed.source-trashed'])
+
+/** Whether a check's own words are Chinese: more Chinese characters than Latin letters (a name or path in either is not enough). */
+function writtenInChinese(text: string): boolean {
+  const chinese = text.match(/\p{Script=Han}/gu)?.length ?? 0
+  return chinese > 0 && chinese >= (text.match(/[A-Za-z]/g)?.length ?? 0)
+}
+
+/**
+ * A document problem as the author reads it: the check's own words when they are already in the interface's language,
+ * else the catalog's sentence for its kind, with those words (and the hint and place the check gave) as `details`.
+ */
+export function problemText(t: WorkbenchMessages, locale: Locale, problem: Pick<Diagnostic, 'checkId' | 'message' | 'hint' | 'source' | 'severity' | 'origin'>): { text: string, hint?: string, details?: string } {
+  const own = locale === 'zh-CN' ? writtenInChinese(problem.message) : WRITTEN_FOR_AUTHORS.has(problem.checkId) && !/\p{Script=Han}/u.test(problem.message)
+  if (own) return { text: problem.message, ...problem.hint ? { hint: problem.hint } : {} }
+  const matched = PROBLEM_KINDS.find(([id]) => problem.checkId === id || problem.checkId.startsWith(`${id}.`))?.[1]
+  let kind = matched ?? (problem.origin === 'runtime' ? 'runtime' : 'other')
+  if (kind === 'code' && (problem.hint || /cannot be found|failed to resolve/i.test(problem.message))) kind = 'code-missing'
+  if (kind === 'plugin' && (problem.severity !== 'error' || !/not loaded|cannot load|not installed|cannot be found/i.test(problem.message))) kind = 'plugin-other'
+  const place = problem.source && `${problem.source.file}${problem.source.line ? `:${problem.source.line}` : ''}`
+  return { text: t.problemTexts[kind] ?? t.problemTexts.other!, details: [problem.message, problem.hint, place].filter(Boolean).join('\n') }
 }
 
 /**

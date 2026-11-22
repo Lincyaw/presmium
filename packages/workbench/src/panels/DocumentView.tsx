@@ -4,7 +4,7 @@ import type { ReactNode, RefObject } from 'react'
 import { PmBadge, PmButton, PmDialog, PmIcon, PmIconButton, PmMenu, PmNotice, PmPanelHeader, PmSkeleton, PmSortableList, PmTabs, PmToolbar, PmToolbarButton } from '../components.tsx'
 import { useMessages, useTreeMessages, useWorkbench, useWorkbenchState } from '../context.tsx'
 import { ReferencesPanel, ReferencesSummary } from './ReferencesPanel.tsx'
-import { failureReason, timeAgo } from '../messages.ts'
+import { failureReason, problemText, timeAgo } from '../messages.ts'
 import { SHORTCUTS } from '../shortcuts.ts'
 import { DocumentOutline, DocumentWordCounter } from '../outline.ts'
 import { isAgentChanging } from '../workbench-state.ts'
@@ -545,6 +545,7 @@ function ProblemsStatus() {
   const t = useMessages()
   const workbench = useWorkbench()
   const problems = useSettledProblems()
+  const locale = useWorkbenchState(state => state.locale)
   const canRepair = useWorkbenchState(state => state.canRepairDiagnostics)
   const repairing = useWorkbenchState(state => state.isRepairingDiagnostics)
   const [open, setOpen] = useState(false)
@@ -554,7 +555,15 @@ function ProblemsStatus() {
     <span className="pmw-statusbar__item pmw-statusbar__problems">
       {problems.length > 0 && <PmButton small variant="text" icon="warning" title={t.problems(problems.length)} aria-haspopup="dialog" onClick={() => setOpen(true)}>{t.problemCount(problems.length)}</PmButton>}
       <PmDialog open={open} label={t.problemsTitle} closeLabel={t.close} actions={repair || undefined} onClose={() => setOpen(false)}>
-        <ul className="pmw-problems__list">{problems.map(problem => <li key={problem.id}><p>{problem.message}</p>{problem.hint && <p className="pmw-problems__hint">{problem.hint}</p>}{problem.section && <PmButton small variant="text" onClick={() => { setOpen(false); workbench.goToSection(problem.section!) }}>{t.goToPage}</PmButton>}</li>)}</ul>
+        <ul className="pmw-problems__list">{problems.map(problem => {
+          const shown = problemText(t, locale, problem)
+          return <li key={problem.id}>
+            <p>{shown.text}</p>
+            {shown.hint && <p className="pmw-problems__hint">{shown.hint}</p>}
+            {shown.details && <details className="pmw-problems__details"><summary>{t.details}</summary><pre>{shown.details}</pre></details>}
+            {problem.section && <PmButton small variant="text" onClick={() => { setOpen(false); workbench.goToSection(problem.section!) }}>{t.goToPage}</PmButton>}
+          </li>
+        })}</ul>
       </PmDialog>
     </span>
   )
