@@ -31,6 +31,7 @@ export {
   eventLine,
   formatTrack,
   LECTURE_ID,
+  LECTURE_VOICEOVER_CHECK,
   LECTURE_RENDERER,
   LECTURES_DIR,
   parseTrack,

@@ -1,9 +1,9 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { createReadStream, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
-import { availableRenderers, build, compileTranslations, documentExporters, exportDocument, serveDirectory } from '@lincyaw/compiler'
+import { availableRenderers, build, compileTranslations, documentExporters, exportDocument, missingOutput, serveDirectory } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
-import { errorMessage, fnv1a64 } from '@lincyaw/kernel'
+import { errorMessage, fnv1a64, jobFailureCode } from '@lincyaw/kernel'
 import { lookup } from 'mime-types'
 import type { CompileJob, JobFile, JobSource, Logger, OutputJobs, OutputTarget } from '@lincyaw/kernel'
 import { writeArchive } from './archive.ts'
@@ -205,9 +205,7 @@ export function createJobs(options: JobsOptions): Jobs {
       const report = await build(compilation, { outDir: dir, to: [job.target], base: `${outputs}${job.id}/${job.target}/`, log })
       if (controller.signal.aborted) throw new Cancelled()
       job.warnings = report.findings.filter(finding => finding.severity === 'warning').map(finding => finding.message)
-      if (!report.outputs.some(output => output.renderer === job.target)) {
-        throw new Error(report.findings.filter(finding => finding.severity === 'error').map(finding => finding.message).join('\n') || `the ${job.target} renderer made nothing`)
-      }
+      if (!report.outputs.some(output => output.renderer === job.target)) throw await missingOutput(compilation, job.target, report.findings)
       job.files = listFiles(dir, join(dir, job.target))
       job.main = mainFile(job.target, job.files)
       if (job.main?.endsWith('/index.html')) await archiveSite(entry, compilation, log, progress)
@@ -235,7 +233,7 @@ export function createJobs(options: JobsOptions): Jobs {
       const report = await build(compilation, { outDir: work, to: [job.target], log })
       if (controller.signal.aborted) throw new Cancelled()
       const site = report.outputs.find(output => output.renderer === job.target)
-      if (!site) throw new Error(report.findings.filter(finding => finding.severity === 'error').map(finding => finding.message).join('\n') || `the ${job.target} renderer made nothing`)
+      if (!site) throw await missingOutput(compilation, job.target, report.findings)
       const file = `${job.target}.zip`
       await writeArchive(site.outDir, join(dir, file), controller.signal)
       job.archive = file
@@ -266,6 +264,8 @@ export function createJobs(options: JobsOptions): Jobs {
         job.state = controller.signal.aborted ? 'cancelled' : 'failed'
         if (job.state === 'failed') {
           job.error = errorMessage(error)
+          const code = jobFailureCode(error)
+          if (code) job.code = code
           // The author's Details show why, under the reason the workbench gives in plain words.
           job.log.push(job.error)
         }

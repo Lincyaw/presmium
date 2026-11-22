@@ -106,7 +106,7 @@ function JobItem({ job, label, current, onPlay }: { job: CompileJob, label: stri
             <span>{t.jobProgress(t.jobPhases[progress.phase] ?? t.outputLabels[progress.phase] ?? progress.phase, progress.done, progress.total)}</span>
           </div>
         )}
-        {job.error && <p className="pmw-job__error">{jobFailure(t, job.error)}</p>}
+        {job.error && <p className="pmw-job__error">{jobFailure(t, job)}</p>}
         {job.log.length > 0 && (
           <details className="pmw-job__log">
             <summary>{t.outputLog}</summary>

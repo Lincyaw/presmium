@@ -2,12 +2,12 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { open } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
-import { build, Compiler, playwrightChromium, serveDirectory } from '@lincyaw/compiler'
-import { ABSOLUTE_URL, aigcLabel, aigcString, deckLocale, errorMessage } from '@lincyaw/kernel'
+import { build, Compiler, missingOutput, playwrightChromium, serveDirectory } from '@lincyaw/compiler'
+import { ABSOLUTE_URL, aigcLabel, aigcString, deckLocale, errorMessage, JobFailure } from '@lincyaw/kernel'
 import type { CanonicalSource, IRDocument } from '@lincyaw/kernel'
 import { ffmpegInstallCommand, findFfmpeg } from '@lincyaw/kernel/node'
 import type { Ffmpeg } from '@lincyaw/kernel/node'
-import { audioSegments, clockText, defaultTrack, LECTURE_MESSAGES, lectureVideoOptions, parseTrack, stepStops, timedEvents, trackDuration } from '../domain/index.ts'
+import { audioSegments, clockText, defaultTrack, LECTURE_MESSAGES, LECTURE_VOICEOVER_CHECK, lectureVideoOptions, parseTrack, stepStops, timedEvents, trackDuration } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 import { writeContactSheet } from './contact-sheet.ts'
 import type { SheetFrame, SheetOptions } from './contact-sheet.ts'
@@ -268,22 +268,25 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
     const burn = options.burn ?? configured.burn, sheetOption = options.contactSheet ?? configured.contactSheet
     const report = await build(compilation, { outDir: work, to: ['web', 'lecture'] })
     const errors = report.findings.filter(f => f.severity === 'error')
-    // The first reason first: a one-line summary (a workbench shows it) says what to fix.
-    if (errors.length > 0) throw new Error(`${errors[0]!.message}${errors.length > 1 ? ` (and ${errors.length - 1} more)` : ''}\n${errors.map(f => `  ${f.message}`).join('\n')}`)
     const warnings = report.findings.filter(f => f.severity === 'warning').map(f => f.message)
     const web = report.outputs.find(o => o.renderer === 'web')
     const lectures = report.outputs.find(o => o.renderer === 'lecture')
-    if (!web || !lectures) throw new Error('the web form or the lectures were not built')
+    if (errors.length > 0 || !web || !lectures) {
+      // The first reason first: a one-line summary says what to fix; a plugin or renderer that cannot be loaded is its own cause.
+      const message = errors.length ? `${errors[0]!.message}${errors.length > 1 ? ` (and ${errors.length - 1} more)` : ''}\n${errors.map(f => `  ${f.message}`).join('\n')}` : 'the web form or the lectures were not built'
+      const missing = errors.some(f => f.checkId === 'presmium.plugins') || (!web || !lectures) && (await missingOutput(compilation, web ? 'lecture' : 'web', report.findings)) instanceof JobFailure
+      throw missing ? new JobFailure('job-plugin-missing', message) : errors.some(f => f.checkId === LECTURE_VOICEOVER_CHECK) ? new JobFailure('job-no-voiceover', message) : new Error(message)
+    }
     const index = JSON.parse(readFileSync(join(lectures.outDir, 'index.json'), 'utf8')) as { id: string, captions?: string[] }[]
     const ids = index.map(entry => entry.id)
     const id = options.track ?? defaultTrack(ids)
-    if (!id || !ids.includes(id)) throw new Error(ids.length ? `name the lecture with --track: ${ids.join(', ')}` : LECTURE_MESSAGES[deckLocale(compilation.doc.meta.lang)].production.noPreparedLecture)
+    if (!id || !ids.includes(id)) throw ids.length ? new Error(`name the lecture with --track: ${ids.join(', ')}`) : new JobFailure('job-no-voiceover', LECTURE_MESSAGES[deckLocale(compilation.doc.meta.lang)].production.noPreparedLecture)
     const track = parseTrack(JSON.parse(readFileSync(join(lectures.outDir, id, 'track.json'), 'utf8'))).track!
     const file = resolve(options.out ?? join(deckDir, 'dist', `${id}.${defaultVideoFormat()}`))
     mkdirSync(dirname(file), { recursive: true })
     const format = videoFormat(file), found = findFfmpeg()
     const ffmpeg = found && ffmpegEncodes(found, format) ? found : undefined
-    if (!ffmpeg && format === 'mp4') throw new Error(`an MP4 video needs FFmpeg with libx264 and aac: install it (${ffmpegInstallCommand()}) or set PRESMIUM_FFMPEG to its file`)
+    if (!ffmpeg && format === 'mp4') throw new JobFailure('job-ffmpeg-missing', `an MP4 video needs FFmpeg with libx264 and aac: install it (${ffmpegInstallCommand()}) or set PRESMIUM_FFMPEG to its file`)
     if (!ffmpeg) warnings.push(`FFmpeg was not found, so the browser encoded the video as WebM at a lower quality; install it for MP4 at a higher quality: ${ffmpegInstallCommand()}`)
     const captions = captionFiles(join(lectures.outDir, id), index.find(entry => entry.id === id)?.captions ?? [])
     if (burn && !captions.some(c => c.lang === burn)) throw new Error(`lecture ${id} has no captions in ${burn}: ${captions.map(c => c.lang).join(', ') || 'none'}`)

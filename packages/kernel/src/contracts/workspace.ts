@@ -386,6 +386,12 @@ export interface StartJobRequest {
 }
 
 /** @experimental A build or an export of a document, run by the workspace service one at a time. */
+/**
+ * Causes of a failed export the author can act on: a part of Presmium (a plugin or renderer) cannot be loaded, the
+ * browser exports print or record with is missing, an MP4 needs FFmpeg, the lecture has no voiceover yet, the disk is full.
+ */
+export type JobFailureCode = 'job-plugin-missing' | 'job-browser-missing' | 'job-ffmpeg-missing' | 'job-no-voiceover' | 'job-disk-full'
+
 export interface CompileJob {
   id: string
   /** Grows with each change of the job: of two copies, a client keeps the one with the greater. */
@@ -417,7 +423,10 @@ export interface CompileJob {
   archive?: string
   /** The WebVTT captions of the main file (a video), by language. */
   captions?: Record<string, string>
+  /** Why it failed, in the words of the exporter or the service: the author sees it only under Details. */
   error?: string
+  /** Why it failed, as a code the workbench words for the author; absent when the cause is not one it knows. */
+  code?: JobFailureCode
   warnings: string[]
   /** The last lines of its log. */
   log: string[]

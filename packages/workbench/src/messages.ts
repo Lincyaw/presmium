@@ -1,4 +1,5 @@
 import { localeOf } from '@lincyaw/kernel'
+import type { CompileJob } from '@lincyaw/kernel'
 import { SHORTCUTS } from './shortcuts.ts'
 
 export type Locale = 'zh-CN' | 'en'
@@ -808,21 +809,15 @@ export function failureReason(t: WorkbenchMessages, reason: string | undefined):
   return t.failureGeneric
 }
 
-// The causes of a failed export the author can act on, from the reason the workspace service gives (its own words).
-const JOB_FAILURES: readonly (readonly [RegExp, string])[] = [
-  [/cannot load plugin|is not installed at the workspace root|renderer \S+ is not installed|package not found from/, 'job-plugin-missing'],
-  [/playwright-chromium|Executable doesn't exist|browserType\.launch/, 'job-browser-missing'],
-  [/needs FFmpeg/, 'job-ffmpeg-missing'],
-  [/has no voiceover yet|还没有可用的配音/, 'job-no-voiceover'],
-  [/ENOSPC|no space left on device/i, 'job-disk-full'],
-]
-
-/** Why an export failed, in the catalog's words: a known cause with what to do, else where to look (Details). */
-export function jobFailure(t: WorkbenchMessages, reason: string | undefined): string {
-  if (reason && reason in t.jobFailureReasons) return t.jobFailureReasons[reason]!
-  if (reason && reason in t.failureReasons) return t.failureReasons[reason]!
-  const known = reason === undefined ? undefined : JOB_FAILURES.find(([pattern]) => pattern.test(reason))?.[1]
-  return t.jobFailureReasons[known ?? 'job-failed']!
+/**
+ * Why an export failed, in the catalog's words: the cause the exporter gave (`job.code`), else a reason the service gives
+ * as a code, else where to look (Details, which keep the exporter's own words).
+ */
+export function jobFailure(t: WorkbenchMessages, job: Pick<CompileJob, 'code' | 'error'>): string {
+  if (job.code && job.code in t.jobFailureReasons) return t.jobFailureReasons[job.code]!
+  if (job.error && job.error in t.jobFailureReasons) return t.jobFailureReasons[job.error]!
+  if (job.error && job.error in t.failureReasons) return t.failureReasons[job.error]!
+  return t.jobFailureReasons['job-failed']!
 }
 
 /** What the author calls an output: the plugin's label in the interface's language, else the catalog's, else its id. */

@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { errorMessage, findComponentRenderer, isRecord } from '@lincyaw/kernel'
+import { errorMessage, findComponentRenderer, isRecord, JobFailure } from '@lincyaw/kernel'
 import type { BoundRendererExtension, ComponentNode, ComponentRenderer, Exporter, Finding, IRBlock, IRDocument, NodeVitePlugin, RenderContext, RenderOutput, Renderer } from '@lincyaw/kernel'
 import { documentLink, publishedAsset } from './assets.ts'
 import type { Compilation, Compiler } from './compiler.ts'
@@ -78,6 +78,16 @@ export async function selectRenderers(compilation: Compilation, to?: string[]): 
     else findings.push(renderFinding(compilation, to ? 'error' : 'warning', `renderer ${id} is not installed: ${missing.get(id) ?? 'unknown renderer id'}`))
   }
   return { selected, findings }
+}
+
+/**
+ * Why a build made no `renderer` output, from its findings: when one of the document's plugins or the renderer's own
+ * package cannot be loaded, a `JobFailure` `job-plugin-missing`; the error findings are the message either way.
+ */
+export async function missingOutput(compilation: Compilation, renderer: string, findings: readonly Finding[]): Promise<Error> {
+  const message = findings.filter(finding => finding.severity === 'error').map(finding => finding.message).join('\n') || `the ${renderer} renderer made nothing`
+  const missing = findings.some(finding => finding.severity === 'error' && finding.checkId === 'presmium.plugins') || !(await selectRenderers(compilation, [renderer])).selected.length
+  return missing ? new JobFailure('job-plugin-missing', message) : new Error(message)
 }
 
 /** The exporters of the document's plugins and of its renderers' packages; one id once, the plugins' first. */

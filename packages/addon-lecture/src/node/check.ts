@@ -1,6 +1,6 @@
 import { deckLocale, errorMessage, ProductionAudioRefusal, SPEECH } from '@lincyaw/kernel'
 import type { Check, CheckContext, Finding, IRDocument, ProductionPlan, Severity } from '@lincyaw/kernel'
-import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, LECTURE_MESSAGES, lectureTiming, lectureVideoOptions, maximumDuration, missingVoiceover, overLimit, plannedUtterances, unchanged } from '../domain/index.ts'
+import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, LECTURE_MESSAGES, LECTURE_VOICEOVER_CHECK, lectureTiming, lectureVideoOptions, maximumDuration, missingVoiceover, overLimit, plannedUtterances, unchanged } from '../domain/index.ts'
 import type { EventDrift, LectureMessages } from '../domain/index.ts'
 import { productionAudioMessage } from '../domain/production-audio.ts'
 import { lectureView } from './latest-ir.ts'
@@ -124,7 +124,7 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
   }
   for (const group of missingVoiceover(missing)) {
     findings.push({
-      checkId: LECTURE_ID,
+      checkId: LECTURE_VOICEOVER_CHECK,
       severity: 'error',
       message: t.cacheMissing(group.count, group.pages, t.reasons[group.reason] ?? t.reasonGeneric),
       source: group.source ?? source,

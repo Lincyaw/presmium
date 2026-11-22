@@ -1617,7 +1617,7 @@ export class Workbench {
     const t = this.#messages
     const target = this.#state.jobs?.targets.find(own => own.id === job.target) ?? { id: job.target, label: {} }
     const label = outputLabel(t, this.#state.locale, target)
-    if (job.state === 'failed') { this.tree.toast(t.exportEnded(label, jobFailure(t, job.error)), 'danger'); return }
+    if (job.state === 'failed') { this.tree.toast(t.exportEnded(label, jobFailure(t, job)), 'danger'); return }
     if (job.state !== 'done') return
     const title = this.tree.title(this.tree.idOf(job.document) ?? '')
     const file = downloadableFile(job)
