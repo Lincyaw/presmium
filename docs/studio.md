@@ -229,7 +229,7 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 
 工作区服务打开空目录时自动建立本地版本历史的空基准，首页直接提供“新建文稿”，无需先配置工作区。首页的文稿按文稿树的顺序列出（[IR 第 7 节](ir.md#7-工作区与命令)）。工作区中有旧格式的文稿（`lecture.json`、格式版本 1）或工作区文件仍列出 `documents:` 时，文稿列表的回答带 `migration`，首页显示“这个工作区使用旧的文稿格式”与“升级 / Upgrade”；升级调用 `POST workspace/migrate`，与 `presmium migrate` 相同，每份文稿记一次修订，完成后刷新列表。此准备允许 Finder 的 `.DS_Store`，已有目录的文件、版本库、分支与索引保持原样。
 
-`presmium studio [目录] [--port] [--host] [--public-url] [--preview-url] [--preview-port] [--verbose]`。`DSH_HOME` 是 `$XDG_STATE_HOME/presmium/studio`；每个安装有自己的 profile `presmium-studio-<散列>`，其 `node_modules` 链接到这个安装的 bundle，因为 dsh 只从 profile 解析插件。新 profile 继承最近用过的设置。
+`presmium studio [目录] [--port] [--host] [--public-url] [--preview-url] [--preview-port] [--verbose]`。`DSH_HOME` 是 `$XDG_STATE_HOME/presmium/studio`。对话与 Harness 的宿主记录（工作区登记、置顶、列表缓存）按工作区分开：`$DSH_HOME/workspaces/<工作区真实路径的散列>/sessions` 与 `storages`，由启动器经 `PRESMIUM_DSH_SESSIONS`、`PRESMIUM_DSH_STORAGES` 交给 profile 补丁中 `session-persistence-jsonl` 与 `storage-json` 的 `root`。Harness 列出并能打开会话根目录中的全部对话，共用一个根目录时一个工作区的对话会出现在另一个工作区的对话记录中，也能被继续；分开后，对话记录只有本工作区的对话。第一次按工作区启动时，本工作区存在共用目录中的旧对话移入自己的目录，Harness 首次建立记录时把它们归入工作区。每个安装有自己的 profile `presmium-studio-<散列>`，其 `node_modules` 链接到这个安装的 bundle，因为 dsh 只从 profile 解析插件。新 profile 继承最近用过的设置。
 
 ### 11.2 启动与监管
 
