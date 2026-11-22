@@ -1,6 +1,6 @@
 import { createSharedStates, installHost, HostProvider, createStore, useStore, presmiumReport, presmiumService, setSiteBase } from '@lincyaw/host'
 import type { HostAdapter, SharedStates, Store } from '@lincyaw/host'
-import { deckLocale, irBlocks, PREVIEW_KEYS_PARAM, PREVIEW_PRESENTATION_PARAM, reportPreview } from '@lincyaw/kernel'
+import { deckLocale, irBlocks, PREVIEW_EVENTS_PARAM, PREVIEW_KEYS_PARAM, PREVIEW_PARAM, PREVIEW_PRESENTATION_PARAM, PREVIEW_SLIDE_FIT_PARAM, reportPreview } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import { createViewer, ViewerProvider, BlockPreview, OverlayViewOutlet, PageViewOutlet, registerComponent, SlideFitProbe, SlidesPrint } from '@lincyaw/viewer'
 import type { Viewer } from '@lincyaw/viewer'
@@ -103,6 +103,7 @@ export function createPageApp(input: PageAppInput): PageApp {
   }
 
   const initial = input.doc
+  const presenting = embedded && !config.block && typeof location !== 'undefined' && new URL(location.href).searchParams.get(PREVIEW_PRESENTATION_PARAM) === 'confirmed'
   const slides = !config.block && config.form === 'slides'
   // The router pages the document as the viewer has it now (a dev server's changes come to the viewer).
   let current: Viewer | undefined
@@ -114,7 +115,7 @@ export function createPageApp(input: PageAppInput): PageApp {
     renderer: 'web',
     embedded,
     externalControls: embedded && typeof location !== 'undefined' && new URL(location.href).searchParams.get(PREVIEW_KEYS_PARAM) === 'playback',
-    ...embedded && !config.block && typeof location !== 'undefined' && new URL(location.href).searchParams.get(PREVIEW_PRESENTATION_PARAM) === 'confirmed' ? { confirmedRevision: createStore<string | undefined>(undefined) } : {},
+    ...presenting ? { confirmedRevision: createStore<string | undefined>(undefined) } : {},
     ...embedded && !config.block ? { refreshPresentation: () => reportPreview({ type: 'presentation-action', action: 'refresh' }), exitPresentation: () => reportPreview({ type: 'presentation-action', action: 'exit' }) } : {},
     documentIdentity: JSON.stringify([config.base, config.document]),
     editingActive: createStore(true),
@@ -142,17 +143,16 @@ export function createPageApp(input: PageAppInput): PageApp {
     ...config.source
       ? { openSource: source => void fetch(`${config.source}?file=${encodeURIComponent(source.file)}&line=${source.line}`, { method: 'POST', headers: { 'Presmium-Request': 'source' } }) }
       : {},
-    ...embedded || config.block
-      ? {}
-      : {
-          openPresenter(position) {
-            const url = new URL(location.href)
-            url.hash = ''
-            url.search = withPositionQuery(url.search, { view: 'presenter', ...position })
-            window.open(url.href, 'presmium-presenter', 'popup,width=1100,height=720')
-          },
-        },
+    // The workbench's presentation opens the presenter view as the page alone, which follows it through the windows' channel.
+    ...(embedded && !presenting) || config.block ? {} : { openPresenter },
   })
+  function openPresenter(position: { section: string, step: number }) {
+    const url = new URL(location.href)
+    url.hash = ''
+    for (const param of [PREVIEW_PARAM, PREVIEW_PRESENTATION_PARAM, PREVIEW_KEYS_PARAM, PREVIEW_EVENTS_PARAM, PREVIEW_SLIDE_FIT_PARAM]) url.searchParams.delete(param)
+    url.search = withPositionQuery(url.search, { view: 'presenter', ...position })
+    window.open(url.href, 'presmium-presenter', 'popup,width=1100,height=720')
+  }
   if (router) viewer.doc.subscribe(() => router.refresh())
   // The slides alone: the presentation, which a slides page opens on (or every slide, printed).
   if (slides && !input.print) viewer.setView('present')

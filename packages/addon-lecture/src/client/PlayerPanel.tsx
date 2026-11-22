@@ -195,7 +195,7 @@ export default function PlayerPanel(_props: { view?: string }) {
   </div>
   const options: MenuItem[] = [
     ...(compact ? [{ id: 'previous', label: t.player.previous, icon: 'chevron-left' as const }, { id: 'next', label: t.player.next, icon: 'chevron-right' as const }] : []),
-    ...(compact && viewer.options.openPresenter ? [{ id: 'presenter', label: t.player.presenter, icon: 'slides' as const }] : []),
+    ...(compact && viewer.options.openPresenter && !viewer.options.embedded ? [{ id: 'presenter', label: t.player.presenter, icon: 'slides' as const }] : []),
     { id: 'transcript', label: t.player.transcript, icon: 'document', checked: panel === 'transcript' },
     { id: 'chapters', label: t.player.chapters, icon: 'overview', checked: panel === 'chapters' },
     ...PLAYBACK_RATES.map((value, index) => ({ id: `rate:${value}`, label: `${t.player.rate} · ${value}×`, checked: rate === value, separator: index === 0 })),
