@@ -8,7 +8,7 @@
   "registrationEmailAsUsername": true,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
-  "resetPasswordAllowed": true,
+  "resetPasswordAllowed": "${CLOUD_KEYCLOAK_PASSWORD_RESET:true}",
   "rememberMe": true,
   "editUsernameAllowed": false,
   "verifyEmail": "${CLOUD_KEYCLOAK_VERIFY_EMAIL:true}",

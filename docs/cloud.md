@@ -1,6 +1,6 @@
 # Presmium 云端
 
-状态：实验性，已在本机回环部署中验证；公网 HTTPS、磁盘配额与多节点未验证。代码在 `packages/cloud/` 与 `deploy/cloud/`。
+状态：实验性，已在本机回环部署中验证（含一条命令安装的本机试用方式）；公网 HTTPS、磁盘配额与多节点未验证。代码在 `packages/cloud/` 与 `deploy/cloud/`。
 
 ## 1. 定位
 
@@ -61,22 +61,52 @@ Studio 镜像带 `python3` 内核。未设置 `PRESMIUM_ENV_LAB_URL` 时，具�
 metadata.execute.environments.lab = { kind: 'jupyter', auth: 'proxy', kernel: 'python3', languages: ['python'] }
 ```
 
-声明 `auth: 'hub', profile: 'python'` 时，点击运行或打开终端才启动或复用命名服务器 `env-python`（阅读、编译不启动）。它用独立的环境卷，默认 1 CPU、1 GiB，不挂载作者卷。规格由运营者用 `CLOUD_ENVIRONMENT_PROFILES` 设置，例如 `{"python":{"image":"presmium-cloud-studio:<标签>","memory":"1G","cpus":1}}`；规格名为小写字母开头、最多 32 个字符的小写字母、数字与连字符。每用户最多 `CLOUD_ENVIRONMENT_LIMIT`（默认 3）个命名环境，空闲时由 idle culler 回收。地址、令牌、镜像与资源都在服务端，文稿不能覆盖。
+声明 `auth: 'hub', profile: 'python'` 时，点击运行或打开终端才启动或复用命名服务器 `env-python`（阅读、编译不启动）。它用独立的环境卷，默认 1 CPU、1 GiB，不挂载作者卷。规格由运营者用 `CLOUD_ENVIRONMENT_PROFILES` 设置，例如 `{"python":{"image":"ghcr.io/lincyaw/presmium-cloud-studio:<版本>","memory":"1G","cpus":1}}`（默认就是部署所用的 Studio 镜像）；规格名为小写字母开头、最多 32 个字符的小写字母、数字与连字符。每用户最多 `CLOUD_ENVIRONMENT_LIMIT`（默认 3）个命名环境，空闲时由 idle culler 回收。地址、令牌、镜像与资源都在服务端，文稿不能覆盖。
 
 ## 8. 部署
 
-### 8.1 准备
+### 8.1 一条命令安装
 
-Linux、Docker Engine、Docker Compose 2.24.4 及以上与仓库源码；宿主机不需要 Node.js。
+需要 Linux、Docker Engine 与 Docker Compose 2.24.4 及以上；宿主机不需要 Node.js 与仓库源码。
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Lincyaw/presmium/main/deploy/cloud/install.sh | bash
+```
+
+安装程序（`deploy/cloud/install.sh`）检查系统、Docker、Compose 版本与端口，缺 Docker 时给出官方的 `curl -fsSL https://get.docker.com | sudo sh`，不自行安装。它只问一个问题：作者从哪里打开云端。
+
+| 方式 | 参数 | 地址 | 需要 |
+|---|---|---|---|
+| 自己的域名 | `--domain example.com` | `app.`、`auth.`、`content.`、`studio.example.com` | 一条 DNS 记录 `*.example.com` 指向服务器；安装程序检查四个名字是否解析到本机的公网 IP，未就绪时给出要加的记录 |
+| 公网 IP | `--ip [地址]` | `app.203-0-113-7.sslip.io` 等 | 不需要 DNS：自动检测公网 IP，sslip.io 把这些名字解析回它，Caddy 照常申请证书；IP 不在本机网卡上时提示转发 80、443 |
+| 本机试用 | `--local [--port 18787]` | `http://app.localhost:18787` 等 | 回环覆盖（`compose.loopback.yaml`），只发布 `127.0.0.1`；安装程序打印 `ssh -N -L` 的隧道命令 |
+
+前两种方式需要 80 与 443 端口空闲且可从公网到达。`--email` 是证书到期通知的邮箱，可省略。四个地址在同一个注册域下；共享内容入口照样去掉 Cookie 与认证头，需要把共享内容放到另一个注册域时按 8.2 节手动设置。
+
+邮件可选：`--smtp-host`、`--smtp-from`，需要时加 `--smtp-port`、`--smtp-user`、`--smtp-password`。给出时注册验证邮箱、可找回密码；不给时写入 `CLOUD_KEYCLOAK_VERIFY_EMAIL=false` 与 `CLOUD_KEYCLOAK_PASSWORD_RESET=false`，注册不验证邮箱、没有找回密码，安装结束时说明这一点以及之后在身份域的 `/admin/` 中配置邮件或关闭注册的位置。
+
+其余参数：`--version`（默认最新的 GitHub Release，例如 `1.0.0-rc.130`）、`--dir`（默认 `~/presmium-cloud`）、`--name`（Compose 项目与实例名，默认 `presmium-cloud`）、`--yes`（不提问，须同时给出地址方式；`curl … | bash -s -- --yes --ip`）、`--dry-run`（只下载到临时目录，打印将写入的配置（隐去密钥）、站点与步骤，并让 Compose 检查配置，不改动任何东西）、`--build`、`--source`（用给定的源码压缩包代替该版本的 GitHub 归档）。
+
+安装目录的内容：`.env`（0600，由 `keycloak/init-env.sh` 生成全部随机密钥，地址、镜像与邮件设置之后写入；已有时保留，不覆盖）、`releases/<版本>/`（该版本的部署文件，`--build` 时为完整源码）、`current`（指向运行中的版本）、`install.sh` 与 `backups/`。重复运行是幂等的：沿用已有的 `.env` 与版本，只补齐缺少的步骤并启动。
+
+镜像：默认拉取 `ghcr.io/lincyaw/presmium-cloud-{api,keycloak,hub,studio}:<版本>`（`CLOUD_IMAGE_REGISTRY=ghcr.io/lincyaw/`、`CLOUD_IMAGE_TAG=<版本>`），由 `.github/workflows/cloud-images.yml` 在发布 `v` 开头的 Release 时（也可手动运行）从该标签的源码构建，含 linux/amd64 与 linux/arm64，同时更新 `latest`。`--build` 在本机构建（`CLOUD_IMAGE_REGISTRY` 为空），Studio 镜像约 5 GB。之后安装程序 `docker compose up -d`，等待 `migrate` 与 `storage-init` 以 0 退出、`api`、`hub`、`keycloak` 健康，检查控制台可访问，然后打印控制台、Studio 与身份管理（`<身份域>/admin/`，账号 `CLOUD_KEYCLOAK_ADMIN`，密码是 `.env` 中的 `CLOUD_KEYCLOAK_ADMIN_PASSWORD`）的地址。第一个作者在控制台注册。
+
+```sh
+bash ~/presmium-cloud/install.sh status               # 服务、运行中的 Studio 与用户卷数
+bash ~/presmium-cloud/install.sh upgrade [--version V] # 先取新镜像，再按 8.6 节备份，迁移并启动新版本
+bash ~/presmium-cloud/install.sh uninstall [--purge]   # 停止；--purge 在输入项目名确认后删除全部卷与配置，保留 backups/
+```
+
+### 8.2 手动部署
+
+以下是安装程序所做的事，供自定义部署参考。
 
 ```sh
 cd deploy/cloud
-bash keycloak/init-env.sh   # 生成 0600 的 .env 与全部随机密钥，不覆盖已有文件
+bash keycloak/init-env.sh   # 生成 0600 的 .env 与全部随机密钥，不覆盖已有文件；可传目标路径
 ```
 
 保管 `.env` 的加密备份。每个部署用独立的 `CLOUD_COMPOSE_PROJECT` 与 `CLOUD_INSTANCE_ID`；Studio 容器与卷名为 `<实例>-studio-<用户>`、`<实例>-work-<用户>`。
-
-### 8.2 域名与入口
 
 | 用途 | 示例 | 配置 |
 |---|---|---|
@@ -85,7 +115,7 @@ bash keycloak/init-env.sh   # 生成 0600 的 .env 与全部随机密钥，不�
 | 共享内容 | `https://content.example.net` | `CLOUD_CONTENT_HOST`、`CLOUD_CONTENT_URL` |
 | Studio | `https://studio.example.net` | `CLOUD_HUB_HOST`、`CLOUD_HUB_URL` |
 
-四个地址互不同源，Caddy 自动申请证书。共享内容入口只转发 `/p/*`，并去掉 Cookie、Authorization 与 Set-Cookie。数据库、对象存储、Hub API 与 Studio 容器不发布宿主端口；Studio 容器只在 `<项目>-studios` 网络上。
+四个地址互不同源，Caddy 自动申请证书（`CLOUD_ACME_EMAIL` 可空）。共享内容入口只转发 `/p/*`，并去掉 Cookie、Authorization 与 Set-Cookie。数据库、对象存储、Hub API 与 Studio 容器不发布宿主端口；Studio 容器只在 `<项目>-studios` 网络上。镜像名为 `${CLOUD_IMAGE_REGISTRY}presmium-cloud-<名字>:${CLOUD_IMAGE_TAG}`：拉取已发布的镜像时设 `CLOUD_IMAGE_REGISTRY=ghcr.io/lincyaw/` 并以 `pull` 代替两条 `build`（`--profile build-studio pull`）。
 
 ```sh
 docker compose --env-file .env -f compose.yaml config --quiet
@@ -97,11 +127,11 @@ docker compose --env-file .env -f compose.yaml ps
 
 `studio-image` 约 5 GB，含工具链、Chromium 与预打包的官方查看器（经 `PRESMIUM_VIEWER_SEED` 作为只读缓存）。`migrate` 与 `storage-init` 以 Exited (0) 结束后控制台启动。
 
-无公网域名时用回环覆盖：在 `.env` 设 `CLOUD_PUBLIC_URL=http://app.localhost:18787`、`CLOUD_AUTH_URL=http://auth.localhost:18787`、`CLOUD_CONTENT_URL=http://content.localhost:18787`、`CLOUD_HUB_URL=http://hub.localhost:18787`、`CLOUD_OIDC_ISSUER=http://auth.localhost:18787/realms/presmium`，以上命令都加 `-f compose.loopback.yaml`，再 `ssh -N -L 18787:127.0.0.1:18787 <服务器>`，打开 `http://app.localhost:18787`。只发布 `127.0.0.1:18787`，注册不验证邮箱。
+无公网域名时用回环覆盖：在 `.env` 设 `CLOUD_PUBLIC_URL=http://app.localhost:18787`、`CLOUD_AUTH_URL=http://auth.localhost:18787`、`CLOUD_CONTENT_URL=http://content.localhost:18787`、`CLOUD_HUB_URL=http://hub.localhost:18787`、`CLOUD_OIDC_ISSUER=http://auth.localhost:18787/realms/presmium`，以上命令都加 `-f compose.loopback.yaml`，再 `ssh -N -L 18787:127.0.0.1:18787 <服务器>`，打开 `http://app.localhost:18787`。只发布 `127.0.0.1:18787`（`CLOUD_LOOPBACK_PORT`），注册不验证邮箱，邮件由只在身份网络内的 mailpit 接收。
 
 ### 8.3 注册、登录与身份
 
-realm `presmium` 启用注册、邮箱登录、密码恢复与暴力尝试限制，客户端为 `presmium-cloud`（控制台，PKCE）与 `presmium-hub`。公网部署验证邮箱：首次启动前填 `CLOUD_SMTP_*`（From 为空会使 realm 导入失败）。realm 只在不存在时导入，之后的修改在身份域的 `/admin/` 中进行（`CLOUD_KEYCLOAK_ADMIN`、`CLOUD_KEYCLOAK_ADMIN_PASSWORD`）。登录主题由 `deploy/cloud/keycloak/build-theme.mjs` 打包。
+realm `presmium` 启用注册、邮箱登录、密码恢复与暴力尝试限制，客户端为 `presmium-cloud`（控制台，PKCE）与 `presmium-hub`。公网部署验证邮箱：首次启动前填 `CLOUD_SMTP_*`；没有邮件服务时把 `CLOUD_KEYCLOAK_VERIFY_EMAIL` 与 `CLOUD_KEYCLOAK_PASSWORD_RESET` 设为 `false`（注册不验证、不能找回密码），`CLOUD_SMTP_FROM` 为空时用不会发出的占位地址，以便 realm 导入。realm 只在不存在时导入，之后的修改在身份域的 `/admin/` 中进行（`CLOUD_KEYCLOAK_ADMIN`、`CLOUD_KEYCLOAK_ADMIN_PASSWORD`）。登录主题由 `deploy/cloud/keycloak/build-theme.mjs` 打包。
 
 ### 8.4 Studio 资源与 AI
 
@@ -137,7 +167,7 @@ docker compose --env-file .env -f compose.yaml up -d
 
 ### 8.7 升级
 
-先做可恢复的备份，记录源码提交与镜像摘要。把 `CLOUD_IMAGE_TAG` 换为新标签：
+`install.sh upgrade` 按下面的顺序完成升级：取新版本的部署文件与镜像，停止运行中的 Studio 并按 8.6 节备份到 `backups/<时间>/`（含 `images.txt` 记录的版本与镜像），把 `CLOUD_IMAGE_TAG` 换为新版本，迁移并启动。手动升级时先做可恢复的备份，记录源码提交与镜像摘要，再把 `CLOUD_IMAGE_TAG` 换为新标签：
 
 ```sh
 docker compose --env-file .env -f compose.yaml build

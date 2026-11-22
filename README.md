@@ -79,18 +79,13 @@ pnpm studio                       # the workbench on an editable copy of the gal
 
 ## Self-hosting
 
-Presmium can be deployed for a group of users: each registered user receives a complete workbench on JupyterHub, documents can be shared as links that others copy into their own space, and AI assistants such as Claude Code can work on a user's documents over MCP with an access token. Deployment requires Linux, Docker, Docker Compose 2.24.4 or later and four domains pointing to the server (console, sign-in, shared content and workbench).
+Presmium can be deployed for a group of users: each registered user receives a complete workbench on JupyterHub, documents can be shared as links that others copy into their own space, and AI assistants such as Claude Code can work on a user's documents over MCP with an access token. On a Linux server with Docker and Docker Compose 2.24.4 or later, one command installs it:
 
 ```sh
-cd deploy/cloud
-bash keycloak/init-env.sh      # create .env with random secrets
-# edit .env: the four domains, CLOUD_ACME_EMAIL and CLOUD_SMTP_*
-docker compose --env-file .env -f compose.yaml build
-docker compose --env-file .env -f compose.yaml --profile build-studio build studio-image
-docker compose --env-file .env -f compose.yaml up -d
+curl -fsSL https://raw.githubusercontent.com/Lincyaw/presmium/main/deploy/cloud/install.sh | bash
 ```
 
-Without domains, add `-f compose.loopback.yaml` to try the deployment on `127.0.0.1:18787`. Resource limits, administration, backups and upgrades are described in the [cloud deployment guide](docs/cloud.md).
+It asks for one thing, the address: your own domain (one wildcard DNS record), the server's public IP (HTTPS through sslip.io, no DNS), or a local trial on `127.0.0.1` reached through an SSH tunnel. It generates every secret, pulls the published images, starts the services and prints the addresses; `--help` lists the non-interactive options, and `bash ~/presmium-cloud/install.sh status | upgrade | uninstall` manages the installation. Manual deployment, resource limits, administration, backups and upgrades are described in the [cloud deployment guide](docs/cloud.md).
 
 ## License
 

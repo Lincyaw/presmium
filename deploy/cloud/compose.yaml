@@ -25,7 +25,7 @@ x-cloud-environment: &cloud-environment
   CLOUD_S3_SECRET_ACCESS_KEY: ${CLOUD_S3_SECRET_ACCESS_KEY:?Set CLOUD_S3_SECRET_ACCESS_KEY}
 
 x-cloud-service: &cloud-service
-  image: presmium-cloud:${CLOUD_IMAGE_TAG:-0.1.0}
+  image: ${CLOUD_IMAGE_REGISTRY:-}presmium-cloud-api:${CLOUD_IMAGE_TAG:-0.1.0}
   build:
     context: ../..
     dockerfile: deploy/cloud/Dockerfile
@@ -74,7 +74,7 @@ services:
     logging: *logs
 
   keycloak:
-    image: presmium-cloud-keycloak:26.8.1
+    image: ${CLOUD_IMAGE_REGISTRY:-}presmium-cloud-keycloak:${CLOUD_IMAGE_TAG:-0.1.0}
     build: { context: ../.., dockerfile: deploy/cloud/keycloak/Dockerfile }
     command: [start, --optimized, --import-realm]
     restart: unless-stopped
@@ -97,10 +97,12 @@ services:
       CLOUD_HUB_CLIENT_ID: ${CLOUD_HUB_CLIENT_ID:-presmium-hub}
       CLOUD_HUB_CLIENT_SECRET: ${CLOUD_HUB_CLIENT_SECRET:?Set CLOUD_HUB_CLIENT_SECRET}
       CLOUD_KEYCLOAK_VERIFY_EMAIL: ${CLOUD_KEYCLOAK_VERIFY_EMAIL:-true}
+      CLOUD_KEYCLOAK_PASSWORD_RESET: ${CLOUD_KEYCLOAK_PASSWORD_RESET:-true}
       CLOUD_KEYCLOAK_SSL_REQUIRED: external
       CLOUD_SMTP_HOST: ${CLOUD_SMTP_HOST:-}
       CLOUD_SMTP_PORT: ${CLOUD_SMTP_PORT:-587}
-      CLOUD_SMTP_FROM: ${CLOUD_SMTP_FROM:-}
+      # The realm import rejects an empty sender; without SMTP the placeholder is never used.
+      CLOUD_SMTP_FROM: ${CLOUD_SMTP_FROM:-no-reply@example.invalid}
       CLOUD_SMTP_AUTH: ${CLOUD_SMTP_AUTH:-true}
       CLOUD_SMTP_USER: ${CLOUD_SMTP_USER:-}
       CLOUD_SMTP_PASSWORD: ${CLOUD_SMTP_PASSWORD:-}
@@ -176,7 +178,7 @@ services:
   # JupyterHub: sign-in to Studio, one Studio container per user (DockerSpawner), routing and idle shutdown. The only
   # service with Docker; Studio containers join the studios network only.
   hub:
-    image: presmium-cloud-hub:${CLOUD_IMAGE_TAG:-0.1.0}
+    image: ${CLOUD_IMAGE_REGISTRY:-}presmium-cloud-hub:${CLOUD_IMAGE_TAG:-0.1.0}
     build: { context: ../.., dockerfile: deploy/cloud/hub/Dockerfile }
     restart: unless-stopped
     environment:
@@ -189,7 +191,7 @@ services:
       CLOUD_OIDC_ISSUER_INTERNAL_URL: ${CLOUD_OIDC_ISSUER_INTERNAL_URL-http://keycloak:8080/realms/presmium}
       CLOUD_STUDIOS_NETWORK: ${CLOUD_COMPOSE_PROJECT:-presmium-cloud}-studios
       CLOUD_INSTANCE_ID: ${CLOUD_INSTANCE_ID:-presmium-cloud}
-      CLOUD_STUDIO_IMAGE: presmium-cloud-studio:${CLOUD_IMAGE_TAG:-0.1.0}
+      CLOUD_STUDIO_IMAGE: ${CLOUD_IMAGE_REGISTRY:-}presmium-cloud-studio:${CLOUD_IMAGE_TAG:-0.1.0}
       CLOUD_STUDIO_MEMORY: ${CLOUD_STUDIO_MEMORY:-4G}
       CLOUD_STUDIO_CPUS: ${CLOUD_STUDIO_CPUS:-2}
       CLOUD_STUDIO_IDLE_SECONDS: ${CLOUD_STUDIO_IDLE_SECONDS:-1800}
@@ -217,7 +219,8 @@ services:
       CLOUD_AUTH_HOST: ${CLOUD_AUTH_HOST:?Set CLOUD_AUTH_HOST}
       CLOUD_CONTENT_HOST: ${CLOUD_CONTENT_HOST:?Set CLOUD_CONTENT_HOST}
       CLOUD_HUB_HOST: ${CLOUD_HUB_HOST:?Set CLOUD_HUB_HOST}
-      CLOUD_ACME_EMAIL: ${CLOUD_ACME_EMAIL:?Set CLOUD_ACME_EMAIL}
+      # Caddy's global option: "email <address>" for certificate notices, or nothing.
+      CLOUD_ACME_EMAIL_OPTION: ${CLOUD_ACME_EMAIL:+email ${CLOUD_ACME_EMAIL}}
     ports:
       - "${CLOUD_BIND_ADDRESS:-0.0.0.0}:${CLOUD_HTTP_PORT:-80}:80"
       - "${CLOUD_BIND_ADDRESS:-0.0.0.0}:${CLOUD_HTTPS_PORT:-443}:443"
@@ -231,10 +234,10 @@ services:
     networks: [services]
     logging: *logs
 
-  # Built once per release; the Hub starts one container of it per user.
+  # Built or pulled once per release; the Hub starts one container of it per user.
   studio-image:
     profiles: [build-studio]
-    image: presmium-cloud-studio:${CLOUD_IMAGE_TAG:-0.1.0}
+    image: ${CLOUD_IMAGE_REGISTRY:-}presmium-cloud-studio:${CLOUD_IMAGE_TAG:-0.1.0}
     build: { context: ../.., dockerfile: deploy/cloud/studio/Dockerfile }
     command: [node, --version]
     network_mode: none

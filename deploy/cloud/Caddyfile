@@ -1,5 +1,5 @@
 {
-	email {$CLOUD_ACME_EMAIL}
+	{$CLOUD_ACME_EMAIL_OPTION}
 	admin off
 }
 
