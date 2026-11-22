@@ -18,10 +18,13 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: var(--pm-space-4) var(--pm-space-4) var(--pm-caption-safe-bottom);
+  padding: var(--pm-space-4) var(--pm-space-4) 0;
+  container-type: size;
+  --pm-caption-size: var(--pm-caption-slide-size);
   pointer-events: none;
 }
 .pm-present__captions > * {
+  margin-bottom: var(--pm-caption-slide-bottom);
   pointer-events: auto;
 }
 

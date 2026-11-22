@@ -1,4 +1,5 @@
 import { createStore, serverClient, useServer, useStore } from '@lincyaw/host'
+import { VIDEO_EXPORT_PARAM } from '@lincyaw/kernel'
 import type { Viewer, ViewerPluginContext } from '@lincyaw/viewer'
 import { useEffect } from 'react'
 import type { LecturePlayer } from './player.ts'
@@ -30,7 +31,7 @@ export function useLecturesAvailable(): boolean {
 const PARAM = 'track'
 function fromUrl(): string | undefined { return typeof location === 'undefined' ? undefined : new URLSearchParams(location.search).get(PARAM) ?? undefined }
 export const playing = createStore<string | undefined>(fromUrl())
-export const exporting = typeof location !== 'undefined' && new URLSearchParams(location.search).has('export')
+export const exporting = typeof location !== 'undefined' && new URLSearchParams(location.search).has(VIDEO_EXPORT_PARAM)
 /** `&autoplay`: a page that embeds the presentation asks for the lecture to start as soon as it is ready. */
 export const autoplay = typeof location !== 'undefined' && new URLSearchParams(location.search).has('autoplay')
 export const burnedCaptions = exporting ? new URLSearchParams(location.search).get('captions') ?? undefined : undefined

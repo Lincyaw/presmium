@@ -172,3 +172,5 @@ export interface CaptureHook {
 
 export const CAPTURE_HOOK = 'presmiumCapture'
 export const CAPTURE_PARAM = 'capture'
+/** The query parameter of the page a lecture video is recorded from: it is played through as a film, never read on screen. */
+export const VIDEO_EXPORT_PARAM = 'export'
