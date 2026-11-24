@@ -1,5 +1,15 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.137
+
+### Patch Changes
+
+- Release native candidate ownership when initialization or recovery fails, allowing safe retries and author review without retaining a stale candidate lock.
+- @lincyaw/cli@1.0.0-rc.138
+  - @lincyaw/kernel@1.0.0-rc.138
+  - @lincyaw/mcp@1.0.0-rc.138
+  - @lincyaw/skills@1.0.0-rc.138
+
 ## 0.2.0-rc.136
 
 ### Patch Changes

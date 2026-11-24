@@ -234,9 +234,13 @@ export class DocumentBindings {
         const previous = runtime?.existingSession(runtimeAgent(agent))
         if (previous && previous.projectRoot !== root) await previous.close()
         const session = await runtime?.acquireFor(runtimeAgent(agent))
-        if (session?.recoveredFrom && session.reviewActive) await session.reviewCommit()
-        const view = session ? (await session.target()).mountpoint : root
-        await runtime?.closeCandidate(runtimeAgent(agent))
+        let view: string
+        try {
+          if (session?.recoveredFrom && session.reviewActive) await session.reviewCommit()
+          view = session ? (await session.target()).mountpoint : root
+        } finally {
+          await runtime?.closeCandidate(runtimeAgent(agent))
+        }
         if (session) await this.#server.requestJson(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id, resumed: true } })
         this.#candidateViews.set(id, view)
         const candidate = new CandidateServer({ root: view, candidate: true, presmium: this.#server.presmium }, this.#log)
@@ -250,8 +254,11 @@ export class DocumentBindings {
     const directory = await candidate.ready
     const workingDirectory = this.#ctx.get('workingDirectory') as { set(agent: DshAgent, path: string): Promise<string> } | undefined
     if (!workingDirectory) throw new Error('Presmium needs the workingDirectory service for concurrent authoring')
-    if (!isInside(this.workingDirectoryOf(agent), directory.root)) await workingDirectory.set(agent, directory.root)
-    await deltaboxOf(this.#ctx)?.closeCandidate(runtimeAgent(agent))
+    try {
+      if (!isInside(this.workingDirectoryOf(agent), directory.root)) await workingDirectory.set(agent, directory.root)
+    } finally {
+      await deltaboxOf(this.#ctx)?.closeCandidate(runtimeAgent(agent))
+    }
     return candidate
   }
 
