@@ -134,10 +134,10 @@
           "3"
         ],
         "reveal": [
-          "paragraph-2"
+          "merge--pm-predict-1--paragraph-2"
         ],
         "notes": [
-          "paragraph-3"
+          "merge--pm-predict-1--paragraph-3"
         ],
         "place": {
           "section": "merge",
@@ -190,7 +190,7 @@
       "parameters": {
         "question": "为什么 BPE 从单个字符开始合并？",
         "reveal": [
-          "paragraph-1"
+          "why--pm-predict-1--paragraph-1"
         ],
         "notes": [],
         "place": {

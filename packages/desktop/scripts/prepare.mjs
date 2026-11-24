@@ -67,7 +67,7 @@ function runtime() {
   run(process.execPath, [pnpm, '--filter', '@lincyaw/skills', 'run', 'prepack'], root)
   run(process.execPath, [pnpm, '--filter', '@lincyaw/dsh', 'run', 'prepack'], root)
   const target = join(out, 'runtime')
-  rmSync(target, { recursive: true, force: true })
+  rmSync(target, { recursive: true, force: true, maxRetries: 3 })
   run(process.execPath, [pnpm, '--filter', 'presmium-desktop', 'deploy', '--prod', '--frozen-lockfile',
     '--config.inject-workspace-packages=true', '--config.node-linker=hoisted', '--config.package-import-method=copy', target], root)
   snapshotFiles(join(target, 'node_modules', '@lincyaw'))
@@ -118,10 +118,11 @@ async function launcher() {
     logLevel: 'warning',
   })
   await build({
-    entryPoints: [join(pkg, 'ui', 'bridge.ts')],
-    outfile: join(ui, 'bridge.js'),
+    entryPoints: [join(pkg, 'ui', 'bridge.ts'), join(pkg, 'ui', 'scroll.ts')],
+    outdir: ui,
     bundle: true,
     format: 'iife',
+    loader: { '.css': 'text' },
     minify: true,
     logLevel: 'warning',
   })

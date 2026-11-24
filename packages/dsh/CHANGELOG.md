@@ -1,5 +1,15 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.134
+
+### Patch Changes
+
+- Stop desktop panes and menus at their scroll boundaries without elastic overscroll. Verify daily CI through structure checks and a real installed consumer build, remove tests for retired contracts, and repair migrated prediction child references.
+- @lincyaw/cli@1.0.0-rc.135
+  - @lincyaw/kernel@1.0.0-rc.135
+  - @lincyaw/mcp@1.0.0-rc.135
+  - @lincyaw/skills@1.0.0-rc.135
+
 ## 0.2.0-rc.133
 
 ### Patch Changes

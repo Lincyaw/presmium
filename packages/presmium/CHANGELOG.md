@@ -1,5 +1,37 @@
 # @lincyaw/presmium
 
+## 1.0.0-rc.135
+
+### Patch Changes
+
+- Stop desktop panes and menus at their scroll boundaries without elastic overscroll. Verify daily CI through structure checks and a real installed consumer build, remove tests for retired contracts, and repair migrated prediction child references.
+- @lincyaw/host@1.0.0-rc.135
+  - @lincyaw/web@1.0.0-rc.135
+  - @lincyaw/studio@0.2.0-rc.134
+  - @lincyaw/addon-assistant@1.0.0-rc.135
+  - @lincyaw/addon-classroom@1.0.0-rc.135
+  - @lincyaw/addon-content@1.0.0-rc.135
+  - @lincyaw/addon-exec@1.0.0-rc.135
+  - @lincyaw/addon-exec-jupyter@1.0.0-rc.135
+  - @lincyaw/addon-exec-local@1.0.0-rc.135
+  - @lincyaw/addon-exec-wasi@1.0.0-rc.135
+  - @lincyaw/addon-exec-webgpu@1.0.0-rc.135
+  - @lincyaw/addon-guide@1.0.0-rc.135
+  - @lincyaw/addon-lecture@1.0.0-rc.135
+  - @lincyaw/addon-motion@1.0.0-rc.135
+  - @lincyaw/addon-publish@1.0.0-rc.135
+  - @lincyaw/addon-session@1.0.0-rc.135
+  - @lincyaw/addon-speech@1.0.0-rc.135
+  - @lincyaw/addon-stage@1.0.0-rc.135
+  - @lincyaw/viewer@1.0.0-rc.135
+  - @lincyaw/render-notebook@1.0.0-rc.135
+  - @lincyaw/render-slides@1.0.0-rc.135
+  - @lincyaw/cli@1.0.0-rc.135
+  - @lincyaw/addon-code@1.0.0-rc.135
+  - create-presmium@1.0.0-rc.135
+  - @lincyaw/kernel@1.0.0-rc.135
+  - @lincyaw/mcp@1.0.0-rc.135
+
 ## 1.0.0-rc.134
 
 ### Patch Changes

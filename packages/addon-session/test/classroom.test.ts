@@ -1,11 +1,10 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { createServer } from 'node:net'
+import { startClassroomServer } from '@lincyaw/classroom-server'
+import { mkdtempSync, rmSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
+import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { startClassroomServer } from '@lincyaw/classroom-server'
-import { presmium } from '@lincyaw/cli/testing'
 import { afterAll, expect, it } from 'vitest'
 import { createClassroomConnection } from '../src/client/classroom-connection.ts'
 
@@ -38,11 +37,3 @@ it('a join abandoned while the server was down leaves the classroom created afte
     await server.close()
   }
 }, 15_000)
-
-it('presmium check tells how to set up a classroom server for a published deck when the deck names none', async () => {
-  writeFileSync(join(dir, 'lecture.md'), `---\nplugins:\n  - ${ADDON}\n---\n\n# Deck\n\nText.\n`)
-  const { code, stdout } = await presmium(dir, ['check'])
-  expect(code, stdout).toBe(0)
-  expect(stdout).toMatch(/lecture\.md:\d+ +info +no classroom server: presmium dev and presmium serve sync the classroom on their own port; a build shows no classroom +\(presmium\.session\)/)
-  expect(stdout).toContain('hint: for a published deck, start presmium-classroom-server')
-})

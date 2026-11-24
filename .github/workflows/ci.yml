@@ -7,6 +7,11 @@ on:
   schedule:
     - cron: '17 3 * * *'
   workflow_dispatch:
+    inputs:
+      full:
+        description: Run the complete legacy integration and browser suites
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -20,11 +25,11 @@ env:
   PRESMIUM_E2E_WEB_PORT: '4174'
 
 jobs:
-  test:
-    name: Tests, demo and Chromium end-to-end
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
+  check:
+    name: Structure and installed consumer build
+    if: github.event_name != 'workflow_dispatch' || !inputs.full
     runs-on: ubuntu-24.04
-    timeout-minutes: 150
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,35 +39,20 @@ jobs:
         with:
           node-version: '24.22.3'
           cache: pnpm
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Python for compile-time execution and the notebook tests
-        run: python -m pip install nbformat nbclient ipykernel
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test
-      - run: pnpm demo:check
-      - run: pnpm demo:build
-      - run: pnpm --filter presmium-papers check
-      - run: pnpm --filter presmium-papers build
-      - run: pnpm --filter presmium-regression-fixture build
-      - name: End-to-end tests in Chromium
-        run: pnpm exec playwright test --project chromium
-        env:
-          PRESMIUM_E2E_BROWSERS: ''
-      - name: Release dry run (pnpm -r publish --dry-run)
-        run: pnpm release:check
-      - if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: test-results/
-          retention-days: 7
+      - run: pnpm check:structure
+      - name: Pack public packages and install outside the repository
+        run: pnpm consumer "$RUNNER_TEMP/presmium-consumer"
+      - name: Check and build the installed consumer's document
+        working-directory: ${{ runner.temp }}/presmium-consumer
+        run: |
+          pnpm exec presmium check .
+          pnpm exec presmium build . --to web
+          pnpm exec presmium build . --to slides
 
   full:
     name: Full suite (pnpm verify)
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.full
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     steps:

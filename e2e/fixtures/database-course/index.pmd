@@ -3302,10 +3302,10 @@
           "可以安全省掉所有同步"
         ],
         "reveal": [
-          "paragraph-2"
+          "group-commit--pm-predict-1--paragraph-2"
         ],
         "notes": [
-          "paragraph-3"
+          "group-commit--pm-predict-1--paragraph-3"
         ],
         "place": {
           "section": "group-commit",

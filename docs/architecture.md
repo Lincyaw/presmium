@@ -333,11 +333,12 @@ PowerPoint 按打印页的排版逐页读取（`@lincyaw/web/slides` 的 `layout
 - 不写新测试，日常不运行套件；改动弄坏的已有测试直接删除。
 - 验证靠真实运行（构建、启动服务、浏览器打开）与性能测量，另加结构检查。报告实际运行与未运行的范围。
 - 已有测试只在用户要求时运行，默认单个 worker，只构建需要的文稿。
+- 日常 CI（推送、PR 与定时）执行 `pnpm check:structure`，再用 `pnpm consumer` 把实际发布包安装到单仓之外，对消费者文稿执行检查及网页、幻灯片构建。它的成功表示结构、打包、安装与这份文稿的构建通过，不代表全量测试通过。完整套件仅通过 CI 的手动入口勾选 `full` 运行。
 
 | 层级 | 内容 | 命令 |
 |---|---|---|
-| 结构检查 | `check-layering`、`check-skills`、`check-plugins`、`check-packages`、`check-tokens`、`check-i18n --strict`、`check-types` | `node scripts/check-*.mjs` |
-| 集成 | Vitest，`packages/<包>/test/`；`export` 项目最后运行 | `pnpm test` |
+| 结构检查 | `check-layering`、`check-skills`、`check-plugins`、`check-packages`、`check-tokens`、`check-i18n --strict`、`check-types` | `pnpm check:structure`，或相关的 `node scripts/check-*.mjs` |
+| 集成 | Vitest，`packages/<包>/test/` | `pnpm test` |
 | 消费者安装 | 打包后在单仓之外安装 `presmium` | `pnpm consumer` |
 | 端到端 | Playwright，`e2e/`；性能用例最后运行 | `pnpm e2e` |
 | 升级闸门 | dsh 相关用例（`@gate`），升级 dsh 时运行 | 同上 |

@@ -120,6 +120,11 @@ deb with xz and the DMG with LZMA through `hdiutil convert`, since compressing s
 the file unused.
 
 The installer also carries `build/gallery/` (a dereferenced copy of `examples/gallery`, its assets and committed speech caches, with initial Git history) and the Node initializer `build/gallery.mjs`. With no recent workspace, the launcher automatically opens `gallery-workspace` in the app's local data directory. The initializer copies atomically and links dependencies to the bundled runtime; it preserves an existing copy and author edits on upgrades. Later launches reopen the last workspace; the workspace menu switches to another directory. Editing and history still use the system's Git. Changes to the gallery or its linked skill sources trigger desktop builds.
+The native window injects a pure appearance script into all frames, including preview iframes. It sets
+`data-pm-desktop-scroll` and applies the public `@lincyaw/design/desktop-scroll.css` to stop vertical and
+horizontal overscroll at every pane and portal boundary. Keep IPC and DesktopHost exclusively in the
+authorized main frame. Preserve normal scrolling without wheel event cancellation; ordinary browser
+pages retain their scroll behavior.
 
 Generated gallery Git objects are owner-writable so Tauri can replace resource copies on repeated builds. Preparation also repairs only those generated `target/{debug,release}/gallery/.git` caches, respecting `CARGO_TARGET_DIR`; it never changes an author's repository. Verify a second real app build. The signature verifier is a separate minimal Rust workspace member and must not activate the desktop build script or copy app resources.
 

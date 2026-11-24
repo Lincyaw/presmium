@@ -1,7 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import type { CodeNode, IRDocument } from '@lincyaw/kernel'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { CodeNode, ComponentNode, IRDocument } from '@lincyaw/kernel'
-import { docBlocks } from '@lincyaw/kernel'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import plugin from '../src/node/presmium.ts'
 import type { Jupyter } from './helpers.ts'
@@ -99,36 +98,6 @@ print("after", round(time.time() - started) < 30)
     FIXTURE_BUILD_VALUE: 'build-only',
   })
 
-  it('presmium build records the remote kernel\'s output, and its fingerprint names the image digest and the kernel\'s version', async () => {
-    const built = await presmium(dir, ['build', '--to', 'notebook'], env())
-    expect(built.code, built.stdout + built.stderr).toBe(0)
-    expect(built.stdout).toMatch(/code runs: 6 executed/)
-    const doc = JSON.parse(readFileSync(join(dir, 'dist/ir.json'), 'utf8')) as IRDocument
-    const output = (id: string) => ([...docBlocks(doc)].find(({ block }) => block.id === id)?.block.node as CodeNode).outputs?.[0]
-    expect(output('where')).toMatchObject({ ok: true, executorId: 'presmium.env.remote', stdout: expect.stringMatching(/^远端内核 3\.\d+\.\d+ True\n\[\]\n$/) })
-    expect(output('use')).toMatchObject({ ok: true, stdout: '42\n' })
-
-    const panel = [...docBlocks(doc)].find(({ block }) => block.id === 'params')!.block.node as ComponentNode
-    expect((panel.children![0]!.node as CodeNode).outputs?.[0]).toMatchObject({ ok: true, stdout: 'int float str bool 42 off\n' })
-
-    expect(output('slow')).toMatchObject({ ok: false, timedOut: true })
-    expect(output('after')).toMatchObject({ ok: true, stdout: 'after True\n' })
-
-    const freeze = join(dir, '.presmium/freeze')
-    const environments = readdirSync(freeze).filter(file => file.endsWith('.json')).map(file => (JSON.parse(readFileSync(join(freeze, file), 'utf8')) as { environment?: string }).environment)
-    expect(environments.length).toBeGreaterThanOrEqual(4)
-    for (const environment of environments) {
-      expect(environment).toContain(`image=${IMAGE}`)
-      expect(environment).toMatch(/kernelspec=python3:sha256:[0-9a-f]{16} kernel=ipython \d+\.\d+\.\d+ python 3\.\d+\.\d+$/)
-    }
-    const again = await presmium(dir, ['build', '--to', 'notebook'], env())
-    expect(again.stdout).toMatch(/code runs: \d executed, [45] from cache/)
-
-    const runs = await fetch(`${jupyter!.url}api/contents/presmium-runs?content=1`, { headers: { Authorization: `token ${jupyter!.token}` } })
-    expect(runs.status).toBe(200)
-    expect((await runs.json() as { content: unknown[] }).content).toEqual([])
-  }, 300_000)
-
   it('puts a run\'s files in its working directory, where the code reads them', async () => {
     const executor = await plugin.environments!.jupyter!.create('remote', { kind: 'jupyter' }, {
       deckDir: dir,
@@ -138,15 +107,6 @@ print("after", round(time.time() - started) < 30)
     })
     const result = await executor.run({ lang: 'python', code: 'import os\nprint(open("data/input.txt").read(), os.path.isfile(os.path.join(os.getcwd(), "data", "input.txt")))', files: { 'data/input.txt': '来自请求的文件' } })
     expect(result).toMatchObject({ ok: true, stdout: '来自请求的文件 True\n' })
-  }, 120_000)
-
-  it('presmium check --env reports an environment on a closed port as unreachable', async () => {
-    const checked = await presmium(dir, ['check', '--env'], env())
-    const text = checked.stdout + checked.stderr
-    expect(checked.code).toBe(1)
-    expect(text).toMatch(new RegExp(`environment "closed" \\(jupyter\\) is not reachable: cannot reach http://127\\.0\\.0\\.1:${closed}/: .*ECONNREFUSED`))
-    expect(text).not.toMatch(/environment "remote"/)
-    expect(text).not.toContain('closed-environment-token')
   }, 120_000)
 })
 

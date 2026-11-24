@@ -1,5 +1,15 @@
 # @lincyaw/workspace
 
+## 1.0.0-rc.135
+
+### Patch Changes
+
+- Updated dependencies
+  - @lincyaw/design@1.0.0-rc.135
+  - @lincyaw/compiler@1.0.0-rc.135
+  - @lincyaw/kernel@1.0.0-rc.135
+  - @lincyaw/server@1.0.0-rc.135
+
 ## 1.0.0-rc.134
 
 ### Patch Changes

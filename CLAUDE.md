@@ -32,9 +32,11 @@
 
 ## 命令
 
+- `pnpm check:structure`：只运行分层、技能、插件、发布元数据、令牌、界面文本与类型检查，不运行测试套件。日常 CI 在此之后打包并安装消费者项目，对其中的文稿执行检查与网页、幻灯片构建；完整测试套件仅在手动运行 CI 时勾选 `full`。
+
 - `pnpm studio [目录]`：启动浏览器编辑工作台，首次自动在 `.presmium/gallery-workspace` 准备 `examples/gallery` 全部示例的独立副本（自己的 git 仓库，带合成缓存与给 AI 的 `AGENTS.md`；技能效果集链接复制成真实文件，旧 `.presmium/example-workspace` 保留），后续复用；可指定文稿或工作区，支持 `--port`、`--host`、`--help`。打开终端打印的完整网址，`Ctrl+C` 停止；编辑和预览不需要模型。设置 `PRESMIUM_TELEMETRY_URL`（运营者的 OTLP/HTTP 日志地址）后，作者在工作台的操作与每个会话的 AI 轨迹持续上传并可互相关联（`docs/studio.md` 6.7 节）；不设置时不采集。
 
-- `pnpm test`：分层检查 + 技能检查（`scripts/check-skills.mjs`，技能在 `.agents/skills`）+ 插件声明检查（`scripts/check-plugins.mjs`）+ 包的发布检查（`scripts/check-packages.mjs`，按 `.changeset/README.md` 的表）+ 令牌检查（`scripts/check-tokens.mjs`，工作台与 studio 外框的 CSS 不写原始颜色、px 与时长）+ 界面文本检查（`scripts/check-i18n.mjs --strict`）+ 类型检查（`scripts/check-types.mjs`，`tsconfig.json` 与 `packages/workbench/tsconfig.json`，不报依赖包源码内部的错误）+ 集成测试（Vitest，`packages/<pkg>/test/`，含消费者安装测试 `packages/cli/test/consumer.test.ts`；在 Chromium 中打印幻灯片的用例（`presmium-export`、`presmium-diff`）是 `export` 项目，在其他用例之后运行，单独运行用 `pnpm exec vitest run --project export`）
+- `pnpm test`：分层检查 + 技能检查（`scripts/check-skills.mjs`，技能在 `.agents/skills`）+ 插件声明检查（`scripts/check-plugins.mjs`）+ 包的发布检查（`scripts/check-packages.mjs`，按 `.changeset/README.md` 的表）+ 令牌检查（`scripts/check-tokens.mjs`，工作台与 studio 外框的 CSS 不写原始颜色、px 与时长）+ 界面文本检查（`scripts/check-i18n.mjs --strict`）+ 类型检查（`scripts/check-types.mjs`，`tsconfig.json` 与 `packages/workbench/tsconfig.json`，不报依赖包源码内部的错误）+ 集成测试（Vitest，`packages/<pkg>/test/`）；消费者打包安装独立使用 `pnpm consumer`
 - `presmium migrate [目录] [--check]`：把旧格式的文稿（`lecture.json`、格式版本 1）与列出 `documents:` 的工作区文件升级为当前格式；仓库中的文稿都已是当前格式，新增或从外部带入的旧文稿用它升级。
 - `pnpm demo:build`、`pnpm demo:check`、`pnpm demo:ir`：公开示例工作区在 `examples/gallery`，包括五份功能合集、两份教程、两讲完整课程、傅里叶小课、产品宣传片与 14 份按场景整理的动画参考（索引见 `examples/gallery/FEATURES.md`）。`check`、`ir` 仍只针对原有两讲；`build` 构建整个工作区网页，再为原有两讲补充幻灯片、notebook 与讲授，并为小课与宣传片补充放映和讲授。站点在 `examples/gallery/dist/web/`，完整课程的其它形态汇入 `<讲义>/slides/`、`<讲义>/notebook/`、`<讲义>/lecture/`。原有讲解语音来自随讲义提交的合成缓存；改过的句子需要配置真实引擎并明确重新生成。
 - `pnpm e2e`：构建私有回归文稿后运行 Playwright。功能专用文稿放在 `e2e/fixtures/<组>/`；旧 BPE 文稿只保留在 `e2e/fixtures/regression/` 用于回归验证。Chromium 运行全部用例，冒烟另在 `PRESMIUM_E2E_BROWSERS`（默认 `firefox,webkit`）中已安装且能启动的浏览器运行。并行测试用 `PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT` 指定端口。性能用例最后运行，单独运行时加 `--no-deps`。

@@ -10,16 +10,22 @@ targeted cases the change touches, one worker, only the documents and forms they
 verification is requested, also not as a wrap-up. Tests use the real CLI, builds, services, browsers and
 pinned dsh, without host mocks.
 
+Daily CI runs `pnpm check:structure`, packs and installs the consumer outside the repository, then checks
+and builds that document as web and slides. Its success covers those operations, not the full suites.
+Full verification is an explicit workflow dispatch with `full` selected; schedules do not run suites.
+Delete obsolete cases against retired contracts instead of changing their assertions or hiding them
+with exclusions, skips or ignored failures. Preserve valid cases in mixed files.
+
 ## Pick the test by where it can fail
 
 | Change | Start from |
 |---|---|
-| Document lowering, steps, diagnostics, execution cache | `packages/cli/test/ir.test.ts`, `packages/addon-exec/test/compile.test.ts` |
+| Document lowering, steps, diagnostics, execution cache | `packages/cli/test/ir.test.ts`, or compile the affected current `index.pmd` |
 | Component display, keyboard, stepping back | `e2e/guide.spec.ts` |
 | Preview after a save | `e2e/viewer.spec.ts`, `e2e/workbench.spec.ts` |
-| Student build, translation, published files | `packages/cli/test/audience.test.ts`, `e2e/site.spec.ts` |
+| Student build, translation, published files | `e2e/site.spec.ts`, or build the affected current `index.pmd` |
 | Server routes, approvals, MCP | `packages/server/test/`, `packages/mcp/test/` |
-| Package loading, install paths | `packages/cli/test/consumer.test.ts`, `e2e/consumer.spec.ts` |
+| Package loading, install paths | `pnpm consumer`, `e2e/consumer.spec.ts` |
 | dsh integration | `packages/dsh/test/` and the upgrade gate |
 | Preview protocol | `e2e/preview-protocol.spec.ts` |
 
@@ -28,8 +34,7 @@ executable directly to avoid a `cli → server → mcp` cycle.
 
 Examples:
 `pnpm exec vitest run --project integration packages/cli/test/ir.test.ts --maxWorkers=1 --no-file-parallelism`,
-`pnpm exec playwright test e2e/guide.spec.ts --project chromium --no-deps --workers=1`. PDF export cases are
-the `export` project: `pnpm exec vitest run --project export`. Filter by name with `--grep` (Playwright) or
+`pnpm exec playwright test e2e/guide.spec.ts --project chromium --no-deps --workers=1`. Filter by name with `--grep` (Playwright) or
 `-t` (Vitest); do not rerun passed cases. `e2e/example.spec.ts` builds the full example when it is missing.
 
 ## End-to-end fixtures

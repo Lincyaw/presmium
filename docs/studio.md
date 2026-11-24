@@ -270,7 +270,7 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 3. dsh 的登录 cookie 是 `SameSite=Strict`。窗口从启动页（另一个站点）转到启动网址时，跳转可能不带 cookie；首次加载得到 dsh 的纯文本登录错误时，应用从 Studio 自己的页面重新加载一次。
 4. Studio 意外结束时窗口回到启动页，说明原因并提供“详细信息”（这次启动的输出）。
 5. 启动页具有工作区选择命令；Studio 的页面通过 `DesktopHost` 仅能读取应用更新状态、触发原生签名更新流程、拖动及缩放当前窗口。Tauri 的应用命令全部显式加入权限表，启动页权限只给本地页面；远端能力只给主窗口的回环地址，并在每次命令调用中再次核对当前运行的 Studio 的确切来源与首页路径。其他窗口、预览、其他回环服务与外部页面不能使用这座桥，也不能取得启动页的文件与进程命令。桥由桌面端通过公共 Tauri API 注入，网页会话保持普通应用栏。指向本机的新窗口留在应用中，其他链接在系统浏览器中打开；下载存入“下载”文件夹并在文件管理器中显示。
-6. 菜单与启动页的语言按系统语言（zh-CN 或 en）；Studio 页面的语言由 Studio 自己决定。
+6. 菜单与启动页的语言按系统语言（zh-CN 或 en）；Studio 页面的语言由 Studio 自己决定。桌面页面、预览 iframe 与各窗格在滚动边界停止，不向外层传递滚动，也不显示上下、左右的弹性回弹；编辑器、列表与时间线仍按各自方向正常滚动。原生窗口通过 Tauri 的全 frame 初始化脚本设置纯外观标记 `data-pm-desktop-scroll`，注入公共设计样式 `@lincyaw/design/desktop-scroll.css`；该脚本不包含 IPC 与桌面桥，预览仍无原生操作权限。
 7. `.github/workflows/desktop.yml` 构建六个平台的安装包（Windows 的 NSIS `.exe`，macOS 的 `.dmg`，Linux 的 `.deb` 与 `.rpm`）。推送到 `main` 构建成功后，安装包替换滚动预发布 [`desktop-latest`](https://github.com/Lincyaw/presmium/releases/tag/desktop-latest) 的内容；发布 GitHub Release 时附加到该 Release。没有签名证书时，macOS 应用只做临时签名（ad hoc，`signingIdentity` 为 `-`），没有经过苹果公证；完全不签名的应用下载后会被 macOS 报为“已损坏”。
 
 Linux 默认构建 DEB；随后 `pnpm --filter presmium-desktop bundle:rpm` 用已编译的二进制生成 RPM，不重新编译。RPM 元数据使用数字基础版本，预发布的 release 为 `0.<预发布标识>`，稳定版为 `1`；二进制与更新签名保留主包完整版本。CI 同时提供 DEB 与 RPM。
@@ -283,7 +283,7 @@ macOS 签名使用 `packages/desktop/src-tauri/Entitlements.plist`，保留 Hard
 
 ## 12. 升级闸门
 
-dsh 发版频繁，上游 Release 与升级指南记录兼容性变化；升级 dsh 是单独的一次改动，先通过五组集成用例（Vitest 名带 `[gate]`，Playwright 标签 `@gate`）：
+dsh 发版频繁，上游 Release 与升级指南记录兼容性变化；升级 dsh 是单独的一次改动，先完成下面五组真实验证。现存 Vitest 名带 `[gate]`、Playwright 标签 `@gate` 的用例可辅助验证；删除已失效的旧契约用例不免除对应流程的真实验证。
 
 | 组 | 内容 |
 |---|---|

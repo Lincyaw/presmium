@@ -307,6 +307,7 @@ fn create_window(app: &AppHandle) -> tauri::Result<WebviewWindow> {
     let window = builder
         .title(messages::current().title)
         .initialization_script(include_str!("../../build/ui/bridge.js"))
+        .initialization_script_for_all_frames(include_str!("../../build/ui/scroll.js"))
         .inner_size(1440.0, 900.0)
         .min_inner_size(720.0, 480.0)
         // Links out of Studio open in the browser; its own pages (presenting, previews) stay in the app.

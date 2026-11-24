@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/language-server",
-  "version": "1.0.0-rc.134",
+  "version": "1.0.0-rc.135",
   "description": "Language server for canonical index.pmd documents: validation, entity navigation, code anchors and preview sync",
   "license": "Apache-2.0",
   "repository": {

@@ -1,0 +1,5 @@
+/* The native window applies this appearance policy to each frame, without a privileged bridge. */
+:root[data-pm-desktop-scroll],
+:root[data-pm-desktop-scroll] * {
+  overscroll-behavior: none;
+}

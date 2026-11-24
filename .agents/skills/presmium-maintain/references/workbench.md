@@ -278,9 +278,11 @@ one with messages and the state after clicking a file, with no duplicated brandi
 
 ## Upgrading dsh
 
-dsh is pinned to one exact version; an upgrade is its own change and must pass the upgrade gate (section 12;
-Vitest cases named `[gate]`, Playwright cases tagged `@gate`). The gate is a test set, so confirm with the
-owner before running it. Client contracts only a README describes are listed in `docs/architecture.md` 9.1.
+dsh is pinned to one exact version; an upgrade is its own change and must complete the five real
+verification flows in section 12. Existing Vitest cases named `[gate]` and Playwright cases tagged
+`@gate` can assist; ask the owner before running suites. Removing retired-contract cases does not
+replace verification of that behavior in the real runtime. Client contracts only a README describes
+are listed in `docs/architecture.md` 9.1.
 
 ## Production docks and voice service
 

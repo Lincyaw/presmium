@@ -1,5 +1,11 @@
 # @lincyaw/design
 
+## 1.0.0-rc.135
+
+### Patch Changes
+
+- Stop desktop panes and menus at their scroll boundaries without elastic overscroll. Verify daily CI through structure checks and a real installed consumer build, remove tests for retired contracts, and repair migrated prediction child references.
+
 ## 1.0.0-rc.134
 
 No changes in this release.
