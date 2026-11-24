@@ -57,6 +57,8 @@ export interface DshToolDefinition {
   execute(args: unknown, exec: DshToolExecution): Promise<unknown>
   /** Content prepared during `execute` that replaces `output.render`'s, installed before `tools/post-execute`. */
   projectContent?(exec: Readonly<DshToolExecution>, result: { readonly isError: boolean }): DshContentBlock[] | undefined
+  /** Runs for every outcome, including failures outside the tool body. */
+  finalizeContent?(exec: Readonly<DshToolExecution>, result: { readonly isError: boolean }): DshContentBlock[] | undefined
 }
 
 /** dsh's `attachments` service (`@deepseek-ai/dsh-attachment`), as far as tool results with images use it. */

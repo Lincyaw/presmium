@@ -85,7 +85,7 @@ async function imageBlocks(ctx: DshContext, tool: string, images: CalledImage[],
   }
 }
 
-function definition(ctx: DshContext, binding: DocumentBinding, tool: ListedTool): DshToolDefinition {
+function definition(ctx: DshContext, agent: DshAgent, tool: ListedTool): DshToolDefinition {
   const prepared = new Map<symbol, DshContentBlock[]>()
   return {
     name: `${PREFIX}${tool.name}`,
@@ -93,7 +93,9 @@ function definition(ctx: DshContext, binding: DocumentBinding, tool: ListedTool)
     parameters: tool.inputSchema,
     output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: String(value) }] },
     async execute(args, exec) {
-      if (exec.agent && ctx.presmium.bindings.bindingOf(exec.agent) !== binding) throw new Error('operation-binding-changed')
+      if (exec.agent !== agent) throw new Error('operation-binding-changed')
+      const binding = ctx.presmium.bindings.bindingOf(agent)
+      if (!binding) throw new Error('operation-binding-changed')
       const target = await resolvePresmiumCall(binding, { name: PREFIX + tool.name, arguments: args })
       if (target.discovery) return JSON.stringify(queryToolCatalog(binding.registeredTools ?? binding.tools, target.arguments))
       const ordinaryMedia = isOrdinaryMediaCall(target.tool.name, target.arguments)
@@ -123,6 +125,10 @@ function definition(ctx: DshContext, binding: DocumentBinding, tool: ListedTool)
       prepared.delete(exec.token)
       return result.isError ? undefined : content
     },
+    finalizeContent(exec) {
+      prepared.delete(exec.token)
+      return undefined
+    },
   }
 }
 
@@ -134,18 +140,25 @@ export function apply(ctx: DshContext): void {
   })
   const live = new WeakSet<DshAgent>()
   const selections = new WeakMap<DshAgent, () => void>()
-  const registered = new WeakMap<DshAgent, { binding?: DocumentBinding, tools?: ListedTool[], stop?: () => void, dispose: (() => void)[] }>()
+  const registered = new WeakMap<DshAgent, { binding?: DocumentBinding, tools?: ListedTool[], catalog: ListedTool[], stop?: () => void, dispose: (() => void)[] }>()
   const install = (agent: DshAgent, binding: DocumentBinding | undefined) => {
     if (!live.has(agent) || ctx.presmium.bindings.bindingOf(agent) !== binding) return
     const previous = registered.get(agent)
     if (previous && previous.binding === binding && previous.tools === binding?.tools) return
     previous?.stop?.()
-    for (const dispose of previous?.dispose ?? []) dispose()
-    if (binding) binding.registeredTools = binding.tools
+    const catalog = binding ? compactToolCatalog(binding.tools) : []
+    // DSH admits registration identities before pre-step. Renew the candidate and its
+    // trusted metadata without replacing those identities while a step is preparing.
+    // A changed public schema waits for idle; old metadata refuses changed operations.
+    const replace = !previous || agent.status === 'idle' && JSON.stringify(previous.catalog) !== JSON.stringify(catalog)
+    const compatible = replace || JSON.stringify(previous!.catalog) === JSON.stringify(catalog)
+    const tools = compatible ? binding?.tools : previous?.tools
+    if (replace) for (const dispose of previous?.dispose ?? []) dispose()
+    if (binding) binding.registeredTools = tools ?? []
     registered.set(agent, {
-      binding, tools: binding?.tools,
+      binding, tools, catalog: replace ? catalog : previous!.catalog,
       stop: binding?.toolChanges.watch(() => { if (agent.status === 'idle') install(agent, binding) }),
-      dispose: binding ? compactToolCatalog(binding.tools).map(tool => agent.ctx.tools.register(definition(ctx, binding, tool))) : [],
+      dispose: replace ? catalog.map(tool => agent.ctx.tools.register(definition(ctx, agent, tool))) : previous!.dispose,
     })
   }
   const sync = async (agent: DshAgent) => {

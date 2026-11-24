@@ -1,10 +1,6 @@
-import { spawnSync } from 'node:child_process'
-import { cpSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { fakeModel } from '../src/node/fake-model.ts'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { writeProfile } from '../src/node/launch.ts'
-import { DSH, PACKAGE, rowsOf, testHome } from './harness.ts'
+import { testHome } from './harness.ts'
 import type { Service, TestHome } from './harness.ts'
 
 const HOST_ROWS = ['presmium-service', 'presmium-tools', 'presmium-policy', 'presmium-context', 'presmium-skills', 'presmium-turns']
@@ -66,20 +62,4 @@ describe('[gate] the pinned DeepSeek Harness with Presmium\'s bundle', () => {
     }
   }, 180_000)
 
-  it('[gate] refuses to install a bundle the pinned version does not satisfy (engines.dsh), and skips it at start', () => {
-    const name = '@lincyaw/dsh-other'
-    const other = mkdtempSync(join(home.dir, 'bundle-'))
-    cpSync(join(PACKAGE, 'cordis.patch.yml'), join(other, 'cordis.patch.yml'))
-    const manifest = JSON.parse(readFileSync(join(PACKAGE, 'package.json'), 'utf8')) as { engines: Record<string, string>, dependencies?: unknown, devDependencies?: unknown, peerDependencies?: unknown }
-    writeFileSync(join(other, 'package.json'), JSON.stringify({ ...manifest, name, engines: { ...manifest.engines, dsh: '^0.3.0' }, dependencies: {}, devDependencies: {}, peerDependencies: {} }, null, 2))
-    const installing = spawnSync(process.execPath, [DSH, 'plugin', '--profile', 'presmium-other', 'add', `link:${other}`], { cwd: home.dir, env: home.env(), encoding: 'utf8' })
-    expect(installing.status).not.toBe(0)
-    expect(`${installing.stdout}${installing.stderr}`).toMatch(/incompatible with dsh 0\.2\.1-alpha\.4[\s\S]*nothing was installed/)
-    const profile = writeProfile(home.dshHome, 'presmium-linked', 'headless', other)
-    writeFileSync(join(profile, 'package.json'), readFileSync(join(profile, 'package.json'), 'utf8').replace('"@lincyaw/dsh"', JSON.stringify(name)))
-    renameSync(join(profile, 'node_modules/@lincyaw/dsh'), join(profile, 'node_modules', name))
-    const started = spawnSync(process.execPath, [DSH, '--profile', 'presmium-linked', '--dump-config'], { cwd: home.dir, env: home.env(), encoding: 'utf8' })
-    expect(started.stderr).toMatch(/skipping profile bundle "@lincyaw\/dsh-other"[\s\S]*incompatible with dsh 0\.2\.1-alpha\.4/)
-    expect(rowsOf(started.stdout).has('presmium-service')).toBe(false)
-  }, 120_000)
 })

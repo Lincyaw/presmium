@@ -27,16 +27,6 @@ import { registerWorkbenchKeys } from './workbench-keys.ts'
 import { runtimeDiagnostics } from './runtime-diagnostics.tsx'
 import { DSH_THEME_TOKENS, syncDarkClass, ThemePresenter } from './theme.ts'
 
-declare const __PRESMIUM_CSS__: string
-
-if (typeof document !== 'undefined' && !document.querySelector(`style[data-plugin-css="${CLIENT_ID}"]`)) {
-  const style = document.createElement('style')
-  style.dataset.plugin = CLIENT_ID
-  style.dataset.pluginCss = CLIENT_ID
-  style.textContent = __PRESMIUM_CSS__
-  document.head.append(style)
-}
-
 export const inject = ['slots', 'theme', 'locale', 'shortcuts']
 
 // The studio's one language source: the language chosen in Settings, else the browser's.

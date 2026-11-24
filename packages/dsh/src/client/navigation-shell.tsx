@@ -10,6 +10,10 @@ interface SidebarProps {
   renderSlot(name: string, props?: Record<string, unknown>, options?: Record<string, unknown>): ReactNode
 }
 
+// This shell has no navigation scroll handoff: the session browser owns its scroller.
+const historyScroller = { bindScrollerRef: () => {} }
+const useHistoryScroller = () => historyScroller
+
 /**
  * Replaces Harness's navigation shell through public slots: the history sidebar, the conversation's header actions,
  * and the global panels (`sidebar.panellist`), which it keeps in `globalPanels` for the activity bar. Harness still
@@ -30,7 +34,7 @@ export function registerNavigationShell(ctx: DshClientContext, workbench: Workbe
       const t = useClientMessages(workbench)
       return <section className="pmw-history" aria-label={t.conversationHistory}>
         <header className="pmw-history__header"><h2>{t.conversationHistory}</h2><PmIconButton icon="close" small label={t.closeHistory} onClick={closeHistory} /></header>
-        <div className="pmw-history__browser">{renderSlot('sidebar.workspaces', { wide: true, expandSidebar: () => actions.selectActivity('sessions') })}</div>
+        <div className="pmw-history__browser">{renderSlot('sidebar.workspaces', { wide: true, expandSidebar: () => actions.selectActivity('sessions') }, { hookContext: { useSectionScroller: useHistoryScroller } })}</div>
         <div hidden>{renderSlot('sidebar.settings', { wide: false })}</div>
       </section>
     }
@@ -40,7 +44,7 @@ export function registerNavigationShell(ctx: DshClientContext, workbench: Workbe
         'sidebar.brand.mark': { kind: 'single', scope: 'root' },
         'sidebar.brand.name': { kind: 'single', scope: 'root' },
         'sidebar.toggle.badge': { kind: 'single', scope: 'root' },
-        'sidebar.workspaces': { kind: 'single', scope: 'root' },
+        'sidebar.workspaces': { kind: 'single', scope: 'root', inject: { hooks: { sectionScroller: (_standard: unknown, context: { useSectionScroller: typeof useHistoryScroller }) => context.useSectionScroller } } },
         'sidebar.settings': { kind: 'single', scope: 'root' },
         'sidebar.footer.action': { kind: 'list', scope: 'root' },
       } }, Sidebar)

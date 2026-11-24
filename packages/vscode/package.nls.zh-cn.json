@@ -7,7 +7,7 @@
   "command.present": "放映文稿",
   "command.stopStudio": "停止可视化编辑器",
   "configuration.title": "Presmium",
-  "configuration.server.runtime": "运行本地服务的 Node.js 可执行文件（Node.js 22.19 或更高版本）。",
+  "configuration.server.runtime": "运行本地服务的 Node.js 可执行文件（Node.js 24.22.3 或更新的 24.x 版本，或 26.13.1 及以上版本）。",
   "configuration.server.path": "presmium-language-server.mjs 的路径。默认使用工作区中安装的版本，没有时使用扩展自带的版本。",
   "capabilities.untrustedWorkspaces": "Presmium 会启动本地服务，用于编辑文件和运行工程代码。",
   "command.installSkills": "安装工程技能"

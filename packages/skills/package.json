@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/skills",
-  "version": "1.0.0-rc.133",
+  "version": "1.0.0-rc.134",
   "description": "Presmium's bundled authoring, animation, figure, presentation and plugin-development skills for coding agents",
   "license": "Apache-2.0",
   "repository": {
@@ -12,7 +12,7 @@
   "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": ["presmium", "skills", "agents"],
   "type": "module",
-  "engines": { "node": ">=22.19" },
+  "engines": { "node": "^24.22.3 || >=26.13.1" },
   "publishConfig": { "access": "public" },
   "bin": { "presmium-skills": "./bin/presmium-skills.mjs" },
   "exports": {

@@ -1,12 +1,12 @@
 # Presmium's pages for the errors the single-user server can show (deploy/cloud/pages).
-FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS pages
+FROM node:24.22.3-trixie-slim@sha256:af02d57b57719b9657a45199a79264a9437940cd55b3c7b3fc99615654f124a0 AS pages
 WORKDIR /src
 COPY packages/design ./packages/design
 COPY deploy/cloud/pages ./deploy/cloud/pages
 RUN node deploy/cloud/pages/build.mjs /pages
 
 # Debian trixie: the workspace service's history needs git 2.43 or later (cat-file -Z).
-FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f
+FROM node:24.22.3-trixie-slim@sha256:af02d57b57719b9657a45199a79264a9437940cd55b3c7b3fc99615654f124a0
 
 # One user's complete Presmium Studio (the workbench, the AI assistant, the workspace service, builds and exports)
 # as a JupyterHub single-user server. The toolchain is fixed at image build; the user's files live on /work.

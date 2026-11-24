@@ -42,7 +42,7 @@ interface DshSlotOptions {
   order?: number
   locale?: string
   label?: string | (() => string)
-  children?: Record<string, { kind: 'single' | 'keyed' | 'list', scope: 'root' }>
+  children?: Record<string, { kind: 'single' | 'keyed' | 'list', scope: 'root', inject?: unknown }>
   store?: unknown
   inject?: unknown
   /** A `chain` slot's election: the first non-null result in priority order renders. */

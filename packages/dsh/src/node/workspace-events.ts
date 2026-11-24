@@ -13,12 +13,11 @@ import type { WorkspaceEventMessage } from '../workspace-events.ts'
 export const name = 'presmium-events'
 export const inject = ['presmium', 'connection', 'webServer']
 
-/** The documented WebServer upgrade and Connection admission faces. */
+interface EventPeer { principal: { kind: string }, signal: AbortSignal }
+
+/** WebServer admits the request before passing the authenticated Peer to its route. */
 interface EventContext extends DshContext {
-  webServer: { registerUpgrade(route: { path: string, handler(request: IncomingMessage, socket: Duplex, head: Buffer): void }): () => void }
-  connection: DshContext['connection'] & {
-    admit(request: IncomingMessage): { rejection: 401 | 403 } | { peer: { principal: { kind: string }, signal: AbortSignal } }
-  }
+  webServer: { registerUpgrade(route: { path: string, handler(request: IncomingMessage, socket: Duplex, head: Buffer, peer?: EventPeer): void }): () => void }
 }
 
 const ROUTES = {
@@ -40,15 +39,12 @@ export function apply(ctx: EventContext): void {
   const sockets = new Map<WebSocket, () => void>()
   const unregister = ctx.webServer.registerUpgrade({
     path: WORKSPACE_EVENTS_PATH,
-    handler(request, socket, head) {
-      const admission = ctx.connection.admit(request)
-      const rejected = 'rejection' in admission ? admission.rejection : admission.peer.principal.kind === 'owner' ? undefined : 403
-      if (rejected !== undefined) {
-        socket.end(`HTTP/1.1 ${rejected} Rejected\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`)
+    handler(request, socket, head, peer) {
+      if (!peer || peer.principal.kind !== 'owner') {
+        socket.end('HTTP/1.1 403 Rejected\r\nConnection: close\r\nContent-Length: 0\r\n\r\n')
         return
       }
-      if (!('peer' in admission) || admission.peer.signal.aborted) { socket.destroy(); return }
-      const peer = admission.peer
+      if (peer.signal.aborted) { socket.destroy(); return }
       server.handleUpgrade(request, socket, head, ws => {
         const subscriptions = new Map<string, { stop(): void, publish?(command: Extract<import('../workspace-events.ts').WorkspaceEventCommand, { type: 'authoring-client-publish' }>): Promise<void> }>()
         let closed = false

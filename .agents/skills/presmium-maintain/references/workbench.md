@@ -43,7 +43,7 @@ Compact browser request polling returns the same projected receipt as an immedia
 Use `details: true` on the status query for the original receipt; full compatibility connections keep it.
 External MCP and the Harness model surface share `@lincyaw/mcp/client`'s compact catalog,
 argument summaries and resolver. `DocumentBinding.tools` keeps full trusted metadata off the model;
-`registeredTools` pins what was installed until the next step boundary or the agent is idle. Resolve the real target before policy,
+`registeredTools` pins trusted metadata at a step boundary. DSH admits registration identities before `agent/pre-step`: retain unchanged compact definitions while renewing the candidate and read the current binding at execution. A changed compact schema waits for idle before replacing registrations; until then the previous trusted catalog refuses changed targets. Definition-owned `finalizeContent` clears temporary image content even when an outer wrapper fails. Resolve the real target before policy,
 review hooks and dispatch: its kind/approval govern confirmation, workspace governs candidate/author
 routing, and its schema validates the nested arguments. Never rewrite frozen Harness execution args.
 Refuse a changed target definition or document binding. Tool-list refresh must release old registrations;
@@ -344,3 +344,5 @@ route and primitives. Changing the optional loopback MCP listener must preserve 
 bind and persist the new endpoint before disposing the old one. Copy uses a fresh revision, and AI setup prompts
 contain credential file locations rather than credential values. Verify occupied ports, authentication, multiple
 windows and cleanup with real service connections.
+
+DSH is pinned to `0.2.3-alpha.2`; run it with Node.js `^24.22.3 || >=26.13.1`, including CI, cloud images and desktop sidecars. Client bundles publish deferred stylesheet metadata (`meta: () => ({ stylesheets })`); the renderer owns installation and cleanup. The custom history shell supplies the public `sidebar.workspaces` section-scroller hook. Browser-only event and model-setup rows belong to the Web patch. Keep the host subprocess service available for connector account operations while DeltaBox owns agent file and shell execution. Official Timeline and connector plugins remain opt-in through Plugins; external MCP connectors can use `toolLoading: on-demand`, while Presmium retains its shared compact catalog. With `client-hmr` disabled, reload open pages after plugin or synced-configuration changes; preserve drafts before reloading.

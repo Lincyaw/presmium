@@ -29,7 +29,7 @@ const sameSource = (a: CanonicalSource, b: CanonicalSource) => a.documentId === 
 const scopeOf = (document: string) => ({ document, home: false })
 const binding = (current: ReturnType<typeof readAuthoringDocument>): CanonicalSource => ({ documentId: current.content.id, version: current.source.version, fingerprint: fnv1a64(current.source.content) })
 const titleOf = (name: string) => [...(name.replaceAll('\\', '/').split('/').at(-1) ?? '').replace(/[\u0000-\u001f\u007f-\u009f]/g, '').trim()].slice(0, ASSET_TITLE_MAX_LENGTH).join('')
-const stamp = (stat: Awaited<ReturnType<Awaited<ReturnType<typeof open>>['stat']>>) => [stat.dev, stat.ino, stat.size, stat.mtimeMs, stat.ctimeMs].join(':')
+const stamp = (stat: import('node:fs').Stats) => [stat.dev, stat.ino, stat.size, stat.mtimeMs, stat.ctimeMs].join(':')
 
 /** Scoped bounded audio reads are shared by import, inspection and voice cloning. */
 export async function readDocumentAudioBytes(editor: SourceEditor, ctx: RequestContext, path: string, signal?: AbortSignal, maxBytes = DOCUMENT_AUDIO_MAX_BYTES): Promise<Uint8Array> {

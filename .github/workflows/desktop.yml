@@ -54,7 +54,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '24.22.3'
           cache: pnpm
       - run: pnpm --filter . --filter presmium-desktop... install --frozen-lockfile
       # Signing and notarization use Tauri's environment variables when the repository has them as secrets.
@@ -167,7 +167,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '24.22.3'
           cache: pnpm
       - run: pnpm --filter presmium-desktop install --frozen-lockfile --ignore-scripts
       - uses: actions/download-artifact@v4

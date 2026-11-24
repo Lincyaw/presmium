@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/studio",
-  "version": "0.2.0-rc.132",
+  "version": "0.2.0-rc.133",
   "description": "presmium studio: Presmium's workbench on DeepSeek Harness in one command, with the workspace service of a directory (experimental)",
   "license": "Apache-2.0",
   "repository": {
@@ -19,7 +19,7 @@
   ],
   "type": "module",
   "engines": {
-    "node": ">=22.19"
+    "node": "^24.22.3 || >=26.13.1"
   },
   "publishConfig": {
     "access": "public"
@@ -36,7 +36,7 @@
     "src"
   ],
   "dependencies": {
-    "@deepseek-ai/dsh": "0.2.1-alpha.4",
+    "@deepseek-ai/dsh": "0.2.3-alpha.2",
     "@lincyaw/dsh": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
     "http-proxy-3": "2.0.1",

@@ -20,7 +20,7 @@ fetch_paths() { # repo tag name pattern... (docs kept in several places; repo la
   (cd "$tmp/$name" && find . -path ./.git -prune -o -name '*.md' ! -name '*.zh.md' -print | cpio -pdm "$dest/$name" 2>/dev/null)
 }
 
-fetch_paths deepseek-ai/deepseek-harness dsh-v0.2.1-alpha.4 dsh \
+fetch_paths deepseek-ai/deepseek-harness dsh-v0.2.3-alpha.2 dsh \
   '/README.md' '/SAFETY.md' '/CONTRIBUTING.md' '/docs/' '!/docs/persistence-changes/' '!/docs/postmortem/' \
   '/apps/cli/*.md' '/apps/cli/reference/' '/packages/*/README.md' '/packages/*/*/README.md' \
   '/packages/preset/agent-preset/skills/'

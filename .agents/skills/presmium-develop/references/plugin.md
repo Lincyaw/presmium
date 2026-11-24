@@ -37,7 +37,7 @@ presmium-plugin-poll/
   "version": "0.1.0",
   "type": "module",
   "keywords": ["presmium", "presmium-plugin"],
-  "engines": { "node": ">=22.19" },
+  "engines": { "node": "^24.22.3 || >=26.13.1" },
   "exports": {
     "./presmium": "./src/node/presmium.ts",
     "./package.json": "./package.json"

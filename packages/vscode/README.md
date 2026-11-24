@@ -2,7 +2,7 @@
 
 Use VS Code's native JSON and code editors for everyday authoring, with shared schema completion, teaching graph diagnostics, entity and code-anchor navigation, live preview and presentation. Open the shared visual editor when you need page layout, assets, the AI Assistant, narration, production or exports. Both entrances edit the same `index.pmd` and project files.
 
-Requires VS Code Desktop 1.142 or later and Node.js 22.19 or later. Editing, preview and presentation do not need a model. AI and speech features use the same settings and service prerequisites as browser Studio.
+Requires VS Code Desktop 1.142 or later and Node.js 24.22.3 or later in the 24.x series, or 26.13.1 or later. Editing, preview and presentation do not need a model. AI and speech features use the same settings and service prerequisites as browser Studio.
 
 ## Author a document
 
@@ -28,7 +28,7 @@ An external MCP agent can call `list_skills` and `read_skill`, or read `presmium
 
 ## Settings
 
-- `presmium.server.runtime`: the Node.js executable for the language server and Studio (Node.js 22.19 or later).
+- `presmium.server.runtime`: the Node.js executable for the language server and Studio (Node.js 24.22.3 or later in the 24.x series, or 26.13.1 or later).
 - `presmium.server.path`: an optional `presmium-language-server.mjs` path. By default, use the workspace-installed language server, otherwise the bundled one.
 
 These executable settings belong to the machine. Presmium stays disabled in untrusted or virtual workspaces because project compilation and authoring can execute project code. Startup failures offer **Show Output** for the Presmium diagnostic channel. Studio uses the same state directory, sessions and model settings as browser Studio.

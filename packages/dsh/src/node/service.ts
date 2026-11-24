@@ -127,11 +127,20 @@ export function apply(ctx: DshContext, config: Config = {}): void {
   const server = new WorkspaceServerClient(config, log)
   const bindings = new DocumentBindings(ctx, server, log)
   ctx.provide('presmium', { server, bindings } satisfies Presmium)
-  ctx.on('session/disposed', (session: { id: string }) => void bindings.unbind(session.id))
+  const retiring = new Set<Promise<void>>()
+  let closing = false
+  ctx.on('session/disposed', (session: { id: string }) => {
+    const task = bindings.unbind(session.id).catch(error => {
+      if (!closing) log.warn(`presmium-service: retiring session ${session.id}: ${errorMessage(error)}`)
+    }).finally(() => retiring.delete(task))
+    retiring.add(task)
+  })
   const stop = () => server.stop()
   process.once('exit', stop)
-  ctx.effect(() => () => {
+  ctx.effect(() => async () => {
+    closing = true
     process.off('exit', stop)
-    void bindings.close().then(() => server.close())
+    await Promise.allSettled(retiring)
+    try { await bindings.close() } finally { await server.close() }
   })
 }

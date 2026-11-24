@@ -1,6 +1,6 @@
 {
   "name": "@lincyaw/addon-classroom",
-  "version": "1.0.0-rc.133",
+  "version": "1.0.0-rc.134",
   "description": "Presmium plugin: classroom features: anchored notes, quizzes, checked exercises, questions, feedback, and predict-then-reveal",
   "license": "Apache-2.0",
   "repository": {
@@ -15,7 +15,7 @@
   ],
   "type": "module",
   "engines": {
-    "node": ">=22.19"
+    "node": "^24.22.3 || >=26.13.1"
   },
   "publishConfig": {
     "access": "public"

@@ -18,7 +18,7 @@ pnpm --filter presmium-desktop dev     # run the app without bundling it
 pnpm --filter presmium-desktop build   # installers for this machine in src-tauri/target/release/bundle/
 ```
 
-Requirements: Rust 1.90 or later (stable), Node 22.19 or later, pnpm, and the platform's Tauri prerequisites; on Linux the WebKitGTK 4.1 development packages (`libwebkit2gtk-4.1-dev` and `libgtk-3-dev` on Debian and Ubuntu).
+Requirements: Rust 1.90 or later (stable), Node 24.22.3 or later in the 24.x series, or 26.13.1 or later, pnpm, and the platform's Tauri prerequisites; on Linux the WebKitGTK 4.1 development packages (`libwebkit2gtk-4.1-dev` and `libgtk-3-dev` on Debian and Ubuntu).
 
 `scripts/prepare.mjs` gathers what the bundle carries for this platform into `build/` and `src-tauri/binaries/`:
 

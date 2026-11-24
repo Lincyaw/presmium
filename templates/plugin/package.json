@@ -8,7 +8,7 @@
     "presmium-plugin"
   ],
   "engines": {
-    "node": ">=22.19"
+    "node": "^24.22.3 || >=26.13.1"
   },
   "exports": {
     "./presmium": "./src/node/presmium.ts",
@@ -39,7 +39,7 @@
     "@lincyaw/render-notebook": "^{{version}}",
     "@lincyaw/render-slides": "^{{version}}",
     "@lincyaw/web": "^{{version}}",
-    "@types/node": "^22.19.0",
+    "@types/node": "^24.0.0",
     "vitest": "^5.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

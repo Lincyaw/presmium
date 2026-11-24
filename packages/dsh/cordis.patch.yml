@@ -25,8 +25,6 @@
         url: !!js process.env.PRESMIUM_SERVICE_URL
         token: !!js process.env.PRESMIUM_SERVICE_TOKEN
         root: !!js process.env.PRESMIUM_WORKSPACE || process.cwd()
-    - id: presmium-events
-      name: '@lincyaw/dsh/events'
     - id: presmium-tools
       name: '@lincyaw/dsh/tools'
     - id: presmium-policy
@@ -37,10 +35,6 @@
       name: '@lincyaw/dsh/skills'
     - id: presmium-turns
       name: '@lincyaw/dsh/turns'
-    # Settings → Models in the author's terms (the services, their keys and a connection test), and the failed
-    # requests that Resend sends again and that a restarted Studio reopens.
-    - id: presmium-assistant
-      name: '@lincyaw/dsh/assistant'
     # The operator's collector (off without a URL): every session's events, and the author's operations in the workbench.
     - id: presmium-telemetry
       name: '@lincyaw/dsh/telemetry'

@@ -5,6 +5,11 @@
 - id: plugin-package-inventory-deepseek
   disabled: true
 
+# Connector account operations use the host subprocess service. Agent file and
+# shell execution still use DeltaBox's private candidate services.
+- id: subprocess
+  disabled: false
+
 # One workspace's conversations and host records (the launcher's workspaceState): Harness lists and reopens every
 # session of its root, so the workspaces of one home do not share it.
 - id: session-persistence-jsonl
@@ -25,6 +30,10 @@
 - id: approval
   config:
     policy: ask
+
+# Preserve read-before-write and stale-file refusals in the private candidate view.
+- id: fs-observation-policy
+  disabled: false
 
 - id: system-prompt
   config:

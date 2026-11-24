@@ -139,14 +139,15 @@ export function apply(ctx: DshContext): void {
 
   ctx.on('agent/created', async ({ agent }: { agent: DshAgent }) => {
     await refresh(agent)
-    agent.ctx.systemPrompt.context({ name: 'presmium:document', order: ORDER, interpolate: false, text: () => latest.get(agent.session.id) ?? '' })
+    agent.ctx.systemPrompt.context({ name: 'presmium:document', order: ORDER, interpolate: false, required: true, text: () => latest.get(agent.session.id) ?? '' })
   })
   ctx.on('session/event', (session: { id: string }, event: { type: string, data?: { turn?: number } }) => {
     if (event.type === 'turn/start' && typeof event.data?.turn === 'number') turns.set(session.id, event.data.turn)
   })
   ctx.on('agent/pre-step', async (payload: { agent: DshAgent }, next: () => Promise<unknown>) => {
+    const decision = await next()
     await refresh(payload.agent)
-    return next()
+    return decision
   })
   ctx.on('session/disposed', (session: { id: string }) => {
     latest.delete(session.id)

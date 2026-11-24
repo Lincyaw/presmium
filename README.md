@@ -11,7 +11,7 @@ The [paper explainers](examples/papers/README.md) live in `examples/papers/`, wi
 
 ## Quick start
 
-Presmium requires Node.js 22.19 or later and pnpm (`corepack enable pnpm`).
+Presmium requires Node.js 24.22.3 or later in the 24.x series, or 26.13.1 or later and pnpm (`corepack enable pnpm`).
 
 ### Write on your own computer
 

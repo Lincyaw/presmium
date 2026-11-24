@@ -38,12 +38,12 @@
 
 ### 2.3 请求的路径
 
-1. **工作台的数据**：浏览器 → dsh 的 `/api/presmium/*`（经 dsh 的 cookie 与 `Host`、`Origin` 栅栏）→ bundle → 工作区服务（带服务令牌）。事件走每页一条 `/api/presmium/events` WebSocket，由 bundle 转接服务的 SSE。
+1. **工作台的数据**：浏览器 → dsh 的 `/api/presmium/*`（经 dsh 的 cookie 与 `Host`、`Origin` 栅栏）→ bundle → 工作区服务（带服务令牌）。事件走每页一条 `/api/presmium/events` WebSocket，由 bundle 转接服务的 SSE。WebServer 在升级前完成鉴权，处理器使用其传入的 Peer，只接受 owner，并在 Peer 失效时释放连接。
 2. **预览**：iframe → 工作区服务的源。
 3. **agent 的工具**：dsh → bundle → 服务的 `/mcp`，每个会话一个会话令牌。
 4. **外部 agent**：`presmium mcp`（原生 stdio，初始化前启动或复用工作区服务；新项目的 `.mcp.json` 为 Claude Code 配好它）或直接连 `/mcp`。
 
-没有替浏览器持有 cookie 或改写 `Origin` 的代理，否则 dsh 的栅栏失效。Web 补丁关掉 `client-hmr`：dsh 没有卸载前阻止的契约，热替换会丢掉未保存的批注稿。
+没有替浏览器持有 cookie 或改写 `Origin` 的代理，否则 dsh 的栅栏失效。Web 补丁关掉 `client-hmr`：dsh 没有卸载前阻止的契约，热替换会重建插件内部状态，可能丢掉未保存的批注稿。关闭后，安装、启停插件与同步配置变更需要先保存草稿，再重新加载打开的页面。
 
 ## 3. 包、分层与版本
 
@@ -60,7 +60,7 @@
 ### 3.3 版本
 
 - **工作台的包保持 0.x。** `@lincyaw/workbench`、`@lincyaw/dsh`、`@lincyaw/studio` 有自己的版本号，不随 Presmium 的统一版本，`scripts/check-packages.mjs` 检查。dsh 发布正式版、且升级闸门在连续两个 dsh 版本上通过之后才进入 1.x。
-- **dsh 精确锁定**，现在是 `0.2.1-alpha.4`（`engines.dsh` 与精确对等依赖，dsh 安装与启动时检查），不用 dist-tag。
+- **dsh 精确锁定**，现在是 `0.2.3-alpha.2`（`engines.dsh` 与精确对等依赖，dsh 安装与启动时检查），不用 dist-tag。运行环境为 Node.js `^24.22.3 || >=26.13.1`，命令行、CI、云端镜像与桌面内置运行时一致。
 
 ## 4. 预览协议 v1
 
@@ -107,7 +107,7 @@
 
 `dsh.bundle` 指向 `cordis.patch.yml`（全部载体的行），`dsh.client` 导出客户端包；只属于某载体的行放在启动器以 `--patch` 传入的 `profile.patch.yml` 与 `web.patch.yml` 中。技能的源只有 `.agents/skills`，打包时复制。
 
-行：`presmium-service`（给出服务地址与令牌，不在 studio 中时自己启动 `presmium serve`）、`presmium-workspaces`（只登记工作区根目录）、`presmium-tools`（第 9 节）、`presmium-policy`（6.3 节）、`presmium-context` 与 `presmium-skills`（6.4 节）、`presmium-turns`（6.5 节）、`presmium-telemetry`（6.7 节）、`presmium-routes`（`/api/presmium/*` 与事件 WebSocket）、`presmium-workbench`（客户端部分，`name` 必须是整包名 `@lincyaw/dsh`）。
+行：`presmium-service`（给出服务地址与令牌，不在 studio 中时自己启动 `presmium serve`）、`presmium-workspaces`（只登记工作区根目录）、`presmium-tools`（第 9 节）、`presmium-policy`（6.3 节）、`presmium-context` 与 `presmium-skills`（6.4 节）、`presmium-turns`（6.5 节）、`presmium-telemetry`（6.7 节）；Web 另加载事件通道 `presmium-events`、模型设置 `presmium-assistant`、`presmium-routes`（`/api/presmium/*` 与事件 WebSocket）、`presmium-workbench`（客户端部分，`name` 必须是整包名 `@lincyaw/dsh`）。
 
 ### 6.2 会话与文稿
 
@@ -176,7 +176,7 @@
 - 设置只给作者语言、外观、字号、“显示代码工作视图”、快捷键、“模型”与“语音服务”。`author-settings.ts` 把作者默认值写进 profile 自己的补丁层（写进 `--patch` 会让表单拒绝作者的修改）。
 - 应用栏的设置菜单中“模型”“语音服务”“MCP 连接”各自直接打开设置的对应页。宽度 768 px 以下时，设置对话框的菜单改为标题下的标签（放不下时换行，不隐藏），页面占满对话框宽度；标题一行保留“打开配置文件”与关闭。样式按对话框的快捷键标识 `data-shortcut-modal="settings"` 与元素结构匹配，不用 Harness 生成的类名。
 - `ctx.theme.overrideTokens` 把 `--dsw-*` 令牌映射到设计令牌的明暗取值，产物经 `appearance` 跟随。工作台文字跟随 dsh 的语言；对话首页标语经 `ctx.locale.addLanguage` 替换。写进产物的文字按文稿 `lang`。
-- 客户端包用 esbuild 构建，外部依赖是 dsh 外壳模块表（React 18.3.1 由 dsh 提供），输出无文档的工厂格式 `__ModuleLoader__.load`；字体以 data URL 内联。
+- 客户端包用 esbuild 构建，外部依赖是 dsh 外壳模块表（React 18.3.1 由 dsh 提供），通过 `__ModuleLoader__.load` 注册惰性工厂和延迟样式元数据 `meta: () => ({ stylesheets })`；DSH 渲染器安装与清理样式。框架的包资源路由可提供图片；字体仍以 data URL 内联。
 
 “语音服务”通过公开 `settings.section` 登记，配音区可直达。页首说明无需设置即可配音：默认使用微软 Edge 朗读的免费音色，试听与生成时文字发送给微软；火山引擎是可选的付费服务。填写火山引擎语音 API Key，或填写配套的 Access Token 与可选 App ID；不选择控制台版本，不需要 Secret Key。密钥与 App ID 不回显、不进讲义。留空保留已存配置；输入新密钥但不填 App ID 时使用 API Key。保存立即刷新语音服务，清除恢复启动环境配置。检查配置只读本机设置，服务权限在显式播放或试听时验证。
 
@@ -214,7 +214,7 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 后启动的 Studio 仅在默认本机监听设置下借用同版本服务，通过独立的启动凭据创建 Harness 会话，不把 MCP 所有者令牌当作启动凭据；关闭 Studio 不关闭借用的服务。原所有者退出时借用它的 Studio 一同结束；已打开的旧版 Studio 不自动迁移到新版宿主，新版应用启动负责切换。显式指定 `--host`、`--preview-port` 或 `--preview-url` 时不借用，需先结束原服务，再按这些设置启动 Studio。缺少独立启动凭据的服务不能自动接管，需结束它后用当前版本启动。
 
 - `@lincyaw/mcp` 导出一张工具表（名字、说明、JSON Schema、种类），按文稿列出时按策略筛选，加上插件的 `AgentTool`；作者事务（`plan_document_change`、`apply_document_change` 等）复用 Web 的 `DocumentEditor` 与历史，见 [作者动作](authoring-actions.md)。
-- 适配器一是 `/mcp` 与 `presmium mcp`。默认 stdio 首次目录就来自已就绪的工作区服务；同地址、同令牌的重启按服务进程身份识别。服务中断时，已发业务请求固定在原连接，只返回原结果或明确失败；未知结果先查询保存历史或任务状态，传输层不重放业务请求。后续新请求使用发现或重新启动的宿主。只读通知订阅按原过滤器重新建立，确认恢复后提示客户端重新读取订阅的资源，直到客户端取消或关闭 stdin。显式 `--compiler-only` 的执行权限由 `--allow` 决定。适配器二是 `presmium-tools`：作为 MCP 客户端用会话令牌连接回环 `/mcp`，在宿主保留完整工具元数据，模型只登记共用精简目录的 `presmium__*` 入口；按需查询参数，调用前解析并校验目标工具，按目标 workspace 路由，再转成 `tools/call`，时限 10 分钟。结果中的图片（如 `capture_slides` 的截图）在会话最近一次请求所用的模型声明接受图片时存入 dsh 的附件，作为工具结果的图片交给模型；否则模型只得到文字（`capture_slides` 的文字列出每张图的文件），另有一行说明图片未附上。候选服务复用启动 Studio 的确切 Presmium 命令及其自带的渲染端和插件，不切到裸 CLI 或另一份全局安装。编译只在服务中做一次；每个会话只登记所属文稿的工具。
+- 适配器一是 `/mcp` 与 `presmium mcp`。默认 stdio 首次目录就来自已就绪的工作区服务；同地址、同令牌的重启按服务进程身份识别。服务中断时，已发业务请求固定在原连接，只返回原结果或明确失败；未知结果先查询保存历史或任务状态，传输层不重放业务请求。后续新请求使用发现或重新启动的宿主。只读通知订阅按原过滤器重新建立，确认恢复后提示客户端重新读取订阅的资源，直到客户端取消或关闭 stdin。显式 `--compiler-only` 的执行权限由 `--allow` 决定。适配器二是 `presmium-tools`：作为 MCP 客户端用会话令牌连接回环 `/mcp`，在宿主保留完整工具元数据，模型只登记共用精简目录的 `presmium__*` 入口；按需查询参数，调用前解析并校验目标工具，按目标 workspace 路由，再转成 `tools/call`，时限 10 分钟。结果中的图片（如 `capture_slides` 的截图）在会话最近一次请求所用的模型声明接受图片时存入 dsh 的附件，作为工具结果的图片交给模型；否则模型只得到文字（`capture_slides` 的文字列出每张图的文件），另有一行说明图片未附上。候选服务复用启动 Studio 的确切 Presmium 命令及其自带的渲染端和插件，不切到裸 CLI 或另一份全局安装。编译只在服务中做一次；每个会话只登记所属文稿的工具。DSH 在 `agent/pre-step` 之前确定本步工具注册身份；更新候选视图时保留未变的精简定义，并在执行时取得当前绑定。公开参数定义改变时等 agent 空闲才替换注册，在此之前固定旧目录并拒绝已变的目标。
 - MCP 默认目录与会话中的 `presmium__*` 使用同一精简目录生成器；会话完整元数据不传给模型。审批、展示文案、候选工作区路由与审阅检查点均按真实目标工具执行，模型侧参数保持原样，不改写 Harness 的冻结 execution。模型已登记的目标定义或文稿绑定变化时拒绝旧调用，下一步请求前或空闲后重装目录；`get_focus` 仍等于会话快照中的焦点。
 
 ## 10. 没有模型与没有 dsh 时
@@ -283,7 +283,7 @@ macOS 签名使用 `packages/desktop/src-tauri/Entitlements.plist`，保留 Hard
 
 ## 12. 升级闸门
 
-dsh 发版频繁、没有 CHANGELOG，所以升级 dsh 是单独的一次改动，先通过五组集成用例（Vitest 名带 `[gate]`，Playwright 标签 `@gate`）：
+dsh 发版频繁，上游 Release 与升级指南记录兼容性变化；升级 dsh 是单独的一次改动，先通过五组集成用例（Vitest 名带 `[gate]`，Playwright 标签 `@gate`）：
 
 | 组 | 内容 |
 |---|---|
@@ -304,7 +304,7 @@ dsh 发版频繁、没有 CHANGELOG，所以升级 dsh 是单独的一次改动�
 ## 15. dsh 的已知限制
 
 - 品牌文案没有覆盖机制：语言包加逐行关掉，zh-TW 等仍显示原文。
-- 布局契约只有 README，工厂格式无文档，客户端包不能带静态文件：启动审计、自己的 esbuild 插件、字体内联。
+- 布局与外壳契约按上游文档及源码维护，由启动审计守护；客户端包的静态资源路由只提供图片，字体仍内联。
 - 回答者看不到工具参数：`displayReason` 带摘要。预设的 persona 补丁按 ID 找不到：另声明 `preset-authoring`。修改摘要只在内存中：审阅记录由工作区服务保存。
 - Linux 网页不许 Mod+Alt 组合：用应用栏按钮收起对话记录。
 
@@ -411,3 +411,7 @@ dsh 发版频繁、没有 CHANGELOG，所以升级 dsh 是单独的一次改动�
 - **同步块**：显示另一份文稿中一个内容块及其下级内容当前的样子（`embed/source`，按来源缓存），只读；标题栏写“同步自”与来源（文稿 › 内容块），悬停或聚焦时显示“编辑原文”（打开来源并定位）与“转为副本”（`embed-to-copy`）。来源在回收站中时仍显示内容并说明；来源不存在时说明原内容已不存在。加载期间保留固定高度。同步块在步骤中与普通内容块一样设定可见性。内容块菜单的“复制同步块链接”复制一个链接，粘贴到另一份文稿即插入同步块。
 - **继承的设置**：工作台中显示的继承设置——字幕大小、音色与步骤的播放时机（配音开始、最短停留、结束停顿）——在文稿自己没有设定时注明值来自哪里：设定它的最近一级上级（“继承自“上级文稿””），或工作区 `defaults:`（“继承自工作区默认设置”）；`GET document` 的 `inheritedFrom` 给出每项设置的来源，服务没有给出时写上级文稿。文稿自己设定了字幕大小而上级也有时，“使用继承值”删除文稿自己的设定；音色在“选择音色”中选“继承”，步骤的时机用“使用继承的时机”。语言、插件、渲染端与插件配置、执行与检查在工作台中没有显示或编辑的地方，不加说明。
 - **性能**：引用与同步块的节点按目标的原始值记忆，输入时不重绘；同一目标的标题来自共享的文稿树，预览与同步块来源各自只读一次。打开文稿不等待引用列表，右栏单独加载。
+
+## 25. 可选的上游能力
+
+插件入口保留 DSH 的官方插件管理与账号连接界面。Timeline 可按需启用，用任务树显示 AI 的进展；定时报告会额外调用模型，按插件设置启用。飞书、Notion、腾讯文档、腾讯会议、企业微信、钉钉与 Linear 连接器按需安装和连接，账号授权由作者在插件页面完成。外部 MCP 连接器可使用 `toolLoading: on-demand`，不替代 Presmium 共用的精简作者工具目录与审批。DSH 的宿主 subprocess 服务用于连接器账号操作；agent 的文件与前台 Shell 仍使用 DeltaBox 的私有候选视图。

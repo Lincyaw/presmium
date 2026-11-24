@@ -2,7 +2,7 @@
 
 Presmium turns one document, `index.pmd`, into a website, slides, a Jupyter notebook and a narrated video. This package is the `presmium` command with Presmium Studio (the browser workbench), the renderers and the official plugins.
 
-Requires Node.js 22.19 or later and pnpm.
+Requires Node.js 24.22.3 or later in the 24.x series, or 26.13.1 or later and pnpm.
 
 ## Install
 

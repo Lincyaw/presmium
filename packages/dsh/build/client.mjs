@@ -53,12 +53,12 @@ export async function buildClient() {
     legalComments: 'none',
     metafile: true,
     external: [...SHELL_MODULES],
-    define: { '__PRESMIUM_CSS__': JSON.stringify(css.outputFiles[0].text), 'process.env.NODE_ENV': '"production"' },
+    define: { 'process.env.NODE_ENV': '"production"' },
     logLevel: 'warning',
   })
   const body = js.outputFiles[0].text
   mkdirSync(OUT, { recursive: true })
-  writeWhole(BUNDLE, `window.__ModuleLoader__.load({\n\tid: ${JSON.stringify(ID)},\n\tfactory: (require) => {\n\t\tvar module = { exports: {} };\n\t\tvar exports = module.exports;\n${body}\n\t\treturn module.exports;\n\t}\n});\n`)
+  writeWhole(BUNDLE, `window.__ModuleLoader__.load({\n\tid: ${JSON.stringify(ID)},\n\tmeta: () => ({ stylesheets: { "src/client/styles.css": { text: () => ${JSON.stringify(css.outputFiles[0].text)} } } }),\n\tfactory: (require) => {\n\t\tvar module = { exports: {} };\n\t\tvar exports = module.exports;\n${body}\n\t\treturn module.exports;\n\t}\n});\n`)
   const inputs = [...new Set([...Object.keys(js.metafile.inputs), ...Object.keys(css.metafile.inputs)])].filter(input => !input.includes('node_modules'))
   writeWhole(META, `${JSON.stringify({ inputs }, null, 2)}\n`)
   return BUNDLE

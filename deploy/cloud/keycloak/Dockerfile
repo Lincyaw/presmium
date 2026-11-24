@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim@sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d AS theme
+FROM node:24.22.3-bookworm-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54 AS theme
 ENV CI=true
 WORKDIR /src
 RUN corepack enable && corepack prepare pnpm@11.20.0 --activate

@@ -1,5 +1,15 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.133
+
+### Patch Changes
+
+- Upgrade Studio to DeepSeek Harness 0.2.3-alpha.2 and Node.js 24.22.3 (or 26.13.1 and later), including desktop, cloud, CI and project templates. Preserve candidate tools across agent steps, await service cleanup, and adapt client styles and session navigation to the new framework contracts. Official task progress and service connectors remain available through Plugins.
+- @lincyaw/cli@1.0.0-rc.134
+  - @lincyaw/kernel@1.0.0-rc.134
+  - @lincyaw/mcp@1.0.0-rc.134
+  - @lincyaw/skills@1.0.0-rc.134
+
 ## 0.2.0-rc.132
 
 ### Patch Changes

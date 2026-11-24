@@ -7,7 +7,7 @@
   "command.present": "Present Document",
   "command.stopStudio": "Stop Visual Editor",
   "configuration.title": "Presmium",
-  "configuration.server.runtime": "Node.js executable that runs the local services (Node.js 22.19 or later).",
+  "configuration.server.runtime": "Node.js executable that runs the local services (Node.js 24.22.3 or later in the 24.x series, or 26.13.1 or later).",
   "configuration.server.path": "Path to presmium-language-server.mjs. By default, the one installed in the workspace, or else the extension’s own.",
   "capabilities.untrustedWorkspaces": "Presmium starts local services that can edit files and run project code.",
   "command.installSkills": "Install Project Skills"

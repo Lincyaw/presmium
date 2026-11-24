@@ -1,6 +1,6 @@
 # @lincyaw/studio
 
-`presmium studio`: Presmium's workbench in one command. It starts [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (MIT) with Presmium's bundle, [`@lincyaw/dsh`](https://www.npmjs.com/package/@lincyaw/dsh), and the workspace service of a directory (`presmium serve`, from its host package `@lincyaw/presmium`), and prints the one address to open in the browser. Experimental (0.x): it installs one exact version of DeepSeek Harness, `0.2.1-alpha.4` (about 865 MB with its dependencies).
+`presmium studio`: Presmium's workbench in one command. It starts [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (MIT) with Presmium's bundle, [`@lincyaw/dsh`](https://www.npmjs.com/package/@lincyaw/dsh), and the workspace service of a directory (`presmium serve`, from its host package `@lincyaw/presmium`), and prints the one address to open in the browser. Experimental (0.x): it installs one exact version of DeepSeek Harness, `0.2.3-alpha.2` (about 865 MB with its dependencies).
 
 Part of [Presmium](https://github.com/Lincyaw/presmium), which turns structured teaching documents into web pages, slides, Jupyter notebooks and narrated lectures.
 

@@ -1,6 +1,11 @@
 - insert:
     - id: presmium-workspaces
       name: '@lincyaw/dsh/workspaces'
+    - id: presmium-events
+      name: '@lincyaw/dsh/events'
+    # Model setup and retry records need the Web connection and credentials services.
+    - id: presmium-assistant
+      name: '@lincyaw/dsh/assistant'
     - id: presmium-routes
       name: '@lincyaw/dsh/routes'
 
@@ -40,7 +45,7 @@
   disabled: true
 - id: ui-settings-account
   disabled: true
-- id: account-controller
+- id: ui-account-notifications
   disabled: true
 - id: deepseek-account
   disabled: true
@@ -55,8 +60,6 @@
 # Settings pages an author has no use for: the built-in plugins (the plugin rows of every session) and the agent presets
 # (the workbench's sessions use the authoring preset). Technical rows of the General page stay behind the coding view
 # (src/client/author-settings.ts).
-- id: ui-settings-plugins
-  disabled: true
 # Harness's Models page (provider routes, protocols, model catalogs, environment variables). Presmium's own page takes
 # its place (src/client/model-setup.tsx): the services an author can use by name, with the address and model folded
 # under Advanced; everything else stays in the profile's configuration file.
@@ -111,6 +114,8 @@
             disabled: !!js process.platform !== 'win32'
           - id: tool-fs
             name: '@deepseek-ai/dsh-tool-fs'
+            config:
+              applyPatch: false
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
           - id: tool-skill

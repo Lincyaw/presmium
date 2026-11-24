@@ -12,7 +12,7 @@ Most people install the `presmium` package, which brings this command with Studi
 pnpm add -g @lincyaw/presmium
 ```
 
-In a project that picks its own renderers and plugins, install the CLI with them (Node.js 22.19 or later):
+In a project that picks its own renderers and plugins, install the CLI with them (Node.js 24.22.3 or later in the 24.x series, or 26.13.1 or later):
 
 ```sh
 pnpm add -D @lincyaw/cli @lincyaw/web @lincyaw/render-slides @lincyaw/render-notebook
