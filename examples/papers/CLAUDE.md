@@ -46,7 +46,7 @@
 | `papers/<slug>/scenes/data/` | `derive.py` 与它算出的 JSON |
 | `papers/<slug>/figures/` | 裁好的论文原图与它们的文字坐标（`*.json`） |
 | `papers/<slug>/.presmium/speech/` | 合成好的配音（随文稿提交，导出与网站直接用） |
-| `tools/` | 取源码（`fetch.sh`）、生成文稿骨架（`new-paper.mjs`）与按工作区配置逐篇检查（`check.mjs`，`pnpm check`）；其余步骤用 Presmium 自带的命令 |
+| `tools/` | 取源码（`fetch.sh`）、生成文稿骨架（`new-paper.mjs`）与扫描 `papers/*/index.pmd` 逐篇检查（`check.mjs`，`pnpm check`）；其余步骤用 Presmium 自带的命令 |
 | `.cache/` | 下载的 arXiv 源码、论文代码仓库（不提交） |
 
 ## 流水线

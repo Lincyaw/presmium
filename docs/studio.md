@@ -273,7 +273,7 @@ Studio 自建工作区服务时，HTTP MCP 默认地址为 `http://127.0.0.1:432
 6. 菜单与启动页的语言按系统语言（zh-CN 或 en）；Studio 页面的语言由 Studio 自己决定。桌面页面、预览 iframe 与各窗格在滚动边界停止，不向外层传递滚动，也不显示上下、左右的弹性回弹；编辑器、列表与时间线仍按各自方向正常滚动。原生窗口通过 Tauri 的全 frame 初始化脚本设置纯外观标记 `data-pm-desktop-scroll`，注入公共设计样式 `@lincyaw/design/desktop-scroll.css`；该脚本不包含 IPC 与桌面桥，预览仍无原生操作权限。
 7. `.github/workflows/desktop.yml` 构建六个平台的安装包（Windows 的 NSIS `.exe`，macOS 的 `.dmg`，Linux 的 `.deb` 与 `.rpm`）。推送到 `main` 构建成功后，安装包替换滚动预发布 [`desktop-latest`](https://github.com/Lincyaw/presmium/releases/tag/desktop-latest) 的内容；发布 GitHub Release 时附加到该 Release。没有签名证书时，macOS 应用只做临时签名（ad hoc，`signingIdentity` 为 `-`），没有经过苹果公证；完全不签名的应用下载后会被 macOS 报为“已损坏”。
 
-Linux 默认构建 DEB；随后 `pnpm --filter presmium-desktop bundle:rpm` 用已编译的二进制生成 RPM，不重新编译。RPM 元数据使用数字基础版本，预发布的 release 为 `0.<预发布标识>`，稳定版为 `1`；二进制与更新签名保留主包完整版本。CI 同时提供 DEB 与 RPM。
+Linux 默认构建 DEB；随后 `pnpm --filter presmium-desktop bundle:rpm` 用已编译的二进制生成 RPM，不重新编译。RPM 元数据使用数字基础版本，预发布的 release 为 `0.<预发布标识>`，稳定版为 `1`；二进制与更新签名保留主包完整版本。CI 同时提供 DEB 与 RPM。Ubuntu 24.04 构建机的包索引中缺少 WebKit 开发包时，工作流按架构补入 Ubuntu 官方软件源，使用系统已有的归档公钥验证后安装，不依赖运行器镜像恰好保留了这些软件源。
 
 桌面应用版本跟随主包版本。正式构建启动时及每 6 小时自动检查；手动“检查更新…”始终保留在原生菜单中。应用栏与启动页只在已发现新版本时显示更新图标，正常状态不占位置。发现更新、正在下载、待重启及重试用对应图标或加载状态表示，完整说明、版本与下载百分比在悬停提示及可访问名称中提供。后台检查只更新图标，网络失败保持安静。点击更新图标开始下载；手动菜单检查仍可先询问下载。下载与编辑并行，完整校验通过后再提示作者保存文稿、处理未提交表单与录音并重启安装。作者选择稍后时保留当前候选包；再次点击时重新核对版本与签名，已校验的缓存可直接进入重启确认，旧候选缓存会清理。安装前停止应用拥有的 Studio，借用的服务在新版启动时按服务版本执行上述交接；签名验证、下载地址、缓存与安装均由原生进程掌握，网页不能指定更新地址或安装字节。
 

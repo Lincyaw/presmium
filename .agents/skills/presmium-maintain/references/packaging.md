@@ -128,6 +128,9 @@ pages retain their scroll behavior.
 
 Generated gallery Git objects are owner-writable so Tauri can replace resource copies on repeated builds. Preparation also repairs only those generated `target/{debug,release}/gallery/.git` caches, respecting `CARGO_TARGET_DIR`; it never changes an author's repository. Verify a second real app build. The signature verifier is a separate minimal Rust workspace member and must not activate the desktop build script or copy app resources.
 
+Ubuntu 24.04 runners restore the architecture-appropriate official signed archives only when WebKit
+development package metadata is absent. Preserve the archive keyring verification.
+
 Linux builds default to DEB. Afterwards `pnpm --filter presmium-desktop bundle:rpm` uses the public Tauri bundle command without recompiling: RPM metadata uses the numeric base version and release `0.<prerelease>` (stable: `1`), retaining the binary's full SemVer. Final RPM signatures bind that full application version, not the RPM metadata version. Verify the real Linux packages and their version/release fields; do not change the compiled application version just to satisfy a package manager.
 
 The snapshot's `tsconfig.json` is standalone: merge the repository base compiler options at packaging time, retaining the gallery's own fields. The initializer repairs the early snapshot's exact `../../tsconfig.base.json` reference only when its target is missing, preserving author compiler options. Verify a real animation scenario from outside the repository as well as the prose tutorial.

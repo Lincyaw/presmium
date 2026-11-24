@@ -45,7 +45,32 @@ jobs:
       - name: Linux libraries for the web view
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
+          sudo apt-get -o Acquire::Retries=3 update
+          # Some runner images expose only the Microsoft repository. Restore Ubuntu's signed archive
+          # only when WebKit's development package is absent from the available package metadata.
+          if ! apt-cache show libwebkit2gtk-4.1-dev > /dev/null 2>&1; then
+            if [ "$(dpkg --print-architecture)" = arm64 ]; then
+              desktop_archive=https://ports.ubuntu.com/ubuntu-ports
+              desktop_security=$desktop_archive
+            else
+              desktop_archive=https://archive.ubuntu.com/ubuntu
+              desktop_security=https://security.ubuntu.com/ubuntu
+            fi
+            sudo tee /etc/apt/sources.list.d/presmium-ubuntu.sources > /dev/null <<EOF
+          Types: deb
+          URIs: $desktop_archive
+          Suites: noble noble-updates noble-backports
+          Components: main restricted universe multiverse
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+          Types: deb
+          URIs: $desktop_security
+          Suites: noble-security
+          Components: main restricted universe multiverse
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+          EOF
+            sudo apt-get -o Acquire::Retries=3 update
+          fi
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf xdg-utils
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
