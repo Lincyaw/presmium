@@ -2,6 +2,10 @@
 # author review remain one Presmium transaction, with source guards and validation.
 - id: deltabox-runtime
   disabled: true
+- id: deltabox-fs
+  disabled: !!js process.platform === 'darwin'
+- id: deltabox-view
+  disabled: !!js process.platform === 'darwin'
 - id: deltabox-review-policy
   disabled: true
 - id: ptc-runtime
@@ -12,11 +16,14 @@
   disabled: true
 
 - insert:
+    - id: presmium-candidate-fs
+      name: '@lincyaw/dsh/candidate-fs'
+      disabled: !!js process.platform !== 'darwin'
     - id: presmium-deltabox-runtime
       name: '@lincyaw/dsh/deltabox-runtime'
       config:
         binary: !!js process.env.DELTABOX_BINARY ?? 'deltabox'
-        fsMode: cbcow-private
+        fsMode: !!js "process.platform === 'darwin' ? 'cbcow-through' : 'cbcow-private'"
         projectSessionReuse: false
     - id: presmium-service
       name: '@lincyaw/dsh/service'

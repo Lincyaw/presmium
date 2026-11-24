@@ -21,7 +21,7 @@ export const GUIDE = [
 
 const ORDER = 9000
 /** Names in a document's directory that are not its sources. */
-const NOT_SOURCES = new Set(['dist', '.presmium', 'node_modules', '.git'])
+const NOT_SOURCES = new Set(['dist', '.presmium', 'node_modules', '.git', '.deltabox', '.deltabox-lite-state'])
 const FILES_SHOWN = 60
 
 async function callJsonTool(binding: DocumentBinding, tool: string): Promise<any> {

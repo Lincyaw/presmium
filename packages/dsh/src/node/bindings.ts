@@ -235,8 +235,9 @@ export class DocumentBindings {
         if (previous && previous.projectRoot !== root) await previous.close()
         const session = await runtime?.acquireFor(runtimeAgent(agent))
         if (session?.recoveredFrom && session.reviewActive) await session.reviewCommit()
-        if (session) await this.#server.requestJson(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id, resumed: true } })
         const view = session ? (await session.target()).mountpoint : root
+        await runtime?.closeCandidate(runtimeAgent(agent))
+        if (session) await this.#server.requestJson(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id, resumed: true } })
         this.#candidateViews.set(id, view)
         const candidate = new CandidateServer({ root: view, candidate: true, presmium: this.#server.presmium }, this.#log)
         await candidate.ready
@@ -250,6 +251,7 @@ export class DocumentBindings {
     const workingDirectory = this.#ctx.get('workingDirectory') as { set(agent: DshAgent, path: string): Promise<string> } | undefined
     if (!workingDirectory) throw new Error('Presmium needs the workingDirectory service for concurrent authoring')
     if (!isInside(this.workingDirectoryOf(agent), directory.root)) await workingDirectory.set(agent, directory.root)
+    await deltaboxOf(this.#ctx)?.closeCandidate(runtimeAgent(agent))
     return candidate
   }
 
@@ -276,8 +278,12 @@ export class DocumentBindings {
     if (!this.candidateRootOf(agent) && !isInside(this.workingDirectoryOf(agent), root)) return
     await this.candidateOf(agent)
     const id = this.rootSessionOf(agent)
+    const runtime = deltaboxOf(this.#ctx)
+    await runtime?.closeCandidate(runtimeAgent(agent))
     const { changed } = await this.#server.requestJson<{ changed: boolean }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id, refresh: true } })
-    if (deltaboxOf(this.#ctx) && (changed || this.#renewCandidates.has(id))) {
+    // Through mode keeps the candidate service on the same real directory after refresh/publication.
+    if (process.platform === 'darwin' && runtime) { this.#renewCandidates.delete(id); return }
+    if (runtime && (changed || this.#renewCandidates.has(id))) {
       await this.retireCandidate(agent)
       await this.candidateOf(agent)
     }
@@ -293,7 +299,9 @@ export class DocumentBindings {
     this.#candidates.delete(id)
     if (candidate) await (await candidate).close()
     this.#candidateViews.delete(id)
-    await deltaboxOf(this.#ctx)?.existingSession(runtimeAgent(agent))?.close()
+    const runtime = deltaboxOf(this.#ctx)
+    await runtime?.closeCandidate(runtimeAgent(agent))
+    await runtime?.existingSession(runtimeAgent(agent))?.close()
     this.#renewCandidates.delete(id)
   }
 

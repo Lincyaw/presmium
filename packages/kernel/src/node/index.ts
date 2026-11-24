@@ -33,6 +33,7 @@ export { compareServiceVersion, ServiceUpgradeError, upgradeWorkspaceService } f
 export type { ServiceState } from './service-state.ts'
 export { tryAcquireServiceHostLease } from './service-lease.ts'
 export type { ServiceHostLease } from './service-lease.ts'
+export { acquireCandidateLease } from './candidate-lease.ts'
 export { validateWorkspaceReviewQuery, validateWorkspaceReviewChange } from './workspace-review.ts'
 export { validateSourceList, validateSourceRead, validateSourceEdit } from './workspace-source.ts'
 export { validateChangesQuery, validateWorkspaceChangesRequest } from './workspace-changes.ts'

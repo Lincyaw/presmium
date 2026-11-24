@@ -433,9 +433,9 @@ presmium serve: 浏览器 → 服务端 ─┬ /__presmium/<插件 ID>/…、/__
 
 ### 10.7 修改审阅
 
-`packages/workspace/src/node/review/`：会话的候选目录位于工作区 `.presmium/agent-workspaces/`，有独立 git 与来源文件版本。DSH 默认加载官方 `dsh-deltabox` 插件，以 `cbcow-private` 在候选目录上提供文件系统与前台 Shell；Presmium 的 runtime 适配只通过公开的 `projectRootFor` 绑定候选根，并在 `acquireFor` 中先为位于原工作区的会话取得候选根，使 Harness 早于绑定的文件调用也不会在原工作区启动 DeltaBox。正文 MCP 服务使用同一私有视图，写入由 `runMutable` 串行化。每个写入工具完成后，DeltaBox 先接受到候选目录，再进入 Presmium 的校验、审阅与发布事务。原工作区持续接受作者保存。候选 git 树记录检查点；拒绝与恢复只写候选目录。发布先确认作者输入已保存，再在原工作区短事务中执行全部文件的版本检查、写入与 `REVISIONS` 提交；任一来源过期时不发布，AI 重新读取后重试。审阅记录在 `presmium/reviews/`，包含候选地址与来源版本，重启后恢复。插件的单次修改任务仍使用文稿锁。
+`packages/workspace/src/node/review/`：会话的候选目录位于工作区 `.presmium/agent-workspaces/`，有独立 git 与来源文件版本。DSH 默认加载官方 `dsh-deltabox` 插件；Presmium 的 runtime 通过公开的 `projectRootFor` 绑定候选根，并在 `acquireFor` 中先为位于原工作区的会话取得候选根，使 Harness 早于绑定的文件调用也不会在原工作区启动 DeltaBox。macOS 使用 `cbcow-through`，原生 Shell、文件工具与正文 MCP 都访问同一个真实候选目录，工作目录不随原生检查点重建而变化。文件 provider 基于官方 `fs-sandbox`，额外限定 `workspace-write` 只写规范化后的候选树（包括经链接访问的路径），不因平台临时目录而扩大写入范围；DeltaBox 状态目录受保护。文件动作与候选 MCP 写入由 `runMutable` 包住，保留读取观察、版本比较与原生回滚。Linux 与 Windows 继续使用 `cbcow-private` 的原生文件系统与 Shell。每个写入工具完成后，DeltaBox 先接受到候选目录，再进入 Presmium 的校验、审阅与发布事务。原工作区持续接受作者保存。候选 git 树记录检查点；拒绝与恢复只写候选目录。发布先确认作者输入已保存，再在原工作区短事务中执行全部文件的版本检查、写入与 `REVISIONS` 提交；任一来源过期时不发布，AI 重新读取后重试。审阅记录在 `presmium/reviews/`，包含候选地址与来源版本，重启后恢复。插件的单次修改任务仍使用文稿锁。
 
-DeltaBox 自带的 turn-stopping 审阅行关闭，保留 Presmium 的单一接受与拒绝入口。工具写入或来源刷新后，在下一模型步骤边界关闭旧视图、候选服务和绑定，再创建新的视图。插件使用原生后端：macOS 需要 APFS/FSEvents，Linux 需要 FUSE，Windows 需要 WinFsp；不静默退回未隔离的执行器。
+DeltaBox 自带的 turn-stopping 审阅行关闭，保留 Presmium 的单一接受与拒绝入口。macOS 的候选目录由跨进程租约协调：原生执行结束并关闭会话、释放租约后，原服务才可刷新、审阅、拒绝、恢复或删除候选；等待租约可取消。候选服务复用同一目录，文件与 Shell 工具按根会话串行，协作、等待与外部工具不占这个队列。`bash` 与 `network_bash` 使用相同的写入事务。其他平台在工具写入或来源刷新后的下一模型步骤边界重建私有视图、候选服务和绑定。插件使用原生后端：macOS 需要 APFS/FSEvents，Linux 需要 FUSE，Windows 需要 WinFsp；不静默退回未隔离的执行器。
 
 候选服务由 bundle 设置 `PRESMIUM_AGENT_CANDIDATE=1`，在自己的目录中允许正文动作提交，是否需要作者确认由原服务发布时的审阅设置决定。作者历史、运行任务和浏览器状态由原服务负责。
 

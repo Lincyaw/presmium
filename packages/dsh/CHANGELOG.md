@@ -1,5 +1,16 @@
 # @lincyaw/dsh
 
+## 0.2.0-rc.136
+
+### Patch Changes
+
+- Keep the macOS assistant in one stable candidate directory across tool calls and reviews, avoiding repeated working-directory notices. Preserve native rollback, candidate-only file permissions, source conflict checks and guarded publication; serialize candidate access across native execution and host review, and include network_bash in the publication transaction.
+- Updated dependencies
+  - @lincyaw/kernel@1.0.0-rc.137
+  - @lincyaw/cli@1.0.0-rc.137
+  - @lincyaw/mcp@1.0.0-rc.137
+  - @lincyaw/skills@1.0.0-rc.137
+
 ## 0.2.0-rc.135
 
 ### Patch Changes

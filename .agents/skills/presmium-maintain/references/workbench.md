@@ -80,14 +80,22 @@ never synthesize values or reveal undeclared `additionalProperties` names.
 ## Editing the document
 
 Studio composes the official `dsh-deltabox` bundle before Presmium. Its public runtime adapter binds
-each Agent to Presmium's candidate root and uses `cbcow-private`; FS, foreground Shell and candidate
-MCP share that view. Mutating candidate MCP calls use `runMutable`. Settle native writes into the
-candidate before Presmium's source validation, author flush, guarded publication and review. Keep the
-stock DeltaBox review row disabled and the authoring preset registry enabled. Renew the view and MCP
-bindings at a step boundary after mutation or a changed author baseline; close them on Agent disposal.
+each Agent to Presmium's private candidate root. macOS uses `cbcow-through`: native Shell, the
+candidate-only provider extending official `fs-sandbox`, and candidate MCP share the same real directory.
+Keep canonical candidate-only writes (including symlink and temp-directory paths), protected DeltaBox
+state, read-before-edit and CAS checks. Wrap file and MCP mutations in `runMutable`; `bash` and
+`network_bash` share the publication transaction. Native ownership holds the cross-process candidate
+lease; close and release it before host refresh, review, reject, restore or deletion. Closing is
+single-flight and pending lock acquisition is cancellable. Reuse the candidate service without moving
+the working directory. Serialize only candidate tools per root session, never collaboration or waiting
+tools. Linux and Windows retain `cbcow-private` and renew their view and MCP bindings at a step boundary
+after mutation or a changed author baseline. Keep the stock DeltaBox review row disabled and the
+authoring preset registry enabled. Close native views and services on Agent disposal.
 Preserve DeltaBox-backed candidates during restart until the native orphan has been adopted and
-staged; an empty host Git diff alone cannot prove the native review is empty. Do not read dependency
-internals or replace these boundaries with a second approval or an unguarded native host commit.
+staged; an empty host Git diff alone cannot prove the native review is empty. Verify stable `pwd`
+across reads, writes and author refresh; read then edit, native abort, required acceptance/rejection,
+source conflicts and restart. Do not read dependency internals or replace these boundaries with a
+second approval or an unguarded native host commit.
 
 Saved edits use an independent local Git directory under the persistent Presmium state home, not the
 project's branch or index. Import its existing HEAD and local exclusions when creating the history,

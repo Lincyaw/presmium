@@ -14,7 +14,8 @@ const NOTHING_CHANGED = 'Nothing was changed.'
 export const name = 'presmium-turns'
 export const inject = ['presmium', 'tools']
 
-export const WRITING_TOOLS = new Set(['write', 'edit', 'str_replace_editor', 'bash', 'pwsh', 'terminal_send'])
+const FILE_WRITING_TOOLS = new Set(['write', 'edit', 'str_replace_editor', 'apply_patch'])
+export const WRITING_TOOLS = new Set([...FILE_WRITING_TOOLS, 'bash', 'network_bash', 'pwsh', 'terminal_send'])
 
 const REVIEW = `${WORKSPACE_ROUTES}review`
 const RETRY_MS = 2000
@@ -65,6 +66,7 @@ export function apply(ctx: DshContext): void {
   const turnStates = new Map<string, TurnState>()
   const agents = new Map<string, LiveAgent>()
   const pending = new Map<string, unknown[]>()
+  const executions = new Map<string, Promise<unknown>>()
   const turnStateOf = (id: string) => {
     let known = turnStates.get(id)
     if (!known) turnStates.set(id, known = { wrote: false })
@@ -102,7 +104,7 @@ export function apply(ctx: DshContext): void {
       .catch((error: unknown) => log.warn(`presmium-turns: the end of turn ${state.turn} of ${session.id} was not told to the review: ${errorMessage(error)}`))
   })
 
-  ctx.on('tools/execute', async (exec: DshToolExecution, next: () => Promise<unknown>) => {
+  const execute = async (exec: DshToolExecution, next: () => Promise<unknown>) => {
     if (!exec.agent) return next()
     const { root } = await ctx.presmium.server.ready
     if (!ctx.presmium.bindings.candidateRootOf(exec.agent) && !isInside(ctx.presmium.bindings.workingDirectoryOf(exec.agent), root)) return next()
@@ -110,10 +112,14 @@ export function apply(ctx: DshContext): void {
     const binding = ctx.presmium.bindings.bindingOf(exec.agent)
     const target = exec.name.startsWith(PREFIX) ? await resolvePresmiumCall(binding, exec) : undefined
     const tool = target?.tool
-    if (!WRITING_TOOLS.has(exec.name) && (!tool || tool.kind === 'read' || !isCandidateTool(tool))) return next()
+    if (!WRITING_TOOLS.has(exec.name) && (!tool || tool.kind === 'read' || !isCandidateTool(tool))) {
+      try { return await next() }
+      finally { await deltaboxOf(ctx)?.closeCandidate(runtimeAgent(exec.agent)) }
+    }
     const document = ctx.presmium.bindings.bindingOf(exec.agent)?.document.dir ?? ''
     const agentSessionId = rootAgentSessionOf(exec.agent.session.id)
     const state = turnStateOf(agentSessionId)
+    await deltaboxOf(ctx)?.closeCandidate(runtimeAgent(exec.agent))
     try {
       await postReview(document, agentSessionId, 'open', { ...state.turn !== undefined ? { turn: state.turn } : {}, ...deltaboxOf(ctx) ? { backend: 'deltabox' } : {} })
     } catch (error) {
@@ -124,16 +130,32 @@ export function apply(ctx: DshContext): void {
     const session = await deltaboxOf(ctx)?.acquireFor(runtimeAgent(exec.agent))
     let result
     try {
-      result = session && target ? await session.runMutable(() => next()) : await next()
+      const hostFileWrite = process.platform === 'darwin' && FILE_WRITING_TOOLS.has(exec.name)
+      result = session && (target || hostFileWrite) ? await session.runMutable(() => next()) : await next()
       if (session?.reviewActive) await session.reviewCommit()
     } catch (error) {
       if (session?.reviewActive) await session.reviewAbort()
       ctx.presmium.bindings.candidateChanged(exec.agent)
       throw error
+    } finally {
+      await deltaboxOf(ctx)?.closeCandidate(runtimeAgent(exec.agent))
     }
     ctx.presmium.bindings.candidateChanged(exec.agent)
     await postReview(document, agentSessionId, 'step', { ...state.turn !== undefined ? { turn: state.turn } : {}, label: labelOf(target ? { ...exec, name: PREFIX + target.tool.name, arguments: target.arguments } : exec), tool: target ? PREFIX + target.tool.name : exec.name })
     return result
+  }
+
+  ctx.on('tools/execute', async (exec: DshToolExecution, next: () => Promise<unknown>) => {
+    if (!exec.agent) return next()
+    if (exec.name.startsWith(PREFIX)) {
+      const target = await resolvePresmiumCall(ctx.presmium.bindings.bindingOf(exec.agent), exec)
+      if (!isCandidateTool(target.tool)) return next()
+    } else if (exec.name !== 'read' && !WRITING_TOOLS.has(exec.name)) return next()
+    const id = ctx.presmium.bindings.rootSessionOf(exec.agent)
+    const previous = executions.get(id) ?? Promise.resolve()
+    const work = previous.catch(() => undefined).then(() => { exec.signal.throwIfAborted(); return execute(exec, next) })
+    executions.set(id, work)
+    return work.finally(() => { if (executions.get(id) === work) executions.delete(id) })
   })
 
   ctx.on('agent/created', ({ agent }: { agent: LiveAgent }) => {

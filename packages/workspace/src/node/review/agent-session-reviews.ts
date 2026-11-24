@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { errorMessage, pushStream } from '@lincyaw/kernel'
+import { acquireCandidateLease } from '@lincyaw/kernel/node'
 import type { DocumentFiles, Logger, Member, ReviewChange, ReviewEnd, ReviewSnapshot, ReviewUpdate } from '@lincyaw/kernel'
 import { trailers } from '../../domain/commit-message.ts'
 import type { WorkspaceConfig } from '../config.ts'
@@ -100,7 +101,7 @@ export class AgentSessionReviews {
       try {
         const pending = pendingAgentSessionReview(scopeDir)
         if (pending?.session) {
-          await this.#serial(() => this.#resume(pending))
+          await this.#serial(() => this.#resume(pending), () => pending.workspace ? [pending.workspace.root] : [])
           continue
         }
         await rollBackLeftTaskReview(this.#options, document)
@@ -133,14 +134,14 @@ export class AgentSessionReviews {
       let workspace = this.#workspaces.get(session)
       if (!workspace) { workspace = await AgentWorkspace.create(this.#options.config); this.#workspaces.set(session, workspace) }
       return { root: workspace.root }
-    })
+    }, false)
   }
 
   refreshWorkspace(session: string): Promise<boolean> {
     return this.#serial(async () => {
       const workspace = this.#workspaces.get(session)
       return workspace && this.#open?.session !== session ? workspace.refresh() : false
-    })
+    }, () => this.#workspaces.has(session) ? [this.#workspaces.get(session)!.root] : [])
   }
 
   /** The DSH adapter has adopted and staged any orphaned native review before this is called. */
@@ -166,7 +167,7 @@ export class AgentSessionReviews {
       const workspace = this.#workspaces.get(session)
       this.#workspaces.delete(session)
       workspace?.dispose()
-    })
+    }, () => this.#workspaces.has(session) ? [this.#workspaces.get(session)!.root] : [])
   }
 
   snapshot(): Promise<ReviewSnapshot | undefined> {
@@ -281,7 +282,7 @@ export class AgentSessionReviews {
       open.running = true
       this.#rescheduleRollback()
       return await this.#publish(open)
-    })
+    }, () => this.#workspaces.has(body.session) ? [this.#workspaces.get(body.session)!.root] : [])
   }
 
   step(document: string, body: { session: string, turn?: number, label?: string, tool?: string, end?: boolean }): Promise<ReviewSnapshot | undefined> {
@@ -497,8 +498,19 @@ export class AgentSessionReviews {
     open.timer.unref?.()
   }
 
-  #serial<T>(work: () => Promise<T>): Promise<T> {
-    const next = this.#queue.then(work, work)
+  #serial<T>(work: () => Promise<T>, roots: false | (() => string[]) = () => this.#open?.workspace ? [this.#open.workspace.root] : []): Promise<T> {
+    const guarded = async () => {
+      const releases: (() => Promise<void>)[] = []
+      try {
+        if (roots && process.platform === 'darwin') {
+          for (const root of roots().sort()) releases.push(await acquireCandidateLease(root))
+        }
+        return await work()
+      } finally {
+        for (const release of releases.reverse()) await release()
+      }
+    }
+    const next = this.#queue.then(guarded, guarded)
     this.#queue = next.catch(() => undefined)
     return next
   }
