@@ -60,7 +60,7 @@ export function apply(ctx: DshContext): void {
     const directory = ctx.presmium.bindings.candidateDirectoryOf(exec.agent)
     if (candidate && authorRoot && file && isInside(resolve(dir, file), authorRoot) && !isInside(resolve(dir, file), candidate) && !(view && isInside(resolve(dir, file), view))) return 'Presmium: write in your current candidate workspace using relative paths. The author workspace changed independently; read the current candidate file and retry.'
     if (file && isInside(resolve(dir, file), operatorDir)) return `Presmium: the operator directory (${operatorDir}) is not the agent's to write`
-    const command = exec.name === 'bash' || exec.name === 'network_bash' ? (exec.arguments as { command?: unknown } | undefined)?.command : undefined
+    const command = exec.name === 'bash' || exec.name === 'pwsh' || exec.name === 'network_bash' ? (exec.arguments as { command?: unknown } | undefined)?.command : undefined
     if (candidate && authorRoot && typeof command === 'string' && command.replaceAll(directory ?? candidate, '').replaceAll(candidate, '').replaceAll(view ?? candidate, '').includes(authorRoot)) return 'Presmium: use your current candidate workspace instead of the author workspace absolute path. Read the file there and retry.'
     if (typeof command === 'string' && command.includes(operatorDir)) return `Presmium: the operator directory (${operatorDir}) is not the agent's to touch`
     return undefined

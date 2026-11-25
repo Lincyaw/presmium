@@ -48,7 +48,8 @@
     "./workspace-events": "./src/workspace-events.ts",
     "./launch": "./src/node/launch.ts",
     "./testing": "./src/node/fake-model.ts",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./candidate-working-directory": "./entries/candidate-working-directory.mjs"
   },
   "files": [
     "entries",
@@ -92,6 +93,7 @@
   "dependencies": {
     "@deepseek-ai/dsh-fs": "0.2.3-alpha.2",
     "@deepseek-ai/dsh-fs-sandbox": "0.2.3-alpha.2",
+    "@deepseek-ai/dsh-working-directory": "0.2.3-alpha.2",
     "@lincyaw/cli": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/mcp": "workspace:*",

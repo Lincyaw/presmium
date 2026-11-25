@@ -8,17 +8,18 @@ import { acquireCandidateLease, isInside } from '@lincyaw/kernel/node'
 import { WindowsCandidateDevices } from './windows-candidate-device.ts'
 
 const key = (value: string) => createHash('sha256').update(value).digest('hex')
+const nativePath = (value: string) => process.platform !== 'win32' ? value : value.startsWith('\\\\?\\UNC\\') ? `\\\\${value.slice(8)}` : /^[\\]{2}\?[\\][a-z]:/i.test(value) ? value.slice(4) : value
 const coordinate = (value: string) => {
-  const absolute = resolve(value)
-  return process.platform === 'win32' ? (absolute.startsWith('\\\\?\\') ? absolute.slice(4) : absolute).toLowerCase() : absolute
+  const absolute = nativePath(resolve(value))
+  return process.platform === 'win32' ? absolute.toLowerCase() : absolute
 }
 const candidateRoot = (value: string) => {
-  try { return coordinate(realpathSync(value)) } catch { return coordinate(value) }
+  try { return coordinate(realpathSync.native(value)) } catch { return coordinate(value) }
 }
 
 /** An execution-world entry, separate from DeltaBox's replaceable private view. */
 export class CandidatePaths {
-  readonly #views = new Map<string, { root: string, view: string, path: string, active: boolean, release: () => Promise<void> }>()
+  readonly #views = new Map<string, { root: string, view: string, canonicalView: string, path: string, active: boolean, release: () => Promise<void> }>()
   readonly #mutations = new Map<string, Promise<unknown>>()
   readonly #lifecycle = new AbortController()
   readonly #attempts = new Map<string, AbortController>()
@@ -58,6 +59,7 @@ export class CandidatePaths {
     // WinFsp presents a network volume: use a real DOS device instead of an NTFS junction.
     if (process.platform === 'win32') {
       const target = this.#devices!.volumeTarget(view)
+      const canonicalView = nativePath(realpathSync.native(view))
       const metadata = join(this.#base, key(root), 'workspace')
       await this.#directory(this.#base)
       const release = known?.release ?? await acquireCandidateLease(metadata, signal)
@@ -65,7 +67,7 @@ export class CandidatePaths {
         signal.throwIfAborted()
         if (!valid()) throw new Error('The candidate view has retired')
         this.#devices!.set(`pm${key(root).slice(0, 32)}`, target)
-        this.#views.set(root, { root, view, path, active: true, release })
+        this.#views.set(root, { root, view, canonicalView, path, active: true, release })
         return path
       } catch (error) { if (!known) await release(); throw error }
     }
@@ -100,7 +102,7 @@ export class CandidatePaths {
       if (coordinate(await realpath(path)) !== coordinate(await realpath(view))) throw new Error('The candidate entry did not reach its private view')
       signal.throwIfAborted()
       if (!valid()) throw new Error('The candidate view has retired')
-      known = { root, view, path, active: true, release }
+      known = { root, view, canonicalView: view, path, active: true, release }
       this.#views.set(root, known)
       return path
     } catch (error) {
@@ -145,7 +147,7 @@ export class CandidatePaths {
     }
     const directory = cwd && this.isShellPath(cwd) ? this.visible(this.physical(cwd)) : cwd
     const absolute = isAbsolute(path) ? resolve(path) : resolve(directory ?? process.cwd(), path)
-    for (const item of this.#views.values()) for (const source of [item.path, item.root]) if (isInside(absolute, source)) {
+    for (const item of this.#views.values()) for (const source of [item.path, item.root, item.canonicalView]) if (isInside(absolute, source)) {
       if (!item.active) throw new Error('The candidate directory is unavailable')
       return join(item.view, relative(source, absolute))
     }
@@ -154,12 +156,13 @@ export class CandidatePaths {
   }
 
   visible(path: string, hint?: string): string {
+    path = nativePath(path)
     const preferred = this.#scope.getStore() ?? (hint && [...this.#views.values()].find(item => hint === item.root || isInside(hint, item.root))?.root)
     const views = preferred ? [this.#views.get(preferred)].filter(item => item !== undefined) : [...this.#views.values()]
     const matches: string[] = []
     for (const item of views) {
       if (!item.active) continue
-      for (const source of [item.view, item.root]) if (isInside(path, source)) { matches.push(join(item.path, relative(source, path))); break }
+      for (const source of [item.view, item.canonicalView, item.root]) if (isInside(path, source)) { matches.push(join(item.path, relative(source, path))); break }
     }
     return matches.length === 1 ? matches[0]! : path
   }

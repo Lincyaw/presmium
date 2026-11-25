@@ -41,11 +41,17 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
 
   /** Handoff the candidate under its root queue; every native handle keeps its exact Agent identity. */
   async selectCandidateAgent(agent: RuntimeAgent): Promise<void> {
+    const presmium = this.ctx.get('presmium') as Presmium | undefined
+    if (!presmium) return
+    return presmium.bindings.accessCandidate(agent as unknown as DshAgent, () => this.selectCandidateOwner(agent))
+  }
+
+  private async selectCandidateOwner(agent: RuntimeAgent): Promise<void> {
     if (process.platform === 'darwin') return
     const presmium = this.ctx.get('presmium') as Presmium | undefined
     await presmium?.bindings.prepareCandidateRoot(agent as unknown as DshAgent, super.projectRootFor(agent))
     const root = presmium?.bindings.candidateRootOf(agent as unknown as DshAgent)
-    const previous = root && this.candidateAgents.get(realpathSync(root))
+    const previous = root && this.candidateAgents.get(realpathSync.native(root))
     if (previous && previous.agent !== agent) {
       if (previous.session.reviewActive) await previous.session.reviewCommit()
       await presmium!.bindings.retireCandidate(previous.agent as unknown as DshAgent)
@@ -79,7 +85,7 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
 
   projectRootFor(agent: RuntimeAgent): string {
     const presmium = this.ctx.get('presmium') as Presmium | undefined
-    return realpathSync(presmium?.bindings.candidateRootOf(agent as unknown as DshAgent) ?? super.projectRootFor(agent))
+    return realpathSync.native(presmium?.bindings.candidateRootOf(agent as unknown as DshAgent) ?? super.projectRootFor(agent))
   }
 
   /**
@@ -87,6 +93,11 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
    * DeltaBox before Presmium binds the agent; on the author's workspace that would put DeltaBox's live tree there.
    */
   async acquireFor(agent: RuntimeAgent): ReturnType<DeltaboxRuntime['acquireFor']> {
+    const presmium = this.ctx.get('presmium') as Presmium | undefined
+    return presmium ? presmium.bindings.accessCandidate(agent as unknown as DshAgent, () => this.acquireCandidate(agent)) : this.acquireCandidate(agent)
+  }
+
+  private async acquireCandidate(agent: RuntimeAgent): ReturnType<DeltaboxRuntime['acquireFor']> {
     const presmium = this.ctx.get('presmium') as Presmium | undefined
     await presmium?.bindings.prepareCandidateRoot(agent as unknown as DshAgent, super.projectRootFor(agent))
     await this.selectCandidateAgent(agent)
@@ -125,12 +136,12 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
     const session = super.existingSession(agent)
     const presmium = this.ctx.get('presmium') as Presmium | undefined
     const root = presmium?.bindings.candidateRootOf(agent as unknown as DshAgent) ?? session?.projectRoot
-    if (root) await this.closeRootView(root, this.candidateAgents.get(realpathSync(root))?.session ?? session)
+    if (root) await this.closeRootView(root, this.candidateAgents.get(realpathSync.native(root))?.session ?? session)
   }
 
   private async closeRootView(root: string, session: ReturnType<DeltaboxRuntime['existingSession']>): Promise<void> {
     if (process.platform === 'darwin') { await session?.close(); return }
-    try { root = session?.projectRoot ?? realpathSync(root) } catch { root = resolve(root) }
+    try { root = session?.projectRoot ?? realpathSync.native(root) } catch { root = resolve(root) }
     session = this.candidateAgents.get(root)?.session ?? session
     const previous = this.closingViews.get(root)
     if (previous) return previous

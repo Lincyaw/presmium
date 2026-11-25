@@ -8,6 +8,8 @@
   disabled: true
 - id: deltabox-bash
   disabled: !!js process.platform !== 'darwin'
+- id: working-directory
+  disabled: !!js process.platform !== 'darwin'
 - id: deltabox-review-policy
   disabled: true
 - id: ptc-runtime
@@ -18,6 +20,9 @@
   disabled: true
 
 - insert:
+    - id: presmium-candidate-working-directory
+      name: '@lincyaw/dsh/candidate-working-directory'
+      disabled: !!js process.platform === 'darwin'
     - id: presmium-candidate-shell
       name: '@lincyaw/dsh/candidate-shell'
       disabled: !!js process.platform === 'darwin'

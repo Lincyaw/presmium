@@ -177,7 +177,7 @@ async function closeBinding(binding: DocumentBinding): Promise<void> {
 
 function realPath(path: string): string {
   try {
-    return realpathSync(path)
+    return realpathSync.native(path)
   } catch {
     return resolve(path)
   }

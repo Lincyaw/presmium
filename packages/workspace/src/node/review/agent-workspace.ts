@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
+import { WindowsDependencies } from './windows-dependencies.ts'
 import { existsSync, lstatSync, readFileSync, readlinkSync, rmSync } from 'node:fs'
 import { cp, lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
@@ -47,6 +48,7 @@ export class AgentWorkspace {
   readonly record: AgentWorkspaceRecord
   readonly #config: WorkspaceConfig
   #version = randomUUID()
+  readonly #dependencies = new WindowsDependencies()
 
   private constructor(config: WorkspaceConfig, record: AgentWorkspaceRecord) { this.#config = config; this.record = record }
   get root(): string { return this.record.root }
@@ -104,7 +106,10 @@ export class AgentWorkspace {
       let source = join(this.#config.root, dir)
       while (!existsSync(join(source, 'node_modules')) && dirname(source) !== source) source = dirname(source)
       const target = join(this.root, dir, 'node_modules')
-      if (existsSync(join(source, 'node_modules')) && !existsSync(target) && existsSync(dirname(target))) { this.changed(); await symlink(join(source, 'node_modules'), target, process.platform === 'win32' ? 'junction' : 'dir') }
+      if (existsSync(join(source, 'node_modules')) && existsSync(dirname(target))) {
+        if (process.platform === 'win32') await this.#dependencies.sync(source, target, dirname(this.root), () => this.changed())
+        else if (!existsSync(target)) { this.changed(); await symlink(join(source, 'node_modules'), target, 'dir') }
+      }
     }
     if (changed || !(await git(this.root, ['rev-parse', '--verify', 'HEAD']).catch(() => '')).trim()) {
       this.changed()
