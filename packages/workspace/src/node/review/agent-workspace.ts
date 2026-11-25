@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
 import { existsSync, lstatSync, readFileSync, readlinkSync, rmSync } from 'node:fs'
 import { cp, lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
@@ -45,9 +46,19 @@ async function sourceStamp(file: string): Promise<FileStamp | undefined> {
 export class AgentWorkspace {
   readonly record: AgentWorkspaceRecord
   readonly #config: WorkspaceConfig
+  #version = randomUUID()
 
   private constructor(config: WorkspaceConfig, record: AgentWorkspaceRecord) { this.#config = config; this.record = record }
   get root(): string { return this.record.root }
+  get version(): string { return this.#version }
+  changed(): void { this.#version = randomUUID() }
+
+  /** Host restores invalidate a private view even when the author baseline did not move. */
+  writeCandidate(changes: DocumentFileChange[]): void {
+    if (!changes.length) return
+    this.changed()
+    writeChanges({ ...this.#config, root: this.root }, changes, true)
+  }
 
   static async create(config: WorkspaceConfig): Promise<AgentWorkspace> {
     const pool = join(config.root, '.presmium', 'agent-workspaces')
@@ -79,12 +90,13 @@ export class AgentWorkspace {
       if (same(current, this.record.base[path])) continue
       const target = join(this.root, path)
       if (same(await sourceStamp(target), current)) continue
+      this.changed()
       await mkdir(dirname(target), { recursive: true })
       await rm(target, { force: true, recursive: true })
       await cp(join(this.#config.root, path), target, { dereference: false, verbatimSymlinks: true })
       if (!same(await sourceStamp(join(this.#config.root, path)), current)) throw new RequestError(409, 'agent-source-changed', { paths: [path], next: 'The author changed a file while the candidate was refreshed. Read the current author files and retry.' })
     }
-    for (const path of Object.keys(this.record.base)) if (!next[path]) await rm(join(this.root, path), { force: true, recursive: true })
+    for (const path of Object.keys(this.record.base)) if (!next[path]) { this.changed(); await rm(join(this.root, path), { force: true, recursive: true }) }
     const changed = JSON.stringify(next) !== JSON.stringify(this.record.base)
     this.record.base = next
     const dependencyDirs = new Set(['', ...paths.filter(path => path.endsWith('package.json')).map(dirname)])
@@ -95,6 +107,7 @@ export class AgentWorkspace {
       if (existsSync(join(source, 'node_modules')) && !existsSync(target) && existsSync(dirname(target))) await symlink(join(source, 'node_modules'), target, 'dir')
     }
     if (changed || !(await git(this.root, ['rev-parse', '--verify', 'HEAD']).catch(() => '')).trim()) {
+      this.changed()
       await git(this.root, ['add', '-A'])
       await git(this.root, ['-c', 'user.name=Presmium', '-c', 'user.email=presmium@localhost', 'commit', '-q', '--allow-empty', '-m', 'Author workspace snapshot'])
     }

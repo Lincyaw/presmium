@@ -209,6 +209,7 @@ export class DocumentBindings {
   readonly #parents = new Map<string, string>()
   readonly #candidateRoots = new Map<string, string>()
   readonly #candidateViews = new Map<string, string>()
+  readonly #candidateVersions = new Map<string, string>()
   readonly #candidateOwners = new Map<string, Set<string>>()
   readonly #renewCandidates = new Set<string>()
   readonly #executions = new Map<string, Promise<unknown>>()
@@ -237,8 +238,9 @@ export class DocumentBindings {
     let pending = this.#candidates.get(id)
     if (!pending) {
       pending = (async () => {
-        const { root } = await this.#server.requestJson<{ root: string }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id } })
+        const { root, version } = await this.#server.requestJson<{ root: string, version?: string }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id } })
         this.#candidateRoots.set(id, root)
+        if (version) this.#candidateVersions.set(id, version)
         const runtime = deltaboxOf(this.#ctx)
         const previous = runtime?.candidateSession(runtimeAgent(agent))
         if (previous && previous.projectRoot !== root) await previous.close()
@@ -303,10 +305,12 @@ export class DocumentBindings {
     const id = this.rootSessionOf(agent)
     const runtime = deltaboxOf(this.#ctx)
     await runtime?.closeCandidate(runtimeAgent(agent))
-    const { changed } = await this.#server.requestJson<{ changed: boolean }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id, refresh: true } })
+    const { changed, version } = await this.#server.requestJson<{ changed: boolean, version?: string }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id, refresh: true } })
+    const restored = version !== undefined && version !== this.#candidateVersions.get(id)
+    if (version) this.#candidateVersions.set(id, version)
     // Through mode keeps the candidate service on the same real directory after refresh/publication.
     if (process.platform === 'darwin' && runtime) { this.#renewCandidates.delete(id); return }
-    if (runtime && (changed || this.#renewCandidates.has(id))) {
+    if (runtime && (changed || restored || this.#renewCandidates.has(id))) {
       await this.retireCandidate(agent)
       await this.candidateOf(agent)
     }
@@ -485,6 +489,7 @@ export class DocumentBindings {
         this.#candidateOwners.delete(ownerId)
         this.#candidateRoots.delete(ownerId)
         this.#candidateViews.delete(ownerId)
+        this.#candidateVersions.delete(ownerId)
         const candidate = this.#candidates.get(ownerId)
         this.#candidates.delete(ownerId)
         if (candidate) await (await candidate).close()
@@ -510,6 +515,7 @@ export class DocumentBindings {
     this.#candidates.clear()
     this.#candidateRoots.clear()
     this.#candidateViews.clear()
+    this.#candidateVersions.clear()
     this.#candidateOwners.clear()
     this.#parents.clear()
   }
