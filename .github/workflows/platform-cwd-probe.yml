@@ -147,7 +147,40 @@ jobs:
           node-version: '24.22.3'
           architecture: x64
       - name: Real Harness with published x64 addon and architecture-matched helper
+        id: harness
+        continue-on-error: true
         shell: pwsh
         run: |
           $env:DELTABOX_BINARY = Join-Path $pwd 'official-native/target/debug/deltabox.exe'
-          node bootstrap-cwd-probe.mjs platform-harness-run.mjs
+          node bootstrap-cwd-probe.mjs platform-harness-run.mjs 2>&1 | Tee-Object full-harness.log
+          exit $LASTEXITCODE
+      - uses: actions/upload-artifact@v4
+        if: steps.harness.outcome == 'failure'
+        with:
+          name: windows-harness-diagnostic
+          path: full-harness.log
+          retention-days: 1
+      - name: Run an updated probe on the same native installation
+        if: steps.harness.outcome == 'failure'
+        shell: pwsh
+        run: |
+          $baseline = git rev-parse HEAD
+          for ($attempt = 0; $attempt -lt 120; $attempt++) {
+            git fetch origin codex/platform-cwd-probe --quiet
+            $updated = git rev-parse FETCH_HEAD
+            if ($updated -ne $baseline) {
+              git checkout FETCH_HEAD -- packages/dsh packages/workspace platform-harness-run.mjs trace-cwd-probe.mjs prepare-windows-deps.mjs
+              Write-Output "Validating source $updated on the existing native installation"
+              $env:DELTABOX_BINARY = Join-Path $pwd 'official-native/target/debug/deltabox.exe'
+              node bootstrap-cwd-probe.mjs platform-harness-run.mjs 2>&1 | Tee-Object retried-harness.log
+              exit $LASTEXITCODE
+            }
+            Start-Sleep -Seconds 5
+          }
+          throw 'No updated probe arrived'
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.harness.outcome == 'failure'
+        with:
+          name: windows-harness-retry
+          path: retried-harness.log
+          retention-days: 1
