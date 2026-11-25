@@ -8,6 +8,10 @@ import { acquireCandidateLease, isInside } from '@lincyaw/kernel/node'
 
 const run = promisify(execFile)
 const key = (value: string) => createHash('sha256').update(value).digest('hex')
+const coordinate = (value: string) => {
+  const absolute = resolve(value)
+  return process.platform === 'win32' ? (absolute.startsWith('\\\\?\\') ? absolute.slice(4) : absolute).toLowerCase() : absolute
+}
 
 /** An execution-world entry, separate from DeltaBox's replaceable private view. */
 export class CandidatePaths {
@@ -31,7 +35,12 @@ export class CandidatePaths {
   async #install(root: string, view: string): Promise<string> {
     this.#lifecycle.signal.throwIfAborted()
     let known = this.#views.get(root)
-    if (known?.view === view) return known.path
+    if (known?.view === view) {
+      const entry = await lstat(known.path).catch(error => { if (error.code !== 'ENOENT') throw error })
+      if (entry && !entry.isSymbolicLink()) throw new Error('The candidate entry is not a host-owned link')
+      if (entry && process.platform !== 'win32' && entry.uid !== process.getuid!()) throw new Error('The candidate entry has another owner')
+      if (entry && coordinate(await readlink(known.path)) === coordinate(view)) return known.path
+    }
     await this.#directory(this.#base)
     const path = this.pathFor(root)
     await this.#directory(resolve(path, '..'))
@@ -40,7 +49,7 @@ export class CandidatePaths {
       const entry = await lstat(path).catch(error => { if (error.code !== 'ENOENT') throw error })
       if (entry && !entry.isSymbolicLink()) throw new Error('The candidate entry is not a host-owned link')
       if (entry && process.platform !== 'win32' && entry.uid !== process.getuid!()) throw new Error('The candidate entry has another owner')
-      if (!entry || resolve(await readlink(path)) !== resolve(view)) {
+      if (!entry || coordinate(await readlink(path)) !== coordinate(view)) {
         const next = `${path}.${randomUUID()}`
         await symlink(view, next, process.platform === 'win32' ? 'junction' : 'dir')
         try {
@@ -49,7 +58,7 @@ export class CandidatePaths {
           await rename(next, path)
         } finally { await rm(next, { force: true }) }
       }
-      if (await realpath(path) !== await realpath(view)) throw new Error('The candidate entry did not reach its private view')
+      if (coordinate(await realpath(path)) !== coordinate(await realpath(view))) throw new Error('The candidate entry did not reach its private view')
       known = { root, view, path, release }
       this.#views.set(root, known)
       return path

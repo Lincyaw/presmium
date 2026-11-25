@@ -15,13 +15,18 @@ const native=new NativeDeltabox(project,lite.binaryPath(),{fsMode:'cbcow-private
 const quote=x=>"'"+x.replaceAll("'",process.platform==='win32'?"''":"'\\''")+"'"
 let previous;const observations=[]
 for(let round=0;round<2;round++){
- const session=await native.startSession(undefined,'fast',undefined,'cbcow-private',true);assert.ok(session.mountpoint);assert.notEqual(session.mountpoint,previous);previous=session.mountpoint
+ const session=await native.startSession(undefined,'fast',undefined,'cbcow-private',true);assert.ok(session.mountpoint);if(process.platform!=='win32')assert.notEqual(session.mountpoint,previous);previous=session.mountpoint
+ await paths.install(project,session.mountpoint)
+ console.log(JSON.stringify({installedEntry:alias,entryContent:await readFile(join(alias,'sample.txt'),'utf8')}))
  if(process.platform==='win32') {
   console.log(JSON.stringify({baselineSession:session}));
-  try { console.log(JSON.stringify({baseline:await native.exec(session.session_id,[join(process.env.SystemRoot,'System32','cmd.exe'),'/d','/c','cd'],session.mountpoint,[],undefined,'workspace-write')})) }
-  catch(error) { console.log(JSON.stringify({baselineFailure:String(error)}));throw error }
+  await native.beginReview(session.session_id,'task','native byte abort');await native.writeFile(session.session_id,'sample.txt',Buffer.from('native-write'));assert.equal(await readFile(join(alias,'sample.txt'),'utf8'),'native-write');assert.equal(await readFile(join(project,'sample.txt'),'utf8'),'before\n');await native.reviewAbort(session.session_id);assert.equal(await readFile(join(alias,'sample.txt'),'utf8'),'before\n');console.log('private bytes, alias access and native abort passed')
+  for(const argv of [[join(process.env.SystemRoot,'System32','cmd.exe'),'/d','/c','cd'],[process.execPath,'-e','console.log(process.cwd())']]) {
+   try { console.log(JSON.stringify({baselineArgv:argv,baseline:await native.exec(session.session_id,argv,session.mountpoint,[],undefined,'workspace-write')})) }
+   catch(error) { console.log(JSON.stringify({baselineArgv:argv,baselineFailure:String(error)})) }
+  }
  }
- await paths.install(project,session.mountpoint);await native.beginReview(session.session_id,'task','stable cwd probe')
+ await native.beginReview(session.session_id,'task','stable cwd probe')
  const command=process.platform==='win32'?`Set-Location -LiteralPath ${quote(alias)}; if (-not $?) { exit 1 }; (Get-Location).Path; [Environment]::CurrentDirectory; & "$env:SystemRoot\\System32\\cmd.exe" /d /c cd; Get-Content -LiteralPath sample.txt; Set-Content -LiteralPath sample.txt -Value after${round} -Encoding utf8`:`cd -- ${quote(alias)} || exit; pwd; /bin/pwd -P; cat sample.txt; printf 'after${round}\\n' > sample.txt`
  const argv=process.platform==='win32'?[join(process.env.SystemRoot,'System32','WindowsPowerShell','v1.0','powershell.exe'),'-NoProfile','-NonInteractive','-Command',command]:['/bin/bash','-c',command]
  const result=await native.exec(session.session_id,argv,session.mountpoint,[],undefined,'workspace-write');console.log(JSON.stringify({round,alias,session,result}));assert.equal(result.exit_code,0);assert.ok(result.stdout.toLowerCase().includes(alias.toLowerCase()));assert.notEqual((await readFile(join(project,'sample.txt'),'utf8')).replace(/^\uFEFF/,''),'after'+round+'\n')

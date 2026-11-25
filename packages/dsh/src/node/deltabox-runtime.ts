@@ -13,14 +13,17 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
   private readonly candidateLeases = new Map<string, { agent: RuntimeAgent, cancel: AbortController, lease: Promise<() => Promise<void>> }>()
   private readonly candidateClosures = new Map<string, Promise<void>>()
   readonly paths = new CandidatePaths()
-  private readonly candidateAgents = new Set<RuntimeAgent>()
+  private readonly candidateAgents = new Map<string, RuntimeAgent>()
 
   constructor(...args: ConstructorParameters<typeof DeltaboxRuntime>) {
     super(...args)
-    this.ctx.on('agent/disposed', async ({ agent }) => { if (this.candidateAgent(agent) === agent) await this.closeCandidate(agent) })
+    this.ctx.on('agent/disposed', async ({ agent }) => {
+      if (this.candidateAgent(agent) === agent) await this.closeCandidate(agent)
+      for (const [root, owner] of this.candidateAgents) if (owner.session.id === agent.session.id) this.candidateAgents.delete(root)
+    })
     this.ctx.effect(() => () => Promise.all([...this.candidateLeases.values()].map(({ agent }) => this.closeCandidate(agent))))
     this.ctx.effect(() => async () => {
-      await Promise.all([...this.candidateAgents].map(agent => super.existingSession(agent)?.close()))
+      await Promise.all([...this.candidateAgents.values()].map(agent => super.existingSession(agent)?.close()))
       await this.paths.close()
     })
     const context = this.ctx as unknown as DshContext
@@ -93,7 +96,7 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
     const session = await super.acquireFor(agent)
     const root = presmium?.bindings.candidateRootOf(agent as unknown as DshAgent)
     if (root && process.platform !== 'darwin') {
-      this.candidateAgents.add(agent)
+      this.candidateAgents.set(root, agent)
       await this.paths.install(root, (await session.target()).mountpoint)
     }
     return session
@@ -105,10 +108,9 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
   }
 
   async retirePaths(root: string): Promise<void> {
-    for (const agent of this.candidateAgents) if (super.existingSession(agent)?.projectRoot === root) {
-      await super.existingSession(agent)?.close()
-      this.candidateAgents.delete(agent)
-    }
+    const agent = this.candidateAgents.get(root)
+    if (agent) await super.existingSession(agent)?.close()
+    this.candidateAgents.delete(root)
     await this.paths.remove(root)
   }
 }

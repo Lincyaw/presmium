@@ -7,7 +7,7 @@
 - id: deltabox-view
   disabled: true
 - id: deltabox-bash
-  name: '@lincyaw/dsh/candidate-shell'
+  disabled: true
 - id: deltabox-review-policy
   disabled: true
 - id: ptc-runtime
@@ -18,6 +18,8 @@
   disabled: true
 
 - insert:
+    - id: presmium-candidate-shell
+      name: '@lincyaw/dsh/candidate-shell'
     - id: presmium-candidate-fs
       name: '@lincyaw/dsh/candidate-fs'
       disabled: !!js process.platform !== 'darwin'

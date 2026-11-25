@@ -12,6 +12,8 @@ jobs:
         os: [ubuntu-24.04, windows-11-arm]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     steps:
       - uses: actions/checkout@v4
       - name: Linux FUSE
@@ -34,7 +36,7 @@ jobs:
         with:
           node-version: '24.22.3'
           architecture: x64
-          cache: pnpm
+          cache: ${{ runner.os == 'Linux' && 'pnpm' || '' }}
       - run: pnpm --filter . --filter @lincyaw/presmium... install --frozen-lockfile
       - run: node packages/dsh/build/client.mjs
       - name: Real native cwd and publication
