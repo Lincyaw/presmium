@@ -28,7 +28,7 @@ jobs:
         shell: pwsh
         run: |
           $installer = Join-Path $env:RUNNER_TEMP 'winfsp.msi'
-          Invoke-WebRequest https://github.com/winfsp/winfsp/releases/download/v2.2/winfsp-2.2.26323.msi -OutFile $installer
+          Invoke-WebRequest https://github.com/winfsp/winfsp/releases/download/v2.1/winfsp-2.1.25156.msi -OutFile $installer
           $p = Start-Process msiexec.exe -ArgumentList "/i `"$installer`" /qn /norestart ADDLOCAL=ALL" -Wait -PassThru
           if ($p.ExitCode -notin @(0,3010)) { throw "WinFsp install failed: $($p.ExitCode)" }
       - uses: pnpm/action-setup@v5
@@ -37,7 +37,7 @@ jobs:
           node-version: '24.22.3'
           architecture: x64
           cache: ${{ runner.os == 'Linux' && 'pnpm' || '' }}
-      - run: pnpm --filter . --filter @lincyaw/presmium... install --frozen-lockfile
+      - run: pnpm --filter @lincyaw/presmium... install --frozen-lockfile
       - run: node packages/dsh/build/client.mjs
       - name: Real native cwd and publication
         continue-on-error: true

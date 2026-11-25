@@ -214,16 +214,20 @@ export class DocumentBindings {
   readonly #candidateOwners = new Map<string, Set<string>>()
   readonly #renewCandidates = new Set<string>()
   readonly #executions = new Map<string, Promise<unknown>>()
-  readonly #execution = new AsyncLocalStorage<string>()
+  readonly #execution = new AsyncLocalStorage<{ root: string, active: boolean }>()
 
   accessCandidate<T>(agent: DshAgent, operation: () => Promise<T>): Promise<T> {
-    return this.#execution.getStore() === this.rootSessionOf(agent) ? operation() : this.serializeCandidate(agent, operation)
+    const owner = this.#execution.getStore()
+    return owner?.active && owner.root === this.rootSessionOf(agent) ? operation() : this.serializeCandidate(agent, operation)
   }
 
   /** View renewal and tools share a boundary; a parent's running tool keeps its entry until it ends. */
   serializeCandidate<T>(agent: DshAgent, operation: () => Promise<T>): Promise<T> {
     const id = this.rootSessionOf(agent)
-    const pending = (this.#executions.get(id) ?? Promise.resolve()).catch(() => undefined).then(() => this.#execution.run(id, operation))
+    const pending = (this.#executions.get(id) ?? Promise.resolve()).catch(() => undefined).then(() => {
+      const owner = { root: id, active: true }
+      return this.#execution.run(owner, async () => { try { return await operation() } finally { owner.active = false } })
+    })
     this.#executions.set(id, pending)
     return pending.finally(() => { if (this.#executions.get(id) === pending) this.#executions.delete(id) })
   }

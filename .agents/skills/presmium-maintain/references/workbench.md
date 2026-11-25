@@ -88,8 +88,17 @@ state, read-before-edit and CAS checks. Wrap file and MCP mutations in `runMutab
 lease; close and release it before host refresh, review, reject, restore or deletion. Closing is
 single-flight and pending lock acquisition is cancellable. Reuse the candidate service without moving
 the working directory. Serialize only candidate tools per root session, never collaboration or waiting
-tools. Linux and Windows retain `cbcow-private` and renew their view and MCP bindings at a step boundary
-after mutation or a changed author baseline. Keep the stock DeltaBox review row disabled and the
+tools. Linux and Windows retain `cbcow-private`. A host-owned symlink/junction gives the root session a
+stable execution-world entry; FS and Shell translate only public coordinates and retain native target
+identities, guards and the original Shell spec object (network grants are bound to it). Keep delegate
+coordinates native inside FS operations, including iterator advances, watch callbacks and disposal.
+Renew the private view and every related MCP binding at a step boundary after mutation, a changed author
+baseline or a host candidate version change. Host rejection, restore and dependency-link creation must
+invalidate that version. Preserve recovered native changes before rebuilding from the authoritative
+host candidate; require a workspace service with candidate version tracking. Never rewrite arbitrary
+command output to hide physical paths. Serialize directory validation with view renewal, and release
+entry ownership and native resources at their lifecycle boundary. Child disposal releases only its own
+binding. Keep the stock DeltaBox review row disabled and the
 authoring preset registry enabled. Close native views and services on Agent disposal.
 Preserve DeltaBox-backed candidates during restart until the native orphan has been adopted and
 staged; an empty host Git diff alone cannot prove the native review is empty. Verify stable `pwd`
