@@ -1,10 +1,11 @@
 import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { WindowsDependencies } from './windows-dependencies.ts'
-import { existsSync, lstatSync, readFileSync, readlinkSync, rmSync } from 'node:fs'
+import { existsSync, lstatSync, readFileSync, readlinkSync, realpathSync, rmSync } from 'node:fs'
 import { cp, lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { gitConfigArgs, gitEnvironment } from '@lincyaw/kernel'
+import { isInside } from '@lincyaw/kernel/node'
 import type { DocumentFileChange } from '@lincyaw/kernel'
 import type { WorkspaceConfig } from '../config.ts'
 import { RequestError } from '../errors.ts'
@@ -76,7 +77,12 @@ export class AgentWorkspace {
   }
 
   static resume(config: WorkspaceConfig, record: AgentWorkspaceRecord): AgentWorkspace {
-    if (resolve(record.original) !== config.root || !resolve(record.root).startsWith(`${join(config.root, '.presmium', 'agent-workspaces')}/`) || !existsSync(join(record.root, '.git'))) throw new RequestError(409, 'agent-workspace-unavailable')
+    try {
+      const original = realpathSync.native(config.root)
+      const pool = realpathSync.native(join(original, '.presmium', 'agent-workspaces'))
+      const root = realpathSync.native(record.root)
+      if (!isInside(original, realpathSync.native(record.original)) || !isInside(realpathSync.native(record.original), original) || !isInside(root, pool) || isInside(pool, root) || !existsSync(join(root, '.git'))) throw new Error('Invalid candidate record')
+    } catch { throw new RequestError(409, 'agent-workspace-unavailable') }
     return new AgentWorkspace(config, record)
   }
 

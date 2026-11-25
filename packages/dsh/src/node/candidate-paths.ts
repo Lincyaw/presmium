@@ -19,7 +19,7 @@ const candidateRoot = (value: string) => {
 
 /** An execution-world entry, separate from DeltaBox's replaceable private view. */
 export class CandidatePaths {
-  readonly #views = new Map<string, { root: string, view: string, canonicalView: string, path: string, active: boolean, release: () => Promise<void> }>()
+  readonly #views = new Map<string, { root: string, view: string, executionView: string, canonicalView: string, path: string, active: boolean, release: () => Promise<void> }>()
   readonly #mutations = new Map<string, Promise<unknown>>()
   readonly #lifecycle = new AbortController()
   readonly #attempts = new Map<string, AbortController>()
@@ -58,7 +58,8 @@ export class CandidatePaths {
     const path = this.pathFor(root)
     // WinFsp presents a network volume: use a real DOS device instead of an NTFS junction.
     if (process.platform === 'win32') {
-      const target = this.#devices!.volumeTarget(view)
+      const executionView = this.#devices!.executionPath(view)
+      const target = this.#devices!.volumeTarget(executionView)
       const canonicalView = nativePath(realpathSync.native(view))
       const metadata = join(this.#base, key(root), 'workspace')
       await this.#directory(this.#base)
@@ -66,8 +67,9 @@ export class CandidatePaths {
       try {
         signal.throwIfAborted()
         if (!valid()) throw new Error('The candidate view has retired')
+        if (this.#devices!.executionPath(view) !== executionView || this.#devices!.volumeTarget(executionView) !== target) throw new Error('The candidate view has retired')
         this.#devices!.set(`pm${key(root).slice(0, 32)}`, target)
-        this.#views.set(root, { root, view, canonicalView, path, active: true, release })
+        this.#views.set(root, { root, view, executionView, canonicalView, path, active: true, release })
         return path
       } catch (error) { if (!known) await release(); throw error }
     }
@@ -102,7 +104,7 @@ export class CandidatePaths {
       if (coordinate(await realpath(path)) !== coordinate(await realpath(view))) throw new Error('The candidate entry did not reach its private view')
       signal.throwIfAborted()
       if (!valid()) throw new Error('The candidate view has retired')
-      known = { root, view, canonicalView: view, path, active: true, release }
+      known = { root, view, executionView: view, canonicalView: view, path, active: true, release }
       this.#views.set(root, known)
       return path
     } catch (error) {
@@ -121,11 +123,12 @@ export class CandidatePaths {
     if (process.platform !== 'win32' && (info.uid !== process.getuid!() || (info.mode & 0o077) !== 0)) throw new Error('The candidate entry directory is not private to its owner')
   }
 
-  shellDirectory(path: string, root: string): { name: string, root: string, path: string } | undefined {
+  shellDirectory(path: string, root: string): { name: string, root: string, path: string, workdir: string } | undefined {
     const item = this.#views.get(candidateRoot(root))
     if (item?.active && isInside(path, item.view)) {
       const name = `pm${key(item.root).slice(0, 32)}`
-      return { name, root: item.view, path: `${name}:\\${relative(item.view, path)}` }
+      const suffix = relative(item.view, path)
+      return { name, root: item.executionView, path: `${name}:\\${suffix}`, workdir: join(item.executionView, suffix) }
     }
     return undefined
   }
@@ -147,7 +150,7 @@ export class CandidatePaths {
     }
     const directory = cwd && this.isShellPath(cwd) ? this.visible(this.physical(cwd)) : cwd
     const absolute = nativePath(isAbsolute(path) ? resolve(path) : resolve(directory ?? process.cwd(), path))
-    for (const item of this.#views.values()) for (const source of [item.path, item.root, item.canonicalView]) if (isInside(absolute, source)) {
+    for (const item of this.#views.values()) for (const source of [item.path, item.root, item.canonicalView, item.executionView]) if (isInside(absolute, source)) {
       if (!item.active) throw new Error('The candidate directory is unavailable')
       return join(item.view, relative(source, absolute))
     }
@@ -162,7 +165,7 @@ export class CandidatePaths {
     const matches: string[] = []
     for (const item of views) {
       if (!item.active) continue
-      for (const source of [item.view, item.canonicalView, item.root]) if (isInside(path, source)) { matches.push(join(item.path, relative(source, path))); break }
+      for (const source of [item.view, item.canonicalView, item.executionView, item.root]) if (isInside(path, source)) { matches.push(join(item.path, relative(source, path))); break }
     }
     return matches.length === 1 ? matches[0]! : path
   }

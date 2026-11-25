@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module'
+import { realpathSync } from 'node:fs'
 
 /** User-logon DOS names need neither a drive letter nor the symlink privilege. */
 export class WindowsCandidateDevices {
@@ -25,14 +26,28 @@ export class WindowsCandidateDevices {
     throw new Error('The candidate device has too many definitions')
   }
 
-  volumeTarget(view: string): string {
+  executionPath(view: string): string {
     if (view.startsWith('\\\\?\\UNC\\')) view = `\\\\${view.slice(8)}`
     else if (/^\\\\\?\\[a-z]:/i.test(view)) view = view.slice(4)
-    if (/^\\\\[^\\]+\\[^\\]+(?:\\|$)/.test(view)) {
-      // Harness canonicalizes a WinFsp network drive to its unique UNC share.
-      // The share names the view itself; it does not depend on a recyclable drive letter.
-      return `\\??\\UNC\\${view.slice(2).replace(/[\\/]$/, '')}`
+    if (/^[a-z]:\\/i.test(view)) return view
+    const share = /^(\\\\[^\\]+\\[^\\]+)(.*)$/.exec(view)
+    if (share) {
+      const expected = share[1]!.replace(/\\$/, '').toLowerCase()
+      for (let code = 90; code >= 65; code--) {
+        const drive = `${String.fromCharCode(code)}:`
+        const target = this.target(drive)
+        if (!target || (!/\\Device\\WinFsp[.\\]/i.test(target) && !target.toLowerCase().includes(expected.slice(1)))) continue
+        let actual: string
+        try { actual = realpathSync.native(`${drive}\\`) } catch { continue }
+        if (actual.startsWith('\\\\?\\UNC\\')) actual = `\\\\${actual.slice(8)}`
+        if (actual.replace(/\\$/, '').toLowerCase() === expected) return `${drive}${share[2] || '\\'}`
+      }
     }
+    throw new Error('The candidate execution drive is unavailable')
+  }
+
+  volumeTarget(view: string): string {
+    view = this.executionPath(view)
     const match = /^([a-z]:)([\\/].*)$/i.exec(view)
     const volume = match && this.target(match[1]!)
     if (!match || !volume) throw new Error('The candidate volume is unavailable')
