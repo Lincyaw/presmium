@@ -9,7 +9,10 @@ if (!command) {
   process.exit(2)
 }
 
+const windowsJob = process.platform === 'win32' ? (await import('./watchdog-windows.mjs')).ownedWindowsJob() : undefined
+
 const group = (signal) => {
+  if (windowsJob) { windowsJob(); return }
   try {
     process.kill(-process.pid, signal)
   } catch {

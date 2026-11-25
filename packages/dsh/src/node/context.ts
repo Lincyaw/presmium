@@ -131,7 +131,7 @@ export function apply(ctx: DshContext): void {
         document = failure ? `<presmium-document>Presmium document context and diagnostics are unavailable: ${JSON.stringify(failure)}. This does not establish that the document is healthy.</presmium-document>`
           : '<presmium-document>No document selected. Document diagnostics are not observed. Work from the workspace root.</presmium-document>'
       }
-      latest.set(id, `Workspace root: ${JSON.stringify(bindings.candidateRootOf(agent) ?? (await server.ready).root)}.\n${document}`)
+      latest.set(id, `Workspace root: ${JSON.stringify(bindings.candidateDirectoryOf(agent) ?? (await server.ready).root)}.\n${document}`)
     } catch (error) {
       latest.set(id, `<presmium-document>Presmium document context and diagnostics are unavailable: ${JSON.stringify(errorMessage(error))}. This does not establish that the document is healthy.</presmium-document>`)
     }

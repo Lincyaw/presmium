@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmdirSync, rmSync, writeFileSync } from 'node:fs'
+import { lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { gitConfigArgs, gitEnvironment } from '@lincyaw/kernel'
@@ -59,7 +59,16 @@ export interface GitDirs {
 
 async function gitDirsOf(root: string): Promise<GitDirs> {
   const [top = '', gitDir = '', commonDir = ''] = (await gitText(root, ['rev-parse', '--show-toplevel', '--absolute-git-dir', '--git-common-dir'])).split('\n')
-  return { top: realpathSync(top), gitDir: realpathSync(gitDir), commonDir: realpathSync(resolve(root, commonDir)) }
+  return { top: realpathSync.native(top), gitDir: realpathSync.native(gitDir), commonDir: realpathSync.native(resolve(root, commonDir)) }
+}
+
+function canonicalGitDirs(dirs: GitDirs, saved?: SavedGitDir): GitDirs {
+  // Check the recorded entry before realpath can follow a replacement symlink.
+  if (saved) {
+    const stat = lstatSync(dirs.gitDir)
+    if (!stat.isDirectory() || `${stat.dev}:${stat.ino}` !== saved.identity) throw new Error(`the git directory ${dirs.gitDir} was replaced`)
+  }
+  return { top: realpathSync.native(dirs.top), gitDir: realpathSync.native(dirs.gitDir), commonDir: realpathSync.native(dirs.commonDir) }
 }
 
 const COPIED_CONFIG_KEYS = '^(core\\.(filemode|symlinks|ignorecase|precomposeunicode|autocrlf|eol|safecrlf|excludesfile)|extensions\\.objectformat)$'
@@ -259,10 +268,10 @@ function gitDirGuard(gitDir: string, scopeDir: string, root: string, onRestore: 
 }
 
 export function recoverGitReview(options: Omit<GitReviewOptions, 'task'>): Promise<{ task: string, paths: string[] } | undefined> {
-  const scopeDir = realpathSync(options.scopeDir)
+  const scopeDir = realpathSync.native(options.scopeDir)
   let running = recovering.get(scopeDir)
   if (!running) {
-    running = rollBackLeftReview(scopeDir, realpathSync(options.workspaceRoot), options).finally(() => recovering.delete(scopeDir))
+    running = rollBackLeftReview(scopeDir, realpathSync.native(options.workspaceRoot), options).finally(() => recovering.delete(scopeDir))
     recovering.set(scopeDir, running)
   }
   return running
@@ -273,8 +282,9 @@ async function rollBackLeftReview(scopeDir: string, root: string, options: Omit<
   if (!record || record.session || openScopes.has(scopeDir) || isHolderAlive(record)) return undefined
   let trees: ReviewTrees | undefined
   try {
-    if (record.guard) gitDirGuard(record.dirs.gitDir, scopeDir, root, options.onRestore, record.guard).restore()
-    trees = new ReviewTrees(record.dirs, scopeDir, root, await isolatedGitConfig(record.dirs), options)
+    const dirs = canonicalGitDirs(record.dirs, record.guard)
+    if (record.guard) gitDirGuard(dirs.gitDir, scopeDir, root, options.onRestore, record.guard).restore()
+    trees = new ReviewTrees(dirs, scopeDir, root, await isolatedGitConfig(dirs), options)
     const paths = await trees.changedPaths(record.snapshot, await trees.tree())
     await trees.restore(record.snapshot, paths)
     return { task: record.task, paths }
@@ -286,14 +296,14 @@ async function rollBackLeftReview(scopeDir: string, root: string, options: Omit<
 
 /** The record of an agent session's review that a process which has ended left waiting for its author. */
 export function pendingAgentSessionReview(scopeDir: string): ReviewRecord | undefined {
-  const real = realpathSync(scopeDir)
+  const real = realpathSync.native(scopeDir)
   const record = readRecord(real)
   return record?.session && !openScopes.has(real) && !isHolderAlive(record) ? record : undefined
 }
 
 export async function openGitReview(options: GitReviewOptions & { session?: Omit<AgentSessionRecord, 'checkpoints' | 'steps'> }): Promise<GitReview> {
-  const scopeDir = realpathSync(options.scopeDir)
-  const root = realpathSync(options.workspaceRoot)
+  const scopeDir = realpathSync.native(options.scopeDir)
+  const root = realpathSync.native(options.workspaceRoot)
   if (openScopes.has(scopeDir)) throw new Error(`a change of ${relative(root, scopeDir) || '.'} is under way already`)
   const left = readRecord(scopeDir)
   if (left && isHolderAlive(left)) throw new Error(`a change of ${relative(root, scopeDir) || '.'} is under way in another process (${left.pid})`)
@@ -318,14 +328,15 @@ export async function openGitReview(options: GitReviewOptions & { session?: Omit
 }
 
 export async function resumeGitReview(record: ReviewRecord, options: Omit<GitReviewOptions, 'task' | 'scopeDir'>): Promise<GitReview> {
-  const scopeDir = realpathSync(record.scopeDir)
-  const root = realpathSync(options.workspaceRoot)
+  const scopeDir = realpathSync.native(record.scopeDir)
+  const root = realpathSync.native(options.workspaceRoot)
   if (openScopes.has(scopeDir) || isHolderAlive(record)) throw new Error(`a change of ${relative(root, scopeDir) || '.'} is under way already`)
-  const { restore: restoreGitDir } = gitDirGuard(record.dirs.gitDir, scopeDir, root, options.onRestore, record.guard)
+  const dirs = canonicalGitDirs(record.dirs, record.guard)
+  const { restore: restoreGitDir } = gitDirGuard(dirs.gitDir, scopeDir, root, options.onRestore, record.guard)
   restoreGitDir()
-  const trees = new ReviewTrees(record.dirs, scopeDir, root, await isolatedGitConfig(record.dirs), options)
+  const trees = new ReviewTrees(dirs, scopeDir, root, await isolatedGitConfig(dirs), options)
   openScopes.add(scopeDir)
-  return createGitReview({ scopeDir, trees, restoreGitDir, record: { ...record, ...THIS_PROCESS }, warn: options.warn })
+  return createGitReview({ scopeDir, trees, restoreGitDir, record: { ...record, scopeDir, dirs, ...THIS_PROCESS }, warn: options.warn })
 }
 
 function createGitReview(open: { scopeDir: string, trees: ReviewTrees, restoreGitDir: () => void, record: ReviewRecord, warn?: (message: string) => void }): GitReview {

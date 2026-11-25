@@ -88,9 +88,41 @@ state, read-before-edit and CAS checks. Wrap file and MCP mutations in `runMutab
 lease; close and release it before host refresh, review, reject, restore or deletion. Closing is
 single-flight and pending lock acquisition is cancellable. Reuse the candidate service without moving
 the working directory. Serialize only candidate tools per root session, never collaboration or waiting
-tools. Linux and Windows retain `cbcow-private` and renew their view and MCP bindings at a step boundary
-after mutation or a changed author baseline. Keep the stock DeltaBox review row disabled and the
+tools. Linux and Windows retain `cbcow-private`. Linux uses a host-owned symlink in a private directory;
+Windows uses a logon-local DOS device bound to the unique WinFsp NT volume and a fixed PowerShell
+filesystem-drive name. Keep Shell specs in backing-candidate coordinates for the official executor;
+use the confirmed execution drive only for the PowerShell drive root and retain UNC file coordinates.
+Do not use a junction to a WinFsp network volume or bind a recyclable drive letter.
+Both have cancellable cross-process ownership; serialize install, detach and removal per entry, disable
+the entry before unmount and release ownership once. FS and Shell translate only public coordinates and retain native target
+identities and guards. Resolve the complete Shell command and directory before network authorization;
+keep both the authorized spec object and its content unchanged during execution. Keep delegate
+coordinates native inside FS operations, including iterator advances, watch callbacks and disposal.
+Renew the private view and every related MCP binding at a step boundary after mutation, a changed author
+baseline or a host candidate version change. Host rejection, restore and dependency-link creation must
+invalidate that version. Preserve recovered native changes before rebuilding from the authoritative
+host candidate; require a workspace service with candidate version tracking. Never rewrite arbitrary
+command output to hide physical paths. Serialize directory validation with view renewal, and release
+entry ownership and native resources at their lifecycle boundary. Handoff the view between exact Agent
+owners under that queue; never alias `currentSession`/`acquireFor` to a parent while the other public
+session methods still return the child. Directory `ensure` and `set` enter the candidate queue before
+the official directory queue, including calls made by stock tools and context assembly. Child disposal
+retires its view only while it is still the active owner. Windows private views reject reparse points:
+snapshot the installed dependency graph with the public Yarn hoister and independent ordinary files,
+retaining peers, aliases, cycles, dev dependencies and existing build outputs. Include graph edges and
+file contents in its stamp; check copied bytes against that stamp before replacing the snapshot. Never
+reinstall dependencies, rerun scripts or expand pnpm junction cycles to make this snapshot. Model
+resolved installed peers as exact dependency edges, preserving path identities; use the public CHECK
+level for final hoister validation instead of repeating full graph checks after every move. Windows
+execution HOME creation and validation use native ACLs, including inherited child access; reject
+reparse points and untrusted accounts while retaining existing content and permissions. Keep the stock DeltaBox review row disabled and the
 authoring preset registry enabled. Close native views and services on Agent disposal.
+Windows process ownership uses an anonymous native Job Object: assign the watchdog itself before
+spawning, retain a non-inheritable kill-on-close handle and keep nested PSEC jobs compatible. Do not
+substitute PID enumeration or Unix process-group signals for this Windows ownership boundary.
+Identify persisted reviews by native canonical paths, accepting older Windows short-name keys.
+Check the saved Git directory entry and identity before resolving its path, including both resume
+and automatic rollback; canonicalize recovered Git coordinates together.
 Preserve DeltaBox-backed candidates during restart until the native orphan has been adopted and
 staged; an empty host Git diff alone cannot prove the native review is empty. Verify stable `pwd`
 across reads, writes and author refresh; read then edit, native abort, required acceptance/rejection,

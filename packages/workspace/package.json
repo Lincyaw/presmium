@@ -31,14 +31,16 @@
   ],
   "dependencies": {
     "@lincyaw/compiler": "workspace:*",
+    "@lincyaw/design": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/server": "workspace:*",
-    "jszip": "^3.10.2",
+    "@yarnpkg/nm": "4.1.2",
+    "cmd-shim": "9.0.2",
     "image-size": "2.0.4",
+    "jszip": "^3.10.2",
     "mime-types": "3.0.2",
     "playwright-chromium": "1.64.1",
-    "yaml": "^2.9.1",
-    "@lincyaw/design": "workspace:*"
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@lincyaw/mcp": "workspace:*",

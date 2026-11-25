@@ -98,14 +98,14 @@ export interface LaunchedProcess {
   /** Stops keeping the output for `ready`, once the process is ready. */
   stopBuffering(): void
   exited: Promise<void>
-  /** SIGTERM, then SIGKILL to the whole process group after 15 s. */
+  /** Stop the owned watchdog: Unix signals its process group; Windows closes its process-tree job. */
   stop(): Promise<void>
 }
 
 /**
- * Starts `node <args>` under the watchdog, in a process group of its own, with the interactive thread budget at normal
- * priority: the author waits for the workspace service and DeepSeek Harness. The watchdog ends the group when the
- * launcher's pipe to it closes, so the group ends with the launcher, after `kill -9` too.
+ * Starts `node <args>` under the watchdog, with the interactive thread budget at normal priority.
+ * Unix descendants belong to its process group; Windows descendants inherit an owned native job.
+ * Closing the launcher pipe ends that tree, including when the launcher is forcibly terminated.
  */
 export function launchNode(name: string, args: string[], options: { cwd: string, env: Record<string, string>, onOutput?(text: string): void }): LaunchedProcess {
   const machine = machineState()

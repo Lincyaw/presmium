@@ -117,7 +117,7 @@ export class AgentSessionReviews {
     const session = pending.session!
     const workspace = pending.workspace ? AgentWorkspace.resume(config, pending.workspace) : undefined
     const root = workspace?.root ?? config.root
-    const review = await resumeGitReview(pending, { workspaceRoot: root, files: { write: async changes => writeChanges({ ...config, root }, changes, true) }, onRestore: paths => log.warn(`session ${session.session}: the agent changed the git directory, put back: ${paths.join(', ')}`) })
+    const review = await resumeGitReview(pending, { workspaceRoot: root, files: { write: async changes => workspace ? workspace.writeCandidate(changes) : writeChanges({ ...config, root }, changes, true) }, onRestore: paths => { workspace?.changed(); log.warn(`session ${session.session}: the agent changed the git directory, put back: ${paths.join(', ')}`) } })
     const empty = (await review.diff()).length === 0
     if (empty && session.backend !== 'deltabox') { await review.close(); workspace?.dispose(); return }
     if (!workspace) { review.suspend(); throw new Error('A legacy review needs to be accepted or rejected with the version that created it before concurrent editing can start.') }
@@ -128,12 +128,12 @@ export class AgentSessionReviews {
     this.#scheduleRollback(open)
   }
 
-  workspace(session: string): Promise<{ root: string }> {
+  workspace(session: string): Promise<{ root: string, version: string }> {
     return this.#serial(async () => {
       this.#retired.delete(session)
       let workspace = this.#workspaces.get(session)
       if (!workspace) { workspace = await AgentWorkspace.create(this.#options.config); this.#workspaces.set(session, workspace) }
-      return { root: workspace.root }
+      return { root: workspace.root, version: workspace.version }
     }, false)
   }
 
@@ -267,8 +267,8 @@ export class AgentSessionReviews {
             recordRoot: config.root,
             workspace: workspace.record,
             task: randomUUID(),
-            files: { write: async changes => writeChanges({ ...config, root }, changes, true) },
-            onRestore: paths => log.warn(`session ${body.session}: the agent changed the git directory, put back: ${paths.join(', ')}`),
+            files: { write: async changes => workspace!.writeCandidate(changes) },
+            onRestore: paths => { workspace!.changed(); log.warn(`session ${body.session}: the agent changed the git directory, put back: ${paths.join(', ')}`) },
             warn: message => log.warn(`session ${body.session}: ${message}`),
             session: { session: body.session, document, member, turns: { from: turn, to: turn }, opened, backend: body.backend },
           })

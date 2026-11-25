@@ -3,9 +3,13 @@
 - id: deltabox-runtime
   disabled: true
 - id: deltabox-fs
-  disabled: !!js process.platform === 'darwin'
+  disabled: true
 - id: deltabox-view
-  disabled: !!js process.platform === 'darwin'
+  disabled: true
+- id: deltabox-bash
+  disabled: !!js process.platform !== 'darwin'
+- id: working-directory
+  disabled: !!js process.platform !== 'darwin'
 - id: deltabox-review-policy
   disabled: true
 - id: ptc-runtime
@@ -16,9 +20,18 @@
   disabled: true
 
 - insert:
+    - id: presmium-candidate-working-directory
+      name: '@lincyaw/dsh/candidate-working-directory'
+      disabled: !!js process.platform === 'darwin'
+    - id: presmium-candidate-shell
+      name: '@lincyaw/dsh/candidate-shell'
+      disabled: !!js process.platform === 'darwin'
     - id: presmium-candidate-fs
       name: '@lincyaw/dsh/candidate-fs'
       disabled: !!js process.platform !== 'darwin'
+    - id: presmium-candidate-view-fs
+      name: '@lincyaw/dsh/candidate-view-fs'
+      disabled: !!js process.platform === 'darwin'
     - id: presmium-deltabox-runtime
       name: '@lincyaw/dsh/deltabox-runtime'
       config:

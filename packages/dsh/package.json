@@ -38,6 +38,8 @@
     "./assistant": "./entries/assistant.mjs",
     "./deltabox-runtime": "./entries/deltabox-runtime.mjs",
     "./candidate-fs": "./entries/candidate-fs.mjs",
+    "./candidate-view-fs": "./entries/candidate-view-fs.mjs",
+    "./candidate-shell": "./entries/candidate-shell.mjs",
     "./telemetry": "./entries/telemetry.mjs",
     "./events": {
       "types": "./src/node/workspace-events.ts",
@@ -46,7 +48,8 @@
     "./workspace-events": "./src/workspace-events.ts",
     "./launch": "./src/node/launch.ts",
     "./testing": "./src/node/fake-model.ts",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./candidate-working-directory": "./entries/candidate-working-directory.mjs"
   },
   "files": [
     "entries",
@@ -90,6 +93,7 @@
   "dependencies": {
     "@deepseek-ai/dsh-fs": "0.2.3-alpha.2",
     "@deepseek-ai/dsh-fs-sandbox": "0.2.3-alpha.2",
+    "@deepseek-ai/dsh-working-directory": "0.2.3-alpha.2",
     "@lincyaw/cli": "workspace:*",
     "@lincyaw/kernel": "workspace:*",
     "@lincyaw/mcp": "workspace:*",
@@ -97,6 +101,7 @@
     "dsh-deltabox": "0.1.8",
     "eventsource": "3.0.7",
     "jiti": "^2.7.0",
+    "koffi": "3.3.8",
     "mathlive": "0.111.4",
     "node-addon-require-builtin": "0.1.10",
     "ws": "8.22.0",

@@ -429,13 +429,13 @@ presmium serve: 浏览器 → 服务端 ─┬ /__presmium/<插件 ID>/…、/__
 
 ### 10.6 编译时执行的信任模型
 
-编译时代码以本机用户身份全部执行，不经确认。每个 Node 端执行器只给 `RunContext.env`，有进程沙箱时经它运行。MCP 的 `build` 写在工作区之外的状态目录，`run_code` 不读写录制。agent 的 shell 按 dsh 权限与 bundle 的确认策略。
+编译时代码以本机用户身份全部执行，不经确认。每个 Node 端执行器只给 `RunContext.env`，有进程沙箱时经它运行。 服务端运行使用独立 HOME；Unix 校验本用户所有的 `0700` 目录，Windows 通过系统 .NET API 原子创建私有 ACL，并在每次使用前校验本目录和子文件的继承授权，拒绝目录连接及其他账户的授权。已有目录的内容与权限不被改写。MCP 的 `build` 写在工作区之外的状态目录，`run_code` 不读写录制。agent 的 shell 按 dsh 权限与 bundle 的确认策略。
 
 ### 10.7 修改审阅
 
-`packages/workspace/src/node/review/`：会话的候选目录位于工作区 `.presmium/agent-workspaces/`，有独立 git 与来源文件版本。DSH 默认加载官方 `dsh-deltabox` 插件；Presmium 的 runtime 通过公开的 `projectRootFor` 绑定候选根，并在 `acquireFor` 中先为位于原工作区的会话取得候选根，使 Harness 早于绑定的文件调用也不会在原工作区启动 DeltaBox。macOS 使用 `cbcow-through`，原生 Shell、文件工具与正文 MCP 都访问同一个真实候选目录，工作目录不随原生检查点重建而变化。文件 provider 基于官方 `fs-sandbox`，额外限定 `workspace-write` 只写规范化后的候选树（包括经链接访问的路径），不因平台临时目录而扩大写入范围；DeltaBox 状态目录受保护。文件动作与候选 MCP 写入由 `runMutable` 包住，保留读取观察、版本比较与原生回滚。Linux 与 Windows 继续使用 `cbcow-private` 的原生文件系统与 Shell。每个写入工具完成后，DeltaBox 先接受到候选目录，再进入 Presmium 的校验、审阅与发布事务。原工作区持续接受作者保存。候选 git 树记录检查点；拒绝与恢复只写候选目录。发布先确认作者输入已保存，再在原工作区短事务中执行全部文件的版本检查、写入与 `REVISIONS` 提交；任一来源过期时不发布，AI 重新读取后重试。审阅记录在 `presmium/reviews/`，包含候选地址与来源版本，重启后恢复。插件的单次修改任务仍使用文稿锁。
+`packages/workspace/src/node/review/`：会话的候选目录位于工作区 `.presmium/agent-workspaces/`，有独立 git 与来源文件版本。DSH 默认加载官方 `dsh-deltabox` 插件；Presmium 的 runtime 通过公开的 `projectRootFor` 绑定候选根，并在 `acquireFor` 中先为位于原工作区的会话取得候选根，使 Harness 早于绑定的文件调用也不会在原工作区启动 DeltaBox。macOS 使用 `cbcow-through`，原生 Shell、文件工具与正文 MCP 都访问同一个真实候选目录，工作目录不随原生检查点重建而变化。文件 provider 基于官方 `fs-sandbox`，额外限定 `workspace-write` 只写规范化后的候选树（包括经链接访问的路径），不因平台临时目录而扩大写入范围；DeltaBox 状态目录受保护。文件动作与候选 MCP 写入由 `runMutable` 包住，保留读取观察、版本比较与原生回滚。Linux 与 Windows 继续使用 `cbcow-private` 的原生文件系统与 Shell。 Agent 的逻辑工作目录通过宿主持有的固定入口映射到当前私有视图，换代与父子 Agent 交接不改变该目录；公开文件目标与原生授权仍属于各自的 Agent。Shell 在授权前完成命令与目录解析，保留官方执行器的候选根边界与授权对象，执行时不再修改。每个写入工具完成后，DeltaBox 先接受到候选目录，再进入 Presmium 的校验、审阅与发布事务。原工作区持续接受作者保存。候选 git 树记录检查点；拒绝与恢复只写候选目录。发布先确认作者输入已保存，再在原工作区短事务中执行全部文件的版本检查、写入与 `REVISIONS` 提交；任一来源过期时不发布，AI 重新读取后重试。审阅记录在 `presmium/reviews/`，包含候选地址与来源版本，重启后恢复。插件的单次修改任务仍使用文稿锁。
 
-DeltaBox 自带的 turn-stopping 审阅行关闭，保留 Presmium 的单一接受与拒绝入口。macOS 的候选目录由跨进程租约协调：原生执行结束并关闭会话、释放租约后，原服务才可刷新、审阅、拒绝、恢复或删除候选；等待租约可取消。候选服务复用同一目录，文件与 Shell 工具按根会话串行，协作、等待与外部工具不占这个队列。`bash` 与 `network_bash` 使用相同的写入事务。其他平台在工具写入或来源刷新后的下一模型步骤边界重建私有视图、候选服务和绑定。插件使用原生后端：macOS 需要 APFS/FSEvents，Linux 需要 FUSE，Windows 需要 WinFsp；不静默退回未隔离的执行器。
+DeltaBox 自带的 turn-stopping 审阅行关闭，保留 Presmium 的单一接受与拒绝入口。macOS 的候选目录由跨进程租约协调：原生执行结束并关闭会话、释放租约后，原服务才可刷新、审阅、拒绝、恢复或删除候选；等待租约可取消。候选服务复用同一目录，文件与 Shell 工具按根会话串行，协作、等待与外部工具不占这个队列。`bash` 与 `network_bash` 使用相同的写入事务。其他平台在工具写入或来源刷新后的下一模型步骤边界重建私有视图、候选服务和绑定。插件使用原生后端：macOS 需要 APFS/FSEvents，Linux 需要 FUSE，Windows 需要 WinFsp；不静默退回未隔离的执行器。 当前锁定的 `deltabox-lite@0.3.0` 未发布 Windows ARM64 原生组件，默认 ARM64 Node 安装不能启动该后端；运行时没有公开的 addon 替换配置口。Windows ARM64 的看门狗、目录入口与 ACL 能力不改变这一上游安装限制。
 
 候选服务由 bundle 设置 `PRESMIUM_AGENT_CANDIDATE=1`，在自己的目录中允许正文动作提交，是否需要作者确认由原服务发布时的审阅设置决定。作者历史、运行任务和浏览器状态由原服务负责。
 

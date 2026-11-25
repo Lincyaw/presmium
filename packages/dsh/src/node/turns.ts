@@ -66,7 +66,6 @@ export function apply(ctx: DshContext): void {
   const turnStates = new Map<string, TurnState>()
   const agents = new Map<string, LiveAgent>()
   const pending = new Map<string, unknown[]>()
-  const executions = new Map<string, Promise<unknown>>()
   const turnStateOf = (id: string) => {
     let known = turnStates.get(id)
     if (!known) turnStates.set(id, known = { wrote: false })
@@ -151,11 +150,7 @@ export function apply(ctx: DshContext): void {
       const target = await resolvePresmiumCall(ctx.presmium.bindings.bindingOf(exec.agent), exec)
       if (!isCandidateTool(target.tool)) return next()
     } else if (exec.name !== 'read' && !WRITING_TOOLS.has(exec.name)) return next()
-    const id = ctx.presmium.bindings.rootSessionOf(exec.agent)
-    const previous = executions.get(id) ?? Promise.resolve()
-    const work = previous.catch(() => undefined).then(() => { exec.signal.throwIfAborted(); return execute(exec, next) })
-    executions.set(id, work)
-    return work.finally(() => { if (executions.get(id) === work) executions.delete(id) })
+    return ctx.presmium.bindings.serializeCandidate(exec.agent, () => { exec.signal.throwIfAborted(); return execute(exec, next) })
   })
 
   ctx.on('agent/created', ({ agent }: { agent: LiveAgent }) => {

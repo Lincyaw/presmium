@@ -3,6 +3,7 @@ import { compactToolCatalog, isOrdinaryMediaCall, mediaResult, prepareMediaArgum
 import type { CalledImage, CatalogCall, ListedTool } from '@lincyaw/mcp/client'
 import type { DshAgent, DshAttachments, DshContentBlock, DshContext, DshImageMediaType, DshLlm, DshToolDefinition, DshToolExecution } from './dsh-types.ts'
 import type { DocumentBinding, PreparedBindingCall } from './bindings.ts'
+import { deltaboxOf, runtimeAgent } from './deltabox-runtime.ts'
 
 export const name = 'presmium-tools'
 export const inject = ['presmium', 'tools', 'deltabox']
@@ -179,10 +180,14 @@ export function apply(ctx: DshContext): void {
     registered.delete(agent)
     previous?.stop?.()
     for (const dispose of previous?.dispose ?? []) dispose()
-    await ctx.presmium.bindings.retireCandidate(agent)
+    const bindings = ctx.presmium.bindings
+    await bindings.serializeCandidate(agent, async () => {
+      if (bindings.rootSessionOf(agent) === agent.session.id || deltaboxOf(ctx)?.ownsCandidate(runtimeAgent(agent))) await bindings.retireCandidate(agent)
+      else await bindings.unbind(agent.session.id, false)
+    })
   })
   ctx.on('agent/pre-step', async ({ agent }: { agent: DshAgent }, next: () => Promise<unknown>) => {
-    await ctx.presmium.bindings.refreshCandidate(agent)
+    await ctx.presmium.bindings.serializeCandidate(agent, () => ctx.presmium.bindings.refreshCandidate(agent))
     await sync(agent)
     return next()
   })
