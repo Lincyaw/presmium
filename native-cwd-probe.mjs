@@ -14,6 +14,11 @@ const quote=x=>"'"+x.replaceAll("'",process.platform==='win32'?"''":"'\\''")+"'"
 let previous;const observations=[]
 for(let round=0;round<2;round++){
  const session=await native.startSession(undefined,'fast',undefined,'cbcow-private',true);assert.ok(session.mountpoint);assert.notEqual(session.mountpoint,previous);previous=session.mountpoint
+ if(process.platform==='win32') {
+  console.log(JSON.stringify({baselineSession:session}));
+  try { console.log(JSON.stringify({baseline:await native.exec(session.session_id,[join(process.env.SystemRoot,'System32','cmd.exe'),'/d','/c','cd'],session.mountpoint,[],undefined,'workspace-write')})) }
+  catch(error) { console.log(JSON.stringify({baselineFailure:String(error)}));throw error }
+ }
  await rm(alias,{force:true});await symlink(session.mountpoint,alias,process.platform==='win32'?'junction':'dir');await native.beginReview(session.session_id,'task','stable cwd probe')
  const command=process.platform==='win32'?`Set-Location -LiteralPath ${quote(alias)}; if (-not $?) { exit 1 }; (Get-Location).Path; [Environment]::CurrentDirectory; & "$env:SystemRoot\\System32\\cmd.exe" /d /c cd; Get-Content -LiteralPath sample.txt; Set-Content -LiteralPath sample.txt -Value after${round} -Encoding utf8`:`cd -- ${quote(alias)} || exit; pwd; /bin/pwd -P; cat sample.txt; printf 'after${round}\\n' > sample.txt`
  const argv=process.platform==='win32'?[join(process.env.SystemRoot,'System32','WindowsPowerShell','v1.0','powershell.exe'),'-NoProfile','-NonInteractive','-Command',command]:['/bin/bash','-c',command]
