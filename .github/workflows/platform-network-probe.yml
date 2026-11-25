@@ -2,7 +2,7 @@ name: Temporary network and child candidate probe
 on:
   push:
     branches: [codex/platform-cwd-probe]
-    paths: [platform-network-run.mjs, network-cwd-probe.yml, child-cwd-probe.mjs, .github/workflows/platform-network-probe.yml]
+    paths: [packages/**, platform-network-run.mjs, network-cwd-probe.yml, child-cwd-probe.mjs, .github/workflows/platform-network-probe.yml]
 permissions:
   contents: read
 jobs:

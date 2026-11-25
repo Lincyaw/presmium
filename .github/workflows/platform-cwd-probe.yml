@@ -109,6 +109,7 @@ jobs:
         with:
           node-version: '24.22.3'
           architecture: arm64
+          cache: pnpm
       - name: WinFsp SDK and driver
         shell: pwsh
         run: |
