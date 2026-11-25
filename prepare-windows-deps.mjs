@@ -9,7 +9,7 @@ export function prepareWindowsDependencies(ws) {
  json(join(b,'package.json'),{name:'fixture-peer-b',version:'1.0.0',main:'index.cjs',dependencies:{'fixture-local-plugin':'workspace:*'}})
  writeFileSync(join(a,'index.cjs'),"exports.marker='local-dependency-ok';exports.cycle=require('fixture-peer-b').peer();\n")
  writeFileSync(join(b,'index.cjs'),"exports.peer=()=>require('fixture-local-plugin').marker;\n")
- writeFileSync(join(a,'presmium.cjs'),"const a=require('./index.cjs');const built=require('fixture-built-dependency');const dev=require('fixture-dev-plugin');if(built!==42||dev!==43||a.marker!==a.cycle)throw Error('Dependency snapshot failed');module.exports={id:'probe.native',version:'1.0.0',server:()=>({routes:{'/marker':{handle:()=>Response.json({...a,built,dev})}}})};\n")
+ writeFileSync(join(a,'presmium.cjs'),"const a=require('./index.cjs');const built=require('fixture-built-dependency');const dev=require('fixture-dev-plugin');if(built!==42||dev!==43||a.marker!==a.cycle)throw Error('Dependency snapshot failed');module.exports={id:'probe.native',version:'1.0.0',server:()=>({routes:{'marker':{handle:()=>Response.json({...a,built,dev})}}})};\n")
  json(join(modules,'fixture-built-dependency','package.json'),{name:'fixture-built-dependency',version:'1.0.0',main:'generated.cjs',scripts:{postinstall:"node -e \"require('fs').writeFileSync('generated.cjs','module.exports=42')\""}})
  writeFileSync(join(modules,'fixture-built-dependency','generated.cjs'),'module.exports=42\n')
  json(join(modules,'fixture-dev-plugin','package.json'),{name:'fixture-dev-plugin',version:'1.0.0',main:'index.cjs',bin:{'fixture-dev':'cli.cmd'}})

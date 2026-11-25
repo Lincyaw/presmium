@@ -51,7 +51,10 @@ export class AgentWorkspace {
   #version = randomUUID()
   readonly #dependencies = new WindowsDependencies()
 
-  private constructor(config: WorkspaceConfig, record: AgentWorkspaceRecord) { this.#config = config; this.record = record }
+  private constructor(config: WorkspaceConfig, record: AgentWorkspaceRecord) {
+    this.#config = config
+    this.record = { ...record, root: realpathSync.native(record.root), original: realpathSync.native(record.original) }
+  }
   get root(): string { return this.record.root }
   get version(): string { return this.#version }
   changed(): void { this.#version = randomUUID() }

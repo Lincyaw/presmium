@@ -253,7 +253,8 @@ export class DocumentBindings {
     let pending = this.#candidates.get(id)
     if (!pending) {
       pending = (async () => {
-        const { root, version } = await this.#server.requestJson<{ root: string, version?: string }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id } })
+        const { root: providedRoot, version } = await this.#server.requestJson<{ root: string, version?: string }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id } })
+        const root = realPath(providedRoot)
         this.#candidateRoots.set(id, root)
         const runtime = deltaboxOf(this.#ctx)
         if (runtime && process.platform !== 'darwin' && !version) throw new Error('Presmium needs an updated workspace service with candidate version tracking; restart the workspace service before continuing this conversation')
@@ -308,7 +309,7 @@ export class DocumentBindings {
     if (!isInside(realPath(projectRoot), realPath(root))) return
     const id = this.rootSessionOf(agent)
     const candidate = await this.#server.requestJson<{ root: string }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id } })
-    if (!this.#candidateRoots.has(id)) this.#candidateRoots.set(id, candidate.root)
+    if (!this.#candidateRoots.has(id)) this.#candidateRoots.set(id, realPath(candidate.root))
   }
 
   candidateViewOf(agent: DshAgent | undefined): string | undefined {
