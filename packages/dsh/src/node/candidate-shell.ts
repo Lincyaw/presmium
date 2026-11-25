@@ -1,3 +1,4 @@
+import { join, relative } from 'node:path'
 import DeltaboxBashExecutor from 'dsh-deltabox/bash'
 import { deltaboxOf } from './deltabox-runtime.ts'
 type ShellExecSpec = Parameters<DeltaboxBashExecutor['execute']>[0]
@@ -20,7 +21,7 @@ export default class CandidateShell extends DeltaboxBashExecutor {
       const drive = runtime.paths.shellDirectory(physical, session.projectRoot)
       if (!drive) throw new Error('The candidate PowerShell directory is unavailable')
       spec.command = `New-PSDrive -Name '${drive.name}' -PSProvider FileSystem -Root '${drive.root.replaceAll("'", "''")}' -Scope Script -ErrorAction Stop | Out-Null; Set-Location -LiteralPath '${drive.path.replaceAll("'", "''")}'; if (-not $?) { exit 1 }; ${command}`
-      spec.workdir = drive.workdir
+      spec.workdir = join(session.projectRoot, relative(drive.root, drive.workdir))
     } else spec.command = `cd -L -- '${visible.replaceAll("'", "'\\''")}' || exit; ${command}`
     if (process.platform !== 'win32') spec.workdir = physical
     return spec

@@ -5,6 +5,7 @@ on:
     paths: [packages/**, pnpm-lock.yaml, bootstrap-cwd-probe.mjs, platform-harness-run.mjs, platform-restart-run.mjs, native-fast-windows.mjs, .github/workflows/platform-cwd-probe.yml]
 permissions:
   contents: read
+  actions: read
 jobs:
   native:
     if: ${{ false }}
@@ -48,6 +49,7 @@ jobs:
         if: always()
         run: node bootstrap-cwd-probe.mjs platform-harness-run.mjs
   native-fast-windows:
+    if: ${{ false }}
     runs-on: windows-11-arm
     timeout-minutes: 10
     steps:
@@ -99,11 +101,6 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
-        with:
-          repository: delta-box/deltabox-lite
-          ref: v0.3.0
-          path: official-native
       - uses: pnpm/action-setup@v5
       - uses: actions/setup-node@v4
         with:
@@ -117,24 +114,12 @@ jobs:
           Invoke-WebRequest https://github.com/winfsp/winfsp/releases/download/v2.1/winfsp-2.1.25156.msi -OutFile $installer
           $p = Start-Process msiexec.exe -ArgumentList "/i `"$installer`" /qn /norestart ADDLOCAL=ALL" -Wait -PassThru
           if ($p.ExitCode -notin @(0,3010)) { throw "WinFsp install failed: $($p.ExitCode)" }
-      - uses: actions/cache@v4
-        with:
-          path: official-native/target
-          key: official-deltabox-0.3.0-windows-arm-rust-1.89
-      - name: Build unchanged official source for the runner architecture
-        shell: pwsh
-        working-directory: official-native
-        run: |
-          rustup toolchain install 1.89.0 --profile minimal
-          cargo +1.89.0 build --locked -p deltabox -p deltabox-node
-          Copy-Item target/debug/deltabox_node.dll target/debug/deltabox.node
-      - uses: actions/upload-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: official-native-arm
-          path: |
-            official-native/target/debug/deltabox.exe
-            official-native/target/debug/deltabox.node
-          retention-days: 3
+          run-id: 45562170095
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: official-native/target/debug
       - name: Real native ARM isolation and absolute paths
         shell: pwsh
         run: |

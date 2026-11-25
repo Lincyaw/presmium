@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmdirSync, rmSync, writeFileSync } from 'node:fs'
+import { lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { gitConfigArgs, gitEnvironment } from '@lincyaw/kernel'
@@ -62,7 +62,14 @@ async function gitDirsOf(root: string): Promise<GitDirs> {
   return { top: realpathSync.native(top), gitDir: realpathSync.native(gitDir), commonDir: realpathSync.native(resolve(root, commonDir)) }
 }
 
-const canonicalGitDirs = (dirs: GitDirs): GitDirs => ({ top: realpathSync.native(dirs.top), gitDir: realpathSync.native(dirs.gitDir), commonDir: realpathSync.native(dirs.commonDir) })
+function canonicalGitDirs(dirs: GitDirs, saved?: SavedGitDir): GitDirs {
+  // Check the recorded entry before realpath can follow a replacement symlink.
+  if (saved) {
+    const stat = lstatSync(dirs.gitDir)
+    if (!stat.isDirectory() || `${stat.dev}:${stat.ino}` !== saved.identity) throw new Error(`the git directory ${dirs.gitDir} was replaced`)
+  }
+  return { top: realpathSync.native(dirs.top), gitDir: realpathSync.native(dirs.gitDir), commonDir: realpathSync.native(dirs.commonDir) }
+}
 
 const COPIED_CONFIG_KEYS = '^(core\\.(filemode|symlinks|ignorecase|precomposeunicode|autocrlf|eol|safecrlf|excludesfile)|extensions\\.objectformat)$'
 
@@ -275,7 +282,7 @@ async function rollBackLeftReview(scopeDir: string, root: string, options: Omit<
   if (!record || record.session || openScopes.has(scopeDir) || isHolderAlive(record)) return undefined
   let trees: ReviewTrees | undefined
   try {
-    const dirs = canonicalGitDirs(record.dirs)
+    const dirs = canonicalGitDirs(record.dirs, record.guard)
     if (record.guard) gitDirGuard(dirs.gitDir, scopeDir, root, options.onRestore, record.guard).restore()
     trees = new ReviewTrees(dirs, scopeDir, root, await isolatedGitConfig(dirs), options)
     const paths = await trees.changedPaths(record.snapshot, await trees.tree())
@@ -324,7 +331,7 @@ export async function resumeGitReview(record: ReviewRecord, options: Omit<GitRev
   const scopeDir = realpathSync.native(record.scopeDir)
   const root = realpathSync.native(options.workspaceRoot)
   if (openScopes.has(scopeDir) || isHolderAlive(record)) throw new Error(`a change of ${relative(root, scopeDir) || '.'} is under way already`)
-  const dirs = canonicalGitDirs(record.dirs)
+  const dirs = canonicalGitDirs(record.dirs, record.guard)
   const { restore: restoreGitDir } = gitDirGuard(dirs.gitDir, scopeDir, root, options.onRestore, record.guard)
   restoreGitDir()
   const trees = new ReviewTrees(dirs, scopeDir, root, await isolatedGitConfig(dirs), options)
