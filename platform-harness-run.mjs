@@ -1,5 +1,5 @@
 import {prepareWindowsDependencies} from './prepare-windows-deps.mjs'
-import {spawn} from 'node:child_process'
+import {spawn,execFileSync} from 'node:child_process'
 import {createRequire} from 'node:module'
 import {mkdtempSync,readFileSync,writeFileSync,symlinkSync} from 'node:fs'
 import {tmpdir} from 'node:os'
@@ -7,6 +7,7 @@ import {join} from 'node:path'
 import {randomUUID} from 'node:crypto'
 import assert from 'node:assert/strict'
 const root=process.cwd()
+if(process.env.GITHUB_ACTIONS==='true'&&process.platform==='win32')execFileSync('git',['checkout','FETCH_HEAD','--','packages/compiler'],{stdio:'inherit'});
 writeFileSync(root+'/trace-cwd-probe.yml', '- insert:\n    - id: trace-cwd-probe\n      name: '+JSON.stringify(root+'/trace-cwd-probe.mjs')+'\n')
 const require=createRequire(root+'/packages/dsh/package.json');const {createJiti}=require('jiti');const jiti=createJiti(root+'/')
 const {testHome,running}=await jiti.import('./packages/dsh/test/harness.ts');const {fakeModel}=await jiti.import('./packages/dsh/src/node/fake-model.ts')

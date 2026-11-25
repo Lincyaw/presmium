@@ -1,3 +1,4 @@
+import { privateWindowsRunHome } from './windows-run-home.ts'
 import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -209,10 +210,11 @@ export function runEnvironment(rules: 'local' | 'serve', passEnv: readonly strin
 function runHome(workspaceRoot: string, source: NodeJS.ProcessEnv): string {
   const state = source.XDG_STATE_HOME || join(homedir(), '.local', 'state')
   const home = join(state, 'presmium', 'run-home', createHash('sha256').update(workspaceRoot).digest('hex').slice(0, 16))
-  mkdirSync(home, { recursive: true, mode: 0o700 })
+  if (process.platform === 'win32') privateWindowsRunHome(home)
+  else mkdirSync(home, { recursive: true, mode: 0o700 })
   const stat = lstatSync(home)
   const uid = process.getuid?.()
-  if (!stat.isDirectory() || (uid !== undefined && stat.uid !== uid) || (stat.mode & 0o077) !== 0) {
+  if (!stat.isDirectory() || (uid !== undefined && stat.uid !== uid) || (process.platform !== 'win32' && (stat.mode & 0o077) !== 0)) {
     throw new Error(`the run HOME ${home} is not a private directory of this user`)
   }
   return home

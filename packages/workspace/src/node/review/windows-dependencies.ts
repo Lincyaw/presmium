@@ -79,7 +79,9 @@ export class WindowsDependencies {
       const known = nodes.get(nodeKey)
       if (known) return known
       const manifest = await json(join(path, 'package.json'))
-      const node: HoisterTree = { name, identName: manifest.name ?? name, reference: id, dependencies: new Set(), peerNames: new Set(Object.keys(manifest.peerDependencies ?? {})) }
+      // Installed peers are exact dependency edges; pnpm may inject them inside this package,
+      // while the hoister's peerNames contract requires a provider in the parent.
+      const node: HoisterTree = { name, identName: manifest.name ?? name, reference: id, dependencies: new Set(), peerNames: new Set() }
       nodes.set(nodeKey, node)
       if (!packages.has(id)) packages.set(id, { source: path, manifest, ...await this.#files(path), direct: namesOf(manifest) })
       const dependencies = new Set([...namesOf(manifest), ...await roots(join(path, 'node_modules'))])
@@ -140,7 +142,8 @@ export class WindowsDependencies {
         }
         for (const [name, entry] of bins) { await mkdir(join(destination, '.bin'), { recursive: true }); await shim(entry, join(destination, '.bin', name)) }
       }
-      await copy(hoist(graph.tree, { check: true }), stage, graph.direct, new Set())
+      // Public CHECK level validates the final layout; check:true repeats a full graph check after every move.
+      await copy(hoist(graph.tree, { debugLevel: 1 }), stage, graph.direct, new Set())
       const ordinary = async (directory: string): Promise<void> => {
         for (const name of await readdir(directory)) {
           const path = join(directory, name)
