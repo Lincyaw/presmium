@@ -69,6 +69,7 @@ jobs:
           $probe = Join-Path $env:RUNNER_TEMP 'native-consumer'
           New-Item -ItemType Directory -Path $probe
           Copy-Item packages/dsh/src/node/candidate-paths.ts $probe
+          Copy-Item packages/dsh/src/node/windows-candidate-device.ts $probe
           Copy-Item native-fast-windows.mjs $probe
           Copy-Item dos-device-probe.mjs $probe
           Set-Location $probe
@@ -92,3 +93,46 @@ jobs:
       - run: node packages/dsh/build/client.mjs
       - name: Real review restoration and killed-host recovery
         run: node bootstrap-cwd-probe.mjs platform-restart-run.mjs
+  official-native-arm:
+    runs-on: windows-11-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: delta-box/deltabox-lite
+          ref: v0.3.0
+          path: official-native
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.3'
+          architecture: arm64
+      - name: WinFsp SDK and driver
+        shell: pwsh
+        run: |
+          $installer = Join-Path $env:RUNNER_TEMP 'winfsp.msi'
+          Invoke-WebRequest https://github.com/winfsp/winfsp/releases/download/v2.1/winfsp-2.1.25156.msi -OutFile $installer
+          $p = Start-Process msiexec.exe -ArgumentList "/i `"$installer`" /qn /norestart ADDLOCAL=ALL" -Wait -PassThru
+          if ($p.ExitCode -notin @(0,3010)) { throw "WinFsp install failed: $($p.ExitCode)" }
+      - name: Build unchanged official source for the runner architecture
+        shell: pwsh
+        working-directory: official-native
+        run: |
+          rustup toolchain install 1.89.0 --profile minimal
+          cargo +1.89.0 build --locked -p deltabox -p deltabox-node
+          Copy-Item target/debug/deltabox_node.dll target/debug/deltabox.node
+      - name: Real native ARM isolation and absolute paths
+        shell: pwsh
+        run: |
+          $probe = Join-Path $env:RUNNER_TEMP 'native-consumer'
+          New-Item -ItemType Directory -Path $probe
+          Copy-Item packages/dsh/src/node/candidate-paths.ts $probe
+          Copy-Item packages/dsh/src/node/windows-candidate-device.ts $probe
+          Copy-Item native-fast-windows.mjs $probe
+          $env:PRESMIUM_NATIVE_ADDON = Join-Path $pwd 'official-native/target/debug/deltabox.node'
+          $env:PRESMIUM_NATIVE_HELPER = Join-Path $pwd 'official-native/target/debug/deltabox.exe'
+          Set-Location $probe
+          '{"private":true,"type":"module","dependencies":{"deltabox-lite":"0.3.0","jiti":"2.7.0","@lincyaw/kernel":"1.0.0-rc.138","koffi":"3.3.8"}}' | Set-Content package.json
+          pnpm install --prod --registry https://registry.npmjs.org
+          node native-fast-windows.mjs

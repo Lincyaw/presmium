@@ -263,7 +263,7 @@ export class DocumentBindings {
             // An adopted accepted view can predate a host restore. Preserve a pending native
             // review first, then start from the authoritative candidate before binding any tools.
             if (session.reviewActive) await session.reviewCommit()
-            await session.close()
+            await runtime!.closeView(runtimeAgent(agent))
             session = await runtime!.acquireFor(runtimeAgent(agent))
           }
           view = session ? (await session.target()).mountpoint : root
@@ -346,7 +346,7 @@ export class DocumentBindings {
     this.#candidateViews.delete(id)
     const runtime = deltaboxOf(this.#ctx)
     await runtime?.closeCandidate(runtimeAgent(agent))
-    await runtime?.candidateSession(runtimeAgent(agent))?.close()
+    await runtime?.closeView(runtimeAgent(agent))
     this.#renewCandidates.delete(id)
   }
 

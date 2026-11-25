@@ -1,0 +1,35 @@
+import { createRequire } from 'node:module'
+
+/** User-logon DOS names need neither a drive letter nor the symlink privilege. */
+export class WindowsCandidateDevices {
+  private readonly kernel = (createRequire(import.meta.url)('koffi') as typeof import('koffi')).load('kernel32.dll')
+  private readonly define = this.kernel.func('__stdcall', 'DefineDosDeviceW', 'int', ['uint32', 'str16', 'str16'])
+  private readonly query = this.kernel.func('__stdcall', 'QueryDosDeviceW', 'uint32', ['str16', 'void *', 'uint32'])
+  private readonly lastError = this.kernel.func('__stdcall', 'GetLastError', 'uint32', [])
+
+  target(name: string): string | undefined {
+    const buffer = Buffer.alloc(65536)
+    if (this.query(name, buffer, buffer.length / 2)) return buffer.toString('utf16le').split('\0')[0]
+    const code = this.lastError()
+    if (code === 2) return undefined
+    throw new Error(`Cannot inspect the candidate device (${code})`)
+  }
+
+  remove(name: string): void {
+    for (let depth = 0; depth < 64; depth++) {
+      const target = this.target(name)
+      if (target === undefined) return
+      // RAW_TARGET_PATH | REMOVE_DEFINITION | EXACT_MATCH_ON_REMOVE | NO_BROADCAST_SYSTEM
+      if (!this.define(15, name, target)) throw new Error(`Cannot retire the candidate device (${this.lastError()})`)
+    }
+    throw new Error('The candidate device has too many definitions')
+  }
+
+  set(name: string, view: string): void {
+    const target = `\\??\\${view}`
+    if (this.target(name)?.toLowerCase() === target.toLowerCase()) return
+    this.remove(name)
+    // RAW_TARGET_PATH | NO_BROADCAST_SYSTEM. Default scope is the caller's logon, not Global.
+    if (!this.define(9, name, target)) throw new Error(`Cannot establish the candidate device (${this.lastError()})`)
+  }
+}

@@ -11,7 +11,9 @@ export default abstract class CandidateViewFileSystem extends DeltaboxFileSystem
   private readonly delegate = new AsyncLocalStorage<boolean>()
 
   async resolve(path: string, opts?: { cwd?: string, signal?: AbortSignal }): Promise<FsTarget> {
-    const paths = deltaboxOf(this.ctx)?.paths
+    const runtime = deltaboxOf(this.ctx)
+    if (this.ctx.agents.currentInitiator()) await runtime?.acquireCurrent()
+    const paths = runtime?.paths
     return this.delegate.run(true, () => super.resolve(paths && (isAbsolute(path) || opts?.cwd || paths.isShellPath(path)) ? paths.physical(path, opts?.cwd) : path, opts))
   }
 
@@ -21,8 +23,10 @@ export default abstract class CandidateViewFileSystem extends DeltaboxFileSystem
     return deltaboxOf(this.ctx)?.paths.visible(path, target.displayPath) ?? path
   }
 
-  lstat(path: string, opts?: { cwd?: string }, signal?: AbortSignal) {
-    const paths = deltaboxOf(this.ctx)?.paths
+  async lstat(path: string, opts?: { cwd?: string }, signal?: AbortSignal) {
+    const runtime = deltaboxOf(this.ctx)
+    if (this.ctx.agents.currentInitiator()) await runtime?.acquireCurrent()
+    const paths = runtime?.paths
     return this.delegate.run(true, () => super.lstat(paths && (isAbsolute(path) || opts?.cwd || paths.isShellPath(path)) ? paths.physical(path, opts?.cwd) : path, opts, signal))
   }
 

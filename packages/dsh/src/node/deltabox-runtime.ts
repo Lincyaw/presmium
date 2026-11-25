@@ -14,6 +14,7 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
   private readonly candidateClosures = new Map<string, Promise<void>>()
   readonly paths = new CandidatePaths()
   private readonly candidateAgents = new Map<string, RuntimeAgent>()
+  private readonly closingViews = new Map<string, Promise<void>>()
 
   constructor(...args: ConstructorParameters<typeof DeltaboxRuntime>) {
     super(...args)
@@ -81,6 +82,7 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
     agent = this.candidateAgent(agent)
     const presmium = this.ctx.get('presmium') as Presmium | undefined
     await presmium?.bindings.prepareCandidateRoot(agent as unknown as DshAgent, super.projectRootFor(agent))
+    await this.closingViews.get(this.projectRootFor(agent))
     const previous = this.existingSession(agent)
     if (previous && previous.projectRoot !== this.projectRootFor(agent)) await previous.close()
     if (process.platform === 'darwin' && presmium?.bindings.candidateRootOf(agent as unknown as DshAgent)) {
@@ -109,6 +111,19 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
     if (agent) await super.existingSession(agent)?.close()
     this.candidateAgents.delete(root)
     await this.paths.remove(root)
+  }
+
+  async closeView(agent: RuntimeAgent): Promise<void> {
+    agent = this.candidateAgent(agent)
+    const session = super.existingSession(agent)
+    if (!session) return
+    if (process.platform === 'darwin') { await session.close(); return }
+    const root = session.projectRoot
+    const previous = this.closingViews.get(root)
+    if (previous) return previous
+    const close = (async () => { try { await session.close() } finally { await this.paths.detach(root) } })()
+    this.closingViews.set(root, close)
+    try { await close } finally { if (this.closingViews.get(root) === close) this.closingViews.delete(root) }
   }
 }
 
