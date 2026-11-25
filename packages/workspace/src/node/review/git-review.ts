@@ -62,6 +62,8 @@ async function gitDirsOf(root: string): Promise<GitDirs> {
   return { top: realpathSync.native(top), gitDir: realpathSync.native(gitDir), commonDir: realpathSync.native(resolve(root, commonDir)) }
 }
 
+const canonicalGitDirs = (dirs: GitDirs): GitDirs => ({ top: realpathSync.native(dirs.top), gitDir: realpathSync.native(dirs.gitDir), commonDir: realpathSync.native(dirs.commonDir) })
+
 const COPIED_CONFIG_KEYS = '^(core\\.(filemode|symlinks|ignorecase|precomposeunicode|autocrlf|eol|safecrlf|excludesfile)|extensions\\.objectformat)$'
 
 const quoted = (value: string) => `"${value.replace(/[\\"]/g, c => `\\${c}`).replace(/\n/g, '\\n')}"`
@@ -273,8 +275,9 @@ async function rollBackLeftReview(scopeDir: string, root: string, options: Omit<
   if (!record || record.session || openScopes.has(scopeDir) || isHolderAlive(record)) return undefined
   let trees: ReviewTrees | undefined
   try {
-    if (record.guard) gitDirGuard(record.dirs.gitDir, scopeDir, root, options.onRestore, record.guard).restore()
-    trees = new ReviewTrees(record.dirs, scopeDir, root, await isolatedGitConfig(record.dirs), options)
+    const dirs = canonicalGitDirs(record.dirs)
+    if (record.guard) gitDirGuard(dirs.gitDir, scopeDir, root, options.onRestore, record.guard).restore()
+    trees = new ReviewTrees(dirs, scopeDir, root, await isolatedGitConfig(dirs), options)
     const paths = await trees.changedPaths(record.snapshot, await trees.tree())
     await trees.restore(record.snapshot, paths)
     return { task: record.task, paths }
@@ -321,11 +324,12 @@ export async function resumeGitReview(record: ReviewRecord, options: Omit<GitRev
   const scopeDir = realpathSync.native(record.scopeDir)
   const root = realpathSync.native(options.workspaceRoot)
   if (openScopes.has(scopeDir) || isHolderAlive(record)) throw new Error(`a change of ${relative(root, scopeDir) || '.'} is under way already`)
-  const { restore: restoreGitDir } = gitDirGuard(record.dirs.gitDir, scopeDir, root, options.onRestore, record.guard)
+  const dirs = canonicalGitDirs(record.dirs)
+  const { restore: restoreGitDir } = gitDirGuard(dirs.gitDir, scopeDir, root, options.onRestore, record.guard)
   restoreGitDir()
-  const trees = new ReviewTrees(record.dirs, scopeDir, root, await isolatedGitConfig(record.dirs), options)
+  const trees = new ReviewTrees(dirs, scopeDir, root, await isolatedGitConfig(dirs), options)
   openScopes.add(scopeDir)
-  return createGitReview({ scopeDir, trees, restoreGitDir, record: { ...record, ...THIS_PROCESS }, warn: options.warn })
+  return createGitReview({ scopeDir, trees, restoreGitDir, record: { ...record, scopeDir, dirs, ...THIS_PROCESS }, warn: options.warn })
 }
 
 function createGitReview(open: { scopeDir: string, trees: ReviewTrees, restoreGitDir: () => void, record: ReviewRecord, warn?: (message: string) => void }): GitReview {

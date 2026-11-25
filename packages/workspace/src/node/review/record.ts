@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { Member, ReviewStep } from '@lincyaw/kernel'
@@ -37,7 +37,31 @@ export function recordsDir(env: NodeJS.ProcessEnv = process.env): string {
   return join(env.XDG_STATE_HOME || join(env.HOME || homedir(), '.local', 'state'), 'presmium', 'reviews')
 }
 
-const recordFile = (scopeDir: string) => join(recordsDir(), `${createHash('sha256').update(scopeDir).digest('hex').slice(0, 24)}.json`)
+const canonicalScope = (scopeDir: string): string => {
+  try { const path = realpathSync.native(scopeDir); return process.platform === 'win32' ? path.toLowerCase() : path } catch { return scopeDir }
+}
+const legacyRecordFile = (scopeDir: string) => join(recordsDir(), `${createHash('sha256').update(scopeDir).digest('hex').slice(0, 24)}.json`)
+const recordFile = (scopeDir: string) => legacyRecordFile(canonicalScope(scopeDir))
+
+/** Earlier Windows records could hash either the short or the long name of one directory. */
+function recordFiles(scopeDir: string): string[] {
+  const files = new Set([recordFile(scopeDir), legacyRecordFile(scopeDir)])
+  if (process.platform === 'win32') {
+    let names: string[] = []
+    try { names = readdirSync(recordsDir()) } catch {}
+    const scope = canonicalScope(scopeDir)
+    for (const name of names) {
+      if (!/^[a-f0-9]{24}\.json$/.test(name)) continue
+      const file = join(recordsDir(), name)
+      try {
+        const record = JSON.parse(readFileSync(file, 'utf8')) as Partial<ReviewRecord> & { deck?: string }
+        const root = record.recordRoot ?? record.scopeDir ?? record.deck
+        if (root && canonicalScope(root) === scope) files.add(file)
+      } catch {}
+    }
+  }
+  return [...files]
+}
 
 export function processStartTime(pid: number): string | undefined {
   try {
@@ -61,21 +85,25 @@ export function isHolderAlive(record: ReviewRecord): boolean {
 
 /** Reads the record of a review of the directory; records of earlier versions name the directory `deck`. */
 export function readRecord(scopeDir: string): ReviewRecord | undefined {
-  try {
-    const { deck, ...record } = JSON.parse(readFileSync(recordFile(scopeDir), 'utf8')) as Partial<ReviewRecord> & { deck?: string }
-    return { ...record, scopeDir: record.scopeDir ?? deck } as ReviewRecord
-  } catch {
-    return undefined
+  for (const file of recordFiles(scopeDir)) {
+    try {
+      const { deck, ...record } = JSON.parse(readFileSync(file, 'utf8')) as Partial<ReviewRecord> & { deck?: string }
+      return { ...record, scopeDir: record.scopeDir ?? deck } as ReviewRecord
+    } catch {}
   }
+  return undefined
 }
 
 export function writeRecord(record: ReviewRecord): void {
-  const file = recordFile(record.recordRoot ?? record.scopeDir)
+  const root = record.recordRoot ?? record.scopeDir
+  const previous = recordFiles(root)
+  const file = recordFile(root)
   mkdirSync(recordsDir(), { recursive: true, mode: 0o700 })
   writeFileSync(`${file}.${process.pid}`, JSON.stringify(record), { mode: 0o600 })
   renameSync(`${file}.${process.pid}`, file)
+  for (const old of previous) if (old !== file) rmSync(old, { force: true })
 }
 
 export function removeRecord(scopeDir: string): void {
-  rmSync(recordFile(scopeDir), { force: true })
+  for (const file of recordFiles(scopeDir)) rmSync(file, { force: true })
 }
