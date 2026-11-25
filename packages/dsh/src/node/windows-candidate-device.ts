@@ -25,8 +25,15 @@ export class WindowsCandidateDevices {
     throw new Error('The candidate device has too many definitions')
   }
 
-  set(name: string, view: string): void {
-    const target = `\\??\\${view}`
+  volumeTarget(view: string): string {
+    const match = /^([a-z]:)([\\/].*)$/i.exec(view)
+    const volume = match && this.target(match[1]!)
+    if (!match || !volume) throw new Error('The candidate volume is unavailable')
+    // Bind the unique NT volume, not Z:, which WinFsp can give to a different workspace later.
+    return volume.replace(/[\\/]$/, '') + match[2]!.replaceAll('/', '\\')
+  }
+
+  set(name: string, target: string): void {
     if (this.target(name)?.toLowerCase() === target.toLowerCase()) return
     this.remove(name)
     // RAW_TARGET_PATH | NO_BROADCAST_SYSTEM. Default scope is the caller's logon, not Global.

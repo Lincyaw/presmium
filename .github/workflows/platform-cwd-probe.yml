@@ -136,3 +136,20 @@ jobs:
           '{"private":true,"type":"module","dependencies":{"deltabox-lite":"0.3.0","jiti":"2.7.0","@lincyaw/kernel":"1.0.0-rc.138","koffi":"3.3.8"}}' | Set-Content package.json
           pnpm install --prod --registry https://registry.npmjs.org
           node native-fast-windows.mjs
+      - name: Install full consumer with native ARM tooling
+        shell: pwsh
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: |
+          Add-Content pnpm-workspace.yaml "`nsupportedArchitectures:`n  os: [win32]`n  cpu: [arm64, x64]"
+          pnpm --filter @lincyaw/presmium... install --frozen-lockfile
+          node packages/dsh/build/client.mjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.3'
+          architecture: x64
+      - name: Real Harness with published x64 addon and architecture-matched helper
+        shell: pwsh
+        run: |
+          $env:DELTABOX_BINARY = Join-Path $pwd 'official-native/target/debug/deltabox.exe'
+          node bootstrap-cwd-probe.mjs platform-harness-run.mjs

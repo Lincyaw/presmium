@@ -33,25 +33,28 @@ export class CandidatePaths {
   withRoot<T>(root: string, operation: () => T): T { return this.#scope.run(candidateRoot(root), operation) }
 
   /** Only the host may replace this entry; an ordinary sandboxed command cannot unlink it. */
-  async install(root: string, view: string): Promise<string> {
+  async install(root: string, view: string, valid: () => boolean = () => true): Promise<string> {
     root = candidateRoot(root)
     const previous = this.#pending.get(root) ?? Promise.resolve('')
-    const pending = previous.catch(() => '').then(() => this.#install(root, view))
+    const pending = previous.catch(() => '').then(() => this.#install(root, view, valid))
     this.#pending.set(root, pending)
     try { return await pending } finally { if (this.#pending.get(root) === pending) this.#pending.delete(root) }
   }
 
-  async #install(root: string, view: string): Promise<string> {
+  async #install(root: string, view: string, valid: () => boolean): Promise<string> {
     this.#lifecycle.signal.throwIfAborted()
+    if (!valid()) throw new Error('The candidate view has retired')
     let known = this.#views.get(root)
     const path = this.pathFor(root)
     // WinFsp presents a network volume: use a real DOS device instead of an NTFS junction.
     if (process.platform === 'win32') {
+      const target = this.#devices!.volumeTarget(view)
       const metadata = join(this.#base, key(root), 'workspace')
       await this.#directory(this.#base)
       const release = known?.release ?? await acquireCandidateLease(metadata, this.#lifecycle.signal)
       try {
-        this.#devices!.set(`pm${key(root).slice(0, 32)}`, view)
+        if (!valid()) throw new Error('The candidate view has retired')
+        this.#devices!.set(`pm${key(root).slice(0, 32)}`, target)
         this.#views.set(root, { root, view, path, active: true, release })
         return path
       } catch (error) { if (!known) await release(); throw error }
@@ -60,12 +63,16 @@ export class CandidatePaths {
       const entry = await lstat(known.path).catch(error => { if (error.code !== 'ENOENT') throw error })
       if (entry && !entry.isSymbolicLink()) throw new Error('The candidate entry is not a host-owned link')
       if (entry && entry.uid !== process.getuid!()) throw new Error('The candidate entry has another owner')
-      if (entry && coordinate(await readlink(known.path)) === coordinate(view)) return known.path
+      if (entry && coordinate(await readlink(known.path)) === coordinate(view)) {
+        if (!valid()) throw new Error('The candidate view has retired')
+        return known.path
+      }
     }
     await this.#directory(this.#base)
     await this.#directory(resolve(path, '..'))
     const release = known?.release ?? await acquireCandidateLease(path, this.#lifecycle.signal)
     try {
+      if (!valid()) throw new Error('The candidate view has retired')
       const entry = await lstat(path).catch(error => { if (error.code !== 'ENOENT') throw error })
       if (entry && !entry.isSymbolicLink()) throw new Error('The candidate entry is not a host-owned link')
       if (entry && entry.uid !== process.getuid!()) throw new Error('The candidate entry has another owner')
@@ -94,7 +101,7 @@ export class CandidatePaths {
     const item = this.#views.get(candidateRoot(root))
     if (item?.active && isInside(path, item.view)) {
       const name = `pm${key(item.root).slice(0, 32)}`
-      return { name, root: item.path, path: `${name}:\\${relative(item.view, path)}` }
+      return { name, root: item.view, path: `${name}:\\${relative(item.view, path)}` }
     }
     return undefined
   }
@@ -160,5 +167,10 @@ export class CandidatePaths {
     item.active = false
     if (this.#devices) this.#devices.remove(`pm${key(item.root).slice(0, 32)}`)
     else await rm(item.path, { force: true })
+  }
+
+  unavailable(root: string): void {
+    const item = this.#views.get(candidateRoot(root))
+    if (item) item.active = false
   }
 }
