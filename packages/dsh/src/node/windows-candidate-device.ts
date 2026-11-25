@@ -26,6 +26,13 @@ export class WindowsCandidateDevices {
   }
 
   volumeTarget(view: string): string {
+    if (view.startsWith('\\\\?\\UNC\\')) view = `\\\\${view.slice(8)}`
+    else if (/^\\\\\?\\[a-z]:/i.test(view)) view = view.slice(4)
+    if (/^\\\\[^\\]+\\[^\\]+(?:\\|$)/.test(view)) {
+      // Harness canonicalizes a WinFsp network drive to its unique UNC share.
+      // The share names the view itself; it does not depend on a recyclable drive letter.
+      return `\\??\\UNC\\${view.slice(2).replace(/[\\/]$/, '')}`
+    }
     const match = /^([a-z]:)([\\/].*)$/i.exec(view)
     const volume = match && this.target(match[1]!)
     if (!match || !volume) throw new Error('The candidate volume is unavailable')

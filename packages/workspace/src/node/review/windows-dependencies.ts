@@ -10,6 +10,11 @@ type Manifest = { name?: string, dependencies?: Record<string, string>, devDepen
 type File = { source: string, path: string, mode: number, digest: string }
 type Package = { source: string, manifest: Manifest, files: File[], directories: string[], direct: Set<string> }
 const validName = (name: string) => /^(?:@[^/\\]+\/)?[^/\\]+$/.test(name) && !name.split('/').some(part => part === '.' || part === '..')
+const digestOf = async (path: string): Promise<string> => {
+  const hash = createHash('sha256')
+  for await (const chunk of createReadStream(path)) hash.update(chunk)
+  return hash.digest('hex')
+}
 const json = async (file: string): Promise<Manifest> => JSON.parse(await readFile(file, 'utf8').catch(error => { if (error.code === 'ENOENT') return '{}'; throw error }))
 const namesOf = (pkg: Manifest, root = false) => new Set(Object.keys({ ...pkg.dependencies, ...pkg.optionalDependencies, ...pkg.peerDependencies, ...root ? pkg.devDependencies : {} }))
 
@@ -37,9 +42,7 @@ export class WindowsDependencies {
           const version = [info.dev, info.ino, info.size, info.mtimeNs, info.ctimeNs, info.mode].join(':')
           let known = this.#hashes.get(resolved)
           if (known?.version !== version) {
-            const hash = createHash('sha256')
-            for await (const chunk of createReadStream(resolved)) hash.update(chunk)
-            const digest = hash.digest('hex')
+            const digest = await digestOf(resolved)
             this.#hashes.set(resolved, known = { version, digest })
           }
           files.push({ source: resolved, path: target, mode: Number(info.mode) & 0o777, digest: known!.digest })
@@ -92,7 +95,9 @@ export class WindowsDependencies {
       const path = await find(source, name)
       if (path) tree.dependencies.add(await visit(name, path))
     }
-    const stamp = createHash('sha256').update(JSON.stringify([manifest, [...packages].map(([id, pkg]) => [id, pkg.files.map(file => [file.path, file.mode, file.digest]), pkg.directories])])).digest('hex')
+    const edges = (node: HoisterTree) => [...node.dependencies].map(dependency => `${dependency.name}:${dependency.reference}`).sort()
+    const topology = [...nodes].sort(([a], [b]) => a.localeCompare(b)).map(([id, node]) => [id, node.identName, [...node.peerNames].sort(), edges(node)])
+    const stamp = createHash('sha256').update(JSON.stringify([manifest, edges(tree), topology, [...packages].map(([id, pkg]) => [id, pkg.files.map(file => [file.path, file.mode, file.digest]), pkg.directories])])).digest('hex')
     return { tree, packages, stamp, direct: namesOf(manifest, true) }
   }
 
@@ -121,6 +126,7 @@ export class WindowsDependencies {
           for (const file of pkg.files) {
             const output = join(directory, file.path)
             await copyFile(file.source, output, constants.COPYFILE_FICLONE)
+            if (await digestOf(output) !== file.digest) throw new Error('Windows source dependencies changed while their candidate snapshot was copied')
             await chmod(output, file.mode)
           }
           const commands = typeof pkg.manifest.bin === 'string' ? { [basename(pkg.manifest.name ?? dependency.name)]: pkg.manifest.bin } : pkg.manifest.bin ?? {}

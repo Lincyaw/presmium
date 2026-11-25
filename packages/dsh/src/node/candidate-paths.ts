@@ -146,7 +146,7 @@ export class CandidatePaths {
       }
     }
     const directory = cwd && this.isShellPath(cwd) ? this.visible(this.physical(cwd)) : cwd
-    const absolute = isAbsolute(path) ? resolve(path) : resolve(directory ?? process.cwd(), path)
+    const absolute = nativePath(isAbsolute(path) ? resolve(path) : resolve(directory ?? process.cwd(), path))
     for (const item of this.#views.values()) for (const source of [item.path, item.root, item.canonicalView]) if (isInside(absolute, source)) {
       if (!item.active) throw new Error('The candidate directory is unavailable')
       return join(item.view, relative(source, absolute))
