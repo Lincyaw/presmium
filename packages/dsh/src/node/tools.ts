@@ -179,7 +179,9 @@ export function apply(ctx: DshContext): void {
     registered.delete(agent)
     previous?.stop?.()
     for (const dispose of previous?.dispose ?? []) dispose()
-    await ctx.presmium.bindings.retireCandidate(agent)
+    const bindings = ctx.presmium.bindings
+    if (bindings.rootSessionOf(agent) === agent.session.id) await bindings.serializeCandidate(agent, () => bindings.retireCandidate(agent))
+    else await bindings.unbind(agent.session.id, false)
   })
   ctx.on('agent/pre-step', async ({ agent }: { agent: DshAgent }, next: () => Promise<unknown>) => {
     await ctx.presmium.bindings.serializeCandidate(agent, () => ctx.presmium.bindings.refreshCandidate(agent))

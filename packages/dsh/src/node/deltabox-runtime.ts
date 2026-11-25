@@ -17,7 +17,7 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
 
   constructor(...args: ConstructorParameters<typeof DeltaboxRuntime>) {
     super(...args)
-    this.ctx.on('agent/disposed', async ({ agent }) => this.closeCandidate(agent))
+    this.ctx.on('agent/disposed', async ({ agent }) => { if (this.candidateAgent(agent) === agent) await this.closeCandidate(agent) })
     this.ctx.effect(() => () => Promise.all([...this.candidateLeases.values()].map(({ agent }) => this.closeCandidate(agent))))
     this.ctx.effect(() => async () => {
       await Promise.all([...this.candidateAgents].map(agent => super.existingSession(agent)?.close()))
@@ -39,8 +39,8 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
     return id && id !== agent.session.id ? this.ctx.agents.get(id as RuntimeAgent['session']['id']) ?? agent : agent
   }
 
-  sessionFor(agent: RuntimeAgent): ReturnType<DeltaboxRuntime['sessionFor']> { return super.sessionFor(this.candidateAgent(agent)) }
-  existingSession(agent: RuntimeAgent): ReturnType<DeltaboxRuntime['existingSession']> { return super.existingSession(this.candidateAgent(agent)) }
+  candidateSession(agent: RuntimeAgent): ReturnType<DeltaboxRuntime['existingSession']> { return super.existingSession(this.candidateAgent(agent)) }
+  currentSession(): ReturnType<DeltaboxRuntime['currentSession']> { return super.sessionFor(this.candidateAgent(this.ctx.agents.requireInitiator())) }
 
   /** Close native ownership before a host review, refresh or removal touches the candidate. */
   async closeCandidate(agent: RuntimeAgent): Promise<void> {
@@ -105,7 +105,7 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
   }
 
   async retirePaths(root: string): Promise<void> {
-    for (const agent of this.candidateAgents) if (this.projectRootFor(agent) === root) {
+    for (const agent of this.candidateAgents) if (super.existingSession(agent)?.projectRoot === root) {
       await super.existingSession(agent)?.close()
       this.candidateAgents.delete(agent)
     }

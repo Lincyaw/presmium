@@ -240,7 +240,7 @@ export class DocumentBindings {
         const { root } = await this.#server.requestJson<{ root: string }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id } })
         this.#candidateRoots.set(id, root)
         const runtime = deltaboxOf(this.#ctx)
-        const previous = runtime?.existingSession(runtimeAgent(agent))
+        const previous = runtime?.candidateSession(runtimeAgent(agent))
         if (previous && previous.projectRoot !== root) await previous.close()
         const session = await runtime?.acquireFor(runtimeAgent(agent))
         let view: string
@@ -317,14 +317,14 @@ export class DocumentBindings {
   /** Retire the private view only at a tool/step boundary, before its next binding is installed. */
   async retireCandidate(agent: DshAgent): Promise<void> {
     const id = this.rootSessionOf(agent)
-    await this.unbind(agent.session.id, false)
+    for (const owner of this.#candidateOwners.get(id) ?? [agent.session.id]) await this.unbind(owner, false)
     const candidate = this.#candidates.get(id)
     this.#candidates.delete(id)
     if (candidate) await (await candidate).close()
     this.#candidateViews.delete(id)
     const runtime = deltaboxOf(this.#ctx)
     await runtime?.closeCandidate(runtimeAgent(agent))
-    await runtime?.existingSession(runtimeAgent(agent))?.close()
+    await runtime?.candidateSession(runtimeAgent(agent))?.close()
     this.#renewCandidates.delete(id)
   }
 

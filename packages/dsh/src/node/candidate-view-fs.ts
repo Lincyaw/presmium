@@ -12,6 +12,8 @@ export default abstract class CandidateViewFileSystem extends DeltaboxFileSystem
 
   processPath(target: FsTarget): string {
     const path = super.processPath(target)
+    // Host/preview targets retain their own coordinates, including calls made inside the provider.
+    if (path === target.displayPath) return path
     return deltaboxOf(this.ctx)?.paths.visible(path) ?? path
   }
 
