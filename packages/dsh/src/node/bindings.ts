@@ -240,7 +240,12 @@ export class DocumentBindings {
     return id
   }
 
-  async candidateOf(agent: DshAgent): Promise<WorkspaceServerClient> {
+  candidateOf(agent: DshAgent): Promise<WorkspaceServerClient> {
+    return this.accessCandidate(agent, () => this.#candidateOf(agent))
+  }
+
+  async #candidateOf(agent: DshAgent): Promise<WorkspaceServerClient> {
+    await deltaboxOf(this.#ctx)?.selectCandidateAgent(runtimeAgent(agent))
     const id = this.rootSessionOf(agent)
     let owners = this.#candidateOwners.get(id)
     if (!owners) this.#candidateOwners.set(id, owners = new Set())
@@ -300,7 +305,7 @@ export class DocumentBindings {
   async prepareCandidateRoot(agent: DshAgent, projectRoot: string): Promise<void> {
     if (this.candidateRootOf(agent)) return
     const { root } = await this.#server.ready
-    if (!isInside(projectRoot, root)) return
+    if (!isInside(realPath(projectRoot), realPath(root))) return
     const id = this.rootSessionOf(agent)
     const candidate = await this.#server.requestJson<{ root: string }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id } })
     if (!this.#candidateRoots.has(id)) this.#candidateRoots.set(id, candidate.root)
@@ -366,6 +371,13 @@ export class DocumentBindings {
   }
 
   bind(agent: DshAgent): Promise<DocumentBinding | undefined> {
+    return this.accessCandidate(agent, async () => {
+      await deltaboxOf(this.#ctx)?.selectCandidateAgent(runtimeAgent(agent))
+      return this.#bindOnce(agent)
+    })
+  }
+
+  #bindOnce(agent: DshAgent): Promise<DocumentBinding | undefined> {
     const id = agent.session.id
     let known = this.#bindRequests.get(id)
     if (!known) {
@@ -538,4 +550,3 @@ export class DocumentBindings {
     this.#parents.clear()
   }
 }
-

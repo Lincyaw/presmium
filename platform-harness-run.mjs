@@ -10,7 +10,7 @@ writeFileSync(root+'/trace-cwd-probe.yml', '- insert:\n    - id: trace-cwd-probe
 const require=createRequire(root+'/packages/dsh/package.json');const {createJiti}=require('jiti');const jiti=createJiti(root+'/')
 const {testHome,running}=await jiti.import('./packages/dsh/test/harness.ts');const {fakeModel}=await jiti.import('./packages/dsh/src/node/fake-model.ts')
 const ws=mkdtempSync(join(tmpdir(),'presmium-stable-manual-doc-'));const file=ws+'/index.pmd'
-symlinkSync(root+'/packages/presmium/node_modules',ws+'/node_modules','junction');writeFileSync(ws+'/.gitignore','node_modules/\n.presmium/\n')
+if(process.platform!=='win32')symlinkSync(root+'/packages/presmium/node_modules',ws+'/node_modules','dir');writeFileSync(ws+'/.gitignore','node_modules/\n.presmium/\n')
 const base=JSON.parse(readFileSync(root+'/packages/workspace/templates/document/default/index.pmd','utf8'));base.metadata.title='Base';base.sections.intro.title='Base';writeFileSync(file,JSON.stringify(base,null,2)+'\n')
 writeFileSync(ws+'/presmium.workspace.yaml','title: Stable candidate\nsettings:\n  presmium.assistant:\n    review: required\n')
 const read={tool:'read',input:{file_path:'index.pmd'}};const pwd={tool:'bash',input:{command:process.platform==='win32'?'(Get-Location).Path':'pwd',description:'Read candidate directory'}}

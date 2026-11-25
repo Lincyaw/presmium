@@ -14,19 +14,18 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
   private readonly candidateLeases = new Map<string, { agent: RuntimeAgent, cancel: AbortController, lease: Promise<() => Promise<void>> }>()
   private readonly candidateClosures = new Map<string, Promise<void>>()
   readonly paths = new CandidatePaths()
-  private readonly candidateAgents = new Map<string, RuntimeAgent>()
+  private readonly candidateAgents = new Map<string, { agent: RuntimeAgent, session: Awaited<ReturnType<DeltaboxRuntime['acquireFor']>> }>()
   private readonly closingViews = new Map<string, Promise<void>>()
 
   constructor(...args: ConstructorParameters<typeof DeltaboxRuntime>) {
     super(...args)
     this.ctx.on('agent/disposed', async ({ agent }) => {
-      if (this.candidateAgent(agent) === agent) await this.closeCandidate(agent)
-      for (const [root, owner] of this.candidateAgents) if (owner.session.id === agent.session.id) this.candidateAgents.delete(root)
+      await this.closeCandidate(agent)
     })
     this.ctx.effect(() => () => Promise.all([...this.candidateLeases.values()].map(({ agent }) => this.closeCandidate(agent))))
     this.ctx.effect(() => async () => {
       this.paths.cancelPending()
-      await Promise.all([...this.candidateAgents].map(([root, agent]) => this.closeRootView(root, super.existingSession(agent))))
+      await Promise.all([...this.candidateAgents].map(([root, owner]) => this.closeRootView(root, owner.session)))
       await this.paths.close()
     })
     const context = this.ctx as unknown as DshContext
@@ -40,24 +39,26 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
     })
   }
 
-  /** Related agents edit one candidate and therefore share its native transaction owner. */
-  private candidateAgent(agent: RuntimeAgent): RuntimeAgent {
-    if (process.platform === 'darwin') return agent
+  /** Handoff the candidate under its root queue; every native handle keeps its exact Agent identity. */
+  async selectCandidateAgent(agent: RuntimeAgent): Promise<void> {
+    if (process.platform === 'darwin') return
     const presmium = this.ctx.get('presmium') as Presmium | undefined
-    const id = presmium?.bindings.rootSessionOf(agent as unknown as DshAgent)
-    return id && id !== agent.session.id ? this.ctx.agents.get(id as RuntimeAgent['session']['id']) ?? agent : agent
+    await presmium?.bindings.prepareCandidateRoot(agent as unknown as DshAgent, super.projectRootFor(agent))
+    const root = presmium?.bindings.candidateRootOf(agent as unknown as DshAgent)
+    const previous = root && this.candidateAgents.get(realpathSync(root))
+    if (previous && previous.agent !== agent) {
+      if (previous.session.reviewActive) await previous.session.reviewCommit()
+      await presmium!.bindings.retireCandidate(previous.agent as unknown as DshAgent)
+    }
   }
 
-  candidateSession(agent: RuntimeAgent): ReturnType<DeltaboxRuntime['existingSession']> { return super.existingSession(this.candidateAgent(agent)) }
-  currentSession(): ReturnType<DeltaboxRuntime['currentSession']> {
-    const agent = this.ctx.agents.requireInitiator()
-    const owner = this.candidateAgent(agent)
-    return owner === agent ? super.currentSession() : super.sessionFor(owner)
+  ownsCandidate(agent: RuntimeAgent): boolean {
+    return [...this.candidateAgents.values()].some(owner => owner.agent === agent)
   }
+  candidateSession(agent: RuntimeAgent): ReturnType<DeltaboxRuntime['existingSession']> { return super.existingSession(agent) }
 
   /** Close native ownership before a host review, refresh or removal touches the candidate. */
   async closeCandidate(agent: RuntimeAgent): Promise<void> {
-    agent = this.candidateAgent(agent)
     const id = agent.session.id
     const closing = this.candidateClosures.get(id)
     if (closing) return closing
@@ -86,9 +87,9 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
    * DeltaBox before Presmium binds the agent; on the author's workspace that would put DeltaBox's live tree there.
    */
   async acquireFor(agent: RuntimeAgent): ReturnType<DeltaboxRuntime['acquireFor']> {
-    agent = this.candidateAgent(agent)
     const presmium = this.ctx.get('presmium') as Presmium | undefined
     await presmium?.bindings.prepareCandidateRoot(agent as unknown as DshAgent, super.projectRootFor(agent))
+    await this.selectCandidateAgent(agent)
     await this.closingViews.get(this.projectRootFor(agent))
     const previous = this.existingSession(agent)
     if (previous && previous.projectRoot !== this.projectRootFor(agent)) await previous.close()
@@ -107,36 +108,39 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
     const session = await super.acquireFor(agent)
     const root = presmium?.bindings.candidateRootOf(agent as unknown as DshAgent)
     if (root && process.platform !== 'darwin') {
-      this.candidateAgents.set(root, agent)
+      this.candidateAgents.set(session.projectRoot, { agent, session })
       await this.paths.install(root, (await session.target()).mountpoint, () => session.lifecycle === 'open')
     }
     return session
   }
 
   async retirePaths(root: string): Promise<void> {
-    const agent = this.candidateAgents.get(root)
-    await this.closeRootView(root, agent ? super.existingSession(agent) : undefined)
+    const owner = this.candidateAgents.get(root)
+    await this.closeRootView(root, owner?.session)
     this.candidateAgents.delete(root)
     await this.paths.remove(root)
   }
 
   async closeView(agent: RuntimeAgent): Promise<void> {
-    agent = this.candidateAgent(agent)
     const session = super.existingSession(agent)
     const presmium = this.ctx.get('presmium') as Presmium | undefined
-    const root = session?.projectRoot ?? presmium?.bindings.candidateRootOf(agent as unknown as DshAgent)
-    if (root) await this.closeRootView(root, session)
+    const root = presmium?.bindings.candidateRootOf(agent as unknown as DshAgent) ?? session?.projectRoot
+    if (root) await this.closeRootView(root, this.candidateAgents.get(realpathSync(root))?.session ?? session)
   }
 
   private async closeRootView(root: string, session: ReturnType<DeltaboxRuntime['existingSession']>): Promise<void> {
     if (process.platform === 'darwin') { await session?.close(); return }
     try { root = session?.projectRoot ?? realpathSync(root) } catch { root = resolve(root) }
+    session = this.candidateAgents.get(root)?.session ?? session
     const previous = this.closingViews.get(root)
     if (previous) return previous
     this.paths.unavailable(root)
     const close = (async () => { try { await session?.close() } finally { await this.paths.detach(root) } })()
     this.closingViews.set(root, close)
-    try { await close } finally { if (this.closingViews.get(root) === close) this.closingViews.delete(root) }
+    try { await close } finally {
+      if (this.closingViews.get(root) === close) this.closingViews.delete(root)
+      if (this.candidateAgents.get(root)?.session === session) this.candidateAgents.delete(root)
+    }
   }
 }
 
