@@ -38,6 +38,8 @@
     "./assistant": "./entries/assistant.mjs",
     "./deltabox-runtime": "./entries/deltabox-runtime.mjs",
     "./candidate-fs": "./entries/candidate-fs.mjs",
+    "./candidate-view-fs": "./entries/candidate-view-fs.mjs",
+    "./candidate-shell": "./entries/candidate-shell.mjs",
     "./telemetry": "./entries/telemetry.mjs",
     "./events": {
       "types": "./src/node/workspace-events.ts",

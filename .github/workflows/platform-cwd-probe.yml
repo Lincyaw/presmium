@@ -35,6 +35,11 @@ jobs:
           node-version: '24.22.3'
           architecture: x64
           cache: pnpm
-      - run: pnpm --filter . --filter @lincyaw/dsh... install --frozen-lockfile
+      - run: pnpm --filter . --filter @lincyaw/presmium... install --frozen-lockfile
+      - run: node packages/dsh/build/client.mjs
       - name: Real native cwd and publication
+        continue-on-error: true
         run: node bootstrap-cwd-probe.mjs
+      - name: Real Harness review and publication
+        if: always()
+        run: node bootstrap-cwd-probe.mjs platform-harness-run.mjs

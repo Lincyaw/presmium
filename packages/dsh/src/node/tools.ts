@@ -182,7 +182,7 @@ export function apply(ctx: DshContext): void {
     await ctx.presmium.bindings.retireCandidate(agent)
   })
   ctx.on('agent/pre-step', async ({ agent }: { agent: DshAgent }, next: () => Promise<unknown>) => {
-    await ctx.presmium.bindings.refreshCandidate(agent)
+    await ctx.presmium.bindings.serializeCandidate(agent, () => ctx.presmium.bindings.refreshCandidate(agent))
     await sync(agent)
     return next()
   })

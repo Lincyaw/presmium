@@ -211,6 +211,15 @@ export class DocumentBindings {
   readonly #candidateViews = new Map<string, string>()
   readonly #candidateOwners = new Map<string, Set<string>>()
   readonly #renewCandidates = new Set<string>()
+  readonly #executions = new Map<string, Promise<unknown>>()
+
+  /** View renewal and tools share a boundary; a parent's running tool keeps its entry until it ends. */
+  serializeCandidate<T>(agent: DshAgent, operation: () => Promise<T>): Promise<T> {
+    const id = this.rootSessionOf(agent)
+    const pending = (this.#executions.get(id) ?? Promise.resolve()).catch(() => undefined).then(operation)
+    this.#executions.set(id, pending)
+    return pending.finally(() => { if (this.#executions.get(id) === pending) this.#executions.delete(id) })
+  }
 
   rootSessionOf(agent: DshAgent): string {
     const header = agent.session.header as { origin?: string, parentSession?: string } | undefined
@@ -255,7 +264,8 @@ export class DocumentBindings {
     const workingDirectory = this.#ctx.get('workingDirectory') as { set(agent: DshAgent, path: string): Promise<string> } | undefined
     if (!workingDirectory) throw new Error('Presmium needs the workingDirectory service for concurrent authoring')
     try {
-      if (!isInside(this.workingDirectoryOf(agent), directory.root)) await workingDirectory.set(agent, directory.root)
+      const logical = this.candidateDirectoryOf(agent) ?? directory.root
+      if (!isInside(this.workingDirectoryOf(agent), logical)) await workingDirectory.set(agent, logical)
     } finally {
       await deltaboxOf(this.#ctx)?.closeCandidate(runtimeAgent(agent))
     }
@@ -278,6 +288,12 @@ export class DocumentBindings {
 
   candidateViewOf(agent: DshAgent | undefined): string | undefined {
     return agent ? this.#candidateViews.get(this.rootSessionOf(agent)) : undefined
+  }
+
+  candidateDirectoryOf(agent: DshAgent | undefined): string | undefined {
+    const root = this.candidateRootOf(agent)
+    const runtime = deltaboxOf(this.#ctx)
+    return root && process.platform !== 'darwin' && runtime ? runtime.paths.pathFor(root) : root
   }
 
   async refreshCandidate(agent: DshAgent): Promise<void> {
@@ -465,12 +481,14 @@ export class DocumentBindings {
       const owners = this.#candidateOwners.get(ownerId)
       owners?.delete(agentSessionId)
       if (owners?.size === 0) {
+        const root = this.#candidateRoots.get(ownerId)
         this.#candidateOwners.delete(ownerId)
         this.#candidateRoots.delete(ownerId)
         this.#candidateViews.delete(ownerId)
         const candidate = this.#candidates.get(ownerId)
         this.#candidates.delete(ownerId)
         if (candidate) await (await candidate).close()
+        if (root) await deltaboxOf(this.#ctx)?.retirePaths(root)
         await this.#server.requestJson(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: ownerId, close: true } })
       }
     }

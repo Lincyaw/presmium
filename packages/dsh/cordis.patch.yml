@@ -3,9 +3,11 @@
 - id: deltabox-runtime
   disabled: true
 - id: deltabox-fs
-  disabled: !!js process.platform === 'darwin'
+  disabled: true
 - id: deltabox-view
-  disabled: !!js process.platform === 'darwin'
+  disabled: true
+- id: deltabox-bash
+  name: '@lincyaw/dsh/candidate-shell'
 - id: deltabox-review-policy
   disabled: true
 - id: ptc-runtime
@@ -19,6 +21,9 @@
     - id: presmium-candidate-fs
       name: '@lincyaw/dsh/candidate-fs'
       disabled: !!js process.platform !== 'darwin'
+    - id: presmium-candidate-view-fs
+      name: '@lincyaw/dsh/candidate-view-fs'
+      disabled: !!js process.platform === 'darwin'
     - id: presmium-deltabox-runtime
       name: '@lincyaw/dsh/deltabox-runtime'
       config:
