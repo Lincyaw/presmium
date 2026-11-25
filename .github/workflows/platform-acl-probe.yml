@@ -1,0 +1,17 @@
+name: Temporary Windows private HOME probe
+on:
+  push:
+    branches: [codex/platform-cwd-probe]
+    paths: [packages/compiler/src/windows-run-home.ts, windows-acl-run.mjs, .github/workflows/platform-acl-probe.yml]
+permissions:
+  contents: read
+jobs:
+  native-acl:
+    runs-on: windows-2025
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.3'
+      - run: node windows-acl-run.mjs

@@ -17,21 +17,23 @@ $acl.SetAccessRuleProtection($true, $false)
 $rule = New-Object Security.AccessControl.FileSystemAccessRule($user, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow')
 $acl.AddAccessRule($rule)
 [IO.Directory]::CreateDirectory($path, $acl) | Out-Null
-$item = Get-Item -LiteralPath $path -Force
+$item = [IO.DirectoryInfo]::new($path)
 if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'The run HOME is a reparse point' }
-$actual = Get-Acl -LiteralPath $path
+$actual = $item.GetAccessControl()
 $allowed = @($user.Value, 'S-1-5-18', 'S-1-5-32-544')
 if ($actual.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $allowed) { throw 'The run HOME has another owner' }
 $full = $false
 foreach ($entry in $actual.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier])) {
-  if (($entry.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0) { continue }
   if ($entry.AccessControlType -ne 'Allow' -or $entry.IdentityReference.Value -notin $allowed) { throw 'The run HOME permits another account' }
+  if (($entry.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0) { continue }
   if ($entry.IdentityReference.Value -eq $user.Value -and ($entry.FileSystemRights -band [Security.AccessControl.FileSystemRights]::FullControl) -eq [Security.AccessControl.FileSystemRights]::FullControl) { $full = $true }
 }
 if (-not $full) { throw 'The run HOME is not writable by this user' }
 `
   const powershell = join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
-  execFileSync(powershell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], { windowsHide: true, timeout: 30_000, stdio: ['ignore', 'pipe', 'pipe'] })
+  try {
+    execFileSync(powershell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], { windowsHide: true, timeout: 30_000, stdio: ['ignore', 'pipe', 'pipe'] })
+  } catch (cause) { throw new Error(`the run HOME ${home} is not a private directory of this user`, { cause }) }
   const after = lstatSync(home)
   if (!after.isDirectory() || after.isSymbolicLink()) throw new Error(`the run HOME ${home} is not a private directory of this user`)
 }
