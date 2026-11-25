@@ -1,16 +1,17 @@
-import { execFile } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
+import { AsyncLocalStorage } from 'node:async_hooks'
+import { realpathSync } from 'node:fs'
 import { lstat, mkdir, readlink, realpath, rename, rm, symlink } from 'node:fs/promises'
-import { userInfo } from 'node:os'
-import { isAbsolute, join, relative, resolve } from 'node:path'
-import { promisify } from 'node:util'
+import { isAbsolute, join, relative, resolve, win32 } from 'node:path'
 import { acquireCandidateLease, isInside } from '@lincyaw/kernel/node'
 
-const run = promisify(execFile)
 const key = (value: string) => createHash('sha256').update(value).digest('hex')
 const coordinate = (value: string) => {
   const absolute = resolve(value)
   return process.platform === 'win32' ? (absolute.startsWith('\\\\?\\') ? absolute.slice(4) : absolute).toLowerCase() : absolute
+}
+const candidateRoot = (value: string) => {
+  try { return coordinate(realpathSync(value)) } catch { return coordinate(value) }
 }
 
 /** An execution-world entry, separate from DeltaBox's replaceable private view. */
@@ -18,14 +19,17 @@ export class CandidatePaths {
   readonly #views = new Map<string, { root: string, view: string, path: string, release: () => Promise<void> }>()
   readonly #pending = new Map<string, Promise<string>>()
   readonly #lifecycle = new AbortController()
+  readonly #scope = new AsyncLocalStorage<string>()
   readonly #base = process.platform === 'win32'
-    ? join(process.env.ProgramData || 'C:\\ProgramData', `Presmium-agent-${key(userInfo().username).slice(0, 24)}`)
+    ? '\\\\presmium\\agents'
     : join('/tmp', `presmium-agent-${process.getuid!()}`)
 
-  pathFor(root: string): string { return join(this.#base, key(resolve(root)), 'workspace') }
+  pathFor(root: string): string { return join(this.#base, key(candidateRoot(root)), 'workspace') }
+  withRoot<T>(root: string, operation: () => T): T { return this.#scope.run(candidateRoot(root), operation) }
 
   /** Only the host may replace this entry; an ordinary sandboxed command cannot unlink it. */
   async install(root: string, view: string): Promise<string> {
+    root = candidateRoot(root)
     const previous = this.#pending.get(root) ?? Promise.resolve('')
     const pending = previous.catch(() => '').then(() => this.#install(root, view))
     this.#pending.set(root, pending)
@@ -35,26 +39,30 @@ export class CandidatePaths {
   async #install(root: string, view: string): Promise<string> {
     this.#lifecycle.signal.throwIfAborted()
     let known = this.#views.get(root)
+    const path = this.pathFor(root)
+    // WinFsp presents a network volume: NTFS junctions cannot target it. Windows
+    // uses provider coordinates and a per-command PowerShell drive, without OS links.
+    if (process.platform === 'win32') {
+      this.#views.set(root, { root, view, path, release: async () => {} })
+      return path
+    }
     if (known?.view === view) {
       const entry = await lstat(known.path).catch(error => { if (error.code !== 'ENOENT') throw error })
       if (entry && !entry.isSymbolicLink()) throw new Error('The candidate entry is not a host-owned link')
-      if (entry && process.platform !== 'win32' && entry.uid !== process.getuid!()) throw new Error('The candidate entry has another owner')
+      if (entry && entry.uid !== process.getuid!()) throw new Error('The candidate entry has another owner')
       if (entry && coordinate(await readlink(known.path)) === coordinate(view)) return known.path
     }
     await this.#directory(this.#base)
-    const path = this.pathFor(root)
     await this.#directory(resolve(path, '..'))
     const release = known?.release ?? await acquireCandidateLease(path, this.#lifecycle.signal)
     try {
       const entry = await lstat(path).catch(error => { if (error.code !== 'ENOENT') throw error })
       if (entry && !entry.isSymbolicLink()) throw new Error('The candidate entry is not a host-owned link')
-      if (entry && process.platform !== 'win32' && entry.uid !== process.getuid!()) throw new Error('The candidate entry has another owner')
+      if (entry && entry.uid !== process.getuid!()) throw new Error('The candidate entry has another owner')
       if (!entry || coordinate(await readlink(path)) !== coordinate(view)) {
         const next = `${path}.${randomUUID()}`
-        await symlink(view, next, process.platform === 'win32' ? 'junction' : 'dir')
+        await symlink(view, next, 'dir')
         try {
-          // Windows cannot replace a junction with rename. All readers of this entry await install.
-          if (process.platform === 'win32' && entry) await rm(path)
           await rename(next, path)
         } finally { await rm(next, { force: true }) }
       }
@@ -66,58 +74,64 @@ export class CandidatePaths {
   }
 
   async #directory(path: string): Promise<void> {
-    const created = await mkdir(path, { recursive: true, mode: 0o700 })
+    await mkdir(path, { recursive: true, mode: 0o700 })
     const info = await lstat(path)
     if (!info.isDirectory() || info.isSymbolicLink()) throw new Error('The candidate entry directory is not a private directory')
-    if (process.platform !== 'win32') {
-      if (info.uid !== process.getuid!() || (info.mode & 0o077) !== 0) throw new Error('The candidate entry directory is not private to its owner')
-      return
+    if (info.uid !== process.getuid!() || (info.mode & 0o077) !== 0) throw new Error('The candidate entry directory is not private to its owner')
+  }
+
+  shellDirectory(path: string, root: string): { name: string, root: string, path: string } | undefined {
+    const item = this.#views.get(candidateRoot(root))
+    if (item && isInside(path, item.view)) {
+      const name = `pm${key(item.root).slice(0, 32)}`
+      return { name, root: item.view, path: `${name}:\\${relative(item.view, path)}` }
     }
-    // Protect metadata against other users while retaining traversal by a PSEC child.
-    // Payload access still goes through the original WinFsp view and its own policy/ACLs.
-    const script = [
-      "$ErrorActionPreference='Stop'",
-      `$p='${path.replaceAll("'", "''")}'`,
-      '$sid=[Security.Principal.WindowsIdentity]::GetCurrent().User',
-      '$directory=[IO.DirectoryInfo]::new($p)',
-      '$acl=$directory.GetAccessControl()',
-      ...(created ? ['$acl.SetOwner($sid)'] : ["if($acl.Owner -ne $sid.Value -and ([Security.Principal.NTAccount]$acl.Owner).Translate([Security.Principal.SecurityIdentifier]).Value -ne $sid.Value){throw 'Candidate entry directory has another owner'}"]),
-      '$acl.SetAccessRuleProtection($true,$false)',
-      'foreach($rule in @($acl.Access)){$acl.RemoveAccessRuleSpecific($rule)}',
-      "foreach($id in @($sid.Value,'S-1-5-18','S-1-5-32-544')){$acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($id),'FullControl','ContainerInherit,ObjectInherit','None','Allow'))}",
-      "foreach($id in @('S-1-5-32-545','S-1-15-2-1')){$acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($id),'ReadAndExecute','ContainerInherit,ObjectInherit','None','Allow'))}",
-      '$directory.SetAccessControl($acl)',
-    ].join('\n')
-    await run(join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe'), ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], { windowsHide: true })
+    return undefined
+  }
+
+  isShellPath(path: string): boolean {
+    return process.platform === 'win32' && [...this.#views.values()].some(item => path.toLowerCase().startsWith(`pm${key(item.root).slice(0, 32)}:\\`))
   }
 
   /** Resolve '..' in the public namespace before translating into the private view. */
   physical(path: string, cwd?: string): string {
-    const absolute = isAbsolute(path) ? resolve(path) : resolve(cwd ?? process.cwd(), path)
-    for (const item of this.#views.values()) if (isInside(absolute, item.path)) return join(item.view, relative(item.path, absolute))
+    if (this.isShellPath(path)) {
+      for (const item of this.#views.values()) {
+        const prefix = `pm${key(item.root).slice(0, 32)}:\\`
+        if (path.toLowerCase().startsWith(prefix)) return join(item.view, win32.relative('P:\\', win32.resolve('P:\\', path.slice(prefix.length))))
+      }
+    }
+    const directory = cwd && this.isShellPath(cwd) ? this.visible(this.physical(cwd)) : cwd
+    const absolute = isAbsolute(path) ? resolve(path) : resolve(directory ?? process.cwd(), path)
+    for (const item of this.#views.values()) for (const source of [item.path, item.root]) if (isInside(absolute, source)) return join(item.view, relative(source, absolute))
+    if (process.platform === 'win32' && isInside(absolute, this.#base)) throw new Error('The candidate directory is unavailable')
     return absolute
   }
 
-  visible(path: string): string {
-    for (const item of this.#views.values()) {
-      for (const source of [item.view, item.root]) if (isInside(path, source)) return join(item.path, relative(source, path))
+  visible(path: string, hint?: string): string {
+    const preferred = this.#scope.getStore() ?? (hint && [...this.#views.values()].find(item => hint === item.root || isInside(hint, item.root))?.root)
+    const views = preferred ? [this.#views.get(preferred)].filter(item => item !== undefined) : [...this.#views.values()]
+    const matches: string[] = []
+    for (const item of views) {
+      for (const source of [item.view, item.root]) if (isInside(path, source)) { matches.push(join(item.path, relative(source, path))); break }
     }
-    return path
+    return matches.length === 1 ? matches[0]! : path
   }
 
   async close(): Promise<void> {
     this.#lifecycle.abort()
     await Promise.allSettled(this.#pending.values())
     await Promise.all([...this.#views.values()].map(async item => {
-      try { await rm(item.path, { force: true }) } finally { await item.release() }
+      try { if (process.platform !== 'win32') await rm(item.path, { force: true }) } finally { await item.release() }
     }))
     this.#views.clear()
   }
 
   async remove(root: string): Promise<void> {
+    root = candidateRoot(root)
     await this.#pending.get(root)
     const item = this.#views.get(root)
     if (!item) return
-    try { await rm(item.path, { force: true }) } finally { this.#views.delete(root); await item.release() }
+    try { if (process.platform !== 'win32') await rm(item.path, { force: true }) } finally { this.#views.delete(root); await item.release() }
   }
 }

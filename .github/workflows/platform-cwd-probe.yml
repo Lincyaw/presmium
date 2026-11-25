@@ -74,3 +74,20 @@ jobs:
           '{"private":true,"type":"module","dependencies":{"deltabox-lite":"0.3.0","jiti":"2.7.0","@lincyaw/kernel":"1.0.0-rc.138"}}' | Set-Content package.json
           pnpm install --prod --registry https://registry.npmjs.org
           node native-fast-windows.mjs
+  final-linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo modprobe fuse && sudo chmod a+rw /dev/fuse
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.3'
+          cache: pnpm
+      - run: pnpm --filter @lincyaw/presmium... install --frozen-lockfile
+      - run: node packages/dsh/build/client.mjs
+      - name: Real review restoration and killed-host recovery
+        run: node bootstrap-cwd-probe.mjs platform-restart-run.mjs

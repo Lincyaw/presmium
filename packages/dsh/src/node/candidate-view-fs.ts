@@ -12,18 +12,18 @@ export default abstract class CandidateViewFileSystem extends DeltaboxFileSystem
 
   async resolve(path: string, opts?: { cwd?: string, signal?: AbortSignal }): Promise<FsTarget> {
     const paths = deltaboxOf(this.ctx)?.paths
-    return this.delegate.run(true, () => super.resolve(paths && (isAbsolute(path) || opts?.cwd) ? paths.physical(path, opts?.cwd) : path, opts))
+    return this.delegate.run(true, () => super.resolve(paths && (isAbsolute(path) || opts?.cwd || paths.isShellPath(path)) ? paths.physical(path, opts?.cwd) : path, opts))
   }
 
   processPath(target: FsTarget): string {
     const path = super.processPath(target)
     if (this.delegate.getStore()) return path
-    return deltaboxOf(this.ctx)?.paths.visible(path) ?? path
+    return deltaboxOf(this.ctx)?.paths.visible(path, target.displayPath) ?? path
   }
 
   lstat(path: string, opts?: { cwd?: string }, signal?: AbortSignal) {
     const paths = deltaboxOf(this.ctx)?.paths
-    return this.delegate.run(true, () => super.lstat(paths && (isAbsolute(path) || opts?.cwd) ? paths.physical(path, opts?.cwd) : path, opts, signal))
+    return this.delegate.run(true, () => super.lstat(paths && (isAbsolute(path) || opts?.cwd || paths.isShellPath(path)) ? paths.physical(path, opts?.cwd) : path, opts, signal))
   }
 
   stat(...args: Parameters<DeltaboxFileSystem['stat']>) { return this.delegate.run(true, () => super.stat(...args)) }

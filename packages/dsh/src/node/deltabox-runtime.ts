@@ -30,7 +30,10 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
     context.on('working-directory/access', async ({ agent }: { agent: RuntimeAgent }, next: () => Promise<string>) => {
       const presmium = this.ctx.get('presmium') as Presmium | undefined
       if (process.platform === 'darwin' || !presmium) return next()
-      return presmium.bindings.accessCandidate(agent as unknown as DshAgent, async () => { await this.acquireFor(agent); return next() })
+      return presmium.bindings.accessCandidate(agent as unknown as DshAgent, async () => {
+        const session = await this.acquireFor(agent)
+        return this.paths.withRoot(session.projectRoot, next)
+      })
     })
   }
 
@@ -99,11 +102,6 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
       await this.paths.install(root, (await session.target()).mountpoint)
     }
     return session
-  }
-
-  viewRootFor(agent: RuntimeAgent): string | undefined {
-    const view = super.viewRootFor(this.candidateAgent(agent))
-    return view && process.platform !== 'darwin' ? this.paths.visible(view) : view
   }
 
   async retirePaths(root: string): Promise<void> {
