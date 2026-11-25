@@ -19,8 +19,9 @@ const candidateRoot = (value: string) => {
 /** An execution-world entry, separate from DeltaBox's replaceable private view. */
 export class CandidatePaths {
   readonly #views = new Map<string, { root: string, view: string, path: string, active: boolean, release: () => Promise<void> }>()
-  readonly #pending = new Map<string, Promise<string>>()
+  readonly #mutations = new Map<string, Promise<unknown>>()
   readonly #lifecycle = new AbortController()
+  readonly #attempts = new Map<string, AbortController>()
   readonly #scope = new AsyncLocalStorage<string>()
   readonly #devices = process.platform === 'win32' ? new WindowsCandidateDevices() : undefined
   readonly #base = process.platform === 'win32'
@@ -34,15 +35,23 @@ export class CandidatePaths {
 
   /** Only the host may replace this entry; an ordinary sandboxed command cannot unlink it. */
   async install(root: string, view: string, valid: () => boolean = () => true): Promise<string> {
+    this.#lifecycle.signal.throwIfAborted()
     root = candidateRoot(root)
-    const previous = this.#pending.get(root) ?? Promise.resolve('')
-    const pending = previous.catch(() => '').then(() => this.#install(root, view, valid))
-    this.#pending.set(root, pending)
-    try { return await pending } finally { if (this.#pending.get(root) === pending) this.#pending.delete(root) }
+    let attempt = this.#attempts.get(root)
+    if (!attempt) this.#attempts.set(root, attempt = new AbortController())
+    const signal = AbortSignal.any([this.#lifecycle.signal, attempt.signal])
+    return this.#mutate(root, () => this.#install(root, view, valid, signal))
   }
 
-  async #install(root: string, view: string, valid: () => boolean): Promise<string> {
-    this.#lifecycle.signal.throwIfAborted()
+  async #mutate<T>(root: string, operation: () => Promise<T>): Promise<T> {
+    const previous = this.#mutations.get(root) ?? Promise.resolve()
+    const pending = previous.catch(() => {}).then(operation)
+    this.#mutations.set(root, pending)
+    try { return await pending } finally { if (this.#mutations.get(root) === pending) this.#mutations.delete(root) }
+  }
+
+  async #install(root: string, view: string, valid: () => boolean, signal: AbortSignal): Promise<string> {
+    signal.throwIfAborted()
     if (!valid()) throw new Error('The candidate view has retired')
     let known = this.#views.get(root)
     const path = this.pathFor(root)
@@ -51,8 +60,9 @@ export class CandidatePaths {
       const target = this.#devices!.volumeTarget(view)
       const metadata = join(this.#base, key(root), 'workspace')
       await this.#directory(this.#base)
-      const release = known?.release ?? await acquireCandidateLease(metadata, this.#lifecycle.signal)
+      const release = known?.release ?? await acquireCandidateLease(metadata, signal)
       try {
+        signal.throwIfAborted()
         if (!valid()) throw new Error('The candidate view has retired')
         this.#devices!.set(`pm${key(root).slice(0, 32)}`, target)
         this.#views.set(root, { root, view, path, active: true, release })
@@ -64,14 +74,17 @@ export class CandidatePaths {
       if (entry && !entry.isSymbolicLink()) throw new Error('The candidate entry is not a host-owned link')
       if (entry && entry.uid !== process.getuid!()) throw new Error('The candidate entry has another owner')
       if (entry && coordinate(await readlink(known.path)) === coordinate(view)) {
+        signal.throwIfAborted()
         if (!valid()) throw new Error('The candidate view has retired')
         return known.path
       }
     }
     await this.#directory(this.#base)
     await this.#directory(resolve(path, '..'))
-    const release = known?.release ?? await acquireCandidateLease(path, this.#lifecycle.signal)
+    const release = known?.release ?? await acquireCandidateLease(path, signal)
+    let replaced = false
     try {
+      signal.throwIfAborted()
       if (!valid()) throw new Error('The candidate view has retired')
       const entry = await lstat(path).catch(error => { if (error.code !== 'ENOENT') throw error })
       if (entry && !entry.isSymbolicLink()) throw new Error('The candidate entry is not a host-owned link')
@@ -81,13 +94,22 @@ export class CandidatePaths {
         await symlink(view, next, 'dir')
         try {
           await rename(next, path)
+          replaced = true
         } finally { await rm(next, { force: true }) }
       }
       if (coordinate(await realpath(path)) !== coordinate(await realpath(view))) throw new Error('The candidate entry did not reach its private view')
+      signal.throwIfAborted()
+      if (!valid()) throw new Error('The candidate view has retired')
       known = { root, view, path, active: true, release }
       this.#views.set(root, known)
       return path
-    } catch (error) { if (!known) await release(); throw error }
+    } catch (error) {
+      if (!known) {
+        try { if (replaced && (await lstat(path).catch(error => { if (error.code !== 'ENOENT') throw error }))?.isSymbolicLink()) await rm(path, { force: true }) }
+        finally { await release() }
+      }
+      throw error
+    }
   }
 
   async #directory(path: string): Promise<void> {
@@ -143,34 +165,43 @@ export class CandidatePaths {
   }
 
   async close(): Promise<void> {
-    this.#lifecycle.abort()
-    await Promise.allSettled(this.#pending.values())
-    await Promise.all([...this.#views.values()].map(async item => {
-      try { if (this.#devices) this.#devices.remove(`pm${key(item.root).slice(0, 32)}`); else await rm(item.path, { force: true }) } finally { await item.release() }
-    }))
-    this.#views.clear()
+    this.cancelPending()
+    await Promise.allSettled(this.#mutations.values())
+    await Promise.all([...this.#views.keys()].map(root => this.remove(root)))
+    await Promise.allSettled(this.#mutations.values())
+    this.#attempts.clear()
   }
 
   async remove(root: string): Promise<void> {
     root = candidateRoot(root)
-    await this.#pending.get(root)
-    const item = this.#views.get(root)
-    if (!item) return
-    try { if (this.#devices) this.#devices.remove(`pm${key(item.root).slice(0, 32)}`); else await rm(item.path, { force: true }) } finally { this.#views.delete(root); await item.release() }
+    this.unavailable(root)
+    return this.#mutate(root, async () => {
+      const item = this.#views.get(root)
+      if (!item) return
+      this.#views.delete(root)
+      try { if (this.#devices) this.#devices.remove(`pm${key(item.root).slice(0, 32)}`); else await rm(item.path, { force: true }) } finally { await item.release() }
+    })
   }
 
   async detach(root: string): Promise<void> {
     root = candidateRoot(root)
-    await this.#pending.get(root)
-    const item = this.#views.get(root)
-    if (!item) return
-    item.active = false
-    if (this.#devices) this.#devices.remove(`pm${key(item.root).slice(0, 32)}`)
-    else await rm(item.path, { force: true })
+    this.unavailable(root)
+    return this.#mutate(root, async () => {
+      const item = this.#views.get(root)
+      if (!item) return
+      item.active = false
+      if (this.#devices) this.#devices.remove(`pm${key(item.root).slice(0, 32)}`)
+      else await rm(item.path, { force: true })
+    })
   }
 
   unavailable(root: string): void {
-    const item = this.#views.get(candidateRoot(root))
+    root = candidateRoot(root)
+    this.#attempts.get(root)?.abort()
+    this.#attempts.delete(root)
+    const item = this.#views.get(root)
     if (item) item.active = false
   }
+
+  cancelPending(): void { this.#lifecycle.abort() }
 }

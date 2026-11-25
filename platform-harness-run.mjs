@@ -1,3 +1,4 @@
+import {spawn} from 'node:child_process'
 import {createRequire} from 'node:module'
 import {mkdtempSync,readFileSync,writeFileSync,symlinkSync} from 'node:fs'
 import {tmpdir} from 'node:os'
@@ -6,7 +7,7 @@ import {randomUUID} from 'node:crypto'
 import assert from 'node:assert/strict'
 const root=process.cwd()
 const require=createRequire(root+'/packages/dsh/package.json');const {createJiti}=require('jiti');const jiti=createJiti(root+'/')
-const {testHome}=await jiti.import('./packages/dsh/test/harness.ts');const {fakeModel}=await jiti.import('./packages/dsh/src/node/fake-model.ts')
+const {testHome,running}=await jiti.import('./packages/dsh/test/harness.ts');const {fakeModel}=await jiti.import('./packages/dsh/src/node/fake-model.ts')
 const ws=mkdtempSync(join(tmpdir(),'presmium-stable-manual-doc-'));const file=ws+'/index.pmd'
 symlinkSync(root+'/packages/presmium/node_modules',ws+'/node_modules','junction');writeFileSync(ws+'/.gitignore','node_modules/\n.presmium/\n')
 const base=JSON.parse(readFileSync(root+'/packages/workspace/templates/document/default/index.pmd','utf8'));base.metadata.title='Base';base.sections.intro.title='Base';writeFileSync(file,JSON.stringify(base,null,2)+'\n')
@@ -15,9 +16,14 @@ const read={tool:'read',input:{file_path:'index.pmd'}};const pwd={tool:'bash',in
 const edit=(before,after)=>({tool:'edit',input:{file_path:'index.pmd',old_string:'"title": "'+before+'"',new_string:'"title": "'+after+'"',replace_all:true}})
 const script=[pwd,read,edit('Base','Draft A'),pwd,{text:'done1'},read,edit('Base','Draft B'),pwd,{text:'done2'},read,edit('Author independent','Draft C'),pwd,{text:'done3'},read,edit('Draft C','Draft D'),read,edit('Draft D','Draft E'),pwd,{text:'done4'}]
 const model=await fakeModel(script);const progress=setInterval(()=>console.log('requests',model.received.filter(x=>x.body.tools?.length).length),10000);const home=testHome('stable-manual');let service,web
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));async function until(f){const end=Date.now()+90000;for(;;){const x=await f();if(x)return x;if(Date.now()>end)throw Error('timeout');await sleep(100)}}
+async function serveMain(directory){
+ const token=randomUUID();const process_=running(spawn(process.execPath,[root+'/packages/presmium/bin/presmium.mjs','serve',directory,'--port','0'],{cwd:directory,env:home.env({PRESMIUM_SERVICE_TOKEN:token}),stdio:['ignore','pipe','pipe']}));
+ const url=(await process_.wait(/^serve {2}(http\S+)$/m,180000))[1];const canonical=(await process_.wait(/^workspace {2}(.+)$/m))[1].trim();
+ return {url,root:canonical,token,env:{PRESMIUM_SERVICE_URL:url,PRESMIUM_SERVICE_TOKEN:token,PRESMIUM_WORKSPACE:canonical},process:process_,stop:()=>process_.stop()}
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));async function until(f){const end=Date.now()+180000;for(;;){const x=await f();if(x)return x;if(Date.now()>end)throw Error('timeout');await sleep(100)}}
 try{
- service=await home.serve(ws,{PRESMIUM_INSTALLATION:root+'/packages/presmium'});web=await home.web(ws,5647,{model,env:{...service.env,PRESMIUM_COMMAND:root+'/packages/presmium/bin/presmium.mjs',PRESMIUM_INSTALLATION:root+'/packages/presmium'}});const api=await web.api();const {sessionId}=await api.call('session/create',{request:{cwd:ws}})
+ service=await serveMain(ws);web=await home.web(ws,5647,{model,env:{...service.env,PRESMIUM_COMMAND:root+'/packages/presmium/bin/presmium.mjs',PRESMIUM_INSTALLATION:root+'/packages/presmium'}});const api=await web.api();const {sessionId}=await api.call('session/create',{request:{cwd:ws}})
  async function review(path='',body){const res=await fetch(service.url+'/__presmium/presmium.workspace/review'+path,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+service.token,'content-type':'application/json'},...body?{body:JSON.stringify(body)}:{}});return {status:res.status,body:await res.json()}}
  const turns=()=>model.received.filter(x=>x.body.tools?.length)
  async function prompt(n){await api.call('session/prompt',{request:{requestId:randomUUID(),sessionId,mode:'queue',content:[{type:'text',text:'Perform validation round '+n}]}});await until(()=>turns().length>=[5,9,13,19][n-1]);await sleep(300);return until(async()=>{const r=await review();return r.body.review&&!r.body.review.running?r.body.review:false})}
@@ -26,6 +32,6 @@ try{
  current=await prompt(2);const author=structuredClone(base);author.metadata.title='Author independent';writeFileSync(file,JSON.stringify(author,null,2)+'\n');const conflict=await review('/accept',{});assert.equal(conflict.status,409);assert.equal(JSON.parse(readFileSync(file)).metadata.title,'Author independent');console.log('source conflict rejected without overwriting author')
  current=await prompt(3);assert.equal((await review('/accept',{})).status,200);assert.equal(JSON.parse(readFileSync(file)).metadata.title,'Draft C');console.log('fresh read and accepted publication succeeded')
  current=await prompt(4);assert.ok(current.steps.length>=2);const restored=await review('/restore',{step:current.steps[1].id});assert.equal(restored.status,200);assert.equal((await review('/accept',{})).status,200);assert.equal(JSON.parse(readFileSync(file)).metadata.title,'Draft D');console.log('step restoration and publication succeeded')
- const messages=turns().at(-1).body.messages;const blocks=messages.flatMap(m=>Array.isArray(m.content)?m.content:[]);const results=blocks.filter(x=>x.type==='tool_result');assert.equal(results.filter(x=>x.is_error).length,0);const pwds=results.map(x=>x.content?.[0]?.text?.trim()).filter(x=>x&&!x.includes('\n')&&(/^(?:\/|[A-Za-z]:[\\/]).*(?:presmium-agent-|Presmium-agent-).*workspace$/i.test(x)));assert.ok(pwds.length>=4);assert.equal(new Set(pwds).size,1);const notices=blocks.filter(x=>x.type==='text'&&x.text?.startsWith('The working directory'));assert.equal(notices.length,1);console.log('same chat across four turns: stable pwd, one initial notice, all tools succeeded',ws)
+ const messages=turns().at(-1).body.messages;const blocks=messages.flatMap(m=>Array.isArray(m.content)?m.content:[]);const results=blocks.filter(x=>x.type==='tool_result');assert.equal(results.filter(x=>x.is_error).length,0);const pwds=results.map(x=>x.content?.[0]?.text?.trim()).filter(x=>x&&!x.includes('\n')&&(/^pm[0-9a-f]{32}:\\/i.test(x)||/^\/tmp\/presmium-agent-.*workspace$/.test(x)));assert.ok(pwds.length>=4);assert.equal(new Set(pwds).size,1);const notices=blocks.filter(x=>x.type==='text'&&x.text?.startsWith('The working directory'));assert.equal(notices.length,1);console.log('same chat across four turns: stable pwd, one initial notice, all tools succeeded',ws)
 }catch(error){console.error(error); const messages=model.received.at(-1)?.body.messages??[];console.log('latest tool results',JSON.stringify(messages.filter(m=>m.role==='tool'||Array.isArray(m.content)&&m.content.some(b=>b.type==='tool_result')).slice(-10)));console.log('host failures',web?.process?.output?.().split('\n').filter(x=>/error|failed|warn/i.test(x)).slice(-20).join('\n'));process.exitCode=1}
 finally{clearInterval(progress);writeFileSync(join(tmpdir(),'presmium-stable-manual-requests.json'),JSON.stringify(model.received.map(x=>({path:x.path,body:x.body})),null,2));if(web)await web.stop();if(service)await service.stop();await model.close();await home.close()}

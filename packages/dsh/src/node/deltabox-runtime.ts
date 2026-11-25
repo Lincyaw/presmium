@@ -25,6 +25,7 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
     })
     this.ctx.effect(() => () => Promise.all([...this.candidateLeases.values()].map(({ agent }) => this.closeCandidate(agent))))
     this.ctx.effect(() => async () => {
+      this.paths.cancelPending()
       await Promise.all([...this.candidateAgents].map(([root, agent]) => this.closeRootView(root, super.existingSession(agent))))
       await this.paths.close()
     })
@@ -41,13 +42,18 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
 
   /** Related agents edit one candidate and therefore share its native transaction owner. */
   private candidateAgent(agent: RuntimeAgent): RuntimeAgent {
+    if (process.platform === 'darwin') return agent
     const presmium = this.ctx.get('presmium') as Presmium | undefined
     const id = presmium?.bindings.rootSessionOf(agent as unknown as DshAgent)
     return id && id !== agent.session.id ? this.ctx.agents.get(id as RuntimeAgent['session']['id']) ?? agent : agent
   }
 
   candidateSession(agent: RuntimeAgent): ReturnType<DeltaboxRuntime['existingSession']> { return super.existingSession(this.candidateAgent(agent)) }
-  currentSession(): ReturnType<DeltaboxRuntime['currentSession']> { return super.sessionFor(this.candidateAgent(this.ctx.agents.requireInitiator())) }
+  currentSession(): ReturnType<DeltaboxRuntime['currentSession']> {
+    const agent = this.ctx.agents.requireInitiator()
+    const owner = this.candidateAgent(agent)
+    return owner === agent ? super.currentSession() : super.sessionFor(owner)
+  }
 
   /** Close native ownership before a host review, refresh or removal touches the candidate. */
   async closeCandidate(agent: RuntimeAgent): Promise<void> {
