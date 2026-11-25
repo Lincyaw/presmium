@@ -70,10 +70,11 @@ jobs:
           New-Item -ItemType Directory -Path $probe
           Copy-Item packages/dsh/src/node/candidate-paths.ts $probe
           Copy-Item native-fast-windows.mjs $probe
+          Copy-Item dos-device-probe.mjs $probe
           Set-Location $probe
-          '{"private":true,"type":"module","dependencies":{"deltabox-lite":"0.3.0","jiti":"2.7.0","@lincyaw/kernel":"1.0.0-rc.138"}}' | Set-Content package.json
+          '{"private":true,"type":"module","dependencies":{"deltabox-lite":"0.3.0","jiti":"2.7.0","@lincyaw/kernel":"1.0.0-rc.138","koffi":"3.3.8"}}' | Set-Content package.json
           pnpm install --prod --registry https://registry.npmjs.org
-          node native-fast-windows.mjs
+          node dos-device-probe.mjs
   final-linux:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
