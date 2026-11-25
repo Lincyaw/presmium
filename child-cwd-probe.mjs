@@ -14,6 +14,6 @@ export function apply(ctx) {
   const {parent,cwd,dispose,prompt}=await request.json()
   if(prompt){const handle=handles.get(prompt);if(!handle)throw Error('Unknown child');handle.agent.followup({id:randomUUID(),role:'user',content:[{type:'text',text:'Edit the shared candidate as a child'}],source:{kind:'user'}});return Response.json({started:true})}
   if(dispose){const handle=handles.get(dispose);if(!handle)throw Error('Unknown child');await handle.dispose();handles.delete(dispose);return Response.json({disposed:true})}
-  const id=randomUUID();const handle=await ctx.agents.create({sessionId:id,meta:{cwd,parentSession:parent,origin:'subagent',delegationDepth:1}});handles.set(id,handle);return Response.json({sessionId:id})
+  const id=randomUUID();const handle=await ctx.agents.create({sessionId:id,agentOptions:{...ctx.agents.get(parent).options,...ctx.agents.get(parent).model.current()},meta:{cwd,parentSession:parent,origin:'subagent',delegationDepth:1}});handles.set(id,handle);return Response.json({sessionId:id})
  }})
 }
