@@ -79,13 +79,14 @@ export class CandidatePaths {
       "$ErrorActionPreference='Stop'",
       `$p='${path.replaceAll("'", "''")}'`,
       '$sid=[Security.Principal.WindowsIdentity]::GetCurrent().User',
-      '$acl=Get-Acl -LiteralPath $p',
+      '$directory=[IO.DirectoryInfo]::new($p)',
+      '$acl=$directory.GetAccessControl()',
       ...(created ? ['$acl.SetOwner($sid)'] : ["if($acl.Owner -ne $sid.Value -and ([Security.Principal.NTAccount]$acl.Owner).Translate([Security.Principal.SecurityIdentifier]).Value -ne $sid.Value){throw 'Candidate entry directory has another owner'}"]),
       '$acl.SetAccessRuleProtection($true,$false)',
       'foreach($rule in @($acl.Access)){$acl.RemoveAccessRuleSpecific($rule)}',
       "foreach($id in @($sid.Value,'S-1-5-18','S-1-5-32-544')){$acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($id),'FullControl','ContainerInherit,ObjectInherit','None','Allow'))}",
       "foreach($id in @('S-1-5-32-545','S-1-15-2-1')){$acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($id),'ReadAndExecute','ContainerInherit,ObjectInherit','None','Allow'))}",
-      'Set-Acl -LiteralPath $p -AclObject $acl',
+      '$directory.SetAccessControl($acl)',
     ].join('\n')
     await run(join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe'), ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], { windowsHide: true })
   }

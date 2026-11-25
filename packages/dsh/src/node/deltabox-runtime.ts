@@ -29,9 +29,8 @@ export default class PresmiumDeltabox extends DeltaboxRuntime {
     const context = this.ctx as unknown as DshContext
     context.on('working-directory/access', async ({ agent }: { agent: RuntimeAgent }, next: () => Promise<string>) => {
       const presmium = this.ctx.get('presmium') as Presmium | undefined
-      const root = presmium?.bindings.candidateRootOf(agent as unknown as DshAgent)
-      if (process.platform !== 'darwin' && (root || agent.session.header.cwd)) await this.acquireFor(agent)
-      return next()
+      if (process.platform === 'darwin' || !presmium) return next()
+      return presmium.bindings.accessCandidate(agent as unknown as DshAgent, async () => { await this.acquireFor(agent); return next() })
     })
   }
 

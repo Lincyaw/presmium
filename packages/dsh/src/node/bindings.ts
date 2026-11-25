@@ -1,4 +1,5 @@
 import { realpathSync } from 'node:fs'
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { relative, resolve, sep } from 'node:path'
 import { isInside } from '@lincyaw/kernel/node'
 import { connectPresmiumMcp } from '@lincyaw/mcp/client'
@@ -213,11 +214,16 @@ export class DocumentBindings {
   readonly #candidateOwners = new Map<string, Set<string>>()
   readonly #renewCandidates = new Set<string>()
   readonly #executions = new Map<string, Promise<unknown>>()
+  readonly #execution = new AsyncLocalStorage<string>()
+
+  accessCandidate<T>(agent: DshAgent, operation: () => Promise<T>): Promise<T> {
+    return this.#execution.getStore() === this.rootSessionOf(agent) ? operation() : this.serializeCandidate(agent, operation)
+  }
 
   /** View renewal and tools share a boundary; a parent's running tool keeps its entry until it ends. */
   serializeCandidate<T>(agent: DshAgent, operation: () => Promise<T>): Promise<T> {
     const id = this.rootSessionOf(agent)
-    const pending = (this.#executions.get(id) ?? Promise.resolve()).catch(() => undefined).then(operation)
+    const pending = (this.#executions.get(id) ?? Promise.resolve()).catch(() => undefined).then(() => this.#execution.run(id, operation))
     this.#executions.set(id, pending)
     return pending.finally(() => { if (this.#executions.get(id) === pending) this.#executions.delete(id) })
   }
@@ -240,14 +246,22 @@ export class DocumentBindings {
       pending = (async () => {
         const { root, version } = await this.#server.requestJson<{ root: string, version?: string }>(`${WORKSPACE_ROUTES}review/workspace`, { body: { session: id } })
         this.#candidateRoots.set(id, root)
-        if (version) this.#candidateVersions.set(id, version)
         const runtime = deltaboxOf(this.#ctx)
+        if (runtime && process.platform !== 'darwin' && !version) throw new Error('Presmium needs an updated workspace service with candidate version tracking; restart the workspace service before continuing this conversation')
+        if (version) this.#candidateVersions.set(id, version)
         const previous = runtime?.candidateSession(runtimeAgent(agent))
         if (previous && previous.projectRoot !== root) await previous.close()
-        const session = await runtime?.acquireFor(runtimeAgent(agent))
+        let session = await runtime?.acquireFor(runtimeAgent(agent))
         let view: string
         try {
           if (session?.recoveredFrom && session.reviewActive) await session.reviewCommit()
+          if (session && process.platform !== 'darwin') {
+            // An adopted accepted view can predate a host restore. Preserve a pending native
+            // review first, then start from the authoritative candidate before binding any tools.
+            if (session.reviewActive) await session.reviewCommit()
+            await session.close()
+            session = await runtime!.acquireFor(runtimeAgent(agent))
+          }
           view = session ? (await session.target()).mountpoint : root
         } finally {
           await runtime?.closeCandidate(runtimeAgent(agent))
@@ -520,3 +534,4 @@ export class DocumentBindings {
     this.#parents.clear()
   }
 }
+

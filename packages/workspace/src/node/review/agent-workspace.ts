@@ -104,7 +104,7 @@ export class AgentWorkspace {
       let source = join(this.#config.root, dir)
       while (!existsSync(join(source, 'node_modules')) && dirname(source) !== source) source = dirname(source)
       const target = join(this.root, dir, 'node_modules')
-      if (existsSync(join(source, 'node_modules')) && !existsSync(target) && existsSync(dirname(target))) await symlink(join(source, 'node_modules'), target, 'dir')
+      if (existsSync(join(source, 'node_modules')) && !existsSync(target) && existsSync(dirname(target))) { this.changed(); await symlink(join(source, 'node_modules'), target, 'dir') }
     }
     if (changed || !(await git(this.root, ['rev-parse', '--verify', 'HEAD']).catch(() => '')).trim()) {
       this.changed()
