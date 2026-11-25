@@ -1,0 +1,66 @@
+name: Publish verified rc139 desktop artifacts
+on:
+  push:
+    branches: [codex/platform-cwd-probe]
+    paths: [.github/workflows/publish-verified-desktop.yml]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  verify:
+    outputs:
+      source_commit: ${{ steps.source.outputs.commit }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: v1.0.0-rc.139
+      VERIFIED_RUN: '45573277660'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v1.0.0-rc.139
+      - name: Verify immutable source and all completed builds
+        id: source
+        run: |
+          gh run watch "$VERIFIED_RUN" --exit-status --interval 30
+          commit=$(git rev-parse HEAD)
+          built=$(gh api "repos/$GH_REPO/actions/runs/$VERIFIED_RUN" --jq .head_sha)
+          result=$(gh api "repos/$GH_REPO/actions/runs/$VERIFIED_RUN" --jq .conclusion)
+          if [ "$commit" != "$built" ] || [ "$result" != success ]; then
+            echo "Desktop artifacts do not match the immutable successful source" >&2
+            exit 1
+          fi
+          echo "Verified desktop source $commit"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+  publish:
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    concurrency:
+      group: desktop-update-feed
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: v1.0.0-rc.139
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.verify.outputs.source_commit }}
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.3'
+          cache: pnpm
+      - run: pnpm --filter presmium-desktop install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 45573277660
+          pattern: presmium-desktop-*
+          path: installers
+          merge-multiple: true
+      - name: Publish complete signed installers and verified update feed
+        run: pnpm --filter presmium-desktop exec node scripts/publish-updates.mjs "$GITHUB_WORKSPACE/installers" --publish-draft
