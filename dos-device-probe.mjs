@@ -18,10 +18,10 @@ try{
  const buffer=Buffer.alloc(65536);const size=query(name,buffer,buffer.length/2);console.log(JSON.stringify({name,target,size,defined:buffer.toString('utf16le').split('\0')[0],error:error()}))
  for(const prefix of ['\\\\.\\','\\\\?\\']){
   const alias=prefix+name+'\\';
-  try{console.log(JSON.stringify({alias,real:await realpath(alias),text:await readFile(join(alias,'sample.txt'),'utf8')}))}catch(e){console.log(JSON.stringify({alias,hostFailure:String(e)}));continue}
+  try{console.log(JSON.stringify({alias,real:await realpath(alias).catch(e=>String(e)),text:await readFile(join(alias,'sample.txt'),'utf8')}))}catch(e){console.log(JSON.stringify({alias,hostFailure:String(e)}));continue}
   const ps=join(process.env.SystemRoot,'System32','WindowsPowerShell','v1.0','powershell.exe');const script=`Set-Location -LiteralPath '${alias}'; (Get-Location).Path; Get-Content -LiteralPath '${join(alias,'sample.txt')}'`
   const env={...process.env};delete env.PSModulePath;
-  try{console.log(JSON.stringify({alias,hostPowerShell:await promisify(execFile)(ps,['-NoProfile','-NonInteractive','-Command',script],{env})}))}catch(e){console.log(JSON.stringify({alias,hostPowerShellFailure:String(e),stderr:e.stderr}))}
+  try{console.log(JSON.stringify({alias,hostPowerShell:await promisify(execFile)(ps,['-NoProfile','-NonInteractive','-Command',script],{env,timeout:15000})}))}catch(e){console.log(JSON.stringify({alias,hostPowerShellFailure:String(e),stderr:e.stderr}))}
   for(const argv of [[process.execPath,'-e',`console.log(require('node:fs').readFileSync(${JSON.stringify(join(alias,'sample.txt'))},'utf8'))`],[ps,'-NoProfile','-NonInteractive','-Command',script]]){
    try{console.log(JSON.stringify({alias,argv,result:await native.exec(session.session_id,argv,session.mountpoint,[],undefined,'workspace-write')}))}catch(e){console.log(JSON.stringify({alias,argv,nativeFailure:String(e)}))}
   }
