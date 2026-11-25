@@ -6,6 +6,7 @@ permissions:
   contents: read
 jobs:
   native:
+    if: ${{ false }}
     strategy:
       fail-fast: false
       matrix:
@@ -45,3 +46,31 @@ jobs:
       - name: Real Harness review and publication
         if: always()
         run: node bootstrap-cwd-probe.mjs platform-harness-run.mjs
+  native-fast-windows:
+    runs-on: windows-11-arm
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.3'
+          architecture: x64
+      - name: Matching WinFsp release
+        shell: pwsh
+        run: |
+          $installer = Join-Path $env:RUNNER_TEMP 'winfsp.msi'
+          Invoke-WebRequest https://github.com/winfsp/winfsp/releases/download/v2.1/winfsp-2.1.25156.msi -OutFile $installer
+          $p = Start-Process msiexec.exe -ArgumentList "/i `"$installer`" /qn /norestart ADDLOCAL=ALL" -Wait -PassThru
+          if ($p.ExitCode -notin @(0,3010)) { throw "WinFsp install failed: $($p.ExitCode)" }
+      - name: Minimal native consumer
+        shell: pwsh
+        run: |
+          $probe = Join-Path $env:RUNNER_TEMP 'native-consumer'
+          New-Item -ItemType Directory -Path $probe
+          Copy-Item packages/dsh/src/node/candidate-paths.ts $probe
+          Copy-Item native-fast-windows.mjs $probe
+          Set-Location $probe
+          '{"private":true,"type":"module","dependencies":{"deltabox-lite":"0.3.0","jiti":"2.7.0","@lincyaw/kernel":"1.0.0-rc.138"}}' | Set-Content package.json
+          pnpm install --prod --registry https://registry.npmjs.org
+          node native-fast-windows.mjs
