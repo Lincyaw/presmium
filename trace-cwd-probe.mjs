@@ -1,5 +1,7 @@
 export const inject = ['presmium', 'deltabox', 'connection', 'agents']
-export function apply(ctx) {
+export async function apply(ctx) {
+ // The legacy direct carrier omits Studio's outer watchdog; mirror its exact native ownership.
+ if(process.platform==='win32'){(await import('./packages/dsh/src/node/watchdog-windows.mjs')).ownedWindowsJob();console.log('CWD native carrier ownership installed before any Agent');}
  ctx.on('agent/error',({agent,error})=>console.log('CWD AGENT ERROR',agent.session.id,error?.stack??String(error)))
  ctx.on('agent/status',({agent,status})=>console.log('CWD AGENT STATUS',agent.session.id,status))
  ctx.connection.fetch.register({path:'/api/probe/dependencies',methods:['POST'],requestBody:'buffered',async fetch(request){const {session}=await request.json();const agent=ctx.agents.get(session);const candidate=await ctx.presmium.bindings.candidateOf(agent);const response=await candidate.request('/__presmium/probe.native/marker');if(!response.ok)console.log('CWD DEPENDENCY ERROR',await response.clone().text());return new Response(response.body,{status:response.status,headers:{'content-type':'application/json'}})}})

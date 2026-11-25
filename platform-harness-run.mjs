@@ -11,6 +11,7 @@ if(process.env.GITHUB_ACTIONS==='true'&&process.platform==='win32')execFileSync(
 writeFileSync(root+'/trace-cwd-probe.yml', '- insert:\n    - id: trace-cwd-probe\n      name: '+JSON.stringify(root+'/trace-cwd-probe.mjs')+'\n')
 const require=createRequire(root+'/packages/dsh/package.json');const {createJiti}=require('jiti');const jiti=createJiti(root+'/')
 const {testHome,running}=await jiti.import('./packages/dsh/test/harness.ts');const {fakeModel}=await jiti.import('./packages/dsh/src/node/fake-model.ts')
+const {launchNode}=await jiti.import('./packages/dsh/src/node/launch.ts')
 const ws=mkdtempSync(join(tmpdir(),'presmium-stable-manual-doc-'));const file=ws+'/index.pmd'
 if(process.platform!=='win32')symlinkSync(root+'/packages/presmium/node_modules',ws+'/node_modules','dir');writeFileSync(ws+'/.gitignore','node_modules/\n.presmium/\n')
 const localDependency=process.platform==='win32'?prepareWindowsDependencies(ws):undefined
@@ -21,7 +22,7 @@ const edit=(before,after)=>({tool:'edit',input:{file_path:'index.pmd',old_string
 const script=[pwd,read,edit('Base','Draft A'),pwd,{text:'done1'},read,edit('Base','Draft B'),pwd,{text:'done2'},read,edit('Author independent','Draft C'),pwd,{text:'done3'},read,edit('Draft C','Draft D'),read,edit('Draft D','Draft E'),pwd,{text:'done4'}]
 const model=await fakeModel(script);const progress=setInterval(()=>console.log('requests',model.received.filter(x=>x.body.tools?.length).length),10000);const home=testHome('stable-manual');let service,web
 async function serveMain(directory){
- const token=randomUUID();const process_=running(spawn(process.execPath,[root+'/packages/presmium/bin/presmium.mjs','serve',directory,'--port','0'],{cwd:directory,env:home.env({PRESMIUM_SERVICE_TOKEN:token}),stdio:['ignore','pipe','pipe']}));
+ const token=randomUUID();const args=[root+'/packages/presmium/bin/presmium.mjs','serve',directory,'--port','0'];const env=home.env({PRESMIUM_SERVICE_TOKEN:token});const process_=running(process.platform==='win32'?launchNode('Windows source verification',args,{cwd:directory,env}).child:spawn(process.execPath,args,{cwd:directory,env,stdio:['ignore','pipe','pipe']}));
  const url=(await process_.wait(/^serve {2}(http\S+)$/m,180000))[1];const canonical=(await process_.wait(/^workspace {2}(.+)$/m))[1].trim();
  return {url,root:canonical,token,env:{PRESMIUM_SERVICE_URL:url,PRESMIUM_SERVICE_TOKEN:token,PRESMIUM_WORKSPACE:canonical},process:process_,stop:()=>process_.stop()}
 }

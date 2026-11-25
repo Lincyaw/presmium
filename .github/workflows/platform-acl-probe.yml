@@ -2,7 +2,7 @@ name: Temporary Windows private HOME probe
 on:
   push:
     branches: [codex/platform-cwd-probe]
-    paths: [packages/compiler/src/windows-run-home.ts, windows-acl-run.mjs, .github/workflows/platform-acl-probe.yml]
+    paths: [packages/compiler/src/windows-run-home.ts, packages/dsh/src/node/watchdog*.mjs, windows-watchdog-run.mjs, windows-acl-run.mjs, .github/workflows/platform-acl-probe.yml]
 permissions:
   contents: read
 jobs:
@@ -15,3 +15,29 @@ jobs:
         with:
           node-version: '24.22.3'
       - run: node windows-acl-run.mjs
+  owned-process-tree:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-2025, arch: x64 }
+          - { os: windows-11-arm, arch: arm64 }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.3'
+          architecture: ${{ matrix.arch }}
+      - name: Minimal public native dependency
+        shell: pwsh
+        run: |
+          $probe = Join-Path $env:RUNNER_TEMP 'owned-job-probe'
+          New-Item -ItemType Directory -Path $probe
+          '{"private":true,"dependencies":{"koffi":"3.3.8"}}' | Set-Content (Join-Path $probe 'package.json')
+          pnpm --dir $probe install --prod --registry https://registry.npmjs.org
+          $env:PRESMIUM_JOB_PROBE = $probe
+          node -e "const fs=require('node:fs'),p=require('node:path');const target=p.resolve('packages/dsh/node_modules');fs.mkdirSync(target,{recursive:true});fs.symlinkSync(p.join(process.env.PRESMIUM_JOB_PROBE,'node_modules/koffi'),p.join(target,'koffi'),'junction')"
+      - run: node windows-watchdog-run.mjs
