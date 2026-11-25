@@ -2,6 +2,7 @@ name: Temporary platform cwd probe
 on:
   push:
     branches: [codex/platform-cwd-probe]
+    paths: [packages/**, pnpm-lock.yaml, bootstrap-cwd-probe.mjs, platform-harness-run.mjs, platform-restart-run.mjs, native-fast-windows.mjs]
 permissions:
   contents: read
 jobs:

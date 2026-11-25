@@ -1,0 +1,9 @@
+- id: presmium-deltabox-runtime
+  config:
+    network:
+      mode: allowlist
+      approval: true
+      allow: [example.com:443]
+- insert:
+    - id: child-cwd-probe
+      name: !!js (process.env.GITHUB_WORKSPACE || process.cwd()) + '/child-cwd-probe.mjs'

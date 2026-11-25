@@ -1,0 +1,25 @@
+name: Temporary network and child candidate probe
+on:
+  push:
+    branches: [codex/platform-cwd-probe]
+    paths: [platform-network-run.mjs, network-cwd-probe.yml, child-cwd-probe.mjs, .github/workflows/platform-network-probe.yml]
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo modprobe fuse && sudo chmod a+rw /dev/fuse
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.3'
+          cache: pnpm
+      - run: pnpm --filter @lincyaw/presmium... install --frozen-lockfile
+      - run: node packages/dsh/build/client.mjs
+      - name: Native network grant and child disposal
+        run: node bootstrap-cwd-probe.mjs platform-network-run.mjs
