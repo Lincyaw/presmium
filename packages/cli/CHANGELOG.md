@@ -1,5 +1,16 @@
 # @lincyaw/cli
 
+## 1.0.0-rc.139
+
+### Patch Changes
+
+- Updated dependencies [f74c2ee]
+  - @lincyaw/workspace@1.0.0-rc.139
+  - @lincyaw/compiler@1.0.0-rc.139
+  - @lincyaw/server@1.0.0-rc.139
+  - @lincyaw/kernel@1.0.0-rc.139
+  - @lincyaw/skills@1.0.0-rc.139
+
 ## 1.0.0-rc.138
 
 ### Patch Changes
