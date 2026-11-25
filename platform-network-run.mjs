@@ -6,6 +6,7 @@ import {join} from 'node:path'
 import {randomUUID} from 'node:crypto'
 import assert from 'node:assert/strict'
 const root=process.cwd()
+writeFileSync(root+'/child-cwd-probe.yml', '- insert:\n    - id: child-cwd-probe\n      name: '+JSON.stringify(root+'/child-cwd-probe.mjs')+'\n')
 const require=createRequire(root+'/packages/dsh/package.json');const {createJiti}=require('jiti');const jiti=createJiti(root+'/')
 const {testHome,running}=await jiti.import('./packages/dsh/test/harness.ts');const {fakeModel}=await jiti.import('./packages/dsh/src/node/fake-model.ts')
 const ws=mkdtempSync(join(tmpdir(),'presmium-stable-manual-doc-'));const file=ws+'/index.pmd'
@@ -23,7 +24,7 @@ async function serveMain(directory){
 }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));async function until(f){const end=Date.now()+180000;for(;;){const x=await f();if(x)return x;if(Date.now()>end)throw Error('timeout');await sleep(100)}}
 try{
- service=await serveMain(ws);web=await home.web(ws,5647,{model,patches:[root+'/network-cwd-probe.yml'],env:{...service.env,PRESMIUM_COMMAND:root+'/packages/presmium/bin/presmium.mjs',PRESMIUM_INSTALLATION:root+'/packages/presmium'}});const api=await web.api();const {sessionId}=await api.call('session/create',{request:{cwd:ws}})
+ service=await serveMain(ws);web=await home.web(ws,5647,{model,patches:[root+'/network-cwd-probe.yml',root+'/child-cwd-probe.yml'],env:{...service.env,PRESMIUM_COMMAND:root+'/packages/presmium/bin/presmium.mjs',PRESMIUM_INSTALLATION:root+'/packages/presmium'}});const api=await web.api();const {sessionId}=await api.call('session/create',{request:{cwd:ws}})
  async function review(path='',body){const res=await fetch(service.url+'/__presmium/presmium.workspace/review'+path,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+service.token,'content-type':'application/json'},...body?{body:JSON.stringify(body)}:{}});return {status:res.status,body:await res.json()}}
  const turns=()=>model.received.filter(x=>x.body.tools?.length)
  async function prompt(n){await api.call('session/prompt',{request:{requestId:randomUUID(),sessionId,mode:'queue',content:[{type:'text',text:'Perform validation round '+n}]}});await until(()=>turns().length>=[5,9,13,19][n-1]);await sleep(300);return until(async()=>{const r=await review();return r.body.review&&!r.body.review.running?r.body.review:false})}
